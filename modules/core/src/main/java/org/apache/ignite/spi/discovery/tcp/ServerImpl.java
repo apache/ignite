@@ -409,9 +409,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     log
                 );
 
-//                sslFilter.needClientAuth(true);
-//                sslFilter.wantClientAuth(true);
-
                 filters.add(sslFilter);
             }
         }
@@ -5336,6 +5333,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                             srvCh.socket().getLocalPort());
 
                         sslEngine.setUseClientMode(false);
+
+                        // Disable client auth explicitly, because incoming connections via SSLSocket
+                        // will produce errors during handshake in SSLEngine.
                         sslEngine.setNeedClientAuth(false);
                         sslEngine.setWantClientAuth(false);
                     }
@@ -5356,16 +5356,15 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 throw new IgniteSpiException("Failed to perform SSL handshake.");
                         }
                         catch (SSLException | IgniteCheckedException e) {
-                            final String sockStr = sock.toString();
+                            log.warning("Failed to perform SSL handshake. [socket=" + sock + "]", e);
 
                             sock.close();
                             ch.close();
 
-                            log.warning("Failed to perform SSL handshake. [socket=" + sockStr + "]", e);
-
                             continue;
                         }
 
+                        // Wrap raw connection into SSL.
                         sock = new NioSSLSocket(sock, sslHnd);
                     }
 
@@ -6174,7 +6173,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             proceedSessionWriteTimeout(ses);
         }
     }
-
 
     /**
      * Thread that reads messages from the socket created for incoming connections.
@@ -7452,10 +7450,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override public synchronized void close() throws IOException {
-            delegate.close();
             U.closeQuiet(sslIn);
             U.closeQuiet(sslOut);
             U.closeQuiet(ch);
+            delegate.close();
             sslEngine.closeInbound();
             sslEngine.closeOutbound();
         }
@@ -7623,6 +7621,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 decodedBuf.get(b, off, read);
 
+                // Return with previously read data, because next read may block thread.
                 if (read > 0)
                     return read;
 
