@@ -40,6 +40,9 @@ import java.util.Set;
  * Task to purge old EntityFramework cache entries.
  */
 public class PlatformDotNetEntityFrameworkPurgeOldEntriesTask extends ComputeTaskAdapter<Object[], Object> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Object[] arg) throws IgniteException {
@@ -63,6 +66,9 @@ public class PlatformDotNetEntityFrameworkPurgeOldEntriesTask extends ComputeTas
      * Job.
      */
     private static class PlatformDotNetEntityFrameworkPurgeOldEntriesJob extends ComputeJobAdapter {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         @IgniteInstanceResource
         private Ignite ignite;
