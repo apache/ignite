@@ -2598,6 +2598,25 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
         }
 
         /**
+         * @param prnt Parent.
+         * @param left Left.
+         * @param right Right.
+         * @param idx Index.
+         * @return {@code true} If children are correct.
+         */
+        private boolean checkChildren(Tail<L> prnt, Tail<L> left, Tail<L> right, int idx) {
+            // The only case when the siblings can have different parents is when we are merging
+            // top-down an empty branch and we already merged the join point with non-empty branch.
+            if (needMergeEmptyBranch == READY)
+                return true;
+
+            assert idx >= 0 && idx < prnt.getCount(): idx;
+
+            return inner(prnt.io).getLeft(prnt.buf, idx) == left.pageId &&
+                inner(prnt.io).getRight(prnt.buf, idx) == right.pageId;
+        }
+
+        /**
          * @param prnt Parent tail.
          * @param left Left child tail.
          * @param right Right child tail.
@@ -2617,7 +2636,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
             if (prntIdx == prntCnt)
                 prntIdx--;
 
-            assert prntCnt > 0 || needMergeEmptyBranch == READY : prntCnt;
+            assert checkChildren(prnt, left, right, prntIdx): printTail(true);
 
             boolean emptyBranch = needMergeEmptyBranch == TRUE || needMergeEmptyBranch == READY;
 
