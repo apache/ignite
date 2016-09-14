@@ -596,8 +596,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
                 Object next = fut.next();
 
-                //Workaround a bug: if IndexingSpi is configured future represents Iterator<Cache.Entry>
-                // instead of Iterator<Map.Entry> due to IndexingSpi interface
+                // Workaround a bug: if IndexingSpi is configured future represents Iterator<Cache.Entry>
+                // instead of Iterator<Map.Entry> due to IndexingSpi interface.
                 if (next == null)
                     return false;
 
@@ -605,6 +605,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     cur = (Cache.Entry)next;
                 else {
                     Map.Entry e = (Map.Entry)next;
+
                     cur = new CacheEntryImpl(e.getKey(), e.getValue());
                 }
 
