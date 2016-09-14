@@ -294,6 +294,7 @@ namespace Apache.Ignite.EntityFramework.Tests
                 // Test sum and count.
                 Assert.AreEqual(4, ctx.Posts.Count());
                 Assert.AreEqual(4, ctx.Posts.Count(x => x.Content == null));
+                Assert.AreEqual(4, ExecuteEntitySql("SELECT COUNT(1) FROM [BloggingContext].Posts"));
                 Assert.AreEqual(blog.BlogId * 4, ctx.Posts.Sum(x => x.BlogId));
 
                 ctx.Posts.Remove(ctx.Posts.First());
@@ -301,6 +302,7 @@ namespace Apache.Ignite.EntityFramework.Tests
 
                 Assert.AreEqual(3, ctx.Posts.Count());
                 Assert.AreEqual(3, ctx.Posts.Count(x => x.Content == null));
+                Assert.AreEqual(3, ExecuteEntitySql("SELECT COUNT(1) FROM [BloggingContext].Posts"));
                 Assert.AreEqual(blog.BlogId * 3, ctx.Posts.Sum(x => x.BlogId));
             }
         }
@@ -532,10 +534,9 @@ namespace Apache.Ignite.EntityFramework.Tests
         }
 
         /// <summary>
-        /// Tests the entity SQL commands.
+        /// Executes the entity SQL.
         /// </summary>
-        [Test]
-        public void TestEntitySql()
+        private object ExecuteEntitySql(string esql)
         {
             using (var ctx = GetDbContext())
             {
@@ -544,13 +545,10 @@ namespace Apache.Ignite.EntityFramework.Tests
                 var conn = objCtx.Connection;
                 conn.Open();
 
-                var cmd = conn.CreateCommand() as EntityCommand;
-                Assert.IsNotNull(cmd);
+                var cmd = (EntityCommand) conn.CreateCommand();
+                cmd.CommandText = esql;
 
-                cmd.CommandText = "SELECT COUNT(*) FROM Blogs";
-                var res = cmd.ExecuteScalar();
-
-                Assert.AreEqual(0, (int)res);
+                return cmd.ExecuteScalar();
             }
         }
 
