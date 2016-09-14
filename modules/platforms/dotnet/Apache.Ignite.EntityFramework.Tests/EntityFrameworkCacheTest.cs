@@ -533,6 +533,8 @@ namespace Apache.Ignite.EntityFramework.Tests
                     Assert.AreEqual(0, reader.RecordsAffected);
                     Assert.IsTrue(reader.HasRows);
                     Assert.IsFalse(reader.IsClosed);
+                    Assert.AreEqual(11, reader.FieldCount);
+                    Assert.AreEqual(11, reader.VisibleFieldCount);
 
                     // Read.
                     Assert.IsTrue(reader.Read());
