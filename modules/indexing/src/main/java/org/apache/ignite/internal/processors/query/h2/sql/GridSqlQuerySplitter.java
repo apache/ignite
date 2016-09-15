@@ -255,7 +255,7 @@ public class GridSqlQuerySplitter {
      * @param skipDuplicateKeys whether this query should not yield an exception on a duplicate key during INSERT.
      */
     private static GridCacheTwoStepQuery splitUpdateQuery(Prepared prepared, Object[] params, Object[] keysFilter,
-                                                          boolean collocatedGrpBy, final boolean distributedJoins, boolean skipDuplicateKeys) throws IgniteCheckedException {
+        boolean collocatedGrpBy, final boolean distributedJoins, boolean skipDuplicateKeys) throws IgniteCheckedException {
         GridSqlStatement gridStmt = new GridSqlQueryParser().parse(prepared);
 
         X.ensureX(gridStmt instanceof GridSqlInsert || gridStmt instanceof GridSqlMerge ||
@@ -317,7 +317,7 @@ public class GridSqlQuerySplitter {
             return twoStepQueryForSingleItem(del, singleUpdate);
 
         int paramsCnt = F.isEmpty(params) ? 0 : params.length;
-        GridSqlSelect mapQry = mapQueryForDelete(del, !F.isEmpty(keysFilter) ? paramsCnt + 1 : null);
+        GridSqlSelect mapQry = mapQueryForDelete(del, !F.isEmpty(keysFilter) ? paramsCnt : null);
 
         params = Arrays.copyOf(U.firstNotNull(params, X.EMPTY_OBJECT_ARRAY), paramsCnt + 1);
         params[paramsCnt] = keysFilter;
@@ -386,7 +386,7 @@ public class GridSqlQuerySplitter {
             return twoStepQueryForSingleItem(update, singleUpdate);
 
         int paramsCnt = F.isEmpty(params) ? 0 : params.length;
-        GridSqlSelect mapQry = mapQueryForUpdate(update, !F.isEmpty(keysFilter) ? paramsCnt + 1 : null);
+        GridSqlSelect mapQry = mapQueryForUpdate(update, !F.isEmpty(keysFilter) ? paramsCnt: null);
 
         params = Arrays.copyOf(U.firstNotNull(params, X.EMPTY_OBJECT_ARRAY), paramsCnt + 1);
         params[paramsCnt] = keysFilter;
