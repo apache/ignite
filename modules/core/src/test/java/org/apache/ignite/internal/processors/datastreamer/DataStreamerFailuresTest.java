@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.datastreamer;
 
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -168,6 +169,44 @@ public class DataStreamerFailuresTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test is checking ability of handling exception when flashing.
+     */
+    public void testHandledExceptionAndFlushAgain() throws Exception {
+        try {
+            Ignite ignite1 = startGrid(0);
+            Ignite ignite2 = startGrid(1);
+
+            checkTopology(2);
+
+            boolean thrown = false;
+
+            try (IgniteDataStreamer ldr = ignite1.dataStreamer(CACHE_NAME)) {
+                ldr.receiver(new TestDataReceiverFailedOnce());
+                ldr.perNodeBufferSize(ENTRY_AMOUNT/6);
+                ldr.perNodeParallelOperations(1);
+                ((DataStreamerImpl)ldr).maxRemapCount(0);
+
+                for (int i = 0; i < ENTRY_AMOUNT; i++) {
+                    ldr.addData(i, i);
+
+                    if (i == 1) {
+                        try {
+                            ldr.flush();
+                        } catch (Exception e) {
+                            thrown = true;
+                        }
+                    }
+                }
+            }
+
+            assertTrue(thrown);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
      * @param futures Futures.
      */
     private void checkFailAddData(IgniteFuture[] futures) {
@@ -232,6 +271,21 @@ public class DataStreamerFailuresTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void receive(IgniteCache cache, Collection collection) throws IgniteException {
             throw new IgniteException("Error in TestDataReceiver.");
+        }
+    }
+
+    /**
+     * Test receiver, which failed only once.
+     */
+    private static class TestDataReceiverFailedOnce implements StreamReceiver {
+
+        /** Not throw. */
+        private static AtomicBoolean notThrow= new AtomicBoolean();
+
+        /** {@inheritDoc} */
+        @Override public void receive(IgniteCache cache, Collection collection) throws IgniteException {
+            if (!notThrow.getAndSet(true))
+                throw new IgniteException("First fail.");
         }
     }
 

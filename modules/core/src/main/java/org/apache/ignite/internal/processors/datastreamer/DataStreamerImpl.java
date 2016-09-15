@@ -102,6 +102,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
+import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -154,6 +155,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** */
     private long autoFlushFreq;
 
+    /** Exception history size. */
+    private int exceptionHistorySize = DFLT_EXCEPTION_HISTORY_SIZE;
+
     /** Mapping. */
     @GridToStringInclude
     private ConcurrentMap<UUID, Buffer> bufMappings = new ConcurrentHashMap8<>();
@@ -191,7 +195,11 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 t.get();
             }
             catch (IgniteCheckedException e) {
-                firstException.compareAndSet(null, e);
+                if (exceptionsQueue.sizex() < exceptionHistorySize)
+                    exceptionsQueue.push(e);
+                else
+                    log.warning("Queue of exceptions is overflowed. You should to invoke flush()," +
+                        " for to clean of the history and see exceptions in log.", e);
             }
 
             boolean rmv = activeFuts.remove(t);
@@ -200,7 +208,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         }
     };
 
-    private final AtomicReference<IgniteCheckedException> firstException = new AtomicReference<>();
+    /** Exceptions queue. */
+    private final ConcurrentLinkedDeque8<IgniteCheckedException> exceptionsQueue = new ConcurrentLinkedDeque8<>();
 
     /** Job peer deploy aware. */
     private volatile GridPeerDeployAware jobPda;
@@ -498,6 +507,16 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             else if (autoFlushFreq == 0)
                 flushQ.remove(this);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public int exceptionHistorySize() {
+        return exceptionHistorySize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void exceptionHistorySize(int size) {
+        exceptionHistorySize = size;
     }
 
     /** {@inheritDoc} */
@@ -853,11 +872,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             activeFuts0.add(f);
         }
 
-        IgniteCheckedException firstException0 = firstException.get();
-
         if (activeFuts0 == null) {
-            if (firstException0 != null)
-                throw  firstException0;
+            throwExceptionIfNeeded();
 
             return;
         }
@@ -932,8 +948,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     try {
                         f.get();
                     } catch (IgniteCheckedException e) {
-                        if (firstException0 == null)
-                            firstException0 = e;
+                        //The exception will be thrown at the end.
+                        //Look at the throwExceptionIfNeeded.
                     }
 
                     doneCnt++;
@@ -945,11 +961,26 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             }
 
             if (doneCnt == activeFuts0.size()) {
-                if (firstException0 != null)
-                    throw  firstException0;
+                throwExceptionIfNeeded();
 
                 return;
             }
+        }
+    }
+
+    /**
+     * Method is throwing IgniteCheckedException Exception, if it took a place.
+     */
+    private void throwExceptionIfNeeded() throws IgniteCheckedException {
+        IgniteCheckedException firstException0 = exceptionsQueue.poll();
+
+        if (firstException0 != null) {
+            IgniteCheckedException suppressed;
+
+            while ((suppressed = exceptionsQueue.poll()) != null)
+                firstException0.addSuppressed(suppressed);
+
+            throw  firstException0;
         }
     }
 

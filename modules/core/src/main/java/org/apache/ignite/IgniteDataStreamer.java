@@ -99,6 +99,9 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
     /** Default timeout for streamer's operations. */
     public static final long DFLT_UNLIMIT_TIMEOUT = -1;
 
+    /** Default exception history size size. */
+    public static final int DFLT_EXCEPTION_HISTORY_SIZE = 1024;
+
     /**
      * Name of cache to stream data to.
      *
@@ -251,6 +254,17 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * @see #flush()
      */
     public void autoFlushFrequency(long autoFlushFreq);
+
+    /**
+     * Sets size of history of exceptions, which will be displayed after strimer cleaned.
+     * @param size Size.
+     */
+    public void exceptionHistorySize(int size);
+
+    /**
+     * Gets size of stored history of exception.
+     */
+    public int exceptionHistorySize();
 
     /**
      * Gets future for this streaming process. This future completes whenever method
