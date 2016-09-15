@@ -86,7 +86,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         /** <inheritDoc /> */
         public override int Depth
         {
-            get { return 1; }
+            get { return 0; }
         }
 
         /** <inheritDoc /> */
