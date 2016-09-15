@@ -117,7 +117,7 @@ public class HadoopShuffle extends HadoopComponent {
     private void send0(UUID nodeId, Object msg) throws IgniteCheckedException {
         ClusterNode node = ctx.kernalContext().discovery().node(nodeId);
 
-        ctx.kernalContext().io().sendUserMessage(F.asList(node), msg, GridTopic.TOPIC_HADOOP, false, 0);
+        ctx.kernalContext().io().sendUserMessage(F.asList(node), msg, GridTopic.TOPIC_HADOOP, false, 0, false);
     }
 
     /**
