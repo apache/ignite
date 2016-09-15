@@ -76,50 +76,62 @@ namespace Apache.Ignite.EntityFramework.Tests
             Assert.AreEqual(1, reader.GetByte(reader.GetOrdinal("fbyte")));
             Assert.AreEqual("by", reader.GetDataTypeName(0));
             Assert.AreEqual(typeof(byte), reader.GetFieldType(0));
+            Assert.AreEqual("fbyte", reader.GetName(0));
 
             Assert.AreEqual(2, reader.GetInt16(reader.GetOrdinal("fshort")));
             Assert.AreEqual("sh", reader.GetDataTypeName(1));
             Assert.AreEqual(typeof(short), reader.GetFieldType(1));
+            Assert.AreEqual("fshort", reader.GetName(1));
 
             Assert.AreEqual(3, reader.GetInt32(reader.GetOrdinal("fint")));
             Assert.AreEqual("in", reader.GetDataTypeName(2));
             Assert.AreEqual(typeof(int), reader.GetFieldType(2));
+            Assert.AreEqual("fint", reader.GetName(2));
 
             Assert.AreEqual(4, reader.GetInt64(reader.GetOrdinal("flong")));
             Assert.AreEqual("lo", reader.GetDataTypeName(3));
             Assert.AreEqual(typeof(long), reader.GetFieldType(3));
+            Assert.AreEqual("flong", reader.GetName(3));
 
             Assert.AreEqual(5, reader.GetFloat(reader.GetOrdinal("ffloat")));
             Assert.AreEqual("fl", reader.GetDataTypeName(4));
             Assert.AreEqual(typeof(float), reader.GetFieldType(4));
+            Assert.AreEqual("ffloat", reader.GetName(4));
 
             Assert.AreEqual(6, reader.GetDouble(reader.GetOrdinal("fdouble")));
             Assert.AreEqual("do", reader.GetDataTypeName(5));
             Assert.AreEqual(typeof(double), reader.GetFieldType(5));
+            Assert.AreEqual("fdouble", reader.GetName(5));
 
             Assert.AreEqual(7, reader.GetDecimal(reader.GetOrdinal("fdecimal")));
             Assert.AreEqual("de", reader.GetDataTypeName(6));
             Assert.AreEqual(typeof(decimal), reader.GetFieldType(6));
+            Assert.AreEqual("fdecimal", reader.GetName(6));
 
             Assert.AreEqual("8", reader.GetString(reader.GetOrdinal("fstring")));
             Assert.AreEqual("st", reader.GetDataTypeName(7));
             Assert.AreEqual(typeof(string), reader.GetFieldType(7));
+            Assert.AreEqual("fstring", reader.GetName(7));
 
             Assert.AreEqual('9', reader.GetChar(reader.GetOrdinal("fchar")));
             Assert.AreEqual("ch", reader.GetDataTypeName(8));
             Assert.AreEqual(typeof(char), reader.GetFieldType(8));
+            Assert.AreEqual("fchar", reader.GetName(8));
 
             Assert.AreEqual(dateTime, reader.GetDateTime(reader.GetOrdinal("fDateTime")));
             Assert.AreEqual("Da", reader.GetDataTypeName(9));
             Assert.AreEqual(typeof(DateTime), reader.GetFieldType(9));
+            Assert.AreEqual("fDateTime", reader.GetName(9));
 
             Assert.AreEqual(guid, reader.GetGuid(reader.GetOrdinal("fGuid")));
             Assert.AreEqual("Gu", reader.GetDataTypeName(10));
             Assert.AreEqual(typeof(Guid), reader.GetFieldType(10));
+            Assert.AreEqual("fGuid", reader.GetName(10));
 
             Assert.AreEqual(false, reader.GetBoolean(reader.GetOrdinal("fbool")));
             Assert.AreEqual("bo", reader.GetDataTypeName(11));
             Assert.AreEqual(typeof(bool), reader.GetFieldType(11));
+            Assert.AreEqual("fbool", reader.GetName(11));
 
             // Close.
             reader.Close();
