@@ -17,21 +17,18 @@
 
 package org.apache.ignite.yardstick.cache;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.yardstick.cache.model.Person;
 import org.yardstickframework.BenchmarkConfiguration;
 
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- * Ignite benchmark that performs put and query operations.
+ * Ignite benchmark that performs put and SQL DELETE operations.
  */
 public class IgniteSqlDeleteFilteredBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** */
@@ -82,7 +79,7 @@ public class IgniteSqlDeleteFilteredBenchmark extends IgniteCacheAbstractBenchma
 
     /** {@inheritDoc} */
     @Override public void tearDown() throws Exception {
-        println(cfg, "Finished sql query put benchmark [putCnt=" + putCnt.get() + ", delCnt=" + delCnt.get() +
+        println(cfg, "Finished SQL DELETE query benchmark [putCnt=" + putCnt.get() + ", delCnt=" + delCnt.get() +
             ", delItemsCnt=" + delItemsCnt.get() + ']');
 
         super.tearDown();

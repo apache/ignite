@@ -18,22 +18,43 @@
 package org.apache.ignite.yardstick.cache;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.yardstick.cache.model.Person1;
 
+import static org.yardstickframework.BenchmarkUtils.println;
+
 /**
- * Ignite benchmark that performs SQL MERGE operations for entity with indexed fields.
+ * Ignite benchmark that performs SQL INSERT operations for entity with indexed fields.
  */
 public class IgniteSqlInsertIndexedValue1Benchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
+    /** */
+    private final AtomicInteger insItemsCnt = new AtomicInteger();
+
+    /** */
+    private final AtomicInteger insCnt = new AtomicInteger();
+
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int key = nextRandom(args.range());
 
-        cache.query(new SqlFieldsQuery("insert into Person1(_key, _val) values (?, ?)")
-            .setArgs(key, new Person1(key)).setSkipDuplicateKeys(true));
+        int res = (Integer) cache.query(new SqlFieldsQuery("insert into Person1(_key, _val) values (?, ?)")
+            .setArgs(key, new Person1(key)).setSkipDuplicateKeys(true)).getAll().get(0).get(0);
+
+        insItemsCnt.addAndGet(res);
+
+        insCnt.incrementAndGet();
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void tearDown() throws Exception {
+        println(cfg, "Finished SQL INSERT query benchmark [insItemsCnt=" + insItemsCnt.get() + ", insCnt=" +
+            insCnt.get() + ']');
+
+        super.tearDown();
     }
 
     /** {@inheritDoc} */

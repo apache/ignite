@@ -28,7 +28,7 @@ import org.yardstickframework.BenchmarkConfiguration;
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- * Ignite benchmark that performs put and query operations.
+ * Ignite benchmark that performs put and SQL UPDATE operations.
  */
 public class IgniteSqlUpdateFilteredBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** */
@@ -79,7 +79,7 @@ public class IgniteSqlUpdateFilteredBenchmark extends IgniteCacheAbstractBenchma
 
     /** {@inheritDoc} */
     @Override public void tearDown() throws Exception {
-        println(cfg, "Finished sql query put benchmark [putCnt=" + putCnt.get() + ", updCnt=" + updCnt.get() +
+        println(cfg, "Finished SQL UPDATE query benchmark [putCnt=" + putCnt.get() + ", updCnt=" + updCnt.get() +
             ", updItemsCnt=" + updItemsCnt.get() + ']');
 
         super.tearDown();
