@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.expiry.CreatedExpiryPolicy;
@@ -44,6 +46,12 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  *
  */
 public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest {
+    /** Count of caches in multi caches test. */
+    private static final int CACHES_CNT = 10;
+
+    /** Prefix for cache name fir multi caches test. */
+    private static final String CACHE_PREFIX = "cache-";
+
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -60,14 +68,27 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
 
         cfg.setDiscoverySpi(discoSpi);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration[] ccfgs = new CacheConfiguration[CACHES_CNT + 1];
 
-        ccfg.setCacheMode(cacheMode);
-        ccfg.setEagerTtl(true);
 
-        cfg.setCacheConfiguration(ccfg);
+        ccfgs[0] = createCacheConfiguration(null);
+
+        for (int i = 0; i < CACHES_CNT; i++) {
+            ccfgs[i + 1] = createCacheConfiguration(CACHE_PREFIX + i);
+        }
+
+        cfg.setCacheConfiguration(ccfgs);
 
         return cfg;
+    }
+
+    private CacheConfiguration createCacheConfiguration(String name) {
+        CacheConfiguration ccfg = new CacheConfiguration();
+        ccfg.setCacheMode(cacheMode);
+        ccfg.setEagerTtl(true);
+        ccfg.setName(name);
+
+        return ccfg;
     }
 
     /**
@@ -149,6 +170,66 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
 
             assertEquals(threadCnt * cnt, cache.size());
             assertEquals(threadCnt * cnt, evtCnt.get());
+        }
+    }
+
+    /**
+     * Add in several threads value to several caches with different expiration policy.
+     * Wait for expiration of keys with small expiration duration.
+     */
+    public void testThatNotificationWorkAsExpectedManyCaches() throws Exception {
+        final int smallDuration = 4_000;
+
+        final int cnt = 1_000;
+        final int cacheCnt = 10;
+        final int threadCnt = 2;
+
+        final CyclicBarrier barrier = new CyclicBarrier(2 * threadCnt * cacheCnt + 1);
+        final AtomicInteger keysRangeGen = new AtomicInteger();
+        final AtomicInteger evtCnt = new AtomicInteger(0);
+        final List<IgniteCache<Object, Object>> caches = new ArrayList<>(cacheCnt);
+
+        try (final Ignite g = startGrid(0)) {
+            for (int i = 0; i < cacheCnt; i++) {
+                IgniteCache<Object, Object> cache = g.cache("cache-" + i);
+                caches.add(cache);
+            }
+
+            g.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    evtCnt.incrementAndGet();
+
+                    return true;
+                }
+            }, EventType.EVT_CACHE_OBJECT_EXPIRED);
+
+            for (int i = 0; i < cacheCnt; i++) {
+                GridTestUtils.runMultiThreadedAsync(
+                    new CacheFiller(caches.get(i), 100_000, barrier, keysRangeGen, cnt),
+                    threadCnt, "");
+
+                GridTestUtils.runMultiThreadedAsync(
+                    new CacheFiller(caches.get(i), smallDuration, barrier, keysRangeGen, cnt),
+                    threadCnt, "");
+            }
+
+            barrier.await();
+
+            Thread.sleep(1_000);
+
+            barrier.await();
+
+            for (int i = 0; i < cacheCnt; i++) {
+                assertEquals("unexpected size of " + CACHE_PREFIX + i, 2 * threadCnt * cnt, caches.get(i).size());
+            }
+
+            Thread.sleep(2 * smallDuration);
+
+            for (int i = 0; i < cacheCnt; i++) {
+                assertEquals("unexpected size of " + CACHE_PREFIX + i, threadCnt * cnt, caches.get(i).size());
+            }
+
+            assertEquals("unexpected count of expired entries", threadCnt * CACHES_CNT * cnt, evtCnt.get());
         }
     }
 
