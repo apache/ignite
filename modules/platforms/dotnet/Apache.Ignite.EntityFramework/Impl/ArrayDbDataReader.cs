@@ -22,6 +22,7 @@ namespace Apache.Ignite.EntityFramework.Impl
     using System.Data;
     using System.Data.Common;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// Reads the data from array.
@@ -61,12 +62,14 @@ namespace Apache.Ignite.EntityFramework.Impl
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public override DataTable GetSchemaTable()
         {
             throw new NotSupportedException();
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public override bool NextResult()
         {
             return false;  // multiple result sets are not supported
@@ -282,6 +285,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public override IEnumerator GetEnumerator()
         {
             throw new NotSupportedException();
