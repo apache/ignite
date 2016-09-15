@@ -36,6 +36,7 @@ namespace Apache.Ignite.EntityFramework.Tests
     using Apache.Ignite.Core.Impl.EntityFramework;
     using Apache.Ignite.Core.Tests;
     using Apache.Ignite.EntityFramework;
+    using Apache.Ignite.EntityFramework.Impl;
     using NUnit.Framework;
 
     /// <summary>
@@ -508,6 +509,7 @@ namespace Apache.Ignite.EntityFramework.Tests
 
         /// <summary>
         /// Tests the cache reader by calling it directly.
+        /// These calls are (partly) delegated by EF to the <see cref="ArrayDbDataReader"/>.
         /// </summary>
         [Test]
         public void TestCacheReaderRaw()
