@@ -119,7 +119,7 @@ public class PagesListMetaIO extends PageIO {
 
         int off = offset(cnt);
 
-        int write = Math.min(cap - cnt, (tails.length - tailsOff) / 2);
+        int write = Math.min(cap - cnt, tails.length - tailsOff);
 
         for (int i = 0; i < write; i++) {
             buf.putShort(off, (short)bucket);

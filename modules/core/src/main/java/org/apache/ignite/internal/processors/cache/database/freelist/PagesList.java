@@ -421,7 +421,7 @@ public abstract class PagesList extends DataStructure {
                             nextPageId = curIo.getNextMetaPageId(curBuf);
                         }
                         else
-                            tailIdx += written * 2;
+                            tailIdx += written;
                     }
                 }
             }
