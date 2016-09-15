@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLongArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
@@ -558,6 +557,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         assertEquals(keys, tree.size());
 
+        tree.validateTree();
+
         info("Remove...");
 
         try {
@@ -602,71 +603,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception if failed.
-     */
-    public void _testMassiveRemove2_true() throws Exception {
-        doTestMassiveRemove2(true);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    private void doTestMassiveRemove2(boolean canGetRow) throws Exception {
-        MAX_PER_PAGE = 2;
-        final int threads = 16;
-        final int keys = 20_000 * threads;
-
-        final TestTree tree = createTestTree(canGetRow);
-
-        for (long i = 0; i < keys; i++)
-            tree.put(i);
-
-        final AtomicInteger id = new AtomicInteger(0);
-
-        info("Remove...");
-
-        try {
-            // This will remove all keys in [0, 1000 * threads) and all even keys in [1000 * threads, 2000 * threads)
-            GridTestUtils.runMultiThreaded(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    int id0 = id.getAndIncrement();
-
-                    int base = id0 * 1000;
-
-                    for (long i = base; i < base + 1000; i++) {
-                        tree.remove(i);
-
-                        rmvdIds.add(i);
-
-                        if (i >= 0 && i % 100 == 0)
-                            info("Done: " + (i - base));
-                    }
-
-                    base = (threads + id0) * 1000;
-
-                    for (long i = base; i < base + 1000; i += 2) {
-                        tree.remove(i);
-
-                        rmvdIds.add(i);
-
-                        if (i >= 0 && i % 100 == 0)
-                            info("Done: " + (i - base));
-                    }
-
-                    return null;
-                }
-            }, threads, "remove");
-
-            info("size: " + tree.size());
-
-            tree.validateTree();
-        }
-        finally {
-            rmvdIds.clear();
-        }
-    }
-
-    /**
      * @param canGetRow Can get row from inner page.
      * @throws IgniteCheckedException If failed.
      */
@@ -696,6 +632,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                 assertNull(tree.remove(x));
             }
 
+//            X.println(tree.printTree());
             tree.validateTree();
 
             if (i % 100 == 0) {
