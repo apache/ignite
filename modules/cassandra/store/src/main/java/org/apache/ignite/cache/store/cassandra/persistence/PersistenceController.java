@@ -107,11 +107,11 @@ public class PersistenceController {
                 questionsList.append(",");
             }
 
-            colsList.append(column);
+            colsList.append("\"").append(column).append("\"");
             questionsList.append("?");
         }
 
-        writeStatement = "insert into " + persistenceSettings.getKeyspace() + "." + persistenceSettings.getTable() + " (" +
+        writeStatement = "insert into \"" + persistenceSettings.getKeyspace() + "\".\"" + persistenceSettings.getTable() + "\" (" +
             colsList.toString() + ") values (" + questionsList.toString() + ")";
 
         if (persistenceSettings.getTTL() != null)
@@ -139,14 +139,14 @@ public class PersistenceController {
             if (statement.length() != 0)
                 statement.append(" and ");
 
-            statement.append(column).append("=?");
+            statement.append("\"").append(column).append("\"=?");
         }
 
         statement.append(";");
 
-        delStatement = "delete from " +
-            persistenceSettings.getKeyspace() + "." +
-            persistenceSettings.getTable() + " where " +
+        delStatement = "delete from \"" +
+            persistenceSettings.getKeyspace() + "\".\"" +
+            persistenceSettings.getTable() + "\" where " +
             statement.toString();
 
         return delStatement;
@@ -173,7 +173,7 @@ public class PersistenceController {
             if (i > 0)
                 hdrWithKeyFields.append(", ");
 
-            hdrWithKeyFields.append(keyCols.get(i));
+            hdrWithKeyFields.append("\"").append(keyCols.get(i)).append("\"");
         }
 
         StringBuilder hdr = new StringBuilder("select ");
@@ -184,22 +184,22 @@ public class PersistenceController {
 
             hdrWithKeyFields.append(",");
 
-            hdr.append(valCols.get(i));
-            hdrWithKeyFields.append(valCols.get(i));
+            hdr.append("\"").append(valCols.get(i)).append("\"");
+            hdrWithKeyFields.append("\"").append(valCols.get(i)).append("\"");
         }
 
         StringBuilder statement = new StringBuilder();
 
-        statement.append(" from ");
+        statement.append(" from \"");
         statement.append(persistenceSettings.getKeyspace());
-        statement.append(".").append(persistenceSettings.getTable());
-        statement.append(" where ");
+        statement.append("\".\"").append(persistenceSettings.getTable());
+        statement.append("\" where ");
 
         for (int i = 0; i < keyCols.size(); i++) {
             if (i > 0)
                 statement.append(" and ");
 
-            statement.append(keyCols.get(i)).append("=?");
+            statement.append("\"").append(keyCols.get(i)).append("\"=?");
         }
 
         statement.append(";");

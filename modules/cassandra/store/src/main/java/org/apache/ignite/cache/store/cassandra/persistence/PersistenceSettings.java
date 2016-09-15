@@ -219,10 +219,10 @@ public abstract class PersistenceSettings implements Serializable {
      */
     public String getTableColumnsDDL() {
         if (PersistenceStrategy.BLOB.equals(stgy))
-            return "  " + col + " " + DataType.Name.BLOB.toString();
+            return "  \"" + col + "\" " + DataType.Name.BLOB.toString();
 
         if (PersistenceStrategy.PRIMITIVE.equals(stgy))
-            return "  " + col + " " + PropertyMappingHelper.getCassandraType(javaCls);
+            return "  \"" + col + "\" " + PropertyMappingHelper.getCassandraType(javaCls);
 
         StringBuilder builder = new StringBuilder();
 
