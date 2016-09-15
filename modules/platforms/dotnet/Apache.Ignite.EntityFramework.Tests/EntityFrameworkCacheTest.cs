@@ -548,8 +548,20 @@ namespace Apache.Ignite.EntityFramework.Tests
                     Assert.AreEqual("Edm.Boolean", reader.GetDataTypeName(7));
                     Assert.AreEqual("Edm.String", reader.GetDataTypeName(8));
                     Assert.AreEqual("Edm.Guid", reader.GetDataTypeName(9));
+                    Assert.AreEqual("Edm.DateTime", reader.GetDataTypeName(10));
 
                     // Check field types.
+                    Assert.AreEqual(typeof(int), reader.GetFieldType(0));
+                    Assert.AreEqual(typeof(byte), reader.GetFieldType(1));
+                    Assert.AreEqual(typeof(short), reader.GetFieldType(2));
+                    Assert.AreEqual(typeof(long), reader.GetFieldType(3));
+                    Assert.AreEqual(typeof(float), reader.GetFieldType(4));
+                    Assert.AreEqual(typeof(double), reader.GetFieldType(5));
+                    Assert.AreEqual(typeof(decimal), reader.GetFieldType(6));
+                    Assert.AreEqual(typeof(bool), reader.GetFieldType(7));
+                    Assert.AreEqual(typeof(string), reader.GetFieldType(8));
+                    Assert.AreEqual(typeof(Guid), reader.GetFieldType(9));
+                    Assert.AreEqual(typeof(DateTime), reader.GetFieldType(10));
 
                     // Read.
                     Assert.IsTrue(reader.Read());
