@@ -28,11 +28,11 @@ import org.apache.ignite.internal.processors.cache.database.freelist.PagesList;
  */
 public final class ReuseListImpl extends PagesList implements ReuseList {
     /** */
-    private static final AtomicReferenceFieldUpdater<ReuseListImpl, long[]> bucketUpdater =
-        AtomicReferenceFieldUpdater.newUpdater(ReuseListImpl.class, long[].class, "bucket");
+    private static final AtomicReferenceFieldUpdater<ReuseListImpl, Stripe[]> bucketUpdater =
+        AtomicReferenceFieldUpdater.newUpdater(ReuseListImpl.class, Stripe[].class, "bucket");
 
     /** */
-    private volatile long[] bucket;
+    private volatile Stripe[] bucket;
 
     /**
      * @param cacheId   Cache ID.
@@ -79,12 +79,12 @@ public final class ReuseListImpl extends PagesList implements ReuseList {
     }
 
     /** {@inheritDoc} */
-    @Override protected long[] getBucket(int bucket) {
+    @Override protected Stripe[] getBucket(int bucket) {
         return this.bucket;
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean casBucket(int bucket, long[] exp, long[] upd) {
+    @Override protected boolean casBucket(int bucket, Stripe[] exp, Stripe[] upd) {
         return bucketUpdater.compareAndSet(this, exp, upd);
     }
 

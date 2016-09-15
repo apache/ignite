@@ -29,7 +29,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -63,6 +62,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 
 /**
  *
@@ -571,7 +572,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         long pageId = cctx.shared().database().globalReuseList().takeRecycledPage();
 
         if (pageId == 0L)
-            pageId = cctx.shared().database().pageMemory().allocatePage(cctx.cacheId(), 0, PageIdAllocator.FLAG_IDX);
+            pageId = cctx.shared().database().pageMemory().allocatePage(cctx.cacheId(), 0, FLAG_IDX);
 
         return pageId;
     }

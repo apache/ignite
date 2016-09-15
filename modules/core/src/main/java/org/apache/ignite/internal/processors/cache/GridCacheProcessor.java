@@ -591,21 +591,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             registerCache(internalCaches, cfg);
         }
 
-        Set<String> savedCacheNames = sharedCtx.pageStore().savedCacheNames();
+        if (sharedCtx.pageStore() != null) {
+            Set<String> savedCacheNames = sharedCtx.pageStore().savedCacheNames();
 
-        for (CacheConfiguration cfg : cfgs)
-            savedCacheNames.remove(cfg.getName());
+            for (CacheConfiguration cfg : cfgs)
+                savedCacheNames.remove(cfg.getName());
 
-        for (String name : internalCaches)
-            savedCacheNames.remove(name);
+            for (String name : internalCaches)
+                savedCacheNames.remove(name);
 
-        if (!ctx.config().isDaemon() && sharedCtx.database().persistenceEnabled() && !F.isEmpty(savedCacheNames)) {
-            log.info("Will start persisted dynamic caches: " + savedCacheNames);
+            if (!ctx.config().isDaemon() && sharedCtx.database().persistenceEnabled() && !F.isEmpty(savedCacheNames)) {
+                log.info("Will start persisted dynamic caches: " + savedCacheNames);
 
-            for (String name : savedCacheNames) {
-                CacheConfiguration cfg = sharedCtx.pageStore().readConfiguration(name);
+                for (String name : savedCacheNames) {
+                    CacheConfiguration cfg = sharedCtx.pageStore().readConfiguration(name);
 
-                registerCache(internalCaches, cfg);
+                    registerCache(internalCaches, cfg);
+                }
             }
         }
 
@@ -762,7 +764,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 if (ctx.config().isDaemon() && !CU.isMarshallerCache(desc.cacheConfiguration().getName()))
                     continue;
 
-                sharedCtx.pageStore().initializeForCache(desc.cacheConfiguration());
+                if (sharedCtx.pageStore() != null)
+                    sharedCtx.pageStore().initializeForCache(desc.cacheConfiguration());
             }
 
             sharedCtx.database().onKernalStart(false);

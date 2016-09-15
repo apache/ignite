@@ -24,7 +24,6 @@ import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -692,13 +691,12 @@ public class DataPageIO extends PageIO {
     /**
      * Adds row to this data page and sets respective link to the given row object.
      *
-     * @param coctx Cache object context.
      * @param buf Buffer.
      * @param row Cache data row.
+     * @param rowSize Row size.
      * @throws IgniteCheckedException If failed.
      */
     public void addRow(
-        CacheObjectContext coctx,
         ByteBuffer buf,
         CacheDataRow row,
         int rowSize
@@ -712,7 +710,7 @@ public class DataPageIO extends PageIO {
 
         int dataOff = getDataOffsetForWrite(buf, fullEntrySize, directCnt, indirectCnt);
 
-        writeRowData(coctx, buf, dataOff, rowSize, row);
+        writeRowData(buf, dataOff, rowSize, row);
 
         int itemId = addItem(buf, fullEntrySize, directCnt, indirectCnt, dataOff);
 
@@ -815,7 +813,6 @@ public class DataPageIO extends PageIO {
     /**
      * Adds maximum possible fragment of the given row to this data page and sets respective link to the row.
      *
-     * @param coctx Cache object context.
      * @param buf Byte buffer.
      * @param row Cache data row.
      * @param written Number of bytes of row size that was already written.
@@ -824,37 +821,33 @@ public class DataPageIO extends PageIO {
      * @throws IgniteCheckedException If failed.
      */
     public int addRowFragment(
-        CacheObjectContext coctx,
         ByteBuffer buf,
         CacheDataRow row,
         int written,
         int rowSize
     ) throws IgniteCheckedException {
-        return addRowFragment(coctx, buf, written, rowSize, row.link(), row, null);
+        return addRowFragment(buf, written, rowSize, row.link(), row, null);
     }
 
     /**
      * Adds this payload as a fragment to this data page.
      *
-     * @param coctx Cache object context.
      * @param buf Byte buffer.
      * @param payload Payload bytes.
      * @param lastLink Link to the previous written fragment (link to the tail).
      * @throws IgniteCheckedException If failed.
      */
     public void addRowFragment(
-        CacheObjectContext coctx,
         ByteBuffer buf,
         byte[] payload,
         long lastLink
     ) throws IgniteCheckedException {
-        addRowFragment(coctx, buf, 0, 0, lastLink, null, payload);
+        addRowFragment(buf, 0, 0, lastLink, null, payload);
     }
 
     /**
      * Adds maximum possible fragment of the given row to this data page and sets respective link to the row.
      *
-     * @param coctx Cache object context.
      * @param buf Byte buffer.
      * @param written Number of bytes of row size that was already written.
      * @param rowSize Row size.
@@ -865,7 +858,6 @@ public class DataPageIO extends PageIO {
      * @throws IgniteCheckedException If failed.
      */
     private int addRowFragment(
-        CacheObjectContext coctx,
         ByteBuffer buf,
         int written,
         int rowSize,
@@ -893,7 +885,7 @@ public class DataPageIO extends PageIO {
             if (payload == null) {
                 int rowOff = rowSize - written - payloadSize;
 
-                writeFragmentData(row, buf, coctx, rowOff, payloadSize);
+                writeFragmentData(row, buf, rowOff, payloadSize);
             }
             else
                 buf.put(payload);
@@ -924,7 +916,6 @@ public class DataPageIO extends PageIO {
      *
      * @param row Row.
      * @param buf Byte buffer.
-     * @param coctx Cache object context.
      * @param rowOff Offset in row data bytes.
      * @param payloadSize Data length that should be written in a fragment.
      * @throws IgniteCheckedException If failed.
@@ -932,17 +923,16 @@ public class DataPageIO extends PageIO {
     private void writeFragmentData(
         final CacheDataRow row,
         final ByteBuffer buf,
-        final CacheObjectContext coctx,
         final int rowOff,
         final int payloadSize
     ) throws IgniteCheckedException {
-        final int keySize = row.key().valueBytesLength(coctx);
-        final int valSize = row.value().valueBytesLength(coctx);
+        final int keySize = row.key().valueBytesLength(null);
+        final int valSize = row.value().valueBytesLength(null);
 
-        int written = writeFragment(row, buf, coctx, rowOff, payloadSize, EntryPart.KEY, keySize, valSize);
-        written += writeFragment(row, buf, coctx, rowOff + written, payloadSize - written, EntryPart.EXPIRE_TIME, keySize, valSize);
-        written += writeFragment(row, buf, coctx, rowOff + written, payloadSize - written, EntryPart.VALUE, keySize, valSize);
-        written += writeFragment(row, buf, coctx, rowOff + written, payloadSize - written, EntryPart.VERSION, keySize, valSize);
+        int written = writeFragment(row, buf, rowOff, payloadSize, EntryPart.KEY, keySize, valSize);
+        written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.EXPIRE_TIME, keySize, valSize);
+        written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.VALUE, keySize, valSize);
+        written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.VERSION, keySize, valSize);
 
         assert written == payloadSize;
     }
@@ -959,7 +949,6 @@ public class DataPageIO extends PageIO {
     private int writeFragment(
         final CacheDataRow row,
         final ByteBuffer buf,
-        final CacheObjectContext coctx,
         final int rowOff,
         final int payloadSize,
         final EntryPart type,
@@ -1012,7 +1001,7 @@ public class DataPageIO extends PageIO {
             // Write key or value.
             final CacheObject co = type == EntryPart.KEY ? row.key() : row.value();
 
-            co.putValue(buf, rowOff - prevLen, len, coctx);
+            co.putValue(buf, rowOff - prevLen, len);
         }
         else
             writeVersionFragment(buf, row.version(), rowOff, len, prevLen);
@@ -1211,7 +1200,6 @@ public class DataPageIO extends PageIO {
     }
 
     /**
-     * @param coctx Cache object context.
      * @param buf Buffer.
      * @param dataOff Data offset.
      * @param payloadSize Payload size.
@@ -1219,7 +1207,6 @@ public class DataPageIO extends PageIO {
      * @throws IgniteCheckedException If failed.
      */
     private void writeRowData(
-        CacheObjectContext coctx,
         ByteBuffer buf,
         int dataOff,
         int payloadSize,
@@ -1230,11 +1217,11 @@ public class DataPageIO extends PageIO {
 
             buf.putShort((short)payloadSize);
 
-            boolean ok = row.key().putValue(buf, coctx);
+            boolean ok = row.key().putValue(buf);
 
             assert ok;
 
-            ok = row.value().putValue(buf, coctx);
+            ok = row.value().putValue(buf);
 
             assert ok;
 
