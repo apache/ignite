@@ -90,6 +90,22 @@ namespace Apache.Ignite.EntityFramework.Tests
             Assert.AreEqual("fl", reader.GetDataTypeName(4));
             Assert.AreEqual(typeof(float), reader.GetFieldType(4));
 
+            Assert.AreEqual(6, reader.GetDouble(reader.GetOrdinal("fdouble")));
+            Assert.AreEqual("do", reader.GetDataTypeName(5));
+            Assert.AreEqual(typeof(double), reader.GetFieldType(5));
+
+            Assert.AreEqual(7, reader.GetDecimal(reader.GetOrdinal("fdecimal")));
+            Assert.AreEqual("de", reader.GetDataTypeName(6));
+            Assert.AreEqual(typeof(decimal), reader.GetFieldType(6));
+
+            Assert.AreEqual("8", reader.GetString(reader.GetOrdinal("fstring")));
+            Assert.AreEqual("st", reader.GetDataTypeName(7));
+            Assert.AreEqual(typeof(string), reader.GetFieldType(7));
+
+            Assert.AreEqual('9', reader.GetChar(reader.GetOrdinal("fchar")));
+            Assert.AreEqual("ch", reader.GetDataTypeName(8));
+            Assert.AreEqual(typeof(char), reader.GetFieldType(8));
+
             // Close.
             reader.Close();
             Assert.IsTrue(reader.IsClosed);
