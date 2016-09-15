@@ -195,8 +195,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 t.get();
             }
             catch (IgniteCheckedException e) {
-                if (exceptionsQueue.sizex() < exceptionHistorySize)
-                    exceptionsQueue.push(e);
+                if (exceptionsHist.sizex() < exceptionHistorySize)
+                    exceptionsHist.push(e);
                 else
                     log.warning("Queue of exceptions is overflowed. You should to invoke flush()," +
                         " for to clean of the history and see exceptions in log.", e);
@@ -208,8 +208,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         }
     };
 
-    /** Exceptions queue. */
-    private final ConcurrentLinkedDeque8<IgniteCheckedException> exceptionsQueue = new ConcurrentLinkedDeque8<>();
+    /** Exceptions history. */
+    private final ConcurrentLinkedDeque8<IgniteCheckedException> exceptionsHist = new ConcurrentLinkedDeque8<>();
 
     /** Job peer deploy aware. */
     private volatile GridPeerDeployAware jobPda;
@@ -972,12 +972,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      * Method is throwing IgniteCheckedException Exception, if it took a place.
      */
     private void throwExceptionIfNeeded() throws IgniteCheckedException {
-        IgniteCheckedException firstException0 = exceptionsQueue.poll();
+        IgniteCheckedException firstException0 = exceptionsHist.poll();
 
         if (firstException0 != null) {
             IgniteCheckedException suppressed;
 
-            while ((suppressed = exceptionsQueue.poll()) != null)
+            while ((suppressed = exceptionsHist.poll()) != null)
                 firstException0.addSuppressed(suppressed);
 
             throw  firstException0;
