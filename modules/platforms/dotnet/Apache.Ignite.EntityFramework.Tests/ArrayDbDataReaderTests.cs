@@ -18,6 +18,7 @@
 namespace Apache.Ignite.EntityFramework.Tests
 {
     using System;
+    using System.Linq;
     using Apache.Ignite.EntityFramework.Impl;
     using NUnit.Framework;
 
@@ -73,6 +74,10 @@ namespace Apache.Ignite.EntityFramework.Tests
             Assert.IsTrue(reader.HasRows);
 
             // Check reading.
+            var data2 = new object[12];
+            Assert.AreEqual(12, reader.GetValues(data2));
+            Assert.AreEqual(data[0], data2);
+
             Assert.AreEqual(1, reader.GetByte(reader.GetOrdinal("fbyte")));
             Assert.AreEqual("by", reader.GetDataTypeName(0));
             Assert.AreEqual(typeof(byte), reader.GetFieldType(0));
@@ -132,6 +137,8 @@ namespace Apache.Ignite.EntityFramework.Tests
             Assert.AreEqual("bo", reader.GetDataTypeName(11));
             Assert.AreEqual(typeof(bool), reader.GetFieldType(11));
             Assert.AreEqual("fbool", reader.GetName(11));
+
+            Assert.IsFalse(Enumerable.Range(0, 12).Any(x => reader.IsDBNull(x)));
 
             // Close.
             reader.Close();
