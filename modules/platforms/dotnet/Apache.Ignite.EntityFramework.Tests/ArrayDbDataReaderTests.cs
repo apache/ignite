@@ -41,7 +41,21 @@ namespace Apache.Ignite.EntityFramework.Tests
                 }
             };
 
-            var schema = new [] {new DataReaderField("byte", typeof(byte), "by") };
+            var schema = new []
+            {
+                new DataReaderField("fbyte", typeof(byte), "by"),
+                new DataReaderField("fshort", typeof(short), "sh"),
+                new DataReaderField("fint", typeof(int), "in"),
+                new DataReaderField("flong", typeof(long), "lo"),
+                new DataReaderField("ffloat", typeof(float), "fl"),
+                new DataReaderField("fdouble", typeof(double), "do"),
+                new DataReaderField("fdecimal", typeof(decimal), "de"),
+                new DataReaderField("fstring", typeof(string), "st"),
+                new DataReaderField("fchar", typeof(char), "ch"),
+                new DataReaderField("fDateTime", typeof(DateTime), "Da"),
+                new DataReaderField("fGuid", typeof(Guid), "Go"),
+                new DataReaderField("fbool", typeof(bool), "bo"),
+            };
 
             var reader = new ArrayDbDataReader(data, schema);
 
@@ -53,7 +67,7 @@ namespace Apache.Ignite.EntityFramework.Tests
             Assert.IsFalse(reader.IsClosed);
             Assert.IsTrue(reader.HasRows);
 
-            Assert.AreEqual(1, reader.GetByte(reader.GetOrdinal("byte")));
+            Assert.AreEqual(1, reader.GetByte(reader.GetOrdinal("fbyte")));
             Assert.AreEqual("by", reader.GetDataTypeName(0));
             Assert.AreEqual(typeof(byte), reader.GetFieldType(0));
         }
