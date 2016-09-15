@@ -57,6 +57,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ArrayDbDataReaderTests.cs" />
     <Compile Include="DbCachingPolicyTest.cs" />
     <Compile Include="EntityFrameworkCacheInitializationTest.cs" />
     <Compile Include="EntityFrameworkCacheTest.cs" />

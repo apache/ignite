@@ -17,6 +17,7 @@
 
 using System;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 [assembly: AssemblyTitle("Apache.Ignite.EntityFramework")]
@@ -36,3 +37,5 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyInformationalVersion("1.8.0")]
 
 [assembly: CLSCompliant(true)]
+
+[assembly: InternalsVisibleTo("Apache.Ignite.EntityFramework.Tests, PublicKey=00240000048000009400000006020000002400005253413100040000010001005f45ca91396d3bb682c38d96bdc6e9ac5855a2b8f7dd7434493c278ceb75cae29d452714a376221e5bfc26dfc7dadcdbe9d0a8bb04b1945f6c326089481fc65da5fa8fc728fa9dde5fa2e1599f89678c6b1b38c59d5deef7d012eced64941d5d065aff987ec0196f5b352213d5c04b982647d7fb3bfb2496b890afc5ef1391b0")]
