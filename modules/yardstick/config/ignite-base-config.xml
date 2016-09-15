@@ -24,6 +24,17 @@
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="
         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+
+    <bean id="expire-policy" class="javax.cache.expiry.CreatedExpiryPolicy" factory-method="factoryOf">
+        <constructor-arg type="javax.cache.expiry.Duration">
+            <bean class="javax.cache.expiry.Duration">
+                <constructor-arg type="java.util.concurrent.TimeUnit" value="java.util.concurrent.TimeUnit.HOURS"/>
+
+                <constructor-arg type="java.lang.Long" value="10"/>
+            </bean>
+        </constructor-arg>
+    </bean>
+
     <bean id="base-ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" abstract="true">
         <property name="peerClassLoadingEnabled" value="false"/>
 
@@ -39,6 +50,18 @@
                     <property name="atomicityMode" value="ATOMIC"/>
 
                     <property name="swapEnabled" value="false"/>
+                </bean>
+
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="atomic-with-expiry"/>
+
+                    <property name="cacheMode" value="PARTITIONED"/>
+
+                    <property name="atomicityMode" value="ATOMIC"/>
+
+                    <property name="swapEnabled" value="false"/>
+
+                    <property name="expiryPolicyFactory" ref="expire-policy"/>
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -63,7 +86,20 @@
                     <property name="swapEnabled" value="false"/>
 
                     <property name="memoryMode" value="OFFHEAP_VALUES"/>
+                </bean>
 
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="atomic-offheap-with-expiry"/>
+
+                    <property name="cacheMode" value="PARTITIONED"/>
+
+                    <property name="atomicityMode" value="ATOMIC"/>
+
+                    <property name="swapEnabled" value="false"/>
+
+                    <property name="memoryMode" value="OFFHEAP_TIERED"/>
+
+                    <property name="expiryPolicyFactory" ref="expire-policy"/>
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -139,7 +175,8 @@
                         <list>
                             <bean class="org.apache.ignite.cache.CacheTypeMetadata">
                                 <property name="keyType" value="java.lang.Integer"/>
-                                <property name="valueType" value="org.apache.ignite.yardstick.cache.model.Organization"/>
+                                <property name="valueType"
+                                          value="org.apache.ignite.yardstick.cache.model.Organization"/>
 
                                 <property name="ascendingFields">
                                     <map>
