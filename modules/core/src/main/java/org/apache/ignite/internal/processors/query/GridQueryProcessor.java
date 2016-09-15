@@ -982,7 +982,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public void remove(String space, KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
         assert key != null;
-        assert val != null;
 
         if (log.isDebugEnabled())
             log.debug("Remove [space=" + space + ", key=" + key + ", val=" + val + "]");
@@ -995,7 +994,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             ctx.indexing().remove(space, key.value(coctx, false));
         }
 
-        if (idx == null)
+        // If val == null we only need to call SPI.
+        if (idx == null || val == null)
             return;
 
         if (!busyLock.enterBusy())
