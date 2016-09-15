@@ -32,12 +32,15 @@ namespace Apache.Ignite.EntityFramework.Tests
         [Test]
         public void TestReader()
         {
+            var dateTime = DateTime.Now;
+            var guid = Guid.NewGuid();
+
             var data = new[]
             {
                 new object[]
                 {
-                    (byte) 1, (short) 2, 3, (long) 4, (float) 5, (double) 6, (decimal) 7, "8", '9', DateTime.Now,
-                    Guid.NewGuid(), false
+                    (byte) 1, (short) 2, 3, (long) 4, (float) 5, (double) 6, (decimal) 7, "8", '9', dateTime,
+                    guid, false
                 }
             };
 
@@ -53,7 +56,7 @@ namespace Apache.Ignite.EntityFramework.Tests
                 new DataReaderField("fstring", typeof(string), "st"),
                 new DataReaderField("fchar", typeof(char), "ch"),
                 new DataReaderField("fDateTime", typeof(DateTime), "Da"),
-                new DataReaderField("fGuid", typeof(Guid), "Go"),
+                new DataReaderField("fGuid", typeof(Guid), "Gu"),
                 new DataReaderField("fbool", typeof(bool), "bo"),
             };
 
@@ -105,6 +108,18 @@ namespace Apache.Ignite.EntityFramework.Tests
             Assert.AreEqual('9', reader.GetChar(reader.GetOrdinal("fchar")));
             Assert.AreEqual("ch", reader.GetDataTypeName(8));
             Assert.AreEqual(typeof(char), reader.GetFieldType(8));
+
+            Assert.AreEqual(dateTime, reader.GetDateTime(reader.GetOrdinal("fDateTime")));
+            Assert.AreEqual("Da", reader.GetDataTypeName(9));
+            Assert.AreEqual(typeof(DateTime), reader.GetFieldType(9));
+
+            Assert.AreEqual(guid, reader.GetGuid(reader.GetOrdinal("fGuid")));
+            Assert.AreEqual("Gu", reader.GetDataTypeName(10));
+            Assert.AreEqual(typeof(Guid), reader.GetFieldType(10));
+
+            Assert.AreEqual(false, reader.GetBoolean(reader.GetOrdinal("fbool")));
+            Assert.AreEqual("bo", reader.GetDataTypeName(11));
+            Assert.AreEqual(typeof(bool), reader.GetFieldType(11));
 
             // Close.
             reader.Close();
