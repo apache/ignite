@@ -19,10 +19,10 @@ namespace Apache.Ignite.Core.Cache.Affinity
 {
     using System.Collections.Generic;
     using System.Diagnostics;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Affinity function context.
@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// Initializes a new instance of the <see cref="AffinityFunctionContext"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        internal AffinityFunctionContext(IBinaryRawReader reader)
+        internal AffinityFunctionContext(BinaryReader reader)
         {
             Debug.Assert(reader != null);
 

@@ -21,6 +21,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
+    using System.IO;
     using System.Runtime.InteropServices;
     using System.Threading;
     using Apache.Ignite.Core.Cache.Affinity;
@@ -37,11 +39,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using Apache.Ignite.Core.Impl.Datastream;
     using Apache.Ignite.Core.Impl.Events;
     using Apache.Ignite.Core.Impl.Handle;
+    using Apache.Ignite.Core.Impl.Log;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Messaging;
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Impl.Services;
     using Apache.Ignite.Core.Lifecycle;
+    using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Services;
     using UU = UnmanagedUtils;
 
@@ -88,6 +92,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
         private readonly IntPtr _cbsPtr;
 
+        /** Log. */
+        private readonly ILogger _log;
+
         /** Error type: generic. */
         private const int ErrGeneric = 1;
 
@@ -97,7 +104,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Error type: attach. */
         private const int ErrJvmAttach = 3;
 
-        /** Opeartion: prepare .Net. */
+        /** Operation: prepare .Net. */
         private const int OpPrepareDotNet = 1;
 
         private delegate long CacheStoreCreateCallbackDelegate(void* target, long memPtr);
@@ -173,6 +180,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void OnClientDisconnectedDelegate(void* target);
         private delegate void OnClientReconnectedDelegate(void* target, bool clusterRestarted);
 
+        private delegate void LoggerLogDelegate(void* target, int level, sbyte* messageChars, int messageCharsLen, sbyte* categoryChars, int categoryCharsLen, sbyte* errorInfoChars, int errorInfoCharsLen, long memPtr);
+        private delegate bool LoggerIsLevelEnabledDelegate(void* target, int level);
+
         private delegate long AffinityFunctionInitDelegate(void* target, long memPtr, void* baseFunc);
         private delegate int AffinityFunctionPartitionDelegate(void* target, long ptr, long memPtr);
         private delegate void AffinityFunctionAssignPartitionsDelegate(void* target, long ptr, long inMemPtr, long outMemPtr);
@@ -182,10 +192,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void ConsoleWriteDelegate(sbyte* chars, int charsLen, bool isErr);
 
         /// <summary>
-        /// constructor.
+        /// Constructor.
         /// </summary>
-        public UnmanagedCallbacks()
+        /// <param name="log">Logger.</param>
+        public UnmanagedCallbacks(ILogger log)
         {
+            Debug.Assert(log != null);
+            _log = log;
+
             var cbs = new UnmanagedCallbackHandlers
             {
                 target = IntPtr.Zero.ToPointer(), // Target is not used in .Net as we rely on dynamic FP creation.
@@ -269,7 +283,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 affinityFunctionPartition = CreateFunctionPointer((AffinityFunctionPartitionDelegate)AffinityFunctionPartition),
                 affinityFunctionAssignPartitions = CreateFunctionPointer((AffinityFunctionAssignPartitionsDelegate)AffinityFunctionAssignPartitions),
                 affinityFunctionRemoveNode = CreateFunctionPointer((AffinityFunctionRemoveNodeDelegate)AffinityFunctionRemoveNode),
-                affinityFunctionDestroy = CreateFunctionPointer((AffinityFunctionDestroyDelegate)AffinityFunctionDestroy)
+                affinityFunctionDestroy = CreateFunctionPointer((AffinityFunctionDestroyDelegate)AffinityFunctionDestroy),
+
+                loggerLog = CreateFunctionPointer((LoggerLogDelegate)LoggerLog),
+                loggerIsLevelEnabled = CreateFunctionPointer((LoggerIsLevelEnabledDelegate)LoggerIsLevelEnabled)
             };
 
             _cbsPtr = Marshal.AllocHGlobal(UU.HandlersSize());
@@ -312,6 +329,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }, true);
         }
 
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         private int CacheStoreInvoke(void* target, long objPtr, long memPtr, void* cb)
         {
@@ -326,7 +344,18 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
-                    return t.Invoke(stream, cb0, _ignite);
+                    try
+                    {
+                        return t.Invoke(stream, cb0, _ignite);
+                    }
+                    catch (Exception e)
+                    {
+                        stream.Seek(0, SeekOrigin.Begin);
+
+                        _ignite.Marshaller.StartMarshal(stream).WriteObject(e);
+
+                        return -1;
+                    }
                 }
             });
         }
@@ -537,7 +566,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         }
 
         /// <summary>
-        /// Get comptue job using it's GC handle pointer.
+        /// Get compute job using it's GC handle pointer.
         /// </summary>
         /// <param name="jobPtr">Job pointer.</param>
         /// <returns>Compute job.</returns>
@@ -756,8 +785,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     string errCls = reader.ReadString();
                     string errMsg = reader.ReadString();
                     string stackTrace = reader.ReadString();
+                    Exception inner = reader.ReadBoolean() ? reader.ReadObject<Exception>() : null;
 
-                    Exception err = ExceptionUtils.GetException(_ignite, errCls, errMsg, stackTrace, reader);
+                    Exception err = ExceptionUtils.GetException(_ignite, errCls, errMsg, stackTrace, reader, inner);
 
                     ProcessFuture(futPtr, fut => { fut.OnError(err); });
                 }
@@ -869,7 +899,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                         using (var inStream = IgniteManager.Memory.Get(arg1).GetStream())
                         using (var outStream = IgniteManager.Memory.Get(arg2).GetStream())
                         {
-                            Ignition.OnPrepare(inStream, outStream, _handleRegistry);
+                            Ignition.OnPrepare(inStream, outStream, _handleRegistry, _log);
 
                             return 0;
                         }
@@ -1072,6 +1102,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private void Error(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars,
             int errMsgCharsLen, sbyte* stackTraceChars, int stackTraceCharsLen, void* errData, int errDataLen)
         {
+            // errData mechanism is only needed for CachePartialUpdateException and is no longer used,
+            // since CacheImpl handles all errors itself.
+            Debug.Assert(errDataLen == 0);
+            Debug.Assert(errData == null);
+
             string errCls = IgniteUtils.Utf8UnmanagedToString(errClsChars, errClsCharsLen);
             string errMsg = IgniteUtils.Utf8UnmanagedToString(errMsgChars, errMsgCharsLen);
             string stackTrace = IgniteUtils.Utf8UnmanagedToString(stackTraceChars, stackTraceCharsLen);
@@ -1079,15 +1114,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             switch (errType)
             {
                 case ErrGeneric:
-                    if (_ignite != null && errDataLen > 0)
-                    {
-                        // Stream disposal intentionally omitted: IGNITE-1598
-                        var stream = new PlatformRawMemory(errData, errDataLen).GetStream();
-
-                        throw ExceptionUtils.GetException(_ignite, errCls, errMsg, stackTrace, 
-                            _ignite.Marshaller.StartUnmarshal(stream));
-                    }
-
                     throw ExceptionUtils.GetException(_ignite, errCls, errMsg, stackTrace);
 
                 case ErrJvmInit:
@@ -1117,6 +1143,41 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
+        private void LoggerLog(void* target, int level, sbyte* messageChars, int messageCharsLen, sbyte* categoryChars,
+            int categoryCharsLen, sbyte* errorInfoChars, int errorInfoCharsLen, long memPtr)
+        {
+            // When custom logger in .NET is not defined, Java should not call us.
+            Debug.Assert(!(_log is JavaLogger));
+
+            SafeCall(() =>
+            {
+                var message = IgniteUtils.Utf8UnmanagedToString(messageChars, messageCharsLen);
+                var category = IgniteUtils.Utf8UnmanagedToString(categoryChars, categoryCharsLen);
+                var nativeError = IgniteUtils.Utf8UnmanagedToString(errorInfoChars, errorInfoCharsLen);
+
+                Exception ex = null;
+
+                if (memPtr != 0 && _ignite != null)
+                {
+                    using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                    {
+                        ex = _ignite.Marshaller.Unmarshal<Exception>(stream);
+                    }
+                }
+
+                _log.Log((LogLevel) level, message, null, CultureInfo.InvariantCulture, category, nativeError, ex);
+            }, true);
+        }
+
+        private bool LoggerIsLevelEnabled(void* target, int level)
+        {
+            // When custom logger in .NET is not defined, Java should not call us.
+            Debug.Assert(!(_log is JavaLogger));
+
+            return SafeCall(() => _log.IsEnabled((LogLevel) level), true);
+        }
+
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private static void ConsoleWrite(sbyte* chars, int charsLen, bool isErr)
         {
             try
@@ -1232,6 +1293,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
             catch (Exception e)
             {
+                _log.Error(e, "Failure in Java callback");
+
                 UU.ThrowToJava(_ctx.NativeContext, e);
             }
         }
@@ -1248,6 +1311,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
             catch (Exception e)
             {
+                _log.Error(e, "Failure in Java callback");
+
                 UU.ThrowToJava(_ctx.NativeContext, e);
 
                 return default(T);
@@ -1270,6 +1335,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public UnmanagedContext Context
         {
             get { return _ctx; }
+        }
+
+        /// <summary>
+        /// Gets the log.
+        /// </summary>
+        public ILogger Log
+        {
+            get { return _log; }
         }
 
         /// <summary>
@@ -1309,6 +1382,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
 
             _initEvent.Set();
+
+            ResourceProcessor.Inject(_log, grid);
         }
 
         /// <summary>

@@ -38,12 +38,16 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="nunit-console-runner">
-      <HintPath>..\libs\nunit-console-runner.dll</HintPath>
+    <Reference Include="NLog">
+      <HintPath>..\packages\NLog.4.3.7\lib\net40\NLog.dll</HintPath>
     </Reference>
-    <Reference Include="nunit.framework, Version=2.6.4.14350, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
+    <Reference Include="nunit-console-runner, Version=2.6.3.0, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\libs\nunit.framework.dll</HintPath>
+      <HintPath>..\packages\NUnit.Runners.2.6.3\tools\lib\nunit-console-runner.dll</HintPath>
+    </Reference>
+    <Reference Include="nunit.framework, Version=2.6.3.0, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\NUnit.Runners.2.6.3\tools\nunit.framework.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.configuration" />
@@ -55,6 +59,20 @@
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Binary\BinaryReaderWriterTest.cs" />
+    <Compile Include="Binary\IO\BinaryStreamsTest.cs" />
+    <Compile Include="Binary\JavaTypeMappingTest.cs" />
+    <Compile Include="Binary\TypeResolverTest.cs" />
+    <Compile Include="Cache\Affinity\AffinityKeyTest.cs" />
+    <Compile Include="Cache\Affinity\AffinityTopologyVersionTest.cs" />
+    <Compile Include="Cache\CacheResultTest.cs" />
+    <Compile Include="Cache\Store\CacheStoreAdapterTest.cs" />
+    <Compile Include="Collections\MultiValueDictionaryTest.cs" />
+    <Compile Include="Collections\ReadOnlyCollectionTest.cs" />
+    <Compile Include="Collections\ReadOnlyDictionaryTest.cs" />
+    <Compile Include="Common\IgniteGuidTest.cs" />
+    <Compile Include="Log\DefaultLoggerTest.cs" />
+    <Compile Include="Log\NLogLoggerTest.cs" />
     <Compile Include="TestAppConfig.cs" />
     <Compile Include="AspNet\IgniteOutputCacheProviderTest.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTestFullFooter.cs" />
@@ -138,6 +156,7 @@
     <Compile Include="LifecycleTest.cs" />
     <Compile Include="LoadDllTest.cs" />
     <Compile Include="IgniteManagerTest.cs" />
+    <Compile Include="Log\CustomLoggerTest.cs" />
     <Compile Include="MarshallerTest.cs" />
     <Compile Include="MessagingTest.cs" />
     <Compile Include="BinaryConfigurationTest.cs" />
@@ -164,7 +183,6 @@
     <Compile Include="Services\ServiceProxyTest.cs" />
     <Compile Include="Services\ServicesAsyncWrapper.cs" />
     <Compile Include="TestRunner.cs" />
-    <Compile Include="TypeResolverTest.cs" />
     <Compile Include="WindowsServiceTest.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -179,6 +197,10 @@
     <ProjectReference Include="..\Apache.Ignite.Linq\Apache.Ignite.Linq.csproj">
       <Project>{5b571661-17f4-4f29-8c7d-0edb38ca9b55}</Project>
       <Name>Apache.Ignite.Linq</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Apache.Ignite.NLog\Apache.Ignite.NLog.csproj">
+      <Project>{C6B58E4A-A2E9-4554-AD02-68CE6DA5CFB7}</Project>
+      <Name>Apache.Ignite.NLog</Name>
     </ProjectReference>
     <ProjectReference Include="..\Apache.Ignite\Apache.Ignite.csproj">
       <Project>{27F7F3C6-BDDE-43A9-B565-856F8395A04B}</Project>
@@ -248,6 +270,12 @@
     <Content Include="Config\Lifecycle\lifecycle-no-beans.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Config\Log\dotnet-log4j.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\Log\custom-log.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Config\spring-test.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -306,6 +334,7 @@
     <None Include="Config\Apache.Ignite.exe.config.test2">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup Condition="'$(Platform)' != 'AnyCPU'">

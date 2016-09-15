@@ -150,7 +150,8 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
         ResultSet rs) throws CacheLoaderException {
         try {
             JdbcTypeField field = fields[0];
-            int colIdx = loadColIdxs.get(field.getDatabaseFieldName());
+
+            Integer colIdx = columnIndex(loadColIdxs, field.getDatabaseFieldName());
 
             return transformer.getColumnValue(rs, colIdx, field.getJavaFieldType());
         }
@@ -196,9 +197,9 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
                     throw new IllegalStateException("Failed to find property in POJO class [type=" + typeName +
                         ", prop=" + fldJavaName + "]");
 
-                String fldDbName = fld.getDatabaseFieldName();
+                String dbName = fld.getDatabaseFieldName();
 
-                Integer colIdx = loadColIdxs.get(fldDbName);
+                Integer colIdx = columnIndex(loadColIdxs, dbName);
 
                 try {
                     Object colVal = transformer.getColumnValue(rs, colIdx, fld.getJavaFieldType());
@@ -208,12 +209,12 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
                     }
                     catch (Exception e) {
                         throw new CacheLoaderException("Failed to set property in POJO class [type=" + typeName +
-                            ", prop=" + fldJavaName + ", col=" + colIdx + ", dbName=" + fldDbName + "]", e);
+                            ", prop=" + fldJavaName + ", col=" + colIdx + ", dbName=" + dbName + "]", e);
                     }
                 }
                 catch (SQLException e) {
                     throw new CacheLoaderException("Failed to read object property [type= " + typeName +
-                        ", prop=" + fldJavaName + ", col=" + colIdx + ", dbName=" + fldDbName + "]", e);
+                        ", prop=" + fldJavaName + ", col=" + colIdx + ", dbName=" + dbName + "]", e);
                 }
             }
 
@@ -245,7 +246,7 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
             Collection<Object> hashValues = calcHash ? new ArrayList<>(hashFields.size()) : null;
 
             for (JdbcTypeField field : fields) {
-                Integer colIdx = loadColIdxs.get(field.getDatabaseFieldName());
+                Integer colIdx = columnIndex(loadColIdxs, field.getDatabaseFieldName());
 
                 Object colVal = transformer.getColumnValue(rs, colIdx, field.getJavaFieldType());
 
@@ -371,8 +372,8 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
          *
          * @param obj Object to get property value from.
          * @return Property value.
-         * @throws IllegalAccessException
-         * @throws InvocationTargetException
+         * @throws IllegalAccessException If failed to get value from property or failed access to property via reflection.
+         * @throws InvocationTargetException If failed access to property via reflection.
          */
         private Object get(Object obj) throws IllegalAccessException, InvocationTargetException {
             if (getter != null)
@@ -389,8 +390,8 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
          *
          * @param obj Object to set property value to.
          * @param val New property value to set.
-         * @throws IllegalAccessException
-         * @throws InvocationTargetException
+         * @throws IllegalAccessException If failed to set property value or failed access to property via reflection.
+         * @throws InvocationTargetException If failed access to property via reflection.
          */
         private void set(Object obj, Object val) throws IllegalAccessException, InvocationTargetException {
             if (setter != null)

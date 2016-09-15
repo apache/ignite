@@ -127,7 +127,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
             writeFut = igfsCtx.data().writeStart(fileInfo.id());
         }
 
-        igfsCtx.igfs().localMetrics().incrementFilesOpenedForWrite();
+        igfsCtx.metrics().incrementFilesOpenedForWrite();
     }
 
     /** {@inheritDoc} */
@@ -315,6 +315,11 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
                     ", fileInfo=" + fileInfo + ']', e);
             }
 
+            // Finish batch before file unlocking to support the assertion that unlocked file batch,
+            // if any, must be in finishing state (e.g. append see more IgfsImpl.newBatch)
+            if (batch != null)
+                batch.finish();
+
             // Unlock the file after data is flushed.
             try {
                 if (flushSuccess && space > 0)
@@ -332,8 +337,6 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
 
             // Finally, await secondary file system flush.
             if (batch != null) {
-                batch.finish();
-
                 if (mode == DUAL_SYNC) {
                     try {
                         batch.await();
@@ -352,8 +355,8 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
             if (err != null)
                 throw err;
 
-            igfsCtx.igfs().localMetrics().addWrittenBytesTime(bytes, time);
-            igfsCtx.igfs().localMetrics().decrementFilesOpenedForWrite();
+            igfsCtx.metrics().addWrittenBytesTime(bytes, time);
+            igfsCtx.metrics().decrementFilesOpenedForWrite();
 
             GridEventStorageManager evts = igfsCtx.kernalContext().event();
 
@@ -393,7 +396,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
     /**
      * Send local buffer if at least something is stored there.
      *
-     * @throws IOException
+     * @throws IOException If failed.
      */
     private void sendBufferIfNotEmpty() throws IOException {
         if (buf != null && buf.position() > 0)
