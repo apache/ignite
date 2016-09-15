@@ -17,19 +17,26 @@
 
 package org.apache.ignite.internal.managers.communication;
 
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.nio.GridNioServer;
+import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.log4j.helpers.ThreadLocalMap;
+
+import static org.apache.ignite.internal.util.nio.GridNioServer.Balancer;
 
 /**
  *
@@ -41,6 +48,9 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
     /** */
     private boolean client;
 
+    /** */
+    private int selectors;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -48,7 +58,9 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
         TcpCommunicationSpi commSpi = ((TcpCommunicationSpi)cfg.getCommunicationSpi());
 
         commSpi.setSharedMemoryPort(-1);
-        commSpi.setSelectorsCount(4);
+
+        if (selectors > 0)
+            commSpi.setSelectorsCount(selectors);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
@@ -68,6 +80,8 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBalance() throws Exception {
+        selectors = 4;
+
         startGrid(0);
 
         client = true;
@@ -107,6 +121,30 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testRandomBalance() throws Exception {
+        System.setProperty(GridNioServer.IGNITE_NIO_SES_BALANCER_CLASS_NAME, TestBalancer.class.getName());
+
+        final int NODES = 10;
+
+        startGridsMultiThreaded(NODES);
+
+        final long stopTime = System.currentTimeMillis() + 60_000;
+
+        GridTestUtils.runMultiThreaded(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                while (System.currentTimeMillis() < stopTime)
+                    ignite(rnd.nextInt(NODES)).compute().broadcast(new DummyRunnable());
+
+                return null;
+            }
+        }, 20, "test-thread");
+    }
+
+    /**
      *
      */
     static class DummyRunnable implements IgniteRunnable {
@@ -114,5 +152,79 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
         @Override public void run() {
             // No-op.
         }
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("unchecked")
+    public static class TestBalancer implements Balancer {
+        /** */
+        private final GridNioServer srv;
+
+        /**
+         * @param srv Server.
+         */
+        public TestBalancer(GridNioServer srv) {
+            this.srv = srv;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void balance() {
+            List<GridNioServer.AbstractNioClientWorker> clientWorkers = srv.workers();
+
+            ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+            int w1 = rnd.nextInt(clientWorkers.size());
+
+            if (clientWorkers.get(w1).sessions().isEmpty())
+                return;
+
+            int w2 = rnd.nextInt(clientWorkers.size());
+
+            while (w2 == w1)
+                w2 = rnd.nextInt(clientWorkers.size());
+
+            if (clientWorkers.get(w2).sessions().isEmpty())
+                return;
+
+            GridNioSession ses = randomSession(clientWorkers.get(w1));
+
+            if (ses != null) {
+                System.out.println("[" + Thread.currentThread().getName() + "] Move session " +
+                    "[w1=" + w1 + ", w2=" + w2 + ", ses=" + ses + ']');
+
+                srv.moveSession(ses, w1, w2);
+            }
+        }
+
+        /**
+         * @param worker Worker.
+         * @return NIO session.
+         */
+        private GridNioSession randomSession(GridNioServer.AbstractNioClientWorker worker) {
+            Collection<GridNioSession> sessions = worker.sessions();
+
+            int size = sessions.size();
+
+            if (size == 0)
+                return null;
+
+            int idx = ThreadLocalRandom.current().nextInt(size);
+
+            Iterator<GridNioSession> it = sessions.iterator();
+
+            int cnt = 0;
+
+            while (it.hasNext()) {
+                GridNioSession ses = it.next();
+
+                if (cnt == idx)
+                    return ses;
+            }
+
+            return null;
+        }
+
     }
 }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util.nio;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -88,6 +89,9 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.NIO_OPER
  *
  */
 public class GridNioServer<T> {
+    /** */
+    public static final String IGNITE_NIO_SES_BALANCER_CLASS_NAME = "IGNITE_NIO_SES_BALANCER_CLASS_NAME";
+
     /** Default session write timeout. */
     public static final int DFLT_SES_WRITE_TIMEOUT = 5000;
 
@@ -336,10 +340,19 @@ public class GridNioServer<T> {
         Balancer balancer0 = null;
 
         if (balanceEnabled) {
-            String balancerCls = IgniteSystemProperties.getString("IGNITE_NIO_SES_BALANCER_CLASS_NAME");
+            String balancerCls = IgniteSystemProperties.getString(IGNITE_NIO_SES_BALANCER_CLASS_NAME);
 
             if (balancerCls != null) {
+                try {
+                    Class<?> cls = Class.forName(balancerCls);
 
+                    Constructor c = cls.getConstructor(GridNioServer.class);
+
+                    balancer0 = (Balancer)c.newInstance(this);
+                }
+                catch (Exception e) {
+                    U.error(log, "Failed to create balancer, balancing will be disabled [cls=" + balancerCls + ']', e);
+                }
             }
             else
                 balancer0 = new SizeBasedBalancer(this);
@@ -572,6 +585,17 @@ public class GridNioServer<T> {
      */
     public Collection<? extends GridNioSession> sessions() {
         return sessions;
+    }
+
+    /**
+     * @return Workers.
+     */
+    public List<AbstractNioClientWorker> workers() {
+        return clientWorkers;
+    }
+
+    public void moveSession(GridNioSession ses, int from, int to) {
+        clientWorkers.get(from).offer(new SessionMoveFuture((GridSelectorNioSessionImpl)ses, to));
     }
 
     /**
@@ -1293,10 +1317,14 @@ public class GridNioServer<T> {
         }
     }
 
+    public interface NioWorker {
+
+    }
+
     /**
      * Thread performing only read operations from the channel.
      */
-    private abstract class AbstractNioClientWorker extends GridWorker {
+    public abstract class AbstractNioClientWorker extends GridWorker {
         /** Queue of change requests on this selector. */
         private final ConcurrentLinkedQueue<NioOperationFuture> changeReqs = new ConcurrentLinkedQueue<>();
 
@@ -1330,6 +1358,10 @@ public class GridNioServer<T> {
             createSelector();
 
             this.idx = idx;
+        }
+
+        public Collection<? extends GridNioSession> sessions() {
+            return sessions0;
         }
 
         /** {@inheritDoc} */
@@ -1456,19 +1488,20 @@ public class GridNioServer<T> {
                                     ses.key(key);
                                 }
                                 else {
-                                    assert ses.selectorIndex() == idx; // TODO replace with IF and ignore?
+                                    if (sessions0.remove(ses)) {
+                                        assert ses.selectorIndex() == idx; // TODO replace with IF and ignore?
 
-                                    // Cleanup.
-                                    ses.selectorIndex(-1);
-                                    sessions0.remove(ses);
+                                        // Cleanup.
+                                        ses.selectorIndex(-1);
 
-                                    SelectionKey key = ses.key();
+                                        SelectionKey key = ses.key();
 
-                                    f.socketChannel((SocketChannel)key.channel());
+                                        f.socketChannel((SocketChannel)key.channel());
 
-                                    key.cancel();
+                                        key.cancel();
 
-                                    clientWorkers.get(f.toIndex()).offer(f);
+                                        clientWorkers.get(f.toIndex()).offer(f);
+                                    }
                                 }
 
                                 break;
@@ -2429,7 +2462,6 @@ public class GridNioServer<T> {
         ) {
             super(ses, NioOperation.MOVE);
 
-            this.sockCh = sockCh;
             this.toIdx = toIdx;
         }
 
