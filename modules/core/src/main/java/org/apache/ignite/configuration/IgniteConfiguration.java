@@ -236,6 +236,9 @@ public class IgniteConfiguration {
     /** IGFS pool size. */
     private int igfsPoolSize = AVAILABLE_PROC_CNT;
 
+    /** Data stream pool size. */
+    private int dataStreamPoolSize = DFLT_PUBLIC_THREAD_CNT;
+
     /** Utility cache pool size. */
     private int utilityCachePoolSize = DFLT_SYSTEM_CORE_THREAD_CNT;
 
@@ -777,6 +780,18 @@ public class IgniteConfiguration {
     public int getIgfsThreadPoolSize() {
         return igfsPoolSize;
     }
+
+    /**
+     * Size of thread pool that is in charge of processing data stream messages.
+     * <p>
+     * If not provided, executor service will have size {@link #DFLT_PUBLIC_THREAD_CNT}.
+     *
+     * @return Thread pool size to be used for data stream messages.
+     */
+    public int getDataStreamThreadPoolSize() {
+        return dataStreamPoolSize;
+    }
+
 
     /**
      * Default size of thread pool that is in charge of processing utility cache messages.

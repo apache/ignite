@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.datastreamer;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.DelayQueue;
+import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -57,6 +59,9 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
     /** Flushing thread. */
     private Thread flusher;
 
+    /** Data stream executor service. */
+    private final ExecutorService execSvc;
+
     /** */
     private final DelayQueue<DataStreamerImpl<K, V>> flushQ = new DelayQueue<>();
 
@@ -72,12 +77,20 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
     public DataStreamProcessor(GridKernalContext ctx) {
         super(ctx);
 
+        execSvc = ctx.getDataStreamExecutorService();
+
         if (!ctx.clientNode()) {
             ctx.io().addMessageListener(TOPIC_DATASTREAM, new GridMessageListener() {
-                @Override public void onMessage(UUID nodeId, Object msg) {
+                @Override public void onMessage(final UUID nodeId, final Object msg) {
                     assert msg instanceof DataStreamerRequest;
 
-                    processRequest(nodeId, (DataStreamerRequest)msg);
+                    execSvc.submit(
+                        new Runnable() {
+                            @Override public void run() {
+                                processRequest(nodeId, (DataStreamerRequest)msg);
+                            }
+                        }
+                    );
                 }
             });
         }
