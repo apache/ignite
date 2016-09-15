@@ -26,6 +26,7 @@ import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -70,18 +71,20 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
 
         CacheConfiguration[] ccfgs = new CacheConfiguration[CACHES_CNT + 1];
 
-
         ccfgs[0] = createCacheConfiguration(null);
 
-        for (int i = 0; i < CACHES_CNT; i++) {
+        for (int i = 0; i < CACHES_CNT; i++)
             ccfgs[i + 1] = createCacheConfiguration(CACHE_PREFIX + i);
-        }
 
         cfg.setCacheConfiguration(ccfgs);
 
         return cfg;
     }
 
+    /**
+     * @param name Cache name.
+     * @return Cache configuration.
+     */
     private CacheConfiguration createCacheConfiguration(String name) {
         CacheConfiguration ccfg = new CacheConfiguration();
         ccfg.setCacheMode(cacheMode);
@@ -125,8 +128,10 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
     }
 
     /**
-     * Add in several threads value to cache with different expiration policy.
-     * Wait for expiration of keys with small expiration duration.
+     * Adds in several threads value to cache with different expiration policy.
+     * Waits for expiration of keys with small expiration duration.
+     *
+     * @throws Exception If failed.
      */
     public void testThatNotificationWorkAsExpectedInMultithreadedMode() throws Exception {
         final CyclicBarrier barrier = new CyclicBarrier(21);
@@ -174,14 +179,16 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
     }
 
     /**
-     * Add in several threads value to several caches with different expiration policy.
-     * Wait for expiration of keys with small expiration duration.
+     * Adds in several threads value to several caches with different expiration policy.
+     * Waits for expiration of keys with small expiration duration.
+     *
+     * @throws Exception If failed.
      */
     public void testThatNotificationWorkAsExpectedManyCaches() throws Exception {
         final int smallDuration = 4_000;
 
         final int cnt = 1_000;
-        final int cacheCnt = 10;
+        final int cacheCnt = CACHES_CNT;
         final int threadCnt = 2;
 
         final CyclicBarrier barrier = new CyclicBarrier(2 * threadCnt * cacheCnt + 1);
@@ -192,6 +199,7 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
         try (final Ignite g = startGrid(0)) {
             for (int i = 0; i < cacheCnt; i++) {
                 IgniteCache<Object, Object> cache = g.cache("cache-" + i);
+
                 caches.add(cache);
             }
 
@@ -206,11 +214,13 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
             for (int i = 0; i < cacheCnt; i++) {
                 GridTestUtils.runMultiThreadedAsync(
                     new CacheFiller(caches.get(i), 100_000, barrier, keysRangeGen, cnt),
-                    threadCnt, "");
+                    threadCnt,
+                    "put-large-duration");
 
                 GridTestUtils.runMultiThreadedAsync(
                     new CacheFiller(caches.get(i), smallDuration, barrier, keysRangeGen, cnt),
-                    threadCnt, "");
+                    threadCnt,
+                    "put-small-duration");
             }
 
             barrier.await();
@@ -219,17 +229,15 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
 
             barrier.await();
 
-            for (int i = 0; i < cacheCnt; i++) {
-                assertEquals("unexpected size of " + CACHE_PREFIX + i, 2 * threadCnt * cnt, caches.get(i).size());
-            }
+            for (int i = 0; i < cacheCnt; i++)
+                assertEquals("Unexpected size of " + CACHE_PREFIX + i, 2 * threadCnt * cnt, caches.get(i).size());
 
             Thread.sleep(2 * smallDuration);
 
-            for (int i = 0; i < cacheCnt; i++) {
-                assertEquals("unexpected size of " + CACHE_PREFIX + i, threadCnt * cnt, caches.get(i).size());
-            }
+            for (int i = 0; i < cacheCnt; i++)
+                assertEquals("Unexpected size of " + CACHE_PREFIX + i, threadCnt * cnt, caches.get(i).size());
 
-            assertEquals("unexpected count of expired entries", threadCnt * CACHES_CNT * cnt, evtCnt.get());
+            assertEquals("Unexpected count of expired entries", threadCnt * CACHES_CNT * cnt, evtCnt.get());
         }
     }
 
@@ -237,12 +245,16 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
     private static class CacheFiller implements Runnable {
         /** Barrier. */
         private final CyclicBarrier barrier;
+
         /** Keys range generator. */
         private final AtomicInteger keysRangeGenerator;
+
         /** Count. */
         private final int cnt;
+
         /** Cache. */
         private final IgniteCache<Object, Object> cache;
+
         /** Expiration duration. */
         private final int expirationDuration;
 
@@ -268,6 +280,7 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
                 barrier.await();
 
                 ExpiryPolicy plc1 = new CreatedExpiryPolicy(new Duration(MILLISECONDS, expirationDuration));
+
                 int keyStart = keysRangeGenerator.getAndIncrement() * cnt;
 
                 for (int i = keyStart; i < keyStart + cnt; i++)
@@ -276,7 +289,7 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
                 barrier.await();
             }
             catch (Exception e) {
-                e.printStackTrace();
+                throw new IgniteException(e);
             }
         }
     }

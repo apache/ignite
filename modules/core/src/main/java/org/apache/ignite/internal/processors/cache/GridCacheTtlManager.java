@@ -50,13 +50,14 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         if (cleanupDisabled)
             return;
 
-        cctx.shared().ttlCleanup().register(cctx.ttl());
+        cctx.shared().ttl().register(this);
     }
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
         pendingEntries.clear();
-        cctx.shared().ttlCleanup().unregister(cctx.ttl());
+
+        cctx.shared().ttl().unregister(this);
     }
 
     /**
@@ -105,8 +106,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     /**
      * Processes specified amount of expired entries.
      *
-     * @param amount limit of processed entries by single call; '-1' - no limit.
-     * @return boolean true, if unprocessed expired entries remains
+     * @param amount Limit of processed entries by single call, {@code -1} for no limit.
+     * @return {@code True} if unprocessed expired entries remains.
      */
     public boolean expire(int amount) {
         long now = U.currentTimeMillis();
@@ -115,12 +116,11 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
         int limit = (-1 != amount) ? amount : pendingEntries.sizex();
 
-        for (int count = limit; count > 0; count--) {
+        for (int cnt = limit; cnt > 0; cnt--) {
             EntryWrapper e = pendingEntries.firstx();
 
             if (e == null || e.expireTime > now)
-                // all expired entries are processed
-                return false;
+                return false; // All expired entries are processed.
 
             if (pendingEntries.remove(e)) {
                 if (obsoleteVer == null)
@@ -128,7 +128,6 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
                 if (log.isTraceEnabled())
                     log.trace("Trying to remove expired entry from cache: " + e);
-
 
                 boolean touch = false;
 
@@ -153,14 +152,13 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             }
         }
 
-        if (-1 == amount) {
-            // we processed all expired entries
-            return false;
-        } else {
-            // check if expired entries remains in pending queue
+        if (amount != -1) {
             EntryWrapper e = pendingEntries.firstx();
+
             return e != null && e.expireTime <= now;
         }
+
+        return false;
     }
 
     /**
