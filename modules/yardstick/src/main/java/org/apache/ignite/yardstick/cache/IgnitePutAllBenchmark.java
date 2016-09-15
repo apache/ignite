@@ -30,7 +30,7 @@ import org.yardstickframework.BenchmarkConfiguration;
  */
 public class IgnitePutAllBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** Affinity mapper. */
-    private Affinity<Integer> aff;
+    protected Affinity<Integer> aff;
 
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {

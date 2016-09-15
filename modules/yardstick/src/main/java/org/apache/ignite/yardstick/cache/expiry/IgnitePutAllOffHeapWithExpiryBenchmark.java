@@ -20,12 +20,21 @@ package org.apache.ignite.yardstick.cache.expiry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.yardstick.cache.IgnitePutBenchmark;
+import org.yardstickframework.BenchmarkConfiguration;
 
 /**
  * Ignite benchmark that performs put operations with {@link CacheMemoryMode#OFFHEAP_TIERED OFFHEAP TIERED}
- * memory mode and with expiration policy set..
+ * memory mode and with expiration policy set.
  */
 public class IgnitePutAllOffHeapWithExpiryBenchmark extends IgnitePutAllWithExpiryBenchmark {
+
+    /** {@inheritDoc} */
+    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
+        super.setUp(cfg);
+
+        aff = ignite().affinity("atomic-offheap-with-expiry");
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
         return ignite().cache("atomic-offheap-with-expiry");

@@ -15,13 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.cache.expiry;
+package org.apache.ignite.yardstick.cache;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
-import org.apache.ignite.yardstick.cache.IgnitePutAllBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
 
 import java.util.Map;
@@ -29,18 +28,19 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 /**
- * Ignite benchmark that performs putAll operations with expiration policy set.
+ * Ignite benchmark that performs putAll operations with {@link CacheMemoryMode#OFFHEAP_TIERED OFFHEAP TIERED}
+ * memory mode..
  */
-public class IgnitePutAllWithExpiryBenchmark extends IgnitePutAllBenchmark {
+public class IgnitePutAllOffHeapBenchmark extends IgnitePutAllBenchmark {
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
-        aff = ignite().affinity("atomic-with-expiry");
+        aff = ignite().affinity("atomic-offheap");
     }
 
-     /** {@inheritDoc} */
+    /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().cache("atomic-with-expiry");
+        return ignite().cache("atomic-offheap");
     }
 }
