@@ -173,6 +173,15 @@ namespace Apache.Ignite.EntityFramework.Tests
             Assert.AreEqual(data[0][12], reader["fbytes"]);
             Assert.AreEqual(data[0][12], reader[12]);
 
+            var chars = new char[2];
+            Assert.AreEqual(2, reader.GetChars(reader.GetOrdinal("fchars"),0, chars, 0, 2));
+            Assert.AreEqual(data[0][13], chars);
+            Assert.AreEqual("cc", reader.GetDataTypeName(13));
+            Assert.AreEqual(typeof(char[]), reader.GetFieldType(13));
+            Assert.AreEqual("fchars", reader.GetName(13));
+            Assert.AreEqual(data[0][13], reader["fchars"]);
+            Assert.AreEqual(data[0][13], reader[13]);
+
             Assert.IsFalse(Enumerable.Range(0, 14).Any(x => reader.IsDBNull(x)));
 
             // Close.
