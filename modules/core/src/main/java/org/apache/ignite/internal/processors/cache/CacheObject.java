@@ -61,23 +61,21 @@ public interface CacheObject extends Message {
 
     /**
      * @param buf Buffer to write value to.
-     * @param ctx Cache object context.
      * @return {@code True} if value was successfully written, {@code false} if there was not enough space in the
      *      buffer.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean putValue(ByteBuffer buf, CacheObjectContext ctx) throws IgniteCheckedException;
+    public boolean putValue(ByteBuffer buf) throws IgniteCheckedException;
 
     /**
      * @param buf Buffer to write value to.
      * @param off Offset in source binary data.
      * @param len Length of the data to write.
-     * @param ctx Cache object context.
      * @return {@code True} if value was successfully written, {@code false} if there was not enough space in the
      *      buffer.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
-    public boolean putValue(ByteBuffer buf, int off, int len, CacheObjectContext ctx) throws IgniteCheckedException;
+    public boolean putValue(ByteBuffer buf, int off, int len) throws IgniteCheckedException;
 
     /**
      * @return Object type.

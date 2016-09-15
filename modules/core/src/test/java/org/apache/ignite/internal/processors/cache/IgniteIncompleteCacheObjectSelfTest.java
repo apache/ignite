@@ -34,7 +34,7 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
     /**
      * Test case when requested data cut on cache object header.
      *
-     * @throws Exception
+     * @throws Exception If failed.
      */
     public void testIncompleteObject() throws Exception {
         final byte[] data = new byte[1024];
@@ -117,14 +117,13 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Override public boolean putValue(final ByteBuffer buf,
-            final CacheObjectContext ctx) throws IgniteCheckedException {
+        @Override public boolean putValue(final ByteBuffer buf) throws IgniteCheckedException {
             return false;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean putValue(final ByteBuffer buf, final int off, final int len,
-            final CacheObjectContext ctx) throws IgniteCheckedException {
+        @Override public boolean putValue(final ByteBuffer buf, final int off, final int len)
+            throws IgniteCheckedException {
             return false;
         }
 
