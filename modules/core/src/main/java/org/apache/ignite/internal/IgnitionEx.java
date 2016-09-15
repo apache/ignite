@@ -1693,7 +1693,7 @@ public class IgnitionEx {
 
             // Note that we do not pre-start threads here as this pool may not be needed.
             dataStreamExecSvc = new IgniteThreadPoolExecutor(
-                "igfs",
+                "data-stream",
                 cfg.getGridName(),
                 cfg.getDataStreamThreadPoolSize(),
                 cfg.getDataStreamThreadPoolSize(),
