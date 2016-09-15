@@ -20,14 +20,19 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
+import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.apache.ignite.internal.util.lang.GridAbsClosure;
 
-import static org.apache.ignite.internal.processors.cache.QueryCursorImpl.State.*;
+import static org.apache.ignite.internal.processors.cache.QueryCursorImpl.State.CLOSED;
+import static org.apache.ignite.internal.processors.cache.QueryCursorImpl.State.EXECUTION;
+import static org.apache.ignite.internal.processors.cache.QueryCursorImpl.State.IDLE;
+import static org.apache.ignite.internal.processors.cache.QueryCursorImpl.State.RESULT_READY;
 
 /**
  * Query cursor implementation.
@@ -48,19 +53,26 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
     private Iterator<T> iter;
 
     /** */
-    private final AtomicReference<State> state = new AtomicReference<>(IDLE);
+    private volatile State state = IDLE;
 
     /** */
     private List<GridQueryFieldMetadata> fieldsMeta;
 
     /** */
-    private final GridAbsClosure cancel;
+    private final GridQueryCancel cancel;
+
+    /** */
+    private volatile Thread thread;
+
+    /** */
+    private final AtomicReferenceFieldUpdater<QueryCursorImpl, State> stateUpdater =
+        AtomicReferenceFieldUpdater.newUpdater(QueryCursorImpl.class, State.class, "state");
 
     /**
      * @param iterExec Query executor.
      * @param cancel Cancellation closure.
      */
-    public QueryCursorImpl(Iterable<T> iterExec, GridAbsClosure cancel) {
+    public QueryCursorImpl(Iterable<T> iterExec, GridQueryCancel cancel) {
         this.iterExec = iterExec;
         this.cancel = cancel;
     }
@@ -74,14 +86,16 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
 
     /** {@inheritDoc} */
     @Override public Iterator<T> iterator() {
-        State state0 = state.get();
+        thread = Thread.currentThread();
 
-        if (state0 != IDLE || !state.compareAndSet(state0, EXECUTION))
-            fail(state0);
+        if (!stateUpdater.compareAndSet(this, IDLE, EXECUTION))
+            throw new IgniteException("Iterator is already fetched or query was cancelled.");
 
         iter = iterExec.iterator();
 
-        state.set(RESULT_READY);
+        // Handle race with concurrent cancellation and throw correct exception.
+        if (!stateUpdater.compareAndSet(this, EXECUTION, CLOSED))
+            throw new CacheException(new QueryCancelledException());
 
         assert iter != null;
 
@@ -116,40 +130,27 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        State state0 = this.state.get();
+        // Cancellation is allowed only from another thread.
+        if (Thread.currentThread() != thread) {
+            if (state == IDLE)
+                throw new IgniteException("Query was not started yest.");
 
-        switch (state0) {
-            case EXECUTION:
-                if (!state.compareAndSet(state0, CLOSED))
-                    fail(state0);
+            if (stateUpdater.compareAndSet(this, EXECUTION, CLOSED))
+                if (cancel != null) cancel.cancel();
 
-                cancel.apply();
-
-                break;
-            case RESULT_READY:
-                if (!state.compareAndSet(state0, CLOSED))
-                    fail(state0);
-
-                if (iter instanceof AutoCloseable) {
-                    try {
-                        ((AutoCloseable)iter).close();
-                    }
-                    catch (Exception e) {
-                        throw new IgniteException(e);
-                    }
-                }
-
-                break;
-            default:
-                fail(state0);
+            return;
         }
-    }
 
-    /**
-     * @param state State.
-     */
-    private void fail(State state) {
-        throw new IgniteException("Illegal query cursor state: " + state);
+        if (stateUpdater.compareAndSet(this, RESULT_READY, CLOSED)) {
+            if (iter instanceof AutoCloseable) {
+                try {
+                    ((AutoCloseable)iter).close();
+                }
+                catch (Exception e) {
+                    throw new IgniteException(e);
+                }
+            }
+        }
     }
 
     /**

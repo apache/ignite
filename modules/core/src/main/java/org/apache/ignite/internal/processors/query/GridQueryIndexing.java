@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.sql.PreparedStatement;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
 
@@ -90,7 +92,10 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     public GridQueryFieldsResult queryFields(@Nullable String spaceName, String qry,
-        Collection<Object> params, IndexingQueryFilter filters, int timeout, AtomicReference<GridAbsClosure> cancel) throws IgniteCheckedException;
+        Collection<Object> params, IndexingQueryFilter filters, int timeout) throws IgniteCheckedException;
+
+    public IgniteSpiCloseableIterator<List<?>> queryFields(PreparedStatement stmt,
+        Collection<Object> params, IndexingQueryFilter filters, int timeout) throws IgniteCheckedException;
 
     /**
      * Executes regular query.
@@ -240,11 +245,7 @@ public interface GridQueryIndexing {
      */
     public void cancelAllQueries();
 
-    /**
-     * Returns query metadata.
-     * @param space Space.
-     * @param sql SQL query.
-     * @return list of field metadata.
-     */
-    public List<GridQueryFieldMetadata> meta(String space, String sql);
+    public PreparedStatement prepareStatement(String space, String sql);
+
+    List<GridQueryFieldMetadata> meta(PreparedStatement stmt);
 }

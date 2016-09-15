@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
+import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.GridH2ResultSetIterator;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.cache.query.QueryCancelledException;
@@ -463,8 +464,7 @@ public class GridReduceQueryExecutor {
      * @return Rows iterator.
      */
     public Iterator<List<?>> query(GridCacheContext<?,?> cctx, GridCacheTwoStepQuery qry, boolean keepBinary,
-        int timeoutMillis, AtomicReference<GridAbsClosure> mapQrysCancel,
-        AtomicReference<GridAbsClosure> reduceQryCancel) {
+        int timeoutMillis, GridQueryCancel cancel) {
         for (int attempt = 0;; attempt++) {
             if (attempt != 0) {
                 try {
@@ -592,7 +592,7 @@ public class GridReduceQueryExecutor {
                         send(finalNodes, new GridQueryCancelRequest(qryReqId), null);
                     }
                 }))
-                    throw new CacheException(new QueryCancelledException());
+                    throw new QueryCancelledException();
 
                 boolean retry = false;
 

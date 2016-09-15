@@ -78,6 +78,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
+import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
@@ -763,6 +764,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     }
 
+    @Override public GridQueryFieldsResult queryFields(PreparedStatement stmt, Collection<Object> params,
+        IndexingQueryFilter filters, int timeout,
+        AtomicReference<GridAbsClosure> cancel) throws IgniteCheckedException {
+        return null;
+    }
+
     /**
      * @param rsMeta Metadata.
      * @return List of fields metadata.
@@ -828,7 +835,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private ResultSet executeSqlQuery(Connection conn, String sql, Collection<Object> params, boolean useStmtCache,
         int timeoutMillis,
-        @Nullable AtomicReference<GridAbsClosure> cancel)
+        @Nullable GridQueryCancel cancel)
         throws IgniteCheckedException {
         final PreparedStatement stmt;
 
@@ -854,21 +861,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (timeoutMillis > 0)
             ((Session)((JdbcConnection)conn).getSession()).setQueryTimeout(timeoutMillis);
 
-        try {
-            if (cancel != null) {
-                if (!cancel.compareAndSet(null, new GridAbsClosure() {
-                    @Override public void apply() {
-                        try {
-                            stmt.cancel();
-                        }
-                        catch (SQLException e) {
-                            throw new IgniteException("Failed to cancel the statement.", e);
-                        }
+        if (cancel != null)
+            cancel.set(new Runnable() {
+                @Override public void run() {
+                    try {
+                        stmt.cancel();
                     }
-                }))
-                    throw new QueryCancelledException();
-            }
+                    catch (SQLException e) {
+                        throw new IgniteException("Failed to cancel the statement.", e);
+                    }
+                }
+            });
 
+        try {
             return stmt.executeQuery();
         }
         catch (SQLException e) {
@@ -878,9 +883,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             throw new IgniteCheckedException("Failed to execute SQL query.", e);
         } finally {
-            if (cancel != null)
-                cancel.set(F.noop());
-
             if (timeoutMillis > 0)
                 ((Session)((JdbcConnection)conn).getSession()).setQueryTimeout(0);
         }
@@ -904,7 +906,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         @Nullable Collection<Object> params,
         boolean useStmtCache,
         int timeoutMillis,
-        @Nullable AtomicReference<GridAbsClosure> cancel) throws IgniteCheckedException {
+        @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
         long start = U.currentTimeMillis();
 
         try {
@@ -948,7 +950,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     private ResultSet executeQuery(String space, String qry, @Nullable Collection<Object> params, TableDescriptor tbl,
-        @Nullable AtomicReference<GridAbsClosure> cancel)
+        @Nullable GridQueryCancel cancel)
             throws IgniteCheckedException {
         Connection conn = connectionForThread(tbl.schemaName());
 
@@ -1009,11 +1011,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private Iterable<List<?>> doQueryTwoStep(final GridCacheContext<?, ?> cctx, final GridCacheTwoStepQuery qry,
         final boolean keepCacheObj,
         final int timeoutMillis,
-        final AtomicReference<GridAbsClosure> mapQrysCancel,
-        final AtomicReference<GridAbsClosure> rdcQryCancel) {
+        final GridQueryCancel cancel) {
         return new Iterable<List<?>>() {
             @Override public Iterator<List<?>> iterator() {
-                return rdcQryExec.query(cctx, qry, keepCacheObj, timeoutMillis, mapQrysCancel, rdcQryCancel);
+                return rdcQryExec.query(cctx, qry, keepCacheObj, timeoutMillis, cancel);
             }
         };
     }
@@ -1042,6 +1043,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         fqry.setArgs(qry.getArgs());
         fqry.setPageSize(qry.getPageSize());
+
         if(qry.getTimeout() > 0)
             fqry.setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
 
@@ -1151,20 +1153,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         twoStepQry.pageSize(qry.getPageSize());
 
-        final AtomicReference<GridAbsClosure> mapQrysCancel = new AtomicReference<>();
-        final AtomicReference<GridAbsClosure> rdcQryCancel = new AtomicReference<>();
+        GridQueryCancel cancel = new GridQueryCancel();
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
-            doQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), qry.getTimeout(), mapQrysCancel, rdcQryCancel),
-            new GridAbsClosure() {
-                @Override public void apply() {
-                    // Cancellation closure is changed on each attempt, because node set may differ.
-                    // Make sure we use correct closure.
-                    while(!GridH2Utils.tryCancel(mapQrysCancel));
-
-                    GridH2Utils.tryCancel(rdcQryCancel);
-                }
-            });
+            doQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), qry.getTimeout(), cancel), cancel);
 
         cursor.fieldsMeta(meta);
 
@@ -2685,18 +2677,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             U.close(conn, log);
     }
 
-    /** {@inheritDoc} */
-    @Override public List<GridQueryFieldMetadata> meta(String space, String sql) {
-        Connection c = connectionForSpace(space);
+    @Override public PreparedStatement prepareStatement(String space, String sql) {
+        Connection conn = connectionForThread(schema(space));
 
+        return prepareStatement(conn, sql, true);
+    }
+
+    @Override public List<GridQueryFieldMetadata> meta(PreparedStatement stmt) {
         try {
-            PreparedStatement stmt = prepareStatement(c, sql, true);
-
             return meta(stmt.getMetaData());
         }
         catch (SQLException e) {
-            throw new CacheException("Failed to get metadata: [qry=" + sql + ", space=" +
-                space + "]", e);
+            e.printStackTrace();
         }
     }
 }

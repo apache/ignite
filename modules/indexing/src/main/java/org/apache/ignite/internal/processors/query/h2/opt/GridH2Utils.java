@@ -133,21 +133,4 @@ public class GridH2Utils {
 
         return year;
     }
-
-    /**
-     * Invokes cancellation closure, if any.
-     *
-     * @param ref Closure reference.
-     * @return True if the closure was called successfully.
-     */
-    public static boolean tryCancel(AtomicReference<GridAbsClosure> ref) {
-        GridAbsClosure clo = ref.get();
-
-        boolean res = clo != null && ref.compareAndSet(clo, F.noop());
-
-        if (res)
-            clo.apply();
-
-        return res;
-    }
 }

@@ -22,8 +22,6 @@ import java.util.List;
 /**
  * Query result cursor. Implements {@link Iterable} only for convenience, e.g. {@link #iterator()}
  * can be obtained only once. Also if iteration is started then {@link #getAll()} method calls are prohibited.
- * <p>
- * Not thread safe and must be used from single thread only.
  */
 public interface QueryCursor<T> extends Iterable<T>, AutoCloseable {
     /**
@@ -39,7 +37,11 @@ public interface QueryCursor<T> extends Iterable<T>, AutoCloseable {
     public List<T> getAll();
 
     /**
-     * Closes all resources related to this cursor.
+     * Closes all resources related to this cursor or cancels the query.
+     * <p>
+     * If the method is called from another thread and a query is still running a cancellation will be attempted.
+     * <p>
+     * Sequential calls to this method have no effect.
      */
     @Override public void close();
 }
