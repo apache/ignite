@@ -88,6 +88,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_USER;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.DATA_STREAM_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IGFS_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MANAGEMENT_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MARSH_CACHE_POOL;
@@ -156,6 +157,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** IGFS pool. */
     private ExecutorService igfsPool;
+
+    /** DataStream pool. */
+    private ExecutorService dataStreamPool;
 
     /** Discovery listener. */
     private GridLocalEventListener discoLsnr;
@@ -260,6 +264,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         utilityCachePool = ctx.utilityCachePool();
         marshCachePool = ctx.marshallerCachePool();
         igfsPool = ctx.getIgfsExecutorService();
+        dataStreamPool = ctx.getDataStreamExecutorService();
         affPool = new IgniteThreadPoolExecutor(
             "aff",
             ctx.gridName(),
@@ -652,6 +657,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 case UTILITY_CACHE_POOL:
                 case MARSH_CACHE_POOL:
                 case IGFS_POOL:
+                case DATA_STREAM_POOL:
                 {
                     if (msg.isOrdered())
                         processOrderedMessage(nodeId, msg, plc, msgC);
@@ -716,6 +722,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 assert igfsPool != null : "IGFS pool is not configured.";
 
                 return igfsPool;
+
+            case DATA_STREAM_POOL:
+                assert dataStreamPool != null : "DataStream pool is not configured.";
+
+                return dataStreamPool;
 
             default: {
                 assert plc >= 0 : "Negative policy: " + plc;

@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.ExecutorService;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -44,6 +45,7 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.DATA_STREAM_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 
 /**
@@ -84,13 +86,12 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                 @Override public void onMessage(final UUID nodeId, final Object msg) {
                     assert msg instanceof DataStreamerRequest;
 
-                    execSvc.submit(
-                        new Runnable() {
-                            @Override public void run() {
-                                processRequest(nodeId, (DataStreamerRequest)msg);
-                            }
+                    execSvc.submit(new Runnable() {
+                        @Override public void run() {
+                            processRequest(nodeId, (DataStreamerRequest)msg);
                         }
-                    );
+                    }, false);
+
                 }
             });
         }
@@ -233,7 +234,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                 if (fut != null && !fut.isDone()) {
                     fut.listen(new CI1<IgniteInternalFuture<?>>() {
                         @Override public void apply(IgniteInternalFuture<?> t) {
-                            ctx.closure().runLocalSafe(new Runnable() {
+                            execSvc.submit(new Runnable() {
                                 @Override public void run() {
                                     processRequest(nodeId, req);
                                 }
@@ -356,7 +357,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
             Byte plc = GridIoManager.currentPolicy();
 
             if (plc == null)
-                plc = PUBLIC_POOL;
+                plc = DATA_STREAM_POOL;
 
             ctx.io().send(nodeId, resTopic, res, plc);
         }
