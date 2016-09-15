@@ -857,8 +857,9 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
 
             try {
                 if (val.len > maxSize) {
-                    // TODO: 14.09.2016 provide more details in comment message if need
-                    log.warning("You try save entry in swap, which have size more than queueMaxSize, entry size " + val.len + " queueMaxSize " + maxSize);
+
+                    log.warning("You try save entry in swap, which have size more than queueMaxSize, entry size "
+                            + val.len + " queueMaxSize " + maxSize + " queueMaxSize will be increased.");
 
                     size += val.len;
 
