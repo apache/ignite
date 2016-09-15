@@ -41,7 +41,7 @@ namespace Apache.Ignite.EntityFramework.Tests
                 new object[]
                 {
                     (byte) 1, (short) 2, 3, (long) 4, (float) 5, (double) 6, (decimal) 7, "8", '9', dateTime,
-                    guid, false
+                    guid, false, new byte[] {1,2}, new[] {'a','b'}
                 }
             };
 
@@ -59,6 +59,8 @@ namespace Apache.Ignite.EntityFramework.Tests
                 new DataReaderField("fDateTime", typeof(DateTime), "Da"),
                 new DataReaderField("fGuid", typeof(Guid), "Gu"),
                 new DataReaderField("fbool", typeof(bool), "bo"),
+                new DataReaderField("fbytes", typeof(byte[]), "bb"),
+                new DataReaderField("fchars", typeof(char[]), "cc"),
             };
 
             // Create reader,
@@ -68,14 +70,14 @@ namespace Apache.Ignite.EntityFramework.Tests
             Assert.IsTrue(reader.Read());
             Assert.AreEqual(0, reader.Depth);
             Assert.AreEqual(0, reader.RecordsAffected);
-            Assert.AreEqual(12, reader.FieldCount);
-            Assert.AreEqual(12, reader.VisibleFieldCount);
+            Assert.AreEqual(14, reader.FieldCount);
+            Assert.AreEqual(14, reader.VisibleFieldCount);
             Assert.IsFalse(reader.IsClosed);
             Assert.IsTrue(reader.HasRows);
 
             // Check reading.
-            var data2 = new object[12];
-            Assert.AreEqual(12, reader.GetValues(data2));
+            var data2 = new object[14];
+            Assert.AreEqual(14, reader.GetValues(data2));
             Assert.AreEqual(data[0], data2);
 
             Assert.AreEqual(1, reader.GetByte(reader.GetOrdinal("fbyte")));
@@ -162,7 +164,16 @@ namespace Apache.Ignite.EntityFramework.Tests
             Assert.AreEqual(false, reader["fbool"]);
             Assert.AreEqual(false, reader[11]);
 
-            Assert.IsFalse(Enumerable.Range(0, 12).Any(x => reader.IsDBNull(x)));
+            var bytes = new byte[2];
+            Assert.AreEqual(2, reader.GetBytes(reader.GetOrdinal("fbytes"),0, bytes, 0, 2));
+            Assert.AreEqual(data[0][12], bytes);
+            Assert.AreEqual("bb", reader.GetDataTypeName(12));
+            Assert.AreEqual(typeof(byte[]), reader.GetFieldType(12));
+            Assert.AreEqual("fbytes", reader.GetName(12));
+            Assert.AreEqual(data[0][12], reader["fbytes"]);
+            Assert.AreEqual(data[0][12], reader[12]);
+
+            Assert.IsFalse(Enumerable.Range(0, 14).Any(x => reader.IsDBNull(x)));
 
             // Close.
             reader.Close();
