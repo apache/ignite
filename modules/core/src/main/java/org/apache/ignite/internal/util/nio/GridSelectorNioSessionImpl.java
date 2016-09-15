@@ -44,7 +44,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     private SelectionKey key;
 
     /** Worker index for server */
-    private final int selectorIdx;
+    private volatile int selectorIdx;
 
     /** Size counter. */
     private final AtomicInteger queueSize = new AtomicInteger();
@@ -158,6 +158,13 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      */
     int selectorIndex() {
         return selectorIdx;
+    }
+
+    /**
+     * @param selectorIdx Selector index.
+     */
+    void selectorIndex(int selectorIdx) {
+        this.selectorIdx = selectorIdx;
     }
 
     /**

@@ -107,9 +107,6 @@ public class GridNioServer<T> {
     private static final int WRITE_BUF_LIMIT = GridNioSessionMetaKey.nextUniqueKey();
 
     /** */
-    private static final boolean NIO_SES_BALANCE_ENABLED = IgniteSystemProperties.getBoolean("IGNITE_NIO_SES_BALANCE_ENABLED", true);
-
-    /** */
     private static final boolean DISABLE_KEYSET_OPTIMIZATION =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_NO_SELECTOR_OPTS);
 
@@ -212,6 +209,15 @@ public class GridNioServer<T> {
 
     /** Optional listener to monitor outbound message queue size. */
     private IgniteBiInClosure<GridNioSession, Integer> msgQueueLsnr;
+
+    /** */
+    private volatile long writerMoveCnt;
+
+    /** */
+    private volatile long readerMoveCnt;
+
+    /** */
+    private final Balancer balancer;
 
     /**
      * @param addr Address.
@@ -324,6 +330,22 @@ public class GridNioServer<T> {
         this.writerFactory = writerFactory;
 
         this.skipRecoveryPred = skipRecoveryPred != null ? skipRecoveryPred : F.<Message>alwaysFalse();
+
+        boolean balanceEnabled = IgniteSystemProperties.getBoolean("IGNITE_NIO_SES_BALANCE_ENABLED", true);
+
+        Balancer balancer0 = null;
+
+        if (balanceEnabled) {
+            String balancerCls = IgniteSystemProperties.getString("IGNITE_NIO_SES_BALANCER_CLASS_NAME");
+
+            if (balancerCls != null) {
+
+            }
+            else
+                balancer0 = new SizeBasedBalancer(this);
+        }
+
+        this.balancer = balancer0;
     }
 
     /**
@@ -399,7 +421,10 @@ public class GridNioServer<T> {
 
         NioOperationFuture<Boolean> fut = new NioOperationFuture<>(impl, NioOperation.CLOSE);
 
-        clientWorkers.get(impl.selectorIndex()).offer(fut);
+        int idx = impl.selectorIndex(); // TODO
+
+        if (idx != -1)
+            clientWorkers.get(idx).offer(fut);
 
         return fut;
     }
@@ -459,9 +484,13 @@ public class GridNioServer<T> {
             if (ses.removeFuture(fut))
                 fut.connectionClosed();
         }
-        else if (msgCnt == 1)
+        else if (msgCnt == 1) {
             // Change from 0 to 1 means that worker thread should be waken up.
-            clientWorkers.get(ses.selectorIndex()).offer(fut);
+            int idx = ses.selectorIndex();
+
+            if (idx != -1) // TODO revisit
+                clientWorkers.get(idx).offer(fut);
+        }
 
         if (msgQueueLsnr != null)
             msgQueueLsnr.apply(ses, msgCnt);
@@ -925,6 +954,8 @@ public class GridNioServer<T> {
                 metricsLsnr.onBytesReceived(cnt);
 
             ses.bytesReceived(cnt);
+            ses.onBytesRead(cnt, readBuf.capacity());
+            onRead(cnt);
 
             readBuf.flip();
 
@@ -1239,6 +1270,8 @@ public class GridNioServer<T> {
                     metricsLsnr.onBytesSent(cnt);
 
                 ses.bytesSent(cnt);
+                ses.onBytesWritten(cnt, buf.capacity());
+                onWrite(cnt);
             }
             else {
                 // For test purposes only (skipWrite is set to true in tests only).
@@ -1275,6 +1308,13 @@ public class GridNioServer<T> {
 
         /** Worker index. */
         private final int idx;
+
+        private volatile long bytesRcvd;
+        private volatile long bytesSent;
+        private volatile long bytesRcvd0;
+        private volatile long bytesSent0;
+
+        private final GridConcurrentHashSet<GridSelectorNioSessionImpl> sessions0 = new GridConcurrentHashSet<>();
 
         /**
          * @param idx Index of this worker in server's array.
@@ -1400,6 +1440,40 @@ public class GridNioServer<T> {
                                 break;
                             }
 
+                            case MOVE: {
+                                SessionMoveFuture f = (SessionMoveFuture)req;
+
+                                GridSelectorNioSessionImpl ses = f.session();
+
+                                if (idx == f.toIdx) {
+                                    ses.selectorIndex(idx);
+
+                                    sessions0.add(ses);
+
+                                    SelectionKey key = f.socketChannel().register(selector,
+                                        SelectionKey.OP_READ | SelectionKey.OP_WRITE, ses); // TODO what if reads were paused?
+
+                                    ses.key(key);
+                                }
+                                else {
+                                    assert ses.selectorIndex() == idx; // TODO replace with IF and ignore?
+
+                                    // Cleanup.
+                                    ses.selectorIndex(-1);
+                                    sessions0.remove(ses);
+
+                                    SelectionKey key = ses.key();
+
+                                    f.socketChannel((SocketChannel)key.channel());
+
+                                    key.cancel();
+
+                                    clientWorkers.get(f.toIndex()).offer(f);
+                                }
+
+                                break;
+                            }
+
                             case REQUIRE_WRITE: {
                                 //Just register write key.
                                 SelectionKey key = req.session().key();
@@ -1467,6 +1541,10 @@ public class GridNioServer<T> {
                                 sb.append(U.nl())
                                     .append(">> Selector info [idx=").append(idx)
                                     .append(", keysCnt=").append(keys.size())
+                                    .append(", bytesRcvd=").append(bytesRcvd)
+                                    .append(", bytesRcvd0=").append(bytesRcvd0)
+                                    .append(", bytesSent=").append(bytesSent)
+                                    .append(", bytesSent0=").append(bytesSent0)
                                     .append("]").append(U.nl());
 
                                 for (SelectionKey key : keys) {
@@ -1500,8 +1578,12 @@ public class GridNioServer<T> {
                                         sb.append(", inRecoveryDesc=null");
 
                                     sb.append(", bytesRcvd=").append(ses.bytesReceived())
+                                        .append(", bytesRcvd0=").append(ses.bytesReceived0())
                                         .append(", bytesSent=").append(ses.bytesSent())
+                                        .append(", bytesSent0=").append(ses.bytesSent0())
                                         .append(", opQueueSize=").append(ses.writeQueueSize())
+                                        .append(", writeStats=").append(Arrays.toString(ses.writeStats()))
+                                        .append(", readStats=").append(Arrays.toString(ses.readStats()))
                                         .append(", msgWriter=").append(writer != null ? writer.toString() : "null")
                                         .append(", msgReader=").append(reader != null ? reader.toString() : "null");
 
@@ -1764,6 +1846,7 @@ public class GridNioServer<T> {
                     resend(ses);
 
                 sessions.add(ses);
+                sessions0.add(ses);
 
                 try {
                     filterChain.onSessionOpened(ses);
@@ -1789,7 +1872,7 @@ public class GridNioServer<T> {
         }
 
         /**
-         * Closes the ses and all associated resources, then notifies the listener.
+         * Closes the session and all associated resources, then notifies the listener.
          *
          * @param ses Session to be closed.
          * @param e Exception to be passed to the listener, if any.
@@ -1806,11 +1889,9 @@ public class GridNioServer<T> {
             }
 
             sessions.remove(ses);
+            sessions0.remove(ses);
 
             SelectionKey key = ses.key();
-
-            // Shutdown input and output so that remote client will see correct socket close.
-            Socket sock = ((SocketChannel)key.channel()).socket();
 
             if (ses.setClosed()) {
                 ses.onClosed();
@@ -1822,6 +1903,9 @@ public class GridNioServer<T> {
                     if (ses.readBuffer() != null)
                         ((DirectBuffer)ses.readBuffer()).cleaner().clean();
                 }
+
+                // Shutdown input and output so that remote client will see correct socket close.
+                Socket sock = ((SocketChannel)key.channel()).socket();
 
                 try {
                     try {
@@ -1906,6 +1990,24 @@ public class GridNioServer<T> {
          * @throws IOException If write failed.
          */
         protected abstract void processWrite(SelectionKey key) throws IOException;
+
+        protected void onRead(int cnt) { // TODO
+            bytesRcvd += cnt;
+            bytesRcvd0 += cnt;
+        }
+
+        protected void onWrite(int cnt) {
+            bytesSent += cnt;
+            bytesSent0 += cnt;
+        }
+
+        protected void reset0() {
+            bytesSent0 = 0;
+            bytesRcvd0 = 0;
+
+            for (GridSelectorNioSessionImpl ses : sessions0)
+                ses.reset0();
+        }
     }
 
     /**
@@ -1976,12 +2078,17 @@ public class GridNioServer<T> {
          * @throws IgniteCheckedException If failed.
          */
         private void accept() throws IgniteCheckedException {
+            long lastBalance = U.currentTimeMillis();
+
             try {
                 while (!closed && selector.isOpen() && !Thread.currentThread().isInterrupted()) {
                     // Wake up every 2 seconds to check if closed.
                     if (selector.select(2000) > 0)
                         // Walk through the ready keys collection and process date requests.
                         processSelectedKeys(selector.selectedKeys());
+
+                    if (balancer != null)
+                        balancer.balance();
                 }
             }
             // Ignore this exception as thread interruption is equal to 'close' call.
@@ -2082,6 +2189,9 @@ public class GridNioServer<T> {
         /** Register read key selection. */
         REGISTER,
 
+        /** */
+        MOVE,
+
         /** Register write key selection. */
         REQUIRE_WRITE,
 
@@ -2107,7 +2217,7 @@ public class GridNioServer<T> {
 
         /** Socket channel in register request. */
         @GridToStringExclude
-        private SocketChannel sockCh;
+        protected SocketChannel sockCh; // TODO to be fixed with proper hierarchy
 
         /** Session to perform operation on. */
         @GridToStringExclude
@@ -2249,14 +2359,14 @@ public class GridNioServer<T> {
         /**
          * @return Socket channel for register request.
          */
-        private SocketChannel socketChannel() {
+        SocketChannel socketChannel() {
             return sockCh;
         }
 
         /**
          * @return Session for this change request.
          */
-        private GridSelectorNioSessionImpl session() {
+        GridSelectorNioSessionImpl session() {
             return ses;
         }
 
@@ -2299,6 +2409,41 @@ public class GridNioServer<T> {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(NioOperationFuture.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class SessionMoveFuture<R> extends NioOperationFuture<R> {
+        /** */
+        private final int toIdx;
+
+        /**
+         * @param ses
+         * @param toIdx
+         */
+        public SessionMoveFuture(
+            GridSelectorNioSessionImpl ses,
+            int toIdx
+        ) {
+            super(ses, NioOperation.MOVE);
+
+            this.sockCh = sockCh;
+            this.toIdx = toIdx;
+        }
+
+        int toIndex() {
+            return toIdx;
+        }
+
+        void socketChannel(SocketChannel sockCh) {
+            this.sockCh = sockCh;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(SessionMoveFuture.class, this, super.toString());
         }
     }
 
@@ -2706,6 +2851,196 @@ public class GridNioServer<T> {
             this.msgQueueLsnr = msgQueueLsnr;
 
             return this;
+        }
+    }
+
+    /**
+     *
+     */
+    public interface Balancer {
+        /**
+         *
+         */
+        void balance();
+    }
+
+    /**
+     *
+     */
+    private static class SizeBasedBalancer implements Balancer {
+        /** */
+        private final GridNioServer<?> srv;
+
+        /** */
+        private final IgniteLogger log;
+
+        /** */
+        private long lastBalance;
+
+        /**
+         * @param srv Server.
+         */
+        public SizeBasedBalancer(GridNioServer<?> srv) {
+            this.srv = srv;
+
+            log = srv.log;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void balance() {
+            long now = U.currentTimeMillis();
+
+            if (lastBalance + 5000 < now) {
+                lastBalance = now;
+
+                long maxRcvd0 = -1, minRcvd0 = -1, maxSent0 = -1, minSent0 = -1;
+                int maxRcvdIdx = -1, minRcvdIdx = -1, maxSentIdx = -1, minSentIdx = -1;
+
+                boolean print = Thread.currentThread().getName().contains("IgniteCommunicationBalanceTest4");
+
+                List<GridNioServer.AbstractNioClientWorker> clientWorkers = (List)srv.clientWorkers;
+
+                for (int i = 0; i < clientWorkers.size(); i++) {
+                    GridNioServer.AbstractNioClientWorker worker = clientWorkers.get(i);
+
+                    if ((i & 1) == 0) {
+                        // Reader.
+                        long bytesRcvd0 = worker.bytesRcvd0;
+
+                        if ((maxRcvd0 == -1 || bytesRcvd0 > maxRcvd0) && bytesRcvd0 > 0 &&
+                            worker.sessions0.size() > 1) {
+                            maxRcvd0 = bytesRcvd0;
+                            maxRcvdIdx = i;
+
+                            continue;
+                        }
+
+                        if (minRcvd0 == -1 || bytesRcvd0 < minRcvd0) {
+                            minRcvd0 = bytesRcvd0;
+                            minRcvdIdx = i;
+                        }
+                    }
+                    else {
+                        // Writer.
+                        long bytesSent0 = worker.bytesSent0;
+
+                        if ((maxSent0 == -1 || bytesSent0 > maxSent0) && bytesSent0 > 0 &&
+                            worker.sessions0.size() > 1) {
+                            maxSent0 = bytesSent0;
+                            maxSentIdx = i;
+
+                            continue;
+                        }
+
+                        if (minSent0 == -1 || bytesSent0 < minSent0) {
+                            minSent0 = bytesSent0;
+                            minSentIdx = i;
+                        }
+                    }
+                }
+
+                if (log.isDebugEnabled())
+                    log.debug("Balancing data [minSent0=" + minSent0 + ", minSentIdx=" + minSentIdx +
+                        ", maxSent0=" + maxSent0 + ", maxSentIdx=" + maxSentIdx +
+                        ", minRcvd0=" + minRcvd0 + ", minRcvdIdx=" + minRcvdIdx +
+                        ", maxRcvd0=" + maxRcvd0 + ", maxRcvdIdx=" + maxRcvdIdx + ']');
+
+                if (print)
+                    log.info("Balancing data [minSent0=" + minSent0 + ", minSentIdx=" + minSentIdx +
+                        ", maxSent0=" + maxSent0 + ", maxSentIdx=" + maxSentIdx +
+                        ", minRcvd0=" + minRcvd0 + ", minRcvdIdx=" + minRcvdIdx +
+                        ", maxRcvd0=" + maxRcvd0 + ", maxRcvdIdx=" + maxRcvdIdx + ']');
+
+                if (maxSent0 != -1 && minSent0 != -1) {
+                    GridSelectorNioSessionImpl ses = null;
+
+                    long sentDiff = maxSent0 - minSent0;
+                    long delta = sentDiff;
+                    double threshold = sentDiff * 0.9;
+
+                    GridConcurrentHashSet<GridSelectorNioSessionImpl> sessions =
+                        clientWorkers.get(maxSentIdx).sessions0;
+
+                    for (GridSelectorNioSessionImpl ses0 : sessions) {
+                        long bytesSent0 = ses0.bytesSent0();
+
+                        if (bytesSent0 < threshold &&
+                            (ses == null || delta > U.safeAbs(bytesSent0 - sentDiff / 2))) {
+                            ses = ses0;
+                            delta = U.safeAbs(bytesSent0 - sentDiff / 2);
+                        }
+                    }
+
+                    if (ses != null) {
+                        if (log.isDebugEnabled())
+                            log.debug("Will move session to less loaded writer [ses=" + ses +
+                                ", from=" + maxSentIdx + ", to=" + minSentIdx + ']');
+
+                        if (print)
+                            log.info("Will move session to less loaded writer [diff=" + sentDiff + ", ses=" + ses +
+                                ", from=" + maxSentIdx + ", to=" + minSentIdx + ']');
+
+                        srv.writerMoveCnt++;
+
+                        clientWorkers.get(maxSentIdx).offer(new SessionMoveFuture(ses, minSentIdx));
+                    }
+                    else {
+                        if (log.isDebugEnabled())
+                            log.debug("Unable to find session to move for writers.");
+
+                        if (print)
+                            log.info("Unable to find session to move for writers.");
+                    }
+                }
+
+                if (maxRcvd0 != -1 && minRcvd0 != -1) {
+                    GridSelectorNioSessionImpl ses = null;
+
+                    long rcvdDiff = maxRcvd0 - minRcvd0;
+                    long delta = rcvdDiff;
+                    double threshold = rcvdDiff * 0.9;
+
+                    GridConcurrentHashSet<GridSelectorNioSessionImpl> sessions =
+                        clientWorkers.get(maxRcvdIdx).sessions0;
+
+                    for (GridSelectorNioSessionImpl ses0 : sessions) {
+                        long bytesRcvd0 = ses0.bytesReceived0();
+
+                        if (bytesRcvd0 < threshold &&
+                            (ses == null || delta > U.safeAbs(bytesRcvd0 - rcvdDiff / 2))) {
+                            ses = ses0;
+                            delta = U.safeAbs(bytesRcvd0 - rcvdDiff / 2);
+                        }
+                    }
+
+                    if (ses != null) {
+                        if (log.isDebugEnabled())
+                            log.debug("Will move session to less loaded reader [ses=" + ses +
+                                ", from=" + maxRcvdIdx + ", to=" + minRcvdIdx + ']');
+
+                        if (print)
+                            log.info("Will move session to less loaded reader [diff=" + rcvdDiff + ", ses=" + ses +
+                                ", from=" + maxSentIdx + ", to=" + minSentIdx + ']');
+
+                        srv.readerMoveCnt++;
+
+                        clientWorkers.get(maxRcvdIdx).offer(new SessionMoveFuture(ses, minRcvdIdx));
+                    }
+                    else {
+                        if (log.isDebugEnabled())
+                            log.debug("Unable to find session to move for readers.");
+
+                        if (print)
+                            log.info("Unable to find session to move for readers.");
+                    }
+                }
+
+                for (int i = 0; i < clientWorkers.size(); i++) {
+                    GridNioServer.AbstractNioClientWorker worker = clientWorkers.get(i);
+
+                    worker.reset0();
+                }
+            }
         }
     }
 }
