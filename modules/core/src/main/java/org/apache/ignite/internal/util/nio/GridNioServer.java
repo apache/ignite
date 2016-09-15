@@ -45,6 +45,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -146,9 +147,13 @@ public class GridNioServer<T> {
     /** Flag indicating if this server should use direct buffers. */
     private final boolean directBuf;
 
-    /** Index to select which thread will serve next socket channel. Using round-robin balancing. */
+    /** Index to select which thread will serve next in socket channel. Using round-robin balancing. */
     @GridToStringExclude
-    private int balanceIdx;
+    private final AtomicInteger readBalanceIdx = new AtomicInteger();
+
+    /** Index to select which thread will serve next out socket channel. Using round-robin balancing. */
+    @GridToStringExclude
+    private final AtomicInteger writeBalanceIdx = new AtomicInteger(1);
 
     /** Tcp no delay flag. */
     private final boolean tcpNoDelay;
@@ -683,12 +688,12 @@ public class GridNioServer<T> {
      * @param req Request to balance.
      */
     private synchronized void offerBalanced(NioOperationFuture req) {
-        clientWorkers.get(balanceIdx).offer(req);
+        assert req.operation() == NioOperation.REGISTER : req;
+        assert req.socketChannel() != null : req;
 
-        balanceIdx++;
+        int balanceIdx = req.accepted() ? readBalanceIdx.getAndAdd(2) : writeBalanceIdx.getAndAdd(2);
 
-        if (balanceIdx == clientWorkers.size())
-            balanceIdx = 0;
+        clientWorkers.get(balanceIdx & (clientWorkers.size() - 1)).offer(req);
     }
 
     /** {@inheritDoc} */
