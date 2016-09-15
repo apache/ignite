@@ -299,9 +299,10 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
                 throw ex;
             }
-            catch (IOException e) {
-                // TODO: add log about update exception
-                throw new IgfsException("Failed on close stream after update failed", e);
+            catch (IOException exOnClose) {
+                ex.addSuppressed(exOnClose);
+
+                throw ex;
             }
         }
     }
@@ -328,9 +329,10 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
                         throw ex;
                     }
-                    catch (IOException e) {
-                        // TODO: add log about update exception
-                        throw new IgfsException("Failed on close stream after update failed", e);
+                    catch (IOException exOnClose) {
+                        ex.addSuppressed(exOnClose);
+
+                        throw ex;
                     }
                 }
             }
