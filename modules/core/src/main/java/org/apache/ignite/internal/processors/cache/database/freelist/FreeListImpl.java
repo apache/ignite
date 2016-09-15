@@ -169,30 +169,30 @@ public final class FreeListImpl extends PagesList implements FreeList, ReuseList
             if (isWalDeltaRecordNeeded(wal, page))
                 wal.log(new DataPageRemoveRecord(cacheId, page.id(), itemId));
 
-            if (io.isEmpty(buf)) {
-                int oldBucket = oldFreeSpace > MIN_PAGE_FREE_SPACE ? bucket(oldFreeSpace, false) : -1;
+            // TODO: properly handle reuse bucket.
+//            if (io.isEmpty(buf)) {
+//                int oldBucket = oldFreeSpace > MIN_PAGE_FREE_SPACE ? bucket(oldFreeSpace, false) : -1;
+//
+//                if (oldBucket == -1 || removeDataPage(page, buf, io, oldBucket))
+//                    put(null, page, buf, REUSE_BUCKET);
+//            }
 
-                if (oldBucket == -1 || removeDataPage(page, buf, io, oldBucket))
-                    put(null, page, buf, REUSE_BUCKET);
-            }
-            else {
-                int newFreeSpace = io.getFreeSpace(buf);
+            int newFreeSpace = io.getFreeSpace(buf);
 
-                if (newFreeSpace > MIN_PAGE_FREE_SPACE) {
-                    int newBucket = bucket(newFreeSpace, false);
+            if (newFreeSpace > MIN_PAGE_FREE_SPACE) {
+                int newBucket = bucket(newFreeSpace, false);
 
-                    if (oldFreeSpace > MIN_PAGE_FREE_SPACE) {
-                        int oldBucket = bucket(oldFreeSpace, false);
+                if (oldFreeSpace > MIN_PAGE_FREE_SPACE) {
+                    int oldBucket = bucket(oldFreeSpace, false);
 
-                        if (oldBucket != newBucket) {
-                            // It is possible that page was concurrently taken for put, in this case put will handle bucket change.
-                            if (removeDataPage(page, buf, io, oldBucket))
-                                put(null, page, buf, newBucket);
-                        }
+                    if (oldBucket != newBucket) {
+                        // It is possible that page was concurrently taken for put, in this case put will handle bucket change.
+                        if (removeDataPage(page, buf, io, oldBucket))
+                            put(null, page, buf, newBucket);
                     }
-                    else
-                        put(null, page, buf, newBucket);
                 }
+                else
+                    put(null, page, buf, newBucket);
             }
 
             // For common case boxed 0L will be cached inside of Long, so no garbage will be produced.
@@ -278,19 +278,17 @@ public final class FreeListImpl extends PagesList implements FreeList, ReuseList
         do {
             int freeSpace = Math.min(MIN_SIZE_FOR_BUCKET, rowSize - written);
 
-            int bucket = bucket(freeSpace, true);
+            int bucket = bucket(freeSpace, false);
 
             long pageId = 0;
             boolean reuseBucket = false;
 
-            for (int b = bucket; b < BUCKETS; b++) {
+            // TODO: properly handle reuse bucket.
+            for (int b = bucket; b < BUCKETS - 1; b++) {
                 pageId = takeEmptyPage(b, DataPageIO.VERSIONS);
 
                 if (pageId != 0L) {
                     reuseBucket = isReuseBucket(b);
-
-                    if (PageIdUtils.flag(pageId) != FLAG_DATA)
-                        pageId = PageIdUtils.changeType(pageId, FLAG_DATA);
 
                     break;
                 }
@@ -352,15 +350,10 @@ public final class FreeListImpl extends PagesList implements FreeList, ReuseList
     }
 
     /** {@inheritDoc} */
-    @Override public long takeRecycledPage(byte flag) throws IgniteCheckedException {
+    @Override public long takeRecycledPage() throws IgniteCheckedException {
         assert reuseList == this: "not allowed to be a reuse list";
 
-        long pageId = takeEmptyPage(REUSE_BUCKET, null);
-
-        if (pageId != 0 && PageIdUtils.flag(pageId) != flag)
-            pageId = PageIdUtils.changeType(pageId, flag);
-
-        return pageId;
+        return takeEmptyPage(REUSE_BUCKET, null);
     }
 
     /** {@inheritDoc} */

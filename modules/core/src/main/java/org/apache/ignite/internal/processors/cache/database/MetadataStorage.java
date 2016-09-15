@@ -102,7 +102,7 @@ public class MetadataStorage implements MetaStore {
                 long pageId = 0;
 
                 if (reuseList != null)
-                    pageId = reuseList.takeRecycledPage(FLAG_IDX);
+                    pageId = reuseList.takeRecycledPage();
 
                 pageId = pageId == 0 ? pageMem.allocatePage(cacheId, 0, ALLOC_SPACE) : pageId;
 

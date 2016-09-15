@@ -33,7 +33,7 @@ public interface ReuseList {
      * @return Page ID or {@code 0} if none available.
      * @throws IgniteCheckedException If failed.
      */
-    public long takeRecycledPage(byte flag) throws IgniteCheckedException;
+    public long takeRecycledPage() throws IgniteCheckedException;
 
     /**
      * @return Number of recycled pages it contains.

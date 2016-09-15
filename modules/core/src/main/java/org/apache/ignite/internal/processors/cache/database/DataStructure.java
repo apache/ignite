@@ -91,7 +91,7 @@ public abstract class DataStructure {
         long pageId = bag != null ? bag.pollFreePage() : 0;
 
         if (pageId == 0 && reuseList != null)
-            pageId = reuseList.takeRecycledPage(FLAG_IDX);
+            pageId = reuseList.takeRecycledPage();
 
         if (pageId == 0)
             pageId = allocatePageNoReuse();

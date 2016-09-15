@@ -71,13 +71,8 @@ public final class ReuseListImpl extends PagesList implements ReuseList {
     }
 
     /** {@inheritDoc} */
-    @Override public long takeRecycledPage(byte flag) throws IgniteCheckedException {
-        long pageId = takeEmptyPage(0, null);
-
-        if (pageId != 0 && PageIdUtils.flag(pageId) != flag)
-            pageId = PageIdUtils.changeType(pageId, flag);
-
-        return pageId;
+    @Override public long takeRecycledPage() throws IgniteCheckedException {
+        return takeEmptyPage(0, null);
     }
 
     /** {@inheritDoc} */
