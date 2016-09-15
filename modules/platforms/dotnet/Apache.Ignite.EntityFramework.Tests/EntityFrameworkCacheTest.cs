@@ -537,6 +537,20 @@ namespace Apache.Ignite.EntityFramework.Tests
                     Assert.AreEqual(11, reader.FieldCount);
                     Assert.AreEqual(11, reader.VisibleFieldCount);
 
+                    // Check field names.
+                    Assert.AreEqual("Edm.Int32", reader.GetDataTypeName(0));
+                    Assert.AreEqual("Edm.Byte", reader.GetDataTypeName(1));
+                    Assert.AreEqual("Edm.Int16", reader.GetDataTypeName(2));
+                    Assert.AreEqual("Edm.Int64", reader.GetDataTypeName(3));
+                    Assert.AreEqual("Edm.Single", reader.GetDataTypeName(4));
+                    Assert.AreEqual("Edm.Double", reader.GetDataTypeName(5));
+                    Assert.AreEqual("Edm.Decimal", reader.GetDataTypeName(6));
+                    Assert.AreEqual("Edm.Boolean", reader.GetDataTypeName(7));
+                    Assert.AreEqual("Edm.String", reader.GetDataTypeName(8));
+                    Assert.AreEqual("Edm.Guid", reader.GetDataTypeName(9));
+
+                    // Check field types.
+
                     // Read.
                     Assert.IsTrue(reader.Read());
 
