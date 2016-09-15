@@ -249,7 +249,7 @@ public class KeyValuePersistenceSettings implements Serializable {
      */
     public String getKeyspaceDDLStatement() {
         StringBuilder builder = new StringBuilder();
-        builder.append("create keyspace if not exists ").append(keyspace);
+        builder.append("create keyspace if not exists \"").append(keyspace).append("\"");
 
         if (keyspaceOptions != null) {
             if (!keyspaceOptions.trim().toLowerCase().startsWith("with"))
@@ -285,7 +285,7 @@ public class KeyValuePersistenceSettings implements Serializable {
 
         StringBuilder builder = new StringBuilder();
 
-        builder.append("create table if not exists ").append(keyspace).append(".").append(tbl);
+        builder.append("create table if not exists \"").append(keyspace).append("\".\"").append(tbl).append("\"");
         builder.append("\n(\n").append(colsDDL).append(",\n").append(primaryKeyDDL).append("\n)");
 
         if (!optionsDDL.isEmpty())

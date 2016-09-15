@@ -104,7 +104,7 @@ public class KeyPersistenceSettings extends PersistenceSettings {
             if (partKey.length() != 0)
                 partKey.append(", ");
 
-            partKey.append(column);
+            partKey.append("\"").append(column).append("\"");
         }
 
         StringBuilder clusterKey = new StringBuilder();
@@ -115,7 +115,7 @@ public class KeyPersistenceSettings extends PersistenceSettings {
                 if (clusterKey.length() != 0)
                     clusterKey.append(", ");
 
-                clusterKey.append(column);
+                clusterKey.append("\"").append(column).append("\"");
             }
         }
 
@@ -143,7 +143,7 @@ public class KeyPersistenceSettings extends PersistenceSettings {
 
             boolean asc = PojoKeyField.SortOrder.ASC.equals(sortOrder);
 
-            builder.append(field.getColumn()).append(" ").append(asc ? "asc" : "desc");
+            builder.append("\"").append(field.getColumn()).append("\" ").append(asc ? "asc" : "desc");
         }
 
         return builder.length() == 0 ? null : "clustering order by (" + builder.toString() + ")";

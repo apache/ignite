@@ -205,7 +205,7 @@ public abstract class PojoField implements Serializable {
 
         this.javaCls = desc.getReadMethod().getDeclaringClass();
         this.desc = desc;
-        this.colDDL = col + " " + cassandraType.toString();
+        this.colDDL = "\"" + col + "\" " + cassandraType.toString();
     }
 
     /**

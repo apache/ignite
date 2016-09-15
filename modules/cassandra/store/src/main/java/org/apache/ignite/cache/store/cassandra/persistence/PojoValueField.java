@@ -125,11 +125,11 @@ public class PojoValueField extends PojoField {
         StringBuilder builder = new StringBuilder();
 
         if (idxCls != null)
-            builder.append("create custom index if not exists on ").append(keyspace).append(".").append(tbl);
+            builder.append("create custom index if not exists on \"").append(keyspace).append("\".\"").append(tbl).append("\"");
         else
-            builder.append("create index if not exists on ").append(keyspace).append(".").append(tbl);
+            builder.append("create index if not exists on \"").append(keyspace).append("\".\"").append(tbl).append("\"");
 
-        builder.append(" (").append(getColumn()).append(")");
+        builder.append(" (\"").append(getColumn()).append("\")");
 
         if (idxCls != null)
             builder.append(" using '").append(idxCls).append("'");
