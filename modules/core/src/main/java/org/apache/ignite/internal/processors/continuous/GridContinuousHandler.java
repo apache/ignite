@@ -57,12 +57,14 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
     public RegisterStatus register(UUID nodeId, UUID routineId, GridKernalContext ctx) throws IgniteCheckedException;
 
     /**
-     * Callback called after listener is registered and acknowledgement is sent.
+     * Initialize listener.
      *
+     * @param nodeId ID of the node that started routine.
      * @param routineId Routine ID.
      * @param ctx Kernal context.
+     * @throws IgniteCheckedException In case of error.
      */
-    public void onListenerRegistered(UUID routineId, GridKernalContext ctx);
+    public void initialize(UUID nodeId, UUID routineId, GridKernalContext ctx) throws IgniteCheckedException;
 
     /**
      * Unregisters listener.

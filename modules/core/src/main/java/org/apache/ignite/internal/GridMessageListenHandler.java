@@ -139,11 +139,6 @@ public class GridMessageListenHandler implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void onListenerRegistered(UUID routineId, GridKernalContext ctx) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public void unregister(UUID routineId, GridKernalContext ctx) {
         ctx.io().removeUserMessageListener(topic, pred);
     }
@@ -225,6 +220,11 @@ public class GridMessageListenHandler implements GridContinuousHandler {
 
     /** {@inheritDoc} */
     @Override public void onNodeLeft() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void initialize(UUID nodeId, UUID routineId, GridKernalContext ctx) throws IgniteCheckedException {
         // No-op.
     }
 
