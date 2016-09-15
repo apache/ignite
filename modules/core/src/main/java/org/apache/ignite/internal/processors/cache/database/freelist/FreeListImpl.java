@@ -108,10 +108,22 @@ public final class FreeListImpl extends PagesList implements FreeList, ReuseList
                 // TODO: context parameter.
                 io.addRow(buf, row, rowSize);
 
-                // TODO This record must contain only a reference to a logical WAL record with the actual data.
-                if (isWalDeltaRecordNeeded(wal, page))
-                    wal.log(new DataPageInsertRecord(cacheId, page.id(),
-                        row.key(), row.value(), row.version(), row.expireTime(), rowSize));
+                if (isWalDeltaRecordNeeded(wal, page)) {
+                    // TODO This record must contain only a reference to a logical WAL record with the actual data.
+                    byte[] payload = new byte[rowSize];
+
+                    io.setPositionAndLimitOnPayload(buf, PageIdUtils.itemId(row.link()));
+
+                    assert buf.remaining() == rowSize;
+
+                    buf.get(payload);
+                    buf.position(0);
+
+                    wal.log(new DataPageInsertRecord(
+                        cacheId,
+                        page.id(),
+                        payload));
+                }
 
                 return rowSize;
             }
