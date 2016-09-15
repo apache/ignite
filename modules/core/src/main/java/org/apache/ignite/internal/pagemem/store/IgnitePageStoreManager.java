@@ -179,14 +179,4 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager {
      * @return saved configuration for cache
      */
     public CacheConfiguration readConfiguration(String cacheName);
-
-    /**
-     * Clears store.
-     *
-     * @param cacheId Cache ID.
-     * @param flags Allocation flags.
-     * @param partId Partition ID.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void clear(int cacheId, byte flags, int partId) throws IgniteCheckedException;
 }
