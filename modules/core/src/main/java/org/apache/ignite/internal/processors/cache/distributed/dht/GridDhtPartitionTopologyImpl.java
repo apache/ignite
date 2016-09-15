@@ -1766,8 +1766,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
             assert part.state() == EVICTED;
 
-            locParts.set(part.id(), null);
-
             long seq = updateSeq ? this.updateSeq.incrementAndGet() : this.updateSeq.get();
 
             updateLocal(part.id(), cctx.localNodeId(), part.state(), seq);
@@ -1970,7 +1968,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             while (nextIdx < locParts.length()) {
                 GridDhtLocalPartition part = locParts.get(nextIdx);
 
-                if (part != null) {
+                if (part != null && part.state().active()) {
                     nextPart = part;
                     return;
                 }
