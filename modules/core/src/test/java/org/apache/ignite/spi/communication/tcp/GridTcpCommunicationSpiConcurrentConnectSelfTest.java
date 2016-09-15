@@ -280,13 +280,13 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
                             @Override public boolean apply() {
                                 Collection sessions = U.field(srv, "sessions");
 
-                                return sessions.size() == 1;
+                                return sessions.size() == 2;
                             }
                         }, 5000);
 
                         Collection sessions = U.field(srv, "sessions");
 
-                        assertEquals(1, sessions.size());
+                        assertEquals(2, sessions.size());
                     }
 
                     assertEquals(expMsgs, lsnr.cntr.get());
