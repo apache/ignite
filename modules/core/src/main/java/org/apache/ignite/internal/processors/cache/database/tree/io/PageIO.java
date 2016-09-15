@@ -314,9 +314,6 @@ public abstract class PageIO {
             case T_BPLUS_META:
                 return (Q)BPlusMetaIO.VERSIONS.forVersion(ver);
 
-            case T_PART_META:
-                return (Q)PagePartMetaIO.VERSIONS.forVersion(ver);
-
             case T_PAGE_LIST_NODE:
                 return (Q)PagesListNodeIO.VERSIONS.forVersion(ver);
 
@@ -324,7 +321,10 @@ public abstract class PageIO {
                 return (Q)PagesListMetaIO.VERSIONS.forVersion(ver);
 
             case T_META:
-                throw new IgniteCheckedException("Root meta page should be always accessed with a fixed version.");
+                return (Q)PageMetaIO.VERSIONS.forVersion(ver);
+
+            case T_PART_META:
+                return (Q)PagePartitionMetaIO.VERSIONS.forVersion(ver);
 
             default:
                 return (Q)getBPlusIO(type, ver);

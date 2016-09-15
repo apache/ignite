@@ -729,8 +729,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         assert state() == EVICTED : this;
         assert evictGuard.get() == -1;
 
-        clearPageStore();
-
         if (cctx.isDrEnabled())
             cctx.dr().partitionEvicted(id);
 
@@ -743,6 +741,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         rent.onDone();
 
         ((GridDhtPreloader)cctx.preloader()).onPartitionEvicted(this, updateSeq);
+
+        clearPageStore();
 
         clearDeferredDeletes();
     }

@@ -53,9 +53,10 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager {
      * the given cache will be stored on disk.
      *
      * @param cacheCtx Cache context of the cache being stopped.
+     * @param destroy Flag indicating if the cache is being destroyed and data should be cleaned.
      * @throws IgniteCheckedException If failed to handle cache destroy callback.
      */
-    public void shutdownForCache(GridCacheContext cacheCtx) throws IgniteCheckedException;
+    public void shutdownForCache(GridCacheContext cacheCtx, boolean destroy) throws IgniteCheckedException;
 
     /**
      * Callback called when a partition is created on the local node.

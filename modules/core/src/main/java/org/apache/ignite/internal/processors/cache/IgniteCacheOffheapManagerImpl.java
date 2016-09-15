@@ -140,24 +140,24 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         super.stop0(cancel, destroy);
 
         if (destroy && cctx.affinityNode())
-            destroyCacheDataStructures();
+            destroyCacheDataStructures(destroy);
     }
 
     /**
      *
      */
-    protected void destroyCacheDataStructures() {
+    protected void destroyCacheDataStructures(boolean destroy) {
+        assert cctx.affinityNode();
+
         try {
-            if (cctx.affinityNode()) {
-                if (locCacheDataStore != null)
-                    locCacheDataStore.destroy();
+            if (locCacheDataStore != null)
+                locCacheDataStore.destroy();
 
-                if (pendingEntries != null)
-                    pendingEntries.destroy();
+            if (pendingEntries != null)
+                pendingEntries.destroy();
 
-                for (CacheDataStore store : partDataStores.values())
-                    store.destroy();
-            }
+            for (CacheDataStore store : partDataStores.values())
+                store.destroy();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e.getMessage(), e);

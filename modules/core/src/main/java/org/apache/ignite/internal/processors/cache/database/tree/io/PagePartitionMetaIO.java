@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.cache.database.tree.io;
 
 import java.nio.ByteBuffer;
 
-public class PagePartMetaIO extends PageIO {
+public class PagePartitionMetaIO extends PageMetaIO {
     /** */
-    private static final int SIZE_OFF = PageIO.COMMON_HEADER_END;
+    private static final int SIZE_OFF = PageMetaIO.REUSE_LIST_ROOT_OFF;
 
     /** */
     private static final int UPDATE_CNTR_OFF = SIZE_OFF + 8;
@@ -31,14 +31,14 @@ public class PagePartMetaIO extends PageIO {
     private static final int GLOBAL_RMV_ID_OFF = UPDATE_CNTR_OFF + 8;
 
     /** */
-    public static final IOVersions<PagePartMetaIO> VERSIONS = new IOVersions<>(
-        new PagePartMetaIO(1)
+    public static final IOVersions<PagePartitionMetaIO> VERSIONS = new IOVersions<>(
+        new PagePartitionMetaIO(1)
     );
 
     /**
      * @param ver Version.
      */
-    public PagePartMetaIO(int ver) {
+    public PagePartitionMetaIO(int ver) {
         super(T_PART_META, ver);
     }
 
