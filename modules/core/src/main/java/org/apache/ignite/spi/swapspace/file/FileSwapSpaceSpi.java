@@ -833,6 +833,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
         /** */
         private final int maxSize;
 
+        /** */
         private final IgniteLogger log;
 
         /**
@@ -857,7 +858,6 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
 
             try {
                 if (val.len > maxSize) {
-
                     log.warning("You try save entry in swap, which have size more than queueMaxSize, entry size "
                             + val.len + " queueMaxSize " + maxSize + " queueMaxSize will be increased.");
 
@@ -1462,8 +1462,9 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
 
         /**
          * @param name Space name.
+         * @param log Logger.
          */
-        private Space(String name,IgniteLogger log) {
+        private Space(String name, IgniteLogger log) {
             assert name != null;
 
             this.name = name;
