@@ -46,7 +46,16 @@ namespace Apache.Ignite.EntityFramework.Tests
             var reader = new ArrayDbDataReader(data, schema);
 
             Assert.IsTrue(reader.Read());
+            Assert.AreEqual(0, reader.Depth);
+            Assert.AreEqual(0, reader.RecordsAffected);
+            Assert.AreEqual(12, reader.FieldCount);
+            Assert.AreEqual(12, reader.VisibleFieldCount);
+            Assert.IsFalse(reader.IsClosed);
+            Assert.IsTrue(reader.HasRows);
+
             Assert.AreEqual(1, reader.GetByte(reader.GetOrdinal("byte")));
+            Assert.AreEqual("by", reader.GetDataTypeName(0));
+            Assert.AreEqual(typeof(byte), reader.GetFieldType(0));
         }
     }
 }
