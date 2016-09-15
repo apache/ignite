@@ -2348,6 +2348,10 @@ public class IgnitionEx {
 
             p2pExecSvc = null;
 
+            U.shutdownNow(getClass(), dataStreamExecSvc, log);
+
+            dataStreamExecSvc = null;
+
             U.shutdownNow(getClass(), igfsExecSvc, log);
 
             igfsExecSvc = null;
