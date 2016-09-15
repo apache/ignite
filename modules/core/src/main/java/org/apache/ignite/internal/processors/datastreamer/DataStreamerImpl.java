@@ -154,8 +154,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** */
     private long autoFlushFreq;
 
-    /** Exception history size. */
-    private int exceptionHistorySize = DFLT_EXCEPTION_HISTORY_SIZE;
+    /** Maximum size for exceptions history. */
+    private int eHistSize = DFLT_EXCEPTION_HISTORY_SIZE;
 
     /** Mapping. */
     @GridToStringInclude
@@ -194,7 +194,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 t.get();
             }
             catch (IgniteCheckedException e) {
-                if (exceptionsHist.sizex() < exceptionHistorySize)
+                if (exceptionsHist.sizex() < eHistSize)
                     exceptionsHist.push(e);
                 else
                     log.warning("Queue of exceptions is overflowed. You should to invoke flush()," +
@@ -510,12 +510,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /** {@inheritDoc} */
     @Override public int exceptionHistorySize() {
-        return exceptionHistorySize;
+        return eHistSize;
     }
 
     /** {@inheritDoc} */
     @Override public void exceptionHistorySize(int size) {
-        exceptionHistorySize = size;
+        eHistSize = size;
     }
 
     /** {@inheritDoc} */
@@ -942,9 +942,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 else if (f.isDone()) {
                     try {
                         f.get();
-                    } catch (IgniteCheckedException e) {
-                        //The exception will be thrown at the end.
-                        //Look at the throwExceptionIfNeeded.
+                    }
+                    catch (IgniteCheckedException ignore) {
+                        //The exception will be thrown at the end, see throwExceptionIfNeeded.
                     }
 
                     doneCnt++;
@@ -964,18 +964,18 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     }
 
     /**
-     * Method is throwing IgniteCheckedException Exception, if it took a place.
+     * Method throws exception if there are errors stored in history.
      */
     private void throwExceptionIfNeeded() throws IgniteCheckedException {
-        IgniteCheckedException firstException0 = exceptionsHist.poll();
+        IgniteCheckedException firstErr = exceptionsHist.poll();
 
-        if (firstException0 != null) {
+        if (firstErr != null) {
             IgniteCheckedException suppressed;
 
             while ((suppressed = exceptionsHist.poll()) != null)
-                firstException0.addSuppressed(suppressed);
+                firstErr.addSuppressed(suppressed);
 
-            throw  firstException0;
+            throw firstErr;
         }
     }
 

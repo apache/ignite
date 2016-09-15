@@ -26,7 +26,8 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -34,26 +35,27 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
- * Test failures for Data streamer.
+ *
  */
+@SuppressWarnings("unchecked")
 public class DataStreamerFailuresTest extends GridCommonAbstractTest {
     /** Cache name. */
     public static final String CACHE_NAME = "cacheName";
 
     /** Timeout. */
-    public static final int TIMEOUT = 1_000;
+    private static final int TIMEOUT = 1_000;
 
     /** Amount of entries. */
-    public static final int ENTRY_AMOUNT = 1_000;
+    private static final int ENTRY_AMOUNT = 1_000;
 
-    /** Client id. */
-    public static final int CLIENT_ID = 2;
+    /** Client node index. */
+    private static final int CLIENT_NODE_IDX = 2;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        if (getTestGridName(CLIENT_ID).equals(gridName))
+        if (getTestGridName(CLIENT_NODE_IDX).equals(gridName))
             cfg.setClientMode(true);
         else
             cfg.setCacheConfiguration(cacheConfiguration());
@@ -78,7 +80,8 @@ public class DataStreamerFailuresTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test fail on receiver, when streamer invokes from server node.
+     * Test fail on receiver, when streamer is called from server node.
+     *
      * @throws Exception If fail.
      */
     public void testFromServer() throws Exception {
@@ -105,7 +108,7 @@ public class DataStreamerFailuresTest extends GridCommonAbstractTest {
         try {
             Ignite ignite1 = startGrid(0);
             Ignite ignite2 = startGrid(1);
-            Ignite client = startGrid(CLIENT_ID);
+            Ignite client = startGrid(CLIENT_NODE_IDX);
 
             checkTopology(3);
 
@@ -120,12 +123,14 @@ public class DataStreamerFailuresTest extends GridCommonAbstractTest {
 
     /**
      * Data loading failed, because server node broken.
+     *
+     * @throws Exception If failed.
      */
     public void testServerBrokenPerLoad() throws Exception {
         try {
             Ignite ignite1 = startGrid(0);
             Ignite ignite2 = startGrid(1);
-            Ignite client = startGrid(CLIENT_ID);
+            Ignite client = startGrid(CLIENT_NODE_IDX);
 
             checkTopology(3);
 
@@ -169,7 +174,9 @@ public class DataStreamerFailuresTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test is checking ability of handling exception when flashing.
+     * Test is checking ability of handling exception when flushing.
+     *
+     * @throws Exception If failed.
      */
     public void testHandledExceptionAndFlushAgain() throws Exception {
         try {
@@ -210,7 +217,7 @@ public class DataStreamerFailuresTest extends GridCommonAbstractTest {
      * @param futures Futures.
      */
     private void checkFailAddData(IgniteFuture[] futures) {
-        boolean thrownNotTimeout = false;
+        boolean thrown = false;
 
         for (int i = 0; i < ENTRY_AMOUNT; i++) {
             try {
@@ -218,21 +225,20 @@ public class DataStreamerFailuresTest extends GridCommonAbstractTest {
                     futures[i].get(TIMEOUT);
                 }
                 catch (IgniteFutureTimeoutException e) {
-                    info("Check future with id " + i + " timeout");
-
-                    thrownNotTimeout = false;
+                    fail();
                 }
             }
             catch (CacheException e) {
-                thrownNotTimeout = true;
+                thrown = true;
             }
         }
 
-        assertTrue(thrownNotTimeout);
+        assertTrue(thrown);
     }
 
     /**
      * @param ignite Ignite.
+     * @return Load futures.
      */
     private IgniteFuture[] loadData(Ignite ignite) {
         boolean thrown = false;
@@ -243,8 +249,9 @@ public class DataStreamerFailuresTest extends GridCommonAbstractTest {
 
         try {
             ldr.receiver(new TestDataReceiver());
-            ldr.perNodeBufferSize(ENTRY_AMOUNT/6);
+            ldr.perNodeBufferSize(ENTRY_AMOUNT / 6);
             ldr.perNodeParallelOperations(1);
+
             ((DataStreamerImpl)ldr).maxRemapCount(0);
 
             for (int i = 0; i < ENTRY_AMOUNT; i++)
@@ -253,7 +260,8 @@ public class DataStreamerFailuresTest extends GridCommonAbstractTest {
         finally {
             try {
                 ldr.close();
-            } catch (Exception e) {
+            }
+            catch (CacheException e) {
                 thrown = true;
             }
         }
@@ -267,9 +275,8 @@ public class DataStreamerFailuresTest extends GridCommonAbstractTest {
      * Test receiver for timeout expiration emulation.
      */
     private static class TestDataReceiver implements StreamReceiver {
-
         /** {@inheritDoc} */
-        @Override public void receive(IgniteCache cache, Collection collection) throws IgniteException {
+        @Override public void receive(IgniteCache cache, Collection col) {
             throw new IgniteException("Error in TestDataReceiver.");
         }
     }
@@ -278,12 +285,11 @@ public class DataStreamerFailuresTest extends GridCommonAbstractTest {
      * Test receiver, which failed only once.
      */
     private static class TestDataReceiverFailedOnce implements StreamReceiver {
-
         /** Not throw. */
-        private static AtomicBoolean notThrow= new AtomicBoolean();
+        private static AtomicBoolean notThrow = new AtomicBoolean();
 
         /** {@inheritDoc} */
-        @Override public void receive(IgniteCache cache, Collection collection) throws IgniteException {
+        @Override public void receive(IgniteCache cache, Collection col) {
             if (!notThrow.getAndSet(true))
                 throw new IgniteException("First fail.");
         }

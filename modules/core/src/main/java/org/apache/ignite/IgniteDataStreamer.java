@@ -256,8 +256,9 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
     public void autoFlushFrequency(long autoFlushFreq);
 
     /**
-     * Sets size of history of exceptions, which will be displayed after strimer cleaned.
-     * @param size Size.
+     * Sets size of history of exceptions, which will be displayed after streamer cleaned.
+     *
+     * @param size Exception history size.
      */
     public void exceptionHistorySize(int size);
 
