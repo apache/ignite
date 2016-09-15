@@ -81,6 +81,8 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
         execSvc = ctx.getDataStreamExecutorService();
 
+        marsh = ctx.config().getMarshaller();
+
         if (!ctx.clientNode()) {
             ctx.io().addMessageListener(TOPIC_DATASTREAM, new GridMessageListener() {
                 @Override public void onMessage(final UUID nodeId, final Object msg) {
@@ -95,8 +97,6 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                 }
             });
         }
-
-        marsh = ctx.config().getMarshaller();
     }
 
     /** {@inheritDoc} */
