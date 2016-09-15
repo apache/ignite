@@ -1086,6 +1086,8 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
 
         Assert.assertTrue(starFut.isDone());
 
+        discoSpi.blockCustomEvent();
+
         message(ignite1.cluster().forRemotes()).send(topic, "msg1");
 
         GridTestUtils.waitForCondition(new PA() {
