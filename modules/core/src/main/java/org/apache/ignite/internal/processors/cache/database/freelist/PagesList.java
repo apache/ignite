@@ -507,8 +507,8 @@ public abstract class PagesList extends DataStructure {
      * @throws IgniteCheckedException If failed.
      * @return Tail page ID.
      */
-    private Stripe addStripe(int bucket) throws IgniteCheckedException {
-        long pageId = allocatePage(null);
+    private Stripe addStripe(int bucket, boolean reuse) throws IgniteCheckedException {
+        long pageId = reuse ? allocatePage(null) : allocatePageNoReuse();
 
         try (Page page = page(pageId)) {
             initPage(pageId, page, PagesListNodeIO.VERSIONS.latest(), wal);
@@ -600,7 +600,7 @@ public abstract class PagesList extends DataStructure {
         Stripe[] tails = getBucket(bucket);
 
         if (tails == null)
-            return addStripe(bucket);
+            return addStripe(bucket, true);
 
         return randomTail(tails);
     }
@@ -744,7 +744,7 @@ public abstract class PagesList extends DataStructure {
             Stripe[] stripes = getBucket(bucket);
 
             if (stripes == null || stripes.length < MAX_STRIPES_PER_BUCKET) {
-                addStripe(bucket);
+                addStripe(bucket, false);
 
                 return null;
             }
