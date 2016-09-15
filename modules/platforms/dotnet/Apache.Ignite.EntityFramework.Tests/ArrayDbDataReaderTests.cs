@@ -57,8 +57,10 @@ namespace Apache.Ignite.EntityFramework.Tests
                 new DataReaderField("fbool", typeof(bool), "bo"),
             };
 
+            // Create reader,
             var reader = new ArrayDbDataReader(data, schema);
 
+            // Check basic props.
             Assert.IsTrue(reader.Read());
             Assert.AreEqual(0, reader.Depth);
             Assert.AreEqual(0, reader.RecordsAffected);
@@ -67,9 +69,30 @@ namespace Apache.Ignite.EntityFramework.Tests
             Assert.IsFalse(reader.IsClosed);
             Assert.IsTrue(reader.HasRows);
 
+            // Check reading.
             Assert.AreEqual(1, reader.GetByte(reader.GetOrdinal("fbyte")));
             Assert.AreEqual("by", reader.GetDataTypeName(0));
             Assert.AreEqual(typeof(byte), reader.GetFieldType(0));
+
+            Assert.AreEqual(2, reader.GetInt16(reader.GetOrdinal("fshort")));
+            Assert.AreEqual("sh", reader.GetDataTypeName(1));
+            Assert.AreEqual(typeof(short), reader.GetFieldType(1));
+
+            Assert.AreEqual(3, reader.GetInt32(reader.GetOrdinal("fint")));
+            Assert.AreEqual("in", reader.GetDataTypeName(2));
+            Assert.AreEqual(typeof(int), reader.GetFieldType(2));
+
+            Assert.AreEqual(4, reader.GetInt64(reader.GetOrdinal("flong")));
+            Assert.AreEqual("lo", reader.GetDataTypeName(3));
+            Assert.AreEqual(typeof(long), reader.GetFieldType(3));
+
+            Assert.AreEqual(5, reader.GetFloat(reader.GetOrdinal("ffloat")));
+            Assert.AreEqual("fl", reader.GetDataTypeName(4));
+            Assert.AreEqual(typeof(float), reader.GetFieldType(4));
+
+            // Close.
+            reader.Close();
+            Assert.IsTrue(reader.IsClosed);
         }
     }
 }
