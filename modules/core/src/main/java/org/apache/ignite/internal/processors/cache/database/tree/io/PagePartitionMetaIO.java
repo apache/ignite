@@ -35,6 +35,15 @@ public class PagePartitionMetaIO extends PageMetaIO {
         new PagePartitionMetaIO(1)
     );
 
+    /** {@inheritDoc} */
+    @Override public void initNewPage(ByteBuffer buf, long pageId) {
+        super.initNewPage(buf, pageId);
+
+        setSize(buf, 0);
+        setUpdateCounter(buf, 0);
+        setGlobalRemoveId(buf, 0);
+    }
+
     /**
      * @param ver Version.
      */

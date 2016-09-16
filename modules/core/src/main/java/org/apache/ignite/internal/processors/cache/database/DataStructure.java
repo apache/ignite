@@ -27,6 +27,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 
 /**
@@ -115,8 +116,12 @@ public abstract class DataStructure {
      * @throws IgniteCheckedException If failed.
      */
     protected final Page page(long pageId) throws IgniteCheckedException {
-        if (PageIdUtils.flag(pageId) == FLAG_IDX)
+        byte flag = PageIdUtils.flag(pageId);
+
+        if (flag == FLAG_IDX)
             pageId = PageIdUtils.maskPartId(pageId);
+        else
+            assert flag == FLAG_DATA : flag;
 
         return pageMem.page(cacheId, pageId);
     }
