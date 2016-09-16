@@ -337,5 +337,31 @@ namespace Apache.Ignite.Core.Tests
                 JvmClasspath = CreateTestClasspath()
             };
         }
+
+        /// <summary>
+        /// Runs the test in new process.
+        /// </summary>
+        public static void RunTestInNewProcess(string fixtureName, string testName)
+        {
+            var procStart = new ProcessStartInfo
+            {
+                // ReSharper disable once AssignNullToNotNullAttribute
+                FileName = typeof(TestUtils).Assembly.Location,
+                Arguments = fixtureName + " " + testName,
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+
+            var proc = System.Diagnostics.Process.Start(procStart);
+
+            Assert.IsNotNull(proc);
+
+            Console.WriteLine(proc.StandardOutput.ReadToEnd());
+            Console.WriteLine(proc.StandardError.ReadToEnd());
+            Assert.IsTrue(proc.WaitForExit(15000));
+            Assert.AreEqual(0, proc.ExitCode);
+        }
     }
 }

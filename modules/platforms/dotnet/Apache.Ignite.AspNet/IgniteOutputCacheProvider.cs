@@ -18,23 +18,20 @@
 namespace Apache.Ignite.AspNet
 {
     using System;
-    using System.Collections.Generic;
     using System.Collections.Specialized;
-    using System.Configuration;
     using System.Diagnostics.CodeAnalysis;
-    using System.Globalization;
     using System.Web.Caching;
+    using Apache.Ignite.AspNet.Impl;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Cache.Expiry;
-    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// ASP.NET output cache provider that uses Ignite cache as a storage.
     /// <para />
     /// You can either start Ignite yourself, and provide <c>gridName</c> attribute, 
     /// or provide <c>igniteConfigurationSectionName</c> attribute to start Ignite automatically from specified
-    /// configuration section (see <see cref="IgniteConfigurationSection"/>).
+    /// configuration section (see <see cref="IgniteConfigurationSection"/>) 
+    /// using <c>igniteConfigurationSectionName</c>.
     /// <para />
     /// <c>cacheName</c> attribute specifies Ignite cache name to use for data storage. This attribute can be omitted 
     /// if cache name is null.
@@ -42,26 +39,7 @@ namespace Apache.Ignite.AspNet
     public class IgniteOutputCacheProvider : OutputCacheProvider
     {
         /** */
-        private const string GridName = "gridName";
-        
-        /** */
-        private const string CacheName = "cacheName";
-
-        /** */
-        private const string IgniteConfigurationSectionName = "igniteConfigurationSectionName";
-
-        /** Max number of cached expiry caches. */
-        private const int MaxExpiryCaches = 1000;
-
-        /** */
-        private volatile ICache<string, object> _cache;
-
-        /** Cached caches per expiry seconds. */
-        private volatile Dictionary<long, ICache<string, object>> _expiryCaches = 
-            new Dictionary<long, ICache<string, object>>();
-
-        /** Sync object. */ 
-        private readonly object _syncRoot = new object();
+        private volatile ExpiryCacheHolder<string, object> _expiryCacheHolder;
 
         /// <summary>
         /// Returns a reference to the specified entry in the output cache.
@@ -88,7 +66,7 @@ namespace Apache.Ignite.AspNet
         /// </returns>
         public override object Add(string key, object entry, DateTime utcExpiry)
         {
-            return GetCacheWithExpiry(utcExpiry).GetAndPutIfAbsent(key, entry).Value;
+            return _expiryCacheHolder.GetCacheWithExpiry(utcExpiry).GetAndPutIfAbsent(key, entry).Value;
         }
 
         /// <summary>
@@ -99,7 +77,7 @@ namespace Apache.Ignite.AspNet
         /// <param name="utcExpiry">The time and date on which the cached <paramref name="entry" /> expires.</param>
         public override void Set(string key, object entry, DateTime utcExpiry)
         {
-            GetCacheWithExpiry(utcExpiry)[key] = entry;
+            _expiryCacheHolder.GetCacheWithExpiry(utcExpiry)[key] = entry;
         }
 
         /// <summary>
@@ -121,46 +99,11 @@ namespace Apache.Ignite.AspNet
         {
             base.Initialize(name, config);
 
-            var gridName = config[GridName];
-            var cacheName = config[CacheName];
-            var cfgSection = config[IgniteConfigurationSectionName];
+            var cache = ConfigUtil.InitializeCache<string, object>(config, GetType());
 
-            try
-            {
-                var grid = cfgSection != null
-                    ? StartFromApplicationConfiguration(cfgSection)
-                    : Ignition.GetIgnite(gridName);
-
-                _cache = grid.GetOrCreateCache<string, object>(cacheName);
-            }
-            catch (Exception ex)
-            {
-                throw new IgniteException(string.Format(CultureInfo.InvariantCulture,
-                    "Failed to initialize {0}: {1}", GetType(), ex), ex);
-            }
+            _expiryCacheHolder = new ExpiryCacheHolder<string, object>(cache);
         }
 
-        /// <summary>
-        /// Starts Ignite from application configuration.
-        /// </summary>
-        private static IIgnite StartFromApplicationConfiguration(string sectionName)
-        {
-            var section = ConfigurationManager.GetSection(sectionName) as IgniteConfigurationSection;
-
-            if (section == null)
-                throw new ConfigurationErrorsException(string.Format(CultureInfo.InvariantCulture, 
-                    "Could not find {0} with name '{1}'", typeof(IgniteConfigurationSection).Name, sectionName));
-
-            var config = section.IgniteConfiguration;
-
-            if (string.IsNullOrWhiteSpace(config.IgniteHome))
-            {
-                // IgniteHome not set by user: populate from default directory
-                config = new IgniteConfiguration(config) {IgniteHome = IgniteWebUtils.GetWebIgniteHome()};
-            }
-
-            return Ignition.Start(config);
-        }
 
         /// <summary>
         /// Gets the cache.
@@ -169,51 +112,12 @@ namespace Apache.Ignite.AspNet
         {
             get
             {
-                var cache = _cache;
+                var holder = _expiryCacheHolder;
 
-                if (cache == null)
-                    throw new InvalidOperationException("IgniteOutputCacheProvider has not been initialized.");
+                if (holder == null)
+                    throw new InvalidOperationException(GetType() + " has not been initialized.");
 
-                return cache;
-            }
-        }
-
-        /// <summary>
-        /// Gets the cache with expiry policy according to provided expiration date.
-        /// </summary>
-        /// <param name="utcExpiry">The UTC expiry.</param>
-        /// <returns>Cache with expiry policy.</returns>
-        private ICache<string, object> GetCacheWithExpiry(DateTime utcExpiry)
-        {
-            if (utcExpiry == DateTime.MaxValue)
-                return Cache;
-
-            // Round up to seconds ([OutputCache] duration is in seconds).
-            var expirySeconds = (long) Math.Round((utcExpiry - DateTime.UtcNow).TotalSeconds);
-
-            if (expirySeconds < 0)
-                expirySeconds = 0;
-
-            ICache<string, object> expiryCache;
-
-            if (_expiryCaches.TryGetValue(expirySeconds, out expiryCache))
-                return expiryCache;
-
-            lock (_syncRoot)
-            {
-                if (_expiryCaches.TryGetValue(expirySeconds, out expiryCache))
-                    return expiryCache;
-
-                // Copy on write with size limit
-                _expiryCaches = _expiryCaches.Count > MaxExpiryCaches
-                    ? new Dictionary<long, ICache<string, object>>()
-                    : new Dictionary<long, ICache<string, object>>(_expiryCaches);
-
-                expiryCache = Cache.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromSeconds(expirySeconds), null, null));
-
-                _expiryCaches[expirySeconds] = expiryCache;
-
-                return expiryCache;
+                return holder.Cache;
             }
         }
     }
