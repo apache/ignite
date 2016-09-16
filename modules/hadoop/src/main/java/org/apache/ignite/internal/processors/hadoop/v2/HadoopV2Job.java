@@ -52,6 +52,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.hadoop.HadoopClassLoader;
 import org.apache.ignite.internal.processors.hadoop.HadoopDefaultJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopFileBlock;
+import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
 import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
 import org.apache.ignite.internal.processors.hadoop.HadoopJob;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
@@ -86,6 +87,9 @@ public class HadoopV2Job implements HadoopJob {
 
     /** */
     private final JobContextImpl jobCtx;
+
+    /** */
+    private final HadoopHelper hadoopHelper;
 
     /** Hadoop job ID. */
     private final HadoopJobId jobId;
@@ -130,13 +134,14 @@ public class HadoopV2Job implements HadoopJob {
      * @param libNames Optional additional native library names.
      */
     public HadoopV2Job(HadoopJobId jobId, final HadoopDefaultJobInfo jobInfo, IgniteLogger log,
-        @Nullable String[] libNames) {
+        @Nullable String[] libNames, HadoopHelper hadoopHelper) {
         assert jobId != null;
         assert jobInfo != null;
 
         this.jobId = jobId;
         this.jobInfo = jobInfo;
         this.libNames = libNames;
+        this.hadoopHelper = hadoopHelper;
 
         ClassLoader oldLdr = HadoopUtils.setContextClassLoader(getClass().getClassLoader());
 
@@ -255,7 +260,7 @@ public class HadoopV2Job implements HadoopJob {
                 // Note that the classloader identified by the task it was initially created for,
                 // but later it may be reused for other tasks.
                 HadoopClassLoader ldr = new HadoopClassLoader(rsrcMgr.classPath(),
-                    HadoopClassLoader.nameForTask(info, false), libNames);
+                    HadoopClassLoader.nameForTask(info, false), libNames, hadoopHelper);
 
                 cls = (Class<? extends HadoopTaskContext>)ldr.loadClass(HadoopV2TaskContext.class.getName());
 

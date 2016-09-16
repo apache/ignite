@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.internal.processors.hadoop;
 
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -43,9 +43,19 @@ import java.util.Set;
 /**
  * Utility methods for Hadoop classloader required to avoid direct 3rd-party dependencies in class loader.
  */
-public class HadoopClassLoaderUtils {
+public class HadoopHelperImpl implements HadoopHelper {
     /** Cache for resolved dependency info. */
     private static final Map<String, Boolean> dependenciesCache = new ConcurrentHashMap8<>();
+
+    /**  */
+    public HadoopHelperImpl() {
+        this(null);
+    }
+
+    /** Constructor required by the engine. */
+    public HadoopHelperImpl(GridKernalContext ctx) {
+        // nool
+    }
 
     /**
      * Load special replacement and impersonate
@@ -55,7 +65,7 @@ public class HadoopClassLoaderUtils {
      * @param replaceName Replacer class name.
      * @return Result.
      */
-    public static byte[] loadReplace(InputStream in, final String originalName, final String replaceName) {
+    @Override public byte[] loadReplace(InputStream in, final String originalName, final String replaceName) {
         ClassReader rdr;
 
         try {
@@ -75,6 +85,9 @@ public class HadoopClassLoaderUtils {
             String nameType = originalName.replace('.', '/');
 
             @Override public String map(String type) {
+                if (type == null)
+                    return null;
+
                 if (type.equals(replaceType))
                     return nameType;
 
@@ -89,7 +102,7 @@ public class HadoopClassLoaderUtils {
      * @param cls Class name.
      * @return {@code true} If this is Hadoop class.
      */
-    public static boolean isHadoop(String cls) {
+    @Override public boolean isHadoop(String cls) {
         return cls.startsWith("org.apache.hadoop.");
     }
 
@@ -99,7 +112,7 @@ public class HadoopClassLoaderUtils {
      * @param cls Class name.
      * @return {@code true} if we need to check this class.
      */
-    public static boolean isHadoopIgfs(String cls) {
+    @Override public boolean isHadoopIgfs(String cls) {
         String ignitePkgPrefix = "org.apache.ignite";
 
         int len = ignitePkgPrefix.length();
@@ -115,7 +128,7 @@ public class HadoopClassLoaderUtils {
      * @param clsName Class.
      * @return Input stream.
      */
-    @Nullable public static InputStream loadClassBytes(ClassLoader ldr, String clsName) {
+    @Override @Nullable public InputStream loadClassBytes(ClassLoader ldr, String clsName) {
         return ldr.getResourceAsStream(clsName.replace('.', '/') + ".class");
     }
 
@@ -126,7 +139,7 @@ public class HadoopClassLoaderUtils {
      * @param parentClsLdr Parent class loader.
      * @return {@code True} if class has external dependencies.
      */
-    static boolean hasExternalDependencies(String clsName, ClassLoader parentClsLdr) {
+    @Override public boolean hasExternalDependencies(String clsName, ClassLoader parentClsLdr) {
         Boolean hasDeps = dependenciesCache.get(clsName);
 
         if (hasDeps == null) {
@@ -137,7 +150,7 @@ public class HadoopClassLoaderUtils {
             ctx.fldVisitor = new CollectingFieldVisitor(ctx, ctx.annVisitor);
             ctx.clsVisitor = new CollectingClassVisitor(ctx, ctx.annVisitor, ctx.mthdVisitor, ctx.fldVisitor);
 
-            hasDeps = hasExternalDependencies(clsName, parentClsLdr, ctx);
+            hasDeps = hasExternalDependencies(this, clsName, parentClsLdr, ctx);
 
             dependenciesCache.put(clsName, hasDeps);
         }
@@ -153,17 +166,17 @@ public class HadoopClassLoaderUtils {
      * @param ctx Context.
      * @return {@code true} If the class has external dependencies.
      */
-    static boolean hasExternalDependencies(String clsName, ClassLoader parentClsLdr, CollectingContext ctx) {
-        if (isHadoop(clsName)) // Hadoop must not be in classpath but Idea sucks, so filtering explicitly as external.
+    static boolean hasExternalDependencies(HadoopHelper h, String clsName, ClassLoader parentClsLdr, CollectingContext ctx) {
+        if (h.isHadoop(clsName)) // Hadoop must not be in classpath but Idea sucks, so filtering explicitly as external.
             return true;
 
         // Try to get from parent to check if the type accessible.
-        InputStream in = loadClassBytes(parentClsLdr, clsName);
+        InputStream in = h.loadClassBytes(parentClsLdr, clsName);
 
         if (in == null) // The class is external itself, it must be loaded from this class loader.
             return true;
 
-        if (!isHadoopIgfs(clsName)) // Other classes should not have external dependencies.
+        if (!h.isHadoopIgfs(clsName)) // Other classes should not have external dependencies.
             return false;
 
         final ClassReader rdr;
@@ -196,7 +209,7 @@ public class HadoopClassLoaderUtils {
         Boolean res = dependenciesCache.get(parentCls);
 
         if (res == null)
-            res = hasExternalDependencies(parentCls, parentClsLdr, ctx);
+            res = hasExternalDependencies(h, parentCls, parentClsLdr, ctx);
 
         return res;
     }
@@ -231,7 +244,7 @@ public class HadoopClassLoaderUtils {
     /**
      * Context for dependencies collection.
      */
-    private static class CollectingContext {
+    private class CollectingContext {
         /** Visited classes. */
         private final Set<String> visited = new HashSet<>();
 
@@ -300,7 +313,8 @@ public class HadoopClassLoaderUtils {
 
             Boolean res = dependenciesCache.get(depCls);
 
-            if (res == Boolean.TRUE || (res == null && hasExternalDependencies(depCls, parentClsLdr, this)))
+            if (res == Boolean.TRUE || (res == null && hasExternalDependencies(HadoopHelperImpl.this, depCls,
+                parentClsLdr, this)))
                 found = true;
         }
 
@@ -681,4 +695,5 @@ public class HadoopClassLoaderUtils {
             ctx.onInternalTypeName(type);
         }
     }
+
 }
