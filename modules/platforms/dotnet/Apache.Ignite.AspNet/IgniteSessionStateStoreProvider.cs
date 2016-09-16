@@ -244,6 +244,9 @@ namespace Apache.Ignite.AspNet
 
             // Item found and lock obtained.
             locked = false;
+            lockId = lockId0;
+
+            Debug.Assert(lockId0 == lockResult.Data.LockId);
 
             return lockResult.Data;
         }
