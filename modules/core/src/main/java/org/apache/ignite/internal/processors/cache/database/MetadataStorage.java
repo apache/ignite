@@ -22,7 +22,6 @@ import java.nio.charset.StandardCharsets;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
@@ -32,6 +31,8 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.util.typedef.internal.U;
+
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 
 /**
  * Metadata storage.
@@ -56,7 +57,7 @@ public class MetadataStorage implements MetaStore {
     private final int cacheId;
 
     /** Allocation space. */
-    private static final byte ALLOC_SPACE = PageIdAllocator.FLAG_IDX;
+    private static final byte ALLOC_SPACE = FLAG_IDX;
 
     /**
      * @param pageMem Page memory.

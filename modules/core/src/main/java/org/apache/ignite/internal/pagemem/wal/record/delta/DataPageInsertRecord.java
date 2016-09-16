@@ -143,7 +143,7 @@ public class DataPageInsertRecord extends PageDeltaRecord implements CacheDataRo
 
         DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
-        io.addRow(coctx, buf, this, rowSize);
+        io.addRow(buf, this, rowSize);
     }
 
     /** {@inheritDoc} */

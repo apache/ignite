@@ -28,7 +28,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -63,6 +62,8 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
+
 /**
  *
  */
@@ -82,7 +83,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
     /** */
     private static final PendingRow START_PENDING_ROW = new PendingRow(Long.MIN_VALUE, 0);
-
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
@@ -125,7 +125,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 true);
         }
     }
-
 
     /** {@inheritDoc} */
     @Override protected void stop0(final boolean cancel, final boolean destroy) {
@@ -558,7 +557,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         long pageId = cctx.shared().database().globalReuseList().takeRecycledPage();
 
         if (pageId == 0L)
-            pageId = cctx.shared().database().pageMemory().allocatePage(cctx.cacheId(), 0, PageIdAllocator.FLAG_IDX);
+            pageId = cctx.shared().database().pageMemory().allocatePage(cctx.cacheId(), 0, FLAG_IDX);
 
         return pageId;
     }
@@ -635,7 +634,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     }
 
     /** {@inheritDoc} */
-    @Override public void expire(IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c) throws IgniteCheckedException {
+    @Override public void expire(
+        IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c) throws IgniteCheckedException {
         if (pendingEntries != null) {
             GridCacheVersion obsoleteVer = null;
 
@@ -754,16 +754,11 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         @Override public void remove(KeyCacheObject key, int partId) throws IgniteCheckedException {
             DataRow dataRow = dataTree.remove(new KeySearchRow(key.hashCode(), key, 0));
 
+            CacheObject val = null;
+            GridCacheVersion ver = null;
+
             if (dataRow != null) {
                 assert dataRow.link() != 0 : dataRow;
-
-                if (indexingEnabled) {
-                    GridCacheQueryManager qryMgr = cctx.queries();
-
-                    assert qryMgr.enabled();
-
-                    qryMgr.remove(key, partId, dataRow.value(), dataRow.version());
-                }
 
                 if (pendingEntries != null && dataRow.expireTime() != 0)
                     pendingEntries.remove(new PendingRow(dataRow.expireTime(), dataRow.link()));
@@ -771,6 +766,18 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 rowStore.removeRow(dataRow.link());
 
                 lsnr.onRemove();
+
+                val = dataRow.value();
+
+                ver = dataRow.version();
+            }
+
+            if (indexingEnabled) {
+                GridCacheQueryManager qryMgr = cctx.queries();
+
+                assert qryMgr.enabled();
+
+                qryMgr.remove(key, partId, val, ver);
             }
         }
 

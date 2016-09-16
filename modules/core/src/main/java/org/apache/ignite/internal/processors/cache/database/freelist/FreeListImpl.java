@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.database.freelist;
 
+import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -34,9 +35,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicReferenceArray;
-
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.writePage;
 
 /**
@@ -52,13 +51,154 @@ public final class FreeListImpl extends PagesList implements FreeList, ReuseList
     private static final Integer COMPLETE = Integer.MAX_VALUE;
 
     /** */
+    private static final int MIN_PAGE_FREE_SPACE = 8;
+
+    /** */
     private final int shift;
 
     /** */
-    private final AtomicReferenceArray<long[]> buckets = new AtomicReferenceArray<>(BUCKETS);
+    private final AtomicReferenceArray<Stripe[]> buckets = new AtomicReferenceArray<>(BUCKETS);
 
     /** */
     private final int MIN_SIZE_FOR_BUCKET;
+
+    /** */
+    private final PageHandler<CacheDataRow, DataPageIO, Integer> writeRow =
+        new PageHandler<CacheDataRow, DataPageIO, Integer>() {
+            @Override public Integer run(long pageId, Page page, DataPageIO io, ByteBuffer buf, CacheDataRow row, int written)
+                throws IgniteCheckedException {
+                int rowSize = getRowSize(row);
+                int oldFreeSpace = io.getFreeSpace(buf);
+
+                assert oldFreeSpace > 0 : oldFreeSpace;
+
+                // If the full row does not fit into this page write only a fragment.
+                written = (written == 0 && oldFreeSpace >= rowSize) ? addRow(page, buf, io, row, rowSize):
+                    addRowFragment(page, buf, io, row, written, rowSize);
+
+                // Reread free space after update.
+                int newFreeSpace = io.getFreeSpace(buf);
+
+                if (newFreeSpace > MIN_PAGE_FREE_SPACE) {
+                    int bucket = bucket(newFreeSpace, false);
+
+                    put(null, page, buf, bucket);
+                }
+
+                // Avoid boxing with garbage generation for usual case.
+                return written == rowSize ? COMPLETE : written;
+            }
+
+            /**
+             * @param page Page.
+             * @param buf Buffer.
+             * @param io IO.
+             * @param row Row.
+             * @param rowSize Row size.
+             * @return Written size which is always equal to row size here.
+             * @throws IgniteCheckedException If failed.
+             */
+            private int addRow(
+                Page page,
+                ByteBuffer buf,
+                DataPageIO io,
+                CacheDataRow row,
+                int rowSize
+            ) throws IgniteCheckedException {
+                // TODO: context parameter.
+                io.addRow(buf, row, rowSize);
+
+                // TODO This record must contain only a reference to a logical WAL record with the actual data.
+                if (isWalDeltaRecordNeeded(wal, page))
+                    wal.log(new DataPageInsertRecord(cacheId, page.id(),
+                        row.key(), row.value(), row.version(), row.expireTime(), rowSize));
+
+                return rowSize;
+            }
+
+            /**
+             * @param page Page.
+             * @param buf Buffer.
+             * @param io IO.
+             * @param row Row.
+             * @param written Written size.
+             * @param rowSize Row size.
+             * @return Updated written size.
+             * @throws IgniteCheckedException If failed.
+             */
+            private int addRowFragment(
+                Page page,
+                ByteBuffer buf,
+                DataPageIO io,
+                CacheDataRow row,
+                int written,
+                int rowSize
+            ) throws IgniteCheckedException {
+                // Read last link before the fragment write, because it will be updated there.
+                long lastLink = row.link();
+
+                int payloadSize = io.addRowFragment(buf, row, written, rowSize);
+
+                assert payloadSize > 0: payloadSize;
+
+                if (isWalDeltaRecordNeeded(wal, page)) {
+                    // TODO This record must contain only a reference to a logical WAL record with the actual data.
+                    byte[] payload = new byte[payloadSize];
+
+                    io.setPositionAndLimitOnPayload(buf, PageIdUtils.itemId(row.link()));
+                    buf.get(payload);
+                    buf.position(0);
+
+                    wal.log(new DataPageInsertFragmentRecord(cacheId, page.id(), payload, lastLink));
+                }
+
+                return written + payloadSize;
+            }
+        };
+
+    /** */
+    private final PageHandler<Void, DataPageIO, Long> rmvRow = new PageHandler<Void, DataPageIO, Long>() {
+        @Override public Long run(long pageId, Page page, DataPageIO io, ByteBuffer buf, Void arg, int itemId)
+            throws IgniteCheckedException {
+            int oldFreeSpace = io.getFreeSpace(buf);
+
+            assert oldFreeSpace >= 0: oldFreeSpace;
+
+            long nextLink = io.removeRow(buf, (byte)itemId);
+
+            if (isWalDeltaRecordNeeded(wal, page))
+                wal.log(new DataPageRemoveRecord(cacheId, page.id(), itemId));
+
+            // TODO: properly handle reuse bucket.
+//            if (io.isEmpty(buf)) {
+//                int oldBucket = oldFreeSpace > MIN_PAGE_FREE_SPACE ? bucket(oldFreeSpace, false) : -1;
+//
+//                if (oldBucket == -1 || removeDataPage(page, buf, io, oldBucket))
+//                    put(null, page, buf, REUSE_BUCKET);
+//            }
+
+            int newFreeSpace = io.getFreeSpace(buf);
+
+            if (newFreeSpace > MIN_PAGE_FREE_SPACE) {
+                int newBucket = bucket(newFreeSpace, false);
+
+                if (oldFreeSpace > MIN_PAGE_FREE_SPACE) {
+                    int oldBucket = bucket(oldFreeSpace, false);
+
+                    if (oldBucket != newBucket) {
+                        // It is possible that page was concurrently taken for put, in this case put will handle bucket change.
+                        if (removeDataPage(page, buf, io, oldBucket))
+                            put(null, page, buf, newBucket);
+                    }
+                }
+                else
+                    put(null, page, buf, newBucket);
+            }
+
+            // For common case boxed 0L will be cached inside of Long, so no garbage will be produced.
+            return nextLink;
+        }
+    };
 
     /**
      * @param cacheId Cache ID.
@@ -102,18 +242,18 @@ public final class FreeListImpl extends PagesList implements FreeList, ReuseList
 
     /**
      * @param freeSpace Page free space.
+     * @param allowReuse {@code True} if it is allowed to get reuse bucket.
      * @return Bucket.
      */
-    private int bucket(int freeSpace) {
+    private int bucket(int freeSpace, boolean allowReuse) {
         assert freeSpace > 0 : freeSpace;
 
         int bucket = freeSpace >>> shift;
 
-        // TODO: properly handle page from reuse bucket for data pages.
-        if (bucket == BUCKETS - 1)
-            bucket--;
-
         assert bucket >= 0 && bucket < BUCKETS : bucket;
+
+        if (!allowReuse && isReuseBucket(bucket))
+            bucket--;
 
         return bucket;
     }
@@ -124,7 +264,7 @@ public final class FreeListImpl extends PagesList implements FreeList, ReuseList
      * @throws IgniteCheckedException If failed.
      */
     private Page allocateDataPage(int part) throws IgniteCheckedException {
-        long pageId = pageMem.allocatePage(cacheId, part, PageIdAllocator.FLAG_DATA);
+        long pageId = pageMem.allocatePage(cacheId, part, FLAG_DATA);
 
         return pageMem.page(cacheId, pageId);
     }
@@ -138,25 +278,25 @@ public final class FreeListImpl extends PagesList implements FreeList, ReuseList
         do {
             int freeSpace = Math.min(MIN_SIZE_FOR_BUCKET, rowSize - written);
 
-            int bucket = bucket(freeSpace);
+            int bucket = bucket(freeSpace, false);
 
             long pageId = 0;
-            boolean newPage = true;
+            boolean reuseBucket = false;
 
-            // TODO
-            for (int i = bucket; i < BUCKETS - 1; i++) {
-                pageId = takeEmptyPage(i, DataPageIO.VERSIONS);
+            // TODO: properly handle reuse bucket.
+            for (int b = bucket; b < BUCKETS - 1; b++) {
+                pageId = takeEmptyPage(b, DataPageIO.VERSIONS);
 
                 if (pageId != 0L) {
-                    newPage = false;
+                    reuseBucket = isReuseBucket(b);
 
                     break;
                 }
             }
 
-            try (Page page = newPage ? allocateDataPage(row.partition()) : pageMem.page(cacheId, pageId)) {
+            try (Page page = pageId == 0 ? allocateDataPage(row.partition()) : pageMem.page(cacheId, pageId)) {
                 // If it is an existing page, we do not need to initialize it.
-                DataPageIO init = newPage ? DataPageIO.VERSIONS.latest() : null;
+                DataPageIO init = reuseBucket || pageId == 0L ? DataPageIO.VERSIONS.latest() : null;
 
                 written = writePage(page.id(), page, writeRow, init, wal, row, written);
             }
@@ -188,12 +328,12 @@ public final class FreeListImpl extends PagesList implements FreeList, ReuseList
     }
 
     /** {@inheritDoc} */
-    @Override protected long[] getBucket(int bucket) {
+    @Override protected Stripe[] getBucket(int bucket) {
         return buckets.get(bucket);
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean casBucket(int bucket, long[] exp, long[] upd) {
+    @Override protected boolean casBucket(int bucket, Stripe[] exp, Stripe[] upd) {
         return buckets.compareAndSet(bucket, exp, upd);
     }
 
@@ -234,135 +374,6 @@ public final class FreeListImpl extends PagesList implements FreeList, ReuseList
 
         return keyLen + valLen + CacheVersionIO.size(row.version(), false) + 8;
     }
-
-    /** */
-    private final PageHandler<CacheDataRow, DataPageIO, Integer> writeRow =
-        new PageHandler<CacheDataRow, DataPageIO, Integer>() {
-            @Override public Integer run(long pageId, Page page, DataPageIO io, ByteBuffer buf, CacheDataRow row, int written)
-                throws IgniteCheckedException {
-                int rowSize = getRowSize(row);
-                int oldFreeSpace = io.getFreeSpace(buf);
-
-                assert oldFreeSpace > 0 : oldFreeSpace;
-
-                // If the full row does not fit into this page write only a fragment.
-                written = (written == 0 && oldFreeSpace >= rowSize) ? addRow(page, buf, io, row, rowSize):
-                    addRowFragment(page, buf, io, row, written, rowSize);
-
-                // Reread free space after update.
-                int newFreeSpace = io.getFreeSpace(buf);
-
-                if (newFreeSpace > 0) {
-                    int bucket = bucket(newFreeSpace);
-
-                    put(null, page, buf, bucket);
-                }
-
-                // Avoid boxing with garbage generation for usual case.
-                return written == rowSize ? COMPLETE : written;
-            }
-
-            /**
-             * @param page Page.
-             * @param buf Buffer.
-             * @param io IO.
-             * @param row Row.
-             * @param rowSize Row size.
-             * @return Written size which is always equal to row size here.
-             * @throws IgniteCheckedException If failed.
-             */
-            private int addRow(
-                Page page,
-                ByteBuffer buf,
-                DataPageIO io,
-                CacheDataRow row,
-                int rowSize
-            ) throws IgniteCheckedException {
-                // TODO: context parameter.
-                io.addRow(null, buf, row, rowSize);
-
-                // TODO This record must contain only a reference to a logical WAL record with the actual data.
-                if (isWalDeltaRecordNeeded(wal, page))
-                    wal.log(new DataPageInsertRecord(cacheId, page.id(),
-                            row.key(), row.value(), row.version(), row.expireTime(), rowSize));
-
-                return rowSize;
-            }
-
-            /**
-             * @param page Page.
-             * @param buf Buffer.
-             * @param io IO.
-             * @param row Row.
-             * @param written Written size.
-             * @param rowSize Row size.
-             * @return Updated written size.
-             * @throws IgniteCheckedException If failed.
-             */
-            private int addRowFragment(
-                Page page,
-                ByteBuffer buf,
-                DataPageIO io,
-                CacheDataRow row,
-                int written,
-                int rowSize
-            ) throws IgniteCheckedException {
-                // Read last link before the fragment write, because it will be updated there.
-                long lastLink = row.link();
-
-                int payloadSize = io.addRowFragment(null, buf, row, written, rowSize);
-
-                assert payloadSize > 0: payloadSize;
-
-                if (isWalDeltaRecordNeeded(wal, page)) {
-                    // TODO This record must contain only a reference to a logical WAL record with the actual data.
-                    byte[] payload = new byte[payloadSize];
-
-                    io.setPositionAndLimitOnPayload(buf, PageIdUtils.itemId(row.link()));
-                    buf.get(payload);
-                    buf.position(0);
-
-                    wal.log(new DataPageInsertFragmentRecord(cacheId, page.id(), payload, lastLink));
-                }
-
-                return written + payloadSize;
-            }
-        };
-
-    /** */
-    private final PageHandler<Void, DataPageIO, Long> rmvRow = new PageHandler<Void, DataPageIO, Long>() {
-        @Override public Long run(long pageId, Page page, DataPageIO io, ByteBuffer buf, Void arg, int itemId)
-                throws IgniteCheckedException {
-            int oldFreeSpace = io.getFreeSpace(buf);
-
-            assert oldFreeSpace >= 0: oldFreeSpace;
-
-            long nextLink = io.removeRow(buf, (byte)itemId);
-
-            if (isWalDeltaRecordNeeded(wal, page))
-                wal.log(new DataPageRemoveRecord(cacheId, page.id(), itemId));
-
-            int newFreeSpace = io.getFreeSpace(buf);
-
-            if (newFreeSpace > 0) {
-                int newBucket = bucket(newFreeSpace);
-
-                if (oldFreeSpace > 0) {
-                    int oldBucket = bucket(oldFreeSpace);
-
-                    if (oldBucket != newBucket) {
-                        if (removeDataPage(page, buf, io, oldBucket))
-                            put(null, page, buf, newBucket);
-                    }
-                }
-                else
-                    put(null, page, buf, newBucket);
-            }
-
-            // For common case boxed 0L will be cached inside of Long, so no garbage will be produced.
-            return nextLink;
-        }
-    };
 
     /** {@inheritDoc} */
     @Override public String toString() {

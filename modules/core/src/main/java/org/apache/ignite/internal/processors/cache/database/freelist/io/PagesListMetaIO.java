@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.database.freelist.io;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
+import org.apache.ignite.internal.processors.cache.database.freelist.PagesList;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridLongList;
@@ -37,7 +38,7 @@ public class PagesListMetaIO extends PageIO {
     private static final int ITEMS_OFF = NEXT_META_PAGE_OFF + 8;
 
     /** */
-    private static final int ITEM_SIZE = 18;
+    private static final int ITEM_SIZE = 10;
 
     /** */
     public static final IOVersions<PagesListMetaIO> VERSIONS = new IOVersions<>(
@@ -107,7 +108,7 @@ public class PagesListMetaIO extends PageIO {
      * @param tailsOff Tails offset.
      * @return Number of items written.
      */
-    public int addTails(ByteBuffer buf, int bucket, long[] tails, int tailsOff) {
+    public int addTails(ByteBuffer buf, int bucket, PagesList.Stripe[] tails, int tailsOff) {
         assert bucket >= 0 && bucket <= Short.MAX_VALUE : bucket;
 
         int cnt = getCount(buf);
@@ -118,14 +119,13 @@ public class PagesListMetaIO extends PageIO {
 
         int off = offset(cnt);
 
-        int write = Math.min(cap, (tails.length - tailsOff) / 2);
+        int write = Math.min(cap - cnt, tails.length - tailsOff);
 
         for (int i = 0; i < write; i++) {
             buf.putShort(off, (short)bucket);
-            buf.putLong(off + 2, tails[tailsOff]);
-            buf.putLong(off + 10, tails[tailsOff + 1]);
+            buf.putLong(off + 2, tails[tailsOff].tailId);
 
-            tailsOff += 2;
+            tailsOff++;
 
             off += ITEM_SIZE;
         }
@@ -156,16 +156,12 @@ public class PagesListMetaIO extends PageIO {
             long tailId = buf.getLong(off + 2);
             assert tailId != 0;
 
-            long headId = buf.getLong(off + 10);
-            assert headId != 0;
-
             GridLongList list = res.get(bucket);
 
             if (list == null)
                 res.put(bucket, list = new GridLongList());
 
             list.add(tailId);
-            list.add(headId);
 
             off += ITEM_SIZE;
         }

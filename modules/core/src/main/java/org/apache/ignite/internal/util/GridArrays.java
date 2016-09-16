@@ -103,31 +103,6 @@ public final class GridArrays {
     }
 
     /**
-     * @param arr Array.
-     * @param idx Start index to remove.
-     * @return Smaller array.
-     */
-    public static long[] remove2(long[] arr, int idx) {
-        int len = arr.length;
-
-        assert arr.length > 2;
-        assert idx >= 0 && idx < len - 1: idx + " < " + (len - 1);
-
-        if (idx == len - 2)
-            return Arrays.copyOfRange(arr, 0, len - 2);
-
-        if (idx == 0)
-            return Arrays.copyOfRange(arr, 2, len);
-
-        long[] res = new long[len - 2];
-
-        System.arraycopy(arr, 0, res, 0, idx);
-        System.arraycopy(arr, idx + 2, res, idx, len - idx - 2);
-
-        return res;
-    }
-
-    /**
      * Nullify array elements from the given index until the first {@code null} element
      * (assuming that after the first {@code null} tail is already cleared).
      *

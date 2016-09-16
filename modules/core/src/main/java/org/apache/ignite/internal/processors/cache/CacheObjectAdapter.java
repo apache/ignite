@@ -70,15 +70,15 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putValue(ByteBuffer buf, CacheObjectContext ctx) throws IgniteCheckedException {
-        return putValue(buf, 0, valueBytesLength(ctx), ctx);
+    @Override public boolean putValue(ByteBuffer buf) throws IgniteCheckedException {
+        assert valBytes != null : "Value bytes must be initialized before object is stored";
+
+        return putValue(buf, 0, objectPutSize(valBytes.length));
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putValue(final ByteBuffer buf, int off, int len,
-        final CacheObjectContext ctx) throws IgniteCheckedException {
-        if (valBytes == null)
-            valueBytes(ctx);
+    @Override public boolean putValue(final ByteBuffer buf, int off, int len) throws IgniteCheckedException {
+        assert valBytes != null : "Value bytes must be initialized before object is stored";
 
         return putValue(cacheObjectType(), buf, off, len, valBytes, 0);
     }
@@ -88,7 +88,7 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
         if (valBytes == null)
             valueBytes(ctx);
 
-        return valBytes.length + 5;
+        return objectPutSize(valBytes.length);
     }
 
     /** {@inheritDoc} */
@@ -143,6 +143,15 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
     /** {@inheritDoc} */
     public String toString() {
         return getClass().getSimpleName() + " [val=" + val + ", hasValBytes=" + (valBytes != null) + ']';
+    }
+
+    /**
+     * @param dataLen Serialized value length.
+     * @return Full size required to store cache object.
+     * @see #putValue(byte, ByteBuffer, int, int, byte[], int)
+     */
+    public static int objectPutSize(int dataLen) {
+        return dataLen + 5;
     }
 
     /**

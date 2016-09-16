@@ -85,8 +85,8 @@ public class IgniteCacheObjectPutSelfTest extends GridCommonAbstractTest {
 
             assertNotNull(entry);
 
-            assertTrue(entry.key().putValue(buf, coCtx));
-            assertTrue(entry.valueBytes().putValue(buf, coCtx));
+            assertTrue(entry.key().putValue(buf));
+            assertTrue(entry.valueBytes().putValue(buf));
         }
 
         buf.flip();
@@ -127,8 +127,8 @@ public class IgniteCacheObjectPutSelfTest extends GridCommonAbstractTest {
 
             assertNotNull(entry);
 
-            assertTrue(entry.key().putValue(buf, coCtx));
-            assertTrue(entry.valueBytes().putValue(buf, coCtx));
+            assertTrue(entry.key().putValue(buf));
+            assertTrue(entry.valueBytes().putValue(buf));
         }
 
         buf.flip();
