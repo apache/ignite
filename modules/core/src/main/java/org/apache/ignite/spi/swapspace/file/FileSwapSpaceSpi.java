@@ -824,6 +824,9 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
         /** */
         private final Condition mayTake = lock.newCondition();
 
+        /** for locking on big val that val.len > maxSize */
+        private final Condition mayAddBig = lock.newCondition();
+
         /** */
         private int size;
 
@@ -835,6 +838,9 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
 
         /** */
         private final IgniteLogger log;
+
+        /** true if message was printed */
+        private boolean printed;
 
         /**
          * @param minTakeSize Min size.
@@ -858,22 +864,18 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
 
             try {
                 if (val.len > maxSize) {
-                    log.warning("You try save entry in swap, which have size more than queueMaxSize, entry size "
-                            + val.len + " queueMaxSize " + maxSize + " queueMaxSize will be increased.");
+                    if (!printed) {
+                        log.warning("You try save entry in swap, which have size more than [queueMaxSize=" + maxSize + "], [entrySize=" + val.len + "], need increased queueMaxSize.");
+                        printed = true;
+                    }
 
-                    size += val.len;
+                    while (size > minTakeSize)
+                        mayAddBig.await();
 
-                    deq.addLast(val);
-
-                    mayTake.signalAll();
-
-                    mayAdd.await();
-
-                    return;
+                } else {
+                    while (size + val.len > maxSize || lock.hasWaiters(mayAddBig))
+                        mayAdd.await();
                 }
-
-                while (size + val.len > maxSize)
-                    mayAdd.await();
 
                 size += val.len;
 
@@ -900,8 +902,10 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
             lock.lock();
 
             try {
-                while (size < minTakeSize)
+                while (size < minTakeSize){
+                    mayAddBig.signalAll();
                     mayTake.await();
+                }
 
                 int size = 0;
                 int cnt = 0;

@@ -66,7 +66,14 @@ public class CacheSwapUnswapGetTest extends GridCommonAbstractTest {
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
-        cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
+        FileSwapSpaceSpi swapSpaceSpi = new FileSwapSpaceSpi();
+
+        // MaxWriteQueueSize (in bytes), size compute by sum byte size all elements
+        // Low value is needed for testTxCacheOffheapSwapEvict, when write thread may be blocking
+        // if value for save > maxWriteQueueSize
+        swapSpaceSpi.setMaxWriteQueueSize(2);
+
+        cfg.setSwapSpaceSpi(swapSpaceSpi);
 
         return cfg;
     }
