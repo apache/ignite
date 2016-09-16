@@ -161,8 +161,10 @@ Attributes:
            5) indexClass   [optional] - custom index java class name, in case you want to use custom index
            6) indexOptions [optional] - custom index options
         -->
+        <field name="personNumber" column="number" />
         <field name="firstName" column="first_name" />
         <field name="lastName" column="last_name" />
+        <field name="fullName" />
         <field name="age" />
         <field name="married" index="true"/>
         <field name="height" />
