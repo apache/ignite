@@ -543,7 +543,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      */
     private void doTestMassiveRemove(final boolean canGetRow) throws Exception {
         final int threads = 64;
-        final int keys = 2000;
+        final int keys = 3000;
 
         final AtomicLongArray rmvd = new AtomicLongArray(keys);
 
