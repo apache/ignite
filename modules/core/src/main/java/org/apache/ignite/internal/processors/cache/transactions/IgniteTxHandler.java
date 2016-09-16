@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecove
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxRemoteAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
@@ -1357,73 +1358,86 @@ public class IgniteTxHandler {
                 for (IgniteTxEntry entry : req.writes()) {
                     GridCacheContext cacheCtx = entry.context();
 
-                    tx.addWrite(entry, ctx.deploy().globalLoader());
+                    int part = cacheCtx.affinity().partition(entry.key());
 
-                    if (isNearEnabled(cacheCtx) && req.invalidateNearEntry(idx))
-                        invalidateNearEntry(cacheCtx, entry.key(), req.version());
+                    GridDhtLocalPartition locPart = cacheCtx.topology().localPartition(part,
+                        req.topologyVersion(),
+                        false);
 
-                    try {
-                        if (req.needPreloadKey(idx)) {
-                            GridCacheEntryEx cached = entry.cached();
+                    if (locPart != null && locPart.reserve()) {
+                        try {
+                            tx.addWrite(entry, ctx.deploy().globalLoader());
 
-                            if (cached == null)
-                                cached = cacheCtx.cache().entryEx(entry.key(), req.topologyVersion());
+                            if (isNearEnabled(cacheCtx) && req.invalidateNearEntry(idx))
+                                invalidateNearEntry(cacheCtx, entry.key(), req.version());
 
-                            GridCacheEntryInfo info = cached.info();
+                            if (req.needPreloadKey(idx)) {
+                                GridCacheEntryEx cached = entry.cached();
 
-                            if (info != null && !info.isNew() && !info.isDeleted())
-                                res.addPreloadEntry(info);
-                        }
+                                if (cached == null)
+                                    cached = cacheCtx.cache().entryEx(entry.key(), req.topologyVersion());
 
-                        if (cacheCtx.readThroughConfigured() &&
-                            !entry.skipStore() &&
-                            entry.op() == TRANSFORM &&
-                            entry.oldValueOnPrimary() &&
-                            !entry.hasValue()) {
-                            while (true) {
-                                try {
-                                    GridCacheEntryEx cached = entry.cached();
+                                GridCacheEntryInfo info = cached.info();
 
-                                    if (cached == null) {
-                                        cached = cacheCtx.cache().entryEx(entry.key(), req.topologyVersion());
+                                if (info != null && !info.isNew() && !info.isDeleted())
+                                    res.addPreloadEntry(info);
+                            }
 
-                                        entry.cached(cached);
-                                    }
+                            if (cacheCtx.readThroughConfigured() &&
+                                !entry.skipStore() &&
+                                entry.op() == TRANSFORM &&
+                                entry.oldValueOnPrimary() &&
+                                !entry.hasValue()) {
+                                while (true) {
+                                    try {
+                                        GridCacheEntryEx cached = entry.cached();
 
-                                    CacheObject val = cached.innerGet(
+                                        if (cached == null) {
+                                            cached = cacheCtx.cache().entryEx(entry.key(), req.topologyVersion());
+
+                                            entry.cached(cached);
+                                        }
+
+                                        CacheObject val = cached.innerGet(
                                         /*ver*/null,
-                                        tx,
+                                            tx,
                                         /*readThrough*/false,
                                         /*updateMetrics*/false,
                                         /*evt*/false,
-                                        tx.subjectId(),
+                                            tx.subjectId(),
                                         /*transformClo*/null,
-                                        tx.resolveTaskName(),
+                                            tx.resolveTaskName(),
                                         /*expiryPlc*/null,
                                         /*keepBinary*/true);
 
-                                    if (val == null)
-                                        val = cacheCtx.toCacheObject(cacheCtx.store().load(null, entry.key()));
+                                        if (val == null)
+                                            val = cacheCtx.toCacheObject(cacheCtx.store().load(null, entry.key()));
 
-                                    if (val != null)
-                                        entry.readValue(val);
+                                        if (val != null)
+                                            entry.readValue(val);
 
-                                    break;
-                                }
-                                catch (GridCacheEntryRemovedException ignore) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Got entry removed exception, will retry: " + entry.txKey());
+                                        break;
+                                    }
+                                    catch (GridCacheEntryRemovedException ignore) {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Got entry removed exception, will retry: " + entry.txKey());
 
-                                    entry.cached(null);
+                                        entry.cached(null);
+                                    }
                                 }
                             }
                         }
-                    }
-                    catch (GridDhtInvalidPartitionException e) {
-                        tx.addInvalidPartition(cacheCtx, e.partition());
+                        catch (GridDhtInvalidPartitionException e) {
+                            tx.addInvalidPartition(cacheCtx, e.partition());
 
-                        tx.clearEntry(entry.txKey());
+                            tx.clearEntry(entry.txKey());
+                        }
+                        finally {
+                            locPart.release();
+                        }
                     }
+                    else
+                        tx.addInvalidPartition(cacheCtx, part);
 
                     idx++;
                 }

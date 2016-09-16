@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLongArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -70,7 +71,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     private static final int CACHE_ID = 100500;
 
     /** */
-    private static int MAX_PER_PAGE = 0;
+    protected static int MAX_PER_PAGE = 0;
 
     /** */
     protected static int CNT = 10;
@@ -501,78 +502,100 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception if failed.
+     * @throws Exception If failed.
      */
-    public void testMassiveRemove_true() throws Exception {
-        fail("https://ggsystems.atlassian.net/browse/GG-11442");
+    public void testMassiveRemove2_false() throws Exception {
+        MAX_PER_PAGE = 2;
+
+        doTestMassiveRemove(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMassiveRemove2_true() throws Exception {
+        MAX_PER_PAGE = 2;
 
         doTestMassiveRemove(true);
     }
 
     /**
-     * @throws Exception if failed.
+     * @throws Exception If failed.
      */
-    public void testMassiveRemove_false() throws Exception {
+    public void testMassiveRemove1_false() throws Exception {
+        MAX_PER_PAGE = 1;
+
         doTestMassiveRemove(false);
     }
 
     /**
-     * @throws Exception if failed.
+     * @throws Exception If failed.
      */
-    private void doTestMassiveRemove(boolean canGetRow) throws Exception {
-        MAX_PER_PAGE = 2;
-        final int threads = 16;
-        final int keys = 20_000 * threads;
+    public void testMassiveRemove1_true() throws Exception {
+        MAX_PER_PAGE = 1;
+
+        doTestMassiveRemove(true);
+    }
+
+    /**
+     * @param canGetRow Can get row in inner page.
+     * @throws Exception If failed.
+     */
+    private void doTestMassiveRemove(final boolean canGetRow) throws Exception {
+        final int threads = 64;
+        final int keys = 3000;
+
+        final AtomicLongArray rmvd = new AtomicLongArray(keys);
 
         final TestTree tree = createTestTree(canGetRow);
 
-        for (long i = 0; i < keys; i++)
+        // Put keys in reverse order to have a better balance in the tree (lower height).
+        for (long i = keys - 1; i >= 0; i--) {
             tree.put(i);
+//            X.println(tree.printTree());
+        }
 
-        long cnt = 0;
+        assertEquals(keys, tree.size());
 
-        GridCursor<Long> cursor = tree.find(0L, (long)keys);
-
-        while (cursor.next())
-            assertEquals(cnt++ , cursor.get().longValue());
-
-        assertEquals(keys, cnt);
-
-        final AtomicInteger id = new AtomicInteger(0);
+        tree.validateTree();
 
         info("Remove...");
 
         try {
-            // This will remove all keys in [0, 1000 * threads) and all even keys in [1000 * threads, 2000 * threads)
             GridTestUtils.runMultiThreaded(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    int id0 = id.getAndIncrement();
+                    Random rnd = new GridRandom();
 
-                    int base = id0 * 1000;
+                    for(;;) {
+                        int idx = 0;
+                        boolean found = false;
 
-                    for (long i = base; i < base + 1000; i++) {
-                        tree.remove(i);
+                        for (int i = 0, shift = rnd.nextInt(keys); i < keys; i++) {
+                            idx = (i + shift) % keys;
 
-                        rmvdIds.add(i);
+                            if (rmvd.get(idx) == 0 && rmvd.compareAndSet(idx, 0, 1)) {
+                                found = true;
 
-                        if (i >= 0 && i % 100 == 0)
-                            info("Done: " + (i - base));
-                    }
+                                break;
+                            }
+                        }
 
-                    base = (threads + id0) * 1000;
+                        if (!found)
+                            break;
 
-                    for (long i = base; i < base + 1000; i += 2) {
-                        tree.remove(i);
+                        assertEquals(Long.valueOf(idx), tree.remove((long)idx));
 
-                        rmvdIds.add(i);
-
-                        if (i >= 0 && i % 100 == 0)
-                            info("Done: " + (i - base));
+                        if (canGetRow)
+                            rmvdIds.add((long)idx);
                     }
 
                     return null;
                 }
             }, threads, "remove");
+
+            assertEquals(0, tree.size());
+
+            tree.validateTree();
         }
         finally {
             rmvdIds.clear();
@@ -588,16 +611,16 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         Map<Long,Long> map = new HashMap<>();
 
-        int loops = reuseList == null ? 200_000 : 1000_000;
+        int loops = reuseList == null ? 300_000 : 1000_000;
 
         for (int i = 0 ; i < loops; i++) {
-            Long x = (long)tree.randomInt(CNT);
+            Long x = (long)BPlusTree.randomInt(CNT);
 
-            boolean put = tree.randomInt(2) == 0;
+            boolean put = BPlusTree.randomInt(2) == 0;
 
-            if (i % 100_000 == 0) {
+            if (i % 1000 == 0) {
+//                X.println(tree.printTree());
                 X.println(" --> " + (put ? "put " : "rmv ") + i + "  " + x);
-                X.println(tree.printTree());
             }
 
             if (put)
@@ -605,8 +628,12 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             else {
                 if (map.remove(x) != null)
                     assertEquals(x, tree.remove(x));
+
                 assertNull(tree.remove(x));
             }
+
+//            X.println(tree.printTree());
+            tree.validateTree();
 
             if (i % 100 == 0) {
                 GridCursor<Long> cursor = tree.find(null, null);
@@ -620,9 +647,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                 }
 
                 assertEquals(map.size(), tree.size());
-
-                if (i % 1000 == 0)
-                    tree.validateTree();
             }
         }
     }
@@ -811,9 +835,17 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             store(dst, dstIdx, row, null);
         }
 
+        /**
+         * @param row Row.
+         */
+        private void checkNotRemoved(Long row) {
+            if (rmvdIds.contains(row))
+                fail("Removed row: " + row);
+        }
+
         /** {@inheritDoc} */
         @Override public void storeByOffset(ByteBuffer buf, int off, Long row) {
-            assertFalse(String.valueOf(row), rmvdIds.contains(row));
+            checkNotRemoved(row);
 
             buf.putLong(off, row);
         }
@@ -821,7 +853,11 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Long getLookupRow(BPlusTree<Long,?> tree, ByteBuffer buf, int idx)
             throws IgniteCheckedException {
-            return buf.getLong(offset(idx));
+            Long row = buf.getLong(offset(idx));
+
+            checkNotRemoved(row);
+
+            return row;
         }
     }
 

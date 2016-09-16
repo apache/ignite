@@ -300,17 +300,13 @@ public abstract class BPlusIO<L> extends PageIO {
      * @param buf Buffer.
      * @param idx Index.
      * @param cnt Count.
-     * @param rmvId Remove ID or {@code 0} to ignore.
      * @throws IgniteCheckedException If failed.
      */
-    public void remove(ByteBuffer buf, int idx, int cnt, long rmvId) throws IgniteCheckedException {
+    public void remove(ByteBuffer buf, int idx, int cnt) throws IgniteCheckedException {
         cnt--;
 
         copyItems(buf, buf, idx + 1, idx, cnt - idx, false);
         setCount(buf, cnt);
-
-        if (rmvId != 0)
-            setRemoveId(buf, rmvId);
     }
 
     /**
@@ -351,7 +347,7 @@ public abstract class BPlusIO<L> extends PageIO {
 
         // Move down split key in inner pages.
         if (!isLeaf() && !emptyBranch) {
-            assert prntIdx < prntCnt; // It must be adjusted already.
+            assert prntIdx >= 0 && prntIdx < prntCnt: prntIdx; // It must be adjusted already.
 
             // We can be sure that we have enough free space to store split key here,
             // because we've done remove already and did not release child locks.

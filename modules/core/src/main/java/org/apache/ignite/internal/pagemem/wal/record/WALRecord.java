@@ -97,6 +97,9 @@ public abstract class WALRecord {
         BTREE_PAGE_INNER_REPLACE,
 
         /** */
+        BTREE_FIX_REMOVE_ID,
+
+        /** */
         BTREE_FORWARD_PAGE_SPLIT,
 
         /** */
