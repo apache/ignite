@@ -28,6 +28,7 @@ namespace Apache.Ignite.AspNet
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Cache;
 
     /// <summary>
@@ -246,7 +247,9 @@ namespace Apache.Ignite.AspNet
             locked = false;
             lockId = lockId0;
 
-            Debug.Assert(lockId0 == lockResult.Data.LockId);
+            if (lockId0 != lockResult.Data.LockId)
+                throw new IgniteException(string.Format("Invalid session state lock result, expected lockId: " +
+                                                        "{0}, actual: {1}", lockId0, lockResult.Data.LockId));
 
             return lockResult.Data;
         }
@@ -283,7 +286,9 @@ namespace Apache.Ignite.AspNet
 
             var data = (IgniteSessionStateStoreData) item;
 
-            Debug.Assert(data.LockId == (long) lockId);  // TODO: Exception?
+            if (!(lockId is long) || data.LockId != (long) lockId)
+                throw new IgniteException(string.Format("Invalid session release request, expected lockId: " +
+                                                        "{0}, actual: {1}", data.LockId, lockId));
 
             SetAndUnlockItem(key, data);
         }
