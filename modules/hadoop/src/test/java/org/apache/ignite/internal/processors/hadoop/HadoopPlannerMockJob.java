@@ -145,7 +145,7 @@ public class HadoopPlannerMockJob implements HadoopJob {
 
         /** {@inheritDoc} */
         @Override public HadoopJob createJob(Class<? extends HadoopJob> jobCls, HadoopJobId jobId, IgniteLogger log,
-            @Nullable String[] libNames, HadoopHelper hadoopHelper) throws IgniteCheckedException {
+            @Nullable String[] libNames, HadoopHelper helper) throws IgniteCheckedException {
             throwUnsupported();
 
             return null;
