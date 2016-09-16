@@ -71,7 +71,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     private static final int CACHE_ID = 100500;
 
     /** */
-    private static int MAX_PER_PAGE = 0;
+    protected static int MAX_PER_PAGE = 0;
 
     /** */
     protected static int CNT = 10;

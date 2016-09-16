@@ -2566,6 +2566,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                         // Free root if it became empty after merge.
                         cutRoot(tail.lvl);
                         freePage(tail.pageId, tail.page, tail.buf, false);
+
+                        // Exit: the operation must be complete at this point.
                     }
                     else if (tail.sibling != null &&
                         tail.getCount() + tail.sibling.getCount() < tail.io.getMaxCount(tail.buf)) {
@@ -2577,10 +2579,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
 
                         return NOT_FOUND; // Lock and merge one level more.
                     }
+
+                    // We don't want to merge anything more, exiting.
                 }
             }
 
-            // If we've found nothing in the page, we should not do any merges.
+            // If we've found nothing in the tree, we should not do any modifications or take tail locks.
             assert isRemoved(): "not removed";
 
             releaseTail();
@@ -2692,8 +2696,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
          * @throws IgniteCheckedException If failed.
          */
         private Result lockForward(int lvl) throws IgniteCheckedException {
-            assert fwdId != 0;
-            assert backId == 0;
+            assert fwdId != 0: fwdId;
+            assert backId == 0: backId;
 
             return writePage(fwdId, page(fwdId), lockTailForward, this, lvl);
         }
