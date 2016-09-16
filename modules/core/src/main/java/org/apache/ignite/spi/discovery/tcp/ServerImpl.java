@@ -5743,6 +5743,11 @@ class ServerImpl extends TcpDiscoveryImpl {
         public WorkerState state() {
             return state;
         }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ClientNioMessageWorker.class, this);
+        }
     }
 
     /**
@@ -5781,6 +5786,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (proc instanceof ClientNioMessageWorker)
                 ((ClientNioMessageWorker) proc).nonblockingStop();
+            else if (log.isDebugEnabled())
+                log.error("Illegal ClientMessageProcessor: " + proc);
 
         }
 
@@ -7141,6 +7148,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             return pinger;
         }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ClientMessageWorker.class, this);
+        }
     }
 
     /**
@@ -7219,6 +7231,9 @@ class ServerImpl extends TcpDiscoveryImpl {
      *
      */
     private static class GridPingFutureAdapter<R> extends GridFutureAdapter<R> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Socket. */
         private volatile Socket sock;
 
@@ -7468,7 +7483,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return delegate.toString();
+            return S.toString(NioSSLSocket.class, this);
         }
 
         /** {@inheritDoc} */
@@ -7694,6 +7709,10 @@ class ServerImpl extends TcpDiscoveryImpl {
             return in.markSupported();
         }
 
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(SSLInputStream.class, this);
+        }
     }
 
     /**
@@ -7768,6 +7787,11 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** {@inheritDoc} */
         @Override public void close() throws IOException {
             out.close();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(SSLOutputStream.class, this);
         }
     }
 
