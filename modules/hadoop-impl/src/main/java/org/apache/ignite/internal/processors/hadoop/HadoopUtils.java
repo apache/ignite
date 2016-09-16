@@ -337,30 +337,7 @@ public class HadoopUtils {
         }
     }
 
-    /**
-     * Sort input splits by length.
-     *
-     * @param splits Splits.
-     * @return Sorted splits.
-     */
-    public static List<HadoopInputSplit> sortInputSplits(Collection<HadoopInputSplit> splits) {
-        int id = 0;
 
-        TreeSet<SplitSortWrapper> sortedSplits = new TreeSet<>();
-
-        for (HadoopInputSplit split : splits) {
-            long len = split instanceof HadoopFileBlock ? ((HadoopFileBlock)split).length() : 0;
-
-            sortedSplits.add(new SplitSortWrapper(id++, split, len));
-        }
-
-        ArrayList<HadoopInputSplit> res = new ArrayList<>(sortedSplits.size());
-
-        for (SplitSortWrapper sortedSplit : sortedSplits)
-            res.add(sortedSplit.split);
-
-        return res;
-    }
 
     /**
      * Set context class loader.
@@ -387,57 +364,5 @@ public class HadoopUtils {
 
         if (newLdr != oldLdr)
             Thread.currentThread().setContextClassLoader(oldLdr);
-    }
-
-    /**
-     * Split wrapper for sorting.
-     */
-    private static class SplitSortWrapper implements Comparable<SplitSortWrapper> {
-        /** Unique ID. */
-        private final int id;
-
-        /** Split. */
-        private final HadoopInputSplit split;
-
-        /** Split length. */
-        private final long len;
-
-        /**
-         * Constructor.
-         *
-         * @param id Unique ID.
-         * @param split Split.
-         * @param len Split length.
-         */
-        public SplitSortWrapper(int id, HadoopInputSplit split, long len) {
-            this.id = id;
-            this.split = split;
-            this.len = len;
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("NullableProblems")
-        @Override public int compareTo(SplitSortWrapper other) {
-            assert other != null;
-
-            long res = len - other.len;
-
-            if (res > 0)
-                return -1;
-            else if (res < 0)
-                return 1;
-            else
-                return id - other.id;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return id;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object obj) {
-            return obj instanceof SplitSortWrapper && id == ((SplitSortWrapper)obj).id;
-        }
     }
 }
