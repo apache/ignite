@@ -308,7 +308,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
             // Need to read link here because `p.finish()` will clear row.
             L newRow = p.row;
 
-            // Do get removed row if we are on a leaf page.
+            // Detach the old row if we are on a leaf page.
             if (lvl == 0) {
                 assert p.oldRow == null;
 
@@ -773,7 +773,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
      */
     private void doFind(Get g) throws IgniteCheckedException {
         try {
-            for (; ; ) { // Go down with retries.
+            for (;;) { // Go down with retries.
                 g.init();
 
                 switch (findDown(g, g.rootId, 0L, g.rootLvl)) {
@@ -806,7 +806,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
         Page page = page(pageId);
 
         try {
-            for (; ; ) {
+            for (;;) {
                 // Init args.
                 g.pageId = pageId;
                 g.fwdId = fwdId;
@@ -1517,10 +1517,18 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
 
                         continue;
 
-                    default:
-                        assert p.isFinished() : result;
+                    case FOUND:
+                        // We may need to insert split key into upper level here.
+                        if (!p.isFinished()) {
+                            checkInterrupted();
+
+                            continue;
+                        }
 
                         return p.oldRow;
+
+                    default:
+                        throw new IllegalStateException("Result: " + result);
                 }
             }
         }
@@ -1751,7 +1759,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
         final Page page = page(pageId);
 
         try {
-            for (; ; ) {
+            for (;;) {
                 // Init args.
                 p.pageId = pageId;
                 p.fwdId = fwdId;
@@ -2709,7 +2717,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
             }
             finally {
                 // If we were not able to lock forward page as tail, release the page.
-                if (!isTail(fwdId, lvl))
+                if (canRelease(fwdId, fwd, lvl))
                     fwd.close();
             }
         }
