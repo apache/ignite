@@ -287,12 +287,14 @@ public class PersistenceController {
      */
     private String[] prepareLoadStatements() {
         PersistenceSettings settings = persistenceSettings.getKeyPersistenceSettings();
+        boolean pojoStrategy = PersistenceStrategy.POJO.equals(settings.getStrategy());
         Collection<String> keyCols = settings.getTableColumns();
         StringBuilder hdrWithKeyFields = new StringBuilder();
 
+
         for (String column : keyCols) {
             // omit calculated fields in load statement
-            if (settings.getFieldByColumn(column).calculatedField())
+            if (pojoStrategy && settings.getFieldByColumn(column).calculatedField())
                 continue;
 
             if (hdrWithKeyFields.length() > 0)
@@ -302,21 +304,22 @@ public class PersistenceController {
         }
 
         settings = persistenceSettings.getValuePersistenceSettings();
+        pojoStrategy = PersistenceStrategy.POJO.equals(settings.getStrategy());
         Collection<String> valCols = settings.getTableColumns();
         StringBuilder hdr = new StringBuilder();
 
         for (String column : valCols) {
-            // omit calculated and alias(duplicate) fields in load statement
-            if (settings.getFieldByColumn(column).calculatedField() || keyCols.contains(column))
+            // omit calculated fields in load statement
+            if (pojoStrategy && settings.getFieldByColumn(column).calculatedField())
                 continue;
 
             if (hdr.length() > 0)
                 hdr.append(", ");
 
-            hdrWithKeyFields.append(",");
-
             hdr.append("\"").append(column).append("\"");
-            hdrWithKeyFields.append("\"").append(column).append("\"");
+
+            if (!keyCols.contains(column))
+                hdrWithKeyFields.append(", \"").append(column).append("\"");
         }
 
         hdrWithKeyFields.insert(0, "select ");

@@ -91,7 +91,8 @@ public abstract class PojoField implements Serializable {
                 null :
                 desc.getWriteMethod().getAnnotation(QuerySqlField.class);
 
-        this.col = sqlField != null && sqlField.name() != null ? sqlField.name() : name.toLowerCase();
+        col = sqlField != null && sqlField.name() != null && !sqlField.name().trim().isEmpty() ?
+                sqlField.name() : name.toLowerCase();
 
         init(desc);
 
@@ -218,16 +219,10 @@ public abstract class PojoField implements Serializable {
                 "' doesn't provide getter method");
         }
 
-        if (desc.getWriteMethod() == null) {
-            throw new IllegalArgumentException("Field '" + desc.getName() +
-                "' of POJO object instance of the class '" + desc.getPropertyType().getName() +
-                "' doesn't provide write method");
-        }
-
         if (!desc.getReadMethod().isAccessible())
             desc.getReadMethod().setAccessible(true);
 
-        if (!desc.getWriteMethod().isAccessible())
+        if (desc.getWriteMethod() != null && !desc.getWriteMethod().isAccessible())
             desc.getWriteMethod().setAccessible(true);
 
         DataType.Name cassandraType = PropertyMappingHelper.getCassandraType(desc.getPropertyType());
