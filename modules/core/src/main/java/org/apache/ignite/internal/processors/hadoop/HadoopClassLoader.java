@@ -90,7 +90,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     private final String[] libNames;
 
     /** Igfs Helper. */
-    private final HadoopHelper hadoopHelper;
+    private final HadoopHelper helper;
 
     /**
      * Gets name for Job class loader. The name is specific for local node id.
@@ -121,14 +121,14 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
      * @param name Classloader name.
      * @param libNames Optional additional native library names to be linked from parent classloader.
      */
-    public HadoopClassLoader(URL[] urls, String name, @Nullable String[] libNames, HadoopHelper hadoopHelper) {
+    public HadoopClassLoader(URL[] urls, String name, @Nullable String[] libNames, HadoopHelper helper) {
         super(addHadoopUrls(urls), APP_CLS_LDR);
 
         assert !(getParent() instanceof HadoopClassLoader);
 
         this.name = name;
         this.libNames = libNames;
-        this.hadoopHelper = hadoopHelper;
+        this.helper = helper;
 
         initializeNativeLibraries();
     }
@@ -194,7 +194,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     @Override protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
         try {
             // Always load Hadoop classes explicitly, since Hadoop can be available in App classpath.
-            if (hadoopHelper.isHadoop(name)) {
+            if (helper.isHadoop(name)) {
                 if (name.equals(CLS_SHUTDOWN_HOOK_MANAGER))  // Dirty hack to get rid of Hadoop shutdown hooks.
                     return loadReplace(name, CLS_SHUTDOWN_HOOK_MANAGER_REPLACE);
                 else if (name.equals(CLS_DAEMON))
@@ -206,7 +206,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
             }
 
             // For Ignite Hadoop and IGFS classes we have to check if they depend on Hadoop.
-            if (hadoopHelper.isHadoopIgfs(name)) {
+            if (helper.isHadoopIgfs(name)) {
                 if (hasExternalDependencies(name))
                     return loadClassExplicitly(name, resolve);
             }
@@ -236,9 +236,9 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
             byte[] bytes = bytesCache.get(originalName);
 
             if (bytes == null) {
-                InputStream in = hadoopHelper.loadClassBytes(getParent(), replaceName);
+                InputStream in = helper.loadClassBytes(getParent(), replaceName);
 
-                bytes = hadoopHelper.loadReplace(in, originalName, replaceName);
+                bytes = helper.loadReplace(in, originalName, replaceName);
 
                 bytesCache.put(originalName, bytes);
             }
@@ -296,7 +296,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
      * @return {@code True} if class has external dependencies.
      */
     boolean hasExternalDependencies(String clsName) {
-        return hadoopHelper.hasExternalDependencies(clsName, getParent());
+        return helper.hasExternalDependencies(clsName, getParent());
     }
 
     /**

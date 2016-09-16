@@ -16,7 +16,6 @@
  */
 package org.apache.ignite.internal.processors.hadoop;
 
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -46,16 +45,6 @@ import java.util.Set;
 public class HadoopHelperImpl implements HadoopHelper {
     /** Cache for resolved dependency info. */
     private static final Map<String, Boolean> dependenciesCache = new ConcurrentHashMap8<>();
-
-    /**  */
-    public HadoopHelperImpl() {
-        this(null);
-    }
-
-    /** Constructor required by the engine. */
-    public HadoopHelperImpl(GridKernalContext ctx) {
-        // nool
-    }
 
     /**
      * Load special replacement and impersonate

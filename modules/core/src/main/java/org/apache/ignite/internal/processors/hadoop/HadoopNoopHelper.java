@@ -8,33 +8,35 @@ import org.jetbrains.annotations.Nullable;
  * Noop Hadoop Helper implementation.
  */
 public class HadoopNoopHelper implements HadoopHelper {
-    /** Constructor required by the engine. */
-    public HadoopNoopHelper(GridKernalContext ctx) {
-        // nool
-    }
-
     /** {@inheritDoc} */
     @Override public boolean hasExternalDependencies(String clsName, ClassLoader parentClsLdr) {
-        return false;
+        throw unsupported();
     }
 
     /** {@inheritDoc} */
     @Override public byte[] loadReplace(InputStream in, String originalName, String replaceName) {
-        return new byte[0];
+        throw unsupported();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isHadoop(String cls) {
-        return false;
+        throw unsupported();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isHadoopIgfs(String cls) {
-        return false;
+        throw unsupported();
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public InputStream loadClassBytes(ClassLoader ldr, String clsName) {
-        return null;
+        throw unsupported();
+    }
+
+    /**
+     * @return Exception.
+     */
+    private static UnsupportedOperationException unsupported() {
+        throw new UnsupportedOperationException("Operation is unsupported (Hadoop module is not in the classpath).");
     }
 }
