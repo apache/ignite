@@ -278,7 +278,11 @@ namespace Apache.Ignite.AspNet
 
             var key = GetKey(id);
 
-            SetAndUnlockItem(key, (IgniteSessionStateStoreData) item);
+            var data = (IgniteSessionStateStoreData) item;
+
+            Debug.Assert(data.LockId == (long) lockId);  // TODO: Exception?
+
+            SetAndUnlockItem(key, data);
         }
 
         /// <summary>
