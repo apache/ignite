@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
@@ -84,7 +85,7 @@ public class IgfsModeResolver {
 
             if (mode == null) {
                 for (T2<IgfsPath, IgfsMode> entry : modes) {
-                    if (path.isSame(entry.getKey()) || path.isSubDirectoryOf(entry.getKey())) {
+                    if (F.eq(path, entry.getKey()) || path.isSubDirectoryOf(entry.getKey())) {
                         // As modes ordered from most specific to least specific first mode found is ours.
                         mode = entry.getValue();
 
