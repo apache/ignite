@@ -73,11 +73,11 @@ import org.jsr166.ConcurrentHashMap8;
 
 import javax.cache.Cache;
 import javax.cache.CacheException;
-import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Field;
-import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -874,6 +874,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 null,
                 null));
         }
+    }
+
+    /**
+     *
+     * @param schema Schema.
+     * @param sql Query.
+     * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
+     */
+    public PreparedStatement prepareNativeStatement(String schema, String sql) throws SQLException {
+        checkxEnabled();
+
+        return idx.prepareNativeStatement(schema, sql);
     }
 
     /**

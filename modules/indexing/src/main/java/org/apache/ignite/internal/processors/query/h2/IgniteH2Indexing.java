@@ -443,6 +443,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return c.prepareStatement(sql);
     }
 
+    /** {@inheritDoc} */
+    @Override public PreparedStatement prepareNativeStatement(String schema, String sql) throws SQLException {
+        JdbcPreparedStatement stmt = (JdbcPreparedStatement) prepareStatement(connectionForSpace(schema), sql, false);
+
+        Prepared p = GridSqlQueryParser.prepared(stmt);
+        p.prepare(); // To enforce types resolution.
+
+        return stmt;
+    }
+
     /**
      * Gets DB connection.
      *

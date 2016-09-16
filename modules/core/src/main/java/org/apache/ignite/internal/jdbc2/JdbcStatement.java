@@ -50,7 +50,7 @@ public class JdbcStatement implements Statement {
     private static final int DFLT_FETCH_SIZE = 1024;
 
     /** Connection. */
-    private final JdbcConnection conn;
+    protected final JdbcConnection conn;
 
     /** Closed flag. */
     private boolean closed;
