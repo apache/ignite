@@ -174,6 +174,7 @@ namespace Apache.Ignite.AspNet.Tests
             // Not locked, no item.
             var res = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
             Assert.IsNull(res);
+            Assert.IsNull(lockId);
             Assert.IsFalse(locked);
             Assert.AreEqual(TimeSpan.Zero, lockAge);
             Assert.AreEqual(SessionStateActions.None, actions);
@@ -181,6 +182,7 @@ namespace Apache.Ignite.AspNet.Tests
             // Exclusive: not locked, no item.
             res = provider.GetItemExclusive(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
             Assert.IsNull(res);
+            Assert.IsNull(lockId);
             Assert.IsFalse(locked);
             Assert.AreEqual(TimeSpan.Zero, lockAge);
             Assert.AreEqual(SessionStateActions.None, actions);
@@ -191,6 +193,7 @@ namespace Apache.Ignite.AspNet.Tests
             // Check added item.
             res = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
             Assert.IsNotNull(res);
+            Assert.IsNull(lockId);
             Assert.AreEqual(7, res.Timeout);
             Assert.IsFalse(locked);
             Assert.AreEqual(TimeSpan.Zero, lockAge);
@@ -199,6 +202,7 @@ namespace Apache.Ignite.AspNet.Tests
             // Lock and update.
             res = provider.GetItemExclusive(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
             Assert.IsNotNull(res);
+            Assert.IsNotNull(lockId);
             Assert.IsFalse(locked);
             Assert.AreEqual(TimeSpan.Zero, lockAge);
             Assert.AreEqual(SessionStateActions.None, actions);
@@ -207,6 +211,7 @@ namespace Apache.Ignite.AspNet.Tests
             // Not locked, item present.
             res = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
             CheckStoreData(res);
+            Assert.IsNull(lockId);
             Assert.IsFalse(locked);
             Assert.AreEqual(TimeSpan.Zero, lockAge);
             Assert.AreEqual(SessionStateActions.None, actions);
@@ -214,6 +219,7 @@ namespace Apache.Ignite.AspNet.Tests
             // Lock item.
             res = provider.GetItemExclusive(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
             CheckStoreData(res);
+            Assert.IsNotNull(lockId);
             Assert.IsFalse(locked);
             Assert.AreEqual(TimeSpan.Zero, lockAge);
             Assert.AreEqual(SessionStateActions.None, actions);
