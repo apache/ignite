@@ -488,6 +488,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         qry = ctx.queries().createScanQuery(p, transformer, scanQry.getPartition(), isKeepBinary);
 
+        if (scanQry.getPageSize() > 0)
+            qry.pageSize(scanQry.getPageSize());
+
         if (grp != null)
             qry.projection(grp);
 
@@ -505,7 +508,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                             if (needToConvert) {
                                 Map.Entry<K, V> entry = (Map.Entry<K, V>)next;
 
-                                return (R) new CacheEntryImpl<>(entry.getKey(), entry.getValue());
+                                return (R)new CacheEntryImpl<>(entry.getKey(), entry.getValue());
                             }
 
                             return (R)next;
@@ -774,17 +777,17 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     private void convertToBinary(final Query qry) {
         if (ctx.binaryMarshaller()) {
             if (qry instanceof SqlQuery) {
-                final SqlQuery sqlQry = (SqlQuery) qry;
+                final SqlQuery sqlQry = (SqlQuery)qry;
 
                 convertToBinary(sqlQry.getArgs());
             }
             else if (qry instanceof SpiQuery) {
-                final SpiQuery spiQry = (SpiQuery) qry;
+                final SpiQuery spiQry = (SpiQuery)qry;
 
                 convertToBinary(spiQry.getArgs());
             }
             else if (qry instanceof SqlFieldsQuery) {
-                final SqlFieldsQuery fieldsQry = (SqlFieldsQuery) qry;
+                final SqlFieldsQuery fieldsQry = (SqlFieldsQuery)qry;
 
                 convertToBinary(fieldsQry.getArgs());
             }
