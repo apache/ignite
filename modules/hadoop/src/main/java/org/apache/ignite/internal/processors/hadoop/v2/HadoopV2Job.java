@@ -138,20 +138,25 @@ public class HadoopV2Job implements HadoopJob {
         this.jobInfo = jobInfo;
         this.libNames = libNames;
 
-        hadoopJobID = new JobID(jobId.globalId().toString(), jobId.localId());
+        ClassLoader oldLdr = HadoopUtils.setContextClassLoader(getClass().getClassLoader());
 
-        jobConf = HadoopUtils.safeCreateJobConf();
+        try {
+            hadoopJobID = new JobID(jobId.globalId().toString(), jobId.localId());
 
-        HadoopFileSystemsUtils.setupFileSystems(jobConf);
+            jobConf = new JobConf();
 
-        Thread.currentThread().setContextClassLoader(null);
+            HadoopFileSystemsUtils.setupFileSystems(jobConf);
 
-        for (Map.Entry<String,String> e : jobInfo.properties().entrySet())
-            jobConf.set(e.getKey(), e.getValue());
+            for (Map.Entry<String,String> e : jobInfo.properties().entrySet())
+                jobConf.set(e.getKey(), e.getValue());
 
-        jobCtx = new JobContextImpl(jobConf, hadoopJobID);
+            jobCtx = new JobContextImpl(jobConf, hadoopJobID);
 
-        rsrcMgr = new HadoopV2JobResourceManager(jobId, jobCtx, log, this);
+            rsrcMgr = new HadoopV2JobResourceManager(jobId, jobCtx, log, this);
+        }
+        finally {
+            HadoopUtils.setContextClassLoader(oldLdr);
+        }
     }
 
     /** {@inheritDoc} */
@@ -166,7 +171,7 @@ public class HadoopV2Job implements HadoopJob {
 
     /** {@inheritDoc} */
     @Override public Collection<HadoopInputSplit> input() throws IgniteCheckedException {
-        Thread.currentThread().setContextClassLoader(jobConf.getClassLoader());
+        ClassLoader oldLdr = HadoopUtils.setContextClassLoader(jobConf.getClassLoader());
 
         try {
             String jobDirPath = jobConf.get(MRJobConfig.MAPREDUCE_JOB_DIR);
@@ -223,7 +228,7 @@ public class HadoopV2Job implements HadoopJob {
             }
         }
         finally {
-            Thread.currentThread().setContextClassLoader(null);
+            HadoopUtils.restoreContextClassLoader(oldLdr);
         }
     }
 
@@ -296,16 +301,13 @@ public class HadoopV2Job implements HadoopJob {
 
         this.locNodeId = locNodeId;
 
-        assert ((HadoopClassLoader)getClass().getClassLoader()).name()
-            .equals(HadoopClassLoader.nameForJob(this.locNodeId));
-
-        Thread.currentThread().setContextClassLoader(jobConf.getClassLoader());
+        ClassLoader oldLdr = HadoopUtils.setContextClassLoader(getClass().getClassLoader());
 
         try {
             rsrcMgr.prepareJobEnvironment(!external, jobLocalDir(locNodeId, jobId));
         }
         finally {
-            Thread.currentThread().setContextClassLoader(null);
+            HadoopUtils.restoreContextClassLoader(oldLdr);
         }
     }
 

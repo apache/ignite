@@ -92,7 +92,6 @@ public class HadoopDefaultJobInfo implements HadoopJobInfo, Externalizable {
 
             return constructor.newInstance(jobId, this, log, libNames);
         }
-        // NB: java.lang.NoClassDefFoundError may be thrown from Class#getConstructor() call.
         catch (Throwable t) {
             if (t instanceof Error)
                 throw (Error)t;
