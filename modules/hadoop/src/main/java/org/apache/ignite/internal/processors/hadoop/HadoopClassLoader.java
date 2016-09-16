@@ -61,10 +61,8 @@ import org.objectweb.asm.commons.RemappingClassAdapter;
  * unavailable for parent.
  */
 public class HadoopClassLoader extends URLClassLoader implements ClassCache {
-    /**
-     * We are very parallel capable.
-     */
     static {
+        // We are very parallel capable.
         registerAsParallelCapable();
     }
 
@@ -498,7 +496,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
                 return hadoopUrls;
 
             try {
-                hadoopUrls = HadoopClasspathUtils.classpathUrls();
+                hadoopUrls = HadoopClasspathUtils.classpathForClassLoader();
             }
             catch (IOException e) {
                 throw new IgniteCheckedException("Failed to resolve Hadoop JAR locations: " + e.getMessage(), e);
