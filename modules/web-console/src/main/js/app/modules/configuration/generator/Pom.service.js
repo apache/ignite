@@ -184,8 +184,10 @@ class GeneratorPom {
         if (dep)
             this.addDependency(deps, 'org.apache.ignite', dep.artifactId, igniteVersion);
 
-        if (_.find(cluster.igfss, (igfs) => igfs.secondaryFileSystemEnabled))
+        if (_.find(cluster.igfss, (igfs) => igfs.secondaryFileSystemEnabled)) {
             this.addDependency(deps, 'org.apache.ignite', 'ignite-hadoop', igniteVersion);
+            this.addDependency(deps, 'org.apache.ignite', 'ignite-hadoop-impl', igniteVersion);
+        }
 
         if (_.find(caches, blobStoreFactory))
             this.addDependency(deps, 'org.apache.ignite', 'ignite-hibernate', igniteVersion);

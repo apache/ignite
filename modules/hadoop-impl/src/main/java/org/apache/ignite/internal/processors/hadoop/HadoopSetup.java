@@ -194,6 +194,7 @@ public class HadoopSetup {
 
         addJarsInFolder(jarFiles, igniteLibs);
         addJarsInFolder(jarFiles, new File(igniteLibs, "ignite-hadoop"));
+        addJarsInFolder(jarFiles, new File(igniteLibs, "ignite-hadoop-impl"));
 
         boolean jarsLinksCorrect = true;
 
