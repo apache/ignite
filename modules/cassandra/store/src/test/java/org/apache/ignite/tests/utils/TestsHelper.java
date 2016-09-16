@@ -223,7 +223,7 @@ public class TestsHelper {
         Map<Long, Person> map = new HashMap<>();
 
         for (long i = 0; i < BULK_OPERATION_SIZE; i++)
-            map.put(i, generateRandomPerson());
+            map.put(i, generateRandomPerson(i));
 
         return map;
     }
@@ -233,7 +233,7 @@ public class TestsHelper {
         Collection<CacheEntryImpl<Long, Person>> entries = new LinkedList<>();
 
         for (long i = 0; i < BULK_OPERATION_SIZE; i++)
-            entries.add(new CacheEntryImpl<>(i, generateRandomPerson()));
+            entries.add(new CacheEntryImpl<>(i, generateRandomPerson(i)));
 
         return entries;
     }
@@ -247,8 +247,10 @@ public class TestsHelper {
     public static Map<PersonId, Person> generatePersonIdsPersonsMap(int cnt) {
         Map<PersonId, Person> map = new HashMap<>();
 
-        for (int i = 0; i < cnt; i++)
-            map.put(generateRandomPersonId(), generateRandomPerson());
+        for (int i = 0; i < cnt; i++) {
+            PersonId id = generateRandomPersonId();
+            map.put(id, generateRandomPerson(id.getPersonNumber()));
+        }
 
         return map;
     }
@@ -262,14 +264,16 @@ public class TestsHelper {
     public static Collection<CacheEntryImpl<PersonId, Person>> generatePersonIdsPersonsEntries(int cnt) {
         Collection<CacheEntryImpl<PersonId, Person>> entries = new LinkedList<>();
 
-        for (int i = 0; i < cnt; i++)
-            entries.add(new CacheEntryImpl<>(generateRandomPersonId(), generateRandomPerson()));
+        for (int i = 0; i < cnt; i++) {
+            PersonId id = generateRandomPersonId();
+            entries.add(new CacheEntryImpl<>(id, generateRandomPerson(id.getPersonNumber())));
+        }
 
         return entries;
     }
 
     /** */
-    public static Person generateRandomPerson() {
+    public static Person generateRandomPerson(long personNum) {
         int phonesCnt = RANDOM.nextInt(4);
 
         List<String> phones = new LinkedList<>();
@@ -277,7 +281,7 @@ public class TestsHelper {
         for (int i = 0; i < phonesCnt; i++)
             phones.add(randomNumber(4));
 
-        return new Person(randomString(4), randomString(4), RANDOM.nextInt(100),
+        return new Person(personNum, randomString(4), randomString(4), RANDOM.nextInt(100),
             RANDOM.nextBoolean(), RANDOM.nextLong(), RANDOM.nextFloat(), new Date(), phones);
     }
 
