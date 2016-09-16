@@ -81,7 +81,7 @@ public abstract class PagesList extends DataStructure {
     protected final String name;
 
     /** */
-    private final PageHandler<Void, PageIO, Boolean> cutTail = new PageHandler<Void, PageIO, Boolean>() {
+    private final PageHandler<Void, Boolean> cutTail = new PageHandler<Void, Boolean>() {
         @Override public Boolean run(long pageId, Page page, PageIO pageIo, ByteBuffer buf, Void ignore, int bucket)
             throws IgniteCheckedException {
             if (getPageId(buf) != pageId)

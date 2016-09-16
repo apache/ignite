@@ -32,9 +32,9 @@ import static java.lang.Boolean.TRUE;
 /**
  * Page handler.
  */
-public abstract class PageHandler<X, Q extends PageIO, R> {
+public abstract class PageHandler<X, R> {
     /** */
-    private static final PageHandler<Void, PageIO, Void> NOOP = new PageHandler<Void, PageIO, Void>() {
+    private static final PageHandler<Void, Void> NOOP = new PageHandler<Void, Void>() {
         @Override public Void run(long pageId, Page page, PageIO io, ByteBuffer buf, Void arg, int intArg)
             throws IgniteCheckedException {
             return null;
@@ -51,7 +51,7 @@ public abstract class PageHandler<X, Q extends PageIO, R> {
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
-    public abstract R run(long pageId, Page page, Q io, ByteBuffer buf, X arg, int intArg)
+    public abstract R run(long pageId, Page page, PageIO io, ByteBuffer buf, X arg, int intArg)
         throws IgniteCheckedException;
 
     /**
@@ -74,12 +74,12 @@ public abstract class PageHandler<X, Q extends PageIO, R> {
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
-    public static <X, Q extends PageIO, R> R readPage(long pageId, Page page, PageHandler<X, Q, R> h, X arg, int intArg)
+    public static <X, R> R readPage(long pageId, Page page, PageHandler<X, R> h, X arg, int intArg)
         throws IgniteCheckedException {
         ByteBuffer buf = page.getForRead();
 
         try {
-            Q io = PageIO.getPageIO(buf);
+            PageIO io = PageIO.getPageIO(buf);
 
             return h.run(pageId, page, io, buf, arg, intArg);
         }
@@ -97,7 +97,7 @@ public abstract class PageHandler<X, Q extends PageIO, R> {
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
-    public static <X, Q extends PageIO, R> R writePage(long pageId, Page page, PageHandler<X, Q, R> h, X arg, int intArg)
+    public static <X, R> R writePage(long pageId, Page page, PageHandler<X, R> h, X arg, int intArg)
         throws IgniteCheckedException {
         return writePage(pageId, page, h, null, null, arg, intArg);
     }
@@ -127,11 +127,11 @@ public abstract class PageHandler<X, Q extends PageIO, R> {
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
-    public static <X, Q extends PageIO, R> R writePage(
+    public static <X, R> R writePage(
         long pageId,
         Page page,
-        PageHandler<X, Q, R> h,
-        Q init,
+        PageHandler<X, R> h,
+        PageIO init,
         IgniteWriteAheadLogManager wal,
         X arg,
         int intArg

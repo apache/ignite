@@ -491,13 +491,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
             if (io.getForward(buf) != r.fwdId)
                 return RETRY;
 
-            // Check that we have a correct view of the world.
-//            if (inner(io).getLeft(buf, idx) != r.getTail(r.tail, lvl - 1).pageId) {
-//                assert !found;
-//
-//                return RETRY;
-//            }
-
             // We don't have a back page, need to lock our forward and become a back for it.
             if (r.fwdId != 0 && r.backId == 0) {
                 Result res = r.lockForward(lvl);
@@ -513,9 +506,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
     };
 
     /** */
-    private final PageHandler<Void, BPlusMetaIO, Void> cutRoot = new PageHandler<Void, BPlusMetaIO, Void>() {
-        @Override public Void run(long metaId, Page meta, BPlusMetaIO io, ByteBuffer buf, Void ignore, int lvl)
+    private final PageHandler<Void, Void> cutRoot = new PageHandler<Void, Void>() {
+        @Override public Void run(long metaId, Page meta, PageIO iox, ByteBuffer buf, Void ignore, int lvl)
             throws IgniteCheckedException {
+            // Safe cast because we should never recycle meta page until the tree is destroyed.
+            BPlusMetaIO io = (BPlusMetaIO)iox;
+
             assert lvl == io.getRootLevel(buf); // Can drop only root.
 
             io.cutRoot(buf);
@@ -528,10 +524,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
     };
 
     /** */
-    private final PageHandler<Long, BPlusMetaIO, Void> addRoot = new PageHandler<Long, BPlusMetaIO, Void>() {
-        @Override public Void run(long metaId, Page meta, BPlusMetaIO io, ByteBuffer buf, Long rootPageId, int lvl)
+    private final PageHandler<Long, Void> addRoot = new PageHandler<Long, Void>() {
+        @Override public Void run(long metaId, Page meta, PageIO iox, ByteBuffer buf, Long rootPageId, int lvl)
             throws IgniteCheckedException {
             assert rootPageId != null;
+
+            // Safe cast because we should never recycle meta page until the tree is destroyed.
+            BPlusMetaIO io = (BPlusMetaIO)iox;
+
             assert lvl == io.getLevelsCount(buf);
 
             io.addRoot(buf, rootPageId);
@@ -544,10 +544,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
     };
 
     /** */
-    private final PageHandler<Long, BPlusMetaIO, Void> initRoot = new PageHandler<Long, BPlusMetaIO, Void>() {
-        @Override public Void run(long metaId, Page meta, BPlusMetaIO io, ByteBuffer buf, Long rootId, int lvl)
+    private final PageHandler<Long, Void> initRoot = new PageHandler<Long, Void>() {
+        @Override public Void run(long metaId, Page meta, PageIO iox, ByteBuffer buf, Long rootId, int lvl)
             throws IgniteCheckedException {
             assert rootId != null;
+
+            // Safe cast because we should never recycle meta page until the tree is destroyed.
+            BPlusMetaIO io = (BPlusMetaIO)iox;
 
             io.initRoot(buf, rootId);
 
@@ -1223,8 +1226,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
      * @throws IgniteCheckedException If failed.
      */
     public final T removeCeil(L row, ReuseBag bag) throws IgniteCheckedException {
-        assert row != null;
-
         return doRemove(row, true, bag);
     }
 
@@ -1234,8 +1235,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
      * @throws IgniteCheckedException If failed.
      */
     public final T remove(L row) throws IgniteCheckedException {
-        assert row != null;
-
         return doRemove(row, false, null);
     }
 
@@ -3560,13 +3559,17 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
     /**
      * Page handler for basic {@link Get} operation.
      */
-    private abstract class GetPageHandler<G extends Get> extends PageHandler<G, BPlusIO<L>, Result> {
+    private abstract class GetPageHandler<G extends Get> extends PageHandler<G, Result> {
         /** {@inheritDoc} */
-        @Override public final Result run(long pageId, Page page, BPlusIO<L> io, ByteBuffer buf, G g, int lvl)
+        @SuppressWarnings("unchecked")
+        @Override public final Result run(long pageId, Page page, PageIO iox, ByteBuffer buf, G g, int lvl)
             throws IgniteCheckedException {
             // The page was merged and removed.
             if (PageIO.getPageId(buf) != pageId)
                 return RETRY;
+
+            // If we've passed the check for correct page ID, we can safely cast.
+            BPlusIO<L> io = (BPlusIO<L>)iox;
 
             // In case of intersection with inner replace in remove operation
             // we need to restart our operation from the tree root.

@@ -30,6 +30,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
@@ -63,10 +64,12 @@ public final class FreeListImpl extends PagesList implements FreeList, ReuseList
     private final int MIN_SIZE_FOR_BUCKET;
 
     /** */
-    private final PageHandler<CacheDataRow, DataPageIO, Integer> writeRow =
-        new PageHandler<CacheDataRow, DataPageIO, Integer>() {
-            @Override public Integer run(long pageId, Page page, DataPageIO io, ByteBuffer buf, CacheDataRow row, int written)
+    private final PageHandler<CacheDataRow, Integer> writeRow =
+        new PageHandler<CacheDataRow, Integer>() {
+            @Override public Integer run(long pageId, Page page, PageIO iox, ByteBuffer buf, CacheDataRow row, int written)
                 throws IgniteCheckedException {
+                DataPageIO io = (DataPageIO)iox;
+
                 int rowSize = getRowSize(row);
                 int oldFreeSpace = io.getFreeSpace(buf);
 
@@ -157,9 +160,11 @@ public final class FreeListImpl extends PagesList implements FreeList, ReuseList
         };
 
     /** */
-    private final PageHandler<Void, DataPageIO, Long> rmvRow = new PageHandler<Void, DataPageIO, Long>() {
-        @Override public Long run(long pageId, Page page, DataPageIO io, ByteBuffer buf, Void arg, int itemId)
+    private final PageHandler<Void, Long> rmvRow = new PageHandler<Void, Long>() {
+        @Override public Long run(long pageId, Page page, PageIO iox, ByteBuffer buf, Void arg, int itemId)
             throws IgniteCheckedException {
+            DataPageIO io = (DataPageIO)iox;
+
             int oldFreeSpace = io.getFreeSpace(buf);
 
             assert oldFreeSpace >= 0: oldFreeSpace;
