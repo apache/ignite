@@ -71,18 +71,17 @@ namespace Apache.Ignite.AspNet.Tests
         {
             var cacheProvider = new IgniteOutputCacheProvider();
 
-            // Not initialized
+            // Not initialized.
             Assert.Throws<InvalidOperationException>(() => cacheProvider.Get("1"));
 
-            // Grid not started
+            // Invalid section.
             Assert.Throws<IgniteException>(() =>
                 cacheProvider.Initialize("testName", new NameValueCollection
                 {
-                    {GridNameAttr, "invalidGridName"},
-                    {CacheNameAttr, CacheName}
+                    {SectionNameAttr, "invalidSection"},
                 }));
 
-            // Valid grid
+            // Valid grid.
             cacheProvider = GetProvider();
 
             cacheProvider.Set("1", 1, DateTime.MaxValue);

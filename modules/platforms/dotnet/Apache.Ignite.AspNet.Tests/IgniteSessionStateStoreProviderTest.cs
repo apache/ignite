@@ -112,23 +112,17 @@ namespace Apache.Ignite.AspNet.Tests
             TimeSpan lockAge;
             object lockId;
 
-
             // Not initialized.
             Assert.Throws<InvalidOperationException>(() =>
                     stateProvider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions));
 
-            // Grid not started - should be started automatically with default configuration.
-            // However, default config does not work in test environment, so this fails with a specific error.
-            var ex = Assert.Throws<IgniteException>(() =>
+            // Invalid section.
+            Assert.Throws<IgniteException>(() =>
                 stateProvider.Initialize("testName", new NameValueCollection
                 {
-                    {GridNameAttr, "invalidGridName"},
+                    {SectionNameAttr, "invalidSection"},
                     {CacheNameAttr, CacheName}
                 }));
-
-            Assert.IsNotNull(ex.InnerException);
-            Assert.AreEqual("Failed to start manager: GridManagerAdapter [enabled=true, name=org.apache.ignite." +
-                            "internal.managers.discovery.GridDiscoveryManager]", ex.InnerException.Message);
 
             // Valid grid.
             stateProvider = GetProvider();
