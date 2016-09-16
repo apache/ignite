@@ -213,14 +213,15 @@ namespace Apache.Ignite.AspNet
         {
             actions = SessionStateActions.None;  // Our items never need initialization.
             lockAge = TimeSpan.Zero;
+            lockId = null;
 
             var lockId0 = Interlocked.Increment(ref _lockId);
-            lockId = lockId0;
 
             var key = GetKey(id);
 
             var lockResult = LockItem(key, lockId0);
 
+            // No item found.
             if (lockResult == null)
             {
                 locked = false;
@@ -228,18 +229,20 @@ namespace Apache.Ignite.AspNet
                 return null;
             }
 
+            // Item was already locked.
             if (!lockResult.Success)
             {
-                // Already locked.
                 locked = true;
 
                 Debug.Assert(lockResult.LockTime != null);
 
                 lockAge = DateTime.UtcNow - lockResult.LockTime.Value;
+                lockId = lockResult.Data.LockId;
 
                 return null;
             }
 
+            // Item found and lock obtained.
             locked = false;
 
             return lockResult.Data;
