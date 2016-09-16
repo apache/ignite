@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -53,7 +51,6 @@ import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
@@ -972,13 +969,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     List<GridQueryFieldMetadata> meta = idx.meta(stmt);
 
-                    GridQueryCancel cancel = new GridQueryCancel();
+                    final GridQueryCancel cancel = new GridQueryCancel();
 
                     QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(new Iterable<List<?>>() {
                         @Override public Iterator<List<?>> iterator() {
                             try {
-                                final IgniteSpiCloseableIterator<List<?>> res = idx.queryFields(stmt, F.asList(args),
-                                    idx.backupFilter(null, null, null), qry.getTimeout());
+                                final IgniteSpiCloseableIterator<List<?>> res = idx.execute(stmt, F.asList(args),
+                                    idx.backupFilter(null, null, null), qry.getTimeout(), cancel);
 
                                 sendQueryExecutedEvent(sql, args);
 
@@ -1166,7 +1163,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             return executeQuery(cctx, new IgniteOutClosureX<GridQueryFieldsResult>() {
                 @Override public GridQueryFieldsResult applyx() throws IgniteCheckedException {
-                    return idx.queryFields(space, clause, params, filters, 0);
+                    return idx.execute(space, clause, params, filters, 0, null);
                 }
             }, false);
         }

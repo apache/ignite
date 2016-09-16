@@ -91,11 +91,20 @@ public interface GridQueryIndexing {
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
-    public GridQueryFieldsResult queryFields(@Nullable String spaceName, String qry,
-        Collection<Object> params, IndexingQueryFilter filters, int timeout) throws IgniteCheckedException;
+    public GridQueryFieldsResult execute(@Nullable String spaceName, String qry,
+        Collection<Object> params, IndexingQueryFilter filters, int timeout, GridQueryCancel cancel) throws IgniteCheckedException;
 
-    public IgniteSpiCloseableIterator<List<?>> queryFields(PreparedStatement stmt,
-        Collection<Object> params, IndexingQueryFilter filters, int timeout) throws IgniteCheckedException;
+    /**
+     * Executes the statement.
+     *
+     * @param stmt Stmt.
+     * @param params Params.
+     * @param filters Filters.
+     * @param timeout Timeout.
+     * @param cancel Cancel.
+     */
+    public IgniteSpiCloseableIterator<List<?>> execute(PreparedStatement stmt,
+        Collection<Object> params, IndexingQueryFilter filters, int timeout, GridQueryCancel cancel) throws IgniteCheckedException;
 
     /**
      * Executes regular query.
@@ -247,5 +256,5 @@ public interface GridQueryIndexing {
 
     public PreparedStatement prepareStatement(String space, String sql);
 
-    List<GridQueryFieldMetadata> meta(PreparedStatement stmt);
+    public List<GridQueryFieldMetadata> meta(PreparedStatement stmt);
 }

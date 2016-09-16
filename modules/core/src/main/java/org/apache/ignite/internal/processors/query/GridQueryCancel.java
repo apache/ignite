@@ -64,4 +64,11 @@ public class GridQueryCancel {
             clo.run();
         }
     }
+
+    /**
+     * Marks cancellable as no-op.
+     */
+    public void invalidate() {
+
+    }
 }

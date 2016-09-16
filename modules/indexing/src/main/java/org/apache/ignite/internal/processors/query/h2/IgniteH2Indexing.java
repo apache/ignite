@@ -52,7 +52,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -103,7 +102,6 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
@@ -735,9 +733,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridQueryFieldsResult queryFields(@Nullable final String spaceName, final String qry,
+    @Override public GridQueryFieldsResult execute(@Nullable final String spaceName, final String qry,
         @Nullable final Collection<Object> params, final IndexingQueryFilter filters,
-        int timeout, AtomicReference<GridAbsClosure> cancel)
+        int timeout, GridQueryCancel cancel)
         throws IgniteCheckedException {
         setFilters(filters);
 
@@ -764,9 +762,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     }
 
-    @Override public GridQueryFieldsResult queryFields(PreparedStatement stmt, Collection<Object> params,
-        IndexingQueryFilter filters, int timeout,
-        AtomicReference<GridAbsClosure> cancel) throws IgniteCheckedException {
+    @Override public IgniteSpiCloseableIterator<List<?>> execute(PreparedStatement stmt, Collection<Object> params,
+        IndexingQueryFilter filters, int timeout, GridQueryCancel cancel) throws IgniteCheckedException {
         return null;
     }
 
@@ -861,7 +858,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (timeoutMillis > 0)
             ((Session)((JdbcConnection)conn).getSession()).setQueryTimeout(timeoutMillis);
 
-        if (cancel != null)
+        if (cancel != null) {
             cancel.set(new Runnable() {
                 @Override public void run() {
                     try {
@@ -872,6 +869,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     }
                 }
             });
+
+            cancel.notifyCancellable();
+        }
 
         try {
             return stmt.executeQuery();
@@ -1507,7 +1507,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (tbl == null)
             return -1;
 
-        IgniteSpiCloseableIterator<List<?>> iter = queryFields(spaceName,
+        IgniteSpiCloseableIterator<List<?>> iter = execute(spaceName,
             "SELECT COUNT(*) FROM " + tbl.fullTableName(), null, null, 0, null).iterator();
 
         return ((Number)iter.next().get(0)).longValue();
@@ -2677,12 +2677,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             U.close(conn, log);
     }
 
+    /** {@inheritDoc} */
     @Override public PreparedStatement prepareStatement(String space, String sql) {
         Connection conn = connectionForThread(schema(space));
 
         return prepareStatement(conn, sql, true);
     }
 
+    /** {@inheritDoc} */
     @Override public List<GridQueryFieldMetadata> meta(PreparedStatement stmt) {
         try {
             return meta(stmt.getMetaData());
