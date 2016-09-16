@@ -23,8 +23,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
-import org.apache.ignite.internal.processors.hadoop.HadoopHelperImpl;
 import org.apache.ignite.internal.processors.hadoop.HadoopJob;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
@@ -98,11 +96,6 @@ public class HadoopChildProcessRunner {
     /** Shuffle job. */
     private HadoopShuffleJob<HadoopProcessDescriptor> shuffleJob;
 
-    /** Hadoop helper.
-     *  NB: we consider helper to be thread-safe, so reusing the same instance for all the jobs.
-     */
-    private final HadoopHelper hadoopHelper = new HadoopHelperImpl();
-
     /** Concurrent mappers. */
     private int concMappers;
 
@@ -141,7 +134,7 @@ public class HadoopChildProcessRunner {
 
                 assert job == null;
 
-                job = req.jobInfo().createJob(HadoopV2Job.class, req.jobId(), log, null, hadoopHelper);
+                job = req.jobInfo().createJob(HadoopV2Job.class, req.jobId(), log, null);
 
                 job.initialize(true, nodeDesc.processId());
 

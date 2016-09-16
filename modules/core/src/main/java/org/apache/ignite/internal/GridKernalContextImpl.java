@@ -60,7 +60,6 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
-import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
 import org.apache.ignite.internal.processors.igfs.IgfsHelper;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
@@ -236,10 +235,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringInclude
     private IgfsHelper igfsHelper;
-
-    /** */
-    @GridToStringInclude
-    private HadoopHelper hadoopHelper;
 
     /** */
     @GridToStringInclude
@@ -546,8 +541,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
         if (helper instanceof IgfsHelper)
             igfsHelper = (IgfsHelper)helper;
-        else if (helper instanceof HadoopHelper)
-            hadoopHelper = (HadoopHelper)helper;
         else
             assert false : "Unknown helper class: " + helper.getClass();
     }
@@ -737,11 +730,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public IgfsHelper igfsHelper() {
         return igfsHelper;
-    }
-
-    /** {@inheritDoc} */
-    @Override public HadoopHelper hadoopHelper() {
-        return hadoopHelper;
     }
 
     /** {@inheritDoc} */

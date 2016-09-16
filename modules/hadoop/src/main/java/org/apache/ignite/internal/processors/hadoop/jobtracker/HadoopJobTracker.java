@@ -162,8 +162,7 @@ public class HadoopJobTracker extends HadoopComponent {
         if (ctx.configuration() != null)
             libNames = ctx.configuration().getNativeLibraryNames();
 
-        HadoopClassLoader ldr = new HadoopClassLoader(null, HadoopClassLoader.nameForJob(nodeId), libNames,
-            ctx.kernalContext().hadoopHelper());
+        HadoopClassLoader ldr = new HadoopClassLoader(null, HadoopClassLoader.nameForJob(nodeId), libNames);
 
         try {
             jobCls = (Class<HadoopV2Job>)ldr.loadClass(HadoopV2Job.class.getName());
@@ -1061,8 +1060,7 @@ public class HadoopJobTracker extends HadoopComponent {
                 jobInfo = meta.jobInfo();
             }
 
-            job = jobInfo.createJob(jobCls, jobId, log, ctx.configuration().getNativeLibraryNames(),
-                ctx.kernalContext().hadoopHelper());
+            job = jobInfo.createJob(jobCls, jobId, log, ctx.configuration().getNativeLibraryNames());
 
             job.initialize(false, ctx.localNodeId());
 

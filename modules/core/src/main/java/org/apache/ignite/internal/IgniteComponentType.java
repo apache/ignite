@@ -19,7 +19,6 @@ package org.apache.ignite.internal;
 
 import java.lang.reflect.Constructor;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.hadoop.HadoopNoopHelper;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
@@ -39,13 +38,6 @@ public enum IgniteComponentType {
     HADOOP(
         "org.apache.ignite.internal.processors.hadoop.HadoopNoopProcessor",
         "org.apache.ignite.internal.processors.hadoop.HadoopProcessor",
-        "ignite-hadoop"
-    ),
-
-    /** Hadoop Helper component. */
-    HADOOP_HELPER(
-        HadoopNoopHelper.class.getName(),
-        "org.apache.ignite.internal.processors.hadoop.HadoopHelperImpl",
         "ignite-hadoop"
     ),
 
