@@ -110,43 +110,43 @@ namespace ignite
 
                     case SQL_SMALLINT:
                     {
-                        writer.WriteInt16(buf.GetInt16());
+                        writer.WriteObject<int16_t>(buf.GetInt16());
                         break;
                     }
 
                     case SQL_INTEGER:
                     {
-                        writer.WriteInt32(buf.GetInt32());
+                        writer.WriteObject<int32_t>(buf.GetInt32());
                         break;
                     }
 
                     case SQL_FLOAT:
                     {
-                        writer.WriteFloat(buf.GetFloat());
+                        writer.WriteObject<float>(buf.GetFloat());
                         break;
                     }
 
                     case SQL_DOUBLE:
                     {
-                        writer.WriteDouble(buf.GetDouble());
+                        writer.WriteObject<double>(buf.GetDouble());
                         break;
                     }
 
                     case SQL_TINYINT:
                     {
-                        writer.WriteInt8(buf.GetInt8());
+                        writer.WriteObject<int8_t>(buf.GetInt8());
                         break;
                     }
 
                     case SQL_BIT:
                     {
-                        writer.WriteBool(buf.GetInt8() != 0);
+                        writer.WriteObject<bool>(buf.GetInt8() != 0);
                         break;
                     }
 
                     case SQL_BIGINT:
                     {
-                        writer.WriteInt64(buf.GetInt64());
+                        writer.WriteObject<int64_t>(buf.GetInt64());
                         break;
                     }
 

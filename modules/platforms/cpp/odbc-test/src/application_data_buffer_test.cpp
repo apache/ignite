@@ -43,7 +43,7 @@ BOOST_AUTO_TEST_SUITE(ApplicationDataBufferTestSuite)
 BOOST_AUTO_TEST_CASE(TestPutIntToString)
 {
     char buffer[1024];
-    SqlLen reslen;
+    SqlLen reslen = 0;
     int* offset = 0;
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, buffer, sizeof(buffer), &reslen, &offset);
@@ -76,7 +76,7 @@ BOOST_AUTO_TEST_CASE(TestPutIntToString)
 BOOST_AUTO_TEST_CASE(TestPutFloatToString)
 {
     char buffer[1024];
-    SqlLen reslen;
+    SqlLen reslen = 0;
     int* offset = 0;
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, buffer, sizeof(buffer), &reslen, &offset);
@@ -101,7 +101,7 @@ BOOST_AUTO_TEST_CASE(TestPutFloatToString)
 BOOST_AUTO_TEST_CASE(TestPutGuidToString)
 {
     char buffer[1024];
-    SqlLen reslen;
+    SqlLen reslen = 0;
     int* offset = 0;
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, buffer, sizeof(buffer), &reslen, &offset);
@@ -117,7 +117,7 @@ BOOST_AUTO_TEST_CASE(TestPutGuidToString)
 BOOST_AUTO_TEST_CASE(TestGetGuidFromString)
 {
     char buffer[] = "1da1ef8f-39ff-4d62-8b72-e8e9f3371801";
-    SqlLen reslen;
+    SqlLen reslen = 0;
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, buffer, sizeof(buffer) - 1, &reslen, 0);
 
@@ -129,7 +129,7 @@ BOOST_AUTO_TEST_CASE(TestGetGuidFromString)
 BOOST_AUTO_TEST_CASE(TestPutBinaryToString)
 {
     char buffer[1024];
-    SqlLen reslen;
+    SqlLen reslen = 0;
     int* offset = 0;
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, buffer, sizeof(buffer), &reslen, &offset);
@@ -145,7 +145,7 @@ BOOST_AUTO_TEST_CASE(TestPutBinaryToString)
 BOOST_AUTO_TEST_CASE(TestPutStringToString)
 {
     char buffer[1024];
-    SqlLen reslen;
+    SqlLen reslen = 0;
     int* offset = 0;
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, buffer, sizeof(buffer), &reslen, &offset);
@@ -161,7 +161,7 @@ BOOST_AUTO_TEST_CASE(TestPutStringToString)
 BOOST_AUTO_TEST_CASE(TestPutStringToWstring)
 {
     wchar_t buffer[1024];
-    SqlLen reslen;
+    SqlLen reslen = 0;
     int* offset = 0;
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_WCHAR, buffer, sizeof(buffer), &reslen, &offset);
@@ -175,7 +175,7 @@ BOOST_AUTO_TEST_CASE(TestPutStringToWstring)
 BOOST_AUTO_TEST_CASE(TestPutStringToLong)
 {
     long numBuf;
-    SqlLen reslen;
+    SqlLen reslen = 0;
     int* offset = 0;
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_SIGNED_LONG, &numBuf, sizeof(numBuf), &reslen, &offset);
@@ -190,7 +190,7 @@ BOOST_AUTO_TEST_CASE(TestPutStringToLong)
 BOOST_AUTO_TEST_CASE(TestPutStringToTiny)
 {
     int8_t numBuf;
-    SqlLen reslen;
+    SqlLen reslen = 0;
     int* offset = 0;
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_SIGNED_TINYINT, &numBuf, sizeof(numBuf), &reslen, &offset);
@@ -205,7 +205,7 @@ BOOST_AUTO_TEST_CASE(TestPutStringToTiny)
 BOOST_AUTO_TEST_CASE(TestPutStringToFloat)
 {
     float numBuf;
-    SqlLen reslen;
+    SqlLen reslen = 0;
     int* offset = 0;
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_FLOAT, &numBuf, sizeof(numBuf), &reslen, &offset);
@@ -220,7 +220,7 @@ BOOST_AUTO_TEST_CASE(TestPutStringToFloat)
 BOOST_AUTO_TEST_CASE(TestPutIntToFloat)
 {
     float numBuf;
-    SqlLen reslen;
+    SqlLen reslen = 0;
     int* offset = 0;
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_FLOAT, &numBuf, sizeof(numBuf), &reslen, &offset);
@@ -247,7 +247,7 @@ BOOST_AUTO_TEST_CASE(TestPutIntToFloat)
 BOOST_AUTO_TEST_CASE(TestPutFloatToShort)
 {
     short numBuf;
-    SqlLen reslen;
+    SqlLen reslen = 0;
     int* offset = 0;
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_SIGNED_SHORT, &numBuf, sizeof(numBuf), &reslen, &offset);
@@ -268,7 +268,7 @@ BOOST_AUTO_TEST_CASE(TestPutFloatToShort)
 BOOST_AUTO_TEST_CASE(TestPutDecimalToDouble)
 {
     double numBuf;
-    SqlLen reslen;
+    SqlLen reslen = 0;
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_DOUBLE, &numBuf, sizeof(numBuf), &reslen, 0);
 
@@ -297,7 +297,7 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToDouble)
 BOOST_AUTO_TEST_CASE(TestPutDecimalToLong)
 {
     long numBuf;
-    SqlLen reslen;
+    SqlLen reslen = 0;
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_SIGNED_LONG, &numBuf, sizeof(numBuf), &reslen, 0);
 
@@ -324,7 +324,7 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToLong)
 BOOST_AUTO_TEST_CASE(TestPutDecimalToString)
 {
     char strBuf[64];
-    SqlLen reslen;
+    SqlLen reslen = 0;
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen, 0);
 
@@ -351,7 +351,7 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToString)
 BOOST_AUTO_TEST_CASE(TestPutDecimalToNumeric)
 {
     SQL_NUMERIC_STRUCT buf;
-    SqlLen reslen;
+    SqlLen reslen = 0;
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_NUMERIC, &buf, sizeof(buf), &reslen, 0);
 

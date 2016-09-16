@@ -1393,7 +1393,7 @@ namespace ignite
 
                 int32_t ilen = static_cast<int32_t>(*resLenPtr);
 
-                return ilen <= SQL_LEN_DATA_AT_EXEC_OFFSET;
+                return ilen <= SQL_LEN_DATA_AT_EXEC_OFFSET || ilen == SQL_DATA_AT_EXEC;
             }
 
             size_t ApplicationDataBuffer::GetDataAtExecSize() const
@@ -1465,35 +1465,18 @@ namespace ignite
                     case IGNITE_ODBC_C_TYPE_DEFAULT:
                     case IGNITE_ODBC_C_TYPE_UNSUPPORTED:
                     default:
-                        return 0;
+                        break;
                 }
-
-                const SQLLEN* resLenPtr = GetResLen();
-
-                if (!resLenPtr)
-                    return 0;
-
-                int32_t ilen = static_cast<int32_t>(*resLenPtr);
-
-                if (ilen <= SQL_LEN_DATA_AT_EXEC_OFFSET)
-                    return static_cast<size_t>(SQL_LEN_DATA_AT_EXEC(ilen));
 
                 return 0;
             }
 
             size_t ApplicationDataBuffer::GetInputSize() const
             {
-                const SQLLEN* resLenPtr = GetResLen();
+                if (!IsDataAtExec())
+                    return static_cast<size_t>(GetSize());
 
-                if (!resLenPtr)
-                    return 0;
-
-                int32_t ilen = static_cast<int32_t>(*resLenPtr);
-
-                if (ilen > SQL_LEN_DATA_AT_EXEC_OFFSET)
-                    return static_cast<size_t>(ilen);
-
-                return 0;
+                return GetDataAtExecSize();
             }
         }
     }
