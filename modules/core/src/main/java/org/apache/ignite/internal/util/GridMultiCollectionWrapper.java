@@ -101,6 +101,10 @@ public class GridMultiCollectionWrapper<E> implements Collection<E>{
 
                 throw new NoSuchElementException();
             }
+
+            @Override public void remove() {
+                throw new UnsupportedOperationException();
+            }
         };
     }
 
