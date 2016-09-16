@@ -26,7 +26,6 @@ namespace Apache.Ignite.AspNet.Impl
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Log;
 
     /// <summary>
     /// Config utils.
@@ -57,9 +56,6 @@ namespace Apache.Ignite.AspNet.Impl
             try
             {
                 var grid = StartFromApplicationConfiguration(cfgSection, gridName);
-
-                grid.Logger.GetLogger(callerType.ToString())
-                    .Info("Initializing {0} with cache '{1}'", callerType, cacheName);
 
                 var cacheConfiguration = new CacheConfiguration(cacheName);
 

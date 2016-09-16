@@ -28,7 +28,6 @@ namespace Apache.Ignite.AspNet.Tests
     using System.Web.SessionState;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Tests;
     using NUnit.Framework;
 
@@ -344,34 +343,6 @@ namespace Apache.Ignite.AspNet.Tests
         }
 
         /// <summary>
-        /// Tests the trace logging.
-        /// </summary>
-        [Test]
-        public void TestTraceLogging()
-        {
-            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
-            {
-                Logger = new SessionLogger()
-            };
-
-            using (Ignition.Start(cfg))
-            {
-                var provider = new IgniteSessionStateStoreProvider();
-
-                provider.Initialize("provider2", new NameValueCollection());
-
-                CheckProvider(provider);
-
-                var logs = SessionLogger.GetLogs();
-
-                Assert.AreEqual("Apache.Ignite.AspNet.IgniteSessionStateStoreProvider initialized: " +
-                                "gridName=, cacheName=, applicationId=", logs[1]);
-
-                Assert.AreEqual("GetItem session store data found: id=1, url=/, timeout=0", logs[4]);
-            }
-        }
-
-        /// <summary>
         /// Updates the store data.
         /// </summary>
         private static SessionStateStoreData UpdateStoreData(SessionStateStoreData data)
@@ -450,46 +421,6 @@ namespace Apache.Ignite.AspNet.Tests
             provider.ResetItemTimeout(HttpContext, Id);
             provider.EndRequest(HttpContext);
             provider.Dispose();
-        }
-
-        /// <summary>
-        /// Logger.
-        /// </summary>
-        private class SessionLogger : ILogger
-        {
-            /** */
-            private static readonly List<string> Logs = new List<string>();
-
-            /** <inheritdoc /> */
-            public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider, string category,
-                string nativeErrorInfo, Exception ex)
-            {
-                if (category != typeof(IgniteSessionStateStoreProvider).FullName)
-                    return;
-
-                lock (Logs)
-                {
-                    Logs.Add(string.Format(message, args));
-                }
-            }
-
-            /** <inheritdoc /> */
-            public bool IsEnabled(LogLevel level)
-            {
-                return true;
-            }
-
-            /// <summary>
-            /// Gets the logs.
-            /// </summary>
-            /// <returns></returns>
-            public static string[] GetLogs()
-            {
-                lock (Logs)
-                {
-                    return Logs.ToArray();
-                }
-            }
         }
     }
 }

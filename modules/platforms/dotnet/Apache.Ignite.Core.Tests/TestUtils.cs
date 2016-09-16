@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Tests
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
-    using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Impl;
@@ -336,32 +335,6 @@ namespace Apache.Ignite.Core.Tests
                 JvmOptions = TestJavaOptions(jvmDebug),
                 JvmClasspath = CreateTestClasspath()
             };
-        }
-
-        /// <summary>
-        /// Runs the test in new process.
-        /// </summary>
-        public static void RunTestInNewProcess(string fixtureName, string testName)
-        {
-            var procStart = new ProcessStartInfo
-            {
-                // ReSharper disable once AssignNullToNotNullAttribute
-                FileName = typeof(TestUtils).Assembly.Location,
-                Arguments = fixtureName + " " + testName,
-                CreateNoWindow = true,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            };
-
-            var proc = System.Diagnostics.Process.Start(procStart);
-
-            Assert.IsNotNull(proc);
-
-            Console.WriteLine(proc.StandardOutput.ReadToEnd());
-            Console.WriteLine(proc.StandardError.ReadToEnd());
-            Assert.IsTrue(proc.WaitForExit(15000));
-            Assert.AreEqual(0, proc.ExitCode);
         }
     }
 }
