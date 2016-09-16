@@ -15,13 +15,14 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.AspNet
+namespace Apache.Ignite.AspNet.Tests
 {
     using System;
     using System.Collections.Specialized;
     using System.Threading;
-    using Apache.Ignite.AspNet;
+    using Apache.Ignite.Core;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Tests;
     using NUnit.Framework;
 
     /// <summary>
@@ -70,18 +71,17 @@ namespace Apache.Ignite.Core.Tests.AspNet
         {
             var cacheProvider = new IgniteOutputCacheProvider();
 
-            // Not initialized
+            // Not initialized.
             Assert.Throws<InvalidOperationException>(() => cacheProvider.Get("1"));
 
-            // Grid not started
+            // Invalid section.
             Assert.Throws<IgniteException>(() =>
                 cacheProvider.Initialize("testName", new NameValueCollection
                 {
-                    {GridNameAttr, "invalidGridName"},
-                    {CacheNameAttr, CacheName}
+                    {SectionNameAttr, "invalidSection"},
                 }));
 
-            // Valid grid
+            // Valid grid.
             cacheProvider = GetProvider();
 
             cacheProvider.Set("1", 1, DateTime.MaxValue);
