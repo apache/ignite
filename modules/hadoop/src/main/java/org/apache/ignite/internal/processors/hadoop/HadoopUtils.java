@@ -43,6 +43,7 @@ import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.v2.HadoopSplitWrapper;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Hadoop utility methods.
@@ -326,33 +327,13 @@ public class HadoopUtils {
      * @return New instance of {@link Configuration}.
      */
     public static Configuration safeCreateConfiguration() {
-        final ClassLoader cl0 = Thread.currentThread().getContextClassLoader();
-
-        Thread.currentThread().setContextClassLoader(Configuration.class.getClassLoader());
+        final ClassLoader oldLdr = setContextClassLoader(Configuration.class.getClassLoader());
 
         try {
             return new Configuration();
         }
         finally {
-            Thread.currentThread().setContextClassLoader(cl0);
-        }
-    }
-
-    /**
-     * Creates {@link JobConf} in a correct class loader context to avoid caching
-     * of inappropriate class loader in the Configuration object.
-     * @return New instance of {@link JobConf}.
-     */
-    public static JobConf safeCreateJobConf() {
-        final ClassLoader cl0 = Thread.currentThread().getContextClassLoader();
-
-        Thread.currentThread().setContextClassLoader(JobConf.class.getClassLoader());
-
-        try {
-            return new JobConf();
-        }
-        finally {
-            Thread.currentThread().setContextClassLoader(cl0);
+            restoreContextClassLoader(oldLdr);
         }
     }
 
@@ -379,6 +360,33 @@ public class HadoopUtils {
             res.add(sortedSplit.split);
 
         return res;
+    }
+
+    /**
+     * Set context class loader.
+     *
+     * @param newLdr New class loader.
+     * @return Old class loader.
+     */
+    @Nullable public static ClassLoader setContextClassLoader(@Nullable ClassLoader newLdr) {
+        ClassLoader oldLdr = Thread.currentThread().getContextClassLoader();
+
+        if (newLdr != oldLdr)
+            Thread.currentThread().setContextClassLoader(newLdr);
+
+        return oldLdr;
+    }
+
+    /**
+     * Restore context class loader.
+     *
+     * @param oldLdr Original class loader.
+     */
+    public static void restoreContextClassLoader(@Nullable ClassLoader oldLdr) {
+        ClassLoader newLdr = Thread.currentThread().getContextClassLoader();
+
+        if (newLdr != oldLdr)
+            Thread.currentThread().setContextClassLoader(oldLdr);
     }
 
     /**
@@ -432,5 +440,4 @@ public class HadoopUtils {
             return obj instanceof SplitSortWrapper && id == ((SplitSortWrapper)obj).id;
         }
     }
-
 }
