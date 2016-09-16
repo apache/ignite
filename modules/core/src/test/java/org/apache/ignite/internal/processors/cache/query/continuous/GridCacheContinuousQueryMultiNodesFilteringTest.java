@@ -243,17 +243,6 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
 
         for (QueryCursor cur : qryCursors)
             cur.close();
-
-        cntr.set(0);
-
-        for (int i = 0; i < KEYS; i++)
-            grid(i % nodesCnt).cache(ccfg.getName()).put(i, i);
-
-        assertFalse("Got events after cursor.close()", GridTestUtils.waitForCondition(new PA() {
-            @Override public boolean apply() {
-                return cntr.get() == 0;
-            }
-        }, 200L));
     }
 
     /** */

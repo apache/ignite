@@ -692,10 +692,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         startFuts.put(routineId, fut);
 
         try {
-            if (locIncluded)
+            if (locIncluded || hnd.isQuery())
                 registerHandler(ctx.localNodeId(), routineId, hnd, bufSize, interval, autoUnsubscribe, true);
-            else if (hnd.isQuery())
-                hnd.initialize(ctx.localNodeId(), routineId, ctx);
 
             ctx.discovery().sendCustomEvent(new StartRoutineDiscoveryMessage(routineId, reqData,
                 reqData.handler().keepBinary()));

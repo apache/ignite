@@ -303,7 +303,18 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         assert routineId != null;
         assert ctx != null;
 
-        init(nodeId, routineId, ctx, true);
+        if (locLsnr != null) {
+            if (locLsnr instanceof JCacheQueryLocalListener) {
+                ctx.resource().injectGeneric(((JCacheQueryLocalListener)locLsnr).impl);
+
+                asyncCallback = ((JCacheQueryLocalListener)locLsnr).async();
+            }
+            else {
+                ctx.resource().injectGeneric(locLsnr);
+
+                asyncCallback = U.hasAnnotation(locLsnr, IgniteAsyncCallback.class);
+            }
+        }
 
         final CacheEntryEventFilter filter = getEventFilter();
 
@@ -323,11 +334,25 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             }
         }
 
+        entryBufs = new ConcurrentHashMap<>();
+
         backupQueue = new ConcurrentLinkedDeque8<>();
+
+        ackBuf = new AcknowledgeBuffer();
+
+        rcvs = new ConcurrentHashMap<>();
+
+        this.nodeId = nodeId;
+
+        this.routineId = routineId;
+
+        this.ctx = ctx;
 
         final boolean loc = nodeId.equals(ctx.localNodeId());
 
         assert !skipPrimaryCheck || loc;
+
+        log = ctx.log(CacheContinuousQueryHandler.class);
 
         CacheContinuousQueryListener<K, V> lsnr = new CacheContinuousQueryListener<K, V>() {
             @Override public void onExecution() {
@@ -498,105 +523,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             return RegisterStatus.DELAYED;
 
         return mgr.registerListener(routineId, lsnr, internal);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void initialize(UUID nodeId, UUID routineId, GridKernalContext ctx) throws IgniteCheckedException {
-        init(nodeId, routineId, ctx, false);
-    }
-
-    /**
-     * Initialize internal continuous structures required.
-     *
-     * @param nodeId Node ID.
-     * @param routineId Routine ID.
-     * @param ctx Kernal context.
-     * @param skipRegisterNoopListener Skip listener registration.
-     * @throws IgniteCheckedException In case of error.
-     */
-    private void init(final UUID nodeId, final UUID routineId, final GridKernalContext ctx,
-        boolean skipRegisterNoopListener) throws IgniteCheckedException {
-        if (locLsnr != null) {
-            if (locLsnr instanceof JCacheQueryLocalListener) {
-                ctx.resource().injectGeneric(((JCacheQueryLocalListener)locLsnr).impl);
-
-                asyncCallback = ((JCacheQueryLocalListener)locLsnr).async();
-            }
-            else {
-                ctx.resource().injectGeneric(locLsnr);
-
-                asyncCallback = U.hasAnnotation(locLsnr, IgniteAsyncCallback.class);
-            }
-        }
-
-        rcvs = new ConcurrentHashMap<>();
-
-        this.nodeId = nodeId;
-
-        this.routineId = routineId;
-
-        log = ctx.log(CacheContinuousQueryHandler.class);
-
-        this.ctx = ctx;
-
-        entryBufs = new ConcurrentHashMap<>();
-
-        ackBuf = new AcknowledgeBuffer();
-
-        if (!skipRegisterNoopListener) {
-            CacheContinuousQueryManager mgr = manager(ctx);
-
-            // Register listener in ContinuousQueryManager for cleaning backup queue by timeout.
-            if (mgr != null)
-                mgr.registerListener(routineId, new CacheContinuousQueryListener() {
-                    @Override public void onExecution() {
-                        // No-op.
-                    }
-
-                    @Override
-                    public void onEntryUpdated(CacheContinuousQueryEvent evt, boolean primary, boolean recordIgniteEvt,
-                        @Nullable GridDhtAtomicUpdateFuture fut) {
-                        // No-op.
-                    }
-
-                    @Override public void onUnregister() {
-                        // No-op.
-                    }
-
-                    @Override public void cleanupBackupQueue(Map updateCntrs) {
-                        // No-op.
-                    }
-
-                    @Override public void flushBackupQueue(GridKernalContext ctx, AffinityTopologyVersion topVer) {
-                        // No-op.
-                    }
-
-                    @Override public void acknowledgeBackupOnTimeout(GridKernalContext ctx) {
-                        sendBackupAcknowledge(ackBuf.acknowledgeOnTimeout(), routineId, ctx);
-                    }
-
-                    @Override public void skipUpdateEvent(CacheContinuousQueryEvent evt, AffinityTopologyVersion topVer,
-                        boolean primary) {
-                        // No-op.
-                    }
-
-                    @Override public void onPartitionEvicted(int part) {
-                        // No-op.
-                    }
-
-                    @Override public boolean oldValueRequired() {
-                        return false;
-                    }
-
-                    @Override public boolean keepBinary() {
-                        return false;
-                    }
-
-                    @Override public boolean notifyExisting() {
-                        return false;
-                    }
-                }, internal);
-        }
     }
 
     /**

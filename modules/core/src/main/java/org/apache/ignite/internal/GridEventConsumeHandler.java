@@ -402,11 +402,6 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void initialize(UUID nodeId, UUID routineId, GridKernalContext ctx) throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public Object orderedTopic() {
         return null;
     }
