@@ -783,8 +783,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 p2pExecSvc,
                 mgmtExecSvc,
                 igfsExecSvc,
-                restExecSvc,
                 dataStreamExecSvc,
+                restExecSvc,
                 callbackExecSvc,
                 plugins);
 
