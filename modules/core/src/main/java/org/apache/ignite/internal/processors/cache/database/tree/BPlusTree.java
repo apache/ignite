@@ -407,8 +407,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                 if (r.fwdId != 0 && r.backId == 0) {
                     Result res = r.lockForward(0);
 
-                    if (res != FOUND)
+                    if (res != FOUND) {
+                        assert r.tail == null;
+
                         return res; // Retry.
+                    }
                 }
 
                 assert r.needReplaceInner == FALSE: "needReplaceInner";
@@ -2699,7 +2702,16 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
             assert fwdId != 0: fwdId;
             assert backId == 0: backId;
 
-            return writePage(fwdId, page(fwdId), lockTailForward, this, lvl);
+            Page fwd = page(fwdId);
+
+            try {
+                return writePage(fwdId, fwd, lockTailForward, this, lvl);
+            }
+            finally {
+                // If we were not able to lock forward page as tail, release the page.
+                if (!isTail(fwdId, lvl))
+                    fwd.close();
+            }
         }
 
         /**
