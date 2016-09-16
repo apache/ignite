@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
+import java.util.List;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -128,6 +130,10 @@ public class BlockingSslHandler {
 
         boolean loop = true;
 
+        final List<HandshakeStatus> hist = new ArrayList<>();
+
+        hist.add(handshakeStatus);
+
         while (loop) {
             switch (handshakeStatus) {
                 case NOT_HANDSHAKING:
@@ -184,6 +190,8 @@ public class BlockingSslHandler {
                         handshakeStatus + ']');
                 }
             }
+
+            hist.add(handshakeStatus);
         }
 
         if (log.isDebugEnabled())
@@ -353,15 +361,27 @@ public class BlockingSslHandler {
      * @throws GridNioException If failed to pass event to the next filter.
      */
     private Status unwrapHandshake() throws SSLException, IgniteCheckedException {
-        // Flip input buffer so we can read the collected data.
-        readFromNet();
+        final int pos = inNetBuf.position();
 
-        inNetBuf.flip();
+        // Try to unwrap data already available in buffer.
+        SSLEngineResult res = tryUnwrap();
 
-        SSLEngineResult res = unwrap0();
-        handshakeStatus = res.getHandshakeStatus();
+        if (handshakeStatus == NEED_UNWRAP)
+            readFromNet();
 
-        checkStatus(res);
+        if (res == null || handshakeStatus == NEED_UNWRAP) {
+            // Flip input buffer so we can read the collected data.
+            inNetBuf.flip();
+
+            // Must restore position after tryUnwrap()
+            inNetBuf.position(pos);
+
+            res = unwrap0();
+
+            handshakeStatus = res.getHandshakeStatus();
+
+            checkStatus(res);
+        }
 
         // If handshake finished, no data was produced, and the status is still ok,
         // try to unwrap more
@@ -380,6 +400,39 @@ public class BlockingSslHandler {
             inNetBuf.compact();
 
         return res.getStatus();
+    }
+
+    /**
+     * Try to unwrap data left in buffer. If that data was not enough
+     * position must be restored after reading data from network.
+     * <p>
+     *     This method was made for cases when all required data already read and next reading
+     *     from channel with block thread indefinitely.
+     * </p>
+     *
+     * @return SSLEngineResult after unwrap.
+     * @throws SSLException If failed.
+     */
+    private SSLEngineResult tryUnwrap() throws SSLException {
+        final int pos = inNetBuf.position();
+        final int lim = inNetBuf.limit();
+
+        // Nothing to unwrap.
+        if (pos == 0)
+            return null;
+
+        inNetBuf.flip();
+
+        final SSLEngineResult res = unwrap0();
+
+        handshakeStatus = res.getHandshakeStatus();
+
+        if (handshakeStatus == NEED_UNWRAP) {
+            inNetBuf.position(pos);
+            inNetBuf.limit(lim);
+        }
+
+        return res;
     }
 
     /**
@@ -463,15 +516,13 @@ public class BlockingSslHandler {
      */
     private void readFromNet() throws IgniteCheckedException {
         try {
-            inNetBuf.clear();
-
             int read = ch.read(inNetBuf);
 
             if (read == -1)
                 throw new IgniteCheckedException("Failed to read remote node response (connection closed).");
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Failed to write byte to socket.", e);
+            throw new IgniteCheckedException("Failed to read byte from socket.", e);
         }
     }
 

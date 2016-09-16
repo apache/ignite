@@ -5334,10 +5334,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         sslEngine.setUseClientMode(false);
 
-                        // Disable client auth explicitly, because incoming connections via SSLSocket
-                        // will produce errors during handshake in SSLEngine.
-                        sslEngine.setNeedClientAuth(false);
-                        sslEngine.setWantClientAuth(false);
+                        sslEngine.setNeedClientAuth(true);
+                        sslEngine.setWantClientAuth(true);
                     }
 
                     final SocketChannel ch = srvCh.accept();
@@ -5358,8 +5356,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         catch (SSLException | IgniteCheckedException e) {
                             log.warning("Failed to perform SSL handshake. [socket=" + sock + "]", e);
 
-                            sock.close();
-                            ch.close();
+                            U.closeQuiet(sock);
+                            U.closeQuiet(ch);
 
                             continue;
                         }
