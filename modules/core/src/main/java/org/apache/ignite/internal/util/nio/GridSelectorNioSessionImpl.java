@@ -43,8 +43,8 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     @GridToStringExclude
     private SelectionKey key;
 
-    /** Worker index for server */
-    private volatile int selectorIdx;
+    /** */
+    public GridNioWorker worker;
 
     /** Size counter. */
     private final AtomicInteger queueSize = new AtomicInteger();
@@ -72,7 +72,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      * Creates session instance.
      *
      * @param log Logger.
-     * @param selectorIdx Selector index for this session.
+     * @param worker NIO worker thread.
      * @param filterChain Filter chain that will handle requests.
      * @param locAddr Local address.
      * @param rmtAddr Remote address.
@@ -83,7 +83,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      */
     GridSelectorNioSessionImpl(
         IgniteLogger log,
-        int selectorIdx,
+        GridNioWorker worker,
         GridNioFilterChain filterChain,
         InetSocketAddress locAddr,
         InetSocketAddress rmtAddr,
@@ -94,7 +94,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     ) {
         super(filterChain, locAddr, rmtAddr, accepted);
 
-        assert selectorIdx >= 0;
+        assert worker != null;
         assert sndQueueLimit >= 0;
 
         assert locAddr != null : "GridSelectorNioSessionImpl should have local socket address.";
@@ -104,7 +104,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
 
         this.log = log;
 
-        this.selectorIdx = selectorIdx;
+        this.worker = worker;
 
         sem = sndQueueLimit > 0 ? new Semaphore(sndQueueLimit) : null;
 
@@ -153,19 +153,13 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
         return key;
     }
 
-    /**
-     * @return Selector index.
-     */
-    int selectorIndex() {
-        return selectorIdx;
+    void offerStateChange(GridNioFuture fut) {
+        GridNioWorker worker0 = worker;
+
+        if (worker0 != null)
+            worker0.offer(fut);
     }
 
-    /**
-     * @param selectorIdx Selector index.
-     */
-    void selectorIndex(int selectorIdx) {
-        this.selectorIdx = selectorIdx;
-    }
 
     /**
      * Adds write future at the front of the queue without acquiring back pressure semaphore.

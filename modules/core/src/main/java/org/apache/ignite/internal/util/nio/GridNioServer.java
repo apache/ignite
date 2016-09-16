@@ -434,10 +434,11 @@ public class GridNioServer<T> {
 
         NioOperationFuture<Boolean> fut = new NioOperationFuture<>(impl, NioOperation.CLOSE);
 
-        int idx = impl.selectorIndex(); // TODO
-
-        if (idx != -1)
-            clientWorkers.get(idx).offer(fut);
+        impl.offerStateChange(fut);
+//        int idx = impl.selectorIndex(); // TODO
+//
+//        if (idx != -1)
+//            clientWorkers.get(idx).offer(fut);
 
         return fut;
     }
@@ -499,10 +500,11 @@ public class GridNioServer<T> {
         }
         else if (msgCnt == 1) {
             // Change from 0 to 1 means that worker thread should be waken up.
-            int idx = ses.selectorIndex();
-
-            if (idx != -1) // TODO revisit
-                clientWorkers.get(idx).offer(fut);
+//            int idx = ses.selectorIndex();
+//
+//            if (idx != -1) // TODO revisit
+//                clientWorkers.get(idx).offer(fut);
+            ses.offerStateChange(fut);
         }
 
         if (msgQueueLsnr != null)
@@ -576,7 +578,8 @@ public class GridNioServer<T> {
             ses0.resend(futs);
 
             // Wake up worker.
-            clientWorkers.get(ses0.selectorIndex()).offer(((NioOperationFuture)fut0));
+            //clientWorkers.get(ses0.selectorIndex()).offer(((NioOperationFuture)fut0));
+            ses0.offerStateChange(fut0);
         }
     }
 
@@ -615,7 +618,7 @@ public class GridNioServer<T> {
 
         NioOperationFuture<?> fut = new NioOperationFuture<Void>(impl, op);
 
-        clientWorkers.get(impl.selectorIndex()).offer(fut);
+        impl.offerStateChange(fut);
 
         return fut;
     }
@@ -1324,7 +1327,7 @@ public class GridNioServer<T> {
     /**
      * Thread performing only read operations from the channel.
      */
-    public abstract class AbstractNioClientWorker extends GridWorker {
+    public abstract class AbstractNioClientWorker extends GridWorker implements GridNioWorker {
         /** Queue of change requests on this selector. */
         private final ConcurrentLinkedQueue<NioOperationFuture> changeReqs = new ConcurrentLinkedQueue<>();
 
@@ -1445,8 +1448,8 @@ public class GridNioServer<T> {
          *
          * @param req Change request.
          */
-        private void offer(NioOperationFuture req) {
-            changeReqs.offer(req);
+        @Override  public void offer(GridNioFuture req) {
+            changeReqs.offer((NioOperationFuture)req);
 
             selector.wakeup();
         }
@@ -1478,7 +1481,7 @@ public class GridNioServer<T> {
                                 GridSelectorNioSessionImpl ses = f.session();
 
                                 if (idx == f.toIdx) {
-                                    ses.selectorIndex(idx);
+                                    ses.worker = this;
 
                                     sessions0.add(ses);
 
@@ -1489,10 +1492,10 @@ public class GridNioServer<T> {
                                 }
                                 else {
                                     if (sessions0.remove(ses)) {
-                                        assert ses.selectorIndex() == idx; // TODO replace with IF and ignore?
+                                        assert ses.worker == this; // TODO replace with IF and ignore?
 
                                         // Cleanup.
-                                        ses.selectorIndex(-1);
+                                        ses.worker = null;
 
                                         SelectionKey key = ses.key();
 
@@ -1855,7 +1858,7 @@ public class GridNioServer<T> {
 
                 final GridSelectorNioSessionImpl ses = new GridSelectorNioSessionImpl(
                     log,
-                    idx,
+                    this,
                     filterChain,
                     (InetSocketAddress)sockCh.getLocalAddress(),
                     (InetSocketAddress)sockCh.getRemoteAddress(),
