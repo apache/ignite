@@ -6119,6 +6119,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                 ses.removeMeta(INCOMPLETE_MESSAGE_META);
 
                 proceedMessageReceived(ses, obj);
+
+                // There are left bytes not processed
+                while (buf.hasRemaining())
+                    onMessageReceived(ses, msg);
             }
             else
                 ses.addMeta(INCOMPLETE_MESSAGE_META, msgBuf);
