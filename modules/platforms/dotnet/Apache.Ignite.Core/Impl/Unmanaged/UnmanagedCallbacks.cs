@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.IO;
     using System.Runtime.InteropServices;
     using System.Threading;
@@ -1116,6 +1117,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     if (_ignite != null && errDataLen > 0)
                     {
                         // Stream disposal intentionally omitted: IGNITE-1598
+                        // ReSharper disable once ExpressionIsAlwaysNull
                         var stream = new PlatformRawMemory(errData, errDataLen).GetStream();
 
                         throw ExceptionUtils.GetException(_ignite, errCls, errMsg, stackTrace,
