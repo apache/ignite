@@ -66,7 +66,7 @@ public class PlatformDotNetSessionLockProcessor implements CacheEntryProcessor<S
         assert data != null;
 
         if (data.isLocked())
-            return new PlatformDotNetSessionLockResult(false, null, data.lockTime());
+            return new PlatformDotNetSessionLockResult(false, null, data.lockTime(), data.lockId());
 
         // Not locked: lock and return result
         data = data.lock(lockNodeId, lockId, lockTime);
@@ -74,7 +74,7 @@ public class PlatformDotNetSessionLockProcessor implements CacheEntryProcessor<S
         // Apply.
         entry.setValue(data);
 
-        return new PlatformDotNetSessionLockResult(true, data, null);
+        return new PlatformDotNetSessionLockResult(true, data, null, data.lockId());
     }
 
     /** {@inheritDoc */

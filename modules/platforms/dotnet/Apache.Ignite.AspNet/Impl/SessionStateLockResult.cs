@@ -35,6 +35,9 @@ namespace Apache.Ignite.AspNet.Impl
         /** Lock time. */
         private readonly DateTime? _lockTime;
 
+        /** Lock id. */
+        private readonly long _lockId;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SessionStateLockResult"/> class.
         /// </summary>
@@ -47,6 +50,7 @@ namespace Apache.Ignite.AspNet.Impl
                 _data = new IgniteSessionStateStoreData(reader);
 
             _lockTime = reader.ReadTimestamp();
+            _lockId = reader.ReadLong();
 
             Debug.Assert(_success ^ (_data == null));
             Debug.Assert(_success ^ (_lockTime != null));
@@ -74,6 +78,14 @@ namespace Apache.Ignite.AspNet.Impl
         public DateTime? LockTime
         {
             get { return _lockTime; }
+        }
+
+        /// <summary>
+        /// Gets the lock identifier.
+        /// </summary>
+        public long LockId
+        {
+            get { return _lockId; }
         }
     }
 }

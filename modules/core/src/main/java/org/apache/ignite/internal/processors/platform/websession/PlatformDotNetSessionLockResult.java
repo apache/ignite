@@ -41,6 +41,9 @@ public class PlatformDotNetSessionLockResult implements Binarylizable {
     /** Lock time. */
     private Timestamp lockTime;
 
+    /** Lock id. */
+    private long lockId;
+
     /**
      * Constructor.
      *
@@ -48,12 +51,14 @@ public class PlatformDotNetSessionLockResult implements Binarylizable {
      * @param data Session data.
      * @param lockTime Lock time.
      */
-    public PlatformDotNetSessionLockResult(boolean success, PlatformDotNetSessionData data, Timestamp lockTime) {
+    public PlatformDotNetSessionLockResult(boolean success, PlatformDotNetSessionData data, Timestamp lockTime,
+        long lockId) {
         assert success ^ (data == null);
 
         this.success = success;
         this.data = data;
         this.lockTime = lockTime;
+        this.lockId = lockId;
     }
 
     /** {@inheritDoc} */
@@ -75,6 +80,7 @@ public class PlatformDotNetSessionLockResult implements Binarylizable {
             data.writeBinary(writer);
 
         writer.writeTimestamp(lockTime);
+        writer.writeLong(lockId);
     }
 
     /** {@inheritDoc} */
@@ -90,6 +96,7 @@ public class PlatformDotNetSessionLockResult implements Binarylizable {
         }
 
         lockTime = raw.readTimestamp();
+        lockId = raw.readLong();
     }
 
     /** {@inheritDoc} */

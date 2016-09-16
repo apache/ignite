@@ -237,7 +237,7 @@ namespace Apache.Ignite.AspNet
                 Debug.Assert(lockResult.LockTime != null);
 
                 lockAge = DateTime.UtcNow - lockResult.LockTime.Value;
-                lockId = lockResult.Data.LockId;
+                lockId = lockResult.LockId;
 
                 return null;
             }
