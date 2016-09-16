@@ -382,7 +382,7 @@ public class HadoopV2Job implements HadoopJob {
      * @throws Exception On error.
      */
     private void stopHadoopFsDaemons(ClassLoader ldr) throws Exception {
-        Class<?> daemonCls = ldr.loadClass(HadoopClassLoader.HADOOP_DAEMON_CLASS_NAME);
+        Class<?> daemonCls = ldr.loadClass(HadoopClassLoader.CLS_DAEMON);
 
         Method m = daemonCls.getMethod("dequeueAndStopAll");
 

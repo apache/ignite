@@ -84,7 +84,7 @@ if [ "${HADOOP_EDITION}" == "1" ]; then
         fi
     fi
 
-    IGNITE_HADOOP_CLASSPATH=$( "$JAVA" -cp "${IGNITE_HOME}"/libs/ignite-hadoop/'*' \
+    IGNITE_HADOOP_CLASSPATH=$( "$JAVA" -cp "${IGNITE_HOME}"/libs/'*' \
         org.apache.ignite.internal.processors.hadoop.HadoopClasspathMain ":" )
 
     statusCode=${?}

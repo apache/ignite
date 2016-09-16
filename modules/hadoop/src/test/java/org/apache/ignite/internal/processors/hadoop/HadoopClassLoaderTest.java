@@ -94,7 +94,7 @@ public class HadoopClassLoaderTest extends TestCase {
             CircularWithoutHadoop.class,
         };
 
-        for (Class c: positiveClasses)
+        for (Class c : positiveClasses)
             assertTrue(c.getName(), ldr.hasExternalDependencies(c.getName()));
 
         // Negative cases:
@@ -104,7 +104,7 @@ public class HadoopClassLoaderTest extends TestCase {
             Without.class,
         };
 
-        for (Class c: negativeClasses)
+        for (Class c : negativeClasses)
             assertFalse(c.getName(), ldr.hasExternalDependencies(c.getName()));
     }
 }

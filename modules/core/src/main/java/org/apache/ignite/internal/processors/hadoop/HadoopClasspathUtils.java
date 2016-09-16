@@ -215,7 +215,7 @@ public class HadoopClasspathUtils {
      * @return Parsed libs search patterns.
      * @throws IOException If failed.
      */
-    static Collection<SearchDirectory> parseUserLibs() throws IOException {
+    public static Collection<SearchDirectory> parseUserLibs() throws IOException {
         return parseUserLibs(systemOrEnv(HADOOP_USER_LIBS, null));
     }
 
@@ -226,7 +226,7 @@ public class HadoopClasspathUtils {
      * @return Result.
      * @throws IOException If failed.
      */
-    static Collection<SearchDirectory> parseUserLibs(String str) throws IOException {
+    public static Collection<SearchDirectory> parseUserLibs(String str) throws IOException {
         Collection<SearchDirectory> res = new LinkedList<>();
 
         if (!isEmpty(str)) {
@@ -314,7 +314,7 @@ public class HadoopClasspathUtils {
     /**
      * Simple pair-like structure to hold directory name and a mask assigned to it.
      */
-    static class SearchDirectory {
+    public static class SearchDirectory {
         /** File. */
         private final File dir;
 
@@ -355,14 +355,14 @@ public class HadoopClasspathUtils {
         /**
          * @return Absolute path.
          */
-        String absolutePath() {
+        public String absolutePath() {
             return dir.getAbsolutePath();
         }
 
         /**
          * @return Child files.
          */
-        File[] files() throws IOException {
+        public File[] files() throws IOException {
             File[] files = dir.listFiles(new FilenameFilter() {
                 @Override public boolean accept(File dir, String name) {
                     return filter.test(name);
@@ -382,7 +382,7 @@ public class HadoopClasspathUtils {
         /**
          * @return {@code True} if wildcard can be used.
          */
-        boolean useWildcard() {
+        public boolean useWildcard() {
             return filter instanceof AcceptAllDirectoryFilter;
         }
     }
@@ -390,7 +390,7 @@ public class HadoopClasspathUtils {
     /**
      * Directory filter interface.
      */
-    static interface DirectoryFilter {
+    public static interface DirectoryFilter {
         /**
          * Test if file with this name should be included.
          *
@@ -403,7 +403,7 @@ public class HadoopClasspathUtils {
     /**
      * Filter to accept all files.
      */
-    static class AcceptAllDirectoryFilter implements DirectoryFilter {
+    public static class AcceptAllDirectoryFilter implements DirectoryFilter {
         /** Singleton instance. */
         public static final AcceptAllDirectoryFilter INSTANCE = new AcceptAllDirectoryFilter();
 
@@ -416,7 +416,7 @@ public class HadoopClasspathUtils {
     /**
      * Filter which uses prefix to filter files.
      */
-    static class PrefixDirectoryFilter implements DirectoryFilter {
+    public static class PrefixDirectoryFilter implements DirectoryFilter {
         /** Prefix. */
         private final String prefix;
 
@@ -440,7 +440,7 @@ public class HadoopClasspathUtils {
     /**
      * Filter which uses exact comparison.
      */
-    static class ExactDirectoryFilter implements DirectoryFilter {
+    public static class ExactDirectoryFilter implements DirectoryFilter {
         /** Name. */
         private final String name;
 
