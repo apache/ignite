@@ -19,86 +19,39 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 
 /**
- * Inner replace on remove.
+ * Fix remove ID record.
  */
-public class InnerReplaceRecord<L> extends PageDeltaRecord {
-    /** */
-    private int dstIdx;
-
-    /** */
-    private long srcPageId;
-
-    /** */
-    private int srcIdx;
-
+public class FixRemoveId extends PageDeltaRecord {
     /** */
     private long rmvId;
 
     /**
      * @param cacheId Cache ID.
      * @param pageId  Page ID.
-     * @param dstIdx Destination index.
-     * @param srcPageId Source page ID.
-     * @param srcIdx Source index.
+     * @param rmvId Remove ID.
      */
-    public InnerReplaceRecord(int cacheId, long pageId, int dstIdx, long srcPageId, int srcIdx, long rmvId) {
+    public FixRemoveId(int cacheId, long pageId, long rmvId) {
         super(cacheId, pageId);
 
-        this.dstIdx = dstIdx;
-        this.srcPageId = srcPageId;
-        this.srcIdx = srcIdx;
         this.rmvId = rmvId;
     }
 
     /** {@inheritDoc} */
-    @Override public void applyDelta(PageMemory pageMem, ByteBuffer dstBuf) throws IgniteCheckedException {
-        BPlusIO<L> io = PageIO.getBPlusIO(dstBuf);
+    @Override public void applyDelta(PageMemory mem, ByteBuffer buf)
+        throws IgniteCheckedException {
+        BPlusIO<?> io = PageIO.getBPlusIO(buf);
 
-        try (Page src = pageMem.page(cacheId(), srcPageId)) {
-            ByteBuffer srcBuf = src.getForRead();
-
-            try {
-                BPlusIO<L> srcIo = PageIO.getBPlusIO(srcBuf);
-
-                io.store(dstBuf, dstIdx, srcIo, srcBuf, srcIdx);
-                io.setRemoveId(dstBuf, rmvId);
-            }
-            finally {
-                src.releaseRead();
-            }
-        }
+        io.setRemoveId(buf, rmvId);
     }
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return RecordType.BTREE_PAGE_INNER_REPLACE;
-    }
-
-    /**
-     * @return Destination index.
-     */
-    public int destinationIndex() {
-        return dstIdx;
-    }
-
-    /**
-     * @return Source page ID.
-     */
-    public long sourcePageId() {
-        return srcPageId;
-    }
-
-    /**
-     * @return Source index.
-     */
-    public int sourceIndex() {
-        return srcIdx;
+        return RecordType.BTREE_FIX_REMOVE_ID;
     }
 
     /**

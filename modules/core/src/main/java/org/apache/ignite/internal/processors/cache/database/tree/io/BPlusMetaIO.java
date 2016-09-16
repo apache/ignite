@@ -59,11 +59,19 @@ public class BPlusMetaIO extends PageIO {
     }
 
     /**
+     * @param buf Buffer.
+     * @return Max levels possible for this page size.
+     */
+    public int getMaxLevels(ByteBuffer buf) {
+        return (buf.capacity() - REFS_OFF) / 8;
+    }
+
+    /**
      * @param buf  Buffer.
      * @param lvls Number of levels in this tree.
      */
     public void setLevelsCount(ByteBuffer buf, int lvls) {
-        assert lvls >= 0 && lvls < 30;
+        assert lvls >= 0 && lvls <= getMaxLevels(buf): lvls;
 
         buf.put(LVLS_OFF, (byte)lvls);
 

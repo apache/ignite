@@ -262,15 +262,12 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V>
         modes.primary = true;
         modes.backup = true;
 
-        long size = 0;
-
-        if (modes.heap)
-            size += size();
-
         if (modes.offheap)
-            size += storageSize.get();
-
-        return size;
+            return storageSize.get();
+        else if (modes.heap)
+            return size();
+        else
+            return 0;
     }
 
     /** {@inheritDoc} */

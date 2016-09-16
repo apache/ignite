@@ -33,22 +33,17 @@ public class RemoveRecord extends PageDeltaRecord {
     /** */
     private int cnt;
 
-    /** */
-    private long rmvId;
-
     /**
      * @param cacheId Cache ID.
      * @param pageId  Page ID.
      * @param idx Index.
      * @param cnt Count.
-     * @param rmvId Remove ID.
      */
-    public RemoveRecord(int cacheId, long pageId, int idx, int cnt, long rmvId) {
+    public RemoveRecord(int cacheId, long pageId, int idx, int cnt) {
         super(cacheId, pageId);
 
         this.idx = idx;
         this.cnt = cnt;
-        this.rmvId = rmvId;
     }
 
     /** {@inheritDoc} */
@@ -58,7 +53,7 @@ public class RemoveRecord extends PageDeltaRecord {
         if (io.getCount(buf) != cnt)
             throw new DeltaApplicationException("Count in wrong: " + cnt);
 
-        io.remove(buf, idx, cnt, rmvId);
+        io.remove(buf, idx, cnt);
     }
 
     /** {@inheritDoc} */
@@ -72,9 +67,5 @@ public class RemoveRecord extends PageDeltaRecord {
 
     public int count() {
         return cnt;
-    }
-
-    public long removeId() {
-        return rmvId;
     }
 }
