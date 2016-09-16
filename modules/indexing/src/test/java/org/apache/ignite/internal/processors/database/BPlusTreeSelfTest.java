@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
@@ -504,6 +505,24 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testMassiveRemove3_false() throws Exception {
+        MAX_PER_PAGE = 3;
+
+        doTestMassiveRemove(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMassiveRemove3_true() throws Exception {
+        MAX_PER_PAGE = 3;
+
+        doTestMassiveRemove(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testMassiveRemove2_false() throws Exception {
         MAX_PER_PAGE = 2;
 
@@ -600,6 +619,95 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         finally {
             rmvdIds.clear();
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMassivePut1_true() throws Exception {
+        MAX_PER_PAGE = 1;
+
+        doTestMassivePut(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMassivePut1_false() throws Exception {
+        MAX_PER_PAGE = 1;
+
+        doTestMassivePut(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMassivePut2_true() throws Exception {
+        MAX_PER_PAGE = 2;
+
+        doTestMassivePut(true);
+    }
+
+    public void testMassivePut2_false() throws Exception {
+        MAX_PER_PAGE = 2;
+
+        doTestMassivePut(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMassivePut3_true() throws Exception {
+        MAX_PER_PAGE = 3;
+
+        doTestMassivePut(true);
+    }
+
+    public void testMassivePut3_false() throws Exception {
+        MAX_PER_PAGE = 3;
+
+        doTestMassivePut(false);
+    }
+
+    /**
+     * @param canGetRow Can get row in inner page.
+     * @throws Exception If failed.
+     */
+    private void doTestMassivePut(final boolean canGetRow) throws Exception {
+        final int threads = 16;
+        final int keys = 26; // We may fail to insert more on small pages size because of tree height.
+
+        final TestTree tree = createTestTree(canGetRow);
+
+        info("Put...");
+
+        final AtomicLong k = new AtomicLong();
+
+        GridTestUtils.runMultiThreaded(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                for (;;) {
+                    long key = k.getAndIncrement();
+
+                    if (key >= keys)
+                        return null;
+
+                    assertNull(tree.put(key));
+                }
+            }
+        }, threads, "put");
+
+        assertEquals(keys, tree.size());
+
+        tree.validateTree();
+
+        GridCursor<Long> c = tree.find(null, null);
+
+        long x = 0;
+
+        while (c.next())
+            assertEquals(Long.valueOf(x++), c.get());
+
+        assertEquals(keys, x);
     }
 
     /**
