@@ -821,8 +821,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 if (pendingEntries != null && dataRow.expireTime() != 0)
                     pendingEntries.remove(new PendingRow(dataRow.expireTime(), dataRow.link()));
 
-                rowStore.removeRow(dataRow.link());
-
                 lsnr.onRemove();
 
                 val = dataRow.value();
@@ -837,6 +835,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
                 qryMgr.remove(key, partId, val, ver);
             }
+
+            if (dataRow != null)
+                rowStore.removeRow(dataRow.link());
         }
 
         /** {@inheritDoc} */

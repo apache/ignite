@@ -1162,7 +1162,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         if (locPart.state() != OWNING) {
                             boolean success = locPart.own();
 
-                            assert success;
+                            assert success : locPart;
 
                             changed |= success;
                         }
