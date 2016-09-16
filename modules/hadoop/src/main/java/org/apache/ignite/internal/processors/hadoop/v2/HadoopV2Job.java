@@ -89,7 +89,7 @@ public class HadoopV2Job implements HadoopJob {
     private final JobContextImpl jobCtx;
 
     /** */
-    private final HadoopHelper hadoopHelper;
+    private final HadoopHelper helper;
 
     /** Hadoop job ID. */
     private final HadoopJobId jobId;
@@ -134,14 +134,14 @@ public class HadoopV2Job implements HadoopJob {
      * @param libNames Optional additional native library names.
      */
     public HadoopV2Job(HadoopJobId jobId, final HadoopDefaultJobInfo jobInfo, IgniteLogger log,
-        @Nullable String[] libNames, HadoopHelper hadoopHelper) {
+        @Nullable String[] libNames, HadoopHelper helper) {
         assert jobId != null;
         assert jobInfo != null;
 
         this.jobId = jobId;
         this.jobInfo = jobInfo;
         this.libNames = libNames;
-        this.hadoopHelper = hadoopHelper;
+        this.helper = helper;
 
         ClassLoader oldLdr = HadoopUtils.setContextClassLoader(getClass().getClassLoader());
 
@@ -260,7 +260,7 @@ public class HadoopV2Job implements HadoopJob {
                 // Note that the classloader identified by the task it was initially created for,
                 // but later it may be reused for other tasks.
                 HadoopClassLoader ldr = new HadoopClassLoader(rsrcMgr.classPath(),
-                    HadoopClassLoader.nameForTask(info, false), libNames, hadoopHelper);
+                    HadoopClassLoader.nameForTask(info, false), libNames, helper);
 
                 cls = (Class<? extends HadoopTaskContext>)ldr.loadClass(HadoopV2TaskContext.class.getName());
 
