@@ -98,11 +98,6 @@ public class HadoopChildProcessRunner {
     /** Shuffle job. */
     private HadoopShuffleJob<HadoopProcessDescriptor> shuffleJob;
 
-    /** Hadoop helper.
-     *  NB: we consider helper to be thread-safe, so reusing the same instance for all the jobs.
-     */
-    private final HadoopHelper hadoopHelper = new HadoopHelperImpl();
-
     /** Concurrent mappers. */
     private int concMappers;
 
@@ -141,7 +136,7 @@ public class HadoopChildProcessRunner {
 
                 assert job == null;
 
-                job = req.jobInfo().createJob(HadoopV2Job.class, req.jobId(), log, null, hadoopHelper);
+                job = req.jobInfo().createJob(HadoopV2Job.class, req.jobId(), log, null, new HadoopHelperImpl());
 
                 job.initialize(true, nodeDesc.processId());
 

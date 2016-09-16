@@ -74,9 +74,6 @@ public class HadoopHelperImpl implements HadoopHelper {
             String nameType = originalName.replace('.', '/');
 
             @Override public String map(String type) {
-                if (type == null)
-                    return null;
-
                 if (type.equals(replaceType))
                     return nameType;
 
@@ -139,7 +136,7 @@ public class HadoopHelperImpl implements HadoopHelper {
             ctx.fldVisitor = new CollectingFieldVisitor(ctx, ctx.annVisitor);
             ctx.clsVisitor = new CollectingClassVisitor(ctx, ctx.annVisitor, ctx.mthdVisitor, ctx.fldVisitor);
 
-            hasDeps = hasExternalDependencies(this, clsName, parentClsLdr, ctx);
+            hasDeps = hasExternalDependencies(clsName, parentClsLdr, ctx);
 
             dependenciesCache.put(clsName, hasDeps);
         }
@@ -155,17 +152,17 @@ public class HadoopHelperImpl implements HadoopHelper {
      * @param ctx Context.
      * @return {@code true} If the class has external dependencies.
      */
-    static boolean hasExternalDependencies(HadoopHelper h, String clsName, ClassLoader parentClsLdr, CollectingContext ctx) {
-        if (h.isHadoop(clsName)) // Hadoop must not be in classpath but Idea sucks, so filtering explicitly as external.
+    boolean hasExternalDependencies(String clsName, ClassLoader parentClsLdr, CollectingContext ctx) {
+        if (isHadoop(clsName)) // Hadoop must not be in classpath but Idea sucks, so filtering explicitly as external.
             return true;
 
         // Try to get from parent to check if the type accessible.
-        InputStream in = h.loadClassBytes(parentClsLdr, clsName);
+        InputStream in = loadClassBytes(parentClsLdr, clsName);
 
         if (in == null) // The class is external itself, it must be loaded from this class loader.
             return true;
 
-        if (!h.isHadoopIgfs(clsName)) // Other classes should not have external dependencies.
+        if (!isHadoopIgfs(clsName)) // Other classes should not have external dependencies.
             return false;
 
         final ClassReader rdr;
@@ -198,7 +195,7 @@ public class HadoopHelperImpl implements HadoopHelper {
         Boolean res = dependenciesCache.get(parentCls);
 
         if (res == null)
-            res = hasExternalDependencies(h, parentCls, parentClsLdr, ctx);
+            res = hasExternalDependencies(parentCls, parentClsLdr, ctx);
 
         return res;
     }
@@ -302,8 +299,7 @@ public class HadoopHelperImpl implements HadoopHelper {
 
             Boolean res = dependenciesCache.get(depCls);
 
-            if (res == Boolean.TRUE || (res == null && hasExternalDependencies(HadoopHelperImpl.this, depCls,
-                parentClsLdr, this)))
+            if (res == Boolean.TRUE || (res == null && hasExternalDependencies(depCls, parentClsLdr, this)))
                 found = true;
         }
 
