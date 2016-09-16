@@ -18,14 +18,15 @@
 #ifndef _IGNITE_ODBC_COMMON_TYPES
 #define _IGNITE_ODBC_COMMON_TYPES
 
-#include <stddef.h>
 #include <stdint.h>
+
+#include <ignite/odbc/system/odbc_constants.h>
 
 namespace ignite
 {
     namespace odbc
     {
-        typedef ptrdiff_t SqlLen;
+        typedef SQLLEN SqlLen;
 
         /**
          * SQL result.

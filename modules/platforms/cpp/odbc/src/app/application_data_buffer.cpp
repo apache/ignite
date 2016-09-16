@@ -1386,7 +1386,7 @@ namespace ignite
 
             bool ApplicationDataBuffer::IsDataAtExec() const
             {
-                const SQLLEN* resLenPtr = GetResLen();
+                const SqlLen* resLenPtr = GetResLen();
 
                 if (!resLenPtr)
                     return false;
@@ -1406,7 +1406,7 @@ namespace ignite
                     case IGNITE_ODBC_C_TYPE_CHAR:
                     case IGNITE_ODBC_C_TYPE_BINARY:
                     {
-                        const SQLLEN* resLenPtr = GetResLen();
+                        const SqlLen* resLenPtr = GetResLen();
 
                         if (!resLenPtr)
                             return 0;
