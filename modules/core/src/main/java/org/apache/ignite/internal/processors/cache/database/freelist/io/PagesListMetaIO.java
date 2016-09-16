@@ -172,7 +172,7 @@ public class PagesListMetaIO extends PageIO {
      * @return Maximum number of items which can be stored in buffer.
      */
     private int getCapacity(ByteBuffer buf) {
-        return (buf.capacity() - NEXT_META_PAGE_OFF) / ITEM_SIZE;
+        return (buf.capacity() - ITEMS_OFF) / ITEM_SIZE;
     }
 
     /**
