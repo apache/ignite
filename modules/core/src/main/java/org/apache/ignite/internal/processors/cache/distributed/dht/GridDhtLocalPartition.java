@@ -142,6 +142,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /**
      * @param cctx Context.
      * @param id Partition ID.
+     * @param entryFactory Entry factory.
      */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     GridDhtLocalPartition(GridCacheContext cctx, int id, GridCacheMapEntryFactory entryFactory) {
@@ -251,7 +252,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return {@code True} if partition is empty.
      */
     public boolean isEmpty() {
-        return size() == 0;
+        return size() == 0 && map.size() == 0;
     }
 
     /**
