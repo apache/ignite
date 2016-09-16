@@ -369,23 +369,23 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     if (!stopping) {
                         boolean reconnect = false;
 
-                        GridNioRecoveryDescriptor recoveryData = ses.outRecoveryDescriptor();
+                        GridNioRecoveryDescriptor outDesc = ses.outRecoveryDescriptor();
 
-                        if (recoveryData != null) {
-                            if (recoveryData.nodeAlive(getSpiContext().node(id))) {
-                                if (!recoveryData.messagesFutures().isEmpty()) {
+                        if (outDesc != null) {
+                            if (outDesc.nodeAlive(getSpiContext().node(id))) {
+                                if (!outDesc.messagesFutures().isEmpty()) {
                                     reconnect = true;
 
                                     if (log.isDebugEnabled())
                                         log.debug("Session was closed but there are unacknowledged messages, " +
-                                            "will try to reconnect [rmtNode=" + recoveryData.node().id() + ']');
+                                            "will try to reconnect [rmtNode=" + outDesc.node().id() + ']');
                                 }
                             }
                             else
-                                recoveryData.onNodeLeft();
+                                outDesc.onNodeLeft();
                         }
 
-                        DisconnectedSessionInfo disconnectData = new DisconnectedSessionInfo(recoveryData,
+                        DisconnectedSessionInfo disconnectData = new DisconnectedSessionInfo(outDesc,
                             reconnect);
 
                         commWorker.addProcessDisconnectRequest(disconnectData);
@@ -649,7 +649,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 if (sndRes)
                     nioSrvr.sendSystem(ses, new RecoveryLastReceivedMessage(recovery.received()));
 
-                recovery.connected();
+                recovery.onConnected();
 
                 GridTcpNioCommunicationClient client = null;
 
@@ -679,7 +679,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 if (sndRes)
                     nioSrvr.sendSystem(ses, new RecoveryLastReceivedMessage(recovery.received()));
 
-                recovery.connected();
+                recovery.onConnected();
             }
 
             /**
@@ -1523,6 +1523,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     .append(", msgsRcvd=").append(desc.received())
                     .append(", lastAcked=").append(desc.lastAcknowledged())
                     .append(", reserveCnt=").append(desc.reserveCount())
+                    .append(", connected=").append(desc.connected())
+                    .append(", reserved=").append(desc.reserved())
+                    .append(", handshakeIdx=").append(desc.handshakeIndex())
                     .append(", descIdHash=").append(System.identityHashCode(desc))
                     .append(']').append(U.nl());
             }
@@ -2959,6 +2962,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /**
+     * @param recoveryDescs Descriptors map.
      * @param node Node.
      * @return Recovery receive data for given node.
      */
