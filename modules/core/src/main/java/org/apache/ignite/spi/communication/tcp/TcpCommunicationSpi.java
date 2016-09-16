@@ -443,11 +443,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 if (useTwoConnections(rmtNode)) {
                     final GridNioRecoveryDescriptor recoveryDesc = inRecoveryDescriptor(rmtNode);
 
-                    boolean reserve = recoveryDesc.tryReserve(msg0.connectCount(),
-                        new ConnectClosureNew(ses, recoveryDesc, rmtNode));
+                    ConnectClosureNew c = new ConnectClosureNew(ses, recoveryDesc, rmtNode);
+
+                    boolean reserve = recoveryDesc.tryReserve(msg0.connectCount(), c);
 
                     if (reserve)
                         connectedNew(recoveryDesc, ses, true);
+                    else {
+                        if (c.failed)
+                            ses.close();
+                    }
                 }
                 else {
                     GridCommunicationClient oldClient = clients.get(sndId);
@@ -628,7 +633,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
              * @param recovery Recovery descriptor.
              * @param ses Session.
              * @param node Node.
-             * @param rcvCnt Number of received messages..
+             * @param rcvCnt Number of received messages.
              * @param sndRes If {@code true} sends response for recovery handshake.
              * @param createClient If {@code true} creates NIO communication client.
              * @return Client.
@@ -698,6 +703,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 /** */
                 private final ClusterNode rmtNode;
 
+                /** */
+                private boolean failed;
+
                 /**
                  * @param ses Incoming session.
                  * @param recoveryDesc Recovery descriptor.
@@ -713,6 +721,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                 /** {@inheritDoc} */
                 @Override public void apply(Boolean success) {
+                    failed = !success;
+
                     if (success) {
                         IgniteInClosure<IgniteInternalFuture<?>> lsnr = new IgniteInClosure<IgniteInternalFuture<?>>() {
                             @Override public void apply(IgniteInternalFuture<?> msgFut) {
