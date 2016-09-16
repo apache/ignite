@@ -25,7 +25,9 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
@@ -39,6 +41,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jsr166.ConcurrentHashMap8;
 
 /**
  * File block location in the grid.
@@ -283,22 +286,12 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable,
             hosts.add(rawReader.readString());
     }
 
-    /**
-     * Converts collection of rich nodes to block location data.
-     *
-     * @param nodes Collection of affinity nodes.
-     */
-    private void convertFromNodes(Collection<ClusterNode> nodes) {
-        Collection<String> names = new LinkedHashSet<>();
-        Collection<String> hosts = new LinkedHashSet<>();
-        Collection<UUID> nodeIds = new ArrayList<>(nodes.size());
-
-        for (final ClusterNode node : nodes) {
-            // Normalize host names into Hadoop-expected format.
+    static class A {
+        A(ClusterNode node) {
             try {
-                Collection<InetAddress> addrs = U.toInetAddresses(node);
+                Collection<InetAddress> inetAddresses = U.toInetAddresses(node);
 
-                for (InetAddress addr : addrs) {
+                for (InetAddress addr : inetAddresses) {
                     if (addr.getHostName() == null)
                         names.add(addr.getHostAddress() + ":" + 9001);
                     else {
@@ -310,8 +303,48 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable,
             catch (IgniteCheckedException ignored) {
                 names.addAll(node.addresses());
             }
+        }
+        final Collection<String> names = new LinkedHashSet<>();
+        final Collection<String> hosts = new LinkedHashSet<>();
+    }
 
+    private static final ConcurrentMap<UUID, A> addrMap = new ConcurrentHashMap8<>();
+
+    private static A getAddr(ClusterNode n) {
+        A a = addrMap.get(n.id());
+
+        if (a != null)
+            return a;
+
+        A aNew = new A(n);
+
+        A a2 = addrMap.putIfAbsent(n.id(), aNew);
+
+        if (a2 == null)
+            return aNew;
+        else
+            return a2;
+    }
+
+    /**
+     * Converts collection of rich nodes to block location data.
+     *
+     * @param nodes Collection of affinity nodes.
+     */
+    private void convertFromNodes(Collection<ClusterNode> nodes) {
+        Collection<String> names = new LinkedHashSet<>();
+        Collection<String> hosts = new LinkedHashSet<>();
+        Collection<UUID> nodeIds = new ArrayList<>(nodes.size());
+
+        for (final ClusterNode node : nodes) {
             nodeIds.add(node.id());
+
+            A a = getAddr(node);
+
+            assert a != null;
+
+            names.addAll(a.names);
+            hosts.addAll(a.hosts);
         }
 
         this.nodeIds = nodeIds;
