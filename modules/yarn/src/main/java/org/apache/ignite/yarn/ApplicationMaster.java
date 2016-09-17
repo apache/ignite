@@ -154,30 +154,30 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
                     ctx.setLocalResources(resources);
                     if(Shell.WINDOWS){
                         ctx.setCommands(
-                        Collections.singletonList(
-                            "dir ignite /b/ad>tmp.txt & for /f %%a in (tmp.txt) do set IGNITE_NAME=%%a &"
-                            +(props.licencePath() != null ? "copy /y gridgain-license.xml .\\ignite\\%IGNITE_NAME% & " : "")
-                            +"call pushd ignite\\%%^IGNITE_NAME%% &"
-                            + "bin\\ignite.bat "
-                            + ".\\..\\..\\ignite-config.xml"
-                            + " -J-Xmx" + ((int)props.memoryPerNode()) + "m"
-                            + " -J-Xms" + ((int)props.memoryPerNode()) + "m &"
-                            + "popd"
-                            + IgniteYarnUtils.YARN_LOG_OUT +"&"
-                        ));
-                    }
+                            Collections.singletonList(
+                                "dir ignite /b/ad>tmp.txt & for /f %%a in (tmp.txt) do set IGNITE_NAME=%%a &"
+                                +(props.licencePath() != null ? "copy /y gridgain-license.xml .\\ignite\\%IGNITE_NAME% & " : "")
+                                +"call pushd ignite\\%%^IGNITE_NAME%% &"
+                                + "bin\\ignite.bat "
+                                + ".\\..\\..\\ignite-config.xml"
+                                + " -J-Xmx" + ((int)props.memoryPerNode()) + "m"
+                                + " -J-Xms" + ((int)props.memoryPerNode()) + "m &"
+                                + "popd"
+                                + IgniteYarnUtils.YARN_LOG_OUT +"&"
+                            ));
+                        }
                     else{
 			 ctx.setCommands(
-                        Collections.singletonList(
-                            (props.licencePath() != null ? "cp gridgain-license.xml ./ignite/*/ || true && " : "")
-                            + "cp -r ./libs/* ./ignite/*/libs/ || true && "
-                            + "./ignite/*/bin/ignite.sh "
-                            + "./ignite-config.xml"
-                            + " -J-Xmx" + ((int)props.memoryPerNode()) + "m"
-                            + " -J-Xms" + ((int)props.memoryPerNode()) + "m"
-                            + IgniteYarnUtils.YARN_LOG_OUT
-                        ));
-                    }
+                            Collections.singletonList(
+                                (props.licencePath() != null ? "cp gridgain-license.xml ./ignite/*/ || true && " : "")
+                                + "cp -r ./libs/* ./ignite/*/libs/ || true && "
+                                + "./ignite/*/bin/ignite.sh "
+                                + "./ignite-config.xml"
+                                + " -J-Xmx" + ((int)props.memoryPerNode()) + "m"
+                                + " -J-Xms" + ((int)props.memoryPerNode()) + "m"
+                                + IgniteYarnUtils.YARN_LOG_OUT
+                            ));
+                        }
 		     log.log(Level.INFO, "Launching container: {0}.", c.getId());
                     nmClient.startContainer(c, ctx);
 
