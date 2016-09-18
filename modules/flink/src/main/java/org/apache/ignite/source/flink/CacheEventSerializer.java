@@ -32,7 +32,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
  */
 public class CacheEventSerializer extends Serializer<CacheEvent> {
     /** Marshaller. */
-    private static final Marshaller marsh = new JdkMarshaller();
+    private final Marshaller marsh = new JdkMarshaller();
 
     /**
      * If true, the type this serializer will be used for is considered immutable.

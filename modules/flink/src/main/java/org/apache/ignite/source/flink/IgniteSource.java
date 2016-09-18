@@ -51,7 +51,7 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
     private static final int DFLT_EVT_BUFFER_TIMEOUT = 10;
 
     /** Event buffer. */
-    private static BlockingQueue<CacheEvent> evtBuf = new LinkedBlockingQueue<>();
+    private BlockingQueue<CacheEvent> evtBuf = new LinkedBlockingQueue<>();
 
     /** Remote Listener id. */
     private UUID rmtLsnrId;
@@ -69,7 +69,10 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
     private TaskLocalListener locLsnr = new TaskLocalListener();
 
     /** Ignite grid configuration file. */
-    private static String igniteCfgFile;
+    private String igniteCfgFile;
+
+    /** Ignite grid configuration file. */
+    private Ignite ignite;
 
     /** Cache name. */
     private String cacheName;
@@ -117,7 +120,7 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
 
         this.stopped = false;
 
-        Ignite ignite = IgniteSource.IgniteContext.getIgnite();
+        ignite = Ignition.start(igniteCfgFile);
 
         TaskRemoteFilter rmtLsnr = new TaskRemoteFilter(cacheName, filter);
 
@@ -142,8 +145,6 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
             return;
 
         stopped = true;
-
-        Ignite ignite = IgniteSource.IgniteContext.getIgnite();
 
         if (rmtLsnrId != null)
             ignite.events(ignite.cluster().forCacheNodes(cacheName))
@@ -182,30 +183,6 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
     /** {@inheritDoc} */
     @Override public void cancel() {
         stopped = true;
-    }
-
-    /**
-     * Ignite context initializing grid on demand.
-     */
-    private static class IgniteContext {
-        /** Constructor. */
-        private IgniteContext() {
-        }
-
-        /** Instance holder. */
-        private static class Holder {
-            /** Ignite. */
-            private static final Ignite IGNITE = Ignition.start(igniteCfgFile);
-        }
-
-        /**
-         * Obtains grid instance.
-         *
-         * @return Grid instance.
-         */
-        private static Ignite getIgnite() {
-            return IgniteSource.IgniteContext.Holder.IGNITE;
-        }
     }
 
     /**
