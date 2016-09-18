@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -36,17 +37,20 @@ public class HadoopClasspathUtils {
     /** Prefix directory. */
     public static final String PREFIX = "HADOOP_PREFIX";
 
-    /** Home directory. */
+    /** Hadoop home directory. */
     public static final String HOME = "HADOOP_HOME";
 
-    /** Home directory. */
+    /** Hadoop common directory. */
     public static final String COMMON_HOME = "HADOOP_COMMON_HOME";
 
-    /** Home directory. */
+    /** Hadoop HDFS directory. */
     public static final String HDFS_HOME = "HADOOP_HDFS_HOME";
 
-    /** Home directory. */
+    /** Hadoop mapred directory. */
     public static final String MAPRED_HOME = "HADOOP_MAPRED_HOME";
+
+    /** Arbitrary additional dependencies. Compliant with standard Java classpath resolution. */
+    public static final String HADOOP_USER_LIBS = "HADOOP_USER_LIBS";
 
     /** Empty string. */
     private static final String EMPTY_STR = "";
@@ -57,16 +61,20 @@ public class HadoopClasspathUtils {
      * @return List of the class path elements.
      * @throws IOException If failed.
      */
-    public static List<String> classpathForJavaProcess() throws IOException {
+    public static List<String> classpathForProcess() throws IOException {
         List<String> res = new ArrayList<>();
 
         for (final SearchDirectory dir : classpathDirectories()) {
-            if (dir.hasFilter()) {
-                for (File file : dir.files())
+            File[] files = dir.files();
+
+            if (dir.useWildcard()) {
+                if (files.length > 0)
+                    res.add(dir.absolutePath() + File.separator + '*');
+            }
+            else {
+                for (File file : files)
                     res.add(file.getAbsolutePath());
             }
-            else
-                res.add(dir.absolutePath() + File.separator + '*');
         }
 
         return res;
@@ -78,7 +86,7 @@ public class HadoopClasspathUtils {
      * @return List of class path URLs.
      * @throws IOException If failed.
      */
-    public static List<URL> classpathUrls() throws IOException {
+    public static List<URL> classpathForClassLoader() throws IOException {
         List<URL> res = new ArrayList<>();
 
         for (SearchDirectory dir : classpathDirectories()) {
@@ -182,17 +190,70 @@ public class HadoopClasspathUtils {
 
         Collection<SearchDirectory> res = new ArrayList<>();
 
-        res.add(new SearchDirectory(new File(loc.common(), "lib"), null));
-        res.add(new SearchDirectory(new File(loc.hdfs(), "lib"), null));
-        res.add(new SearchDirectory(new File(loc.mapred(), "lib"), null));
+        res.add(new SearchDirectory(new File(loc.common(), "lib"), AcceptAllDirectoryFilter.INSTANCE));
+        res.add(new SearchDirectory(new File(loc.hdfs(), "lib"), AcceptAllDirectoryFilter.INSTANCE));
+        res.add(new SearchDirectory(new File(loc.mapred(), "lib"), AcceptAllDirectoryFilter.INSTANCE));
 
-        res.add(new SearchDirectory(new File(loc.common()), "hadoop-common-"));
-        res.add(new SearchDirectory(new File(loc.common()), "hadoop-auth-"));
+        res.add(new SearchDirectory(new File(loc.common()), new PrefixDirectoryFilter("hadoop-common-")));
+        res.add(new SearchDirectory(new File(loc.common()), new PrefixDirectoryFilter("hadoop-auth-")));
 
-        res.add(new SearchDirectory(new File(loc.hdfs()), "hadoop-hdfs-"));
+        res.add(new SearchDirectory(new File(loc.hdfs()), new PrefixDirectoryFilter("hadoop-hdfs-")));
 
-        res.add(new SearchDirectory(new File(loc.mapred()), "hadoop-mapreduce-client-common"));
-        res.add(new SearchDirectory(new File(loc.mapred()), "hadoop-mapreduce-client-core"));
+        res.add(new SearchDirectory(new File(loc.mapred()),
+            new PrefixDirectoryFilter("hadoop-mapreduce-client-common")));
+        res.add(new SearchDirectory(new File(loc.mapred()),
+            new PrefixDirectoryFilter("hadoop-mapreduce-client-core")));
+
+        res.addAll(parseUserLibs());
+
+        return res;
+    }
+
+    /**
+     * Parse user libs.
+     *
+     * @return Parsed libs search patterns.
+     * @throws IOException If failed.
+     */
+    static Collection<SearchDirectory> parseUserLibs() throws IOException {
+        return parseUserLibs(systemOrEnv(HADOOP_USER_LIBS, null));
+    }
+
+    /**
+     * Parse user libs.
+     *
+     * @param str String.
+     * @return Result.
+     * @throws IOException If failed.
+     */
+    static Collection<SearchDirectory> parseUserLibs(String str) throws IOException {
+        Collection<SearchDirectory> res = new LinkedList<>();
+
+        if (!isEmpty(str)) {
+            String[] tokens = normalize(str).split(File.pathSeparator);
+
+            for (String token : tokens) {
+                // Skip empty tokens.
+                if (isEmpty(token))
+                    continue;
+
+                File file = new File(token);
+                File dir = file.getParentFile();
+
+                if (token.endsWith("*")) {
+                    assert dir != null;
+
+                    res.add(new SearchDirectory(dir, AcceptAllDirectoryFilter.INSTANCE, false));
+                }
+                else {
+                    // Met "/" or "C:\" pattern, nothing to do with it.
+                    if (dir == null)
+                        continue;
+
+                    res.add(new SearchDirectory(dir, new ExactDirectoryFilter(file.getName()), false));
+                }
+            }
+        }
 
         return res;
     }
@@ -239,57 +300,162 @@ public class HadoopClasspathUtils {
     }
 
     /**
+     * NOramlize the string.
+     *
+     * @param str String.
+     * @return Normalized string.
+     */
+    private static String normalize(String str) {
+        assert str != null;
+
+        return str.trim().toLowerCase();
+    }
+
+    /**
      * Simple pair-like structure to hold directory name and a mask assigned to it.
      */
-    private static class SearchDirectory {
+    static class SearchDirectory {
         /** File. */
         private final File dir;
 
-        /** The mask. */
-        private final String filter;
+        /** Filter. */
+        private final DirectoryFilter filter;
+
+        /** Whether directory must exist. */
+        private final boolean strict;
+
+        /**
+         * Constructor for directory search with strict rule.
+         *
+         * @param dir Directory.
+         * @param filter Filter.
+         * @throws IOException If failed.
+         */
+        private SearchDirectory(File dir, DirectoryFilter filter) throws IOException {
+            this(dir, filter, true);
+        }
 
         /**
          * Constructor.
          *
          * @param dir Directory.
          * @param filter Filter.
+         * @param strict Whether directory must exist.
+         * @throws IOException If failed.
          */
-        private SearchDirectory(File dir, String filter) throws IOException {
+        private SearchDirectory(File dir, DirectoryFilter filter, boolean strict) throws IOException {
             this.dir = dir;
             this.filter = filter;
+            this.strict = strict;
 
-            if (!exists(dir.getAbsolutePath()))
+            if (strict && !exists(dir.getAbsolutePath()))
                 throw new IOException("Directory cannot be read: " + dir.getAbsolutePath());
         }
 
         /**
          * @return Absolute path.
          */
-        private String absolutePath() {
+        String absolutePath() {
             return dir.getAbsolutePath();
         }
 
         /**
          * @return Child files.
          */
-        private File[] files() throws IOException {
+        File[] files() throws IOException {
             File[] files = dir.listFiles(new FilenameFilter() {
                 @Override public boolean accept(File dir, String name) {
-                    return filter == null || name.startsWith(filter);
+                    return filter.test(name);
                 }
             });
 
-            if (files == null)
-                throw new IOException("Path is not a directory. [dir=" + dir + ']');
-
-            return files;
+            if (files == null) {
+                if (strict)
+                    throw new IOException("Failed to get directory files [dir=" + dir + ']');
+                else
+                    return new File[0];
+            }
+            else
+                return files;
         }
 
         /**
-         * @return {@code True} if filter exists.
+         * @return {@code True} if wildcard can be used.
          */
-        private boolean hasFilter() {
-            return filter != null;
+        boolean useWildcard() {
+            return filter instanceof AcceptAllDirectoryFilter;
+        }
+    }
+
+    /**
+     * Directory filter interface.
+     */
+    static interface DirectoryFilter {
+        /**
+         * Test if file with this name should be included.
+         *
+         * @param name File name.
+         * @return {@code True} if passed.
+         */
+        public boolean test(String name);
+    }
+
+    /**
+     * Filter to accept all files.
+     */
+    static class AcceptAllDirectoryFilter implements DirectoryFilter {
+        /** Singleton instance. */
+        public static final AcceptAllDirectoryFilter INSTANCE = new AcceptAllDirectoryFilter();
+
+        /** {@inheritDoc} */
+        @Override public boolean test(String name) {
+            return true;
+        }
+    }
+
+    /**
+     * Filter which uses prefix to filter files.
+     */
+    static class PrefixDirectoryFilter implements DirectoryFilter {
+        /** Prefix. */
+        private final String prefix;
+
+        /**
+         * Constructor.
+         *
+         * @param prefix Prefix.
+         */
+        public PrefixDirectoryFilter(String prefix) {
+            assert prefix != null;
+
+            this.prefix = normalize(prefix);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean test(String name) {
+            return normalize(name).startsWith(prefix);
+        }
+    }
+
+    /**
+     * Filter which uses exact comparison.
+     */
+    static class ExactDirectoryFilter implements DirectoryFilter {
+        /** Name. */
+        private final String name;
+
+        /**
+         * Constructor.
+         *
+         * @param name Name.
+         */
+        public ExactDirectoryFilter(String name) {
+            this.name = normalize(name);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean test(String name) {
+            return normalize(name).equals(this.name);
         }
     }
 }
