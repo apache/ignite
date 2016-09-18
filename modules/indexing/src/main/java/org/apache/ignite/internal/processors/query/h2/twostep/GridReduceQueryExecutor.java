@@ -74,7 +74,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryRequest;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -459,8 +458,7 @@ public class GridReduceQueryExecutor {
      * @param qry Query.
      * @param keepBinary Keep binary.
      * @param timeoutMillis Timeout in milliseconds.
-     * @param mapQrysCancel Reference to remote queries cancellation closure.
-     * @param reduceQryCancel Reference to reduce query cancellation closure.
+     * @param cancel Query cancel.
      * @return Rows iterator.
      */
     public Iterator<List<?>> query(GridCacheContext<?,?> cctx, GridCacheTwoStepQuery qry, boolean keepBinary,
@@ -477,9 +475,7 @@ public class GridReduceQueryExecutor {
                 }
             }
 
-            GridAbsClosure clo = mapQrysCancel.get();
-
-            if (clo == F.noop())
+            if (cancel.cancelRequested())
                 throw new CacheException(new QueryCancelledException());
 
             final long qryReqId = reqIdGen.incrementAndGet();
@@ -587,20 +583,24 @@ public class GridReduceQueryExecutor {
                         mapQry.marshallParams(m);
                 }
 
-                if (!mapQrysCancel.compareAndSet(clo, new GridAbsClosure() { // Update cancellation closure for current attempt.
-                    @Override public void apply() {
+                cancel.set(new Runnable() {
+                    @Override public void run() {
                         send(finalNodes, new GridQueryCancelRequest(qryReqId), null);
                     }
-                }))
-                    throw new QueryCancelledException();
+                });
 
                 boolean retry = false;
 
+                if (cancel.cancelRequested())
+                    throw new QueryCancelledException();
+
                 if (send(nodes,
                     new GridQueryRequest(qryReqId, r.pageSize, space, mapQrys, topVer, extraSpaces, null, timeoutMillis), partsMap)) {
+                    cancel.enterCancellableState(); // Enter cancellable state.
+
                     awaitAllReplies(r, nodes);
 
-                    if (mapQrysCancel.get() == F.noop()) // Query might be cancelled while waiting for pages.
+                    if (cancel.cancelRequested())
                         throw new QueryCancelledException();
 
                     Object state = r.state.get();
@@ -613,7 +613,7 @@ public class GridReduceQueryExecutor {
                                 throw err;
 
                             if (wasCancelled(err))
-                                throw new CacheException(new QueryCancelledException()); // Throw correct exception.
+                                throw new QueryCancelledException(); // Throw correct exception.
 
                             throw new CacheException("Failed to run map query remotely.", err);
                         }
@@ -660,6 +660,9 @@ public class GridReduceQueryExecutor {
                         resIter = res.iterator();
                     }
                     else {
+                        if (cancel.cancelRequested())
+                            throw new QueryCancelledException();
+
                         GridCacheSqlQuery rdc = qry.reduceQuery();
 
                         // Statement caching is prohibited here because we can't guarantee correct merge index reuse.
@@ -669,7 +672,7 @@ public class GridReduceQueryExecutor {
                             F.asList(rdc.parameters()),
                             false,
                             timeoutMillis,
-                            reduceQryCancel);
+                            cancel);
 
                         resIter = new Iter(res);
                     }
@@ -679,22 +682,14 @@ public class GridReduceQueryExecutor {
                     if (Thread.currentThread().isInterrupted())
                         throw new IgniteInterruptedCheckedException("Query was interrupted.");
 
-                    if (clo == F.noop())
-                        throw new CacheException(new QueryCancelledException());
-
                     continue;
                 }
-
-                // Cancellation of completed query has no meaning.
-                if (mapQrysCancel != null)
-                    mapQrysCancel.set(F.noop());
-
-                if (reduceQryCancel != null)
-                    reduceQryCancel.set(F.noop());
 
                 return new GridQueryCacheObjectsIterator(resIter, cctx, keepBinary);
             }
             catch (IgniteCheckedException | RuntimeException e) {
+                cancel.leaveCancellableState();
+
                 U.closeQuiet(r.conn);
 
                 if (e instanceof CacheException) {
@@ -732,6 +727,8 @@ public class GridReduceQueryExecutor {
     }
 
     /**
+     * Returns true if the exception is triggered by query cancel.
+     *
      * @param e Exception.
      */
     private boolean wasCancelled(CacheException e) {

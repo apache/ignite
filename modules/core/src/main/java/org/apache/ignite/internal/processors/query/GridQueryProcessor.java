@@ -965,21 +965,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     final String sql = qry.getSql();
                     final Object[] args = qry.getArgs();
 
-                    final PreparedStatement stmt = idx.prepareStatement(space, sql);
-
-                    List<GridQueryFieldMetadata> meta = idx.meta(stmt);
-
                     final GridQueryCancel cancel = new GridQueryCancel();
+
+                    final GridQueryFieldsResult res = idx.execute(space, sql, F.asList(args),
+                        idx.backupFilter(null, null, null), qry.getTimeout(), cancel);
 
                     QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(new Iterable<List<?>>() {
                         @Override public Iterator<List<?>> iterator() {
                             try {
-                                final IgniteSpiCloseableIterator<List<?>> res = idx.execute(stmt, F.asList(args),
-                                    idx.backupFilter(null, null, null), qry.getTimeout(), cancel);
-
                                 sendQueryExecutedEvent(sql, args);
 
-                                return new GridQueryCacheObjectsIterator(res, cctx, keepBinary);
+                                return new GridQueryCacheObjectsIterator(res.iterator(), cctx, keepBinary);
                             }
                             catch (IgniteCheckedException e) {
                                 throw new IgniteException(e);
@@ -987,7 +983,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         }
                     }, cancel);
 
-                    cursor.fieldsMeta(meta);
+                    cursor.fieldsMeta(res.metaData());
 
                     return cursor;
                 }

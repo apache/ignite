@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import org.apache.ignite.IgniteException;
 
 /**
  * Contains cancellation closure.
@@ -33,9 +34,15 @@ public class GridQueryCancel {
     /** Cancellation closure. */
     private volatile Runnable clo;
 
+    /** Cancellable state flag. */
+    private boolean cancellable;
+
     /** Updater. */
     private final AtomicReferenceFieldUpdater<GridQueryCancel, Runnable> updater =
         AtomicReferenceFieldUpdater.newUpdater(GridQueryCancel.class, Runnable.class, "clo");
+
+    /** Cancel requested. */
+    private volatile boolean cancelRequested;
 
     /**
      * @param clo Clo.
@@ -44,21 +51,46 @@ public class GridQueryCancel {
         this.clo = clo;
     }
 
-    public void waitForCancellableState() {
+    /**
+     * Waits for cancellable state.
+     */
+    public synchronized void waitForCancellableState() {
+        while (!cancellable)
+            try {
+                wait();
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
 
-    }
-
-    public void notifyCancellable() {
-
+                throw new IgniteException("Interrtuped while waiting for cancellable state.");
+            }
     }
 
     /**
-     * Try cancelling a query. If query is already completed or cancelled, this is no-op.
+     * Enters cancellable state notifying all waiters.
+     */
+    public synchronized void enterCancellableState() {
+        cancellable = true;
+
+        notifyAll();
+    }
+
+    /**
+     * Leaves cancellable state.
+     */
+    public synchronized void leaveCancellableState() {
+        cancellable = false;
+    }
+
+    /**
+     * Tries cancelling a query. If query is already completed or cancelled, this is no-op.
      */
     public void cancel() {
         Runnable clo0 = clo;
 
         if (clo0 != null && updater.compareAndSet(this, clo0, NO_OP)) {
+            cancelRequested = true;
+
             waitForCancellableState();
 
             clo.run();
@@ -66,9 +98,9 @@ public class GridQueryCancel {
     }
 
     /**
-     * Marks cancellable as no-op.
+     * @return Cancel requested.
      */
-    public void invalidate() {
-
+    public boolean cancelRequested() {
+        return cancelRequested;
     }
 }

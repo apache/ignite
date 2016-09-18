@@ -95,18 +95,6 @@ public interface GridQueryIndexing {
         Collection<Object> params, IndexingQueryFilter filters, int timeout, GridQueryCancel cancel) throws IgniteCheckedException;
 
     /**
-     * Executes the statement.
-     *
-     * @param stmt Stmt.
-     * @param params Params.
-     * @param filters Filters.
-     * @param timeout Timeout.
-     * @param cancel Cancel.
-     */
-    public IgniteSpiCloseableIterator<List<?>> execute(PreparedStatement stmt,
-        Collection<Object> params, IndexingQueryFilter filters, int timeout, GridQueryCancel cancel) throws IgniteCheckedException;
-
-    /**
      * Executes regular query.
      *
      * @param spaceName Space name.
@@ -253,8 +241,4 @@ public interface GridQueryIndexing {
      * Cancels all executing queries.
      */
     public void cancelAllQueries();
-
-    public PreparedStatement prepareStatement(String space, String sql);
-
-    public List<GridQueryFieldMetadata> meta(PreparedStatement stmt);
 }

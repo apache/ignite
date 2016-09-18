@@ -62,9 +62,6 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
     private final GridQueryCancel cancel;
 
     /** */
-    private volatile Thread thread;
-
-    /** */
     private final AtomicReferenceFieldUpdater<QueryCursorImpl, State> stateUpdater =
         AtomicReferenceFieldUpdater.newUpdater(QueryCursorImpl.class, State.class, "state");
 
@@ -86,16 +83,17 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
 
     /** {@inheritDoc} */
     @Override public Iterator<T> iterator() {
-        thread = Thread.currentThread();
-
         if (!stateUpdater.compareAndSet(this, IDLE, EXECUTION))
             throw new IgniteException("Iterator is already fetched or query was cancelled.");
 
         iter = iterExec.iterator();
 
-        // Handle race with concurrent cancellation and throw correct exception.
-        if (!stateUpdater.compareAndSet(this, EXECUTION, CLOSED))
+        if (!stateUpdater.compareAndSet(this, EXECUTION, RESULT_READY)) {
+            // Handle race with cancel and make sure the iterator resources are freed correctly.
+            closeIter();
+
             throw new CacheException(new QueryCancelledException());
+        }
 
         assert iter != null;
 
@@ -130,25 +128,30 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        // Cancellation is allowed only from another thread.
-        if (Thread.currentThread() != thread) {
-            if (state == IDLE)
-                throw new IgniteException("Query was not started yest.");
+        if (state == IDLE)
+            throw new IllegalStateException("Query execution is not started yet.");
 
-            if (stateUpdater.compareAndSet(this, EXECUTION, CLOSED))
-                if (cancel != null) cancel.cancel();
+        if (stateUpdater.compareAndSet(this, EXECUTION, CLOSED)) {
+            if (cancel != null)
+                cancel.cancel();
 
             return;
         }
 
-        if (stateUpdater.compareAndSet(this, RESULT_READY, CLOSED)) {
-            if (iter instanceof AutoCloseable) {
-                try {
-                    ((AutoCloseable)iter).close();
-                }
-                catch (Exception e) {
-                    throw new IgniteException(e);
-                }
+        if (stateUpdater.compareAndSet(this, RESULT_READY, CLOSED))
+            closeIter();
+    }
+
+    /**
+     * Closes iterator.
+     */
+    private void closeIter() {
+        if (iter instanceof AutoCloseable) {
+            try {
+                ((AutoCloseable)iter).close();
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
             }
         }
     }

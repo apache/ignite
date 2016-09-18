@@ -37,11 +37,11 @@ public interface QueryCursor<T> extends Iterable<T>, AutoCloseable {
     public List<T> getAll();
 
     /**
-     * Closes all resources related to this cursor or cancels the query.
-     * <p>
-     * If the method is called from another thread and a query is still running a cancellation will be attempted.
-     * <p>
+     * Closes all resources related to this cursor. If the query execution is in progress
+     * (which is possible in case of invoking from another thread), a cancel will be attempted.
      * Sequential calls to this method have no effect.
+     * <p>
+     * Note: don't forget to close query cursors. Not doing so may lead to various resource leaks.
      */
     @Override public void close();
 }
