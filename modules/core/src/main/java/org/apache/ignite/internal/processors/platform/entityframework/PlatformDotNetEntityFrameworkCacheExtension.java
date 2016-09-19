@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.entityframework;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
@@ -57,7 +58,15 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
                 target.rawCache().invokeAll(entitySetNames,
                     new PlatformDotNetEntityFrameworkIncreaseVersionProcessor());
 
+
                 // TODO: Broadcast cleanup from here.
+                Ignite grid = target.platformContext().kernalContext().grid();
+
+                // TODO: 1) not too many task
+                // 2) do not use user thread pool
+                // 3) cache can have a node filter?
+                // 4) we should account for lost data!
+                //grid.compute().broadcast()
 
                 return target.writeResult(mem, null);
             }
