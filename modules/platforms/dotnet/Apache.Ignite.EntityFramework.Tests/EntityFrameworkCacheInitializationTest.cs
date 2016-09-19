@@ -56,20 +56,13 @@ namespace Apache.Ignite.EntityFramework.Tests
                 new IgniteDbConfiguration(new IgniteConfiguration
                 {
                     GridName = "myGrid3",
-                    CacheConfiguration = new[]
-                    {
-                        new CacheConfiguration
-                        {
-                            Name = "myCache",
-                            CacheMode = CacheMode.Replicated,
-                            AtomicityMode = CacheAtomicityMode.Transactional
-                        }
-                    }
-                }, "myCache", null), CacheMode.Replicated);
+                }, null, null, null), CacheMode.Replicated);
 
             // Existing instance.
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
-            CheckCacheAndStop(null, "123", new IgniteDbConfiguration(ignite, "123", null));
+            CheckCacheAndStop(null, "123", new IgniteDbConfiguration(ignite, null, null, null));
+
+            // TODO: Test all ctors. Think about better overloads (Ignite+Policy?).
         }
 
         /// <summary>

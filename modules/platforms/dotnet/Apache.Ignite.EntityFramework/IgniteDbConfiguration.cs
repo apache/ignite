@@ -93,12 +93,12 @@ namespace Apache.Ignite.EntityFramework
         /// </summary>
         /// <param name="configurationSectionName">Name of the configuration section.</param>
         /// <param name="metaCacheConfiguration">
-        /// Configuration of the metadata cache which holds entity set information. 
+        /// Configuration of the metadata cache which holds entity set information. Null for default configuration.
         /// <para />
         /// This cache holds small amount of data, but should not lose entries. At least one backup recommended.
         /// </param>
         /// <param name="dataCacheConfiguration">
-        /// Configuration of the data cache which holds query results.
+        /// Configuration of the data cache which holds query results. Null for default configuration.
         /// <para />
         /// This cache tolerates lost data and can have no backups.
         /// </param>
@@ -116,12 +116,12 @@ namespace Apache.Ignite.EntityFramework
         /// </summary>
         /// <param name="igniteConfiguration">The ignite configuration to use for starting Ignite instance.</param>
         /// <param name="metaCacheConfiguration">
-        /// Configuration of the metadata cache which holds entity set information. 
+        /// Configuration of the metadata cache which holds entity set information. Null for default configuration. 
         /// <para />
         /// This cache holds small amount of data, but should not lose entries. At least one backup recommended.
         /// </param>
         /// <param name="dataCacheConfiguration">
-        /// Configuration of the data cache which holds query results.
+        /// Configuration of the data cache which holds query results. Null for default configuration.
         /// <para />
         /// This cache tolerates lost data and can have no backups.
         /// </param>
@@ -139,12 +139,12 @@ namespace Apache.Ignite.EntityFramework
         /// </summary>
         /// <param name="ignite">The ignite instance to use.</param>
         /// <param name="metaCacheConfiguration">
-        /// Configuration of the metadata cache which holds entity set information. 
+        /// Configuration of the metadata cache which holds entity set information. Null for default configuration. 
         /// <para />
         /// This cache holds small amount of data, but should not lose entries. At least one backup recommended.
         /// </param>
         /// <param name="dataCacheConfiguration">
-        /// Configuration of the data cache which holds query results.
+        /// Configuration of the data cache which holds query results. Null for default configuration.
         /// <para />
         /// This cache tolerates lost data and can have no backups.
         /// </param>
@@ -155,8 +155,9 @@ namespace Apache.Ignite.EntityFramework
             CacheConfiguration dataCacheConfiguration, IDbCachingPolicy policy)
         {
             IgniteArgumentCheck.NotNull(ignite, "ignite");
-            IgniteArgumentCheck.NotNull(metaCacheConfiguration, "metaCacheConfiguration");
-            IgniteArgumentCheck.NotNull(dataCacheConfiguration, "dataCacheConfiguration");
+
+            metaCacheConfiguration = metaCacheConfiguration ?? GetDefaultMetaCacheConfiguration();
+            dataCacheConfiguration = dataCacheConfiguration ?? GetDefaultDataCacheConfiguration();
 
             var efCache = new DbCache(ignite, metaCacheConfiguration, dataCacheConfiguration);
 
@@ -198,9 +199,9 @@ namespace Apache.Ignite.EntityFramework
         /// <summary>
         /// Gets the default meta cache configuration.
         /// </summary>
-        private static CacheConfiguration GetDefaultMetaCacheConfiguration(string namePrefix)
+        private static CacheConfiguration GetDefaultMetaCacheConfiguration(string namePrefix = null)
         {
-            return new CacheConfiguration(namePrefix + MetaCacheSuffix)
+            return new CacheConfiguration((namePrefix ?? DefaultCacheNamePrefix) + MetaCacheSuffix)
             {
                 Backups = 1
             };
@@ -209,9 +210,9 @@ namespace Apache.Ignite.EntityFramework
         /// <summary>
         /// Gets the default data cache configuration.
         /// </summary>
-        private static CacheConfiguration GetDefaultDataCacheConfiguration(string namePrefix)
+        private static CacheConfiguration GetDefaultDataCacheConfiguration(string namePrefix = null)
         {
-            return new CacheConfiguration(namePrefix + DataCacheSuffix);
+            return new CacheConfiguration((namePrefix ?? DefaultCacheNamePrefix) + DataCacheSuffix);
         }
     }
 }
