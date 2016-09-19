@@ -39,7 +39,7 @@ namespace Apache.Ignite.EntityFramework.Impl
 
         /** Java task to purge old entries. */
         public const string PurgeCacheTask =
-            "org.apache.ignite.internal.processors.entityframework.PlatformDotNetEntityFrameworkPurgeOldEntriesTask";
+            "org.apache.ignite.internal.processors.platform.entityframework.PlatformDotNetEntityFrameworkPurgeOldEntriesTask";
 
         /** Main cache: stores SQL -> QueryResult mappings. */
         private readonly ICache<string, object> _cache;

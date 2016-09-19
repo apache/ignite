@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.entityframework;
+package org.apache.ignite.internal.processors.platform.entityframework;
 
 /**
  * Entry processor that increments entity set version number.
