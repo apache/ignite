@@ -18,62 +18,46 @@
 package org.apache.ignite.yardstick.cache;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.yardstick.cache.model.Person;
+import org.apache.ignite.yardstick.cache.model.Person1;
+import org.apache.ignite.yardstick.cache.model.Person2;
 import org.yardstickframework.BenchmarkConfiguration;
 
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- * Ignite benchmark that performs SQL MERGE and query operations.
+ * Ignite benchmark that performs SQL DELETE operations.
  */
 public class IgniteSqlDeleteBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** */
-    private AtomicInteger putCnt = new AtomicInteger();
-
-    /** */
-    private AtomicInteger delCnt = new AtomicInteger();
+    private final ConcurrentLinkedQueue<Integer> keys = new ConcurrentLinkedQueue<>();
 
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
+
+        for (int i = 0; i < args.range(); i++) {
+            cache().put(i, new Person1(i));
+            keys.add(i);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-        int k = rnd.nextInt(args.range());
-
-        if (rnd.nextBoolean()) {
-            cache().query(new SqlFieldsQuery("delete from Person where _key = ?").setArgs(k));
-
-            delCnt.getAndIncrement();
-        }
-        else {
-            cache.put(k, new Person(k, "firstName" + k, "lastName" + k, k * 1000));
-
-            putCnt.getAndIncrement();
-        }
+        cache.query(new SqlFieldsQuery("delete from Person1 where _key = ?").setArgs(keys.poll()));
 
         return true;
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().cache("query").withKeepBinary();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void tearDown() throws Exception {
-        println(cfg, "Finished sql DELETE query benchmark [putCnt=" + putCnt.get() + ", delCnt=" + delCnt.get() +
-            ", size=" + cache().size(CachePeekMode.ALL) + ']');
-
-        super.tearDown();
+        return ignite().cache("atomic-index");
     }
 }
 

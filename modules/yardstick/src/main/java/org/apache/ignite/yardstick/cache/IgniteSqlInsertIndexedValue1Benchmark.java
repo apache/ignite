@@ -30,31 +30,16 @@ import static org.yardstickframework.BenchmarkUtils.println;
  */
 public class IgniteSqlInsertIndexedValue1Benchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** */
-    private final AtomicInteger insItemsCnt = new AtomicInteger();
-
-    /** */
     private final AtomicInteger insCnt = new AtomicInteger();
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        int key = nextRandom(args.range());
+        int key = insCnt.incrementAndGet();
 
-        int res = (Integer) cache.query(new SqlFieldsQuery("insert into Person1(_key, _val) values (?, ?)")
-            .setArgs(key, new Person1(key)).setSkipDuplicateKeys(true)).getAll().get(0).get(0);
-
-        insItemsCnt.addAndGet(res);
-
-        insCnt.incrementAndGet();
+        cache.query(new SqlFieldsQuery("insert into Person1(_key, _val) values (?, ?)")
+            .setArgs(key, new Person1(key)));
 
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void tearDown() throws Exception {
-        println(cfg, "Finished SQL INSERT query benchmark [insItemsCnt=" + insItemsCnt.get() + ", insCnt=" +
-            insCnt.get() + ']');
-
-        super.tearDown();
     }
 
     /** {@inheritDoc} */

@@ -24,64 +24,37 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.yardstick.cache.model.Person;
+import org.apache.ignite.yardstick.cache.model.Person1;
+import org.apache.ignite.yardstick.cache.model.Person2;
 import org.yardstickframework.BenchmarkConfiguration;
 
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- * Ignite benchmark that performs SQL MERGE and query operations.
+ * Ignite benchmark that performs SQL UPDATE operations.
  */
 public class IgniteSqlUpdateBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
-    /** */
-    private AtomicInteger putCnt = new AtomicInteger();
-
-    /** */
-    private AtomicInteger updCnt = new AtomicInteger();
-
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
+
+        for (int i = 0; i < args.range(); i++)
+            cache().put(i, new Person1(i));
     }
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-        int k = rnd.nextInt(args.range());
-
-        if (rnd.nextBoolean()) {
-            int updK = rnd.nextInt(args.range());
-
-            cache().query(new SqlFieldsQuery("update Person set _val = ? where _key = ?")
-                .setArgs(createPerson(updK), k));
-
-            updCnt.getAndIncrement();
-        }
-        else {
-            cache.put(k, createPerson(k));
-
-            putCnt.getAndIncrement();
-        }
+        cache().query(new SqlFieldsQuery("update Person1 set _val = ? where _key = ?")
+            .setArgs(new Person1(rnd.nextInt(args.range())), rnd.nextInt(args.range())));
 
         return true;
     }
 
-    /** */
-    private static Person createPerson(int k) {
-        return new Person(k, "firstName" + k, "lastName" + k, k * 1000);
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().cache("query").withKeepBinary();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void tearDown() throws Exception {
-        println(cfg, "Finished sql UPDATE query benchmark [putCnt=" + putCnt.get() + ", updCnt=" + updCnt.get() +
-            ", size=" + cache().size(CachePeekMode.ALL) + ']');
-
-        super.tearDown();
+        return ignite().cache("atomic-index");
     }
 }
 
