@@ -696,7 +696,7 @@ namespace Apache.Ignite.EntityFramework.Tests
 
         private class MyDbConfiguration : IgniteDbConfiguration
         {
-            public MyDbConfiguration() : base(Ignition.GetIgnite(), null, Policy)
+            public MyDbConfiguration() : base(Ignition.GetIgnite(), null, null, Policy)
             {
                 // No-op.
             }
