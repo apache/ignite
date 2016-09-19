@@ -56,13 +56,19 @@ namespace Apache.Ignite.EntityFramework.Tests
                 new IgniteDbConfiguration(new IgniteConfiguration
                 {
                     GridName = "myGrid3",
-                }, null, null, null), CacheMode.Replicated);
+                }, new CacheConfiguration("myCache_metadata") {CacheMode = CacheMode.Replicated}, 
+                new CacheConfiguration("myCache_data") {CacheMode = CacheMode.Replicated}, null),
+                CacheMode.Replicated);
 
             // Existing instance.
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
-            CheckCacheAndStop(null, "123", new IgniteDbConfiguration(ignite, null, null, null));
+            CheckCacheAndStop(null, "123", new IgniteDbConfiguration(ignite,
+                new CacheConfiguration("123_metadata") {Backups = 1},
+                new CacheConfiguration("123_data"), null));
 
             // TODO: Test all ctors. Think about better overloads (Ignite+Policy?).
+            // TODO: Check backups warning.
+            // TODO: Check same cache name exception.
         }
 
         /// <summary>
@@ -80,14 +86,16 @@ namespace Apache.Ignite.EntityFramework.Tests
             var metaCache = ignite.GetCache<object, object>(cacheName + "_metadata");
             Assert.IsNotNull(metaCache);
             Assert.AreEqual(cacheMode, metaCache.GetConfiguration().CacheMode);
-            Assert.AreEqual(1, metaCache.GetConfiguration().Backups);
+
+            if (cacheMode == CacheMode.Partitioned)
+                Assert.AreEqual(1, metaCache.GetConfiguration().Backups);
 
             var dataCache = ignite.GetCache<object, object>(cacheName + "_data");
             Assert.IsNotNull(dataCache);
             Assert.AreEqual(cacheMode, dataCache.GetConfiguration().CacheMode);
 
-            // TODO: Check other config properties.
-            // TODO: Check backups warning.
+            if (cacheMode == CacheMode.Partitioned)
+                Assert.AreEqual(0, dataCache.GetConfiguration().Backups);
 
             Ignition.StopAll(true);
         }
