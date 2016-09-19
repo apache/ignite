@@ -39,6 +39,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeExecutionRejectedException;
 import org.apache.ignite.compute.ComputeJobSibling;
 import org.apache.ignite.compute.ComputeTaskSession;
+import org.apache.ignite.compute.ComputeUserUndeclaredException;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.JobEvent;
@@ -1104,7 +1105,25 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     // If exception occurs on job initialization, deployment is released in job listener.
                     releaseDep = false;
 
-                    if (job.initialize(dep, dep.deployedClass(req.getTaskClassName()))) {
+                    //Try to deploy job class
+                    Class<?> deployedClass;
+                    try {
+                        deployedClass = dep.deployedClass(req.getTaskClassName());
+
+                        if (deployedClass == null)
+                            throw new ClassNotFoundException(req.getTaskClassName());
+                    }
+                    catch (Throwable t) {
+                        IgniteException ex = new ComputeUserUndeclaredException(t);
+
+                        U.error(log, ex.getMessage(), ex);
+
+                        handleException(node, req, ex, endTime);
+
+                        return;
+                    }
+
+                    if (job.initialize(dep, deployedClass)) {
                         // Internal jobs will always be executed synchronously.
                         if (job.isInternal()) {
                             // This is an internal job and can be executed inside busy lock
