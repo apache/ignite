@@ -200,8 +200,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
 
             long res = doAskNeighbor(io, buf, back);
 
-            if (back)
+            if (back) {
+                assert g.getClass() == Remove.class;
+
+                if (io.getForward(buf) != g.backId) // See how g.backId is setup in removeDown for this check.
+                    return RETRY;
+
                 g.backId = res;
+            }
             else {
                 assert isBack == FALSE.ordinal() : isBack;
 
@@ -216,6 +222,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
     private final GetPageHandler<Get> search = new GetPageHandler<Get>() {
         @Override public Result run0(long pageId, Page page, ByteBuffer buf, BPlusIO<L> io, Get g, int lvl)
             throws IgniteCheckedException {
+            // Check the triangle invariant.
+            if (io.getForward(buf) != g.fwdId)
+                return RETRY;
+
             boolean needBackIfRouting = g.backId != 0;
 
             g.backId = 0; // Usually we'll go left down and don't need it.
@@ -237,11 +247,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
             }
             else {
                 idx = fix(idx);
-
-                // If we are on the right edge, then check for expected forward page and retry of it does match.
-                // It means that concurrent split happened. This invariant is referred as `triangle`.
-                if (idx == cnt && io.getForward(buf) != g.fwdId)
-                    return RETRY;
 
                 if (g.notFound(io, buf, idx, lvl)) // No way down, stop here.
                     return NOT_FOUND;
@@ -336,16 +341,17 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
             throws IgniteCheckedException {
             assert p.btmLvl == lvl : "we must always insert at the bottom level: " + p.btmLvl + " " + lvl;
 
+            // Check triangle invariant.
+            if (io.getForward(buf) != p.fwdId)
+                return RETRY;
+
             int cnt = io.getCount(buf);
             int idx = findInsertionPoint(io, buf, cnt, p.row, 0);
 
-            assert idx < 0 : "Duplicate row in index.";
+            if (idx >= 0) // We do not support concurrent put of the same key.
+                throw new IllegalStateException("Duplicate row in index.");
 
             idx = fix(idx);
-
-            // Possible split or merge.
-            if (idx == cnt && io.getForward(buf) != p.fwdId)
-                return RETRY;
 
             // Do insert.
             L moveUpRow = p.insert(page, io, buf, idx, lvl);
@@ -412,8 +418,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
 
                         return res; // Retry.
                     }
+
+                    assert r.tail != null; // We've just locked forward page.
                 }
 
+                // Retry must reset these fields when we release the whole branch without remove.
                 assert r.needReplaceInner == FALSE: "needReplaceInner";
                 assert r.needMergeEmptyBranch == FALSE: "needMergeEmptyBranch";
 
@@ -427,7 +436,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
 
                 t.idx = (short)idx;
 
-                // We will do the actual remove only when we made sure that we've locked the triangle correctly.
+                // We will do the actual remove only when we made sure that
+                // we've locked the whole needed branch correctly.
                 return FOUND;
             }
 
@@ -1218,6 +1228,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
     /**
      * Interrupt all operations on all threads and all indexes.
      */
+    @SuppressWarnings("unused")
     public static void interruptAll() {
         interrupted = true;
     }
@@ -1228,6 +1239,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
      * @return Removed row.
      * @throws IgniteCheckedException If failed.
      */
+    @SuppressWarnings("unused")
     public final T removeCeil(L row, ReuseBag bag) throws IgniteCheckedException {
         return doRemove(row, true, bag);
     }
@@ -1266,10 +1278,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
 
                     default:
                         if (!r.isFinished()) {
-                            Result res = r.finishTail(true);
+                            Result res = r.finishTail();
 
-                            if (res == RETRY) {
-                                assert !r.isRemoved(): "removed";
+                            // If not found, then the tree grew beyond our call stack -> retry from the actual root.
+                            if (res == RETRY || res == NOT_FOUND) {
+                                assert r.checkTailLevel(getRootLevel(r.meta));
 
                                 checkInterrupted();
 
@@ -1279,7 +1292,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                             assert res == FOUND: res;
                         }
 
-                        assert r.isFinished(): "not finished";
+                        assert r.isFinished();
 
                         return r.removed;
                 }
@@ -1332,12 +1345,17 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                 switch (res) {
                     case GO_DOWN_X:
                         assert backId != 0;
+                        assert r.backId == 0; // We did not setup it yet.
+
+                        r.backId = pageId; // Dirty hack to setup a check inside of askNeighbor.
 
                         // We need to get backId here for our child page, it must be the last child of our back.
                         res = askNeighbor(backId, r, true);
 
                         if (res != FOUND)
                             return res; // Retry.
+
+                        assert r.backId != pageId; // It must be updated in askNeighbor.
 
                         // Intentional fallthrough.
                     case GO_DOWN:
@@ -1350,7 +1368,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                         }
 
                         if (res != RETRY_ROOT && !r.isFinished()) {
-                            res = r.finishTail(false);
+                            res = r.finishTail();
 
                             if (res == NOT_FOUND)
                                 res = r.lockTail(pageId, page, backId, fwdId, lvl);
@@ -1520,6 +1538,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                     case FOUND:
                         // We may need to insert split key into upper level here.
                         if (!p.isFinished()) {
+                            // It must be impossible to have an insert higher than the current root,
+                            // because we are making decision about creating new root while keeping
+                            // write lock on current root, so it can't concurrently change.
+                            assert p.btmLvl <= getRootLevel(p.meta);
+
                             checkInterrupted();
 
                             continue;
@@ -1586,7 +1609,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
 
             try {
                 for (long pageId : getFirstPageIds(metaBuf)) {
-
                     assert pageId != 0;
 
                     do {
@@ -2506,17 +2528,16 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
         /**
          * Process tail and finish.
          *
-         * @param root We are at the root level.
          * @return Result.
          * @throws IgniteCheckedException If failed.
          */
-        private Result finishTail(boolean root) throws IgniteCheckedException {
+        private Result finishTail() throws IgniteCheckedException {
             assert !isFinished();
             assert tail.type == Tail.EXACT && tail.lvl >= 0: tail;
 
             if (tail.lvl == 0) {
-                assert !root; // Otherwise we must not have tail.
-                assert tail.sibling != null: "sibling";
+                // At the bottom level we can't have a tail without a sibling, it means we have higher levels.
+                assert tail.sibling != null;
 
                 return NOT_FOUND; // Lock upper level, we are at the bottom now.
             }
@@ -2526,26 +2547,25 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                     if (releaseForRetry(tail))
                         return RETRY;
 
-                    // Leave as is and exit.
+                    // It was a regular merge, leave as is and exit.
                 }
                 else {
                     // Try to find inner key on inner level.
                     if (needReplaceInner == TRUE) {
-                        if (isInnerKeyInTail())
-                            needReplaceInner = READY;
-                        else if (root)
-                            needReplaceInner = FALSE; // We may miss inner key because of concurrent merge.
-                        else
+                        // Since we setup needReplaceInner in leaf page write lock and do not release it,
+                        // we should not be able to miss the inner key. Even if concurrent merge
+                        // happened the inner key must still exist.
+                        if (!isInnerKeyInTail())
                             return NOT_FOUND; // Lock the whole branch up to the inner key.
+
+                        needReplaceInner = READY;
                     }
 
+                    // Try to merge an empty branch.
                     if (needMergeEmptyBranch == TRUE) {
-                        // We can't merge empty branch if tail in routing page.
-                        if (tail.getCount() == 0) {
-                            assert !root;
-
+                        // We can't merge empty branch if tail is a routing page.
+                        if (tail.getCount() == 0)
                             return NOT_FOUND; // Lock the whole branch up to the first non-empty.
-                        }
 
                         // Top-down merge for empty branch. The actual row remove will happen here if everything is ok.
                         Tail<L> t = mergeEmptyBranch();
@@ -2578,15 +2598,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                         cutRoot(tail.lvl);
                         freePage(tail.pageId, tail.page, tail.buf, false);
 
-                        // Exit: the operation must be complete at this point.
+                        // Exit: we are done.
                     }
                     else if (tail.sibling != null &&
                         tail.getCount() + tail.sibling.getCount() < tail.io.getMaxCount(tail.buf)) {
                         // Release everything lower than tail, we've already merged this path.
                         doReleaseTail(tail.down);
                         tail.down = null;
-
-                        assert !root: "more to merge";
 
                         return NOT_FOUND; // Lock and merge one level more.
                     }
@@ -2596,7 +2614,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
             }
 
             // If we've found nothing in the tree, we should not do any modifications or take tail locks.
-            assert isRemoved(): "not removed";
+            assert isRemoved();
 
             releaseTail();
             finish();
@@ -2891,7 +2909,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
             // top-down an empty branch and we already merged the join point with non-empty branch.
             // This happens because when merging empty page we do not update parent link to a lower
             // empty page in the branch since it will be dropped anyways.
-            if (needMergeEmptyBranch != READY && !checkChildren(prnt, left, right, prntIdx))
+            if (needMergeEmptyBranch == READY)
+                assert left.getCount() == 0 || right.getCount() == 0; // Empty branch check.
+            else if (!checkChildren(prnt, left, right, prntIdx))
                 return false;
 
             boolean emptyBranch = needMergeEmptyBranch == TRUE || needMergeEmptyBranch == READY;
@@ -3194,6 +3214,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
             }
 
             return sb.toString();
+        }
+
+        /**
+         * @param rootLvl Actual root level.
+         * @return {@code true} If tail level is correct.
+         */
+        public boolean checkTailLevel(int rootLvl) {
+            return tail == null || tail.lvl < rootLvl;
         }
     }
 

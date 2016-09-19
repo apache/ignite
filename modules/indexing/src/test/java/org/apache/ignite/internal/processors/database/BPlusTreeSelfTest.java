@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
@@ -456,6 +455,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             tree.put(x);
 
             assertEquals(x, tree.findOne(x).longValue());
+
+            tree.validateTree();
         }
 
         X.println(tree.printTree());
@@ -470,11 +471,13 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         for (long x = RMV_INC > 0 ? 0 : cnt - 1; x >= 0 && x < cnt; x += RMV_INC) {
             X.println(" -- " + x);
 
-            assertEquals(x, tree.remove(x).longValue());
+            assertEquals(Long.valueOf(x), tree.remove(x));
 
             X.println(tree.printTree());
 
             assertNull(tree.findOne(x));
+
+            tree.validateTree();
         }
 
         assertFalse(tree.find(null, null).next());
@@ -681,18 +684,33 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         info("Put...");
 
-        final AtomicLong k = new AtomicLong();
+        final AtomicLongArray k = new AtomicLongArray(keys);
 
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
+                Random rnd = new GridRandom();
+
                 for (;;) {
-                    long key = k.getAndIncrement();
+                    int idx = 0;
+                    boolean found = false;
 
-                    if (key >= keys)
-                        return null;
+                    for (int i = 0, shift = rnd.nextInt(keys); i < keys; i++) {
+                        idx = (i + shift) % keys;
 
-                    assertNull(tree.put(key));
+                        if (k.get(idx) == 0 && k.compareAndSet(idx, 0, 1)) {
+                            found = true;
+
+                            break;
+                        }
+                    }
+
+                    if (!found)
+                        break;
+
+                    assertNull(tree.put((long)idx));
                 }
+
+                return null;
             }
         }, threads, "put");
 
