@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
+import java.util.Collections;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.ClassCache;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -61,8 +64,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     public static final String CLS_DAEMON_REPLACE = "org.apache.ignite.internal.processors.hadoop.v2.HadoopDaemon";
 
     /** Hadoop class name: ShutdownHookManager replacement. */
-    public static final String CLS_SHUTDOWN_HOOK_MANAGER_REPLACE =
-        "org.apache.ignite.internal.processors.hadoop.v2.HadoopShutdownHookManager";
+    public static final String CLS_SHUTDOWN_HOOK_MANAGER_REPLACE = "org.apache.ignite.internal.processors.hadoop.v2.HadoopShutdownHookManager";
 
     /** Name of libhadoop library. */
     private static final String LIBHADOOP = "hadoop.";
@@ -83,14 +85,14 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     private final ConcurrentMap<String, Class> cacheMap = new ConcurrentHashMap<>();
 
     /** Diagnostic name of this class loader. */
-    @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
-    private final String name;
+    @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"}) private final String name;
 
     /** Native library names. */
-    private final String[] libNames;
+    private String[] loadedLibNames;
 
     /**
      * Gets name for Job class loader. The name is specific for local node id.
+     *
      * @param locNodeId The local node id.
      * @return The class loader name.
      */
@@ -100,6 +102,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
 
     /**
      * Gets name for the task class loader. Task class loader
+     *
      * @param info The task info.
      * @param prefix Get only prefix (without task type and number)
      * @return The class loader name.
@@ -122,69 +125,201 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
         super(addHadoopUrls(urls), APP_CLS_LDR);
 
         assert !(getParent() instanceof HadoopClassLoader);
+        assert getClass().getClassLoader() == APP_CLS_LDR; // by definition, app cls loader created in such way.
 
         this.name = name;
-        this.libNames = libNames;
 
-        initializeNativeLibraries();
+        // TODO: for POC:
+        if (libNames == null)
+            libNames = new String[] { "hadoop" };
+
+        setNativeLibrariesToBeInjectedIfNeeded(this, libNames);
+    }
+
+    //    /**
+    //     * Workaround to load native Hadoop libraries. Java doesn't allow native libraries to be loaded from different
+    //     * classloaders. But we load Hadoop classes many times and one of these classes - {@code NativeCodeLoader} - tries
+
+    //     * to load the same native library over and over again.
+    //     * <p>
+    //     * To fix the problem, we force native library load in parent class loader and then "link" handle to this native
+    //     * library to our class loader. As a result, our class loader will think that the library is already loaded and will
+    //     * be able to link native methods.
+    //     *
+    //     * @see <a href="http://docs.oracle.com/javase/1.5.0/docs/guide/jni/spec/invocation.html#library_version">
+    //     *     JNI specification</a>
+    //     */
+    //    private void initializeNativeLibraries() {
+    //        try {
+    //            // This must trigger native library load.
+    //            // TODO: Do not delegate to APP LDR
+    //            Class.forName(CLS_NATIVE_CODE_LOADER, true, this);
+    //
+    //            final Vector<Object> curVector = U.field(this, "nativeLibraries");
+    //
+    //            // TODO: Do not delegate to APP LDR
+    //            ClassLoader ldr = APP_CLS_LDR;
+    //
+    //            while (ldr != null) {
+    //                Vector vector = U.field(ldr, "nativeLibraries");
+    //
+    //                for (Object lib : vector) {
+    //                    String name = U.field(lib, "name");
+    //
+    //                    boolean add = name.contains(LIBHADOOP);
+    //
+    //                    if (!add && libNames != null) {
+    //                        for (String libName : libNames) {
+    //                            if (libName != null && name.contains(libName)) {
+    //                                add = true;
+    //
+    //                                break;
+    //                            }
+    //                        }
+    //                    }
+    //
+    //                    if (add) {
+    //                        curVector.add(lib);
+    //
+    //                        return;
+    //                    }
+    //                }
+    //
+    //                ldr = ldr.getParent();
+    //            }
+    //        }
+    //        catch (Exception e) {
+    //            U.quietAndWarn(null, "Failed to initialize Hadoop native library " +
+    //                "(native Hadoop methods might not work properly): " + e);
+    //        }
+    //    }
+
+    /** */
+    private static volatile Collection<Object> nativeLibrariesToBeInjected;
+
+    /**
+     * This method will be invoked for each created instance of HadoopClassLoader, but the list of native libraries will
+     * be loaded only once.
+     */
+    private static void setNativeLibrariesToBeInjectedIfNeeded(HadoopClassLoader instance, String[] libs) {
+        if (libs == null)
+            return;
+
+        boolean created = false;
+
+        // 1. If needed, init the native lib data collection:
+        if (nativeLibrariesToBeInjected == null) {
+            synchronized (HadoopClassLoader.class) {
+                if (nativeLibrariesToBeInjected == null) {
+                    instance.runLoadingCode(libs);
+
+                    nativeLibrariesToBeInjected = instance.collectNativeLibraries();
+
+                    created = true;
+                }
+            }
+        }
+
+        assert nativeLibrariesToBeInjected != null;
+
+        // 2. Inject libraries:
+        if (!created)
+            // This is an instance that did not load the libs:
+            instance.injectNatives();
     }
 
     /**
-     * Workaround to load native Hadoop libraries. Java doesn't allow native libraries to be loaded from different
-     * classloaders. But we load Hadoop classes many times and one of these classes - {@code NativeCodeLoader} - tries
-     * to load the same native library over and over again.
-     * <p>
-     * To fix the problem, we force native library load in parent class loader and then "link" handle to this native
-     * library to our class loader. As a result, our class loader will think that the library is already loaded and will
-     * be able to link native methods.
-     *
-     * @see <a href="http://docs.oracle.com/javase/1.5.0/docs/guide/jni/spec/invocation.html#library_version">
-     *     JNI specification</a>
+     * Injects previously
      */
-    private void initializeNativeLibraries() {
+    private void injectNatives() {
         try {
-            // This must trigger native library load.
-            // TODO: Do not delegate to APP LDR
-            Class.forName(CLS_NATIVE_CODE_LOADER, true, APP_CLS_LDR);
-
+            // 2. Init this instance with the natives:
             final Vector<Object> curVector = U.field(this, "nativeLibraries");
 
-            // TODO: Do not delegate to APP LDR
-            ClassLoader ldr = APP_CLS_LDR;
-
-            while (ldr != null) {
-                Vector vector = U.field(ldr, "nativeLibraries");
-
-                for (Object lib : vector) {
-                    String name = U.field(lib, "name");
-
-                    boolean add = name.contains(LIBHADOOP);
-
-                    if (!add && libNames != null) {
-                        for (String libName : libNames) {
-                            if (libName != null && name.contains(libName)) {
-                                add = true;
-
-                                break;
-                            }
-                        }
-                    }
-
-                    if (add) {
-                        curVector.add(lib);
-
-                        return;
-                    }
-                }
-
-                ldr = ldr.getParent();
-            }
+            curVector.addAll(nativeLibrariesToBeInjected);
         }
         catch (Exception e) {
             U.quietAndWarn(null, "Failed to initialize Hadoop native library " +
-                "(native Hadoop methods might not work properly): " + e);
+                 "(native Hadoop methods might not work properly): " + e);
         }
     }
+
+    /**
+     *
+     * @return
+     */
+    private Collection<Object> collectNativeLibraries() {
+        List<Object> target = new ArrayList<>();
+
+        ClassLoader ldr = this;
+
+        while (ldr != null) {
+            collectNativeLibrariesFromLoader(ldr, target);
+
+            ldr = ldr.getParent();
+        }
+
+        return Collections.unmodifiableList(target);
+    }
+
+    /**
+     * Run default or user code to force native libs loading:
+     */
+    private void runLoadingCode(String[] libs) {
+        try {
+            // TODO: "XXX" is a special class loaded by Hadoop class loader (simulating Hadoop class).
+            // NB: this sample class must *not* cause loading of any natives.
+            Class<?> sampleCls = this.loadClass(XXX.class.getName(), true);
+
+            assert sampleCls != null;
+            assert sampleCls.getClassLoader() == this;
+
+            Collection<String> loadedLibs = new ArrayList<>();
+
+            for (String lib: libs) {
+                boolean ok = LoadHelper.tryLoad(sampleCls, lib);
+
+                if (ok)
+                    loadedLibs.add(lib);
+            }
+
+            loadedLibNames = loadedLibs.toArray(new String[loadedLibs.size()]);
+        }
+        catch (Exception e) {
+            throw new IgniteException(e);
+        }
+
+    }
+
+    /**
+     *
+     * @param ldr
+     * @param target
+     */
+    private void collectNativeLibrariesFromLoader(ClassLoader ldr, Collection<Object> target) {
+        final Vector vector = U.field(ldr, "nativeLibraries");
+
+        for (Object lib : vector) {
+            String name = U.field(lib, "name");
+
+            // TODO: LIBHADOOP should be added implicitly into "libNames"
+            boolean addLib = false; //name.contains(LIBHADOOP);
+
+            if (loadedLibNames != null) {
+                for (String libName : loadedLibNames) {
+                    if (libName != null && name.contains(libName)) {
+                        addLib = true;
+
+                        break;
+                    }
+                }
+            }
+
+            if (addLib)
+                target.add(lib);
+        }
+    }
+
 
     /** {@inheritDoc} */
     @Override protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {

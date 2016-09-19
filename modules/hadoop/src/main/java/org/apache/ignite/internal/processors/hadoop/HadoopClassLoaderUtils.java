@@ -90,7 +90,7 @@ public class HadoopClassLoaderUtils {
      * @return {@code true} If this is Hadoop class.
      */
     public static boolean isHadoop(String cls) {
-        return cls.startsWith("org.apache.hadoop.");
+        return cls.startsWith("org.apache.hadoop.") || cls.equals(XXX.class.getName());
     }
 
     /**
