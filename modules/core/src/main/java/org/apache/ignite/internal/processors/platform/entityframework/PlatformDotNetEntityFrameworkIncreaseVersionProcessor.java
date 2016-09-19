@@ -31,7 +31,12 @@ public class PlatformDotNetEntityFrameworkIncreaseVersionProcessor implements Ca
 
     /** {@inheritDoc} */
     @Override public Object process(MutableEntry<String, Long> entry, Object... objects) throws EntryProcessorException {
-        entry.setValue(entry.getValue() + 1);
+        Long val = entry.getValue();
+
+        if (val == null)
+            val = 0L;
+
+        entry.setValue(val + 1);
 
         return null;
     }
