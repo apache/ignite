@@ -14,7 +14,7 @@ import java.util.HashSet;
  */
 public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCacheExtension {
     /** Extension ID. */
-    private static final int EXT_ID = 0;
+    private static final int EXT_ID = 1;
 
     /** Operation: increment entity set versions. */
     private static final int OP_INCREMENT_VERSIONS = 1;
