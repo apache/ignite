@@ -1812,7 +1812,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             U.quiet(false, "JVM PID: " + (jvmPid == -1 ? "undetermined" : jvmPid));
 
         if (log.isInfoEnabled())
-            U.quiet(false, "JVM PID: " + (jvmPid == -1 ? "undetermined" : jvmPid));
+            log.info("JVM PID: " + (jvmPid == -1 ? "undetermined" : jvmPid));
     }
 
     /**
