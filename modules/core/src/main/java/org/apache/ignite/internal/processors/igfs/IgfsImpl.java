@@ -1063,13 +1063,17 @@ public final class IgfsImpl implements IgfsEx {
                 int blockSize = cfg.getBlockSize();
 
                 if (mode == PROXY) {
+                    IgfsFile igfsFile = secondaryFs.info(path);
+
+                    if (igfsFile != null) {
+                        blockSize = igfsFile.blockSize();
+                        if (blockSize <= 0)
+                            blockSize = cfg.getBlockSize();
+
+                        length = igfsFile.length();
+                    }
+
                     secondaryStream = secondaryFs.create(path, bufSize, overwrite, replication, blockSize, props);
-
-                    IgfsFile igfsFile = info(path);
-
-                    length = igfsFile.length();
-
-                    // TODO: Try getting block size from the secondary file system.
                 }
                 else {
                     // Perform create.

@@ -296,7 +296,8 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
         try {
             if (remainder != null) {
                 igfsCtx.data().storeDataBlocks(fileInfo, length + space, null, 0,
-                    ByteBuffer.wrap(remainder, 0, remainderDataLen), true, streamRange, batch, mode == PROXY);
+                    ByteBuffer.wrap(remainder, 0, remainderDataLen), true, streamRange, batch,
+                    blockSize, mode == PROXY);
 
                 remainder = null;
                 remainderDataLen = 0;
@@ -486,11 +487,13 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
             else {
                 if (data instanceof ByteBuffer) {
                     remainder = igfsCtx.data().storeDataBlocks(fileInfo, length + space, remainder,
-                        remainderDataLen, (ByteBuffer) data, false, streamRange, batch, mode == PROXY);
+                        remainderDataLen, (ByteBuffer) data, false, streamRange, batch,
+                        blockSize, mode == PROXY);
                 }
                 else {
                     remainder = igfsCtx.data().storeDataBlocks(fileInfo, length + space, remainder,
-                        remainderDataLen, (DataInput) data, writeLen, false, streamRange, batch, mode == PROXY);
+                        remainderDataLen, (DataInput) data, writeLen, false, streamRange, batch,
+                        blockSize, mode == PROXY);
                 }
 
                 remainderDataLen = remainder == null ? 0 : remainder.length;
