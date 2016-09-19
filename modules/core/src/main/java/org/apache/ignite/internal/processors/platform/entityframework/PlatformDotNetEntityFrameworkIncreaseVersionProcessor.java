@@ -25,19 +25,21 @@ import javax.cache.processor.MutableEntry;
 /**
  * Entry processor that increments entity set version number.
  */
-public class PlatformDotNetEntityFrameworkIncreaseVersionProcessor implements CacheEntryProcessor<String, Long, Object> {
+public class PlatformDotNetEntityFrameworkIncreaseVersionProcessor implements CacheEntryProcessor<String, Long, Long> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override public Object process(MutableEntry<String, Long> entry, Object... objects) throws EntryProcessorException {
+    @Override public Long process(MutableEntry<String, Long> entry, Object... objects) throws EntryProcessorException {
         Long val = entry.getValue();
 
         if (val == null)
             val = 0L;
 
-        entry.setValue(val + 1);
+        val++;
 
-        return null;
+        entry.setValue(val);
+
+        return val;
     }
 }

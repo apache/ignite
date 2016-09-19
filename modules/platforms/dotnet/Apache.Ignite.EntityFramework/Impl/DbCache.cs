@@ -146,7 +146,8 @@ namespace Apache.Ignite.EntityFramework.Impl
             // Increase version for each dependent entity set and run a task to clean up old entries.
             ((ICacheInternal) _metaCache).DoOutInOpExtension<object>(ExtensionId, OpInvalidateSets, w =>
             {
-                // TODO: Send cache name to clear up.
+                w.WriteString(_cache.Name);
+
                 w.WriteInt(entitySets.Count);
 
                 foreach (var set in entitySets)

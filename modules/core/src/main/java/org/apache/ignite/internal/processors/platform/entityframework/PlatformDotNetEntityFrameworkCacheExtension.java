@@ -26,11 +26,11 @@ import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtension;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
 import javax.cache.Cache;
+import javax.cache.processor.EntryProcessorResult;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -56,26 +56,28 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
         PlatformMemory mem) throws IgniteCheckedException {
         switch (type) {
             case OP_INVALIDATE_SETS: {
+                final IgniteCache<String, Long> metaCache = (IgniteCache<String, Long>)target.rawCache();
+                final String dataCacheName = reader.readString();
+
                 int cnt = reader.readInt();
                 final Set<String> entitySetNames = new HashSet(cnt);
 
                 for (int i = 0; i < cnt; i++)
                     entitySetNames.add(reader.readString());
 
-                target.rawCache().invokeAll(entitySetNames,
-                    new PlatformDotNetEntityFrameworkIncreaseVersionProcessor()); // TODO: Inline?
-
+                final Map<String, EntryProcessorResult<Long>> currentVersions =
+                    metaCache.invokeAll(entitySetNames,
+                    new PlatformDotNetEntityFrameworkIncreaseVersionProcessor());
 
                 // Initiate old entries cleanup.
                 Ignite grid = target.platformContext().kernalContext().grid();
-                final String cacheName = target.rawCache().getName();
 
                 grid.compute().broadcast(new IgniteRunnable() {
                     @IgniteInstanceResource
                     private Ignite ignite;
 
                     @Override public void run() {
-                        removeOldEntries(ignite, cacheName, entitySetNames);
+                        removeOldEntries(ignite, dataCacheName, currentVersions);
                     }
                 });
 
@@ -105,26 +107,21 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
      * Removes old cache entries locally.
      *
      * @param ignite Ignite.
-     * @param cacheName Cache name.
-     * @param entitySets Entity sets.
+     * @param dataCacheName Cache name.
+     * @param currentVersions Current versions.
      */
-    private static void removeOldEntries(Ignite ignite, String cacheName, Set<String> entitySets) {
-        IgniteCache<String, Object> cache = ignite.cache(cacheName);
+    private static void removeOldEntries(Ignite ignite, String dataCacheName,
+        Map<String, EntryProcessorResult<Long>> currentVersions) {
+        IgniteCache<String, PlatformDotNetEntityFrameworkCacheEntry> cache = ignite.cache(dataCacheName);
 
-        Map<String, Object> currentVersions = cache.getAll(entitySets);
-
-        for (Cache.Entry<String, Object> cacheEntry : cache.localEntries(CachePeekMode.ALL)) {
-            Object val = cacheEntry.getValue();
-
-            if (!(val instanceof PlatformDotNetEntityFrameworkCacheEntry))
-                continue;
-
-            PlatformDotNetEntityFrameworkCacheEntry entry = (PlatformDotNetEntityFrameworkCacheEntry)val;
+        for (Cache.Entry<String, PlatformDotNetEntityFrameworkCacheEntry> cacheEntry :
+            cache.localEntries(CachePeekMode.ALL)) {
+            PlatformDotNetEntityFrameworkCacheEntry entry = cacheEntry.getValue();
 
             for (Map.Entry<String, Long> entitySet : entry.entitySets().entrySet()) {
-                Object curVer = currentVersions.get(entitySet.getKey());
+                EntryProcessorResult<Long> curVer = currentVersions.get(entitySet.getKey());
 
-                if (curVer != null && entitySet.getValue() < (Long)curVer)
+                if (curVer != null && entitySet.getValue() < curVer.get())
                     cache.remove(cacheEntry.getKey());
             }
         }

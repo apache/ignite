@@ -187,20 +187,20 @@ namespace Apache.Ignite.EntityFramework.Tests
                 ctx.Posts.Add(new Post {BlogId = blog.BlogId, Title = "My Second Post", Content = "Foo bar."});
                 Assert.AreEqual(1, ctx.SaveChanges());
                 
-                Assert.AreEqual(2, _cache.GetSize()); // Only entity set versions are in cache.
+                Assert.AreEqual(0, _cache.GetSize()); // No cached entries.
 
                 Assert.AreEqual(2, ctx.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
 
-                Assert.AreEqual(3, _cache.GetSize()); // Cached query added.
+                Assert.AreEqual(1, _cache.GetSize()); // Cached query added.
 
                 // Delete post.
                 ctx.Posts.Remove(ctx.Posts.First());
                 Assert.AreEqual(1, ctx.SaveChanges());
 
-                Assert.AreEqual(2, _cache.GetSize()); // Only entity set versions are in cache.
+                Assert.AreEqual(0, _cache.GetSize()); // No cached entries.
                 Assert.AreEqual(1, ctx.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
 
-                Assert.AreEqual(3, _cache.GetSize()); // Cached query added.
+                Assert.AreEqual(1, _cache.GetSize()); // Cached query added.
 
                 // Modify post.
                 Assert.AreEqual(0, ctx.Posts.Count(x => x.Title.EndsWith("updated")));
@@ -208,10 +208,10 @@ namespace Apache.Ignite.EntityFramework.Tests
                 ctx.Posts.Single().Title += " - updated";
                 Assert.AreEqual(1, ctx.SaveChanges());
 
-                Assert.AreEqual(2, _cache.GetSize()); // Only entity set versions are in cache.
+                Assert.AreEqual(0, _cache.GetSize()); // No cached entries.
                 Assert.AreEqual(1, ctx.Posts.Count(x => x.Title.EndsWith("updated")));
 
-                Assert.AreEqual(3, _cache.GetSize()); // Cached query added.
+                Assert.AreEqual(1, _cache.GetSize()); // Cached query added.
             }
         }
 
