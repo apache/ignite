@@ -586,7 +586,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRebalanceIterator rebalanceIterator(int part, Long partCntr) throws IgniteCheckedException {
+    @Override public IgniteRebalanceIterator rebalanceIterator(int part, AffinityTopologyVersion topVer, Long partCntr)
+        throws IgniteCheckedException {
         final GridIterator<CacheDataRow> it = iterator(part);
 
         return new IgniteRebalanceIterator() {

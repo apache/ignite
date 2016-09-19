@@ -152,7 +152,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @return Partition data iterator.
      * @throws IgniteCheckedException If failed.
      */
-    public IgniteRebalanceIterator rebalanceIterator(final int part, final Long partCntr)
+    public IgniteRebalanceIterator rebalanceIterator(int part, AffinityTopologyVersion topVer, Long partCntr)
         throws IgniteCheckedException;
 
     /**

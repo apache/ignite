@@ -53,7 +53,7 @@ public class IgniteWriteAheadLogNoopManager extends GridCacheSharedManagerAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public int truncate(WALPointer ptr) throws IgniteException, StorageException {
+    @Override public int truncate(WALPointer ptr) {
         return 0;
     }
 }
