@@ -412,10 +412,12 @@ namespace Apache.Ignite.EntityFramework.Tests
                 ctx.SaveChanges();
 
                 Assert.AreEqual(1, ctx.Posts.ToArray().Length);
-                Assert.AreEqual(3, _cache.GetSize());
+                Assert.AreEqual(1, _cache.GetSize());
+                Assert.AreEqual(2, _metaCache.GetSize());
 
                 Thread.Sleep(250);
-                Assert.AreEqual(2, _cache.GetSize());
+                Assert.AreEqual(0, _cache.GetSize());
+                Assert.AreEqual(2, _metaCache.GetSize());
             }
         }
 
@@ -650,8 +652,9 @@ namespace Apache.Ignite.EntityFramework.Tests
                 }
             }
 
-            // Only one version of data is in the cache, plus the version info.
-            Assert.AreEqual(2, _cache.GetSize());
+            // Only one version of data is in the cache.
+            Assert.AreEqual(1, _cache.GetSize());
+            Assert.AreEqual(1, _metaCache.GetSize());
         }
 
         /// <summary>
