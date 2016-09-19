@@ -1804,7 +1804,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * Logs out Process Info.
      */
     private void ackProcessInfo() {
-        U.quiet(false, "JVM PID: " + U.jvmPid());
+        int jvmPid = U.jvmPid();
+
+        U.quiet(false, "JVM PID: " + (jvmPid == -1 ? "undetermined" : jvmPid));
     }
 
     /**
