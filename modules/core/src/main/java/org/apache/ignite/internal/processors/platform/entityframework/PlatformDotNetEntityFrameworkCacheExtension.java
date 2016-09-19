@@ -5,6 +5,7 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtension;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.HashSet;
 
@@ -39,5 +40,10 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
         }
 
         throw new IgniteCheckedException("Unsupported operation type: " + type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PlatformDotNetEntityFrameworkCacheExtension.class, this);
     }
 }
