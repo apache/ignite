@@ -622,6 +622,34 @@ namespace Apache.Ignite.EntityFramework.Tests
         }
 
         /// <summary>
+        /// Tests that old versions of caches entries are cleaned up.
+        /// </summary>
+        [Test]
+        public void TestOldEntriesCleanup()
+        {
+            // Run in a loop to generate a bunch of outdated cache entries.
+            for (var i = 0; i < 100; i++)
+            {
+                using (var ctx = GetDbContext())
+                {
+                    var blog = new Blog {Name = "my blog"};
+                    ctx.Blogs.Add(blog);
+                    ctx.SaveChanges();
+
+                    Assert.AreEqual(1, ctx.Blogs.Count());
+
+                    ctx.Blogs.Remove(blog);
+                    ctx.SaveChanges();
+
+                    Assert.AreEqual(0, ctx.Blogs.Count());
+                }
+            }
+
+            // Only blog entity set version is in the cache.
+            Assert.AreEqual(1, _cache.GetSize());
+        }
+
+        /// <summary>
         /// Executes the entity SQL.
         /// </summary>
         private static EntityCommand GetEntityCommand(BloggingContext ctx, string esql)
