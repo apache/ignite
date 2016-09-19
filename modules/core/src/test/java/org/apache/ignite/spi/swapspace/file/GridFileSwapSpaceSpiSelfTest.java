@@ -42,6 +42,7 @@ import org.apache.ignite.spi.swapspace.SwapSpaceSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
+import org.junit.Assert;
 
 /**
  * Test for {@link FileSwapSpaceSpi}.
@@ -371,21 +372,15 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testCheckLockingWhenSaveFileWithMoreSizeWhichQueue() throws IgniteCheckedException {
-        final String spaceName = "myScape";
+    public void testSaveValueLargeThenQueueSize() throws IgniteCheckedException {
+        final String spaceName = "mySpace";
         final SwapKey key = new SwapKey("key");
-        final String msg = "Message text";
+
+        final byte[] val = new byte[FileSwapSpaceSpi.DFLT_QUE_SIZE * 2];
+        Arrays.fill(val, (byte)1);
 
         IgniteInternalFuture<byte[]> fut = GridTestUtils.runAsync(new Callable<byte[]>() {
             @Override public byte[] call() throws Exception {
-                byte[] val = msg.getBytes();
-
-                // Min queue size in byte, for write to swap file.
-                ((FileSwapSpaceSpi)spi).setWriteBufferSize(1);
-
-                // Max queue size in byte.
-                ((FileSwapSpaceSpi)spi).setMaxWriteQueueSize(5);
-
                 spi.store(spaceName, key, val, context());
 
                 GridTestUtils.waitForCondition(new GridAbsPredicate() {
@@ -404,6 +399,6 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
 
         byte[] bytes = fut.get(10_000);
 
-        assertEquals(msg, new String(bytes));
+        Assert.assertArrayEquals(val, bytes);
     }
 }

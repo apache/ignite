@@ -824,9 +824,6 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
         /** */
         private final Condition mayTake = lock.newCondition();
 
-        /** for locking on big val that val.len > maxSize */
-        private final Condition mayAddBig = lock.newCondition();
-
         /** */
         private int size;
 
@@ -839,8 +836,8 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
         /** */
         private final IgniteLogger log;
 
-        /** true if message was printed */
-        private boolean printed;
+        /** */
+        private boolean queueSizeWarn;
 
         /**
          * @param minTakeSize Min size.
@@ -863,17 +860,22 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
             lock.lock();
 
             try {
-                if (val.len > maxSize) {
-                    if (!printed) {
-                        log.warning("You try save entry in swap, which have size more than [queueMaxSize=" + maxSize + "], [entrySize=" + val.len + "], need increased queueMaxSize.");
-                        printed = true;
+                boolean largeVal = val.len > maxSize;
+
+                if (largeVal) {
+                    if (!queueSizeWarn) {
+                        U.warn(log, "Trying to save in swap entry which have size more than write queue size. " +
+                            "You may wish to increase 'maxWriteQueueSize' in FileSwapSpaceSpi configuration " +
+                            "[queueMaxSize=" + maxSize + ", valSize=" + val.len + ']');
+
+                        queueSizeWarn = true;
                     }
 
-                    while (size > minTakeSize)
-                        mayAddBig.await();
-
-                } else {
-                    while (size + val.len > maxSize || lock.hasWaiters(mayAddBig))
+                    while (size >= minTakeSize)
+                        mayAdd.await();
+                }
+                else {
+                    while (size + val.len > maxSize)
                         mayAdd.await();
                 }
 
@@ -902,10 +904,8 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
             lock.lock();
 
             try {
-                while (size < minTakeSize){
-                    mayAddBig.signalAll();
+                while (size < minTakeSize)
                     mayTake.await();
-                }
 
                 int size = 0;
                 int cnt = 0;
