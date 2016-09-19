@@ -148,17 +148,6 @@ namespace Apache.Ignite.EntityFramework.Impl
                 foreach (var set in entitySets)
                     w.WriteString(set.Name);
             }, null);
-
-
-            //var arg = new string[entitySets.Count + 1];
-
-            //arg[0] = _cache.Name;
-
-            //var i = 1;
-            //foreach (var set in entitySets)
-            //    arg[i++] = set.Name;
-
-            //_cache.Ignite.GetCompute().ExecuteJavaTaskAsync<object>(PurgeCacheTask, arg);
         }
 
         /// <summary>
