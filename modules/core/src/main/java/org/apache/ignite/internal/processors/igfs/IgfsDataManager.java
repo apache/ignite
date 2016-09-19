@@ -422,6 +422,8 @@ public class IgfsDataManager extends IgfsManager {
      * @param blockSize The size of the block.
      * @param key The data cache key of the block.
      * @param data The new value of the block.
+     *
+     * @throws IgniteCheckedException If failed.
      */
     private void putBlock(int blockSize, IgfsBlockKey key, byte[] data) throws IgniteCheckedException {
         if (data.length < blockSize)
@@ -434,7 +436,6 @@ public class IgfsDataManager extends IgfsManager {
             dataCachePrj.put(key, data);
         }
     }
-
 
     /**
      * Registers write future in igfs data manager.
@@ -481,6 +482,7 @@ public class IgfsDataManager extends IgfsManager {
      * @param flush Flush flag.
      * @param affinityRange Affinity range to update if file write can be colocated.
      * @param batch Optional secondary file system worker batch.
+     * @param proxy Proxy mode flag.
      *
      * @return Remainder if data did not fill full block.
      * @throws IgniteCheckedException If failed.
@@ -493,12 +495,13 @@ public class IgfsDataManager extends IgfsManager {
         ByteBuffer data,
         boolean flush,
         IgfsFileAffinityRange affinityRange,
-        @Nullable IgfsFileWorkerBatch batch
+        @Nullable IgfsFileWorkerBatch batch,
+        boolean proxy
     ) throws IgniteCheckedException {
         //assert validTxState(any); // Allow this method call for any transaction state.
 
         return byteBufWriter.storeDataBlocks(fileInfo, reservedLen, remainder, remainderLen, data, data.remaining(),
-            flush, affinityRange, batch);
+            flush, affinityRange, batch, proxy);
     }
 
     /**
@@ -514,9 +517,11 @@ public class IgfsDataManager extends IgfsManager {
      * @param flush Flush flag.
      * @param affinityRange File affinity range to update if file cal be colocated.
      * @param batch Optional secondary file system worker batch.
-     * @throws IgniteCheckedException If failed.
+     * @param proxy Proxy mode flag.
+     *
      * @return Remainder of data that did not fit the block if {@code flush} flag is {@code false}.
      * @throws IOException If store failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable public byte[] storeDataBlocks(
         IgfsEntryInfo fileInfo,
@@ -527,12 +532,13 @@ public class IgfsDataManager extends IgfsManager {
         int len,
         boolean flush,
         IgfsFileAffinityRange affinityRange,
-        @Nullable IgfsFileWorkerBatch batch
+        @Nullable IgfsFileWorkerBatch batch,
+        boolean proxy
     ) throws IgniteCheckedException, IOException {
         //assert validTxState(any); // Allow this method call for any transaction state.
 
         return dataInputWriter.storeDataBlocks(fileInfo, reservedLen, remainder, remainderLen, in, len, flush,
-            affinityRange, batch);
+            affinityRange, batch, proxy);
     }
 
     /**
@@ -1221,6 +1227,7 @@ public class IgfsDataManager extends IgfsManager {
          * @param flush Flush flag.
          * @param affinityRange Affinity range to update if file write can be colocated.
          * @param batch Optional secondary file system worker batch.
+         * @param proxy Proxy mode flag.
          * @throws IgniteCheckedException If failed.
          * @return Data remainder if {@code flush} flag is {@code false}.
          */
@@ -1234,7 +1241,8 @@ public class IgfsDataManager extends IgfsManager {
             int srcLen,
             boolean flush,
             IgfsFileAffinityRange affinityRange,
-            @Nullable IgfsFileWorkerBatch batch
+            @Nullable IgfsFileWorkerBatch batch,
+            boolean proxy
         ) throws IgniteCheckedException {
             IgniteUuid id = fileInfo.id();
             int blockSize = fileInfo.blockSize();
@@ -1279,10 +1287,15 @@ public class IgfsDataManager extends IgfsManager {
                 if (portionOff < size)
                     readData(src, portion, portionOff);
 
-                // Will update range if necessary.
-                IgfsBlockKey key = createBlockKey(block, fileInfo, affinityRange);
+                IgfsBlockKey key = null;
+                ClusterNode primaryNode = null;
 
-                ClusterNode primaryNode = dataCachePrj.cache().affinity().mapKeyToNode(key);
+                if (!proxy) {
+                    // Will update range if necessary.
+                    key = createBlockKey(block, fileInfo, affinityRange);
+
+                    primaryNode = dataCachePrj.cache().affinity().mapKeyToNode(key);
+                }
 
                 if (block == first) {
                     off = (int)blockStartOff;
@@ -1300,7 +1313,7 @@ public class IgfsDataManager extends IgfsManager {
                     if (blockStartOff == 0 && !flush) {
                         assert written + portion.length == len;
 
-                        if (!nodeBlocks.isEmpty()) {
+                        if (!proxy && !nodeBlocks.isEmpty()) {
                             processBatch(id, node, nodeBlocks);
 
                             igfsCtx.metrics().addWriteBlocks(1, 0);
@@ -1324,26 +1337,28 @@ public class IgfsDataManager extends IgfsManager {
 
                 int writtenTotal = 0;
 
-                if (!primaryNode.id().equals(node.id())) {
-                    if (!nodeBlocks.isEmpty())
-                        processBatch(id, node, nodeBlocks);
+                if(!proxy) {
+                    if (!primaryNode.id().equals(node.id())) {
+                        if (!nodeBlocks.isEmpty())
+                            processBatch(id, node, nodeBlocks);
 
-                    writtenTotal = nodeBlocks.size();
+                        writtenTotal = nodeBlocks.size();
 
-                    nodeBlocks = U.newLinkedHashMap((int)(limit - first));
-                    node = primaryNode;
+                        nodeBlocks = U.newLinkedHashMap((int)(limit - first));
+                        node = primaryNode;
+                    }
+
+                    assert size == portion.length;
+
+                    if (size != blockSize) {
+                        // Partial writes must be always synchronous.
+                        processPartialBlockWrite(id, key, block == first ? off : 0, portion, blockSize);
+
+                        writtenTotal++;
+                    }
+                    else
+                        nodeBlocks.put(key, portion);
                 }
-
-                assert size == portion.length;
-
-                if (size != blockSize) {
-                    // Partial writes must be always synchronous.
-                    processPartialBlockWrite(id, key, block == first ? off : 0, portion, blockSize);
-
-                    writtenTotal++;
-                }
-                else
-                    nodeBlocks.put(key, portion);
 
                 igfsCtx.metrics().addWriteBlocks(writtenTotal, writtenSecondary);
 
@@ -1351,7 +1366,7 @@ public class IgfsDataManager extends IgfsManager {
             }
 
             // Process final batch, if exists.
-            if (!nodeBlocks.isEmpty()) {
+            if (!proxy && !nodeBlocks.isEmpty()) {
                 processBatch(id, node, nodeBlocks);
 
                 igfsCtx.metrics().addWriteBlocks(nodeBlocks.size(), 0);

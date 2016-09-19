@@ -191,7 +191,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             IgfsFileAffinityRange range = new IgfsFileAffinityRange();
 
             byte[] remainder = mgr.storeDataBlocks(info, info.length(), null, 0, ByteBuffer.wrap(data), true,
-                range, null);
+                range, null, false);
 
             assert remainder == null;
 
@@ -274,7 +274,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             IgfsFileAffinityRange range = new IgfsFileAffinityRange();
 
             byte[] left = mgr.storeDataBlocks(info, info.length(), remainder, remainder.length, ByteBuffer.wrap(data),
-                false, range, null);
+                false, range, null, false);
 
             assert left.length == blockSize / 2;
 
@@ -283,7 +283,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             info = info.length(info.length() + remainder2.length);
 
             byte[] left2 = mgr.storeDataBlocks(info, info.length(), left, left.length, ByteBuffer.wrap(remainder2),
-                false, range, null);
+                false, range, null, false);
 
             assert left2 == null;
 
@@ -364,7 +364,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
                 Arrays.fill(data, (byte)(j / 4));
 
                 byte[] left = mgr.storeDataBlocks(info, (j + 1) * chunkSize, null, 0, ByteBuffer.wrap(data),
-                    true, range, null);
+                    true, range, null, false);
 
                 assert left == null : "No remainder should be returned if flush is true: " + Arrays.toString(left);
             }
@@ -582,7 +582,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             @Override public Object call() throws Exception {
                 IgfsFileAffinityRange range = new IgfsFileAffinityRange();
 
-                mgr.storeDataBlocks(reserved, reserved.length(), null, 0, ByteBuffer.wrap(data), false, range, null);
+                mgr.storeDataBlocks(reserved, reserved.length(), null, 0, ByteBuffer.wrap(data), false,
+                    range, null, false);
 
                 return null;
             }
