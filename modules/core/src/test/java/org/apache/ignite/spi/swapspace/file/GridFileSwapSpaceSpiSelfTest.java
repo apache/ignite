@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -395,7 +394,7 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testSaveValueLargeThenQueueSizeMultiThread() throws Exception {
+    public void testSaveValueLargeThenQueueSizeMultiThreaded() throws Exception {
         final String spaceName = "mySpace";
 
         final int threads = 5;
@@ -408,49 +407,38 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
 
         try {
             IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Void>() {
-                @Override
-                public Void call() throws Exception {
+                @Override public Void call() throws Exception {
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
-                    SwapKey key = new SwapKey("key-" + Thread.currentThread().getName());
 
                     while (!done.get()) {
-                        int size = rnd.nextInt(0, maxSize);
-                        final byte[] val = new byte[size];
+                        SwapKey key = new SwapKey(rnd.nextInt(1000));
 
-                        Arrays.fill(val, (byte) 1);
-
-                        byte[] res = saveAndGet(spaceName, key, val);
-
-                        Assert.assertArrayEquals(val, res);
-
+                        spi.store(spaceName, key, new byte[rnd.nextInt(0, maxSize)], context());
                     }
+
                     return null;
                 }
-            }, threads, " async-writer");
+            }, threads, " async-put");
 
-            long endTime = System.currentTimeMillis() + DURATION;
-
-            while (System.currentTimeMillis() < endTime)
-                Thread.sleep(5000);
+            Thread.sleep(DURATION);
 
             done.set(true);
 
             fut.get();
-
-            U.sleep(2000);
-
-        }finally {
+        }
+        finally {
            done.set(true);
         }
-
     }
 
     /**
      * @param spaceName Space name.
      * @param key Key.
      * @param val Value.
+     * @throws Exception If failed.
+     * @return Read bytes.
      */
-    private byte [] saveAndGet(final String spaceName, final SwapKey key, byte[] val) throws IgniteInterruptedCheckedException {
+    private byte[] saveAndGet(final String spaceName, final SwapKey key, byte[] val) throws Exception {
         spi.store(spaceName, key, val, context());
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
