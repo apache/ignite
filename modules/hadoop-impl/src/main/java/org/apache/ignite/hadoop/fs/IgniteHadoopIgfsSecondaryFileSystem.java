@@ -17,8 +17,6 @@
 
 package org.apache.ignite.hadoop.fs;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
@@ -36,13 +34,12 @@ import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.OutputStream;
-import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
 /**
- * Secondary file system which delegates calls to an instance of Hadoop {@link FileSystem}.
+ * Secondary file system which delegates calls to Hadoop {@code org.apache.hadoop.fs.FileSystem}.
  * <p>
  * Target {@code FileSystem}'s are created on per-user basis using passed {@link HadoopFileSystemFactory}.
  */
@@ -118,7 +115,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
      * Gets default user name.
      * <p>
      * Defines user name which will be used during file system invocation in case no user name is defined explicitly
-     * through {@link FileSystem#get(URI, Configuration, String)}.
+     * through {@code FileSystem.get(URI, Configuration, String)}.
      * <p>
      * Also this name will be used if you manipulate {@link IgniteFileSystem} directly and do not set user name
      * explicitly using {@link IgfsUserContext#doAs(String, IgniteOutClosure)} or
@@ -145,7 +142,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
     /**
      * Gets secondary file system factory.
      * <p>
-     * This factory will be used whenever a call to a target {@link FileSystem} is required.
+     * This factory will be used whenever a call to a target {@code FileSystem} is required.
      * <p>
      * If not set, {@link CachingHadoopFileSystemFactory} will be used.
      *
