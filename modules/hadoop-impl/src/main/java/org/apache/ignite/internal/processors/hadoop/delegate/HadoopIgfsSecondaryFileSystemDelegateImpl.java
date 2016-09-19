@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop;
+package org.apache.ignite.internal.processors.hadoop.delegate;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -59,7 +59,7 @@ import java.util.Map;
 /**
  * Secondary file system implementation.
  */
-public class HadoopIgfsSecondaryFileSystemImpl implements HadoopIgfsSecondaryFileSystem {
+public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSecondaryFileSystemDelegate {
     /** The default user name. It is used if no user context is set. */
     private String dfltUsrName;
 
@@ -452,6 +452,6 @@ public class HadoopIgfsSecondaryFileSystemImpl implements HadoopIgfsSecondaryFil
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(HadoopIgfsSecondaryFileSystemImpl.class, this);
+        return S.toString(HadoopIgfsSecondaryFileSystemDelegateImpl.class, this);
     }
 }

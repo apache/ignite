@@ -24,8 +24,8 @@ import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsUserContext;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
-import org.apache.ignite.internal.processors.hadoop.HadoopIgfsSecondaryFileSystem;
-import org.apache.ignite.internal.processors.hadoop.HadoopIgfsSecondaryFileSystemImpl;
+import org.apache.ignite.internal.processors.hadoop.delegate.HadoopIgfsSecondaryFileSystemDelegate;
+import org.apache.ignite.internal.processors.hadoop.delegate.HadoopIgfsSecondaryFileSystemDelegateImpl;
 import org.apache.ignite.internal.processors.hadoop.HadoopPayloadAware;
 import org.apache.ignite.internal.processors.igfs.IgfsSecondaryFileSystemV2;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
@@ -52,7 +52,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
     private HadoopFileSystemFactory fsFactory;
 
     /** Target. */
-    volatile private HadoopIgfsSecondaryFileSystem target;
+    volatile private HadoopIgfsSecondaryFileSystemDelegate target;
 
     /**
      * Default constructor for Spring.
@@ -245,7 +245,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
         if (fsFactory == null)
             fsFactory = new CachingHadoopFileSystemFactory();
 
-        target = new HadoopIgfsSecondaryFileSystemImpl();
+        target = new HadoopIgfsSecondaryFileSystemDelegateImpl();
 
         target.start(dfltUsrName, fsFactory);
     }

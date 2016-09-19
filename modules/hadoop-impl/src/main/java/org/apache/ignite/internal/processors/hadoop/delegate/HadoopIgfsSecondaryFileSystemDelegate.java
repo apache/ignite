@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop;
+package org.apache.ignite.internal.processors.hadoop.delegate;
 
 import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 import org.apache.ignite.internal.processors.igfs.IgfsSecondaryFileSystemV2;
@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsSecondaryFileSystemV2;
 /**
  * Interface to secondary file system implementation.
  */
-public interface HadoopIgfsSecondaryFileSystem extends IgfsSecondaryFileSystemV2 {
+public interface HadoopIgfsSecondaryFileSystemDelegate extends IgfsSecondaryFileSystemV2 {
     /**
      * Start routine.
      *
