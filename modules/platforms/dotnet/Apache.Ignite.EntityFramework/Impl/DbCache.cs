@@ -24,7 +24,9 @@ namespace Apache.Ignite.EntityFramework.Impl
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Text;
+    using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Common;
@@ -35,7 +37,7 @@ namespace Apache.Ignite.EntityFramework.Impl
     /// </summary>
     internal class DbCache
     {
-        /** Extension id  */
+        /** Extension id.  */
         private const int ExtensionId = 1;
 
         /** Invalidate sets extension operation. */
@@ -48,7 +50,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         private readonly ICache<string, EntityFrameworkCacheEntry> _cache;
 
         /** Entity set version cache. */
-        private readonly ICache<string, long> _entitySetVersions;
+        private readonly ICache<string, long> _metaCache;
 
         /** Cached caches per (expiry_seconds * 10). */
         private volatile Dictionary<long, ICache<string, EntityFrameworkCacheEntry>> _expiryCaches =
@@ -58,18 +60,22 @@ namespace Apache.Ignite.EntityFramework.Impl
         private readonly object _syncRoot = new object();
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DbCache"/> class.
+        /// Initializes a new instance of the <see cref="DbCache" /> class.
         /// </summary>
-        /// <param name="cache">The cache.</param>
-        [SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters")]
+        /// <param name="ignite">The ignite.</param>
+        /// <param name="metaCacheConfiguration">The meta cache configuration.</param>
+        /// <param name="dataCacheConfiguration">The data cache configuration.</param>
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods",
             Justification = "Validation is present")]
-        public DbCache(ICache<string, EntityFrameworkCacheEntry> cache)
+        public DbCache(IIgnite ignite, CacheConfiguration metaCacheConfiguration, 
+            CacheConfiguration dataCacheConfiguration)
         {
-            IgniteArgumentCheck.NotNull(cache, "cache");
+            IgniteArgumentCheck.NotNull(ignite, "ignite");
+            IgniteArgumentCheck.NotNull(metaCacheConfiguration, "metaCacheConfiguration");
+            IgniteArgumentCheck.NotNull(dataCacheConfiguration, "metaCacheConfiguration");
 
-            _cache = cache;
-            _entitySetVersions = cache.Ignite.GetCache<string, long>(cache.Name);  // same cache with different types
+            _metaCache = ignite.GetOrCreateCache<string, long>(metaCacheConfiguration);
+            _cache = ignite.GetOrCreateCache<string, EntityFrameworkCacheEntry>(dataCacheConfiguration);
         }
 
         /** <inheritdoc /> */
@@ -130,7 +136,7 @@ namespace Apache.Ignite.EntityFramework.Impl
             Debug.Assert(entitySets != null && entitySets.Count > 0);
 
             // Increase version for each dependent entity set and run a task to clean up old entries.
-            ((ICacheInternal) _entitySetVersions).DoOutInOpExtension<object>(ExtensionId, OpInvalidateSets, w =>
+            ((ICacheInternal) _metaCache).DoOutInOpExtension<object>(ExtensionId, OpInvalidateSets, w =>
             {
                 w.WriteInt(entitySets.Count);
 
@@ -231,7 +237,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         private IDictionary<string, long> GetEntitySetVersions(ICollection<EntitySetBase> sets)
         {
             // LINQ Select allocates less that a new List<> will do.
-            var versions = _entitySetVersions.GetAll(sets.Select(x => x.Name));
+            var versions = _metaCache.GetAll(sets.Select(x => x.Name));
 
             // Some versions may be missing, fill up with 0.
             foreach (var set in sets)

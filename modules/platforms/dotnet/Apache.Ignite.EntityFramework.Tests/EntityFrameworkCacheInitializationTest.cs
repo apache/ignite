@@ -41,7 +41,7 @@ namespace Apache.Ignite.EntityFramework.Tests
             Assert.IsNull(Ignition.TryGetIgnite());
 
             // Test default config (picks up app.config section).
-            CheckCacheAndStop("myGrid1", IgniteDbConfiguration.DefaultCacheName, new IgniteDbConfiguration());
+            CheckCacheAndStop("myGrid1", IgniteDbConfiguration.DefaultCacheNamePrefix, new IgniteDbConfiguration());
 
             // Specific config section.
             CheckCacheAndStop("myGrid2", "cacheName2", 

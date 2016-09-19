@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.EntityFramework
 {
-    using System;
     using System.Configuration;
     using System.Data.Entity;
     using System.Data.Entity.Core.Common;
@@ -27,7 +26,6 @@ namespace Apache.Ignite.EntityFramework
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.EntityFramework;
     using Apache.Ignite.EntityFramework.Impl;
 
     /// <summary>
@@ -39,26 +37,53 @@ namespace Apache.Ignite.EntityFramework
         /// <summary>
         /// The configuration section name to be used when starting Ignite.
         /// </summary>
-        public const string ConfigurationSectionName = "igniteConfiguration";
+        private const string ConfigurationSectionName = "igniteConfiguration";
 
         /// <summary>
         /// The default cache name to be used for cached EF data.
         /// </summary>
-        public const string DefaultCacheName = "entityFrameworkQueryCache";
+        public const string DefaultCacheNamePrefix = "entityFrameworkQueryCache";
+
+        /// <summary>
+        /// Suffix for the meta cache name.
+        /// </summary>
+        private const string MetaCacheSuffix = "_metadata";
+
+        /// <summary>
+        /// Suffix for the data cache name.
+        /// </summary>
+        private const string DataCacheSuffix = "_data";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteDbConfiguration"/> class.
         /// <para />
         /// This constructor uses default Ignite instance (with null <see cref="IgniteConfiguration.GridName"/>) 
-        /// and a cache with <see cref="DefaultCacheName"/> name.
+        /// and a cache with <see cref="DefaultCacheNamePrefix"/> name.
         /// <para />
         /// Ignite instance will be started automatically, if it is not started yet.
         /// <para /> 
-        /// <see cref="IgniteConfigurationSection"/> with name <see cref="ConfigurationSectionName"/> will be picked up 
-        /// when starting Ignite, if present.
+        /// <see cref="IgniteConfigurationSection"/> with name 
+        /// <see cref="ConfigurationSectionName"/> will be picked up when starting Ignite, if present.
         /// </summary>
         public IgniteDbConfiguration() 
-            : this(GetConfiguration(ConfigurationSectionName, false), DefaultCacheName, null)
+            : this(GetConfiguration(ConfigurationSectionName, false), 
+                  GetDefaultMetaCacheConfiguration(DefaultCacheNamePrefix), 
+                  GetDefaultDataCacheConfiguration(DefaultCacheNamePrefix), null)
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IgniteDbConfiguration" /> class.
+        /// </summary>
+        /// <param name="configurationSectionName">Name of the configuration section.</param>
+        /// <param name="cacheNamePrefix">The cache name prefix for Data and Metadata caches.</param>
+        /// <param name="policy">The caching policy. Null for default <see cref="DbCachingPolicy" />.</param>
+        public IgniteDbConfiguration(string configurationSectionName, string cacheNamePrefix, IDbCachingPolicy policy)
+            : this(configurationSectionName,
+                GetDefaultMetaCacheConfiguration(cacheNamePrefix),
+                GetDefaultDataCacheConfiguration(cacheNamePrefix), policy)
+
         {
             // No-op.
         }
@@ -67,11 +92,21 @@ namespace Apache.Ignite.EntityFramework
         /// Initializes a new instance of the <see cref="IgniteDbConfiguration"/> class.
         /// </summary>
         /// <param name="configurationSectionName">Name of the configuration section.</param>
-        /// <param name="cacheName">Name of the cache.</param>
+        /// <param name="metaCacheConfiguration">
+        /// Configuration of the metadata cache which holds entity set information. 
+        /// <para />
+        /// This cache holds small amount of data, but should not lose entries. At least one backup recommended.
+        /// </param>
+        /// <param name="dataCacheConfiguration">
+        /// Configuration of the data cache which holds query results.
+        /// <para />
+        /// This cache tolerates lost data and can have no backups.
+        /// </param>
         /// <param name="policy">The caching policy. Null for default <see cref="DbCachingPolicy"/>.</param>
-        [CLSCompliant(false)]
-        public IgniteDbConfiguration(string configurationSectionName, string cacheName, IDbCachingPolicy policy)
-             : this(GetConfiguration(configurationSectionName, true), cacheName, policy)
+        public IgniteDbConfiguration(string configurationSectionName, CacheConfiguration metaCacheConfiguration,
+            CacheConfiguration dataCacheConfiguration, IDbCachingPolicy policy)
+            : this(GetConfiguration(configurationSectionName, true), 
+                  metaCacheConfiguration, dataCacheConfiguration, policy)
         {
             // No-op.
         }
@@ -80,12 +115,21 @@ namespace Apache.Ignite.EntityFramework
         /// Initializes a new instance of the <see cref="IgniteDbConfiguration" /> class.
         /// </summary>
         /// <param name="igniteConfiguration">The ignite configuration to use for starting Ignite instance.</param>
-        /// <param name="cacheName">Name of the cache. Can be null. Cache will be created if it does not exist.</param>
+        /// <param name="metaCacheConfiguration">
+        /// Configuration of the metadata cache which holds entity set information. 
+        /// <para />
+        /// This cache holds small amount of data, but should not lose entries. At least one backup recommended.
+        /// </param>
+        /// <param name="dataCacheConfiguration">
+        /// Configuration of the data cache which holds query results.
+        /// <para />
+        /// This cache tolerates lost data and can have no backups.
+        /// </param>
         /// <param name="policy">The caching policy. Null for default <see cref="DbCachingPolicy"/>.</param>
-        [CLSCompliant(false)]
-        public IgniteDbConfiguration(IgniteConfiguration igniteConfiguration, string cacheName, 
+        public IgniteDbConfiguration(IgniteConfiguration igniteConfiguration,
+            CacheConfiguration metaCacheConfiguration, CacheConfiguration dataCacheConfiguration,
             IDbCachingPolicy policy)
-            : this(GetOrStartIgnite(igniteConfiguration), cacheName, policy)
+            : this(GetOrStartIgnite(igniteConfiguration), metaCacheConfiguration, dataCacheConfiguration, policy)
         {
             // No-op.
         }
@@ -94,18 +138,27 @@ namespace Apache.Ignite.EntityFramework
         /// Initializes a new instance of the <see cref="IgniteDbConfiguration" /> class.
         /// </summary>
         /// <param name="ignite">The ignite instance to use.</param>
-        /// <param name="cacheName">Name of the cache. Can be null. Cache will be created if it does not exist.</param>
-        /// <param name="policy">The caching policy. Null for default <see cref="DbCachingPolicy"/>.</param>
+        /// <param name="metaCacheConfiguration">
+        /// Configuration of the metadata cache which holds entity set information. 
+        /// <para />
+        /// This cache holds small amount of data, but should not lose entries. At least one backup recommended.
+        /// </param>
+        /// <param name="dataCacheConfiguration">
+        /// Configuration of the data cache which holds query results.
+        /// <para />
+        /// This cache tolerates lost data and can have no backups.
+        /// </param>
+        /// <param name="policy">The caching policy. Null for default <see cref="DbCachingPolicy" />.</param>
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", 
             Justification = "Validation is present")]
-        [CLSCompliant(false)]
-        public IgniteDbConfiguration(IIgnite ignite, string cacheName, IDbCachingPolicy policy)
+        public IgniteDbConfiguration(IIgnite ignite, CacheConfiguration metaCacheConfiguration,
+            CacheConfiguration dataCacheConfiguration, IDbCachingPolicy policy)
         {
             IgniteArgumentCheck.NotNull(ignite, "ignite");
+            IgniteArgumentCheck.NotNull(metaCacheConfiguration, "metaCacheConfiguration");
+            IgniteArgumentCheck.NotNull(dataCacheConfiguration, "dataCacheConfiguration");
 
-            var cache = ignite.GetOrCreateCache<string, EntityFrameworkCacheEntry>(new CacheConfiguration(cacheName));
-
-            var efCache = new DbCache(cache);
+            var efCache = new DbCache(ignite, metaCacheConfiguration, dataCacheConfiguration);
 
             // SetProviderServices is not suitable. We should replace whatever provider there is with our proxy.
             Loaded += (sender, args) => args.ReplaceService<DbProviderServices>(
@@ -140,6 +193,25 @@ namespace Apache.Ignite.EntityFramework
             throw new IgniteException(string.Format(CultureInfo.InvariantCulture,
                 "Failed to initialize {0}. Could not find {1} with name {2} in application configuration.",
                 typeof (IgniteDbConfiguration), typeof (IgniteConfigurationSection), sectionName));
+        }
+
+        /// <summary>
+        /// Gets the default meta cache configuration.
+        /// </summary>
+        private static CacheConfiguration GetDefaultMetaCacheConfiguration(string namePrefix)
+        {
+            return new CacheConfiguration(namePrefix + MetaCacheSuffix)
+            {
+                Backups = 1
+            };
+        }
+
+        /// <summary>
+        /// Gets the default data cache configuration.
+        /// </summary>
+        private static CacheConfiguration GetDefaultDataCacheConfiguration(string namePrefix)
+        {
+            return new CacheConfiguration(namePrefix + DataCacheSuffix);
         }
     }
 }
