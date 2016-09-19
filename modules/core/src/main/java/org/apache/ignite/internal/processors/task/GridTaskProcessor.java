@@ -515,7 +515,13 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     throw new IgniteDeploymentCheckedException("Unknown task name or failed to auto-deploy " +
                         "task (was task (re|un)deployed?): " + taskName);
 
-                taskCls = dep.deployedClass(taskName);
+                try {
+                    taskCls = dep.deployedClass(taskName);
+                }
+                catch (Throwable t){
+                    throw new IgniteDeploymentCheckedException("Failed to auto-deploy " +
+                        "task (was task (re|un)deployed?) [taskName=" + taskName + ", dep=" + dep + ']');
+                }
 
                 if (taskCls == null)
                     throw new IgniteDeploymentCheckedException("Unknown task name or failed to auto-deploy " +
