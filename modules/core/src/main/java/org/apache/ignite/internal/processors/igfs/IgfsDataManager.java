@@ -422,7 +422,6 @@ public class IgfsDataManager extends IgfsManager {
      * @param blockSize The size of the block.
      * @param key The data cache key of the block.
      * @param data The new value of the block.
-     *
      * @throws IgniteCheckedException If failed.
      */
     private void putBlock(int blockSize, IgfsBlockKey key, byte[] data) throws IgniteCheckedException {
@@ -1244,6 +1243,7 @@ public class IgfsDataManager extends IgfsManager {
             @Nullable IgfsFileWorkerBatch batch,
             boolean proxy
         ) throws IgniteCheckedException {
+            // TODO: NPEs?
             IgniteUuid id = fileInfo.id();
             int blockSize = fileInfo.blockSize();
 

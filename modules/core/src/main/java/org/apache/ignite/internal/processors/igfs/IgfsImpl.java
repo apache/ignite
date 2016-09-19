@@ -1055,14 +1055,21 @@ public final class IgfsImpl implements IgfsEx {
 
 
                 IgfsEntryInfo info = null;
+
                 OutputStream secondaryStream;
+
                 long length = 0;
+
                 int blockSize = cfg.getBlockSize();
 
                 if (mode == PROXY) {
                     secondaryStream = secondaryFs.create(path, bufSize, overwrite, replication, blockSize, props);
+
                     IgfsFile igfsFile = info(path);
+
                     length = igfsFile.length();
+
+                    // TODO: Try getting block size from the secondary file system.
                 }
                 else {
                     // Perform create.
@@ -1085,6 +1092,7 @@ public final class IgfsImpl implements IgfsEx {
 
                     if (info != null) {
                         length = info.length();
+
                         blockSize = info.blockSize();
                     }
                 }
@@ -1185,6 +1193,7 @@ public final class IgfsImpl implements IgfsEx {
 
                         batch = newBatch(path, secondaryStream);
 
+                        // TODO: Try getting block size from secondary.
                         return new IgfsOutputStreamImpl(igfsCtx, path, null, bufferSize(bufSize), mode, batch,
                             info.length(), cfg.getBlockSize());
                     }
