@@ -24,7 +24,6 @@ namespace Apache.Ignite.EntityFramework.Impl
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Text;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Impl.Cache;
@@ -39,21 +38,11 @@ namespace Apache.Ignite.EntityFramework.Impl
         /** Extension id  */
         private const int ExtensionId = 1;
 
-        /// <summary>
-        /// Op codes for <see cref="ICacheInternal.DoOutInOpExtension{T}"/>.
-        /// </summary>
-        private enum Op
-        {
-            /** Increment entity set versions. */
-            IncrementVersions = 1
-        }
+        /** Invalidate sets extension operation. */
+        private const int OpInvalidateSets = 1;
 
         /** Max number of cached expiry caches. */
         private const int MaxExpiryCaches = 1000;
-
-        /** Java task to purge old entries. */
-        private const string PurgeCacheTask =
-            "org.apache.ignite.internal.processors.platform.entityframework.PlatformDotNetEntityFrameworkPurgeOldEntriesTask";
 
         /** Main cache: stores SQL -> QueryResult mappings. */
         private readonly ICache<string, object> _cache;
@@ -151,26 +140,25 @@ namespace Apache.Ignite.EntityFramework.Impl
         {
             Debug.Assert(entitySets != null && entitySets.Count > 0);
 
-            // Increase version for each dependent entity set.
-            OutInOp(Op.IncrementVersions, w =>
+            // Increase version for each dependent entity set and run a task to clean up old entries.
+            ((ICacheInternal) _entitySetVersions).DoOutInOpExtension<object>(ExtensionId, OpInvalidateSets, w =>
             {
                 w.WriteInt(entitySets.Count);
 
                 foreach (var set in entitySets)
                     w.WriteString(set.Name);
-            });
+            }, null);
 
-            // Asynchronously purge old cache entries.
-            // TODO: Java call? We can do this in a single call!!
-            var arg = new string[entitySets.Count + 1];
 
-            arg[0] = _cache.Name;
+            //var arg = new string[entitySets.Count + 1];
 
-            var i = 1;
-            foreach (var set in entitySets)
-                arg[i++] = set.Name;
+            //arg[0] = _cache.Name;
 
-            _cache.Ignite.GetCompute().ExecuteJavaTaskAsync<object>(PurgeCacheTask, arg);
+            //var i = 1;
+            //foreach (var set in entitySets)
+            //    arg[i++] = set.Name;
+
+            //_cache.Ignite.GetCompute().ExecuteJavaTaskAsync<object>(PurgeCacheTask, arg);
         }
 
         /// <summary>
@@ -277,14 +265,6 @@ namespace Apache.Ignite.EntityFramework.Impl
             Debug.Assert(sets.Count == versions.Count);
 
             return versions;
-        }
-
-        /// <summary>
-        /// Invokes the extension operation.
-        /// </summary>
-        private void OutInOp(Op op, Action<IBinaryRawWriter> writeAction)
-        {
-            ((ICacheInternal) _entitySetVersions).DoOutInOpExtension<object>(ExtensionId, (int) op, writeAction, null);
         }
     }
 }
