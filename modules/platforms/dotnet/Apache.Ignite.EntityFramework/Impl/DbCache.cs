@@ -24,8 +24,10 @@ namespace Apache.Ignite.EntityFramework.Impl
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Text;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Expiry;
+    using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.EntityFramework;
 
@@ -34,11 +36,23 @@ namespace Apache.Ignite.EntityFramework.Impl
     /// </summary>
     internal class DbCache
     {
+        /** Extension id  */
+        private const int ExtensionId = 1;
+
+        /// <summary>
+        /// Op codes for <see cref="ICacheInternal.DoOutInOpExtension{T}"/>.
+        /// </summary>
+        private enum Op
+        {
+            /** Increment entity set versions. */
+            IncrementVersions = 1
+        }
+
         /** Max number of cached expiry caches. */
         private const int MaxExpiryCaches = 1000;
 
         /** Java task to purge old entries. */
-        public const string PurgeCacheTask =
+        private const string PurgeCacheTask =
             "org.apache.ignite.internal.processors.platform.entityframework.PlatformDotNetEntityFrameworkPurgeOldEntriesTask";
 
         /** Main cache: stores SQL -> QueryResult mappings. */
@@ -135,10 +149,19 @@ namespace Apache.Ignite.EntityFramework.Impl
         /** <inheritdoc /> */
         public void InvalidateSets(ICollection<EntitySetBase> entitySets)
         {
+            Debug.Assert(entitySets != null && entitySets.Count > 0);
+
             // Increase version for each dependent entity set.
-            _entitySetVersions.InvokeAll(entitySets.Select(x => x.Name), new AddOneProcessor(), null);
+            OutInOp(Op.IncrementVersions, w =>
+            {
+                w.WriteInt(entitySets.Count);
+
+                foreach (var set in entitySets)
+                    w.WriteString(set.Name);
+            });
 
             // Asynchronously purge old cache entries.
+            // TODO: Java call? We can do this in a single call!!
             var arg = new string[entitySets.Count + 1];
 
             arg[0] = _cache.Name;
@@ -257,18 +280,11 @@ namespace Apache.Ignite.EntityFramework.Impl
         }
 
         /// <summary>
-        /// TODO: Replace with a Java processor.
+        /// Invokes the extension operation.
         /// </summary>
-        [Serializable]
-        private class AddOneProcessor : ICacheEntryProcessor<string, long, object, object>
+        private void OutInOp(Op op, Action<IBinaryRawWriter> writeAction)
         {
-            public object Process(IMutableCacheEntry<string, long> entry, object arg)
-            {
-                // This will create a value if it is missing.
-                entry.Value++;
-
-                return null;
-            }
+            ((ICacheInternal) _entitySetVersions).DoOutInOpExtension<object>(ExtensionId, (int) op, writeAction, null);
         }
     }
 }
