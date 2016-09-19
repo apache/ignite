@@ -25,7 +25,6 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
@@ -286,17 +285,27 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable,
             hosts.add(rawReader.readString());
     }
 
-    static class A {
-        A(ClusterNode node) {
+    /**
+     * Encapsulates
+     */
+    static class CachedAddresses {
+        /**
+         * Constructor.
+         *
+         * @param node The node to calculate and cache addresses for.
+         */
+        CachedAddresses(ClusterNode node) {
             try {
-                Collection<InetAddress> inetAddresses = U.toInetAddresses(node);
+                Collection<InetAddress> inetAddrs = U.toInetAddresses(node);
 
-                for (InetAddress addr : inetAddresses) {
-                    if (addr.getHostName() == null)
+                for (InetAddress addr : inetAddrs) {
+                    String hostName = addr.getHostName();
+
+                    if (hostName == null)
                         names.add(addr.getHostAddress() + ":" + 9001);
                     else {
-                        names.add(addr.getHostName() + ":" + 9001); // hostname:portNumber
-                        hosts.add(addr.getHostName());
+                        names.add(hostName + ":" + 9001); // hostname:portNumber
+                        hosts.add(hostName);
                     }
                 }
             }
@@ -304,21 +313,31 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable,
                 names.addAll(node.addresses());
             }
         }
+
+        /**
+         * Collection of pairs {@code hostname:portNumber},
+         * see {@link IgfsBlockLocation#names()}.
+         */
         final Collection<String> names = new LinkedHashSet<>();
+
+        /**
+         * Collection of pairs {@code hostname:portNumber},
+         * see {@link IgfsBlockLocation#hosts()}.
+         */
         final Collection<String> hosts = new LinkedHashSet<>();
     }
 
-    private static final ConcurrentMap<UUID, A> addrMap = new ConcurrentHashMap8<>();
+    private static final ConcurrentMap<UUID, CachedAddresses> addrMap = new ConcurrentHashMap8<>();
 
-    private static A getAddr(ClusterNode n) {
-        A a = addrMap.get(n.id());
+    private static CachedAddresses getAddr(ClusterNode n) {
+        CachedAddresses a = addrMap.get(n.id());
 
         if (a != null)
             return a;
 
-        A aNew = new A(n);
+        CachedAddresses aNew = new CachedAddresses(n);
 
-        A a2 = addrMap.putIfAbsent(n.id(), aNew);
+        CachedAddresses a2 = addrMap.putIfAbsent(n.id(), aNew);
 
         if (a2 == null)
             return aNew;
@@ -339,7 +358,7 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable,
         for (final ClusterNode node : nodes) {
             nodeIds.add(node.id());
 
-            A a = getAddr(node);
+            CachedAddresses a = getAddr(node);
 
             assert a != null;
 
