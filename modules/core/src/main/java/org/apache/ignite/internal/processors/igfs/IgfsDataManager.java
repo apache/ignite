@@ -123,9 +123,6 @@ public class IgfsDataManager extends IgfsManager {
     /** Affinity key generator. */
     private AtomicLong affKeyGen = new AtomicLong();
 
-    /** IGFS executor service. */
-    private ExecutorService igfsSvc;
-
     /** Request ID counter for write messages. */
     private AtomicLong reqIdCtr = new AtomicLong();
 
@@ -182,8 +179,6 @@ public class IgfsDataManager extends IgfsManager {
                 }
             }
         }, EVT_NODE_LEFT, EVT_NODE_FAILED);
-
-        igfsSvc = igfsCtx.kernalContext().getIgfsExecutorService();
 
         delWorker = new AsyncDeleteWorker(igfsCtx.kernalContext().gridName(),
             "igfs-" + igfsName + "-delete-worker", log);
@@ -990,7 +985,7 @@ public class IgfsDataManager extends IgfsManager {
             }
         }
         else {
-            callIgfsLocalSafe(new GridPlainCallable<Object>() {
+            igfsCtx.callIgfsLocalSafe(new GridPlainCallable<Object>() {
                 @Override @Nullable public Object call() throws Exception {
                     storeBlocksAsync(blocks).listen(new CI1<IgniteInternalFuture<?>>() {
                         @Override public void apply(IgniteInternalFuture<?> fut) {
@@ -1089,28 +1084,6 @@ public class IgfsDataManager extends IgfsManager {
                     ", dataLen=" + data.length + ']');
 
             tx.commit();
-        }
-    }
-
-    /**
-     * Executes callable in IGFS executor service. If execution rejected, callable will be executed
-     * in caller thread.
-     *
-     * @param c Callable to execute.
-     */
-    private <T> void callIgfsLocalSafe(Callable<T> c) {
-        try {
-            igfsSvc.submit(c);
-        }
-        catch (RejectedExecutionException ignored) {
-            // This exception will happen if network speed is too low and data comes faster
-            // than we can send it to remote nodes.
-            try {
-                c.call();
-            }
-            catch (Exception e) {
-                log.warning("Failed to execute IGFS callable: " + c, e);
-            }
         }
     }
 
