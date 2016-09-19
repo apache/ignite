@@ -17,12 +17,25 @@
 
 package org.apache.ignite.internal.processors.hadoop.delegate;
 
-import org.apache.ignite.internal.processors.igfs.IgfsSecondaryFileSystemV2;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.lifecycle.LifecycleAware;
 
 /**
- * Interface to secondary file system implementation.
+ * Abstract delegate
  */
-public interface HadoopIgfsSecondaryFileSystemDelegate extends IgfsSecondaryFileSystemV2, LifecycleAware {
-    // No-op.
+public abstract class HadoopAbstractDelegate<T> implements LifecycleAware {
+    /** Proxy. */
+    @GridToStringExclude
+    protected final T proxy;
+
+    /**
+     * Constructor.
+     *
+     * @param proxy Proxy.
+     */
+    public HadoopAbstractDelegate(T proxy) {
+        assert proxy != null;
+
+        this.proxy = proxy;
+    }
 }

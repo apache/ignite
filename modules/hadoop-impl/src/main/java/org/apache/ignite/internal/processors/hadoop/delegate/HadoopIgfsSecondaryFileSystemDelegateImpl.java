@@ -26,6 +26,7 @@ import org.apache.hadoop.fs.PathIsNotEmptyDirectoryException;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
+import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.IgfsDirectoryNotEmptyException;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
@@ -59,12 +60,29 @@ import java.util.Map;
 /**
  * Secondary file system implementation.
  */
-public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSecondaryFileSystemDelegate {
+public class HadoopIgfsSecondaryFileSystemDelegateImpl
+    extends HadoopAbstractDelegate<IgniteHadoopIgfsSecondaryFileSystem> implements HadoopIgfsSecondaryFileSystemDelegate
+     {
     /** The default user name. It is used if no user context is set. */
-    private String dfltUsrName;
+    private final String dfltUsrName;
 
     /** Factory. */
-    private HadoopFileSystemFactory factory;
+    private final HadoopFileSystemFactory factory;
+
+    /**
+     * Constructor.
+     *
+     * @param proxy Proxy.
+    */
+    public HadoopIgfsSecondaryFileSystemDelegateImpl(IgniteHadoopIgfsSecondaryFileSystem proxy) {
+        super(proxy);
+
+        assert proxy.getDefaultUserName() != null;
+        assert proxy.getFileSystemFactory() != null;
+
+        this.dfltUsrName = proxy.getDefaultUserName();
+        this.factory = proxy.getFileSystemFactory();
+    }
 
     /** {@inheritDoc} */
     @Override public boolean exists(IgfsPath path) {
@@ -350,13 +368,7 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
     }
 
     /** {@inheritDoc} */
-    public void start(String dfltUsrName, HadoopFileSystemFactory factory) {
-        assert dfltUsrName != null;
-        assert factory != null;
-
-        this.dfltUsrName = dfltUsrName;
-        this.factory = factory;
-
+    public void start() {
         if (factory instanceof LifecycleAware)
             ((LifecycleAware) factory).start();
     }

@@ -245,9 +245,9 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
         if (fsFactory == null)
             fsFactory = new CachingHadoopFileSystemFactory();
 
-        target = new HadoopIgfsSecondaryFileSystemDelegateImpl();
+        target = new HadoopIgfsSecondaryFileSystemDelegateImpl(this);
 
-        target.start(dfltUsrName, fsFactory);
+        target.start();
     }
 
     /** {@inheritDoc} */
