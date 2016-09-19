@@ -316,14 +316,17 @@ public class IgfsDataManager extends IgfsManager {
      * @return Requested data block or {@code null} if nothing found.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteInternalFuture<byte[]> dataBlock(final IgfsEntryInfo fileInfo, final IgfsPath path,
-        final long blockIdx, @Nullable final IgfsSecondaryFileSystemPositionedReadable secReader)
+    @Nullable public IgniteInternalFuture<byte[]> dataBlock(
+        @Nullable final IgfsEntryInfo fileInfo,
+        final IgfsPath path,
+        final long blockIdx,
+        @Nullable final IgfsSecondaryFileSystemPositionedReadable secReader)
         throws IgniteCheckedException {
         assert fileInfo != null;
         assert blockIdx >= 0;
 
         // Schedule block request BEFORE prefetch requests.
-        final IgfsBlockKey key = blockKey(blockIdx, fileInfo);
+        final IgfsBlockKey key = (fileInfo != null) ? blockKey(blockIdx, fileInfo) : null;
 
         if (log.isDebugEnabled() &&
             dataCache.affinity().isPrimaryOrBackup(igfsCtx.kernalContext().discovery().localNode(), key)) {
@@ -345,45 +348,12 @@ public class IgfsDataManager extends IgfsManager {
 
                         if (oldRmtReadFut == null) {
                             try {
-                                if (log.isDebugEnabled())
-                                    log.debug("Reading non-local data block in the secondary file system [path=" +
-                                        path + ", fileInfo=" + fileInfo + ", blockIdx=" + blockIdx + ']');
 
-                                int blockSize = fileInfo.blockSize();
-
-                                long pos = blockIdx * blockSize; // Calculate position for Hadoop
-
-                                res = new byte[blockSize];
-
-                                int read = 0;
-
-                                synchronized (secReader) {
-                                    try {
-                                        // Delegate to the secondary file system.
-                                        while (read < blockSize) {
-                                            int r = secReader.read(pos + read, res, read, blockSize - read);
-
-                                            if (r < 0)
-                                                break;
-
-                                            read += r;
-                                        }
-                                    }
-                                    catch (IOException e) {
-                                        throw new IgniteCheckedException("Failed to read data due to secondary file system " +
-                                            "exception: " + e.getMessage(), e);
-                                    }
-                                }
-
-                                // If we did not read full block at the end of the file - trim it.
-                                if (read != blockSize)
-                                    res = Arrays.copyOf(res, read);
+                                res = secondaryDataBlock(path, blockIdx, secReader, fileInfo.blockSize());
 
                                 rmtReadFut.onDone(res);
 
                                 putBlock(fileInfo.blockSize(), key, res);
-
-                                igfsCtx.metrics().addReadBlocks(1, 1);
                             }
                             catch (IgniteCheckedException e) {
                                 rmtReadFut.onDone(e);
@@ -417,11 +387,65 @@ public class IgfsDataManager extends IgfsManager {
     }
 
     /**
+     * Get data block for specified block index from secondary reader.
+     *
+     * @param path Path reading from.
+     * @param blockIdx Block index.
+     * @param secReader Optional secondary file system reader.
+     * @param blockSize Block size.
+     * @return Requested data block or {@code null} if nothing found.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public byte[] secondaryDataBlock(
+        final IgfsPath path,
+        final long blockIdx,
+        @Nullable final IgfsSecondaryFileSystemPositionedReadable secReader,
+        final int blockSize)
+        throws IgniteCheckedException {
+        if (log.isDebugEnabled())
+            log.debug("Reading non-local data block in the secondary file system [path=" +
+                path + ", blockIdx=" + blockIdx + ']');
+
+        long pos = blockIdx * blockSize; // Calculate position for Hadoop
+
+        byte[] res = new byte[blockSize];
+
+        int read = 0;
+
+        synchronized (secReader) {
+            try {
+                // Delegate to the secondary file system.
+                while (read < blockSize) {
+                    int r = secReader.read(pos + read, res, read, blockSize - read);
+
+                    if (r < 0)
+                        break;
+
+                    read += r;
+                }
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException("Failed to read data due to secondary file system " +
+                    "exception: " + e.getMessage(), e);
+            }
+        }
+
+        // If we did not read full block at the end of the file - trim it.
+        if (read != blockSize)
+            res = Arrays.copyOf(res, read);
+
+        igfsCtx.metrics().addReadBlocks(1, 1);
+
+        return res;
+    }
+
+    /**
      * Stores the given block in data cache.
      *
      * @param blockSize The size of the block.
      * @param key The data cache key of the block.
      * @param data The new value of the block.
+     * @throws IgniteCheckedException If failed.
      */
     private void putBlock(int blockSize, IgfsBlockKey key, byte[] data) throws IgniteCheckedException {
         if (data.length < blockSize)
