@@ -37,7 +37,6 @@ public class CheckpointRecord extends WALRecord {
     /** */
     private Map<Integer, CacheState> cacheStates;
 
-
     /** Safe replay pointer. */
     private WALPointer cpMark;
 
