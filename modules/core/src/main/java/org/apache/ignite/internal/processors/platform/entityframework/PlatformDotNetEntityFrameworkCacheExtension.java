@@ -24,6 +24,8 @@ import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtension;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteRunnable;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -61,6 +63,12 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
 
                 // TODO: Broadcast cleanup from here.
                 Ignite grid = target.platformContext().kernalContext().grid();
+
+                grid.compute().broadcast(new IgniteRunnable() {
+                    @Override public void run() {
+                        // TODO:
+                    }
+                });
 
                 // TODO:
                 // 0) Use a separate meta cache for versions and cleanup state
