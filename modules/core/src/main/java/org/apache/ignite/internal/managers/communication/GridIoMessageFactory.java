@@ -195,6 +195,11 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
+            case TcpCommunicationSpi.HANDSHAKE_MSG_TYPE2:
+                msg = new TcpCommunicationSpi.HandshakeMessage2();
+
+                break;
+
             case 0:
                 msg = new GridJobCancelRequest();
 

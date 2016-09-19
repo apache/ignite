@@ -46,10 +46,14 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
 
     /**
      * @param ses Session.
+     * @param connIdx Connection index.
      * @param log Logger.
      */
-    public GridTcpNioCommunicationClient(GridNioSession ses, IgniteLogger log) {
-        super(null);
+    public GridTcpNioCommunicationClient(
+        int connIdx,
+        GridNioSession ses,
+        IgniteLogger log) {
+        super(connIdx, null);
 
         assert ses != null;
         assert log != null;
