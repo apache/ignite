@@ -775,7 +775,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
             boolean put = BPlusTree.randomInt(2) == 0;
 
-            if (i % 1000 == 0) {
+            if (i % 10_000 == 0) {
 //                X.println(tree.printTree());
                 X.println(" --> " + (put ? "put " : "rmv ") + i + "  " + x);
             }
@@ -945,6 +945,26 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     public void testTestRandomPutRemoveMultithreaded_2_50_1() throws Exception {
         MAX_PER_PAGE = 2;
         CNT = 50;
+
+        doTestRandomPutRemoveMultithreaded(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTestRandomPutRemoveMultithreaded_3_70_0() throws Exception {
+        MAX_PER_PAGE = 3;
+        CNT = 70;
+
+        doTestRandomPutRemoveMultithreaded(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTestRandomPutRemoveMultithreaded_3_70_1() throws Exception {
+        MAX_PER_PAGE = 3;
+        CNT = 70;
 
         doTestRandomPutRemoveMultithreaded(true);
     }
