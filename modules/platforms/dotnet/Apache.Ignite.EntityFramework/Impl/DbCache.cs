@@ -31,6 +31,7 @@ namespace Apache.Ignite.EntityFramework.Impl
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.EntityFramework;
+    using Apache.Ignite.Core.Log;
 
     /// <summary>
     /// Database query cache.
@@ -73,6 +74,13 @@ namespace Apache.Ignite.EntityFramework.Impl
             IgniteArgumentCheck.NotNull(ignite, "ignite");
             IgniteArgumentCheck.NotNull(metaCacheConfiguration, "metaCacheConfiguration");
             IgniteArgumentCheck.NotNull(dataCacheConfiguration, "metaCacheConfiguration");
+
+            IgniteArgumentCheck.Ensure(metaCacheConfiguration.Name != dataCacheConfiguration.Name, 
+                "dataCacheConfiguration", "Meta and Data cache can't have the same name.");
+
+            if (metaCacheConfiguration.CacheMode == CacheMode.Partitioned && metaCacheConfiguration.Backups < 1)
+                ignite.Logger.Warn("EntityFramework meta cache is partitioned and has no backups. " +
+                                   "This can lead to data loss and incorrect query results.");
 
             _metaCache = ignite.GetOrCreateCache<string, long>(metaCacheConfiguration);
             _cache = ignite.GetOrCreateCache<string, EntityFrameworkCacheEntry>(dataCacheConfiguration);
