@@ -17,8 +17,22 @@
 
 package org.apache.ignite.internal.processors.platform.entityframework;
 
+import org.apache.ignite.cache.CacheEntryProcessor;
+
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
+
 /**
  * Entry processor that increments entity set version number.
  */
-public class PlatformDotNetEntityFrameworkIncreaseVersionProcessor {
+public class PlatformDotNetEntityFrameworkIncreaseVersionProcessor implements CacheEntryProcessor<String, Long, Object> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** {@inheritDoc} */
+    @Override public Object process(MutableEntry<String, Long> entry, Object... objects) throws EntryProcessorException {
+        entry.setValue(entry.getValue() + 1);
+
+        return null;
+    }
 }
