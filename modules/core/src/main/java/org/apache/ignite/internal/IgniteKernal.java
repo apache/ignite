@@ -1796,6 +1796,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (log.isInfoEnabled()) {
             log.info("Language runtime: " + getLanguage());
             log.info("VM information: " + U.jdkString());
+            log.info("VM total memory: " + U.heapSize(2) + "GB");
         }
     }
 
@@ -1803,15 +1804,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * Logs out Process Info.
      */
     private void ackProcessInfo() {
-        assert log != null;
-
-        if (log.isQuiet())
-            U.quiet(false, "JVM PID: " + U.jvmPid());
-
-        if (log.isInfoEnabled()) {
-            log.info("JVM PID: " + U.jvmPid());
-            log.info("VM total memory: " + U.heapSize(2) + "GB");
-        }
+        U.quiet(false, "JVM PID: " + U.jvmPid());
     }
 
     /**
