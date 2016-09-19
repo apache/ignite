@@ -8,6 +8,7 @@
     "Log4j2": {"artifactId": "ignite-log4j2"},
     "JCL": {"artifactId": "ignite-jcl"},
     "HadoopIgfsJcl": {"artifactId": "ignite-hadoop"},
+    "HadoopImplIgfsJcl": {"artifactId": "ignite-hadoop-impl"},
     "SLF4J": {"artifactId": "ignite-slf4j"},
 
     "Generic": {"groupId": "com.mchange", "artifactId": "c3p0", "version": "0.9.5.1"},
