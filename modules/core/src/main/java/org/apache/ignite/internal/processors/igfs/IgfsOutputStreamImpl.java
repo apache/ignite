@@ -95,20 +95,34 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
     /** Affinity written by this output stream. */
     private IgfsFileAffinityRange streamRange;
 
+    /** File length. */
+    private long length;
+
+    /** File block size. */
+    private int blockSize;
+
     /**
      * Constructs file output stream.
-     *
      * @param igfsCtx IGFS context.
      * @param path Path to stored file.
      * @param fileInfo File info to write binary data to.
      * @param bufSize The size of the buffer to be used.
      * @param mode Grid IGFS mode.
      * @param batch Optional secondary file system batch.
+     * @param length File length.
+     * @param blockSize File block size.
      */
-    IgfsOutputStreamImpl(IgfsContext igfsCtx, IgfsPath path, IgfsEntryInfo fileInfo, int bufSize, IgfsMode mode,
-        @Nullable IgfsFileWorkerBatch batch) {
+    IgfsOutputStreamImpl(
+        IgfsContext igfsCtx,
+        IgfsPath path,
+        @Nullable IgfsEntryInfo fileInfo,
+        int bufSize,
+        IgfsMode mode,
+        @Nullable IgfsFileWorkerBatch batch,
+        long length,
+        int blockSize) {
         assert fileInfo != null && fileInfo.isFile() : "Unexpected file info: " + fileInfo;
-        assert mode != null && mode != PROXY && (mode == PRIMARY && batch == null || batch != null);
+        assert mode != null && (mode == PRIMARY && batch == null || batch != null);
 
         // File hasn't been locked.
         if (fileInfo.lockId() == null)
@@ -116,11 +130,13 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
 
         synchronized (mux) {
             this.path = path;
-            this.bufSize = optimizeBufferSize(bufSize, fileInfo);
+            this.bufSize = optimizeBufferSize(bufSize);
             this.igfsCtx = igfsCtx;
             this.fileInfo = fileInfo;
             this.mode = mode;
             this.batch = batch;
+            this.length = length;
+            this.blockSize = blockSize;
 
             streamRange = initialStreamRange(fileInfo);
 
@@ -229,7 +245,9 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
             awaitAcks();
 
             // Update file length if needed.
-            if (igfsCtx.configuration().isUpdateFileLengthOnFlush() && space > 0) {
+            if (mode != PROXY && igfsCtx.configuration().isUpdateFileLengthOnFlush() && space > 0) {
+                assert fileInfo != null;
+
                 try {
                     IgfsEntryInfo fileInfo0 = igfsCtx.meta().reserveSpace(fileInfo.id(), space, streamRange);
 
@@ -256,6 +274,11 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
      * @throws IOException If failed.
      */
     private void awaitAcks() throws IOException {
+        if (mode == PROXY)
+            return;
+
+        assert fileInfo != null;
+
         try {
             igfsCtx.data().awaitAllAcksReceived(fileInfo.id());
         }
@@ -272,8 +295,9 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
     private void flushRemainder() throws IOException {
         try {
             if (remainder != null) {
-                igfsCtx.data().storeDataBlocks(fileInfo, fileInfo.length() + space, null, 0,
-                    ByteBuffer.wrap(remainder, 0, remainderDataLen), true, streamRange, batch);
+                igfsCtx.data().storeDataBlocks(fileInfo, length + space, null, 0,
+                    ByteBuffer.wrap(remainder, 0, remainderDataLen), true, streamRange, batch,
+                    blockSize, mode == PROXY);
 
                 remainder = null;
                 remainderDataLen = 0;
@@ -304,7 +328,8 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
 
                 flushRemainder();
 
-                igfsCtx.data().writeClose(fileInfo.id());
+                if (mode != PROXY)
+                    igfsCtx.data().writeClose(fileInfo.id());
 
                 writeFut.get();
 
@@ -321,18 +346,20 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
                 batch.finish();
 
             // Unlock the file after data is flushed.
-            try {
-                if (flushSuccess && space > 0)
-                    igfsCtx.meta().unlock(fileInfo.id(), fileInfo.lockId(), System.currentTimeMillis(), true,
-                        space, streamRange);
-                else
-                    igfsCtx.meta().unlock(fileInfo.id(), fileInfo.lockId(), System.currentTimeMillis());
-            }
-            catch (Exception e) {
-                if (err == null)
-                    err = new IOException("File to release file lock: " + path, e);
-                else
-                    err.addSuppressed(e);
+            if (mode != PROXY) {
+                try {
+                    if (flushSuccess && space > 0)
+                        igfsCtx.meta().unlock(fileInfo.id(), fileInfo.lockId(), System.currentTimeMillis(), true,
+                            space, streamRange);
+                    else
+                        igfsCtx.meta().unlock(fileInfo.id(), fileInfo.lockId(), System.currentTimeMillis());
+                }
+                catch (Exception e) {
+                    if (err == null)
+                        err = new IOException("File to release file lock: " + path, e);
+                    else
+                        err.addSuppressed(e);
+                }
             }
 
             // Finally, await secondary file system flush.
@@ -369,6 +396,8 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
     /**
      * Validate this stream is open.
      *
+     * @param in Data input.
+     * @param len The size in bytes to read from the data input.
      * @throws IOException If this stream is closed.
      */
     private void checkClosed(@Nullable DataInput in, int len) throws IOException {
@@ -432,7 +461,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
             bytes += writeLen;
             space += writeLen;
 
-            int blockSize = fileInfo.blockSize();
+            int blockSize = this.blockSize;
 
             // If data length is not enough to fill full block, fill the remainder and return.
             if (remainderDataLen + writeLen < blockSize) {
@@ -457,12 +486,14 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
             }
             else {
                 if (data instanceof ByteBuffer) {
-                    remainder = igfsCtx.data().storeDataBlocks(fileInfo, fileInfo.length() + space, remainder,
-                        remainderDataLen, (ByteBuffer) data, false, streamRange, batch);
+                    remainder = igfsCtx.data().storeDataBlocks(fileInfo, length + space, remainder,
+                        remainderDataLen, (ByteBuffer) data, false, streamRange, batch,
+                        blockSize, mode == PROXY);
                 }
                 else {
-                    remainder = igfsCtx.data().storeDataBlocks(fileInfo, fileInfo.length() + space, remainder,
-                        remainderDataLen, (DataInput) data, writeLen, false, streamRange, batch);
+                    remainder = igfsCtx.data().storeDataBlocks(fileInfo, length + space, remainder,
+                        remainderDataLen, (DataInput) data, writeLen, false, streamRange, batch,
+                        blockSize, mode == PROXY);
                 }
 
                 remainderDataLen = remainder == null ? 0 : remainder.length;
@@ -520,16 +551,15 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
      * Optimize buffer size.
      *
      * @param bufSize Requested buffer size.
-     * @param fileInfo File info.
      * @return Optimized buffer size.
      */
-    private static int optimizeBufferSize(int bufSize, IgfsEntryInfo fileInfo) {
+    private int optimizeBufferSize(int bufSize) {
         assert bufSize > 0;
 
         if (fileInfo == null)
             return bufSize;
 
-        int blockSize = fileInfo.blockSize();
+        int blockSize = this.blockSize;
 
         if (blockSize <= 0)
             return bufSize;

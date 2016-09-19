@@ -1053,26 +1053,59 @@ public final class IgfsImpl implements IgfsEx {
                 if (mode != PRIMARY)
                     await(path);
 
-                // Perform create.
-                IgfsCreateResult res = meta.create(
-                    path,
-                    dirProps,
-                    overwrite,
-                    cfg.getBlockSize(),
-                    affKey,
-                    evictExclude(path, mode == PRIMARY),
-                    fileProps,
-                    secondaryCtx
-                );
 
-                assert res != null;
+                IgfsEntryInfo info = null;
+
+                OutputStream secondaryStream;
+
+                long length = 0;
+
+                int blockSize = cfg.getBlockSize();
+
+                if (mode == PROXY) {
+                    IgfsFile igfsFile = secondaryFs.info(path);
+
+                    if (igfsFile != null) {
+                        blockSize = igfsFile.blockSize();
+                        if (blockSize <= 0)
+                            blockSize = cfg.getBlockSize();
+
+                        length = igfsFile.length();
+                    }
+
+                    secondaryStream = secondaryFs.create(path, bufSize, overwrite, replication, blockSize, props);
+                }
+                else {
+                    // Perform create.
+                    IgfsCreateResult res = meta.create(
+                        path,
+                        dirProps,
+                        overwrite,
+                        cfg.getBlockSize(),
+                        affKey,
+                        evictExclude(path, mode == PRIMARY),
+                        fileProps,
+                        secondaryCtx
+                    );
+
+                    assert res != null;
+
+                    secondaryStream = res.secondaryOutputStream();
+
+                    info = res.info();
+
+                    if (info != null) {
+                        length = info.length();
+
+                        blockSize = info.blockSize();
+                    }
+                }
 
                 // Create secondary file system batch.
-                OutputStream secondaryStream = res.secondaryOutputStream();
-
                 IgfsFileWorkerBatch batch = secondaryStream != null ? newBatch(path, secondaryStream) : null;
 
-                return new IgfsOutputStreamImpl(igfsCtx, path, res.info(), bufferSize(bufSize), mode, batch);
+                return new IgfsOutputStreamImpl(igfsCtx, path, info, bufferSize(bufSize), mode, batch,
+                    length, blockSize);
             }
         });
     }
@@ -1098,54 +1131,79 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgfsFileWorkerBatch batch;
 
-                if (mode != PRIMARY) {
-                    assert IgfsUtils.isDualMode(mode);
+                switch (mode) {
+                    case PRIMARY: {
+                        final List<IgniteUuid> ids = meta.idsForPath(path);
 
-                    await(path);
+                        final IgniteUuid id = ids.get(ids.size() - 1);
 
-                    IgfsCreateResult desc = meta.appendDual(secondaryFs, path, bufSize, create);
+                        if (id == null) {
+                            if (!create)
+                                throw new IgfsPathNotFoundException("File not found: " + path);
+                        }
 
-                    batch = newBatch(path, desc.secondaryOutputStream());
+                        // Prevent attempt to append to ROOT in early stage:
+                        if (ids.size() == 1)
+                            throw new IgfsPathIsDirectoryException("Failed to open file (not a file): " + path);
 
-                    return new IgfsOutputStreamImpl(igfsCtx, path, desc.info(), bufferSize(bufSize), mode, batch);
+                        final Map<String, String> dirProps, fileProps;
+
+                        if (props == null) {
+                            dirProps = DFLT_DIR_META;
+
+                            fileProps = null;
+                        }
+                        else
+                            dirProps = fileProps = new HashMap<>(props);
+
+                        IgfsEntryInfo info = meta.append(
+                            path,
+                            dirProps,
+                            create,
+                            cfg.getBlockSize(),
+                            null/*affKey*/,
+                            evictExclude(path, true),
+                            fileProps
+                        );
+
+                        assert info != null;
+
+                        return new IgfsOutputStreamImpl(igfsCtx, path, info, bufferSize(bufSize), mode, null,
+                            info.length(), info.blockSize());
+                    }
+
+                    case DUAL_ASYNC:
+                    case DUAL_SYNC: {
+                        await(path);
+
+                        IgfsCreateResult desc = meta.appendDual(secondaryFs, path, bufSize, create);
+
+                        batch = newBatch(path, desc.secondaryOutputStream());
+
+                        IgfsEntryInfo info = desc.info();
+
+                        return new IgfsOutputStreamImpl(igfsCtx, path, info, bufferSize(bufSize), mode, batch,
+                            info.length(), info.blockSize());
+                    }
+
+                    case PROXY: {
+                        if (!secondaryFs.exists(path))
+                            if (!create)
+                                throw new IgfsPathNotFoundException("File not found: " + path);
+
+                        OutputStream secondaryStream = secondaryFs.append(path, bufSize, create, props);
+
+                        IgfsFile info = info(path);
+
+                        batch = newBatch(path, secondaryStream);
+
+                        // TODO: Try getting block size from secondary.
+                        return new IgfsOutputStreamImpl(igfsCtx, path, null, bufferSize(bufSize), mode, batch,
+                            info.length(), cfg.getBlockSize());
+                    }
                 }
 
-                final List<IgniteUuid> ids = meta.idsForPath(path);
-
-                final IgniteUuid id = ids.get(ids.size() - 1);
-
-                if (id == null) {
-                    if (!create)
-                        throw new IgfsPathNotFoundException("File not found: " + path);
-                }
-
-                // Prevent attempt to append to ROOT in early stage:
-                if (ids.size() == 1)
-                    throw new IgfsPathIsDirectoryException("Failed to open file (not a file): " + path);
-
-                final Map<String, String> dirProps, fileProps;
-
-                if (props == null) {
-                    dirProps = DFLT_DIR_META;
-
-                    fileProps = null;
-                }
-                else
-                    dirProps = fileProps = new HashMap<>(props);
-
-                IgfsEntryInfo res = meta.append(
-                    path,
-                    dirProps,
-                    create,
-                    cfg.getBlockSize(),
-                    null/*affKey*/,
-                    evictExclude(path, true),
-                    fileProps
-                );
-
-                assert res != null;
-
-                return new IgfsOutputStreamImpl(igfsCtx, path, res, bufferSize(bufSize), mode, null);
+                return null;
             }
         });
     }
