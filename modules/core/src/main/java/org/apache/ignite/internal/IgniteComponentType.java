@@ -167,7 +167,7 @@ public enum IgniteComponentType {
      * @return Created component.
      * @throws IgniteCheckedException If failed.
      */
-    public <T extends GridComponent> T create(GridKernalContext ctx, boolean noOp) throws IgniteCheckedException {
+    public <T> T create(GridKernalContext ctx, boolean noOp) throws IgniteCheckedException {
         return create0(ctx, noOp ? noOpClsName : clsName);
     }
 
@@ -179,7 +179,7 @@ public enum IgniteComponentType {
      * @return Created component.
      * @throws IgniteCheckedException If failed.
      */
-    public <T extends GridComponent> T createIfInClassPath(GridKernalContext ctx, boolean mandatory)
+    public <T> T createIfInClassPath(GridKernalContext ctx, boolean mandatory)
         throws IgniteCheckedException {
         String cls = clsName;
 
