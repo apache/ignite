@@ -645,8 +645,8 @@ namespace Apache.Ignite.EntityFramework.Tests
                 }
             }
 
-            // Only blog entity set version is in the cache.
-            Assert.AreEqual(1, _cache.GetSize());
+            // Only one version of data is in the cache, plus the version info.
+            Assert.AreEqual(2, _cache.GetSize());
         }
 
         /// <summary>
