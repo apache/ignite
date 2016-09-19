@@ -25,10 +25,12 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -381,24 +383,86 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
 
         IgniteInternalFuture<byte[]> fut = GridTestUtils.runAsync(new Callable<byte[]>() {
             @Override public byte[] call() throws Exception {
-                spi.store(spaceName, key, val, context());
-
-                GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                    @Override public boolean apply() {
-                        return spi.read(spaceName, key, context()) != null;
-                    }
-                }, 10_000);
-
-                byte[] res = spi.read(spaceName, key, context());
-
-                assertNotNull(res);
-
-                return res;
+                return saveAndGet(spaceName, key, val);
             }
         });
 
         byte[] bytes = fut.get(10_000);
 
         Assert.assertArrayEquals(val, bytes);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testSaveValueLargeThenQueueSizeMultiThread() throws Exception {
+        final String spaceName = "mySpace";
+
+        final int threads = 5;
+
+        long DURATION = 30_000;
+
+        final int maxSize = FileSwapSpaceSpi.DFLT_QUE_SIZE * 2;
+
+        final AtomicBoolean done = new AtomicBoolean();
+
+        try {
+            IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
+                    SwapKey key = new SwapKey("key-" + Thread.currentThread().getName());
+
+                    while (!done.get()) {
+                        int size = rnd.nextInt(0, maxSize);
+                        final byte[] val = new byte[size];
+
+                        Arrays.fill(val, (byte) 1);
+
+                        byte[] res = saveAndGet(spaceName, key, val);
+
+                        Assert.assertArrayEquals(val, res);
+
+                    }
+                    return null;
+                }
+            }, threads, " async-writer");
+
+            long endTime = System.currentTimeMillis() + DURATION;
+
+            while (System.currentTimeMillis() < endTime)
+                Thread.sleep(5000);
+
+            done.set(true);
+
+            fut.get();
+
+            U.sleep(2000);
+
+        }finally {
+           done.set(true);
+        }
+
+    }
+
+    /**
+     * @param spaceName Space name.
+     * @param key Key.
+     * @param val Value.
+     */
+    private byte [] saveAndGet(final String spaceName, final SwapKey key, byte[] val) throws IgniteInterruptedCheckedException {
+        spi.store(spaceName, key, val, context());
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return spi.read(spaceName, key, context()) != null;
+            }
+        }, 10_000);
+
+        byte[] res = spi.read(spaceName, key, context());
+
+        assertNotNull(res);
+
+        return res;
     }
 }
