@@ -29,7 +29,7 @@ import org.yardstickframework.BenchmarkConfiguration;
 /**
  * Ignite benchmark that performs invoke operations.
  */
-public class IgniteInvokeTxBenchmark extends IgniteInvokeBenchmark {
+public class IgniteGetAndPutTxBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** */
     private IgniteTransactions txs;
 
@@ -49,7 +49,7 @@ public class IgniteInvokeTxBenchmark extends IgniteInvokeBenchmark {
             @Override public Void call() throws Exception {
                 int key = nextRandom(args.range());
 
-                cache.invoke(key, new SetValueEntryProcessor(new SampleValue(key)));
+                cache.getAndPut(key, new SampleValue(key));
 
                 return null;
             }
