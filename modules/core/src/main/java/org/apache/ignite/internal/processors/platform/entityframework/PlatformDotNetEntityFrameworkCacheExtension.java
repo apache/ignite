@@ -8,6 +8,7 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.HashSet;
+import java.util.Set;
 
 /**
  * EntityFramework cache extension.
@@ -30,7 +31,12 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
         PlatformMemory mem) throws IgniteCheckedException {
         switch (type) {
             case OP_INCREMENT_VERSIONS: {
-                HashSet keys = null;
+                int cnt = reader.readInt();
+                Set keys = new HashSet(cnt);
+
+                for (int i = 0; i < cnt; i++)
+                    keys.add(reader.readString());
+
                 target.rawCache().invokeAll(keys, new PlatformDotNetEntityFrameworkIncreaseVersionProcessor());
 
                 return target.writeResult(mem, null);
