@@ -77,6 +77,8 @@ import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileUnlockProcess
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdatePropertiesProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdateTimesProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformJavaObjectFactoryProxy;
+import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionData;
+import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionLockResult;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -321,6 +323,9 @@ public class BinaryContext {
         registerPredefinedType(BinaryMetadataKey.class, 0);
         registerPredefinedType(BinaryMetadata.class, 0);
         registerPredefinedType(BinaryEnumObjectImpl.class, 0);
+
+        registerPredefinedType(PlatformDotNetSessionData.class, 0);
+        registerPredefinedType(PlatformDotNetSessionLockResult.class, 0);
 
         registerPredefinedType(PlatformDotNetEntityFrameworkCacheEntry.class, 0);
 

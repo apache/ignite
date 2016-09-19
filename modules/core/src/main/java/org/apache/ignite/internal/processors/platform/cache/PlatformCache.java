@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.platform.cache;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePartialUpdateException;
@@ -28,7 +30,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
@@ -52,12 +54,13 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosur
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
 import javax.cache.Cache;
+import javax.cache.CacheException;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.integration.CompletionListener;
@@ -193,26 +196,35 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_LOAD_ALL = 40;
 
-    /** Underlying JCache. */
+    /** */
+    public static final int OP_EXTENSION = 41;
+
+    /** Underlying JCache in binary mode. */
     private final IgniteCacheProxy cache;
+
+    /** Initial JCache (not in binary mode). */
+    private final IgniteCache rawCache;
 
     /** Whether this cache is created with "keepBinary" flag on the other side. */
     private final boolean keepBinary;
 
     /** */
-    private static final GetAllWriter WRITER_GET_ALL = new GetAllWriter();
+    private static final PlatformFutureUtils.Writer WRITER_GET_ALL = new GetAllWriter();
 
     /** */
-    private static final EntryProcessorInvokeWriter WRITER_INVOKE = new EntryProcessorInvokeWriter();
+    private static final PlatformFutureUtils.Writer WRITER_INVOKE = new EntryProcessorInvokeWriter();
 
     /** */
-    private static final EntryProcessorInvokeAllWriter WRITER_INVOKE_ALL = new EntryProcessorInvokeAllWriter();
+    private static final PlatformFutureUtils.Writer WRITER_INVOKE_ALL = new EntryProcessorInvokeAllWriter();
 
     /** Map with currently active locks. */
     private final ConcurrentMap<Long, Lock> lockMap = GridConcurrentFactory.newMap();
 
     /** Lock ID sequence. */
     private static final AtomicLong LOCK_ID_GEN = new AtomicLong();
+
+    /** Extensions. */
+    private final PlatformCacheExtension[] exts;
 
     /**
      * Constructor.
@@ -222,10 +234,29 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param keepBinary Keep binary flag.
      */
     public PlatformCache(PlatformContext platformCtx, IgniteCache cache, boolean keepBinary) {
+        this(platformCtx, cache, keepBinary, new PlatformCacheExtension[0]);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param platformCtx Context.
+     * @param cache Underlying cache.
+     * @param keepBinary Keep binary flag.
+     * @param exts Extensions.
+     */
+    public PlatformCache(PlatformContext platformCtx, IgniteCache cache, boolean keepBinary,
+        PlatformCacheExtension[] exts) {
         super(platformCtx);
 
-        this.cache = (IgniteCacheProxy)cache;
+        assert cache != null;
+        assert exts != null;
+
+        rawCache = cache;
+
+        this.cache = (IgniteCacheProxy)cache.withKeepBinary();
         this.keepBinary = keepBinary;
+        this.exts = exts;
     }
 
     /**
@@ -237,7 +268,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         if (cache.delegate().skipStore())
             return this;
 
-        return new PlatformCache(platformCtx, cache.withSkipStore(), keepBinary);
+        return copy(rawCache.withSkipStore(), keepBinary);
     }
 
     /**
@@ -249,7 +280,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         if (keepBinary)
             return this;
 
-        return new PlatformCache(platformCtx, cache.withKeepBinary(), true);
+        return copy(rawCache.withKeepBinary(), true);
     }
 
     /**
@@ -261,9 +292,9 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @return Cache.
      */
     public PlatformCache withExpiryPolicy(final long create, final long update, final long access) {
-        IgniteCache cache0 = cache.withExpiryPolicy(new InteropExpiryPolicy(create, update, access));
+        IgniteCache cache0 = rawCache.withExpiryPolicy(new InteropExpiryPolicy(create, update, access));
 
-        return new PlatformCache(platformCtx, cache0, keepBinary);
+        return copy(cache0, keepBinary);
     }
 
     /**
@@ -275,7 +306,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         if (cache.isAsync())
             return this;
 
-        return new PlatformCache(platformCtx, (IgniteCache)cache.withAsync(), keepBinary);
+        return copy(rawCache.withAsync(), keepBinary);
     }
 
     /**
@@ -289,11 +320,19 @@ public class PlatformCache extends PlatformAbstractTarget {
         if (opCtx != null && opCtx.noRetries())
             return this;
 
-        return new PlatformCache(platformCtx, cache.withNoRetries(), keepBinary);
+        return copy(rawCache.withNoRetries(), keepBinary);
+    }
+
+    /**
+     * @return Raw cache.
+     */
+    public IgniteCache rawCache() {
+        return rawCache;
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader, PlatformMemory mem) throws IgniteCheckedException {
+    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader, PlatformMemory mem)
+        throws IgniteCheckedException {
         try {
             switch (type) {
                 case OP_PUT:
@@ -452,6 +491,11 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 case OP_LOCK_ALL:
                     return registerLock(cache.lockAll(PlatformUtils.readCollection(reader)));
+
+                case OP_EXTENSION:
+                    PlatformCacheExtension ext = extension(reader.readInt());
+
+                    return ext.processInOutStreamLong(this, reader.readInt(), reader, mem);
             }
         }
         catch (Exception e) {
@@ -474,14 +518,14 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Writes the result to reused stream, if any.
      */
-    private long writeResult(PlatformMemory mem, Object obj) {
+    public long writeResult(PlatformMemory mem, Object obj) {
         return writeResult(mem, obj, null);
     }
 
     /**
      * Writes the result to reused stream, if any.
      */
-    private long writeResult(PlatformMemory mem, Object obj, PlatformWriterClosure clo) {
+    public long writeResult(PlatformMemory mem, Object obj, PlatformWriterClosure clo) {
         if (obj == null)
             return FALSE;
 
@@ -665,7 +709,7 @@ public class PlatformCache extends PlatformAbstractTarget {
             return new PlatformCachePartialUpdateException((CachePartialUpdateCheckedException)e, platformCtx, keepBinary);
 
         if (e.getCause() instanceof EntryProcessorException)
-            return (EntryProcessorException) e.getCause();
+            return (Exception)e.getCause();
 
         return super.convertException(e);
     }
@@ -743,7 +787,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * Clears the contents of the cache, without notifying listeners or CacheWriters.
      *
      * @throws IllegalStateException if the cache is closed.
-     * @throws javax.cache.CacheException if there is a problem during the clear
+     * @throws CacheException if there is a problem during the clear
      */
     public void clear() throws IgniteCheckedException {
         cache.clear();
@@ -752,7 +796,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Removes all entries.
      *
-     * @throws org.apache.ignite.IgniteCheckedException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public void removeAll() throws IgniteCheckedException {
         cache.removeAll();
@@ -969,7 +1013,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Reads text query.
      */
-    private Query readTextQuery(BinaryRawReaderEx reader) {
+    private Query readTextQuery(BinaryRawReader reader) {
         boolean loc = reader.readBoolean();
         String txt = reader.readString();
         String typ = reader.readString();
@@ -1001,6 +1045,34 @@ public class PlatformCache extends PlatformAbstractTarget {
         qry.setLocal(loc);
 
         return qry;
+    }
+
+    /**
+     * Clones this instance.
+     *
+     * @param cache Cache.
+     * @param keepBinary Keep binary flag.
+     * @return Cloned instance.
+     */
+    private PlatformCache copy(IgniteCache cache, boolean keepBinary) {
+        return new PlatformCache(platformCtx, cache, keepBinary, exts);
+    }
+
+    /**
+     * Get extension by ID.
+     *
+     * @param id ID.
+     * @return Extension.
+     */
+    private PlatformCacheExtension extension(int id) {
+        if (exts != null && id < exts.length) {
+            PlatformCacheExtension ext = exts[id];
+
+            if (ext != null)
+                return ext;
+        }
+
+        throw new IgniteException("Platform cache extension is not registered [id=" + id + ']');
     }
 
     /**
@@ -1088,7 +1160,7 @@ public class PlatformCache extends PlatformAbstractTarget {
          * @param update Expiry for update.
          * @param access Expiry for access.
          */
-        public InteropExpiryPolicy(long create, long update, long access) {
+        private InteropExpiryPolicy(long create, long update, long access) {
             this.create = convert(create);
             this.update = convert(update);
             this.access = convert(access);

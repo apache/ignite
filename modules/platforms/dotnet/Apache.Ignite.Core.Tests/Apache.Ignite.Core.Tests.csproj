@@ -53,7 +53,6 @@
     <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Runtime.Serialization" />
-    <Reference Include="System.Web" />
     <Reference Include="System.ServiceProcess" />
     <Reference Include="System.XML" />
     <Reference Include="System.Xml.Linq" />
@@ -74,7 +73,6 @@
     <Compile Include="Log\DefaultLoggerTest.cs" />
     <Compile Include="Log\NLogLoggerTest.cs" />
     <Compile Include="TestAppConfig.cs" />
-    <Compile Include="AspNet\IgniteOutputCacheProviderTest.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTestFullFooter.cs" />
     <Compile Include="Binary\BinaryCompactFooterInteropTest.cs" />
     <Compile Include="Binary\BinarySelfTestFullFooter.cs" />
@@ -186,10 +184,6 @@
     <Compile Include="WindowsServiceTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Apache.Ignite.AspNet\Apache.Ignite.AspNet.csproj">
-      <Project>{13EA96FC-CC83-4164-A7C0-4F30ED797460}</Project>
-      <Name>Apache.Ignite.AspNet</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj">
       <Project>{4CD2F726-7E2B-46C4-A5BA-057BB82EECB6}</Project>
       <Name>Apache.Ignite.Core</Name>

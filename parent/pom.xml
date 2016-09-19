@@ -892,13 +892,15 @@
                                         <exclude>**/*.ps1</exclude>
                                         <exclude>**/*.json</exclude>
                                         <!--web console-->
-                                        <exclude>**/src/main/js/.babelrc</exclude>
-                                        <exclude>**/src/main/js/.eslintrc</exclude>
-                                        <exclude>**/src/main/js/build/**</exclude>
-                                        <exclude>**/src/main/js/node_modules/**</exclude>
-                                        <exclude>**/src/main/js/ignite_modules/**</exclude>
-                                        <exclude>**/src/main/js/ignite_modules_temp/**</exclude>
-                                        <exclude>**/src/main/js/serve/config/settings.json.sample</exclude>
+                                        <exclude>**/.babelrc</exclude>
+                                        <exclude>**/.eslintrc</exclude>
+                                        <exclude>**/.dockerignore</exclude>
+                                        <exclude>**/backend/config/settings.json.sample</exclude>
+                                        <exclude>**/backend/node_modules/**</exclude>
+                                        <exclude>**/frontend/build/**</exclude>
+                                        <exclude>**/frontend/ignite_modules/**</exclude>
+                                        <exclude>**/frontend/ignite_modules_temp/**</exclude>
+                                        <exclude>**/frontend/node_modules/**</exclude>
                                     </excludes>
                                 </configuration>
                             </execution>
