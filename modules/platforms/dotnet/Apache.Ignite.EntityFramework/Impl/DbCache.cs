@@ -45,14 +45,14 @@ namespace Apache.Ignite.EntityFramework.Impl
         private const int MaxExpiryCaches = 1000;
 
         /** Main cache: stores SQL -> QueryResult mappings. */
-        private readonly ICache<string, object> _cache;
+        private readonly ICache<string, EntityFrameworkCacheEntry> _cache;
 
         /** Entity set version cache. */
         private readonly ICache<string, long> _entitySetVersions;
 
         /** Cached caches per (expiry_seconds * 10). */
-        private volatile Dictionary<long, ICache<string, object>> _expiryCaches =
-            new Dictionary<long, ICache<string, object>>();
+        private volatile Dictionary<long, ICache<string, EntityFrameworkCacheEntry>> _expiryCaches =
+            new Dictionary<long, ICache<string, EntityFrameworkCacheEntry>>();
 
         /** Sync object. */
         private readonly object _syncRoot = new object();
@@ -64,7 +64,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         [SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters")]
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods",
             Justification = "Validation is present")]
-        public DbCache(ICache<string, object> cache)
+        public DbCache(ICache<string, EntityFrameworkCacheEntry> cache)
         {
             IgniteArgumentCheck.NotNull(cache, "cache");
 
@@ -76,27 +76,16 @@ namespace Apache.Ignite.EntityFramework.Impl
         public bool GetItem(string key, ICollection<EntitySetBase> dependentEntitySets, DbCachingStrategy strategy, 
             out object value)
         {
-            switch (strategy)
-            {
-                case DbCachingStrategy.ReadWrite:
-                {
-                    key = GetVersionedKey(key, dependentEntitySets);
+            if (strategy == DbCachingStrategy.ReadWrite)
+                key = GetVersionedKey(key, dependentEntitySets);
 
-                    object res;
+            EntityFrameworkCacheEntry res;
 
-                    var success = _cache.TryGet(key, out res);
+            var success = _cache.TryGet(key, out res);
 
-                    value = success ? ((EntityFrameworkCacheEntry) res).Data : null;
+            value = success ? res.Data : null;
 
-                    return success;
-                }
-
-                case DbCachingStrategy.ReadOnly:
-                    return _cache.TryGet(key, out value);
-
-                default:
-                    throw new ArgumentOutOfRangeException("strategy", strategy, null);
-            }
+            return success;
         }
 
         /** <inheritdoc /> */
@@ -125,7 +114,7 @@ namespace Apache.Ignite.EntityFramework.Impl
                 {
                     var cache = GetCacheWithExpiry(absoluteExpiration);
 
-                    cache[key] = value;
+                    cache[key] = new EntityFrameworkCacheEntry(value, null);
 
                     return;
                 }
@@ -155,7 +144,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// </summary>
         /// <returns>Cache with expiry policy.</returns>
         // ReSharper disable once UnusedParameter.Local
-        private ICache<string, object> GetCacheWithExpiry(TimeSpan absoluteExpiration)
+        private ICache<string, EntityFrameworkCacheEntry> GetCacheWithExpiry(TimeSpan absoluteExpiration)
         {
             if (absoluteExpiration == TimeSpan.MaxValue)
                 return _cache;
@@ -163,7 +152,7 @@ namespace Apache.Ignite.EntityFramework.Impl
             // Round up to 0.1 of a second so that we share expiry caches
             var expirySeconds = GetSeconds(absoluteExpiration);
 
-            ICache<string, object> expiryCache;
+            ICache<string, EntityFrameworkCacheEntry> expiryCache;
 
             if (_expiryCaches.TryGetValue(expirySeconds, out expiryCache))
                 return expiryCache;
@@ -175,8 +164,8 @@ namespace Apache.Ignite.EntityFramework.Impl
 
                 // Copy on write with size limit
                 _expiryCaches = _expiryCaches.Count > MaxExpiryCaches
-                    ? new Dictionary<long, ICache<string, object>>()
-                    : new Dictionary<long, ICache<string, object>>(_expiryCaches);
+                    ? new Dictionary<long, ICache<string, EntityFrameworkCacheEntry>>()
+                    : new Dictionary<long, ICache<string, EntityFrameworkCacheEntry>>(_expiryCaches);
 
                 expiryCache =
                     _cache.WithExpiryPolicy(GetExpiryPolicy(expirySeconds));

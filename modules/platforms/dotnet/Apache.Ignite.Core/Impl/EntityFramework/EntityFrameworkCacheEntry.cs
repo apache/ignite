@@ -42,8 +42,6 @@ namespace Apache.Ignite.Core.Impl.EntityFramework
         public EntityFrameworkCacheEntry(object data, IDictionary<string, long> entitySets)
         {
             Debug.Assert(data != null);
-            Debug.Assert(entitySets != null);
-            Debug.Assert(entitySets.Any());
 
             _data = data;
             _entitySets = entitySets;
@@ -59,10 +57,13 @@ namespace Apache.Ignite.Core.Impl.EntityFramework
 
             var count = raw.ReadInt();
 
-            _entitySets = new Dictionary<string, long>(count);
+            if (count > 0)
+            {
+                _entitySets = new Dictionary<string, long>(count);
 
-            for (var i = 0; i < count; i++)
-                _entitySets[raw.ReadString()] = raw.ReadLong();
+                for (var i = 0; i < count; i++)
+                    _entitySets[raw.ReadString()] = raw.ReadLong();
+            }
 
             _data = raw.ReadObject<object>();
         }
@@ -74,13 +75,18 @@ namespace Apache.Ignite.Core.Impl.EntityFramework
         {
             var raw = writer.GetRawWriter();
 
-            raw.WriteInt(_entitySets.Count);
-
-            foreach (var entry in _entitySets)
+            if (_entitySets != null)
             {
-                raw.WriteString(entry.Key);
-                raw.WriteLong(entry.Value);
+                raw.WriteInt(_entitySets.Count);
+
+                foreach (var entry in _entitySets)
+                {
+                    raw.WriteString(entry.Key);
+                    raw.WriteLong(entry.Value);
+                }
             }
+            else
+                raw.WriteInt(0);
 
             raw.WriteObject(_data);
         }
@@ -98,9 +104,10 @@ namespace Apache.Ignite.Core.Impl.EntityFramework
         /// </summary>
         public override string ToString()
         {
-            var setVersions = _entitySets
-                .Select(x => string.Format("{0}:{1}", x.Key, x.Value))
-                .Aggregate((x, y) => x + ", " + y);
+            var setVersions = _entitySets == null
+                ? "-"
+                : _entitySets.Select(x => string.Format("{0}:{1}", x.Key, x.Value))
+                    .Aggregate((x, y) => x + ", " + y);
 
             return string.Format("{0} [EntitySets=({1})]", GetType().Name, setVersions);
         }
