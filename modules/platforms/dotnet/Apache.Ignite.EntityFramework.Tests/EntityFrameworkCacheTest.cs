@@ -652,9 +652,9 @@ namespace Apache.Ignite.EntityFramework.Tests
         /// <summary>
         /// Executes the entity SQL.
         /// </summary>
-        private static EntityCommand GetEntityCommand(BloggingContext ctx, string esql)
+        private static EntityCommand GetEntityCommand(IObjectContextAdapter ctx, string esql)
         {
-            var objCtx = ((IObjectContextAdapter) ctx).ObjectContext;
+            var objCtx = ctx.ObjectContext;
 
             var conn = objCtx.Connection;
             conn.Open();
