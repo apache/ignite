@@ -55,6 +55,34 @@ public abstract class PageHandler<X, R> {
         throws IgniteCheckedException;
 
     /**
+     * @param page Page.
+     */
+    protected void onWriteLock(Page page) {
+        // No-op.
+    }
+
+    /**
+     * @param page Page.
+     */
+    protected void onWriteUnlock(Page page) {
+        // No-op.
+    }
+
+    /**
+     * @param page Page.
+     */
+    protected void onReadLock(Page page) {
+        // No-op.
+    }
+
+    /**
+     * @param page Page.
+     */
+    protected void onReadUnlock(Page page) {
+        // No-op.
+    }
+
+    /**
      * @param pageId Page ID.
      * @param page Page.
      * @param arg Argument.
@@ -79,12 +107,16 @@ public abstract class PageHandler<X, R> {
         ByteBuffer buf = page.getForRead();
 
         try {
+            h.onReadLock(page);
+
             PageIO io = PageIO.getPageIO(buf);
 
             return h.run(pageId, page, io, buf, arg, intArg);
         }
         finally {
             page.releaseRead();
+
+            h.onReadUnlock(page);
         }
     }
 
@@ -145,6 +177,8 @@ public abstract class PageHandler<X, R> {
         assert buf != null;
 
         try {
+            h.onWriteLock(page);
+
             if (init != null) // It is a new page and we have to initialize it.
                 doInitPage(pageId, page, buf, init, wal);
             else
@@ -157,8 +191,11 @@ public abstract class PageHandler<X, R> {
         finally {
             assert PageIO.getCrc(buf) == 0; //TODO GG-11480
 
-            if (h.releaseAfterWrite(pageId, page, arg, intArg))
+            if (h.releaseAfterWrite(pageId, page, arg, intArg)) {
                 page.releaseWrite(ok);
+
+                h.onWriteUnlock(page);
+            }
         }
 
         return res;

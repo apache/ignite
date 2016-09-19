@@ -239,7 +239,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         this.reuseList = reuseList == null ? this : reuseList;
         int pageSize = pageMem.pageSize();
 
-        assert U.isPow2(pageSize) : pageSize;
+        assert U.isPow2(pageSize) : "Page size must be a power of 2: " + pageSize;
         assert U.isPow2(BUCKETS);
         assert BUCKETS <= pageSize : pageSize;
 

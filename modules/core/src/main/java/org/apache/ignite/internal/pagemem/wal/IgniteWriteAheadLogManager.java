@@ -75,8 +75,6 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager {
      *
      * @param ptr Pointer for which it is safe to clear the log.
      * @return Number of deleted WAL segments.
-     * @throws IgniteException If failed to
-     * @throws StorageException
      */
-    public int truncate(WALPointer ptr) throws IgniteException, StorageException;
+    public int truncate(WALPointer ptr);
 }

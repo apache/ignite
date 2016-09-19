@@ -587,9 +587,6 @@ public class GridDhtPartitionDemander {
                         part.lock();
 
                         try {
-                            if (supply.isClean(part.id()) && cctx.shared().database().persistenceEnabled())
-                                part.clearAll();
-
                             // Loop through all received entries and try to preload them.
                             for (GridCacheEntryInfo entry : e.getValue().infos()) {
                                 if (!part.preloadingPermitted(entry.key(), entry.version())) {

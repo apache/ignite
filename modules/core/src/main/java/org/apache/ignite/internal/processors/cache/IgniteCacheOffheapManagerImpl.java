@@ -589,7 +589,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRebalanceIterator rebalanceIterator(int part, Long partCntr) throws IgniteCheckedException {
+    @Override public IgniteRebalanceIterator rebalanceIterator(int part, AffinityTopologyVersion topVer, Long partCntr)
+        throws IgniteCheckedException {
         final GridIterator<CacheDataRow> it = iterator(part);
 
         return new IgniteRebalanceIterator() {
@@ -844,8 +845,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 if (pendingEntries != null && dataRow.expireTime() != 0)
                     pendingEntries.remove(new PendingRow(dataRow.expireTime(), dataRow.link()));
 
-                rowStore.removeRow(dataRow.link());
-
                 lsnr.onRemove();
 
                 val = dataRow.value();
@@ -860,6 +859,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
                 qryMgr.remove(key, partId, val, ver);
             }
+
+            if (dataRow != null)
+                rowStore.removeRow(dataRow.link());
         }
 
         /** {@inheritDoc} */

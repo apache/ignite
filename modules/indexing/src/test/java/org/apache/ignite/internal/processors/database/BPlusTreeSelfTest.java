@@ -20,19 +20,24 @@ package org.apache.ignite.internal.processors.database;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
+import java.util.concurrent.locks.Lock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
+import org.apache.ignite.internal.processors.cache.database.DataStructure;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
@@ -42,11 +47,13 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridRandom;
+import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.rnd;
 
@@ -455,31 +462,55 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
             tree.put(x);
 
+            assertTrue(TestTree.checkNoLocks());
+
             assertEquals(x, tree.findOne(x).longValue());
+
+            assertTrue(TestTree.checkNoLocks());
+
+            tree.validateTree();
+
+            assertTrue(TestTree.checkNoLocks());
         }
 
         X.println(tree.printTree());
+
+        assertTrue(TestTree.checkNoLocks());
 
         assertNull(tree.findOne(-1L));
 
         for (long x = 0; x < cnt; x++)
             assertEquals(x, tree.findOne(x).longValue());
 
+        assertTrue(TestTree.checkNoLocks());
+
         assertNull(tree.findOne(cnt));
 
         for (long x = RMV_INC > 0 ? 0 : cnt - 1; x >= 0 && x < cnt; x += RMV_INC) {
             X.println(" -- " + x);
 
-            assertEquals(x, tree.remove(x).longValue());
+            assertEquals(Long.valueOf(x), tree.remove(x));
+
+            assertTrue(TestTree.checkNoLocks());
 
             X.println(tree.printTree());
 
+            assertTrue(TestTree.checkNoLocks());
+
             assertNull(tree.findOne(x));
+
+            assertTrue(TestTree.checkNoLocks());
+
+            tree.validateTree();
+
+            assertTrue(TestTree.checkNoLocks());
         }
 
         assertFalse(tree.find(null, null).next());
         assertEquals(0, tree.size());
         assertEquals(0, tree.rootLevel());
+
+        assertTrue(TestTree.checkNoLocks());
     }
 
     /**
@@ -500,6 +531,24 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         CNT = 30;
 
         doTestRandomPutRemove(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMassiveRemove3_false() throws Exception {
+        MAX_PER_PAGE = 3;
+
+        doTestMassiveRemove(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMassiveRemove3_true() throws Exception {
+        MAX_PER_PAGE = 3;
+
+        doTestMassiveRemove(true);
     }
 
     /**
@@ -604,6 +653,114 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testMassivePut1_true() throws Exception {
+        MAX_PER_PAGE = 1;
+
+        doTestMassivePut(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMassivePut1_false() throws Exception {
+        MAX_PER_PAGE = 1;
+
+        doTestMassivePut(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMassivePut2_true() throws Exception {
+        MAX_PER_PAGE = 2;
+
+        doTestMassivePut(true);
+    }
+
+    public void testMassivePut2_false() throws Exception {
+        MAX_PER_PAGE = 2;
+
+        doTestMassivePut(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMassivePut3_true() throws Exception {
+        MAX_PER_PAGE = 3;
+
+        doTestMassivePut(true);
+    }
+
+    public void testMassivePut3_false() throws Exception {
+        MAX_PER_PAGE = 3;
+
+        doTestMassivePut(false);
+    }
+
+    /**
+     * @param canGetRow Can get row in inner page.
+     * @throws Exception If failed.
+     */
+    private void doTestMassivePut(final boolean canGetRow) throws Exception {
+        final int threads = 16;
+        final int keys = 26; // We may fail to insert more on small pages size because of tree height.
+
+        final TestTree tree = createTestTree(canGetRow);
+
+        info("Put...");
+
+        final AtomicLongArray k = new AtomicLongArray(keys);
+
+        GridTestUtils.runMultiThreaded(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                Random rnd = new GridRandom();
+
+                for (;;) {
+                    int idx = 0;
+                    boolean found = false;
+
+                    for (int i = 0, shift = rnd.nextInt(keys); i < keys; i++) {
+                        idx = (i + shift) % keys;
+
+                        if (k.get(idx) == 0 && k.compareAndSet(idx, 0, 1)) {
+                            found = true;
+
+                            break;
+                        }
+                    }
+
+                    if (!found)
+                        break;
+
+                    assertNull(tree.put((long)idx));
+
+                    assertTrue(TestTree.checkNoLocks());
+                }
+
+                return null;
+            }
+        }, threads, "put");
+
+        assertEquals(keys, tree.size());
+
+        tree.validateTree();
+
+        GridCursor<Long> c = tree.find(null, null);
+
+        long x = 0;
+
+        while (c.next())
+            assertEquals(Long.valueOf(x++), c.get());
+
+        assertEquals(keys, x);
+
+        assertTrue(TestTree.checkNoLocks());
+    }
+
+    /**
      * @param canGetRow Can get row from inner page.
      * @throws IgniteCheckedException If failed.
      */
@@ -619,7 +776,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
             boolean put = BPlusTree.randomInt(2) == 0;
 
-            if (i % 1000 == 0) {
+            if (i % 10_000 == 0) {
 //                X.println(tree.printTree());
                 X.println(" --> " + (put ? "put " : "rmv ") + i + "  " + x);
             }
@@ -633,6 +790,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                 assertNull(tree.remove(x));
             }
 
+            assertTrue(TestTree.checkNoLocks());
+
 //            X.println(tree.printTree());
             tree.validateTree();
 
@@ -645,9 +804,13 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                     assert x != null;
 
                     assertEquals(map.get(x), x);
+
+                    assertTrue(TestTree.checkNoLocks());
                 }
 
                 assertEquals(map.size(), tree.size());
+
+                assertTrue(TestTree.checkNoLocks());
             }
         }
     }
@@ -671,6 +834,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         assertFalse(tree.find(4L, null).next());
         assertFalse(tree.find(null, 0L).next());
+
+        assertTrue(TestTree.checkNoLocks());
     }
 
     /**
@@ -692,6 +857,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
             assertEquals(map.put(row, row), tree.put(row));
             assertEquals(row, tree.findOne(row));
+
+            assertTrue(TestTree.checkNoLocks());
         }
 
         final int off = rnd.nextInt(5 * MAX_PER_PAGE);
@@ -711,6 +878,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             assertEquals(i.next(), c.get());
 
             last = c.get();
+
+            assertTrue(TestTree.checkNoLocks());
         }
 
         if (last != null) {
@@ -720,6 +889,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
             assertTrue(c.next());
             assertEquals(last, c.get());
+
+            assertTrue(TestTree.checkNoLocks());
         }
 
         while (c.next()) {
@@ -730,9 +901,146 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             assertEquals(c.get(), tree.remove(c.get()));
 
             i.remove();
+
+            assertTrue(TestTree.checkNoLocks());
         }
 
         assertEquals(map.size(), size(tree.find(null, null)));
+
+        assertTrue(TestTree.checkNoLocks());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTestRandomPutRemoveMultithreaded_1_30_0() throws Exception {
+        MAX_PER_PAGE = 1;
+        CNT = 30;
+
+        doTestRandomPutRemoveMultithreaded(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTestRandomPutRemoveMultithreaded_1_30_1() throws Exception {
+        MAX_PER_PAGE = 1;
+        CNT = 30;
+
+        doTestRandomPutRemoveMultithreaded(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTestRandomPutRemoveMultithreaded_2_50_0() throws Exception {
+        MAX_PER_PAGE = 2;
+        CNT = 50;
+
+        doTestRandomPutRemoveMultithreaded(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTestRandomPutRemoveMultithreaded_2_50_1() throws Exception {
+        MAX_PER_PAGE = 2;
+        CNT = 50;
+
+        doTestRandomPutRemoveMultithreaded(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTestRandomPutRemoveMultithreaded_3_70_0() throws Exception {
+        MAX_PER_PAGE = 3;
+        CNT = 70;
+
+        doTestRandomPutRemoveMultithreaded(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTestRandomPutRemoveMultithreaded_3_70_1() throws Exception {
+        MAX_PER_PAGE = 3;
+        CNT = 70;
+
+        doTestRandomPutRemoveMultithreaded(true);
+    }
+
+    /**
+     * @param canGetRow Can get row from inner page.
+     * @throws Exception If failed.
+     */
+    private void doTestRandomPutRemoveMultithreaded(boolean canGetRow) throws Exception {
+        final TestTree tree = createTestTree(canGetRow);
+
+        final Map<Long,Long> map = new ConcurrentHashMap8<>();
+
+        final int loops = reuseList == null ? 200_000 : 1000_000;
+
+        final GridStripedLock lock = new GridStripedLock(256);
+
+        multithreaded(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                for (int i = 0 ; i < loops; i++) {
+                    Long x = (long)DataStructure.randomInt(CNT);
+
+                    boolean put = DataStructure.randomInt(2) == 0;
+
+                    if (i % 10000 == 0)
+                        X.println(" --> " + (put ? "put " : "rmv ") + i + "  " + x);
+
+                    Lock l = lock.getLock(x.longValue());
+
+                    l.lock();
+
+                    try {
+                        if (put) {
+                            assertEquals(map.put(x, x), tree.put(x));
+
+                            assertTrue(TestTree.checkNoLocks());
+                        }
+                        else {
+                            if (map.remove(x) != null) {
+                                assertEquals(x, tree.remove(x));
+
+                                assertTrue(TestTree.checkNoLocks());
+                            }
+
+                            assertNull(tree.remove(x));
+
+                            assertTrue(TestTree.checkNoLocks());
+                        }
+                    }
+                    finally {
+                        l.unlock();
+                    }
+                }
+
+                return null;
+            }
+        }, 16);
+
+        GridCursor<Long> cursor = tree.find(null, null);
+
+        while (cursor.next()) {
+            Long x = cursor.get();
+
+            assert x != null;
+
+            assertEquals(map.get(x), x);
+        }
+
+        info("size: " + map.size());
+
+        assertEquals(map.size(), tree.size());
+
+        tree.validateTree();
+
+        assertTrue(TestTree.checkNoLocks());
     }
 
     /**
@@ -775,6 +1083,20 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * Test tree.
      */
     protected static class TestTree extends BPlusTree<Long, Long> {
+        /** */
+        private static ThreadLocal<Set<Long>> readLocks = new ThreadLocal<Set<Long>>() {
+            @Override protected Set<Long> initialValue() {
+                return new HashSet<>();
+            }
+        };
+
+        /** */
+        private static ThreadLocal<Set<Long>> writeLocks = new ThreadLocal<Set<Long>>() {
+            @Override protected Set<Long> initialValue() {
+                return new HashSet<>();
+            }
+        };
+
         /**
          * @param reuseList Reuse list.
          * @param canGetRow Can get row from inner page.
@@ -806,6 +1128,38 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             assert io.canGetRow() : io;
 
             return io.getLookupRow(this, buf, idx);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void onReadLock(Page page) {
+            boolean ok = readLocks.get().add(page.id());
+
+            assert ok: page;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void onReadUnlock(Page page) {
+            boolean ok = readLocks.get().remove(page.id());
+
+            assert ok: page;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void onWriteLock(Page page) {
+            boolean ok = writeLocks.get().add(page.id());
+
+            assert ok: page;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void onWriteUnlock(Page page) {
+            boolean ok = writeLocks.get().remove(page.id());
+
+            assert ok: page;
+        }
+
+        static boolean checkNoLocks() {
+            return readLocks.get().isEmpty() && writeLocks.get().isEmpty();
         }
     }
 
