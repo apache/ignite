@@ -17,7 +17,6 @@
 
 package org.apache.ignite.hadoop.fs;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -25,16 +24,15 @@ import org.apache.ignite.internal.processors.hadoop.fs.HadoopFileSystemsUtils;
 import org.apache.ignite.internal.processors.hadoop.fs.HadoopLazyConcurrentMap;
 
 import java.io.IOException;
-import java.net.URI;
 
 /**
- * Caching Hadoop file system factory. Caches {@link FileSystem} instances on per-user basis. Doesn't rely on
+ * Caching Hadoop file system factory. Caches {@code FileSystem} instances on per-user basis. Doesn't rely on
  * built-in Hadoop {@code FileSystem} caching mechanics. Separate {@code FileSystem} instance is created for each
  * user instead.
  * <p>
- * This makes cache instance resistant to concurrent calls to {@link FileSystem#close()} in other parts of the user
+ * This makes cache instance resistant to concurrent calls to {@code FileSystem.close()} in other parts of the user
  * code. On the other hand, this might cause problems on some environments. E.g. if Kerberos is enabled, a call to
- * {@link FileSystem#get(URI, Configuration, String)} will refresh Kerberos token. But this factory implementation
+ * {@code FileSystem.get(URI, Configuration, String)} will refresh Kerberos token. But this factory implementation
  * calls this method only once per user what may lead to token expiration. In such cases it makes sense to either
  * use {@link BasicHadoopFileSystemFactory} or implement your own factory.
  */
