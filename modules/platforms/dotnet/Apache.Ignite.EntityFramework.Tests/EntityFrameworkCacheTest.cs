@@ -56,6 +56,9 @@ namespace Apache.Ignite.EntityFramework.Tests
         /** */
         private ICache<object, object> _cache;
 
+        /** */
+        private ICache<object, object> _metaCache;
+
         /// <summary>
         /// Fixture set up.
         /// </summary>
@@ -74,8 +77,9 @@ namespace Apache.Ignite.EntityFramework.Tests
                 ctx.Database.Create();
             }
 
-            // Get the cache.
-            _cache = ignite.GetCache<object, object>(null);
+            // Get the caches.
+            _cache = ignite.GetCache<object, object>("entityFrameworkQueryCache_data");
+            _metaCache = ignite.GetCache<object, object>("entityFrameworkQueryCache_metadata");
         }
 
         /// <summary>
@@ -121,8 +125,9 @@ namespace Apache.Ignite.EntityFramework.Tests
                 Assert.IsEmpty(ctx.Posts);
             }
 
-            // Clear the cache.
+            // Clear the caches.
             _cache.Clear();
+            _metaCache.Clear();
         }
 
         /// <summary>
