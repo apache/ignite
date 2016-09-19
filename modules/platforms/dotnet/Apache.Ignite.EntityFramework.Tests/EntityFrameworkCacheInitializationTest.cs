@@ -77,9 +77,17 @@ namespace Apache.Ignite.EntityFramework.Tests
             var ignite = Ignition.TryGetIgnite(gridName);
             Assert.IsNotNull(ignite);
 
-            var cache = ignite.GetCache<object, object>(cacheName);
-            Assert.IsNotNull(cache);
-            Assert.AreEqual(cacheMode, cache.GetConfiguration().CacheMode);
+            var metaCache = ignite.GetCache<object, object>(cacheName + "_metadata");
+            Assert.IsNotNull(metaCache);
+            Assert.AreEqual(cacheMode, metaCache.GetConfiguration().CacheMode);
+            Assert.AreEqual(1, metaCache.GetConfiguration().Backups);
+
+            var dataCache = ignite.GetCache<object, object>(cacheName + "_data");
+            Assert.IsNotNull(dataCache);
+            Assert.AreEqual(cacheMode, dataCache.GetConfiguration().CacheMode);
+
+            // TODO: Check other config properties.
+            // TODO: Check backups warning.
 
             Ignition.StopAll(true);
         }
