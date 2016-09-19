@@ -573,8 +573,10 @@ public class IgfsInputStreamImpl extends IgfsInputStream implements IgfsSecondar
     @Nullable protected IgniteInternalFuture<byte[]> dataBlock(final long blockIdx)
         throws IgniteCheckedException {
         if (proxy) {
+
             final GridFutureAdapter<byte[]> fut = new GridFutureAdapter<>();
 
+            // TODO: move to IgfsContext (and from DataManager as well).
             igfsCtx.kernalContext().getIgfsExecutorService().submit(new Runnable() {
                 @Override public void run() {
                     try {
