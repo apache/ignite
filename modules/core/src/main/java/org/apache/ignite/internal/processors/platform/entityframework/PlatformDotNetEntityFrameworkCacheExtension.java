@@ -62,10 +62,14 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
                 // TODO: Broadcast cleanup from here.
                 Ignite grid = target.platformContext().kernalContext().grid();
 
-                // TODO: 1) not too many task
-                // 2) do not use user thread pool
+                // TODO:
+                // 0) Use a separate meta cache for versions and cleanup state
+                // 1) limit cleanup tasks: store node id in a special key.
+                //    If node is present, then cleanup is in process;
+                //    If node has left, then start new cleanup.
+                // 2) do not use public thread pool - HOW? ComputeJobContinuation, new thread, holdcc, callcc
                 // 3) cache can have a node filter?
-                // 4) we should account for lost data!
+                // 4) we should account for lost data: meta cache should have backups.
                 //grid.compute().broadcast()
 
                 return target.writeResult(mem, null);
