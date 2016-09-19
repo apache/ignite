@@ -17,25 +17,25 @@
 
 package org.apache.ignite.internal.processors.hadoop.delegate;
 
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.lifecycle.LifecycleAware;
-
 /**
- * Abstract delegate
+ * Utility methods for Hadoop delegates.
  */
-public abstract class HadoopAbstractDelegate<T> implements LifecycleAware {
-    /** Proxy. */
-    @GridToStringExclude
-    protected final T proxy;
-
+public class HadoopDelegateUtils {
     /**
-     * Constructor.
+     * Create delegate for certain proxy.
      *
      * @param proxy Proxy.
+     * @return Delegate.
      */
-    public HadoopAbstractDelegate(T proxy) {
-        assert proxy != null;
+    public static <T> T delegate(Object proxy) {
+        // TODO
+        return null;
+    }
 
-        this.proxy = proxy;
+    /**
+     * Private constructor.
+     */
+    private HadoopDelegateUtils() {
+        // No-op.
     }
 }

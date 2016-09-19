@@ -15,24 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.hadoop.fs;
+package org.apache.ignite.internal.processors.hadoop.delegate;
 
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.ignite.lifecycle.LifecycleAware;
 
 import java.io.IOException;
 
 /**
- * Factory for Hadoop {@code FileSystem} used by {@link IgniteHadoopIgfsSecondaryFileSystem}.
- * <p>
- * {@link #get(String)} method will be used whenever a call to a target {@code FileSystem} is required.
- * <p>
- * It is implementation dependent whether to rely on built-in Hadoop file system cache, implement own caching facility
- * or doesn't cache file systems at all.
- * <p>
- * Concrete factory may implement {@link LifecycleAware} interface. In this case start and stop callbacks will be
- * performed by Ignite. You may want to implement some initialization or cleanup there.
+ * Hadoop file system factory delegate.
  */
-public interface HadoopFileSystemFactory {
+public interface HadoopFileSystemFactoryDelegate extends LifecycleAware {
     /**
      * Gets file system for the given user name.
      *
@@ -40,5 +33,5 @@ public interface HadoopFileSystemFactory {
      * @return File system.
      * @throws IOException In case of error.
      */
-    public Object get(String usrName) throws IOException;
+    public FileSystem get(String usrName) throws IOException;
 }

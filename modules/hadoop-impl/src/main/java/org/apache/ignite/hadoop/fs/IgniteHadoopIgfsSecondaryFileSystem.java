@@ -49,7 +49,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
     private String dfltUsrName;
 
     /** Factory. */
-    private HadoopFileSystemFactory fsFactory;
+    private HadoopFileSystemFactory factory;
 
     /** Target. */
     volatile private HadoopIgfsSecondaryFileSystemDelegate target;
@@ -149,7 +149,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
      * @return Secondary file system factory.
      */
     public HadoopFileSystemFactory getFileSystemFactory() {
-        return fsFactory;
+        return factory;
     }
 
     /**
@@ -158,7 +158,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
      * @param factory Secondary file system factory.
      */
     public void setFileSystemFactory(HadoopFileSystemFactory factory) {
-        this.fsFactory = factory;
+        this.factory = factory;
     }
 
     /** {@inheritDoc} */
@@ -240,11 +240,6 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        dfltUsrName = IgfsUtils.fixUserName(dfltUsrName);
-
-        if (fsFactory == null)
-            fsFactory = new CachingHadoopFileSystemFactory();
-
         target = new HadoopIgfsSecondaryFileSystemDelegateImpl(this);
 
         target.start();
@@ -258,6 +253,6 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
 
     /** {@inheritDoc} */
     @Override public HadoopFileSystemFactory getPayload() {
-        return fsFactory;
+        return factory;
     }
 }

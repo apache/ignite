@@ -25,6 +25,7 @@ import org.apache.hadoop.fs.PathExistsException;
 import org.apache.hadoop.fs.PathIsNotEmptyDirectoryException;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.IgfsDirectoryNotEmptyException;
@@ -60,8 +61,7 @@ import java.util.Map;
 /**
  * Secondary file system implementation.
  */
-public class HadoopIgfsSecondaryFileSystemDelegateImpl
-    extends HadoopAbstractDelegate<IgniteHadoopIgfsSecondaryFileSystem> implements HadoopIgfsSecondaryFileSystemDelegate
+public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSecondaryFileSystemDelegate
      {
     /** The default user name. It is used if no user context is set. */
     private final String dfltUsrName;
@@ -75,13 +75,16 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl
      * @param proxy Proxy.
     */
     public HadoopIgfsSecondaryFileSystemDelegateImpl(IgniteHadoopIgfsSecondaryFileSystem proxy) {
-        super(proxy);
-
-        assert proxy.getDefaultUserName() != null;
         assert proxy.getFileSystemFactory() != null;
 
-        this.dfltUsrName = proxy.getDefaultUserName();
-        this.factory = proxy.getFileSystemFactory();
+        dfltUsrName = IgfsUtils.fixUserName(proxy.getDefaultUserName());
+
+        HadoopFileSystemFactory factory0 = proxy.getFileSystemFactory();
+
+        if (factory0 == null)
+            factory0 = new CachingHadoopFileSystemFactory();
+
+        this.factory = factory0;
     }
 
     /** {@inheritDoc} */
