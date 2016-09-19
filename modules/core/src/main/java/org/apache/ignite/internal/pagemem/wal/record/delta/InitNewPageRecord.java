@@ -27,13 +27,13 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
  */
 public class InitNewPageRecord extends PageDeltaRecord {
     /** */
-    private int ioType;
+    protected int ioType;
 
     /** */
-    private int ioVer;
+    protected int ioVer;
 
     /** */
-    private long newPageId;
+    protected long newPageId;
 
     /**
      * @param cacheId Cache ID.

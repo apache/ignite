@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -36,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.writePage;
 
 /**
@@ -281,7 +281,10 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
      * @throws IgniteCheckedException If failed.
      */
     private Page allocateDataPage(int part) throws IgniteCheckedException {
-        long pageId = pageMem.allocatePage(cacheId, part, FLAG_DATA);
+        assert part <= PageIdAllocator.MAX_PARTITION_ID;
+        assert part != PageIdAllocator.INDEX_PARTITION;
+
+        long pageId = pageMem.allocatePage(cacheId, part, PageIdAllocator.FLAG_DATA);
 
         return pageMem.page(cacheId, pageId);
     }
@@ -310,6 +313,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
                     break;
                 }
             }
+
+            assert pageId == 0 || PageIdUtils.partId(pageId) == row.partition();
 
             try (Page page = pageId == 0 ? allocateDataPage(row.partition()) : pageMem.page(cacheId, pageId)) {
                 // If it is an existing page, we do not need to initialize it.

@@ -21,14 +21,18 @@ import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 
 /**
  * Base class for all the data structures based on {@link PageMemory}.
@@ -107,7 +111,7 @@ public abstract class DataStructure {
      * @throws IgniteCheckedException If failed.
      */
     protected long allocatePageNoReuse() throws IgniteCheckedException {
-        return pageMem.allocatePage(cacheId, 0, FLAG_IDX);
+        return pageMem.allocatePage(cacheId, PageIdAllocator.INDEX_PARTITION, FLAG_IDX);
     }
 
     /**
@@ -118,10 +122,8 @@ public abstract class DataStructure {
     protected final Page page(long pageId) throws IgniteCheckedException {
         byte flag = PageIdUtils.flag(pageId);
 
-        if (flag == FLAG_IDX)
-            pageId = PageIdUtils.maskPartId(pageId);
-        else
-            assert flag == FLAG_DATA : flag;
+        assert flag == FLAG_IDX && PageIdUtils.partId(pageId) == INDEX_PARTITION ||
+            flag == FLAG_DATA && PageIdUtils.partId(pageId) <= MAX_PARTITION_ID : U.hexLong(pageId);
 
         return pageMem.page(cacheId, pageId);
     }

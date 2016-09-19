@@ -50,6 +50,9 @@ public final class PageIdUtils {
     public static final long FLAG_MASK = ~(-1L << FLAG_SIZE);
 
     /** */
+    private static final long EFFECTIVE_PAGE_ID_MASK = ~(OFFSET_MASK << (PAGE_IDX_SIZE + PART_ID_SIZE));
+
+    /** */
     private static final long PAGE_ID_MASK = ~(OFFSET_MASK << (PAGE_IDX_SIZE + PART_ID_SIZE + FLAG_SIZE));
 
     /** Max itemid number. */
@@ -107,7 +110,7 @@ public final class PageIdUtils {
      * @return Effective page id.
      */
     public static long effectivePageId(long link) {
-        return link & PAGE_ID_MASK;
+        return link & EFFECTIVE_PAGE_ID_MASK;
     }
 
 

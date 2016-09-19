@@ -92,22 +92,20 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager {
      *
      * @param cacheId Cache ID.
      * @param partId Partition ID.
-     * @param flag Allocation flag.
      * @return {@code True} if page exists.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean exists(int cacheId, int partId, byte flag) throws IgniteCheckedException;
+    public boolean exists(int cacheId, int partId) throws IgniteCheckedException;
 
     /**
      * Reads a header of apage store.
      *
      * @param cacheId Cache ID.
      * @param partId Partition ID.
-     * @param flag Allocation flags.
      * @param buf Buffer to write to.
      * @throws IgniteCheckedException If failed.
      */
-    public void readHeader(int cacheId, int partId, byte flag, ByteBuffer buf) throws IgniteCheckedException;
+    public void readHeader(int cacheId, int partId, ByteBuffer buf) throws IgniteCheckedException;
 
     /**
      * Writes the page for the given cache ID. Cache ID may be {@code 0} if the page is a meta page.
@@ -133,11 +131,10 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager {
      * Makes sure that all previous writes to the store has been written to disk.
      *
      * @param cacheId Cache ID to sync.
-     * @param flags Allocation flags.
      * @param partId Partition ID to sync.
      * @throws IgniteCheckedException If IO error occurred while running sync.
      */
-    public void sync(int cacheId, byte flags, int partId) throws IgniteCheckedException;
+    public void sync(int cacheId, int partId) throws IgniteCheckedException;
 
     /**
      * Allocates a page for the given page space.
@@ -155,11 +152,10 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager {
      *
      * @param cacheId Cache ID.
      * @param partId Partition ID.
-     * @param flags Flags.
      * @return Number of allocated pages.
      * @throws IgniteCheckedException If failed.
      */
-    public int pages(int cacheId, int partId, byte flags) throws IgniteCheckedException;
+    public int pages(int cacheId, int partId) throws IgniteCheckedException;
 
     /**
      * Gets meta page ID for specified cache.

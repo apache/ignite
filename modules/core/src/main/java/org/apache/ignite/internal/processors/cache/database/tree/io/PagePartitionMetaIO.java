@@ -22,7 +22,7 @@ import java.nio.ByteBuffer;
 
 public class PagePartitionMetaIO extends PageMetaIO {
     /** */
-    private static final int SIZE_OFF = PageMetaIO.REUSE_LIST_ROOT_OFF;
+    private static final int SIZE_OFF = PageMetaIO.REUSE_LIST_ROOT_OFF + 8;
 
     /** */
     private static final int UPDATE_CNTR_OFF = SIZE_OFF + 8;
