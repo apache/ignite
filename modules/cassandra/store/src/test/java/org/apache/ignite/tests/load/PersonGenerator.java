@@ -38,6 +38,6 @@ public class PersonGenerator implements Generator {
 
     /** {@inheritDoc} */
     @Override public Object generate(long i) {
-        return new Person(Long.toString(i), Long.toString(i), (int)(i % 100), i % 2 == 0, i, i, DATE, PHONES);
+        return new Person(i, Long.toString(i), Long.toString(i), (int)(i % 100), i % 2 == 0, i, i, DATE, PHONES);
     }
 }

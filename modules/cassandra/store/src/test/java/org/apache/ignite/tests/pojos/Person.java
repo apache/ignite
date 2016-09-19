@@ -17,6 +17,8 @@
 
 package org.apache.ignite.tests.pojos;
 
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -28,6 +30,9 @@ import java.util.List;
  * Simple POJO which could be stored as a value in Ignite cache
  */
 public class Person implements Externalizable {
+    /** */
+    private long personNum;
+
     /** */
     private String firstName;
 
@@ -58,8 +63,9 @@ public class Person implements Externalizable {
     }
 
     /** */
-    public Person(String firstName, String lastName, int age, boolean married,
+    public Person(long personNum, String firstName, String lastName, int age, boolean married,
         long height, float weight, Date birthDate, List<String> phones) {
+        this.personNum = personNum;
         this.firstName = firstName;
         this.lastName = lastName;
         this.age = age;
@@ -73,6 +79,7 @@ public class Person implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeLong(personNum);
         out.writeObject(firstName);
         out.writeObject(lastName);
         out.writeInt(age);
@@ -86,6 +93,7 @@ public class Person implements Externalizable {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        personNum = in.readLong();
         firstName = (String)in.readObject();
         lastName = (String)in.readObject();
         age = in.readInt();
@@ -103,6 +111,9 @@ public class Person implements Externalizable {
             return false;
 
         Person person = (Person)obj;
+
+        if (personNum != person.personNum)
+            return false;
 
         if ((firstName != null && !firstName.equals(person.firstName)) ||
             (person.firstName != null && !person.firstName.equals(firstName)))
@@ -132,6 +143,9 @@ public class Person implements Externalizable {
 
         Person person = (Person)obj;
 
+        if (personNum != person.personNum)
+            return false;
+
         if ((firstName != null && !firstName.equals(person.firstName)) ||
             (person.firstName != null && !person.firstName.equals(firstName)))
             return false;
@@ -146,6 +160,18 @@ public class Person implements Externalizable {
 
         return age == person.age && married == person.married &&
             height == person.height && weight == person.weight;
+    }
+
+    /** */
+    @SuppressWarnings("UnusedDeclaration")
+    public void setPersonNumber(long personNum) {
+        this.personNum = personNum;
+    }
+
+    /** */
+    @SuppressWarnings("UnusedDeclaration")
+    public long getPersonNumber() {
+        return personNum;
     }
 
     /** */
@@ -170,6 +196,13 @@ public class Person implements Externalizable {
     @SuppressWarnings("UnusedDeclaration")
     public String getLastName() {
         return lastName;
+    }
+
+    /** */
+    @SuppressWarnings("UnusedDeclaration")
+    @QuerySqlField
+    public String getFullName() {
+        return firstName + " " + lastName;
     }
 
     /** */
