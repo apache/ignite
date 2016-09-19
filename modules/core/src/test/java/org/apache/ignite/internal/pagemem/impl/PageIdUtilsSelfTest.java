@@ -41,10 +41,10 @@ public class PageIdUtilsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testEffectivePageId() throws Exception {
-        assertEquals(0x0002FFFFFFFFFFFFL, PageIdUtils.effectivePageId(0x0002FFFFFFFFFFFFL));
-        assertEquals(0x0002FFFFFFFFFFFFL, PageIdUtils.effectivePageId(0x0A02FFFFFFFFFFFFL));
-        assertEquals(0x0002FFFFFFFFFFFFL, PageIdUtils.effectivePageId(0x0F02FFFFFFFFFFFFL));
-        assertEquals(0x0002FFFFFFFFFFFFL, PageIdUtils.effectivePageId(0xFF02FFFFFFFFFFFFL));
+        assertEquals(0x0000FFFFFFFFFFFFL, PageIdUtils.effectivePageId(0x0002FFFFFFFFFFFFL));
+        assertEquals(0x0000FFFFFFFFFFFFL, PageIdUtils.effectivePageId(0x0A02FFFFFFFFFFFFL));
+        assertEquals(0x0000FFFFFFFFFFFFL, PageIdUtils.effectivePageId(0x0F02FFFFFFFFFFFFL));
+        assertEquals(0x0000FFFFFFFFFFFFL, PageIdUtils.effectivePageId(0xFF02FFFFFFFFFFFFL));
     }
 
     /**

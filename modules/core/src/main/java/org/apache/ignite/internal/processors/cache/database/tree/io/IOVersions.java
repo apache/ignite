@@ -88,7 +88,8 @@ public final class IOVersions<V extends PageIO> {
 
         V res = forVersion(ver);
 
-        assert res.getType() == PageIO.getType(buf);
+        assert res.getType() == PageIO.getType(buf) : "resType=" + res.getType() +
+            ", pageType=" + PageIO.getType(buf);
 
         return res;
     }
