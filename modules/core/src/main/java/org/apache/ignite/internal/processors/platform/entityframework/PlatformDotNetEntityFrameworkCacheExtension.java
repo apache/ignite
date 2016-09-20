@@ -37,6 +37,7 @@ import javax.cache.processor.EntryProcessorResult;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * EntityFramework cache extension.
@@ -78,7 +79,8 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
 
                 Ignite grid = target.platformContext().kernalContext().grid();
 
-                startBackgroundCleanup(grid, metaCache, dataCacheName, currentVersions);
+                startBackgroundCleanup(grid, (IgniteCache<String, UUID>)(IgniteCache)metaCache,
+                    dataCacheName, currentVersions);
 
                 return target.writeResult(mem, null);
             }
@@ -100,15 +102,36 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
      * @param dataCacheName Data cache name.
      * @param currentVersions Current versions.
      */
-    private void startBackgroundCleanup(Ignite grid, final IgniteCache metaCache,
+    private void startBackgroundCleanup(Ignite grid, final Cache<String, UUID> metaCache,
         final String dataCacheName, final Map<String, EntryProcessorResult<Long>> currentVersions) {
         // Initiate old entries cleanup.
         IgniteCompute asyncCompute = grid.compute().withAsync();
 
         // Set a flag about running cleanup.
-        // TODO: How to atomically check if there is no cleanup?
-        //while (true) {                }
-        metaCache.put(CLEANUP_NODE_ID, grid.cluster().localNode().id());
+        final UUID localNodeId = grid.cluster().localNode().id();
+
+        while (true) {
+            if (metaCache.putIfAbsent(CLEANUP_NODE_ID, localNodeId))
+                break;   // No cleanup is in progress, start new.
+
+            // Some node is performing cleanup - check if it is alive.
+            UUID nodeId = metaCache.get(CLEANUP_NODE_ID);
+
+            if (nodeId == null)
+                continue;  // Cleanup has stopped.
+
+            if (nodeId.equals(localNodeId))
+                return;  // Current node already performs cleanup.
+
+            if (grid.cluster().node(nodeId) != null)
+                return;  // Another node already performs cleanup and is alive.
+
+            // Node that performs cleanup has disconnected.
+            if (metaCache.replace(CLEANUP_NODE_ID, nodeId, localNodeId))
+                break;  // Successfully replaced disconnected node id with our id.
+
+            // Node id value has changed by another thread. Repeat the process.
+        }
 
         asyncCompute.broadcast(new IgniteRunnable() {
             @IgniteInstanceResource
