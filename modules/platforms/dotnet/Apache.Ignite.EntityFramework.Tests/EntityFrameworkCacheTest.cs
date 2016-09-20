@@ -417,7 +417,12 @@ namespace Apache.Ignite.EntityFramework.Tests
                 Assert.AreEqual(1, _cache.GetSize());
                 Assert.AreEqual(2, _metaCache.GetSize());
 
-                Thread.Sleep(250);
+                var key = _cache.Single().Key;
+                Assert.IsTrue(_cache.ContainsKey(key));
+
+                Thread.Sleep(300);
+
+                Assert.IsFalse(_cache.ContainsKey(key));
                 Assert.AreEqual(0, _cache.GetSize());
                 Assert.AreEqual(2, _metaCache.GetSize());
             }
