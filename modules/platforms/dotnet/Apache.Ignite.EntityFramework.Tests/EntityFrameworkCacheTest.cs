@@ -406,7 +406,7 @@ namespace Apache.Ignite.EntityFramework.Tests
         [Test]
         public void TestExpiration()
         {
-            Policy.GetExpirationTimeoutFunc = qry => TimeSpan.FromSeconds(0.2);
+            Policy.GetExpirationTimeoutFunc = qry => TimeSpan.FromSeconds(0.3);
 
             using (var ctx = GetDbContext())
             {
@@ -415,7 +415,6 @@ namespace Apache.Ignite.EntityFramework.Tests
 
                 Assert.AreEqual(1, ctx.Posts.ToArray().Length);
                 Assert.AreEqual(1, _cache.GetSize());
-                Assert.AreEqual(2, _metaCache.GetSize());
 
                 var key = _cache.Single().Key;
                 Assert.IsTrue(_cache.ContainsKey(key));
