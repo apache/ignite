@@ -573,7 +573,6 @@ public class IgfsInputStreamImpl extends IgfsInputStream implements IgfsSecondar
     @Nullable protected IgniteInternalFuture<byte[]> dataBlock(final long blockIdx)
         throws IgniteCheckedException {
         if (proxy) {
-
             final GridFutureAdapter<byte[]> fut = new GridFutureAdapter<>();
 
             igfsCtx.runInIgfsThreadPool(new Runnable() {

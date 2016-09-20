@@ -307,17 +307,14 @@ public class IgfsDataManager extends IgfsManager {
      * @return Requested data block or {@code null} if nothing found.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteInternalFuture<byte[]> dataBlock(
-        @Nullable final IgfsEntryInfo fileInfo,
-        final IgfsPath path,
-        final long blockIdx,
-        @Nullable final IgfsSecondaryFileSystemPositionedReadable secReader)
+    @Nullable public IgniteInternalFuture<byte[]> dataBlock(final IgfsEntryInfo fileInfo, final IgfsPath path,
+        final long blockIdx, @Nullable final IgfsSecondaryFileSystemPositionedReadable secReader)
         throws IgniteCheckedException {
         assert fileInfo != null;
         assert blockIdx >= 0;
 
         // Schedule block request BEFORE prefetch requests.
-        final IgfsBlockKey key = (fileInfo != null) ? blockKey(blockIdx, fileInfo) : null;
+        final IgfsBlockKey key = blockKey(blockIdx, fileInfo);
 
         if (log.isDebugEnabled() &&
             dataCache.affinity().isPrimaryOrBackup(igfsCtx.kernalContext().discovery().localNode(), key)) {
