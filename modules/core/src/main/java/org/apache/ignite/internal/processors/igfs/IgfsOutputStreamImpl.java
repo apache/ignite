@@ -26,6 +26,7 @@ import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,6 +52,15 @@ class IgfsOutputStreamImpl extends IgfsAbstractOutputStream {
 
     /** Affinity written by this output stream. */
     private IgfsFileAffinityRange streamRange;
+
+    /** Data length in remainder. */
+    protected int remainderDataLen;
+
+    /** Intermediate remainder to keep data. */
+    private byte[] remainder;
+
+    /** Space in file to write data. */
+    protected long space;
 
     /**
      * Constructs file output stream.
@@ -83,8 +93,10 @@ class IgfsOutputStreamImpl extends IgfsAbstractOutputStream {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected long length() {
+    /**
+     * @return Length of file.
+     */
+    private long length() {
         return fileInfo.length();
     }
 
@@ -115,11 +127,6 @@ class IgfsOutputStreamImpl extends IgfsAbstractOutputStream {
             return bufSize / blockSize * blockSize;
 
         return bufSize;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int sendBlockSize() {
-        return fileInfo.blockSize();
     }
 
     /**
@@ -234,18 +241,76 @@ class IgfsOutputStreamImpl extends IgfsAbstractOutputStream {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected byte[] storeDataBlocks(long reservedLen, byte[] remainder, int remainderLen, ByteBuffer src,
-        int srcLen, boolean flush, IgfsFileWorkerBatch batch) throws IgniteCheckedException {
-        return igfsCtx.data().storeDataBlocks(fileInfo, reservedLen, remainder,
-            remainderLen, src, flush, streamRange, batch);
+    /**
+     * Flush remainder.
+     *
+     * @throws IOException If failed.
+     */
+    private void flushRemainder() throws IOException {
+        try {
+            if (remainder != null) {
+
+                remainder = igfsCtx.data().storeDataBlocks(fileInfo, length() + space, null,
+                    0, ByteBuffer.wrap(remainder, 0, remainderDataLen), true, streamRange, batch);
+
+                remainder = null;
+                remainderDataLen = 0;
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw new IOException("Failed to flush data (remainder) [path=" + path + ", space=" + space + ']', e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override protected byte[] storeDataBlocks(long reservedLen, byte[] remainder, int remainderLen, DataInput src,
-        int srcLen, boolean flush, IgfsFileWorkerBatch batch) throws IgniteCheckedException, IOException {
-        return igfsCtx.data().storeDataBlocks(fileInfo, reservedLen, remainder,
-            remainderLen, src, srcLen, flush, streamRange, batch);
+    @Override protected void send(Object data, int writeLen) throws IOException {
+        assert Thread.holdsLock(mux);
+        assert data instanceof ByteBuffer || data instanceof DataInput;
+
+        try {
+            // Increment metrics.
+            bytes += writeLen;
+            space += writeLen;
+
+            int blockSize = fileInfo.blockSize();
+
+            // If data length is not enough to fill full block, fill the remainder and return.
+            if (remainderDataLen + writeLen < blockSize) {
+                if (remainder == null)
+                    remainder = new byte[blockSize];
+                else if (remainder.length != blockSize) {
+                    assert remainderDataLen == remainder.length;
+
+                    byte[] allocated = new byte[blockSize];
+
+                    U.arrayCopy(remainder, 0, allocated, 0, remainder.length);
+
+                    remainder = allocated;
+                }
+
+                if (data instanceof ByteBuffer)
+                    ((ByteBuffer)data).get(remainder, remainderDataLen, writeLen);
+                else
+                    ((DataInput)data).readFully(remainder, remainderDataLen, writeLen);
+
+                remainderDataLen += writeLen;
+            }
+            else {
+                if (data instanceof ByteBuffer) {
+                    remainder = igfsCtx.data().storeDataBlocks(fileInfo, length() + space, remainder,
+                        remainderDataLen, (ByteBuffer)data, false, streamRange, batch);
+                }
+                else {
+                    remainder = igfsCtx.data().storeDataBlocks(fileInfo, length() + space, remainder,
+                        remainderDataLen, (DataInput)data, writeLen, false, streamRange, batch);
+                }
+
+                remainderDataLen = remainder == null ? 0 : remainder.length;
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw new IOException("Failed to store data into file: " + path, e);
+        }
     }
 
     /**

@@ -58,19 +58,10 @@ abstract class IgfsAbstractOutputStream extends IgfsOutputStream {
     protected ByteBuffer buf;
 
     /** Bytes written. */
-    private long bytes;
+    protected long bytes;
 
     /** Time consumed by write operations. */
     protected long time;
-
-    /** Space in file to write data. */
-    protected long space;
-
-    /** Data length in remainder. */
-    protected int remainderDataLen;
-
-    /** Intermediate remainder to keep data. */
-    private byte[] remainder;
 
     /**
      * Constructs file output stream.
@@ -99,51 +90,6 @@ abstract class IgfsAbstractOutputStream extends IgfsOutputStream {
      * @return Optimized buffer size.
      */
     protected abstract int optimizeBufferSize(int bufSize);
-
-    /**
-     * @return Length of file.
-     */
-    protected abstract long length();
-
-    /**
-     * @return Block size for send.
-     */
-    protected abstract int sendBlockSize();
-
-    /**
-     * Stores data blocks read from ByteBuffer.
-     *
-     * @param reservedLen Reserved length.
-     * @param remainder Remainder.
-     * @param remainderLen Remainder length.
-     * @param src Source to read bytes.
-     * @param srcLen Data length to read from source.
-     * @param flush Flush flag.
-     * @param batch Optional secondary file system worker batch.
-     * @return Data remainder if {@code flush} flag is {@code false}.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected abstract byte[] storeDataBlocks(long reservedLen, byte[] remainder, int remainderLen, ByteBuffer src,
-        int srcLen, boolean flush,
-        IgfsFileWorkerBatch batch) throws IgniteCheckedException;
-
-    /**
-     * Stores data blocks read from DataInput.
-     *
-     * @param reservedLen Reserved length.
-     * @param remainder Remainder.
-     * @param remainderLen Remainder length.
-     * @param src Source to read bytes.
-     * @param srcLen Data length to read from source.
-     * @param flush Flush flag.
-     * @param batch Optional secondary file system worker batch.
-     * @return Data remainder if {@code flush} flag is {@code false}.
-     * @throws IgniteCheckedException If failed.
-     * @throws IOException If failed.
-     */
-    protected abstract byte[] storeDataBlocks(long reservedLen, byte[] remainder, int remainderLen, DataInput src,
-        int srcLen, boolean flush,
-        IgfsFileWorkerBatch batch) throws IgniteCheckedException, IOException;
 
     /** {@inheritDoc} */
     @Override public void write(int b) throws IOException {
@@ -229,27 +175,6 @@ abstract class IgfsAbstractOutputStream extends IgfsOutputStream {
     }
 
     /**
-     * Flush remainder.
-     *
-     * @throws IOException If failed.
-     */
-    protected void flushRemainder() throws IOException {
-        try {
-            if (remainder != null) {
-
-                remainder = storeDataBlocks(length() + space, null,
-                    0, ByteBuffer.wrap(remainder, 0, remainderDataLen), remainderDataLen, true, batch);
-
-                remainder = null;
-                remainderDataLen = 0;
-            }
-        }
-        catch (IgniteCheckedException e) {
-            throw new IOException("Failed to flush data (remainder) [path=" + path + ", space=" + space + ']', e);
-        }
-    }
-
-    /**
      * Validate this stream is open.
      *
      * @param in Data input.
@@ -308,55 +233,7 @@ abstract class IgfsAbstractOutputStream extends IgfsOutputStream {
      * @param writeLen Write length.
      * @throws IOException If failed.
      */
-    private void send(Object data, int writeLen) throws IOException {
-        assert Thread.holdsLock(mux);
-        assert data instanceof ByteBuffer || data instanceof DataInput;
-
-        try {
-            // Increment metrics.
-            bytes += writeLen;
-            space += writeLen;
-
-            int blockSize = sendBlockSize();
-
-            // If data length is not enough to fill full block, fill the remainder and return.
-            if (remainderDataLen + writeLen < blockSize) {
-                if (remainder == null)
-                    remainder = new byte[blockSize];
-                else if (remainder.length != blockSize) {
-                    assert remainderDataLen == remainder.length;
-
-                    byte[] allocated = new byte[blockSize];
-
-                    U.arrayCopy(remainder, 0, allocated, 0, remainder.length);
-
-                    remainder = allocated;
-                }
-
-                if (data instanceof ByteBuffer)
-                    ((ByteBuffer)data).get(remainder, remainderDataLen, writeLen);
-                else
-                    ((DataInput)data).readFully(remainder, remainderDataLen, writeLen);
-
-                remainderDataLen += writeLen;
-            }
-            else {
-                if (data instanceof ByteBuffer) {
-                    remainder = storeDataBlocks(length() + space, remainder,
-                        remainderDataLen, (ByteBuffer)data, ((ByteBuffer)data).remaining(), false, batch);
-                }
-                else {
-                    remainder = storeDataBlocks(length() + space, remainder,
-                        remainderDataLen, (DataInput)data, writeLen, false, batch);
-                }
-
-                remainderDataLen = remainder == null ? 0 : remainder.length;
-            }
-        }
-        catch (IgniteCheckedException e) {
-            throw new IOException("Failed to store data into file: " + path, e);
-        }
-    }
+    protected abstract void send(Object data, int writeLen) throws IOException;
 
     /**
      * Allocate new buffer.
@@ -368,7 +245,7 @@ abstract class IgfsAbstractOutputStream extends IgfsOutputStream {
     }
 
     /**
-     *
+     * Updates IGFS metrics when the stream is closed.
      */
     protected void updateMetricsOnClose() {
         IgfsLocalMetrics metrics = igfsCtx.metrics();
