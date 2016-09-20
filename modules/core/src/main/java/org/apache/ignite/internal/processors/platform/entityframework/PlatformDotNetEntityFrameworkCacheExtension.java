@@ -81,7 +81,9 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
                     new PlatformDotNetEntityFrameworkIncreaseVersionProcessor());
 
                 // TODO: This fails. Talk to Sam?
-                assert currentVersions.size() == cnt;
+                if (currentVersions.size() != cnt)
+                    throw new IgniteCheckedException("Failed to update entity set versions, expected: "
+                        + cnt + "actual: " + currentVersions.size());
 
                 /**
                 StringBuilder sb = new StringBuilder("Updated versions: ");
