@@ -51,8 +51,10 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+
 import junit.framework.Assert;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryCollectionFactory;
@@ -73,6 +75,7 @@ import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteProperties;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -716,6 +719,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(obj.s, (short)po.field("_s"));
         assertEquals(obj.i, (int)po.field("_i"));
         assertEquals(obj.l, (long)po.field("_l"));
+        assertEquals(obj.zl, (long)po.field("_zl"));
         assertEquals(obj.f, (float)po.field("_f"), 0);
         assertEquals(obj.d, (double)po.field("_d"), 0);
         assertEquals(obj.c, (char)po.field("_c"));
@@ -841,8 +845,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         assertEquals(clazz, marshalUnmarshal(clazz));
     }
-
-
 
     /**
      *
@@ -3407,6 +3409,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         innerSimple.s = 1;
         innerSimple.i = 1;
         innerSimple.l = 1;
+        innerSimple.zl = 0L;
         innerSimple.f = 1.1f;
         innerSimple.d = 1.1d;
         innerSimple.c = 1;
@@ -3446,6 +3449,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         innerBinary.s = 2;
         innerBinary.i = 2;
         innerBinary.l = 2;
+        innerBinary.zl = 0L;
         innerBinary.f = 2.2f;
         innerBinary.d = 2.2d;
         innerBinary.c = 2;
@@ -3521,6 +3525,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         outer.s = 4;
         outer.i = 4;
         outer.l = 4;
+        outer.zl = 0L;
         outer.f = 4.4f;
         outer.d = 4.4d;
         outer.c = 4;
@@ -3616,6 +3621,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         /** */
         private long l;
+
+        /** */
+        private long zl;
 
         /** */
         private float f;
@@ -3737,6 +3745,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         /** */
         private long l;
+
+        /** */
+        private long zl;
 
         /** */
         private long lRaw;
@@ -3903,6 +3914,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             writer.writeShort("_s", s);
             writer.writeInt("_i", i);
             writer.writeLong("_l", l);
+            writer.writeLong("_zl", zl);
             writer.writeFloat("_f", f);
             writer.writeDouble("_d", d);
             writer.writeChar("_c", c);
@@ -3970,6 +3982,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             s = reader.readShort("_s");
             i = reader.readInt("_i");
             l = reader.readLong("_l");
+            zl = reader.readLong("_zl");
             f = reader.readFloat("_f");
             d = reader.readDouble("_d");
             c = reader.readChar("_c");
@@ -4884,5 +4897,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
     /**
      */
-    private static class SingleHandleB {}
+    private static class SingleHandleB {
+    }
 }

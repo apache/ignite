@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
@@ -705,7 +706,18 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /** {@inheritDoc} */
     @Override public long readLong(String fieldName) throws BinaryObjectException {
-        return findFieldByName(fieldName) && checkFlagNoHandles(LONG) == Flag.NORMAL ? in.readLong() : 0;
+        if (findFieldByName(fieldName)) {
+            switch (checkFlagNoHandles(LONG, ZERO_LONG)) {
+                case LONG:
+                    return in.readLong();
+
+                case ZERO_LONG:
+                case NULL:
+                    return 0L;
+            }
+        }
+
+        return 0L;
     }
 
     /**
@@ -714,7 +726,18 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @throws BinaryObjectException If failed.
      */
     long readLong(int fieldId) throws BinaryObjectException {
-        return findFieldById(fieldId) && checkFlagNoHandles(LONG) == Flag.NORMAL ? in.readLong() : 0;
+        if (findFieldById(fieldId)) {
+            switch (checkFlagNoHandles(LONG, ZERO_LONG)) {
+                case LONG:
+                    return in.readLong();
+
+                case ZERO_LONG:
+                case NULL:
+                    return 0L;
+            }
+        }
+
+        return 0L;
     }
 
     /**
@@ -724,10 +747,16 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      */
     @Nullable Long readLongNullable(int fieldId) throws BinaryObjectException {
         if (findFieldById(fieldId)) {
-            if (checkFlagNoHandles(LONG) == Flag.NORMAL)
-                return in.readLong();
-            else if (checkFlagNoHandles(ZERO_LONG) == Flag.NORMAL)
-                return 0L;
+            switch (checkFlagNoHandles(LONG, ZERO_LONG)) {
+                case LONG:
+                    return in.readLong();
+
+                case ZERO_LONG:
+                    return 0L;
+
+                case NULL:
+                    return null;
+            }
         }
 
         return null;
@@ -1432,6 +1461,29 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
         throw new BinaryObjectException("Unexpected flag value [pos=" + pos + ", expected=" + expFlag +
             ", actual=" + flag + ']');
+    }
+
+    /**
+     * Ensure that type flag is either null or contained by allowed values.
+     *
+     * @param expFlags Expected values.
+     * @return type flag.
+     * @throws BinaryObjectException If flag is neither null, nor expected.
+     */
+    private byte checkFlagNoHandles(byte... expFlags) {
+        byte flag = in.readByte();
+
+        if (flag == NULL)
+            return NULL;
+
+        for (byte f : expFlags)
+            if (f == flag)
+                return f;
+
+        int pos = BinaryUtils.positionForHandle(in);
+
+        throw new BinaryObjectException("Unexpected flag value [pos=" + pos + ", expected=" +
+            Arrays.toString(expFlags) + ", actual=" + flag + ']');
     }
 
     /** {@inheritDoc} */

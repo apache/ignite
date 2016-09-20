@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
@@ -197,6 +198,23 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      */
     public void testLong() throws Exception {
         check("fLong");
+    }
+
+    /**
+     * Test long field within compact mode on.
+    * Compact Long zeroes should become default mode in Apache Ignite 2.0, so this test will be redundant.
+     *
+     * @deprecated Should be removed in Apache Ignite 2.0.
+     * @throws Exception If failed.
+     */
+    @Deprecated
+    public void testLongZero() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_BINARY_COMPACT_LONG_ZEROES, "true");
+
+        check("fLong");
+        check("fLongZero");
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_BINARY_COMPACT_LONG_ZEROES);
     }
 
     /**
@@ -429,27 +447,27 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
             Object expVal = U.field(ctx.obj, fieldName);
 
             if (val instanceof BinaryObject)
-                val = ((BinaryObject) val).deserialize();
+                val = ((BinaryObject)val).deserialize();
 
             if (val != null && val.getClass().isArray()) {
                 assertNotNull(expVal);
 
                 if (val instanceof byte[])
-                    assertTrue(Arrays.equals((byte[]) expVal, (byte[]) val));
+                    assertTrue(Arrays.equals((byte[])expVal, (byte[])val));
                 else if (val instanceof boolean[])
-                    assertTrue(Arrays.equals((boolean[]) expVal, (boolean[]) val));
+                    assertTrue(Arrays.equals((boolean[])expVal, (boolean[])val));
                 else if (val instanceof short[])
-                    assertTrue(Arrays.equals((short[]) expVal, (short[]) val));
+                    assertTrue(Arrays.equals((short[])expVal, (short[])val));
                 else if (val instanceof char[])
-                    assertTrue(Arrays.equals((char[]) expVal, (char[]) val));
+                    assertTrue(Arrays.equals((char[])expVal, (char[])val));
                 else if (val instanceof int[])
-                    assertTrue(Arrays.equals((int[]) expVal, (int[]) val));
+                    assertTrue(Arrays.equals((int[])expVal, (int[])val));
                 else if (val instanceof long[])
-                    assertTrue(Arrays.equals((long[]) expVal, (long[]) val));
+                    assertTrue(Arrays.equals((long[])expVal, (long[])val));
                 else if (val instanceof float[])
-                    assertTrue(Arrays.equals((float[]) expVal, (float[]) val));
+                    assertTrue(Arrays.equals((float[])expVal, (float[])val));
                 else if (val instanceof double[])
-                    assertTrue(Arrays.equals((double[]) expVal, (double[]) val));
+                    assertTrue(Arrays.equals((double[])expVal, (double[])val));
                 else {
                     Object[] expVal0 = (Object[])expVal;
                     Object[] val0 = (Object[])val;
@@ -574,6 +592,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
         public char fChar;
         public int fInt;
         public long fLong;
+        public long fLongZero;
         public float fFloat;
         public double fDouble;
 
@@ -626,17 +645,18 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
             fChar = 3;
             fInt = 4;
             fLong = 5;
+            fLongZero = 0;
             fFloat = 6.6f;
             fDouble = 7.7;
 
-            fByteArr = new byte[] { 1, 2 };
-            fBoolArr = new boolean[] { true, false };
-            fShortArr = new short[] { 2, 3 };
-            fCharArr = new char[] { 3, 4 };
-            fIntArr = new int[] { 4, 5 };
-            fLongArr = new long[] { 5, 6 };
-            fFloatArr = new float[] { 6.6f, 7.7f };
-            fDoubleArr = new double[] { 7.7, 8.8 };
+            fByteArr = new byte[] {1, 2};
+            fBoolArr = new boolean[] {true, false};
+            fShortArr = new short[] {2, 3};
+            fCharArr = new char[] {3, 4};
+            fIntArr = new int[] {4, 5};
+            fLongArr = new long[] {5, 6};
+            fFloatArr = new float[] {6.6f, 7.7f};
+            fDoubleArr = new double[] {7.7, 8.8};
 
             fString = "8";
             fDate = new Date();
@@ -644,15 +664,15 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
             fUuid = UUID.randomUUID();
             fDecimal = new BigDecimal(9);
 
-            fStringArr = new String[] { "8", "9" };
-            fDateArr = new Date[] { new Date(), new Date(new Date().getTime() + 1) };
+            fStringArr = new String[] {"8", "9"};
+            fDateArr = new Date[] {new Date(), new Date(new Date().getTime() + 1)};
             fTimestampArr =
-                new Timestamp[] { new Timestamp(new Date().getTime() + 1), new Timestamp(new Date().getTime() + 2) };
-            fUuidArr = new UUID[] { UUID.randomUUID(), UUID.randomUUID() };
-            fDecimalArr = new BigDecimal[] { new BigDecimal(9), new BigDecimal(10) };
+                new Timestamp[] {new Timestamp(new Date().getTime() + 1), new Timestamp(new Date().getTime() + 2)};
+            fUuidArr = new UUID[] {UUID.randomUUID(), UUID.randomUUID()};
+            fDecimalArr = new BigDecimal[] {new BigDecimal(9), new BigDecimal(10)};
 
             fObj = new TestInnerObject(10);
-            fObjArr = new TestInnerObject[] { new TestInnerObject(10), new TestInnerObject(11) };
+            fObjArr = new TestInnerObject[] {new TestInnerObject(10), new TestInnerObject(11)};
         }
     }
 
