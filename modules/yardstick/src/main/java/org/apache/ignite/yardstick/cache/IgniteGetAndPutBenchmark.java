@@ -18,53 +18,24 @@
 package org.apache.ignite.yardstick.cache;
 
 import java.util.Map;
-import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.IgniteTransactions;
-import org.apache.ignite.yardstick.IgniteBenchmarkUtils;
 import org.apache.ignite.yardstick.cache.model.SampleValue;
-import org.yardstickframework.BenchmarkConfiguration;
 
 /**
  * Ignite benchmark that performs invoke operations.
  */
-public class IgniteInvokeTxBenchmark extends IgniteInvokeBenchmark {
-    /** */
-    private IgniteTransactions txs;
-
-    /** */
-    private Callable<Void> clo;
-
-    /** {@inheritDoc} */
-    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
-        super.setUp(cfg);
-
-        if (!IgniteSystemProperties.getBoolean("SKIP_MAP_CHECK"))
-            ignite().compute().broadcast(new WaitMapExchangeFinishCallable());
-
-        txs = ignite().transactions();
-
-        clo = new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                int key = nextRandom(args.range());
-
-                cache.invoke(key, new SetValueEntryProcessor(new SampleValue(key)));
-
-                return null;
-            }
-        };
-    }
-
+public class IgniteGetAndPutBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        IgniteBenchmarkUtils.doInTransaction(txs, args.txConcurrency(), args.txIsolation(), clo);
+        int key = nextRandom(args.range());
+
+        cache.getAndPut(key, new SampleValue(key));
 
         return true;
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().cache("tx");
+        return ignite().cache("atomic");
     }
 }
