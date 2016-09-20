@@ -383,12 +383,8 @@ public class IgfsDataManager extends IgfsManager {
      * @return Requested data block or {@code null} if nothing found.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public byte[] secondaryDataBlock(
-        final IgfsPath path,
-        final long blockIdx,
-        @Nullable final IgfsSecondaryFileSystemPositionedReadable secReader,
-        final int blockSize)
-        throws IgniteCheckedException {
+    @Nullable public byte[] secondaryDataBlock(IgfsPath path, long blockIdx,
+        IgfsSecondaryFileSystemPositionedReadable secReader, int blockSize) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Reading non-local data block in the secondary file system [path=" +
                 path + ", blockIdx=" + blockIdx + ']');
@@ -399,22 +395,20 @@ public class IgfsDataManager extends IgfsManager {
 
         int read = 0;
 
-        synchronized (secReader) {
-            try {
-                // Delegate to the secondary file system.
-                while (read < blockSize) {
-                    int r = secReader.read(pos + read, res, read, blockSize - read);
+        try {
+            // Delegate to the secondary file system.
+            while (read < blockSize) {
+                int r = secReader.read(pos + read, res, read, blockSize - read);
 
-                    if (r < 0)
-                        break;
+                if (r < 0)
+                    break;
 
-                    read += r;
-                }
+                read += r;
             }
-            catch (IOException e) {
-                throw new IgniteCheckedException("Failed to read data due to secondary file system " +
-                    "exception: " + e.getMessage(), e);
-            }
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to read data due to secondary file system " +
+                "exception: " + e.getMessage(), e);
         }
 
         // If we did not read full block at the end of the file - trim it.
