@@ -28,7 +28,7 @@ import org.apache.ignite.thread.IgniteThread;
 /**
  * Periodically removes expired entities from caches with {@link CacheConfiguration#isEagerTtl()} flag set.
  */
-public class GridCacheSharedTtlCleanupManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
+public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdapter {
     /** Ttl cleanup worker thread sleep interval, ms. */
     private static final long CLEANUP_WORKER_SLEEP_INTERVAL = 500;
 
@@ -36,7 +36,7 @@ public class GridCacheSharedTtlCleanupManager<K, V> extends GridCacheSharedManag
     private static final int CLEANUP_WORKER_ENTRIES_PROCESS_LIMIT = 1000;
 
     /** Cleanup worker. */
-    private CleanupWorker cleanupWorker = null;
+    private CleanupWorker cleanupWorker;
 
     /** Mutex on worker thread creation. */
     private final Object mux = new Object();
@@ -119,6 +119,9 @@ public class GridCacheSharedTtlCleanupManager<K, V> extends GridCacheSharedManag
                 for (GridCacheTtlManager mgr : mgrs) {
                     if (mgr.expire(CLEANUP_WORKER_ENTRIES_PROCESS_LIMIT))
                         expiredRemains = true;
+
+                    if (isCancelled())
+                        return;
                 }
 
                 if (!expiredRemains)

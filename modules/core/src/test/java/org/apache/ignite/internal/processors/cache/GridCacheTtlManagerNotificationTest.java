@@ -87,6 +87,7 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
      */
     private CacheConfiguration createCacheConfiguration(String name) {
         CacheConfiguration ccfg = new CacheConfiguration();
+
         ccfg.setCacheMode(cacheMode);
         ccfg.setEagerTtl(true);
         ccfg.setName(name);

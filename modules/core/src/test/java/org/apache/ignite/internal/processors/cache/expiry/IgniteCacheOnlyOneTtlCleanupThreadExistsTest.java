@@ -22,8 +22,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * One and only one Ttl cleanup worker thread must exists only
- * if al least one cache with set 'eagerTtl' flag exists.
+ * Checks that one and only one Ttl cleanup worker thread must exists, and only
+ * if at least one cache with set 'eagerTtl' flag exists.
  */
 public class IgniteCacheOnlyOneTtlCleanupThreadExistsTest extends GridCommonAbstractTest {
     /** */
@@ -72,6 +72,7 @@ public class IgniteCacheOnlyOneTtlCleanupThreadExistsTest extends GridCommonAbst
      */
     private CacheConfiguration createCacheConfiguration(String name, boolean eagerTtl) {
         CacheConfiguration ccfg = new CacheConfiguration();
+
         ccfg.setEagerTtl(eagerTtl);
         ccfg.setName(name);
 
@@ -79,7 +80,7 @@ public class IgniteCacheOnlyOneTtlCleanupThreadExistsTest extends GridCommonAbst
     }
 
     /**
-     * @param exists {@code True} if ttl cleanup worker thread execpted.
+     * @param exists {@code True} if ttl cleanup worker thread expected.
      * @throws Exception If failed.
      */
     private void checkCleanupThreadExists(boolean exists) throws Exception {
