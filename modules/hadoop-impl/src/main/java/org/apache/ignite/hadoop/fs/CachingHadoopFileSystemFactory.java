@@ -17,14 +17,6 @@
 
 package org.apache.ignite.hadoop.fs;
 
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.hadoop.fs.HadoopFileSystemsUtils;
-import org.apache.ignite.internal.processors.hadoop.fs.HadoopLazyConcurrentMap;
-
-import java.io.IOException;
-
 /**
  * Caching Hadoop file system factory. Caches {@code FileSystem} instances on per-user basis. Doesn't rely on
  * built-in Hadoop {@code FileSystem} caching mechanics. Separate {@code FileSystem} instance is created for each
@@ -40,44 +32,10 @@ public class CachingHadoopFileSystemFactory extends BasicHadoopFileSystemFactory
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Per-user file system cache. */
-    private final transient HadoopLazyConcurrentMap<String, FileSystem> cache = new HadoopLazyConcurrentMap<>(
-        new HadoopLazyConcurrentMap.ValueFactory<String, FileSystem>() {
-            @Override public FileSystem createValue(String key) throws IOException {
-                return CachingHadoopFileSystemFactory.super.getWithMappedName(key);
-            }
-        }
-    );
-
     /**
-     * Public non-arg constructor.
+     * Constructor.
      */
     public CachingHadoopFileSystemFactory() {
-        // noop
-    }
-
-    /** {@inheritDoc} */
-    @Override public FileSystem getWithMappedName(String name) throws IOException {
-        return cache.getOrCreate(name);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void start() throws IgniteException {
-        super.start();
-
-        // Disable caching.
-        cfg.setBoolean(HadoopFileSystemsUtils.disableFsCachePropertyName(fullUri.getScheme()), true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stop() throws IgniteException {
-        super.stop();
-
-        try {
-            cache.close();
-        }
-        catch (IgniteCheckedException ice) {
-            throw new IgniteException(ice);
-        }
+        // No-op.
     }
 }

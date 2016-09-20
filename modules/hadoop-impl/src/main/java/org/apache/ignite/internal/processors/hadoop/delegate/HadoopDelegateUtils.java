@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.hadoop.delegate;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.fs.BasicHadoopFileSystemFactory;
+import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
+import org.apache.ignite.hadoop.fs.KerberosHadoopFileSystemFactory;
 
 /**
  * Utility methods for Hadoop delegates.
@@ -37,8 +39,12 @@ public class HadoopDelegateUtils {
 
         if (proxy instanceof IgniteHadoopIgfsSecondaryFileSystem)
             res = new HadoopIgfsSecondaryFileSystemDelegateImpl((IgniteHadoopIgfsSecondaryFileSystem)proxy);
+        else if (proxy instanceof KerberosHadoopFileSystemFactory)
+            res = new HadoopKerberosFileSystemFactoryDelegate((KerberosHadoopFileSystemFactory)proxy);
+        else if (proxy instanceof CachingHadoopFileSystemFactory)
+            res = new HadoopCachingFileSystemFactoryDelegate((CachingHadoopFileSystemFactory)proxy);
         else if (proxy instanceof BasicHadoopFileSystemFactory)
-            res = new BasicHadoopFileSystemFactoryDelegate((BasicHadoopFileSystemFactory)proxy);
+            res = new HadoopBasicFileSystemFactoryDelegate((BasicHadoopFileSystemFactory)proxy);
         else
             throw new IgniteException("Unsupported proxy: " + proxy);
 

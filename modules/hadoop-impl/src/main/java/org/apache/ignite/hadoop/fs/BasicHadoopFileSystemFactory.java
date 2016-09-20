@@ -20,7 +20,7 @@ package org.apache.ignite.hadoop.fs;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.util.KerberosUserNameMapper;
 import org.apache.ignite.hadoop.util.UserNameMapper;
-import org.apache.ignite.internal.processors.hadoop.delegate.BasicHadoopFileSystemFactoryDelegate;
+import org.apache.ignite.internal.processors.hadoop.delegate.HadoopBasicFileSystemFactoryDelegate;
 import org.apache.ignite.internal.processors.hadoop.delegate.HadoopDelegateUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
@@ -50,7 +50,7 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
     private UserNameMapper usrNameMapper;
 
     /** Delegate. */
-    private transient volatile BasicHadoopFileSystemFactoryDelegate target;
+    private transient volatile HadoopBasicFileSystemFactoryDelegate target;
 
     /**
      * Constructor.

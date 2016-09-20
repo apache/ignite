@@ -36,7 +36,7 @@ import java.util.Arrays;
 /**
  * Basic Hadoop file system factory delegate.
  */
-public class BasicHadoopFileSystemFactoryDelegate implements HadoopFileSystemFactoryDelegate {
+public class HadoopBasicFileSystemFactoryDelegate implements HadoopFileSystemFactoryDelegate {
     /** Configuration of the secondary filesystem, never null. */
     protected final Configuration cfg;
 
@@ -51,7 +51,7 @@ public class BasicHadoopFileSystemFactoryDelegate implements HadoopFileSystemFac
      *
      * @param proxy Proxy.
      */
-    public BasicHadoopFileSystemFactoryDelegate(BasicHadoopFileSystemFactory proxy) {
+    public HadoopBasicFileSystemFactoryDelegate(BasicHadoopFileSystemFactory proxy) {
         cfg = HadoopUtils.safeCreateConfiguration();
 
         if (proxy.getConfigPaths() != null) {
