@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.database;
 
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.database.MetadataStorage;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
@@ -94,8 +95,9 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
                 MetadataStorage metaStore = storeMap.get(cacheId);
 
                 if (metaStore == null) {
-                    metaStore = new MetadataStorage(mem, null, new AtomicLong(), cacheId, 0, PageMemory.FLAG_IDX,
-                        null, mem.allocatePage(cacheId, 0, PageMemory.FLAG_IDX), true);
+                    metaStore = new MetadataStorage(mem, null, new AtomicLong(), cacheId,
+                        PageIdAllocator.INDEX_PARTITION, PageMemory.FLAG_IDX,
+                        null, mem.allocatePage(cacheId, PageIdAllocator.INDEX_PARTITION, PageMemory.FLAG_IDX), true);
 
                     storeMap.put(cacheId, metaStore);
                 }

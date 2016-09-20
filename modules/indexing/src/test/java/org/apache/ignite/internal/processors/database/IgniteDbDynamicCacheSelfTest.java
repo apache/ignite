@@ -121,7 +121,7 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
 
         ccfg.setIndexedTypes(Integer.class, String.class);
 
-        long finishTime = U.currentTimeMillis() + getTestTimeout() / 2;
+        long finishTime = U.currentTimeMillis() + 20_000;
 
         int iteration = 0;
 

@@ -64,6 +64,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 
 /**
  *
@@ -571,7 +572,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         long pageId = cctx.shared().database().globalReuseList().takeRecycledPage();
 
         if (pageId == 0L)
-            pageId = cctx.shared().database().pageMemory().allocatePage(cctx.cacheId(), 0, FLAG_IDX);
+            pageId = cctx.shared().database().pageMemory().allocatePage(cctx.cacheId(), INDEX_PARTITION, FLAG_IDX);
 
         return pageId;
     }

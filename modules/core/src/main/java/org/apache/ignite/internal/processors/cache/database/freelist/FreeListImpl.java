@@ -314,8 +314,6 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
                 }
             }
 
-            assert pageId == 0 || PageIdUtils.partId(pageId) == row.partition();
-
             try (Page page = pageId == 0 ? allocateDataPage(row.partition()) : pageMem.page(cacheId, pageId)) {
                 // If it is an existing page, we do not need to initialize it.
                 DataPageIO init = reuseBucket || pageId == 0L ? DataPageIO.VERSIONS.latest() : null;
