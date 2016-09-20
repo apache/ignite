@@ -474,6 +474,15 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES = "IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES";
 
     /**
+     * When set to {@code true} Long zeroes will be encoded with with special type and no value included,
+     * that saves 8-bytes per field. Otherwise Long zeroes will be encoded in old manner, preserving compatibility.
+     * <p>
+     * @deprecated Should be removed in Apache Ignite 2.0.
+     */
+    @Deprecated
+    public static final String IGNITE_BINARY_COMPACT_LONG_ZEROES = "IGNITE_BINARY_COMPACT_LONG_ZEROES";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

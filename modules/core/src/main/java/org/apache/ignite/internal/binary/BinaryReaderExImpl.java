@@ -79,6 +79,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TIMESTAMP_A
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UNREGISTERED_TYPE_ID;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UUID;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UUID_ARR;
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.ZERO_LONG;
 
 /**
  * Binary reader implementation.
@@ -421,6 +422,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
         return (T)obj;
     }
+
     /** {@inheritDoc} */
     @Override public byte readByte(String fieldName) throws BinaryObjectException {
         return findFieldByName(fieldName) && checkFlagNoHandles(BYTE) == Flag.NORMAL ? in.readByte() : 0;
@@ -721,7 +723,14 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @throws BinaryObjectException In case of error.
      */
     @Nullable Long readLongNullable(int fieldId) throws BinaryObjectException {
-        return findFieldById(fieldId) && checkFlagNoHandles(LONG) == Flag.NORMAL ? in.readLong() : null;
+        if (findFieldById(fieldId)) {
+            if (checkFlagNoHandles(LONG) == Flag.NORMAL)
+                return in.readLong();
+            else if (checkFlagNoHandles(ZERO_LONG) == Flag.NORMAL)
+                return 0L;
+        }
+
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -1521,6 +1530,11 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
                 break;
 
+            case ZERO_LONG:
+                obj = 0L;
+
+                break;
+
             case FLOAT:
                 obj = in.readFloat();
 
@@ -2053,7 +2067,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /** {@inheritDoc} */
     @Override public long skip(long n) throws IOException {
-        return skipBytes((int) n);
+        return skipBytes((int)n);
     }
 
     /** {@inheritDoc} */
