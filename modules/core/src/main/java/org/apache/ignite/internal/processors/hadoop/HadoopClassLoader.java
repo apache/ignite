@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.hadoop;
 
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -117,6 +118,8 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
             return "hadoop-task-" + info.jobId() + "-" + info.type() + "-" + info.taskNumber();
     }
 
+    private static final String[] DEFAULT_OPTIONAL_LIBS_TO_BE_LOADED = { "hadoop" };
+
     /**
      * Constructor.
      *
@@ -206,20 +209,30 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
      * be loaded only once.
      */
     private static void setNativeLibrariesToBeInjectedIfNeeded(HadoopClassLoader instance, String[] libs) {
+        System.out.println("### Loading libs: " + libs);
+
         if (libs == null)
             return;
-
-        boolean created = false;
+//
+//        boolean created = false;
 
         // 1. If needed, init the native lib data collection:
         if (nativeLibrariesToBeInjected == null) {
             synchronized (HadoopClassLoader.class) {
                 if (nativeLibrariesToBeInjected == null) {
+                    LinkedHashSet<Object> natives0 = getNativeLibraries(APP_CLS_LDR);
+
                     instance.runLoadingCode(libs);
 
-                    nativeLibrariesToBeInjected = instance.collectNativeLibraries();
+                    LinkedHashSet<Object> natives1 = getNativeLibraries(APP_CLS_LDR);
 
-                    created = true;
+                    natives1.removeAll(natives0);
+
+                    nativeLibrariesToBeInjected = Collections.unmodifiableCollection(natives1);
+
+                    System.out.println("### Collected loaded libraries: " + nativeLibrariesToBeInjected);
+//
+//                    created = true;
                 }
             }
         }
@@ -227,9 +240,19 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
         assert nativeLibrariesToBeInjected != null;
 
         // 2. Inject libraries:
-        if (!created)
+        //if (!created)
             // This is an instance that did not load the libs:
-            instance.injectNatives();
+        instance.injectNatives();
+    }
+
+    /**
+     *
+     * @return
+     */
+    private static LinkedHashSet<Object> getNativeLibraries(ClassLoader cl) {
+        Vector<Object> curVector = U.field(cl, "nativeLibraries");
+
+        return new LinkedHashSet<>(curVector);
     }
 
     /**
@@ -255,7 +278,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     private Collection<Object> collectNativeLibraries() {
         List<Object> target = new ArrayList<>();
 
-        ClassLoader ldr = this;
+        ClassLoader ldr = APP_CLS_LDR;
 
         while (ldr != null) {
             collectNativeLibrariesFromLoader(ldr, target);
@@ -271,17 +294,17 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
      */
     private void runLoadingCode(String[] libs) {
         try {
-            // TODO: "XXX" is a special class loaded by Hadoop class loader (simulating Hadoop class).
-            // NB: this sample class must *not* cause loading of any natives.
-            Class<?> sampleCls = this.loadClass(XXX.class.getName(), true);
-
-            assert sampleCls != null;
-            assert sampleCls.getClassLoader() == this;
+//            // TODO: "XXX" is a special class loaded by Hadoop class loader (simulating Hadoop class).
+//            // NB: this sample class must *not* cause loading of any natives.
+//            Class<?> sampleCls = this.loadClass(XXX.class.getName(), true);
+//
+//            assert sampleCls != null;
+//            assert sampleCls.getClassLoader() == this;
 
             Collection<String> loadedLibs = new ArrayList<>();
 
             for (String lib: libs) {
-                boolean ok = LoadHelper.tryLoad(sampleCls, lib);
+                boolean ok = LoadHelper.tryLoad(null, lib);
 
                 if (ok)
                     loadedLibs.add(lib);

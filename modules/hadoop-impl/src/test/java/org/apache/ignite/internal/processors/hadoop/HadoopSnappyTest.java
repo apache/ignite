@@ -58,7 +58,7 @@ public class HadoopSnappyTest extends GridCommonAbstractTest {
             U.invoke(cls, null, "checkSnappy");
         }
 
-        //checkSnappy();
+        checkSnappy();
     }
 
     /**

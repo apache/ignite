@@ -7,18 +7,18 @@ import java.lang.reflect.Method;
  */
 public class LoadHelper {
 
-    private static Method method;
-
-    static {
-        try {
-            method = ClassLoader.class.getDeclaredMethod("loadLibrary",
-                new Class[] {Class.class, String.class, boolean.class});
-
-            method.setAccessible(true);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+//    private static Method method;
+//
+//    static {
+//        try {
+//            method = ClassLoader.class.getDeclaredMethod("loadLibrary",
+//                new Class[] {Class.class, String.class, boolean.class});
+//
+//            method.setAccessible(true);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//    }
 
     /**
      * Utility method that loads given class by name with the given "caller" class.
@@ -27,7 +27,7 @@ public class LoadHelper {
      */
     public static boolean tryLoad(Class caller, String libName) {
         try {
-            method.invoke(null, new Object[] {caller/*caller class*/, libName /*lib*/ , false/*isAbsolute*/ });
+            System.loadLibrary(libName);
 
             return true;
         }
@@ -37,6 +37,11 @@ public class LoadHelper {
 
             return false;
         }
+    }
+
+
+    public static void main(String[] args) {
+        System.load("/home/ivan/hadoop-2.6.0/lib/native/libhadoop.so");
     }
 
 }
