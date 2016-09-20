@@ -117,7 +117,7 @@ public class IgfsInputStreamImpl extends IgfsInputStream implements IgfsSecondar
     private int blockSize;
 
     /** Block size to read. */
-    private long blocksCount;
+    private long blocksCnt;
 
     /** Proxy mode. */
     private boolean proxy;
@@ -132,7 +132,7 @@ public class IgfsInputStreamImpl extends IgfsInputStream implements IgfsSecondar
      * @param secReader Optional secondary file system reader.
      * @param len File length.
      * @param blockSize Block size.
-     * @param blocksCount Blocks count.
+     * @param blocksCnt Blocks count.
      * @param proxy Proxy mode flag.
      */
     IgfsInputStreamImpl(
@@ -144,7 +144,7 @@ public class IgfsInputStreamImpl extends IgfsInputStream implements IgfsSecondar
         @Nullable IgfsSecondaryFileSystemPositionedReadable secReader,
         long len,
         int blockSize,
-        long blocksCount,
+        long blocksCnt,
         boolean proxy) {
         assert igfsCtx != null;
         assert path != null;
@@ -157,7 +157,7 @@ public class IgfsInputStreamImpl extends IgfsInputStream implements IgfsSecondar
         this.secReader = secReader;
         this.len = len;
         this.blockSize = blockSize;
-        this.blocksCount = blocksCount;
+        this.blocksCnt = blocksCnt;
         this.proxy = proxy;
 
         log = igfsCtx.kernalContext().log(IgfsInputStream.class);
@@ -513,7 +513,7 @@ public class IgfsInputStreamImpl extends IgfsInputStream implements IgfsSecondar
 
         int blockSize = this.blockSize;
 
-        if (blockIdx == blocksCount - 1)
+        if (blockIdx == blocksCnt - 1)
             blockSize = (int)(length() % blockSize);
 
         // If part of the file was reserved for writing, but was not actually written.

@@ -1001,20 +1001,18 @@ public final class IgfsImpl implements IgfsEx {
                         IgfsSecondaryFileSystemPositionedReadable secReader =
                             new IgfsLazySecondaryFileSystemPositionedReadable(secondaryFs, path, bufSize);
 
-                        long length = info.length();
+                        long len = info.length();
 
-                        int blockSize = info.blockSize();
+                        int blockSize = info.blockSize() > 0 ? info.blockSize() : cfg.getBlockSize();
 
-                        blockSize = (blockSize > 0) ? blockSize : cfg.getBlockSize();
+                        long blockCnt = len / blockSize;
 
-                        long blockCount = length / blockSize;
-
-                        if (length % blockSize != 0)
-                            ++blockCount;
+                        if (len % blockSize != 0)
+                            blockCnt++;
 
                         IgfsInputStream os = new IgfsInputStreamImpl(igfsCtx, path, null,
                             cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, secReader,
-                            info.length(), blockSize, blockCount, true);
+                            info.length(), blockSize, blockCnt, true);
 
                         IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EVT_IGFS_FILE_OPENED_READ);
 
