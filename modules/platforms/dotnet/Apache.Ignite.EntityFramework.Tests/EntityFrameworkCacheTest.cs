@@ -638,12 +638,7 @@ namespace Apache.Ignite.EntityFramework.Tests
         {
             // Run in a loop to generate a bunch of outdated cache entries.
             for (var i = 0; i < 100; i++)
-            {
-                using (var ctx = GetDbContext())
-                {
-                    CreateRemoveBlog(ctx);
-                }
-            }
+                CreateRemoveBlog();
 
             // Only one version of data is in the cache.
             Assert.AreEqual(1, _cache.GetSize());
