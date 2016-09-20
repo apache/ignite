@@ -579,7 +579,8 @@ public class IgfsInputStreamImpl extends IgfsInputStream implements IgfsSecondar
                 @Override public void run() {
                     try {
                         fut.onDone(igfsCtx.data().secondaryDataBlock(path, blockIdx, secReader, blockSize));
-                    } catch (Throwable e) {
+                    }
+                    catch (Throwable e) {
                         fut.onDone(null, e);
                     }
                 }
