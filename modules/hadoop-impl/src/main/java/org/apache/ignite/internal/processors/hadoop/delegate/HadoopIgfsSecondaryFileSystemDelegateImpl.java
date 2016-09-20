@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.hadoop.fs;
+package org.apache.ignite.internal.processors.hadoop.delegate;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.ParentNotDirectoryException;
@@ -25,9 +24,10 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathExistsException;
 import org.apache.hadoop.fs.PathIsNotEmptyDirectoryException;
 import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
+import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
+import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.IgfsDirectoryNotEmptyException;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
@@ -37,15 +37,13 @@ import org.apache.ignite.igfs.IgfsPathAlreadyExistsException;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.igfs.IgfsUserContext;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
-import org.apache.ignite.internal.processors.hadoop.HadoopPayloadAware;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsProperties;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.processors.igfs.IgfsEntryInfo;
 import org.apache.ignite.internal.processors.igfs.IgfsFileImpl;
-import org.apache.ignite.internal.processors.igfs.IgfsSecondaryFileSystemV2;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteOutClosure;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
@@ -59,189 +57,35 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Callable;
 
 /**
- * Secondary file system which delegates calls to an instance of Hadoop {@link FileSystem}.
- * <p>
- * Target {@code FileSystem}'s are created on per-user basis using passed {@link HadoopFileSystemFactory}.
+ * Secondary file system implementation.
  */
-public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSystemV2, LifecycleAware,
-    HadoopPayloadAware {
+@SuppressWarnings("unused")
+public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSecondaryFileSystemDelegate {
     /** The default user name. It is used if no user context is set. */
-    private String dfltUsrName;
+    private final String dfltUsrName;
 
     /** Factory. */
-    private HadoopFileSystemFactory fsFactory;
-
-    /**
-     * Default constructor for Spring.
-     */
-    public IgniteHadoopIgfsSecondaryFileSystem() {
-        // No-op.
-    }
-
-    /**
-     * Simple constructor that is to be used by default.
-     *
-     * @param uri URI of file system.
-     * @throws IgniteCheckedException In case of error.
-     * @deprecated Use {@link #getFileSystemFactory()} instead.
-     */
-    @Deprecated
-    public IgniteHadoopIgfsSecondaryFileSystem(String uri) throws IgniteCheckedException {
-        this(uri, null, null);
-    }
+    private final HadoopFileSystemFactoryDelegate factory;
 
     /**
      * Constructor.
      *
-     * @param uri URI of file system.
-     * @param cfgPath Additional path to Hadoop configuration.
-     * @throws IgniteCheckedException In case of error.
-     * @deprecated Use {@link #getFileSystemFactory()} instead.
-     */
-    @Deprecated
-    public IgniteHadoopIgfsSecondaryFileSystem(@Nullable String uri, @Nullable String cfgPath)
-        throws IgniteCheckedException {
-        this(uri, cfgPath, null);
-    }
+     * @param proxy Proxy.
+    */
+    @SuppressWarnings("unused")
+    public HadoopIgfsSecondaryFileSystemDelegateImpl(IgniteHadoopIgfsSecondaryFileSystem proxy) {
+        assert proxy.getFileSystemFactory() != null;
 
-    /**
-     * Constructor.
-     *
-     * @param uri URI of file system.
-     * @param cfgPath Additional path to Hadoop configuration.
-     * @param userName User name.
-     * @throws IgniteCheckedException In case of error.
-     * @deprecated Use {@link #getFileSystemFactory()} instead.
-     */
-    @Deprecated
-    public IgniteHadoopIgfsSecondaryFileSystem(@Nullable String uri, @Nullable String cfgPath,
-        @Nullable String userName) throws IgniteCheckedException {
-        setDefaultUserName(userName);
+        dfltUsrName = IgfsUtils.fixUserName(proxy.getDefaultUserName());
 
-        CachingHadoopFileSystemFactory fac = new CachingHadoopFileSystemFactory();
+        HadoopFileSystemFactory factory0 = proxy.getFileSystemFactory();
 
-        fac.setUri(uri);
+        if (factory0 == null)
+            factory0 = new CachingHadoopFileSystemFactory();
 
-        if (cfgPath != null)
-            fac.setConfigPaths(cfgPath);
-
-        setFileSystemFactory(fac);
-    }
-
-    /**
-     * Gets default user name.
-     * <p>
-     * Defines user name which will be used during file system invocation in case no user name is defined explicitly
-     * through {@link FileSystem#get(URI, Configuration, String)}.
-     * <p>
-     * Also this name will be used if you manipulate {@link IgniteFileSystem} directly and do not set user name
-     * explicitly using {@link IgfsUserContext#doAs(String, IgniteOutClosure)} or
-     * {@link IgfsUserContext#doAs(String, Callable)} methods.
-     * <p>
-     * If not set value of system property {@code "user.name"} will be used. If this property is not set either,
-     * {@code "anonymous"} will be used.
-     *
-     * @return Default user name.
-     */
-    @Nullable public String getDefaultUserName() {
-        return dfltUsrName;
-    }
-
-    /**
-     * Sets default user name. See {@link #getDefaultUserName()} for details.
-     *
-     * @param dfltUsrName Default user name.
-     */
-    public void setDefaultUserName(@Nullable String dfltUsrName) {
-        this.dfltUsrName = dfltUsrName;
-    }
-
-    /**
-     * Gets secondary file system factory.
-     * <p>
-     * This factory will be used whenever a call to a target {@link FileSystem} is required.
-     * <p>
-     * If not set, {@link CachingHadoopFileSystemFactory} will be used.
-     *
-     * @return Secondary file system factory.
-     */
-    public HadoopFileSystemFactory getFileSystemFactory() {
-        return fsFactory;
-    }
-
-    /**
-     * Sets secondary file system factory. See {@link #getFileSystemFactory()} for details.
-     *
-     * @param factory Secondary file system factory.
-     */
-    public void setFileSystemFactory(HadoopFileSystemFactory factory) {
-        this.fsFactory = factory;
-    }
-
-    /**
-     * Convert IGFS path into Hadoop path.
-     *
-     * @param path IGFS path.
-     * @return Hadoop path.
-     */
-    private Path convert(IgfsPath path) {
-        URI uri = fileSystemForUser().getUri();
-
-        return new Path(uri.getScheme(), uri.getAuthority(), path.toString());
-    }
-
-    /**
-     * Heuristically checks if exception was caused by invalid HDFS version and returns appropriate exception.
-     *
-     * @param e Exception to check.
-     * @param detailMsg Detailed error message.
-     * @return Appropriate exception.
-     */
-    private IgfsException handleSecondaryFsError(IOException e, String detailMsg) {
-        return cast(detailMsg, e);
-    }
-
-    /**
-     * Cast IO exception to IGFS exception.
-     *
-     * @param e IO exception.
-     * @return IGFS exception.
-     */
-    public static IgfsException cast(String msg, IOException e) {
-        if (e instanceof FileNotFoundException)
-            return new IgfsPathNotFoundException(e);
-        else if (e instanceof ParentNotDirectoryException)
-            return new IgfsParentNotDirectoryException(msg, e);
-        else if (e instanceof PathIsNotEmptyDirectoryException)
-            return new IgfsDirectoryNotEmptyException(e);
-        else if (e instanceof PathExistsException)
-            return new IgfsPathAlreadyExistsException(msg, e);
-        else
-            return new IgfsException(msg, e);
-    }
-
-    /**
-     * Convert Hadoop FileStatus properties to map.
-     *
-     * @param status File status.
-     * @return IGFS attributes.
-     */
-    private static Map<String, String> properties(FileStatus status) {
-        FsPermission perm = status.getPermission();
-
-        if (perm == null)
-            perm = FsPermission.getDefault();
-
-        HashMap<String, String> res = new HashMap<>(3);
-
-        res.put(IgfsUtils.PROP_PERMISSION, String.format("%04o", perm.toShort()));
-        res.put(IgfsUtils.PROP_USER_NAME, status.getOwner());
-        res.put(IgfsUtils.PROP_GROUP_NAME, status.getGroup());
-
-        return res;
+        factory = HadoopDelegateUtils.fileSystemFactoryDelegate(factory0);
     }
 
     /** {@inheritDoc} */
@@ -527,13 +371,77 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
         }
     }
 
+    /** {@inheritDoc} */
+    public void start() {
+        factory.start();
+    }
+
+    /** {@inheritDoc} */
+    public void stop() {
+        factory.stop();
+    }
+
     /**
-     * Gets the underlying {@link FileSystem}.
-     * This method is used solely for testing.
-     * @return the underlying Hadoop {@link FileSystem}.
+     * Convert IGFS path into Hadoop path.
+     *
+     * @param path IGFS path.
+     * @return Hadoop path.
      */
-    public FileSystem fileSystem() {
-        return fileSystemForUser();
+    private Path convert(IgfsPath path) {
+        URI uri = fileSystemForUser().getUri();
+
+        return new Path(uri.getScheme(), uri.getAuthority(), path.toString());
+    }
+
+    /**
+     * Heuristically checks if exception was caused by invalid HDFS version and returns appropriate exception.
+     *
+     * @param e Exception to check.
+     * @param detailMsg Detailed error message.
+     * @return Appropriate exception.
+     */
+    private IgfsException handleSecondaryFsError(IOException e, String detailMsg) {
+        return cast(detailMsg, e);
+    }
+
+    /**
+     * Cast IO exception to IGFS exception.
+     *
+     * @param e IO exception.
+     * @return IGFS exception.
+     */
+    public static IgfsException cast(String msg, IOException e) {
+        if (e instanceof FileNotFoundException)
+            return new IgfsPathNotFoundException(e);
+        else if (e instanceof ParentNotDirectoryException)
+            return new IgfsParentNotDirectoryException(msg, e);
+        else if (e instanceof PathIsNotEmptyDirectoryException)
+            return new IgfsDirectoryNotEmptyException(e);
+        else if (e instanceof PathExistsException)
+            return new IgfsPathAlreadyExistsException(msg, e);
+        else
+            return new IgfsException(msg, e);
+    }
+
+    /**
+     * Convert Hadoop FileStatus properties to map.
+     *
+     * @param status File status.
+     * @return IGFS attributes.
+     */
+    private static Map<String, String> properties(FileStatus status) {
+        FsPermission perm = status.getPermission();
+
+        if (perm == null)
+            perm = FsPermission.getDefault();
+
+        HashMap<String, String> res = new HashMap<>(3);
+
+        res.put(IgfsUtils.PROP_PERMISSION, String.format("%04o", perm.toShort()));
+        res.put(IgfsUtils.PROP_USER_NAME, status.getOwner());
+        res.put(IgfsUtils.PROP_GROUP_NAME, status.getGroup());
+
+        return res;
     }
 
     /**
@@ -549,7 +457,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
         assert !F.isEmpty(user);
 
         try {
-            return fsFactory.get(user);
+            return (FileSystem)factory.get(user);
         }
         catch (IOException ioe) {
             throw new IgniteException(ioe);
@@ -557,24 +465,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteException {
-        dfltUsrName = IgfsUtils.fixUserName(dfltUsrName);
-
-        if (fsFactory == null)
-            fsFactory = new CachingHadoopFileSystemFactory();
-
-        if (fsFactory instanceof LifecycleAware)
-            ((LifecycleAware) fsFactory).start();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stop() throws IgniteException {
-        if (fsFactory instanceof LifecycleAware)
-            ((LifecycleAware)fsFactory).stop();
-    }
-
-    /** {@inheritDoc} */
-    @Override public HadoopFileSystemFactory getPayload() {
-        return fsFactory;
+    @Override public String toString() {
+        return S.toString(HadoopIgfsSecondaryFileSystemDelegateImpl.class, this);
     }
 }
