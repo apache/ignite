@@ -19,6 +19,7 @@
 // ReSharper disable UnusedAutoPropertyAccessor.Local
 // ReSharper disable ClassWithVirtualMembersNeverInherited.Local
 // ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable VirtualMemberNeverOverridden.Global
 namespace Apache.Ignite.EntityFramework.Tests
 {
     using System;
@@ -59,16 +60,20 @@ namespace Apache.Ignite.EntityFramework.Tests
         /** */
         private ICache<object, object> _metaCache;
 
+        /** */
+        private IIgnite _ignite2;
+
         /// <summary>
         /// Fixture set up.
         /// </summary>
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
-            // Prepare SQL CE support.
-
             // Start Ignite.
-            var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+            var cfg = TestUtils.GetTestConfiguration();
+            var ignite = Ignition.Start(cfg);
+
+            _ignite2 = Ignition.Start(new IgniteConfiguration(cfg) {GridName = "grid2"});
 
             // Create SQL CE database in a temp file.
             using (var ctx = GetDbContext())
@@ -636,29 +641,32 @@ namespace Apache.Ignite.EntityFramework.Tests
         {
             // Run in a loop to generate a bunch of outdated cache entries.
             for (var i = 0; i < 100; i++)
-            {
-                using (var ctx = GetDbContext())
-                {
-                    var blog = new Blog {Name = "my blog"};
-                    ctx.Blogs.Add(blog);
-                    ctx.SaveChanges();
-
-                    Assert.AreEqual(1, ctx.Blogs.Count());
-
-                    ctx.Blogs.Remove(blog);
-                    ctx.SaveChanges();
-
-                    Assert.AreEqual(0, ctx.Blogs.Count());
-                }
-            }
+                CreateRemoveBlog();
 
             // Only one version of data is in the cache.
             Assert.AreEqual(1, _cache.GetSize());
             Assert.AreEqual(1, _metaCache.GetSize());
         }
 
+        private static void CreateRemoveBlog()
+        {
+            using (var ctx = GetDbContext())
+            {
+                var blog = new Blog {Name = "my blog"};
+                ctx.Blogs.Add(blog);
+                ctx.SaveChanges();
+
+                Assert.AreEqual(1, ctx.Blogs.Count());
+
+                ctx.Blogs.Remove(blog);
+                ctx.SaveChanges();
+
+                Assert.AreEqual(0, ctx.Blogs.Count());
+            }
+        }
+
         /// <summary>
-        /// Tests the old entries cleanup in multithreaded scenario.
+        /// Tests the old entries cleanup in multi threaded scenario.
         /// </summary>
         [Test]
         [Category(TestUtils.CategoryIntensive)]
@@ -714,9 +722,25 @@ namespace Apache.Ignite.EntityFramework.Tests
             return new BloggingContext(ConnectionString);
         }
 
+        /// <summary>
+        /// Gets the database context for the second grid.
+        /// </summary>
+        private static BloggingContext GetDbContext2()
+        {
+            return new BloggingContext2(ConnectionString);
+        }
+
         private class MyDbConfiguration : IgniteDbConfiguration
         {
             public MyDbConfiguration() : base(Ignition.GetIgnite(), null, null, Policy)
+            {
+                // No-op.
+            }
+        }
+
+        private class MyDbConfiguration2 : IgniteDbConfiguration
+        {
+            public MyDbConfiguration2() : base(Ignition.GetIgnite("grid2"), null, null, Policy)
             {
                 // No-op.
             }
@@ -733,6 +757,18 @@ namespace Apache.Ignite.EntityFramework.Tests
             public virtual DbSet<Blog> Blogs { get; set; }
             public virtual DbSet<Post> Posts { get; set; }
             public virtual DbSet<ArrayReaderTest> Tests { get; set; }
+        }
+
+        /// <summary>
+        /// Context that uses second grid.
+        /// </summary>
+        [DbConfigurationType(typeof(MyDbConfiguration2))]
+        private class BloggingContext2 : BloggingContext
+        {
+            public BloggingContext2(string nameOrConnectionString) : base(nameOrConnectionString)
+            {
+                // No-op.
+            }
         }
 
         private class Blog
