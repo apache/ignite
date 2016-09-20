@@ -669,6 +669,10 @@ namespace Apache.Ignite.EntityFramework.Tests
                     CreateRemoveBlog(ctx);
                 }
             }, 8, 20);
+
+            // Only one version of data is in the cache.
+            Assert.AreEqual(1, _cache.GetSize());
+            Assert.AreEqual(1, _metaCache.GetSize());
         }
 
         /// <summary>
@@ -680,12 +684,12 @@ namespace Apache.Ignite.EntityFramework.Tests
             ctx.Blogs.Add(blog);
             ctx.SaveChanges();
 
-            Assert.AreEqual(1, ctx.Blogs.Count());
+            Assert.AreEqual(1, ctx.Blogs.Count(x => x.BlogId == blog.BlogId));
 
             ctx.Blogs.Remove(blog);
             ctx.SaveChanges();
 
-            Assert.AreEqual(0, ctx.Blogs.Count());
+            Assert.AreEqual(0, ctx.Blogs.Count(x => x.BlogId == blog.BlogId));
         }
 
         /// <summary>
