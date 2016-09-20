@@ -361,7 +361,7 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
                 factory.start();
 
                 try {
-                    FileSystem secFs = factory.get(user);
+                    FileSystem secFs = (FileSystem)factory.get(user);
 
                     secondaryUri = secFs.getUri();
 
@@ -388,7 +388,8 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
             if (clientLog.isLogEnabled())
                 clientLog.close();
 
-            factory.stop();
+            if (factory != null)
+                factory.stop();
 
             // Reset initialized resources.
             rmtClient = null;
@@ -1073,6 +1074,6 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
     private FileSystem secondaryFileSystem() throws IOException{
         assert factory != null;
 
-        return factory.get(user);
+        return (FileSystem)factory.get(user);
     }
 }

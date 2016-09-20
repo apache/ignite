@@ -350,7 +350,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
                 factory.start();
 
                 try {
-                    FileSystem secFs = factory.get(user);
+                    FileSystem secFs = (FileSystem)factory.get(user);
 
                     secondaryUri = secFs.getUri();
 
@@ -426,7 +426,8 @@ public class IgniteHadoopFileSystem extends FileSystem {
         if (clientLog.isLogEnabled())
             clientLog.close();
 
-        factory.stop();
+        if (factory != null)
+            factory.stop();
 
         // Reset initialized resources.
         uri = null;
@@ -1361,6 +1362,6 @@ public class IgniteHadoopFileSystem extends FileSystem {
         if (factory == null)
             return null;
 
-        return factory.get(user);
+        return (FileSystem)factory.get(user);
     }
 }

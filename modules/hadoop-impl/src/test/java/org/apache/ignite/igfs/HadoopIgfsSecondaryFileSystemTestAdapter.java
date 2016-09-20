@@ -148,6 +148,6 @@ public class HadoopIgfsSecondaryFileSystemTestAdapter implements IgfsSecondaryFi
      * @throws IOException If failed.
      */
     protected FileSystem get() throws IOException {
-        return factory.get(FileSystemConfiguration.DFLT_USER_NAME);
+        return (FileSystem)factory.get(FileSystemConfiguration.DFLT_USER_NAME);
     }
 }

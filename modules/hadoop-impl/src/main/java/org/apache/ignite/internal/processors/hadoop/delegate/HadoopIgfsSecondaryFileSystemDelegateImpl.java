@@ -457,7 +457,7 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
         assert !F.isEmpty(user);
 
         try {
-            return factory.get(user);
+            return (FileSystem)factory.get(user);
         }
         catch (IOException ioe) {
             throw new IgniteException(ioe);

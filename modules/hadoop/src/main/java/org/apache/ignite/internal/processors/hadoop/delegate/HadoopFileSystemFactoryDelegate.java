@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.hadoop.delegate;
 
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.ignite.lifecycle.LifecycleAware;
 
 import java.io.IOException;
@@ -33,5 +32,5 @@ public interface HadoopFileSystemFactoryDelegate extends LifecycleAware {
      * @return File system.
      * @throws IOException In case of error.
      */
-    public FileSystem get(String usrName) throws IOException;
+    public Object get(String usrName) throws IOException;
 }

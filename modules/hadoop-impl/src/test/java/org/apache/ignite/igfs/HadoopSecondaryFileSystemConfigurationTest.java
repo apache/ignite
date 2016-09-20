@@ -185,7 +185,7 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
 
         facDelegate.start();
 
-        primaryFs = facDelegate.get(null); //provider.createFileSystem(null);
+        primaryFs = (FileSystem)facDelegate.get(null); //provider.createFileSystem(null);
 
         primaryFsUri = primaryFs.getUri();
     }
