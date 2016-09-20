@@ -68,6 +68,9 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
                 final String dataCacheName = reader.readString();
 
                 int cnt = reader.readInt();
+
+                assert cnt > 0;
+
                 final Set<String> entitySetNames = new HashSet(cnt);
 
                 for (int i = 0; i < cnt; i++)
@@ -76,6 +79,18 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
                 final Map<String, EntryProcessorResult<Long>> currentVersions =
                     metaCache.invokeAll(entitySetNames,
                     new PlatformDotNetEntityFrameworkIncreaseVersionProcessor());
+
+                // TODO: This fails. Talk to Sam?
+                assert currentVersions.size() == cnt;
+
+                /**
+                StringBuilder sb = new StringBuilder("Updated versions: ");
+
+                for (Map.Entry<String, EntryProcessorResult<Long>> e : currentVersions.entrySet())
+                    sb.append(e.getKey()).append("=").append(e.getValue().get()).append(",");
+
+                System.out.println(sb.toString());
+                 */
 
                 Ignite grid = target.platformContext().kernalContext().grid();
 

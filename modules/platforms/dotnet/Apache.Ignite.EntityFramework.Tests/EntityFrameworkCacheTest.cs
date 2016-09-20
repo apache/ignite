@@ -665,20 +665,32 @@ namespace Apache.Ignite.EntityFramework.Tests
         /// <summary>
         /// Creates and removes a blog.
         /// </summary>
-        private static void CreateRemoveBlog()
+        private void CreateRemoveBlog()
         {
             using (var ctx = GetDbContext())
             {
+                var arr0 = ctx.Blogs.ToArray();
+                var data0 = _cache.ToArray();
+                var meta0 = _metaCache.ToArray();
+
                 var blog = new Blog {Name = "my blog"};
                 ctx.Blogs.Add(blog);
                 ctx.SaveChanges();
 
-                Assert.AreEqual(1, ctx.Blogs.ToArray().Count(x => x.BlogId == blog.BlogId));
+                var arr = ctx.Blogs.ToArray();
+                var data = _cache.ToArray();
+                var meta = _metaCache.ToArray();
+
+                Assert.AreEqual(1, arr.Count(x => x.BlogId == blog.BlogId));
 
                 ctx.Blogs.Remove(blog);
                 ctx.SaveChanges();
 
-                Assert.AreEqual(0, ctx.Blogs.ToArray().Count(x => x.BlogId == blog.BlogId));
+                var arr2 = ctx.Blogs.ToArray();
+                var data2 = _cache.ToArray();
+                var meta2 = _metaCache.ToArray();
+
+                Assert.AreEqual(0, arr.Count(x => x.BlogId == blog.BlogId));
             }
         }
 
