@@ -339,6 +339,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /** */
     private ConnectGateway connectGate;
 
+    /** */
+    private ConnectionPolicy connPlc;
+
     /** Server listener. */
     private final GridNioServerListener<Message> srvLsnr =
         new GridNioServerListenerAdapter<Message>() {
@@ -374,7 +377,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     if (nodeClients != null) {
                         for (GridCommunicationClient client : nodeClients) {
                             if (client instanceof GridTcpNioCommunicationClient &&
-                                ((GridTcpNioCommunicationClient) client).session() == ses) {
+                                ((GridTcpNioCommunicationClient)client).session() == ses) {
                                 client.close();
 
                                 removeNodeClient(id, client);
@@ -1615,6 +1618,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             nioSrvr.dumpStats();
     }
 
+    /** */
+    private final ThreadLocal<Integer> threadConnIdx = new ThreadLocal<>();
+
+    /** */
+    private final AtomicInteger connIdx = new AtomicInteger();
+
     /** {@inheritDoc} */
     @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
         initFailureDetectionTimeout();
@@ -1647,6 +1656,53 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
             assertParameter(unackedMsgsBufSize >= ackSndThreshold * 5,
                 "Specified 'unackedMsgsBufSize' is too low, it should be at least 'ackSndThreshold * 5'.");
+        }
+
+        if (connectionsPerNode > 1) {
+            int idxMode = IgniteSystemProperties.getInteger("CONN_IDX_MODE", 0);
+
+            switch (idxMode) {
+                case 0: {
+                    connPlc = new ConnectionPolicy() {
+                        @Override public int connectionIndex() {
+                            return (int)(Thread.currentThread().getId() % connectionsPerNode);
+                        }
+                    };
+
+                    break;
+                }
+
+                case 1: {
+                    connPlc = new ConnectionPolicy() {
+                        @Override public int connectionIndex() {
+                            Integer threadIdx = threadConnIdx.get();
+
+                            if (threadIdx != null)
+                                return threadIdx;
+
+                            for (;;) {
+                                int idx = connIdx.get();
+                                int nextIdx = idx == connectionsPerNode - 1 ? 0 : idx + 1;
+
+                                if (connIdx.compareAndSet(idx, nextIdx)) {
+                                    threadConnIdx.set(idx);
+
+                                    return idx;
+                                }
+                            }
+                        }
+                    };
+
+                    break;
+                }
+            }
+        }
+        else {
+            connPlc = new ConnectionPolicy() {
+                @Override public int connectionIndex() {
+                    return 0;
+                }
+            };
         }
 
         try {
@@ -2161,51 +2217,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         sendMessage0(node, msg, ackC);
     }
 
-    /** */
-    private final int idxMode = IgniteSystemProperties.getInteger("CONN_IDX_MODE", 0);
-
-    /** */
-    private final ThreadLocal<Integer> threadConnIdx = new ThreadLocal<>();
-
-    /** */
-    private final AtomicInteger connIdx = new AtomicInteger();
-
-    /**
-     * TODO
-     * @return
-     */
-    private int connectionIndex() {
-        switch (idxMode) {
-            case 0: {
-                return (int)(Thread.currentThread().getId() % connectionsPerNode);
-            }
-
-            case 1: {
-                Integer threadIdx = threadConnIdx.get();
-
-                if (threadIdx != null)
-                    return threadIdx;
-
-                for (;;) {
-                    int idx = connIdx.get();
-                    int nextIdx = idx == connectionsPerNode - 1 ? 0 : idx + 1;
-
-                    if (connIdx.compareAndSet(idx, nextIdx)) {
-                        threadConnIdx.set(idx);
-
-                        return idx;
-                    }
-                }
-            }
-
-            case 2:
-                return ThreadLocalRandom.current().nextInt(connectionsPerNode);
-
-            default:
-                throw new IgniteException("Invalid connection index mode: " + idxMode);
-        }
-    }
-
     /**
      * @param node Destination node.
      * @param msg Message to send.
@@ -2233,7 +2244,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         else {
             GridCommunicationClient client = null;
 
-            int connIdx = useMultipleConnections(node) ? connectionIndex() : 0;
+            int connIdx = useMultipleConnections(node) ? connPlc.connectionIndex() : 0;
 
             try {
                 boolean retry;
@@ -4309,5 +4320,15 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         @Override public String toString() {
             return S.toString(ConnectionKey.class, this);
         }
+    }
+
+    /**
+     *
+     */
+    interface ConnectionPolicy {
+        /**
+         * @return Thread connection index.
+         */
+        int connectionIndex();
     }
 }
