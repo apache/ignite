@@ -105,7 +105,7 @@ public class HadoopDelegateUtils {
     private static String proxyClassName(Class proxyCls) {
         assert proxyCls != null;
 
-        return proxyCls.getClass().getName();
+        return proxyCls.getName();
     }
 
     /**
