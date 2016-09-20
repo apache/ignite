@@ -358,7 +358,7 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
                     ((LifecycleAware) factory).start();
 
                 try {
-                    FileSystem secFs = factory.get(user);
+                    FileSystem secFs = (FileSystem)factory.get(user);
 
                     secondaryUri = secFs.getUri();
 
@@ -1071,6 +1071,6 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
     private FileSystem secondaryFileSystem() throws IOException{
         assert factory != null;
 
-        return factory.get(user);
+        return (FileSystem)factory.get(user);
     }
 }

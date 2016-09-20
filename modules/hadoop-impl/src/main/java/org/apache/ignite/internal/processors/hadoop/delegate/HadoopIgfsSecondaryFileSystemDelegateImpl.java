@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.FileNotFoundException;
@@ -61,13 +62,12 @@ import java.util.Map;
  * Secondary file system implementation.
  */
 @SuppressWarnings("unused")
-public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSecondaryFileSystemDelegate
-     {
+public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSecondaryFileSystemDelegate {
     /** The default user name. It is used if no user context is set. */
     private final String dfltUsrName;
 
     /** Factory. */
-    private final HadoopFileSystemFactoryDelegate factory;
+    private final HadoopFileSystemFactory factory;
 
     /**
      * Constructor.
@@ -85,7 +85,7 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
         if (factory0 == null)
             factory0 = new CachingHadoopFileSystemFactory();
 
-        factory = HadoopDelegateUtils.delegate(factory0);
+        factory = factory0;
     }
 
     /** {@inheritDoc} */
@@ -373,12 +373,14 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
 
     /** {@inheritDoc} */
     public void start() {
-        factory.start();
+        if (factory instanceof LifecycleAware)
+            ((LifecycleAware)factory).start();
     }
 
     /** {@inheritDoc} */
     public void stop() {
-        factory.stop();
+        if (factory instanceof LifecycleAware)
+            ((LifecycleAware)factory).stop();
     }
 
     /**
@@ -457,7 +459,7 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
         assert !F.isEmpty(user);
 
         try {
-            return factory.get(user);
+            return (FileSystem)factory.get(user);
         }
         catch (IOException ioe) {
             throw new IgniteException(ioe);
