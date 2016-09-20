@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.compute.ComputeJobContext;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtension;
@@ -31,6 +32,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.JobContextResource;
 
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessorResult;
@@ -152,16 +154,18 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
             // Node id value has changed by another thread. Repeat the process.
         }
 
-        // TODO:
-        // 2) do not use public thread pool - HOW? ComputeJobContinuation, new thread, holdcc, callcc
-        //grid.compute().broadcast()
-
         asyncCompute.broadcast(new IgniteRunnable() {
+            /** Inject Ignite. */
             @IgniteInstanceResource
             private Ignite ignite;
 
+            /** Inject job context. */
+            @SuppressWarnings("unused")
+            @JobContextResource
+            private ComputeJobContext jobCtx;
+
             @Override public void run() {
-                removeOldEntries(ignite, dataCacheName, currentVersions);
+                removeOldEntries(ignite, dataCacheName, currentVersions, jobCtx);
             }
         });
 
@@ -180,20 +184,32 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
      * @param dataCacheName Cache name.
      * @param currentVersions Current versions.
      */
-    private static void removeOldEntries(Ignite ignite, String dataCacheName,
-        Map<String, EntryProcessorResult<Long>> currentVersions) {
-        IgniteCache<String, PlatformDotNetEntityFrameworkCacheEntry> cache = ignite.cache(dataCacheName);
+    private static void removeOldEntries(final Ignite ignite, final String dataCacheName,
+        final Map<String, EntryProcessorResult<Long>> currentVersions, final ComputeJobContext jobCtx) {
 
-        for (Cache.Entry<String, PlatformDotNetEntityFrameworkCacheEntry> cacheEntry :
-            cache.localEntries(CachePeekMode.ALL)) {
-            PlatformDotNetEntityFrameworkCacheEntry entry = cacheEntry.getValue();
+        // Run in a separate thread to avoid starving public pool.
 
-            for (Map.Entry<String, Long> entitySet : entry.entitySets().entrySet()) {
-                EntryProcessorResult<Long> curVer = currentVersions.get(entitySet.getKey());
+        // TODO: Run in system pool.
+        new Thread() {
+            @Override public void run() {
+                IgniteCache<String, PlatformDotNetEntityFrameworkCacheEntry> cache = ignite.cache(dataCacheName);
 
-                if (curVer != null && entitySet.getValue() < curVer.get())
-                    cache.remove(cacheEntry.getKey());
+                for (Cache.Entry<String, PlatformDotNetEntityFrameworkCacheEntry> cacheEntry :
+                    cache.localEntries(CachePeekMode.ALL)) {
+                    PlatformDotNetEntityFrameworkCacheEntry entry = cacheEntry.getValue();
+
+                    for (Map.Entry<String, Long> entitySet : entry.entitySets().entrySet()) {
+                        EntryProcessorResult<Long> curVer = currentVersions.get(entitySet.getKey());
+
+                        if (curVer != null && entitySet.getValue() < curVer.get())
+                            cache.remove(cacheEntry.getKey());
+                    }
+                }
+
+                jobCtx.callcc();
             }
-        }
+        }.start();
+
+        jobCtx.holdcc();
     }
 }
