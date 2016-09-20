@@ -153,17 +153,9 @@ public class HadoopJobTracker extends HadoopComponent {
 
         evtProcSvc = Executors.newFixedThreadPool(1);
 
-        UUID nodeId = ctx.localNodeId();
-
         assert jobCls == null;
 
-        String[] libNames = null;
-
-        if (ctx.configuration() != null)
-            libNames = ctx.configuration().getNativeLibraryNames();
-
-        HadoopClassLoader ldr = new HadoopClassLoader(null, HadoopClassLoader.nameForJob(nodeId), libNames,
-            ctx.kernalContext().hadoopHelper());
+        HadoopClassLoader ldr = ctx.kernalContext().hadoopHelper().commonClassLoader();
 
         try {
             jobCls = (Class<HadoopV2Job>)ldr.loadClass(HadoopV2Job.class.getName());

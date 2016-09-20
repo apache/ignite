@@ -32,7 +32,6 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
-import java.util.UUID;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -91,15 +90,6 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
 
     /** Igfs Helper. */
     private final HadoopHelper helper;
-
-    /**
-     * Gets name for Job class loader. The name is specific for local node id.
-     * @param locNodeId The local node id.
-     * @return The class loader name.
-     */
-    public static String nameForJob(UUID locNodeId) {
-        return "hadoop-job-node-" + locNodeId.toString();
-    }
 
     /**
      * Gets name for the task class loader. Task class loader
