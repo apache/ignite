@@ -41,6 +41,7 @@ import java.util.Set;
 /**
  * EntityFramework cache extension.
  */
+@SuppressWarnings("unchecked")
 public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCacheExtension {
     /** Extension ID. */
     private static final int EXT_ID = 1;
@@ -75,39 +76,9 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
                     metaCache.invokeAll(entitySetNames,
                     new PlatformDotNetEntityFrameworkIncreaseVersionProcessor());
 
-                // Initiate old entries cleanup.
                 Ignite grid = target.platformContext().kernalContext().grid();
-                IgniteCompute asyncCompute = grid.compute().withAsync();
 
-                // Set a flag about running cleanup.
-                // TODO: How to atomically check if there is no cleanup?
-                ((IgniteCache)metaCache).put(CLEANUP_NODE_ID, grid.cluster().localNode().id());
-
-                asyncCompute.broadcast(new IgniteRunnable() {
-                    @IgniteInstanceResource
-                    private Ignite ignite;
-
-                    @Override public void run() {
-                        removeOldEntries(ignite, dataCacheName, currentVersions);
-                    }
-                });
-
-                asyncCompute.future().listen(new CI1<IgniteFuture<Object>>() {
-                    @Override public void apply(IgniteFuture<Object> future) {
-                        // Reset cleanup flag.
-                        ((IgniteCache)metaCache).put(CLEANUP_NODE_ID, null);
-                    }
-                });
-
-                // TODO:
-                // 0) Use a separate meta cache for versions and cleanup state
-                // 1) limit cleanup tasks: store node id in a special key.
-                //    If node is present, then cleanup is in process;
-                //    If node has left, then start new cleanup.
-                // 2) do not use public thread pool - HOW? ComputeJobContinuation, new thread, holdcc, callcc
-                // 3) cache can have a node filter?
-                // 4) we should account for lost data: meta cache should have backups.
-                //grid.compute().broadcast()
+                startBackgroundCleanup(grid, metaCache, dataCacheName, currentVersions);
 
                 return target.writeResult(mem, null);
             }
@@ -119,6 +90,51 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(PlatformDotNetEntityFrameworkCacheExtension.class, this);
+    }
+
+    /**
+     * Starts the background cleanup of old cache entries.
+     *
+     * @param grid Grid.
+     * @param metaCache Meta cache.
+     * @param dataCacheName Data cache name.
+     * @param currentVersions Current versions.
+     */
+    private void startBackgroundCleanup(Ignite grid, final IgniteCache metaCache,
+        final String dataCacheName, final Map<String, EntryProcessorResult<Long>> currentVersions) {
+        // Initiate old entries cleanup.
+        IgniteCompute asyncCompute = grid.compute().withAsync();
+
+        // Set a flag about running cleanup.
+        // TODO: How to atomically check if there is no cleanup?
+        //while (true) {                }
+        metaCache.put(CLEANUP_NODE_ID, grid.cluster().localNode().id());
+
+        asyncCompute.broadcast(new IgniteRunnable() {
+            @IgniteInstanceResource
+            private Ignite ignite;
+
+            @Override public void run() {
+                removeOldEntries(ignite, dataCacheName, currentVersions);
+            }
+        });
+
+        asyncCompute.future().listen(new CI1<IgniteFuture<Object>>() {
+            @Override public void apply(IgniteFuture<Object> future) {
+                // Reset cleanup flag.
+                metaCache.remove(CLEANUP_NODE_ID);
+            }
+        });
+
+        // TODO:
+        // 0) Use a separate meta cache for versions and cleanup state
+        // 1) limit cleanup tasks: store node id in a special key.
+        //    If node is present, then cleanup is in process;
+        //    If node has left, then start new cleanup.
+        // 2) do not use public thread pool - HOW? ComputeJobContinuation, new thread, holdcc, callcc
+        // 3) cache can have a node filter?
+        // 4) we should account for lost data: meta cache should have backups.
+        //grid.compute().broadcast()
     }
 
     /**
