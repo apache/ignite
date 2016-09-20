@@ -658,6 +658,18 @@ namespace Apache.Ignite.EntityFramework.Tests
         }
 
         /// <summary>
+        /// Tests the old entries cleanup in multithreaded scenario.
+        /// </summary>
+        [Test]
+        [Category(TestUtils.CategoryIntensive)]
+        public void TestOldEntriesCleanupMultithreaded()
+        {
+            // TODO: multi-node, multi-thread
+            
+        }
+
+
+        /// <summary>
         /// Executes the entity SQL.
         /// </summary>
         private static EntityCommand GetEntityCommand(IObjectContextAdapter ctx, string esql)
