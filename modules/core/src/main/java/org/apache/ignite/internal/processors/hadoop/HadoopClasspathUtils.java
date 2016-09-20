@@ -29,6 +29,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.IgniteUtils;
 
 /**
  * Hadoop classpath utilities.
@@ -55,30 +57,30 @@ public class HadoopClasspathUtils {
     /** Empty string. */
     private static final String EMPTY_STR = "";
 
-    /**
-     * Gets Hadoop class path as list of classpath elements for process.
-     *
-     * @return List of the class path elements.
-     * @throws IOException If failed.
-     */
-    public static List<String> classpathForProcess() throws IOException {
-        List<String> res = new ArrayList<>();
-
-        for (final SearchDirectory dir : classpathDirectories()) {
-            File[] files = dir.files();
-
-            if (dir.useWildcard()) {
-                if (files.length > 0)
-                    res.add(dir.absolutePath() + File.separator + '*');
-            }
-            else {
-                for (File file : files)
-                    res.add(file.getAbsolutePath());
-            }
-        }
-
-        return res;
-    }
+//    /**
+//     * Gets Hadoop class path as list of classpath elements for process.
+//     *
+//     * @return List of the class path elements.
+//     * @throws IOException If failed.
+//     */
+//    public static List<String> classpathForProcess() throws IOException {
+//        List<String> res = new ArrayList<>();
+//
+//        for (final SearchDirectory dir : classpathDirectories()) {
+//            File[] files = dir.files();
+//
+//            if (dir.useWildcard()) {
+//                if (files.length > 0)
+//                    res.add(dir.absolutePath() + File.separator + '*');
+//            }
+//            else {
+//                for (File file : files)
+//                    res.add(file.getAbsolutePath());
+//            }
+//        }
+//
+//        return res;
+//    }
 
     /**
      * Gets Hadoop class path as a list of URLs (for in-process class loader usage).
@@ -99,6 +101,18 @@ public class HadoopClasspathUtils {
                 }
             }
         }
+
+        String igniteHome = IgniteUtils.getIgniteHome();
+
+        if (igniteHome == null)
+            throw new IgniteException("Cannot determine ignite home.");
+
+        File dir = new File(igniteHome, "libs/ignite-hadoop-impl");
+
+        File[] files = new SearchDirectory(dir, AcceptAllDirectoryFilter.INSTANCE, true).files();
+
+        for (File f: files)
+            res.add(f.toURI().toURL());
 
         return res;
     }
