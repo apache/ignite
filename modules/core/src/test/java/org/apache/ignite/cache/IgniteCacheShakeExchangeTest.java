@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.affinity.bugreproduce;
+package org.apache.ignite.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
@@ -36,32 +36,35 @@ import java.util.concurrent.atomic.*;
 
 /**
  */
-public class IssuesIGNITE2539ReproduceTest extends GridCommonAbstractTest {
+public class IgniteCacheShakeExchangeTest extends GridCommonAbstractTest {
     /** */
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
-    /** */
-    private static final int ITERATIONS = 10;
+    /** Additional node */
+    private static final int ITERATIONS = 13;
 
-    /** partitioned cache name. */
+    /** Partitioned cache name. */
     private static final String CACHE_NAME_DHT_PARTITIONED = "cacheP";
 
-    /** replicated cache name. */
+    /** Replicated cache name. */
     private static final String CACHE_NAME_DHT_REPLICATED = "cacheR";
 
-    /** Ignite. */
+    /** Ignite 1. */
     private static Ignite ignite1;
 
-    /** Ignite. */
+    /** Ignite 2. */
     private static Ignite ignite2;
 
-    /** Ignite. */
+    /** Ignite 3. */
     private static Ignite ignite3;
 
+    /** catch Exception. */
     private static final AtomicReference<Throwable> exc = new AtomicReference<>();
 
+    /** Thread dump in catch exception moment. */
     private static final AtomicReference<GridStringBuilder> dump = new AtomicReference<>();
 
+    /** Thread witch catch exception. */
     private static final AtomicReference<Thread> thr = new AtomicReference<>();
 
     /**
@@ -94,12 +97,15 @@ public class IssuesIGNITE2539ReproduceTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Main goal this test, it create more exchange messages between nodes, and stop
+     * nodes before all exchange future completed. There are case when cleanUp method
+     * cleaned reference before future completed. This test checking that it isn't happened.
      */
-    public void testCacheStopping() throws Exception {
+    public void testShakeExchange() throws Exception {
 
         final int delta = 5;
 
+        // add handler for all exchange workers
         for (Thread worker : getExchangeWorkerThread()) {
             worker.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
                 @Override public void uncaughtException(Thread t, Throwable e) {
@@ -110,6 +116,7 @@ public class IssuesIGNITE2539ReproduceTest extends GridCommonAbstractTest {
             });
         }
 
+        // start async shake create/put/destroy cache
         GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
 
@@ -124,7 +131,7 @@ public class IssuesIGNITE2539ReproduceTest extends GridCommonAbstractTest {
                 }
                 return null;
             }
-        }, "CacheSerialKiller");
+        }, "CacheShaker");
 
         for (int i = delta; i < ITERATIONS + delta; i++)
             startGrid(i);
@@ -134,13 +141,14 @@ public class IssuesIGNITE2539ReproduceTest extends GridCommonAbstractTest {
         for (int i = delta; i < ITERATIONS + delta; i++)
             stopGrid(i);
 
+        // check if was catch exception from exchange-worker thread
         if (exc.get() != null) {
+            log.info(dump.toString());
+
             log.info(thr.get().getName());
 
             Throwable e = exc.get();
             log.error(e.getMessage(), e);
-
-            log.info(dump.toString());
 
             exc.set(null);
             dump.set(null);
@@ -151,7 +159,7 @@ public class IssuesIGNITE2539ReproduceTest extends GridCommonAbstractTest {
     }
 
     /**
-     * get all exchange-worker threads
+     * Get all exchange-worker threads
      */
     private Iterable<Thread> getExchangeWorkerThread() {
         Collection<Thread> exhcWorkers = new ArrayList<>();
@@ -163,7 +171,7 @@ public class IssuesIGNITE2539ReproduceTest extends GridCommonAbstractTest {
     }
 
     /** Put 2 * {@code iterations} caches inside ignite. */
-    private static void fillWithCache(Ignite ignite, int iterations, int start, AffinityFunction affinityFunction) {
+    private  void fillWithCache(Ignite ignite, int iterations, int start, AffinityFunction affinityFunction) {
         for (int i = start; i < iterations + start; i++) {
             CacheConfiguration<Integer, Integer> cachePCfg = new CacheConfiguration<>();
 
