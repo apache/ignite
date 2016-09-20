@@ -45,8 +45,8 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
     private final IgniteLogger log;
 
     /**
-     * @param ses Session.
      * @param connIdx Connection index.
+     * @param ses Session.
      * @param log Logger.
      */
     public GridTcpNioCommunicationClient(

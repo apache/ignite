@@ -78,6 +78,9 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
     /** */
     private static int port = 60_000;
 
+    /** */
+    private int connectionsPerNode = 1;
+
     /**
      *
      */
@@ -153,6 +156,17 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
         int threads = Runtime.getRuntime().availableProcessors() * 5;
 
         concurrentConnect(threads, 10, ITERS, false, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMultithreaded_10Connections() throws Exception {
+        connectionsPerNode = 10;
+
+        int threads = Runtime.getRuntime().availableProcessors() * 5;
+
+        concurrentConnect(threads, 10, 10, false, false);
     }
 
     /**
@@ -286,7 +300,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
 
                         Collection sessions = U.field(srv, "sessions");
 
-                        assertEquals(2, sessions.size());
+                        assertEquals(2 * connectionsPerNode, sessions.size());
                     }
 
                     assertEquals(expMsgs, lsnr.cntr.get());
@@ -315,6 +329,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
         spi.setIdleConnectionTimeout(60_000);
         spi.setConnectTimeout(10_000);
         spi.setSharedMemoryPort(-1);
+        spi.setConnectionsPerNode(connectionsPerNode);
 
         return spi;
     }
