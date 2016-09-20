@@ -690,7 +690,7 @@ namespace Apache.Ignite.EntityFramework.Tests
                 var data2 = _cache.ToArray();
                 var meta2 = _metaCache.ToArray();
 
-                Assert.AreEqual(0, arr.Count(x => x.BlogId == blog.BlogId));
+                Assert.AreEqual(0, arr2.Count(x => x.BlogId == blog.BlogId));
             }
         }
 
