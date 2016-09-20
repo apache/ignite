@@ -98,6 +98,7 @@ import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
+import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
@@ -111,6 +112,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
@@ -5488,16 +5490,16 @@ class ServerImpl extends TcpDiscoveryImpl {
      * NIO worker state.
      */
     private enum WorkerState {
-        /** */
+        /** Initial worker state. */
         NOT_STARTED,
 
-        /** */
+        /** Started but all messages are added to queue. */
         STARTED,
 
-        /** */
+        /** Started and all messages are sent to client node. */
         JOINED,
 
-        /** */
+        /** Worker was stopped. */
         STOPPED
     }
 
@@ -5580,7 +5582,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 while (!msgQueue.isEmpty()) {
                     final T2<TcpDiscoveryAbstractMessage, byte[]> addedMsg = msgQueue.poll();
 
-                    addMessage(addedMsg.get1(), addedMsg.get2());
+                    sendMessage(addedMsg.get1(), addedMsg.get2());
                 }
 
                 msgQueue = null;
@@ -5629,11 +5631,22 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Set state as joined.
+         * Change state to JOINED and send all pending messages.
          */
-        public void joined() {
+        public void markJoinedAndSendPendingMessages() {
             if (state == WorkerState.STARTED) {
                 synchronized (this) {
+                    if (msgQueue != null) {
+                        // process all pending messages
+                        while (!msgQueue.isEmpty()) {
+                            final T2<TcpDiscoveryAbstractMessage, byte[]> addedMsg = msgQueue.poll();
+
+                            sendMessage(addedMsg.get1(), addedMsg.get2());
+                        }
+
+                        msgQueue = null;
+                    }
+
                     if (state == WorkerState.STARTED)
                         state = WorkerState.JOINED;
                 }
@@ -5840,9 +5853,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 msgWorker.addMessage(req);
 
-                                clientMsgWrk.joined();
-
-                                clientMsgWrk.sendPendingMessages();
+                                clientMsgWrk.markJoinedAndSendPendingMessages();
 
                                 return null;
                             }
@@ -5906,9 +5917,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             final IgniteInternalFuture<?> fut) throws IgniteCheckedException {
                             msgWorker.addMessage(msg);
 
-                            clientMsgWrk.joined();
-
-                            clientMsgWrk.sendPendingMessages();
+                            clientMsgWrk.markJoinedAndSendPendingMessages();
 
                             return null;
                         }
