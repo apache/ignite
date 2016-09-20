@@ -152,6 +152,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
      * @see <a href="http://docs.oracle.com/javase/1.5.0/docs/guide/jni/spec/invocation.html#library_version">
      *     JNI specification</a>
      */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     private void initializeNativeLibraries(@Nullable String[] usrLibs) {
         Collection<Object> res;
 
@@ -176,7 +177,9 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
         // Link libraries to class loader.
         Vector<Object> ldrLibs = nativeLibraries(this);
 
-        ldrLibs.addAll(res);
+        synchronized (ldrLibs) {
+            ldrLibs.addAll(res);
+        }
     }
 
     /**
@@ -185,6 +188,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
      * @param libs Libraries to initialize.
      * @return Initialized libraries.
      */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     private static Collection<Object> initializeNativeLibraries0(Collection<NativeLibrary> libs) {
         assert Thread.holdsLock(LIBS_MUX);
 
@@ -205,24 +209,27 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
                 // Find library in class loader internals.
                 Object libObj = null;
 
-                ClassLoader ldr = HadoopClassLoader.class.getClassLoader();
+                ClassLoader ldr = APP_CLS_LDR;
 
                 while (ldr != null) {
-                    for (Object ldrLibObj : nativeLibraries(ldr)) {
-                        String name = nativeLibraryName(ldrLibObj);
+                    Vector<Object> ldrLibObjs = nativeLibraries(ldr);
 
-                        if (libFile.isAbsolute()) {
-                            if (F.eq(name, libFile.getCanonicalPath())) {
-                                libObj = ldrLibObj;
+                    synchronized (ldrLibObjs) {
+                        for (Object ldrLibObj : ldrLibObjs) {
+                            String name = nativeLibraryName(ldrLibObj);
 
-                                break;
-                            }
-                        }
-                        else {
-                            if (name.contains(libName)) {
-                                libObj = ldrLibObj;
+                            if (libFile.isAbsolute()) {
+                                if (F.eq(name, libFile.getCanonicalPath())) {
+                                    libObj = ldrLibObj;
 
-                                break;
+                                    break;
+                                }
+                            } else {
+                                if (name.contains(libName)) {
+                                    libObj = ldrLibObj;
+
+                                    break;
+                                }
                             }
                         }
                     }
