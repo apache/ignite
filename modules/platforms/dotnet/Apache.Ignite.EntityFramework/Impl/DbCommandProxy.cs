@@ -33,7 +33,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         private readonly DbCommand _command;
 
         /** */
-        private readonly DbCommandInfo _info;
+        private readonly DbCommandInfo _commandInfo;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DbCommandProxy"/> class.
@@ -44,7 +44,7 @@ namespace Apache.Ignite.EntityFramework.Impl
             Debug.Assert(info != null);
 
             _command = command;
-            _info = info;
+            _commandInfo = info;
         }
 
         /// <summary>
@@ -62,7 +62,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         [ExcludeFromCodeCoverage]
         public DbCommandInfo CommandInfo
         {
-            get { return _info; }
+            get { return _commandInfo; }
         }
 
         /** <inheritDoc /> */
@@ -146,9 +146,9 @@ namespace Apache.Ignite.EntityFramework.Impl
         /** <inheritDoc /> */
         protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
         {
-            if (_info.IsModification)
+            if (_commandInfo.IsModification)
             {
-                _info.Cache.InvalidateSets(_info.AffectedEntitySets);
+                _commandInfo.Cache.InvalidateSets(_commandInfo.AffectedEntitySets);
 
                 return _command.ExecuteReader(behavior);
             }
@@ -158,14 +158,12 @@ namespace Apache.Ignite.EntityFramework.Impl
                 return _command.ExecuteReader(behavior);
             }
 
-            // TODO: We must retrieve entity set versions BEFORE executing the query!
-
-            var cacheKey = GetKey();
             var queryInfo = GetQueryInfo();
-            var strategy = _info.Policy.GetCachingStrategy(queryInfo);
+            var strategy = _commandInfo.Policy.GetCachingStrategy(queryInfo);
+            var cacheKey = _commandInfo.Cache.GetCacheKey(GetKey(), _commandInfo.AffectedEntitySets, strategy);
 
             object cachedRes;
-            if (_info.Cache.GetItem(cacheKey, _info.AffectedEntitySets, strategy, out cachedRes))
+            if (_commandInfo.Cache.GetItem(cacheKey, out cachedRes))
                 return ((DataReaderResult) cachedRes).CreateReader();
 
             var reader = _command.ExecuteReader(behavior);
@@ -174,17 +172,17 @@ namespace Apache.Ignite.EntityFramework.Impl
                 return reader;  // Queries that modify anything are never cached.
 
             // Check if cacheable.
-            if (!_info.Policy.CanBeCached(queryInfo))
+            if (!_commandInfo.Policy.CanBeCached(queryInfo))
                 return reader;
 
             // Read into memory.
             var res = new DataReaderResult(reader);
 
             // Check if specific row count is cacheable.
-            if (!_info.Policy.CanBeCached(queryInfo, res.RowCount))
+            if (!_commandInfo.Policy.CanBeCached(queryInfo, res.RowCount))
                 return res.CreateReader();
 
-            PutResultToCache(cacheKey, res, strategy, queryInfo);
+            PutResultToCache(cacheKey, res, queryInfo);
 
             return res.CreateReader();
         }
@@ -192,8 +190,8 @@ namespace Apache.Ignite.EntityFramework.Impl
         /** <inheritDoc /> */
         public override int ExecuteNonQuery()
         {
-            if (_info.IsModification)
-                _info.Cache.InvalidateSets(_info.AffectedEntitySets);
+            if (_commandInfo.IsModification)
+                _commandInfo.Cache.InvalidateSets(_commandInfo.AffectedEntitySets);
 
             return _command.ExecuteNonQuery();
         }
@@ -210,13 +208,13 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// <summary>
         /// Puts the result to cache.
         /// </summary>
-        private void PutResultToCache(string key, object result, DbCachingStrategy strategy, DbQueryInfo queryInfo)
+        private void PutResultToCache(DbCacheKey key, object result, DbQueryInfo queryInfo)
         {
-            var expiration = _info.Policy != null
-                ? _info.Policy.GetExpirationTimeout(queryInfo)
+            var expiration = _commandInfo.Policy != null
+                ? _commandInfo.Policy.GetExpirationTimeout(queryInfo)
                 : TimeSpan.MaxValue;
 
-            _info.Cache.PutItem(key, result, _info.AffectedEntitySets, strategy, expiration);
+            _commandInfo.Cache.PutItem(key, result, expiration);
         }
 
         /// <summary>
@@ -239,7 +237,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// </summary>
         private DbQueryInfo GetQueryInfo()
         {
-            return new DbQueryInfo(_info.AffectedEntitySets, CommandText, DbParameterCollection);
+            return new DbQueryInfo(_commandInfo.AffectedEntitySets, CommandText, DbParameterCollection);
         }
     }
 }

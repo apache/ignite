@@ -20,6 +20,7 @@ namespace Apache.Ignite.EntityFramework.Impl
     using System.Collections.Generic;
     using System.Data.Entity.Core.Metadata.Edm;
     using System.Diagnostics;
+    using System.Text;
 
     /// <summary>
     /// Represents a cache key, including dependent entity sets and their versions.
@@ -70,6 +71,22 @@ namespace Apache.Ignite.EntityFramework.Impl
         public IDictionary<string, long> EntitySetVersions
         {
             get { return _entitySetVersions; }
+        }
+
+        /// <summary>
+        /// Gets the versioned key.
+        /// </summary>
+        public string GetStringKey()
+        {
+            if (_entitySetVersions == null)
+                return _key;
+
+            var sb = new StringBuilder(_key);
+
+            foreach (var ver in _entitySetVersions)
+                sb.AppendFormat("_{0}", ver.Value);
+
+            return sb.ToString();
         }
     }
 }

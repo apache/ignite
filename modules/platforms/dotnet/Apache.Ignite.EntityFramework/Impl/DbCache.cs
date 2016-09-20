@@ -23,7 +23,6 @@ namespace Apache.Ignite.EntityFramework.Impl
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
-    using System.Text;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -89,23 +88,29 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// <summary>
         /// Gets the cache key to be used with GetItem and PutItem.
         /// </summary>
-        public string GetCacheKey(string key, ICollection<EntitySetBase> dependentEntitySets, DbCachingStrategy strategy)
+        public DbCacheKey GetCacheKey(string key, ICollection<EntitySetBase> dependentEntitySets, DbCachingStrategy strategy)
         {
             if (strategy == DbCachingStrategy.ReadWrite)
-                key = GetVersionedKey(key, dependentEntitySets);
+            {
+                var versions = GetEntitySetVersions(dependentEntitySets);
 
-            return key;
+                return new DbCacheKey(key, dependentEntitySets, versions);
+            }
+
+            if (strategy == DbCachingStrategy.ReadOnly)
+                return new DbCacheKey(key, null, null);
+
+            throw new ArgumentOutOfRangeException("strategy");
         }
 
         /// <summary>
         /// Gets the item from cache.
         /// </summary>
-        public bool GetItem(string key, ICollection<EntitySetBase> dependentEntitySets, DbCachingStrategy strategy, 
-            out object value)
+        public bool GetItem(DbCacheKey key, out object value)
         {
             EntityFrameworkCacheEntry res;
 
-            var success = _cache.TryGet(key, out res);
+            var success = _cache.TryGet(key.GetStringKey(), out res);
 
             value = success ? res.Data : null;
 
@@ -115,37 +120,11 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// <summary>
         /// Puts the item to cache.
         /// </summary>
-        public void PutItem(string key, object value, ICollection<EntitySetBase> dependentEntitySets,
-            DbCachingStrategy strategy, TimeSpan absoluteExpiration)
+        public void PutItem(DbCacheKey key, object value, TimeSpan absoluteExpiration)
         {
-            switch (strategy)
-            {
-                case DbCachingStrategy.ReadWrite:
-                {
-                    if (dependentEntitySets == null)
-                        return;
+            var cache = GetCacheWithExpiry(absoluteExpiration);
 
-                    var entitySetVersions = GetEntitySetVersions(dependentEntitySets);
-
-                    var cache = GetCacheWithExpiry(absoluteExpiration);
-
-                    cache[key] = new EntityFrameworkCacheEntry(value, entitySetVersions);
-
-                    return;
-                }
-
-                case DbCachingStrategy.ReadOnly:
-                {
-                    var cache = GetCacheWithExpiry(absoluteExpiration);
-
-                    cache[key] = new EntityFrameworkCacheEntry(value, null);
-
-                    return;
-                }
-
-                default:
-                    throw new ArgumentOutOfRangeException("strategy", strategy, null);
-            }
+            cache[key.GetStringKey()] = new EntityFrameworkCacheEntry(value, key.EntitySetVersions);
         }
 
         /// <summary>
@@ -230,27 +209,6 @@ namespace Apache.Ignite.EntityFramework.Impl
                 seconds = 0;
 
             return (long) (seconds * 10);
-        }
-
-        /// <summary>
-        /// Gets the versioned key.
-        /// </summary>
-        private string GetVersionedKey(string key, ICollection<EntitySetBase> sets)
-        {
-            return GetVersionedKey(key, GetEntitySetVersions(sets));
-        }
-
-        /// <summary>
-        /// Gets the versioned key.
-        /// </summary>
-        private static string GetVersionedKey(string key, IDictionary<string, long> versions)
-        {
-            var sb = new StringBuilder(key);
-
-            foreach (var ver in versions.Values)
-                sb.AppendFormat("_{0}", ver);
-
-            return sb.ToString();
         }
 
         /// <summary>
