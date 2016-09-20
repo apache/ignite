@@ -111,7 +111,7 @@ public class IgfsInputStreamImpl extends IgfsInputStream implements IgfsSecondar
     private long time;
 
     /** File Length. */
-    private long length;
+    private long len;
 
     /** Block size to read. */
     private int blockSize;
@@ -130,7 +130,7 @@ public class IgfsInputStreamImpl extends IgfsInputStream implements IgfsSecondar
      * @param prefetchBlocks Number of blocks to prefetch.
      * @param seqReadsBeforePrefetch Amount of sequential reads before prefetch is triggered.
      * @param secReader Optional secondary file system reader.
-     * @param length File length.
+     * @param len File length.
      * @param blockSize Block size.
      * @param blocksCount Blocks count.
      * @param proxy Proxy mode flag.
@@ -142,7 +142,7 @@ public class IgfsInputStreamImpl extends IgfsInputStream implements IgfsSecondar
         int prefetchBlocks,
         int seqReadsBeforePrefetch,
         @Nullable IgfsSecondaryFileSystemPositionedReadable secReader,
-        long length,
+        long len,
         int blockSize,
         long blocksCount,
         boolean proxy) {
@@ -155,7 +155,7 @@ public class IgfsInputStreamImpl extends IgfsInputStream implements IgfsSecondar
         this.prefetchBlocks = prefetchBlocks;
         this.seqReadsBeforePrefetch = seqReadsBeforePrefetch;
         this.secReader = secReader;
-        this.length = length;
+        this.len = len;
         this.blockSize = blockSize;
         this.blocksCount = blocksCount;
         this.proxy = proxy;
@@ -182,7 +182,7 @@ public class IgfsInputStreamImpl extends IgfsInputStream implements IgfsSecondar
 
     /** {@inheritDoc} */
     @Override public long length() {
-        return length;
+        return len;
     }
 
     /** {@inheritDoc} */
@@ -223,7 +223,7 @@ public class IgfsInputStreamImpl extends IgfsInputStream implements IgfsSecondar
 
     /** {@inheritDoc} */
     @Override public synchronized int available() throws IOException {
-        long l = length() - pos;
+        long l = len - pos;
 
         if (l < 0)
             return 0;

@@ -1002,8 +1002,11 @@ public final class IgfsImpl implements IgfsEx {
                             new IgfsLazySecondaryFileSystemPositionedReadable(secondaryFs, path, bufSize);
 
                         long length = info.length();
+
                         int blockSize = info.blockSize();
+
                         blockSize = (blockSize > 0) ? blockSize : cfg.getBlockSize();
+
                         long blockCount = length / blockSize;
 
                         if (length % blockSize != 0)
