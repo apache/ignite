@@ -79,12 +79,13 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Destruct offheap map for given space name.
+     * Destructs offheap map for given space name.
      *
      * @param spaceName Space name.
      * */
     public void destruct(@Nullable String spaceName) {
         spaceName = maskNull(spaceName);
+
         GridOffHeapPartitionedMap map = offheap.remove(spaceName);
 
         if (map != null)

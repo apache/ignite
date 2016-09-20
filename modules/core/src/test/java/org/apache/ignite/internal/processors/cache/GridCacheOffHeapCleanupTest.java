@@ -27,34 +27,91 @@ import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.noop.NoopSwapSpaceSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
+import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
+import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 
 /**
  * Check offheap allocations are freed after cache destroy.
  */
 public class GridCacheOffHeapCleanupTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
+    private static final String CACHE_NAME = "testCache";
 
     /** Memory mode. */
     private CacheMemoryMode memoryMode;
 
     /** Eviction policy. */
-    private EvictionPolicy evictionPolicy;
+    private EvictionPolicy evictionPlc;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
-        cfg.setSwapSpaceSpi(new NoopSwapSpaceSpi());
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         return cfg;
+    }
+
+    /**
+     * Checks offheap resources are freed after cache destroy - ONHEAP_TIERED memory mode
+     *
+     * @throws Exception If failed.
+     */
+    public void testCleanupOffheapAfterCacheDestroyOnheapTiered() throws Exception {
+        memoryMode = ONHEAP_TIERED;
+
+        FifoEvictionPolicy evictionPlc0 = new FifoEvictionPolicy();
+        evictionPlc0.setMaxSize(1);
+
+        evictionPlc = evictionPlc0;
+
+        checkCleanupOffheapAfterCacheDestroy();
+    }
+
+    /**
+     * Checks offheap resources are freed after cache destroy - OFFHEAP_TIERED memory mode
+     *
+     * @throws Exception If failed.
+     */
+    public void testCleanupOffheapAfterCacheDestroyOffheapTiered() throws Exception {
+        memoryMode = OFFHEAP_TIERED;
+        evictionPlc = null;
+
+        checkCleanupOffheapAfterCacheDestroy();
+    }
+
+    /**
+     * TODO: IGNITE-2714.
+     *
+     * Checks offheap resources are freed after cache destroy - OFFHEAP_VALUES memory mode
+     *
+     * @throws Exception If failed.
+     */
+    public void _testCleanupOffheapAfterCacheDestroyOffheapValues() throws Exception {
+        memoryMode = OFFHEAP_VALUES;
+        evictionPlc = null;
+
+        try (Ignite g = startGrid(0)) {
+            IgniteCache<Integer, String> cache = g.getOrCreateCache(createCacheConfiguration());
+
+            cache.put(1, "value_1");
+            cache.put(2, "value_2");
+
+            GridCacheContext ctx =  GridTestUtils.cacheContext(cache);
+            GridUnsafeMemory unsafeMemory = ctx.unsafeMemory();
+
+            g.destroyCache(null);
+
+            if (unsafeMemory != null)
+                assertEquals("Unsafe memory not freed", 0, unsafeMemory.allocatedSize());
+        }
     }
 
     /**
@@ -63,14 +120,14 @@ public class GridCacheOffHeapCleanupTest extends GridCommonAbstractTest {
      * @return cache configuration.
      * */
     private CacheConfiguration<Integer, String> createCacheConfiguration() {
-        CacheConfiguration<Integer, String> cacheCfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<>();
 
-        cacheCfg.setOffHeapMaxMemory(0);
-        cacheCfg.setMemoryMode(memoryMode);
-        cacheCfg.setEvictionPolicy(evictionPolicy);
-        cacheCfg.setNearConfiguration(null);
+        ccfg.setName(CACHE_NAME);
+        ccfg.setOffHeapMaxMemory(0);
+        ccfg.setMemoryMode(memoryMode);
+        ccfg.setEvictionPolicy(evictionPlc);
 
-        return cacheCfg;
+        return ccfg;
     }
 
     /**
@@ -79,20 +136,21 @@ public class GridCacheOffHeapCleanupTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkCleanupOffheapAfterCacheDestroy() throws Exception {
-        final String defaultCacheSpaceName = "gg-swap-cache-dflt";
+        final String spaceName = "gg-swap-cache-" + CACHE_NAME;
 
         try (Ignite g = startGrid(0)) {
-            checkOffheapAllocated(defaultCacheSpaceName, false);
+            checkOffheapAllocated(spaceName, false);
 
             IgniteCache<Integer, String> cache = g.getOrCreateCache(createCacheConfiguration());
 
             cache.put(1, "value_1");
             cache.put(2, "value_2");
 
-            checkOffheapAllocated(defaultCacheSpaceName, true);
+            checkOffheapAllocated(spaceName, true);
 
-            g.destroyCache(null);
-            checkOffheapAllocated(defaultCacheSpaceName, false);
+            g.destroyCache(cache.getName());
+
+            checkOffheapAllocated(spaceName, false);
         }
     }
 
@@ -106,61 +164,6 @@ public class GridCacheOffHeapCleanupTest extends GridCommonAbstractTest {
     private void checkOffheapAllocated(String spaceName, boolean allocated) throws Exception {
         long offheapSize = grid(0).context().offheap().allocatedSize(spaceName);
 
-        if (allocated != (offheapSize >= 0))
-            assertEquals("Unexpected offheap allocated size for space " + spaceName, offheapSize);
-    }
-
-
-    /**
-     * Check offheap resources are freed after cache destroy - ONHEAP_TIERED memory mode
-     *
-     * @throws Exception If failed.
-     */
-    public void testCleanupOffheapAfterCacheDestroyOnheapTiered() throws Exception {
-        memoryMode = CacheMemoryMode.ONHEAP_TIERED;
-
-        FifoEvictionPolicy evictionPolicy0 = new FifoEvictionPolicy();
-        evictionPolicy0.setMaxSize(1);
-
-        evictionPolicy = evictionPolicy0;
-
-        checkCleanupOffheapAfterCacheDestroy();
-    }
-
-    /**
-     * Check offheap resources are freed after cache destroy - OFFHEAP_TIERED memory mode
-     *
-     * @throws Exception If failed.
-     */
-    public void testCleanupOffheapAfterCacheDestroyOffheapTiered() throws Exception {
-        memoryMode = CacheMemoryMode.OFFHEAP_TIERED;
-        evictionPolicy = null;
-
-        checkCleanupOffheapAfterCacheDestroy();
-    }
-
-    /**
-     * Check offheap resources are freed after cache destroy - OFFHEAP_VALUES memory mode
-     *
-     * @throws Exception If failed.
-     */
-    public void testCleanupOffheapAfterCacheDestroyOffheapValues() throws Exception {
-        memoryMode = CacheMemoryMode.OFFHEAP_VALUES;
-        evictionPolicy = null;
-
-        try (Ignite g = startGrid(0)) {
-            IgniteCache<Integer, String> cache = g.getOrCreateCache(createCacheConfiguration());
-
-            cache.put(1, "value_1");
-            cache.put(2, "value_2");
-
-            GridCacheContext context =  GridTestUtils.cacheContext(cache);
-            GridUnsafeMemory unsafeMemory = context.unsafeMemory();
-
-            g.destroyCache(null);
-
-            if (unsafeMemory != null)
-                assertEquals("Unsafe memory not freed", 0, unsafeMemory.allocatedSize());
-        }
+        assertEquals("Unexpected offheap allocated size", allocated, (offheapSize >= 0));
     }
 }
