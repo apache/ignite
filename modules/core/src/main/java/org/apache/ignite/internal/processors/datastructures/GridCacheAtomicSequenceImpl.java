@@ -245,7 +245,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
                     reservationFut = runAsyncReservation(0);
 
                 // If reserved range isn't exhausted.
-                if (locVal + l <= upBound) {
+                if (locVal + l < upBound) {
                     long curVal = locVal;
 
                     locVal += l;
