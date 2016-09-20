@@ -28,6 +28,7 @@ import org.apache.ignite.yardstick.cache.model.Person;
 import org.apache.ignite.yardstick.cache.model.Person1;
 import org.apache.ignite.yardstick.cache.model.Person2;
 import org.yardstickframework.BenchmarkConfiguration;
+import org.yardstickframework.BenchmarkUtils;
 
 import static org.yardstickframework.BenchmarkUtils.println;
 
@@ -45,12 +46,14 @@ public class IgniteSqlDeleteBenchmark extends IgniteCacheAbstractBenchmark<Integ
         for (int i = 0; i < args.range(); i++) {
             cache().put(i, new Person1(i));
             keys.add(i);
+            if (i % 100000 == 0)
+                BenchmarkUtils.println(cfg, "DELETE setUp: have successfully put " + i + " items");
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        cache.query(new SqlFieldsQuery("delete from Person1 where _key = ?").setArgs(keys.poll()));
+        cache.query(new SqlFieldsQuery("delete from Person1 where _key = ?").setArgs(keys.remove()));
 
         return true;
     }
