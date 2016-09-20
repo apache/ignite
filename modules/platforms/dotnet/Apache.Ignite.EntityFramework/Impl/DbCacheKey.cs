@@ -83,8 +83,10 @@ namespace Apache.Ignite.EntityFramework.Impl
 
             var sb = new StringBuilder(_key);
 
-            foreach (var ver in _entitySetVersions)
-                sb.AppendFormat("_{0}", ver.Value);
+            // Versions should be in the same order!
+            // TODO: Add test
+            foreach (var entitySet in _entitySets)
+                sb.AppendFormat("_{0}", _entitySetVersions[entitySet.Name]);
 
             return sb.ToString();
         }
