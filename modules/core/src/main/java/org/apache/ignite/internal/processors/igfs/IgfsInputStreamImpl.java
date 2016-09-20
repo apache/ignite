@@ -576,7 +576,7 @@ public class IgfsInputStreamImpl extends IgfsInputStream implements IgfsSecondar
 
             final GridFutureAdapter<byte[]> fut = new GridFutureAdapter<>();
 
-            igfsCtx.runIgfsLocalSafe(new Runnable() {
+            igfsCtx.runInIgfsThreadPool(new Runnable() {
                 @Override public void run() {
                     try {
                         fut.onDone(igfsCtx.data().secondaryDataBlock(path, blockIdx, secReader, blockSize));

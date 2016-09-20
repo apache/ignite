@@ -95,10 +95,11 @@ public class IgfsContext {
         this.srvMgr = add(srvMgr);
         this.fragmentizerMgr = add(fragmentizerMgr);
 
-        igfs = new IgfsImpl(this);
-
         log = ctx.log(IgfsContext.class);
+
         igfsSvc = ctx.getIgfsExecutorService();
+
+        igfs = new IgfsImpl(this);
     }
 
     /**
@@ -219,34 +220,12 @@ public class IgfsContext {
     }
 
     /**
-     * Executes callable in IGFS executor service. If execution rejected, callable will be executed
-     * in caller thread.
-     *
-     * @param c Callable to execute.
-     */
-    public <T> void callIgfsLocalSafe(Callable<T> c) {
-        try {
-            igfsSvc.submit(c);
-        }
-        catch (RejectedExecutionException ignored) {
-            // This exception will happen if network speed is too low and data comes faster
-            // than we can send it to remote nodes.
-            try {
-                c.call();
-            }
-            catch (Exception e) {
-                log.warning("Failed to execute IGFS callable: " + c, e);
-            }
-        }
-    }
-
-    /**
      * Executes runnable in IGFS executor service. If execution rejected, runnable will be executed
      * in caller thread.
      *
      * @param r Runnable to execute.
      */
-    public void runIgfsLocalSafe(Runnable r) {
+    public void runInIgfsThreadPool(Runnable r) {
         try {
             igfsSvc.submit(r);
         }
