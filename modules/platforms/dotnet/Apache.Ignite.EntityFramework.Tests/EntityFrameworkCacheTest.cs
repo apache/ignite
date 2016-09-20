@@ -657,8 +657,6 @@ namespace Apache.Ignite.EntityFramework.Tests
             // Wait for the cleanup to complete.
             Thread.Sleep(200);
 
-            var all = _cache.ToArray();
-
             // Only one version of data is in the cache.
             Assert.AreEqual(1, _cache.GetSize());
             Assert.AreEqual(1, _metaCache.GetSize());
@@ -675,8 +673,7 @@ namespace Apache.Ignite.EntityFramework.Tests
                 ctx.Blogs.Add(blog);
                 ctx.SaveChanges();
 
-                var array = ctx.Blogs.ToArray();
-                Assert.AreEqual(1, array.Count(x => x.BlogId == blog.BlogId));
+                Assert.AreEqual(1, ctx.Blogs.ToArray().Count(x => x.BlogId == blog.BlogId));
 
                 ctx.Blogs.Remove(blog);
                 ctx.SaveChanges();
