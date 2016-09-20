@@ -55,6 +55,7 @@
     <Compile Include="IDbCachingPolicy.cs" />
     <Compile Include="Impl\ArrayDbDataReader.cs" />
     <Compile Include="Impl\DataReaderResult.cs" />
+    <Compile Include="Impl\DbCacheKey.cs" />
     <Compile Include="Impl\DbCommandDefinitionProxy.cs" />
     <Compile Include="Impl\DbCommandInfo.cs" />
     <Compile Include="Impl\DbCommandProxy.cs">

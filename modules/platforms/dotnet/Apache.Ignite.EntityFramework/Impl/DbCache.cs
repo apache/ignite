@@ -86,13 +86,23 @@ namespace Apache.Ignite.EntityFramework.Impl
             _cache = ignite.GetOrCreateCache<string, EntityFrameworkCacheEntry>(dataCacheConfiguration);
         }
 
-        /** <inheritdoc /> */
-        public bool GetItem(string key, ICollection<EntitySetBase> dependentEntitySets, DbCachingStrategy strategy, 
-            out object value)
+        /// <summary>
+        /// Gets the cache key to be used with GetItem and PutItem.
+        /// </summary>
+        public string GetCacheKey(string key, ICollection<EntitySetBase> dependentEntitySets, DbCachingStrategy strategy)
         {
             if (strategy == DbCachingStrategy.ReadWrite)
                 key = GetVersionedKey(key, dependentEntitySets);
 
+            return key;
+        }
+
+        /// <summary>
+        /// Gets the item from cache.
+        /// </summary>
+        public bool GetItem(string key, ICollection<EntitySetBase> dependentEntitySets, DbCachingStrategy strategy, 
+            out object value)
+        {
             EntityFrameworkCacheEntry res;
 
             var success = _cache.TryGet(key, out res);
@@ -102,7 +112,9 @@ namespace Apache.Ignite.EntityFramework.Impl
             return success;
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Puts the item to cache.
+        /// </summary>
         public void PutItem(string key, object value, ICollection<EntitySetBase> dependentEntitySets,
             DbCachingStrategy strategy, TimeSpan absoluteExpiration)
         {
@@ -114,8 +126,6 @@ namespace Apache.Ignite.EntityFramework.Impl
                         return;
 
                     var entitySetVersions = GetEntitySetVersions(dependentEntitySets);
-
-                    key = GetVersionedKey(key, entitySetVersions);
 
                     var cache = GetCacheWithExpiry(absoluteExpiration);
 
@@ -138,7 +148,9 @@ namespace Apache.Ignite.EntityFramework.Impl
             }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Invalidates the sets.
+        /// </summary>
         public void InvalidateSets(ICollection<EntitySetBase> entitySets)
         {
             Debug.Assert(entitySets != null && entitySets.Count > 0);
