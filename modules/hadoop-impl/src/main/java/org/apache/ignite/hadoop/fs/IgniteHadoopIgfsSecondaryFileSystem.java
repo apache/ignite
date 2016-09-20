@@ -239,7 +239,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        target = HadoopDelegateUtils.delegate(this);
+        target = HadoopDelegateUtils.secondaryFileSystemDelegate(this);
 
         target.start();
     }

@@ -31,37 +31,68 @@ import java.util.Map;
  * Utility methods for Hadoop delegates.
  */
 public class HadoopDelegateUtils {
-    /** Proxy to delegate class name mapping. */
-    private static final Map<String, String> CLS_MAP;
+    /** Secondary file system delegate class. */
+    private static final String SECONDARY_FILE_SYSTEM_CLS =
+        "org.apache.ignite.internal.processors.hadoop.delegate.HadoopIgfsSecondaryFileSystemDelegateImpl";
+
+    /** Default file system factory class. */
+    private static final String DFLT_FACTORY_CLS =
+        "org.apache.ignite.internal.processors.hadoop.delegate.HadoopDefaultFileSystemFactoryDelegate";
+
+    /** Factory proxy to delegate class name mapping. */
+    private static final Map<String, String> FACTORY_CLS_MAP;
 
     static {
-        CLS_MAP = new HashMap<>();
+        FACTORY_CLS_MAP = new HashMap<>();
 
-        CLS_MAP.put(proxyClassName(IgniteHadoopIgfsSecondaryFileSystem.class),
-            "org.apache.ignite.internal.processors.hadoop.delegate.HadoopIgfsSecondaryFileSystemDelegateImpl");
-
-        CLS_MAP.put(proxyClassName(BasicHadoopFileSystemFactory.class),
+        FACTORY_CLS_MAP.put(BasicHadoopFileSystemFactory.class.getName(),
             "org.apache.ignite.internal.processors.hadoop.delegate.HadoopBasicFileSystemFactoryDelegate");
 
-        CLS_MAP.put(proxyClassName(CachingHadoopFileSystemFactory.class),
+        FACTORY_CLS_MAP.put(CachingHadoopFileSystemFactory.class.getName(),
             "org.apache.ignite.internal.processors.hadoop.delegate.HadoopCachingFileSystemFactoryDelegate");
 
-        CLS_MAP.put(proxyClassName(KerberosHadoopFileSystemFactory.class),
+        FACTORY_CLS_MAP.put(KerberosHadoopFileSystemFactory.class.getName(),
             "org.apache.ignite.internal.processors.hadoop.delegate.HadoopKerberosFileSystemFactoryDelegate");
     }
 
     /**
-     * Create delegate for certain proxy.
+     * Create delegate for secondary file system.
+     *
+     * @param proxy Proxy.
+     * @return Delegate.
+     */
+    public static HadoopIgfsSecondaryFileSystemDelegate secondaryFileSystemDelegate(
+        IgniteHadoopIgfsSecondaryFileSystem proxy) {
+        return newInstance(SECONDARY_FILE_SYSTEM_CLS, proxy);
+    }
+
+    /**
+     * Create delegate for certain file system factory.
      *
      * @param proxy Proxy.
      * @return Delegate.
      */
     @SuppressWarnings("unchecked")
-    public static <T> T delegate(Object proxy) {
-        String delegateClsName = delegateClassName(proxy.getClass());
+    public static <T> T fileSystemFactoryDelegate(Object proxy) {
+        String clsName = FACTORY_CLS_MAP.get(proxy.getClass().getName());
 
+        if (clsName == null)
+            clsName = DFLT_FACTORY_CLS;
+
+        return newInstance(clsName, proxy);
+    }
+
+    /**
+     * Get new delegate instance.
+     *
+     * @param clsName Class name.
+     * @param proxy Proxy.
+     * @return Instance.
+     */
+    @SuppressWarnings("unchecked")
+    private static <T> T newInstance(String clsName, Object proxy) {
         try {
-            Class delegateCls = Class.forName(delegateClsName);
+            Class delegateCls = Class.forName(clsName);
 
             Constructor[] ctors = delegateCls.getConstructors();
 
@@ -73,39 +104,8 @@ public class HadoopDelegateUtils {
         }
         catch (ReflectiveOperationException e) {
             throw new IgniteException("Failed to instantiate delegate for proxy [proxy=" + proxy +
-                ", delegateClsName=" + delegateClsName + ']', e);
+                ", delegateClsName=" + clsName + ']', e);
         }
-    }
-
-    /**
-     * Get delegate class name.
-     *
-     * @param proxyCls Proxy class.
-     * @return Delegate class name.
-     */
-    private static String delegateClassName(Class proxyCls) {
-        assert proxyCls != null;
-
-        String proxyClsName = proxyClassName(proxyCls);
-
-        String delegateClsName = CLS_MAP.get(proxyClsName);
-
-        if (delegateClsName == null)
-            throw new IgniteException("No delegate for proxy class: " + proxyClsName);
-
-        return delegateClsName;
-    }
-
-    /**
-     * Get proxy class name.
-     *
-     * @param proxyCls Proxy class.
-     * @return Class name.
-     */
-    private static String proxyClassName(Class proxyCls) {
-        assert proxyCls != null;
-
-        return proxyCls.getName();
     }
 
     /**

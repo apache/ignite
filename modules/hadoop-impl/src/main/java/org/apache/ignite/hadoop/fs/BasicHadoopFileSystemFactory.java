@@ -139,7 +139,7 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        target = HadoopDelegateUtils.delegate(this);
+        target = HadoopDelegateUtils.fileSystemFactoryDelegate(this);
 
         target.start();
     }
