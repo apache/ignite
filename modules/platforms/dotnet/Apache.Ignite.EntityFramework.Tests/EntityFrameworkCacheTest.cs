@@ -60,20 +60,17 @@ namespace Apache.Ignite.EntityFramework.Tests
         /** */
         private ICache<object, object> _metaCache;
 
-        /** */
-        private IIgnite _ignite2;
-
         /// <summary>
         /// Fixture set up.
         /// </summary>
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
-            // Start Ignite.
+            // Start 2 nodes.
             var cfg = TestUtils.GetTestConfiguration();
             var ignite = Ignition.Start(cfg);
 
-            _ignite2 = Ignition.Start(new IgniteConfiguration(cfg) {GridName = "grid2"});
+            Ignition.Start(new IgniteConfiguration(cfg) {GridName = "grid2"});
 
             // Create SQL CE database in a temp file.
             using (var ctx = GetDbContext())
@@ -641,28 +638,16 @@ namespace Apache.Ignite.EntityFramework.Tests
         {
             // Run in a loop to generate a bunch of outdated cache entries.
             for (var i = 0; i < 100; i++)
-                CreateRemoveBlog();
+            {
+                using (var ctx = GetDbContext())
+                {
+                    CreateRemoveBlog(ctx);
+                }
+            }
 
             // Only one version of data is in the cache.
             Assert.AreEqual(1, _cache.GetSize());
             Assert.AreEqual(1, _metaCache.GetSize());
-        }
-
-        private static void CreateRemoveBlog()
-        {
-            using (var ctx = GetDbContext())
-            {
-                var blog = new Blog {Name = "my blog"};
-                ctx.Blogs.Add(blog);
-                ctx.SaveChanges();
-
-                Assert.AreEqual(1, ctx.Blogs.Count());
-
-                ctx.Blogs.Remove(blog);
-                ctx.SaveChanges();
-
-                Assert.AreEqual(0, ctx.Blogs.Count());
-            }
         }
 
         /// <summary>
@@ -672,10 +657,36 @@ namespace Apache.Ignite.EntityFramework.Tests
         [Category(TestUtils.CategoryIntensive)]
         public void TestOldEntriesCleanupMultithreaded()
         {
-            // TODO: multi-node, multi-thread
-            
+            TestUtils.RunMultiThreaded(() =>
+            {
+                using (var ctx = GetDbContext())
+                {
+                    CreateRemoveBlog(ctx);
+                }
+
+                using (var ctx = GetDbContext2())
+                {
+                    CreateRemoveBlog(ctx);
+                }
+            }, 8, 20);
         }
 
+        /// <summary>
+        /// Creates and removes a blog.
+        /// </summary>
+        private static void CreateRemoveBlog(BloggingContext ctx)
+        {
+            var blog = new Blog { Name = "my blog" };
+            ctx.Blogs.Add(blog);
+            ctx.SaveChanges();
+
+            Assert.AreEqual(1, ctx.Blogs.Count());
+
+            ctx.Blogs.Remove(blog);
+            ctx.SaveChanges();
+
+            Assert.AreEqual(0, ctx.Blogs.Count());
+        }
 
         /// <summary>
         /// Executes the entity SQL.
