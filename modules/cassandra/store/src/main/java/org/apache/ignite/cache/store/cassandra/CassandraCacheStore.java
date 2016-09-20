@@ -457,12 +457,12 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
     }
 
     /**
-     * Returns table name to use for all Cassandra based operations (READ/WRITE/DELETE)
+     * Returns table name to use for all Cassandra based operations (READ/WRITE/DELETE).
      *
-     * @return table name
+     * @return Table name.
      */
     private String cassandraTable() {
         return controller.getPersistenceSettings().getTable() != null ?
-                controller.getPersistenceSettings().getTable() : storeSes.cacheName().toLowerCase();
+            controller.getPersistenceSettings().getTable() : storeSes.cacheName().toLowerCase();
     }
 }

@@ -40,7 +40,7 @@ public interface BatchExecutionAssistant<R, V> {
     /**
      * Cassandra table to use for an operation.
      *
-     * @return table name
+     * @return Table name.
      */
     public String getTable();
 

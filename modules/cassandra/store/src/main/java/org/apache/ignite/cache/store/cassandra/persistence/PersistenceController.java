@@ -21,7 +21,12 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Row;
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
@@ -129,8 +134,7 @@ public class PersistenceController {
     /**
      * Returns CQL statement to insert row into Cassandra table.
      *
-     * @param table table name
-     *
+     * @param table Table name.
      * @return CQL statement.
      */
     public String getWriteStatement(String table) {
@@ -140,8 +144,7 @@ public class PersistenceController {
     /**
      * Returns CQL statement to delete row from Cassandra table.
      *
-     * @param table table name
-     *
+     * @param table Table name.
      * @return CQL statement.
      */
     public String getDeleteStatement(String table) {
@@ -151,15 +154,15 @@ public class PersistenceController {
     /**
      * Returns CQL statement to select key/value fields from Cassandra table.
      *
-     * @param table table name
+     * @param table Table name.
      * @param includeKeyFields whether to include/exclude key fields from the returned row.
      *
      * @return CQL statement.
      */
     public String getLoadStatement(String table, boolean includeKeyFields) {
         return includeKeyFields ?
-                getStatement(table, loadWithKeyFieldsStatementTempl, loadWithKeyFieldsStatements) :
-                getStatement(table, loadStatementTempl, loadStatements);
+            getStatement(table, loadWithKeyFieldsStatementTempl, loadWithKeyFieldsStatements) :
+            getStatement(table, loadStatementTempl, loadStatements);
     }
 
     /**
@@ -247,7 +250,7 @@ public class PersistenceController {
         }
 
         String statement = "insert into \"" + persistenceSettings.getKeyspace() + "\".\"%1$s" +
-                "\" (" + colsList + ") values (" + questionsList + ")";
+            "\" (" + colsList + ") values (" + questionsList + ")";
 
         if (persistenceSettings.getTTL() != null)
             statement += " using ttl " + persistenceSettings.getTTL();

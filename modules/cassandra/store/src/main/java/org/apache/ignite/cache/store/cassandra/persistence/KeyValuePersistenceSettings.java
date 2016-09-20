@@ -272,8 +272,7 @@ public class KeyValuePersistenceSettings implements Serializable {
     /**
      * Returns DDL statement to create Cassandra table.
      *
-     * @param table table name
-     *
+     * @param table Table name.
      * @return Table DDL statement.
      */
     public String getTableDDLStatement(String table) {
@@ -316,8 +315,7 @@ public class KeyValuePersistenceSettings implements Serializable {
     /**
      * Returns DDL statements to create Cassandra table secondary indexes.
      *
-     * @param table table name
-     *
+     * @param table Table name.
      * @return DDL statements to create secondary indexes.
      */
     public List<String> getIndexDDLStatements(String table) {
