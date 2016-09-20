@@ -21,10 +21,7 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Row;
 import java.nio.ByteBuffer;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
@@ -45,17 +42,29 @@ public class PersistenceController {
     /** List of value unique POJO fields (skipping aliases pointing to the same Cassandra table column). */
     private final List<PojoField> valUniquePojoFields;
 
-    /** CQL statement to insert row into Cassandra table. */
-    private final String writeStatement;
+    /** CQL statement template to insert row into Cassandra table. */
+    private final String writeStatementTempl;
 
-    /** CQL statement to delete row from Cassandra table. */
-    private final String delStatement;
+    /** CQL statement template to delete row from Cassandra table. */
+    private final String delStatementTempl;
 
-    /** CQL statement to select value fields from Cassandra table. */
-    private final String loadStatement;
+    /** CQL statement template to select value fields from Cassandra table. */
+    private final String loadStatementTempl;
 
-    /** CQL statement to select key/value fields from Cassandra table. */
-    private final String loadStatementWithKeyFields;
+    /** CQL statement template to select key/value fields from Cassandra table. */
+    private final String loadWithKeyFieldsStatementTempl;
+
+    /** CQL statements to insert row into Cassandra table. */
+    private volatile Map<String, String> writeStatements = new HashMap<>();
+
+    /** CQL statements to delete row from Cassandra table. */
+    private volatile Map<String, String> delStatements = new HashMap<>();
+
+    /** CQL statements to select value fields from Cassandra table. */
+    private volatile Map<String, String> loadStatements = new HashMap<>();
+
+    /** CQL statements to select key/value fields from Cassandra table. */
+    private volatile Map<String, String> loadWithKeyFieldsStatements = new HashMap<>();
 
     /**
      * Constructs persistence controller from Ignite cache persistence settings.
@@ -70,10 +79,10 @@ public class PersistenceController {
 
         String[] loadStatements = prepareLoadStatements();
 
-        loadStatementWithKeyFields = loadStatements[0];
-        loadStatement = loadStatements[1];
-        writeStatement = prepareWriteStatement();
-        delStatement = prepareDeleteStatement();
+        loadWithKeyFieldsStatementTempl = loadStatements[0];
+        loadStatementTempl = loadStatements[1];
+        writeStatementTempl = prepareWriteStatement();
+        delStatementTempl = prepareDeleteStatement();
 
         keyUniquePojoFields = settings.getKeyPersistenceSettings().cassandraUniqueFields();
 
@@ -118,50 +127,39 @@ public class PersistenceController {
     }
 
     /**
-     * Returns Cassandra keyspace to use.
-     *
-     * @return keyspace.
-     */
-    public String getKeyspace() {
-        return persistenceSettings.getKeyspace();
-    }
-
-    /**
-     * Returns Cassandra table to use.
-     *
-     * @return table.
-     */
-    public String getTable() {
-        return persistenceSettings.getTable();
-    }
-
-    /**
      * Returns CQL statement to insert row into Cassandra table.
+     *
+     * @param table table name
      *
      * @return CQL statement.
      */
-    public String getWriteStatement() {
-        return writeStatement;
+    public String getWriteStatement(String table) {
+        return getStatement(table, writeStatementTempl, writeStatements);
     }
 
     /**
      * Returns CQL statement to delete row from Cassandra table.
      *
+     * @param table table name
+     *
      * @return CQL statement.
      */
-    public String getDeleteStatement() {
-        return delStatement;
+    public String getDeleteStatement(String table) {
+        return getStatement(table, delStatementTempl, delStatements);
     }
 
     /**
      * Returns CQL statement to select key/value fields from Cassandra table.
      *
+     * @param table table name
      * @param includeKeyFields whether to include/exclude key fields from the returned row.
      *
      * @return CQL statement.
      */
-    public String getLoadStatement(boolean includeKeyFields) {
-        return includeKeyFields ? loadStatementWithKeyFields : loadStatement;
+    public String getLoadStatement(String table, boolean includeKeyFields) {
+        return includeKeyFields ?
+                getStatement(table, loadWithKeyFieldsStatementTempl, loadWithKeyFieldsStatements) :
+                getStatement(table, loadStatementTempl, loadStatements);
     }
 
     /**
@@ -248,8 +246,8 @@ public class PersistenceController {
             questionsList.append("?");
         }
 
-        String statement = "insert into \"" + persistenceSettings.getKeyspace() + "\".\"" +
-                persistenceSettings.getTable() + "\" (" + colsList + ") values (" + questionsList + ")";
+        String statement = "insert into \"" + persistenceSettings.getKeyspace() + "\".\"%1$s" +
+                "\" (" + colsList + ") values (" + questionsList + ")";
 
         if (persistenceSettings.getTTL() != null)
             statement += " using ttl " + persistenceSettings.getTTL();
@@ -276,10 +274,7 @@ public class PersistenceController {
 
         statement.append(";");
 
-        return "delete from \"" +
-            persistenceSettings.getKeyspace() + "\".\"" +
-            persistenceSettings.getTable() + "\" where " +
-            statement;
+        return "delete from \"" + persistenceSettings.getKeyspace() + "\".\"%1$s\" where " + statement;
     }
 
     /**
@@ -331,7 +326,7 @@ public class PersistenceController {
 
         statement.append(" from \"");
         statement.append(persistenceSettings.getKeyspace());
-        statement.append("\".\"").append(persistenceSettings.getTable());
+        statement.append("\".\"%1$s");
         statement.append("\" where ");
 
         int i = 0;
@@ -347,6 +342,20 @@ public class PersistenceController {
         statement.append(";");
 
         return new String[] {hdrWithKeyFields + statement.toString(), hdr + statement.toString()};
+    }
+
+    private String getStatement(final String table, final String template, final Map<String, String> statements) {
+        //noinspection SynchronizationOnLocalVariableOrMethodParameter
+        synchronized (statements) {
+            String st = statements.get(table);
+
+            if (st == null) {
+                st = String.format(template, table);
+                statements.put(table, st);
+            }
+
+            return st;
+        }
     }
 
     /**
