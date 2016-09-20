@@ -483,7 +483,7 @@ namespace ignite
 
         SQLRETURN res = SQLFetchScroll(stmt, orientation, offset);
 
-        if (res == SQL_SUCCESS || res == SQL_NO_DATA)
+        if (res == SQL_SUCCESS)
         {
             if (rowCount)
                 *rowCount = 1;
@@ -491,6 +491,8 @@ namespace ignite
             if (rowStatusArray)
                 rowStatusArray[0] = SQL_ROW_SUCCESS;
         }
+        else if (res == SQL_NO_DATA && rowCount)
+            *rowCount = 0;
 
         return res;
     }
@@ -509,7 +511,8 @@ namespace ignite
 
         int32_t res = statement->GetColumnNumber();
 
-        *columnNum = static_cast<SQLSMALLINT>(res);
+        if (columnNum)
+            *columnNum = static_cast<SQLSMALLINT>(res);
 
         LOG_MSG("columnNum: %d\n", *columnNum);
 
@@ -628,7 +631,7 @@ namespace ignite
         if (ioType != SQL_PARAM_INPUT)
             return SQL_ERROR;
 
-        if (*resLen == SQL_DATA_AT_EXEC || *resLen <= SQL_LEN_DATA_AT_EXEC_OFFSET)
+        if (resLen && (*resLen == SQL_DATA_AT_EXEC || *resLen <= SQL_LEN_DATA_AT_EXEC_OFFSET))
             return SQL_ERROR;
 
         if (!IsSqlTypeSupported(paramSqlType))
@@ -669,7 +672,8 @@ namespace ignite
         CopyStringToBuffer(in, reinterpret_cast<char*>(outQueryBuffer),
             static_cast<size_t>(outQueryBufferLen));
 
-        *outQueryLen = std::min(outQueryBufferLen, static_cast<SQLINTEGER>(in.size()));
+        if (outQueryLen)
+            *outQueryLen = std::min(outQueryBufferLen, static_cast<SQLINTEGER>(in.size()));
 
         return SQL_SUCCESS;
     }
