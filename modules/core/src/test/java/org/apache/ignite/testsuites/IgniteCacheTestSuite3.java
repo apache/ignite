@@ -165,6 +165,9 @@ public class IgniteCacheTestSuite3 extends TestSuite {
         // Near-only cache.
         suite.addTest(IgniteCacheNearOnlySelfTestSuite.suite());
 
+        //Cache exchange shake suit
+        suite.addTest(IgniteCacheShakeExchangeTestSuit.suite());
+
         // Test cache with daemon nodes.
         suite.addTestSuite(GridCacheDaemonNodeLocalSelfTest.class);
         suite.addTestSuite(GridCacheDaemonNodePartitionedSelfTest.class);

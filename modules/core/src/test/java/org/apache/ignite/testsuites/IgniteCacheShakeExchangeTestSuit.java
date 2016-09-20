@@ -22,8 +22,10 @@ import org.apache.ignite.cache.IgniteCacheShakeExchangeTest;
 
 /**
  */
-public class IgniteCacheShakeExchangeTestSuit extends TestSuite {
-
+public class IgniteCacheShakeExchangeTestSuit {
+    /**
+     *
+     */
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Shake on exchange suit");
 
