@@ -17,9 +17,6 @@
 
 package org.apache.ignite.hadoop.fs;
 
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -123,15 +120,6 @@ public class KerberosHadoopFileSystemFactory extends BasicHadoopFileSystemFactor
      */
     public void setReloginInterval(long reloginInterval) {
         this.reloginInterval = reloginInterval;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void start() throws IgniteException {
-        A.ensure(!F.isEmpty(keyTab), "keyTab cannot not be empty.");
-        A.ensure(!F.isEmpty(keyTabPrincipal), "keyTabPrincipal cannot not be empty.");
-        A.ensure(reloginInterval >= 0, "reloginInterval cannot not be negative.");
-
-        super.start();
     }
 
     /** {@inheritDoc} */

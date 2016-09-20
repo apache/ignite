@@ -96,8 +96,6 @@ public abstract class Hadoop1DualAbstractTest extends IgfsDualAbstractSelfTest {
         factory.setConfigPaths(secondaryConfFullPath);
         factory.setUserNameMapper(mapper);
 
-        factory.start();
-
         IgniteHadoopIgfsSecondaryFileSystem second = new IgniteHadoopIgfsSecondaryFileSystem();
 
         second.setFileSystemFactory(factory);

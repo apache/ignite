@@ -31,6 +31,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
 import org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem;
+import org.apache.ignite.internal.processors.hadoop.delegate.HadoopDelegateUtils;
+import org.apache.ignite.internal.processors.hadoop.delegate.HadoopFileSystemFactoryDelegate;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsCommonAbstractTest;
 import org.apache.ignite.internal.util.typedef.G;
@@ -161,7 +163,7 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
 
     /**
      * Executes before each test.
-     * @throws Exception
+     * @throws Exception If failed.
      */
     private void before() throws Exception {
         initSecondary();
@@ -179,16 +181,18 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
         fac.setConfigPaths(primaryConfFullPath);
         fac.setUri(primaryFsUriStr);
 
-        fac.start();
+        HadoopFileSystemFactoryDelegate facDelegate = HadoopDelegateUtils.fileSystemFactoryDelegate(fac);
 
-        primaryFs = (FileSystem)fac.get(null); //provider.createFileSystem(null);
+        facDelegate.start();
+
+        primaryFs = facDelegate.get(null); //provider.createFileSystem(null);
 
         primaryFsUri = primaryFs.getUri();
     }
 
     /**
      * Executes after each test.
-     * @throws Exception
+     * @throws Exception If failed.
      */
     private void after() throws Exception {
         if (primaryFs != null) {
@@ -225,7 +229,7 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
     /**
      * Initialize underlying secondary filesystem.
      *
-     * @throws Exception
+     * @throws Exception If failed.
      */
     private void initSecondary() throws Exception {
         if (passSecondaryConfiguration) {

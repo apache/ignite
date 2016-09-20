@@ -17,13 +17,9 @@
 
 package org.apache.ignite.hadoop.fs;
 
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.util.KerberosUserNameMapper;
 import org.apache.ignite.hadoop.util.UserNameMapper;
-import org.apache.ignite.internal.processors.hadoop.delegate.HadoopBasicFileSystemFactoryDelegate;
-import org.apache.ignite.internal.processors.hadoop.delegate.HadoopDelegateUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Externalizable;
@@ -36,7 +32,7 @@ import java.io.ObjectOutput;
  * <p>
  * If {@code "fs.[prefix].impl.disable.cache"} is set to {@code true}, file system instances will be cached by Hadoop.
  */
-public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Externalizable, LifecycleAware {
+public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -49,9 +45,6 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
     /** User name mapper. */
     private UserNameMapper usrNameMapper;
 
-    /** Delegate. */
-    private transient volatile HadoopBasicFileSystemFactoryDelegate target;
-
     /**
      * Constructor.
      */
@@ -61,7 +54,7 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
 
     /** {@inheritDoc} */
     @Override public final Object get(String name) throws IOException {
-        return target.get(name);
+        throw new UnsupportedOperationException("Method should not be called directly.");
     }
 
     /**
@@ -135,19 +128,6 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
      */
     public void setUserNameMapper(@Nullable UserNameMapper usrNameMapper) {
         this.usrNameMapper = usrNameMapper;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void start() throws IgniteException {
-        target = HadoopDelegateUtils.fileSystemFactoryDelegate(this);
-
-        target.start();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stop() throws IgniteException {
-        if (target != null)
-            target.stop();
     }
 
     /** {@inheritDoc} */

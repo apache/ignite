@@ -22,6 +22,8 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.fs.KerberosHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
 
 import java.io.IOException;
 import java.security.PrivilegedExceptionAction;
@@ -44,8 +46,9 @@ public class HadoopKerberosFileSystemFactoryDelegate extends HadoopBasicFileSyst
     public HadoopKerberosFileSystemFactoryDelegate(KerberosHadoopFileSystemFactory proxy) {
         super(proxy);
 
-        assert proxy.getKeyTabPrincipal() != null;
-        assert proxy.getKeyTab() != null;
+        A.ensure(!F.isEmpty(proxy.getKeyTab()), "keyTab cannot not be empty.");
+        A.ensure(!F.isEmpty(proxy.getKeyTabPrincipal()), "keyTabPrincipal cannot not be empty.");
+        A.ensure(proxy.getReloginInterval() >= 0, "reloginInterval cannot not be negative.");
 
         reloginInterval = proxy.getReloginInterval();
 

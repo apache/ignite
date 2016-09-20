@@ -67,7 +67,7 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
     private final String dfltUsrName;
 
     /** Factory. */
-    private final HadoopFileSystemFactory factory;
+    private final HadoopFileSystemFactoryDelegate factory;
 
     /**
      * Constructor.
@@ -85,7 +85,7 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
         if (factory0 == null)
             factory0 = new CachingHadoopFileSystemFactory();
 
-        factory = factory0;
+        factory = HadoopDelegateUtils.fileSystemFactoryDelegate(factory0);
     }
 
     /** {@inheritDoc} */
@@ -373,14 +373,12 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
 
     /** {@inheritDoc} */
     public void start() {
-        if (factory instanceof LifecycleAware)
-            ((LifecycleAware)factory).start();
+        factory.start();
     }
 
     /** {@inheritDoc} */
     public void stop() {
-        if (factory instanceof LifecycleAware)
-            ((LifecycleAware)factory).stop();
+        factory.stop();
     }
 
     /**
@@ -459,7 +457,7 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
         assert !F.isEmpty(user);
 
         try {
-            return (FileSystem)factory.get(user);
+            return factory.get(user);
         }
         catch (IOException ioe) {
             throw new IgniteException(ioe);

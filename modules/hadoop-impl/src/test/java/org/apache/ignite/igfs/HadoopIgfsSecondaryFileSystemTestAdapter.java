@@ -28,6 +28,8 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
+import org.apache.ignite.internal.processors.hadoop.delegate.HadoopDelegateUtils;
+import org.apache.ignite.internal.processors.hadoop.delegate.HadoopFileSystemFactoryDelegate;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
@@ -39,7 +41,7 @@ import org.apache.ignite.internal.util.typedef.T2;
  */
 public class HadoopIgfsSecondaryFileSystemTestAdapter implements IgfsSecondaryFileSystemTestAdapter {
     /** File system factory. */
-    private final HadoopFileSystemFactory factory;
+    private final HadoopFileSystemFactoryDelegate factory;
 
     /**
      * Constructor.
@@ -48,7 +50,9 @@ public class HadoopIgfsSecondaryFileSystemTestAdapter implements IgfsSecondaryFi
     public HadoopIgfsSecondaryFileSystemTestAdapter(HadoopFileSystemFactory factory) {
         assert factory != null;
 
-        this.factory = factory;
+        this.factory = HadoopDelegateUtils.fileSystemFactoryDelegate(factory);
+
+        this.factory.start();
     }
 
     /** {@inheritDoc} */
@@ -144,6 +148,6 @@ public class HadoopIgfsSecondaryFileSystemTestAdapter implements IgfsSecondaryFi
      * @throws IOException If failed.
      */
     protected FileSystem get() throws IOException {
-        return (FileSystem)factory.get(FileSystemConfiguration.DFLT_USER_NAME);
+        return factory.get(FileSystemConfiguration.DFLT_USER_NAME);
     }
 }

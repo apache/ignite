@@ -73,7 +73,7 @@ public class HadoopDelegateUtils {
      * @return Delegate.
      */
     @SuppressWarnings("unchecked")
-    public static <T> T fileSystemFactoryDelegate(Object proxy) {
+    public static HadoopFileSystemFactoryDelegate fileSystemFactoryDelegate(Object proxy) {
         String clsName = FACTORY_CLS_MAP.get(proxy.getClass().getName());
 
         if (clsName == null)

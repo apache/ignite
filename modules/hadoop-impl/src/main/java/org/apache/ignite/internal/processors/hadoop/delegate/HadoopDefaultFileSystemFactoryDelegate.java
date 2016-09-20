@@ -42,18 +42,19 @@ public class HadoopDefaultFileSystemFactoryDelegate implements HadoopFileSystemF
         this.factory = factory;
     }
 
-    @Override
-    public FileSystem get(String usrName) throws IOException {
+    /** {@inheritDoc} */
+    @Override public FileSystem get(String usrName) throws IOException {
         return (FileSystem)factory.get(usrName);
     }
 
+    /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
         if (factory instanceof LifecycleAware)
             ((LifecycleAware)factory).start();
     }
 
-    @Override
-    public void stop() throws IgniteException {
+    /** {@inheritDoc} */
+    @Override public void stop() throws IgniteException {
         if (factory instanceof LifecycleAware)
             ((LifecycleAware)factory).stop();
     }
