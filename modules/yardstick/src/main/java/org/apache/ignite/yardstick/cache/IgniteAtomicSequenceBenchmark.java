@@ -34,6 +34,8 @@ public class IgniteAtomicSequenceBenchmark extends IgniteAbstractBenchmark {
         super.setUp(cfg);
 
         seq = ignite().atomicSequence("benchSequence", 0, true);
+
+        seq.batchSize(args.batch());
     }
 
     /** {@inheritDoc} */

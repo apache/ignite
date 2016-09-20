@@ -30,14 +30,21 @@ import org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSe
  */
 public interface ExecutionAssistant<R> {
     /**
-     * Indicates if Cassandra table existence is required for operation.
+     * Indicates if Cassandra table existence is required for an operation.
      *
      * @return true if table existence required.
      */
     public boolean tableExistenceRequired();
 
     /**
-     * Returns CQL statement to be used for operation.
+     * Cassandra table to use for an operation.
+     *
+     * @return Table name.
+     */
+    public String getTable();
+
+    /**
+     * Returns CQL statement to be used for an operation.
      *
      * @return CQL statement.
      */
@@ -53,7 +60,7 @@ public interface ExecutionAssistant<R> {
     public BoundStatement bindStatement(PreparedStatement statement);
 
     /**
-     * Persistence settings to use for operation.
+     * Persistence settings to use for an operation.
      *
      * @return persistence settings.
      */

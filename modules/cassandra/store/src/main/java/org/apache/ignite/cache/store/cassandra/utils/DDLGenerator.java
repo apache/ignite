@@ -46,16 +46,18 @@ public class DDLGenerator {
 
             try {
                 KeyValuePersistenceSettings settings = new KeyValuePersistenceSettings(file);
+                String table = settings.getTable() != null ? settings.getTable() : "my_table";
+
                 System.out.println("-------------------------------------------------------------");
                 System.out.println("DDL for keyspace/table from file: " + arg);
                 System.out.println("-------------------------------------------------------------");
                 System.out.println();
                 System.out.println(settings.getKeyspaceDDLStatement());
                 System.out.println();
-                System.out.println(settings.getTableDDLStatement());
+                System.out.println(settings.getTableDDLStatement(table));
                 System.out.println();
 
-                List<String> statements = settings.getIndexDDLStatements();
+                List<String> statements = settings.getIndexDDLStatements(table);
                 if (statements != null && !statements.isEmpty()) {
                     for (String st : statements) {
                         System.out.println(st);

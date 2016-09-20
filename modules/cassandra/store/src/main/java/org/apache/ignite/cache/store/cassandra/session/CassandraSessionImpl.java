@@ -129,7 +129,7 @@ public class CassandraSessionImpl implements CassandraSession {
                 }
 
                 try {
-                    PreparedStatement preparedSt = prepareStatement(assistant.getStatement(),
+                    PreparedStatement preparedSt = prepareStatement(assistant.getTable(), assistant.getStatement(),
                         assistant.getPersistenceSettings(), assistant.tableExistenceRequired());
 
                     if (preparedSt == null)
@@ -151,7 +151,7 @@ public class CassandraSessionImpl implements CassandraSession {
                             return null;
                         }
 
-                        handleTableAbsenceError(assistant.getPersistenceSettings());
+                        handleTableAbsenceError(assistant.getTable(), assistant.getPersistenceSettings());
                     }
                     else if (CassandraHelper.isHostsAvailabilityError(e))
                         handleHostsAvailabilityError(e, attempt, errorMsg);
@@ -210,7 +210,7 @@ public class CassandraSessionImpl implements CassandraSession {
 
                 List<Cache.Entry<Integer, ResultSetFuture>> futResults = new LinkedList<>();
 
-                PreparedStatement preparedSt = prepareStatement(assistant.getStatement(),
+                PreparedStatement preparedSt = prepareStatement(assistant.getTable(), assistant.getStatement(),
                     assistant.getPersistenceSettings(), assistant.tableExistenceRequired());
 
                 if (preparedSt == null)
@@ -232,7 +232,7 @@ public class CassandraSessionImpl implements CassandraSession {
                                     return assistant.processedData();
 
                                 tblAbsenceEx = e;
-                                handleTableAbsenceError(assistant.getPersistenceSettings());
+                                handleTableAbsenceError(assistant.getTable(), assistant.getPersistenceSettings());
                             }
                             else if (CassandraHelper.isHostsAvailabilityError(e)) {
                                 hostsAvailEx = e;
@@ -307,7 +307,7 @@ public class CassandraSessionImpl implements CassandraSession {
                         return assistant.processedData();
 
                     error = tblAbsenceEx;
-                    handleTableAbsenceError(assistant.getPersistenceSettings());
+                    handleTableAbsenceError(assistant.getTable(), assistant.getPersistenceSettings());
                 }
 
                 if (hostsAvailEx != null) {
@@ -475,7 +475,7 @@ public class CassandraSessionImpl implements CassandraSession {
      * @param tblExistenceRequired Flag indicating if table existence is required for the statement.
      * @return Prepared statement.
      */
-    private PreparedStatement prepareStatement(String statement, KeyValuePersistenceSettings settings,
+    private PreparedStatement prepareStatement(String table, String statement, KeyValuePersistenceSettings settings,
         boolean tblExistenceRequired) {
 
         int attempt = 0;
@@ -507,7 +507,7 @@ public class CassandraSessionImpl implements CassandraSession {
                         if (!tblExistenceRequired)
                             return null;
 
-                        handleTableAbsenceError(settings);
+                        handleTableAbsenceError(table, settings);
                     }
                     else if (CassandraHelper.isHostsAvailabilityError(e))
                         handleHostsAvailabilityError(e, attempt, errorMsg);
@@ -574,24 +574,25 @@ public class CassandraSessionImpl implements CassandraSession {
      *
      * @param settings Persistence settings.
      */
-    private void createTable(KeyValuePersistenceSettings settings) {
+    private void createTable(String table, KeyValuePersistenceSettings settings) {
         int attempt = 0;
         Throwable error = null;
-        String errorMsg = "Failed to create Cassandra table '" + settings.getTableFullName() + "'";
+        String tableFullName = settings.getKeyspace() + "." + table;
+        String errorMsg = "Failed to create Cassandra table '" + tableFullName + "'";
 
         while (attempt < CQL_EXECUTION_ATTEMPTS_COUNT) {
             try {
                 log.info("-----------------------------------------------------------------------");
-                log.info("Creating Cassandra table '" + settings.getTableFullName() + "'");
+                log.info("Creating Cassandra table '" + tableFullName + "'");
                 log.info("-----------------------------------------------------------------------\n\n" +
-                    settings.getTableDDLStatement() + "\n");
+                        tableFullName + "\n");
                 log.info("-----------------------------------------------------------------------");
-                session().execute(settings.getTableDDLStatement());
-                log.info("Cassandra table '" + settings.getTableFullName() + "' was successfully created");
+                session().execute(settings.getTableDDLStatement(table));
+                log.info("Cassandra table '" + tableFullName + "' was successfully created");
                 return;
             }
             catch (AlreadyExistsException ignored) {
-                log.info("Cassandra table '" + settings.getTableFullName() + "' already exist");
+                log.info("Cassandra table '" + tableFullName + "' already exist");
                 return;
             }
             catch (Throwable e) {
@@ -599,7 +600,7 @@ public class CassandraSessionImpl implements CassandraSession {
                     throw new IgniteException(errorMsg, e);
 
                 if (CassandraHelper.isKeyspaceAbsenceError(e)) {
-                    log.warning("Failed to create Cassandra table '" + settings.getTableFullName() +
+                    log.warning("Failed to create Cassandra table '" + tableFullName +
                         "' cause appropriate keyspace doesn't exist", e);
                     createKeyspace(settings);
                 }
@@ -620,19 +621,22 @@ public class CassandraSessionImpl implements CassandraSession {
      *
      * @param settings Persistence settings.
      */
-    private void createTableIndexes(KeyValuePersistenceSettings settings) {
-        if (settings.getIndexDDLStatements() == null || settings.getIndexDDLStatements().isEmpty())
+    private void createTableIndexes(String table, KeyValuePersistenceSettings settings) {
+        List<String> indexDDLStatements = settings.getIndexDDLStatements(table);
+
+        if (indexDDLStatements == null || indexDDLStatements.isEmpty())
             return;
 
         int attempt = 0;
         Throwable error = null;
-        String errorMsg = "Failed to create indexes for Cassandra table " + settings.getTableFullName();
+        String tableFullName = settings.getKeyspace() + "." + table;
+        String errorMsg = "Failed to create indexes for Cassandra table " + tableFullName;
 
         while (attempt < CQL_EXECUTION_ATTEMPTS_COUNT) {
             try {
-                log.info("Creating indexes for Cassandra table '" + settings.getTableFullName() + "'");
+                log.info("Creating indexes for Cassandra table '" + tableFullName + "'");
 
-                for (String statement : settings.getIndexDDLStatements()) {
+                for (String statement : indexDDLStatements) {
                     try {
                         session().execute(statement);
                     }
@@ -644,7 +648,7 @@ public class CassandraSessionImpl implements CassandraSession {
                     }
                 }
 
-                log.info("Indexes for Cassandra table '" + settings.getTableFullName() + "' were successfully created");
+                log.info("Indexes for Cassandra table '" + tableFullName + "' were successfully created");
 
                 return;
             }
@@ -652,7 +656,7 @@ public class CassandraSessionImpl implements CassandraSession {
                 if (CassandraHelper.isHostsAvailabilityError(e))
                     handleHostsAvailabilityError(e, attempt, errorMsg);
                 else if (CassandraHelper.isTableAbsenceError(e))
-                    createTable(settings);
+                    createTable(table, settings);
                 else
                     throw new IgniteException(errorMsg, e);
 
@@ -700,22 +704,24 @@ public class CassandraSessionImpl implements CassandraSession {
      *
      * @param settings Persistence settings.
      */
-    private void handleTableAbsenceError(KeyValuePersistenceSettings settings) {
+    private void handleTableAbsenceError(String table, KeyValuePersistenceSettings settings) {
         int hndNum = tblAbsenceHandlersCnt.incrementAndGet();
+
+        String tableFullName = settings.getKeyspace() + "." + table;
 
         try {
             synchronized (tblAbsenceHandlersCnt) {
                 // Oooops... I am not the first thread who tried to handle table absence problem.
                 if (hndNum != 0) {
-                    log.warning("Table " + settings.getTableFullName() + " absence problem detected. " +
+                    log.warning("Table " + tableFullName + " absence problem detected. " +
                             "Another thread already fixed it.");
                     return;
                 }
 
-                log.warning("Table " + settings.getTableFullName() + " absence problem detected. " +
+                log.warning("Table " + tableFullName + " absence problem detected. " +
                         "Trying to create table.");
 
-                IgniteException error = new IgniteException("Failed to create Cassandra table " + settings.getTableFullName());
+                IgniteException error = new IgniteException("Failed to create Cassandra table " + tableFullName);
 
                 int attempt = 0;
 
@@ -724,14 +730,14 @@ public class CassandraSessionImpl implements CassandraSession {
 
                     try {
                         createKeyspace(settings);
-                        createTable(settings);
-                        createTableIndexes(settings);
+                        createTable(table, settings);
+                        createTableIndexes(table, settings);
                     }
                     catch (Throwable e) {
                         if (CassandraHelper.isHostsAvailabilityError(e))
                             handleHostsAvailabilityError(e, attempt, null);
                         else
-                            throw new IgniteException("Failed to create Cassandra table " + settings.getTableFullName(), e);
+                            throw new IgniteException("Failed to create Cassandra table " + tableFullName, e);
 
                         error = (e instanceof IgniteException) ? (IgniteException)e : new IgniteException(e);
                     }
