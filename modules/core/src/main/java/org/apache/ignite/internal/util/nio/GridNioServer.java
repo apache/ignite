@@ -1590,7 +1590,8 @@ public class GridNioServer<T> {
                                     MessageReader reader = ses.meta(GridDirectParser.READER_META_KEY);
 
                                     sb.append("    Connection info [")
-                                        .append("rmtAddr=").append(ses.remoteAddress())
+                                        .append("in=").append(ses.accepted())
+                                        .append(", rmtAddr=").append(ses.remoteAddress())
                                         .append(", locAddr=").append(ses.localAddress());
 
                                     GridNioRecoveryDescriptor outDesc = ses.outRecoveryDescriptor();

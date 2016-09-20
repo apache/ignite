@@ -36,7 +36,7 @@ public class HadoopClasspathMain {
 
         StringBuilder sb = new StringBuilder();
 
-        for (String path : HadoopClasspathUtils.classpathForJavaProcess())
+        for (String path : HadoopClasspathUtils.classpathForProcess())
             sb.append(path).append(separator);
 
         System.out.println(sb);
