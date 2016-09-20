@@ -25,6 +25,13 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface HadoopHelper {
     /**
+     * Get common Hadoop class loader.
+     *
+     * @return Common Hadoop class loader.
+     */
+    public HadoopClassLoader commonClassLoader();
+
+    /**
      * Load special replacement and impersonate.
      *
      * @param in Input stream.

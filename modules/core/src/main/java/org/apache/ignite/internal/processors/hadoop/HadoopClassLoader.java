@@ -36,7 +36,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.UUID;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -98,15 +97,6 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
         PREDEFINED_NATIVE_LIBS = new HashSet<>();
 
         PREDEFINED_NATIVE_LIBS.add("hadoop");
-    }
-
-    /**
-     * Gets name for Job class loader. The name is specific for local node id.
-     * @param locNodeId The local node id.
-     * @return The class loader name.
-     */
-    public static String nameForJob(UUID locNodeId) {
-        return "hadoop-job-node-" + locNodeId.toString();
     }
 
     /**

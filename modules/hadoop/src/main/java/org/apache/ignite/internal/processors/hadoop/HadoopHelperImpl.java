@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.hadoop;
 
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -46,14 +47,53 @@ public class HadoopHelperImpl implements HadoopHelper {
     /** Cache for resolved dependency info. */
     private static final Map<String, Boolean> dependenciesCache = new ConcurrentHashMap8<>();
 
+    /** Kernal context. */
+    private final GridKernalContext ctx;
+
+    /** Common class loader. */
+    private volatile HadoopClassLoader ldr;
+
     /**
-     * Load special replacement and impersonate
-     *
-     * @param in Input stream.
-     * @param originalName Original class name.
-     * @param replaceName Replacer class name.
-     * @return Result.
+     * Default constructor.
      */
+    public HadoopHelperImpl() {
+        this(null);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param ctx Kernal context.
+     */
+    public HadoopHelperImpl(GridKernalContext ctx) {
+        this.ctx = ctx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public HadoopClassLoader commonClassLoader() {
+        HadoopClassLoader res = ldr;
+
+        if (res == null) {
+            synchronized (this) {
+                res = ldr;
+
+                if (res == null) {
+                    String[] libNames = null;
+
+                    if (ctx != null && ctx.config().getHadoopConfiguration() != null)
+                        libNames = ctx.config().getHadoopConfiguration().getNativeLibraryNames();
+
+                    res = new HadoopClassLoader(null, "hadoop-common", libNames, this);
+
+                    ldr = res;
+                }
+            }
+        }
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
     @Override public byte[] loadReplace(InputStream in, final String originalName, final String replaceName) {
         ClassReader rdr;
 
@@ -84,20 +124,12 @@ public class HadoopHelperImpl implements HadoopHelper {
         return w.toByteArray();
     }
 
-    /**
-     * @param cls Class name.
-     * @return {@code true} If this is Hadoop class.
-     */
+    /** {@inheritDoc} */
     @Override public boolean isHadoop(String cls) {
         return cls.startsWith("org.apache.hadoop.");
     }
 
-    /**
-     * Need to parse only Ignite Hadoop and IGFS classes.
-     *
-     * @param cls Class name.
-     * @return {@code true} if we need to check this class.
-     */
+    /** {@inheritDoc} */
     @Override public boolean isHadoopIgfs(String cls) {
         String ignitePkgPrefix = "org.apache.ignite";
 
@@ -109,22 +141,12 @@ public class HadoopHelperImpl implements HadoopHelper {
                 cls.indexOf("hadoop.", len) != -1);
     }
 
-    /**
-     * @param ldr Loader.
-     * @param clsName Class.
-     * @return Input stream.
-     */
+    /** {@inheritDoc} */
     @Override @Nullable public InputStream loadClassBytes(ClassLoader ldr, String clsName) {
         return ldr.getResourceAsStream(clsName.replace('.', '/') + ".class");
     }
 
-    /**
-     * Check whether class has external dependencies on Hadoop.
-     *
-     * @param clsName Class name.
-     * @param parentClsLdr Parent class loader.
-     * @return {@code True} if class has external dependencies.
-     */
+    /** {@inheritDoc} */
     @Override public boolean hasExternalDependencies(String clsName, ClassLoader parentClsLdr) {
         Boolean hasDeps = dependenciesCache.get(clsName);
 
@@ -152,7 +174,7 @@ public class HadoopHelperImpl implements HadoopHelper {
      * @param ctx Context.
      * @return {@code true} If the class has external dependencies.
      */
-    boolean hasExternalDependencies(String clsName, ClassLoader parentClsLdr, CollectingContext ctx) {
+    private boolean hasExternalDependencies(String clsName, ClassLoader parentClsLdr, CollectingContext ctx) {
         if (isHadoop(clsName)) // Hadoop must not be in classpath but Idea sucks, so filtering explicitly as external.
             return true;
 

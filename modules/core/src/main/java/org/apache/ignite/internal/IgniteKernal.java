@@ -822,7 +822,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             addHelper(IGFS_HELPER.create(F.isEmpty(cfg.getFileSystemConfiguration())));
 
-            addHelper(HADOOP_HELPER.createIfInClassPath(null, false));
+            addHelper(HADOOP_HELPER.createIfInClassPath(ctx, false));
 
             startProcessor(new IgnitePluginProcessor(ctx, cfg, plugins));
 
