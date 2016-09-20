@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.util.concurrent.SynchronousQueue;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -274,7 +275,7 @@ public final class IgfsImpl implements IgfsEx {
         }
 
         dualPool = secondaryFs != null ? new IgniteThreadPoolExecutor(4, Integer.MAX_VALUE, 5000L,
-            new LinkedBlockingQueue<Runnable>(), new IgfsThreadFactory(cfg.getName()), null) : null;
+            new SynchronousQueue<Runnable>(), new IgfsThreadFactory(cfg.getName()), null) : null;
     }
 
     /** {@inheritDoc} */
@@ -328,10 +329,6 @@ public final class IgfsImpl implements IgfsEx {
                 assert dualPool != null;
 
                 dualPool.submit(batch);
-
-                // Await starting batch. Batch worker could be blocked on queue of execution pool
-                // this is cause of deadlock.
-                batch.awaitStart();
 
                 // Spin in case another batch is currently running.
                 while (true) {
