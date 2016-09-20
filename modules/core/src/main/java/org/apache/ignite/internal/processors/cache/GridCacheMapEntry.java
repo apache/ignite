@@ -1141,6 +1141,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean evt,
         boolean metrics,
         boolean keepBinary,
+        boolean oldValPresent,
+        @Nullable CacheObject oldVal,
         AffinityTopologyVersion topVer,
         CacheEntryPredicate[] filter,
         GridDrType drType,
@@ -1198,7 +1200,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             Map<UUID, CacheContinuousQueryListener> lsnrCol =
                 notifyContinuousQueries(tx) ? cctx.continuousQueries().updateListeners(internal, false) : null;
 
-            old = (retval || intercept || lsnrCol != null) ?
+            old = oldValPresent ? oldVal :
+                (retval || intercept || lsnrCol != null) ?
                 rawGetOrUnmarshalUnlocked(!retval && !isOffHeapValuesOnly()) : this.val;
 
             if (intercept) {
@@ -1333,6 +1336,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean evt,
         boolean metrics,
         boolean keepBinary,
+        boolean oldValPresent,
+        @Nullable CacheObject oldVal,
         AffinityTopologyVersion topVer,
         CacheEntryPredicate[] filter,
         GridDrType drType,
@@ -1403,7 +1408,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             Map<UUID, CacheContinuousQueryListener> lsnrCol =
                 notifyContinuousQueries(tx) ? cctx.continuousQueries().updateListeners(internal, false) : null;
 
-            old = (retval || intercept || lsnrCol != null) ?
+            old = oldValPresent ? oldVal : (retval || intercept || lsnrCol != null) ?
                 rawGetOrUnmarshalUnlocked(!retval && !isOffHeapValuesOnly()) : val;
 
             if (intercept) {

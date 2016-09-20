@@ -35,14 +35,12 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import java.io.Externalizable;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.net.URI;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -116,14 +114,6 @@ public class HadoopFIleSystemFactorySelfTest extends IgfsCommonAbstractTest {
 
         assert primary.exists(IGFS_PATH_DUAL);
         assert secondary.exists(IGFS_PATH_DUAL);
-
-        GridTestUtils.assertThrows(null, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                primary.mkdirs(IGFS_PATH_PROXY);
-
-                return null;
-            }
-        }, IgfsInvalidPathException.class, null);
 
         // Create remote instance.
         FileSystem fs = FileSystem.get(URI.create("igfs://primary:primary@127.0.0.1:10500/"), baseConfiguration());
