@@ -188,6 +188,7 @@ import static org.apache.ignite.internal.GridKernalState.STARTED;
 import static org.apache.ignite.internal.GridKernalState.STARTING;
 import static org.apache.ignite.internal.GridKernalState.STOPPED;
 import static org.apache.ignite.internal.GridKernalState.STOPPING;
+import static org.apache.ignite.internal.IgniteComponentType.HADOOP_HELPER;
 import static org.apache.ignite.internal.IgniteComponentType.IGFS;
 import static org.apache.ignite.internal.IgniteComponentType.IGFS_HELPER;
 import static org.apache.ignite.internal.IgniteComponentType.SCHEDULE;
@@ -821,6 +822,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             addHelper(IGFS_HELPER.create(F.isEmpty(cfg.getFileSystemConfiguration())));
 
+            addHelper(HADOOP_HELPER.createIfInClassPath(null, false));
+
             startProcessor(new IgnitePluginProcessor(ctx, cfg, plugins));
 
             // Off-heap processor has no dependencies.
@@ -881,7 +884,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor(new DataStreamProcessor(ctx));
             startProcessor((GridProcessor)IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
             startProcessor(new GridContinuousProcessor(ctx));
-            startProcessor((GridProcessor)createHadoopComponent());
+            startProcessor(createHadoopComponent());
             startProcessor(new DataStructuresProcessor(ctx));
             startProcessor(createComponent(PlatformProcessor.class, ctx));
 
