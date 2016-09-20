@@ -20,6 +20,7 @@ package org.apache.ignite.hadoop.fs;
 import org.apache.ignite.lifecycle.LifecycleAware;
 
 import java.io.IOException;
+import java.io.Serializable;
 
 /**
  * Factory for Hadoop {@code FileSystem} used by {@link IgniteHadoopIgfsSecondaryFileSystem}.
@@ -32,7 +33,7 @@ import java.io.IOException;
  * Concrete factory may implement {@link LifecycleAware} interface. In this case start and stop callbacks will be
  * performed by Ignite. You may want to implement some initialization or cleanup there.
  */
-public interface HadoopFileSystemFactory {
+public interface HadoopFileSystemFactory extends Serializable {
     /**
      * Gets file system for the given user name.
      *

@@ -21,17 +21,24 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.util.KerberosUserNameMapper;
 import org.apache.ignite.hadoop.util.UserNameMapper;
 import org.apache.ignite.internal.processors.hadoop.delegate.BasicHadoopFileSystemFactoryDelegate;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.Externalizable;
 import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 /**
  * Simple Hadoop file system factory which delegates to {@code FileSystem.get()} on each call.
  * <p>
  * If {@code "fs.[prefix].impl.disable.cache"} is set to {@code true}, file system instances will be cached by Hadoop.
  */
-public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, LifecycleAware {
+public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Externalizable, LifecycleAware {
+    /** */
+    private static final long serialVersionUID = 0L;
+
         /** File system URI. */
     private String uri;
 
@@ -140,5 +147,37 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Li
     @Override public void stop() throws IgniteException {
         if (target != null)
             target.stop();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        U.writeString(out, uri);
+
+        if (cfgPaths != null) {
+            out.writeInt(cfgPaths.length);
+
+            for (String cfgPath : cfgPaths)
+                U.writeString(out, cfgPath);
+        }
+        else
+            out.writeInt(-1);
+
+        out.writeObject(usrNameMapper);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        uri = U.readString(in);
+
+        int cfgPathsCnt = in.readInt();
+
+        if (cfgPathsCnt != -1) {
+            cfgPaths = new String[cfgPathsCnt];
+
+            for (int i = 0; i < cfgPathsCnt; i++)
+                cfgPaths[i] = U.readString(in);
+        }
+
+        usrNameMapper = (UserNameMapper)in.readObject();
     }
 }
