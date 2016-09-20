@@ -670,9 +670,13 @@ namespace Apache.Ignite.EntityFramework.Tests
         /// <summary>
         /// Creates and removes a blog.
         /// </summary>
-        private static void CreateRemoveBlog()
+        private void CreateRemoveBlog()
         {
             var blog = new Blog {Name = "my blog"};
+
+            Func<object> getMeta = () => _metaCache.Where(x => x.Key == "Blog").Select(x => x.Value).SingleOrDefault();
+
+            var meta1 = getMeta();
 
             using (var ctx = GetDbContext())
             {
@@ -680,10 +684,15 @@ namespace Apache.Ignite.EntityFramework.Tests
                 ctx.SaveChanges();
             }
 
+            var meta2 = getMeta();
+
             using (var ctx = GetDbContext())
             {
-                Assert.AreEqual(1, ctx.Blogs.ToArray().Count(x => x.BlogId == blog.BlogId));
+                Assert.AreEqual(1, ctx.Blogs.ToArray().Count(x => x.BlogId == blog.BlogId),
+                    string.Format(meta1 + ", " + meta2));
             }
+
+            var meta3 = getMeta();
 
             using (var ctx = GetDbContext())
             {
@@ -692,9 +701,12 @@ namespace Apache.Ignite.EntityFramework.Tests
                 ctx.SaveChanges();
             }
 
+            var meta4 = getMeta();
+
             using (var ctx = GetDbContext())
             {
-                Assert.AreEqual(0, ctx.Blogs.ToArray().Count(x => x.BlogId == blog.BlogId));
+                Assert.AreEqual(0, ctx.Blogs.ToArray().Count(x => x.BlogId == blog.BlogId),
+                    string.Format(meta1 + ", " + meta2 + ", " + meta3 + ", " + meta4));
             }
         }
 
