@@ -158,6 +158,8 @@ namespace Apache.Ignite.EntityFramework.Impl
                 return _command.ExecuteReader(behavior);
             }
 
+            // TODO: We must retrieve entity set versions BEFORE executing the query!
+
             var cacheKey = GetKey();
             var queryInfo = GetQueryInfo();
             var strategy = _info.Policy.GetCachingStrategy(queryInfo);
