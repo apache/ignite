@@ -657,18 +657,12 @@ namespace Apache.Ignite.EntityFramework.Tests
         [Category(TestUtils.CategoryIntensive)]
         public void TestOldEntriesCleanupMultithreaded()
         {
-            TestUtils.RunMultiThreaded(() =>
-            {
-                using (var ctx = GetDbContext())
-                {
-                    CreateRemoveBlog(ctx);
-                }
+            TestUtils.RunMultiThreaded(CreateRemoveBlog, 4, 10);
 
-                using (var ctx = GetDbContext2())
-                {
-                    CreateRemoveBlog(ctx);
-                }
-            }, 8, 20);
+            // Wait for the cleanup to complete.
+            Thread.Sleep(200);
+
+            var all = _cache.ToArray();
 
             // Only one version of data is in the cache.
             Assert.AreEqual(1, _cache.GetSize());
@@ -678,18 +672,22 @@ namespace Apache.Ignite.EntityFramework.Tests
         /// <summary>
         /// Creates and removes a blog.
         /// </summary>
-        private static void CreateRemoveBlog(BloggingContext ctx)
+        private static void CreateRemoveBlog()
         {
-            var blog = new Blog { Name = "my blog" };
-            ctx.Blogs.Add(blog);
-            ctx.SaveChanges();
+            using (var ctx = GetDbContext())
+            {
+                var blog = new Blog {Name = "my blog"};
+                ctx.Blogs.Add(blog);
+                ctx.SaveChanges();
 
-            Assert.AreEqual(1, ctx.Blogs.Count(x => x.BlogId == blog.BlogId));
+                var array = ctx.Blogs.ToArray();
+                Assert.AreEqual(1, array.Count(x => x.BlogId == blog.BlogId));
 
-            ctx.Blogs.Remove(blog);
-            ctx.SaveChanges();
+                ctx.Blogs.Remove(blog);
+                ctx.SaveChanges();
 
-            Assert.AreEqual(0, ctx.Blogs.Count(x => x.BlogId == blog.BlogId));
+                Assert.AreEqual(0, ctx.Blogs.ToArray().Count(x => x.BlogId == blog.BlogId));
+            }
         }
 
         /// <summary>
@@ -737,25 +735,9 @@ namespace Apache.Ignite.EntityFramework.Tests
             return new BloggingContext(ConnectionString);
         }
 
-        /// <summary>
-        /// Gets the database context for the second grid.
-        /// </summary>
-        private static BloggingContext GetDbContext2()
-        {
-            return new BloggingContext2(ConnectionString);
-        }
-
         private class MyDbConfiguration : IgniteDbConfiguration
         {
             public MyDbConfiguration() : base(Ignition.GetIgnite(), null, null, Policy)
-            {
-                // No-op.
-            }
-        }
-
-        private class MyDbConfiguration2 : IgniteDbConfiguration
-        {
-            public MyDbConfiguration2() : base(Ignition.GetIgnite("grid2"), null, null, Policy)
             {
                 // No-op.
             }
@@ -772,18 +754,6 @@ namespace Apache.Ignite.EntityFramework.Tests
             public virtual DbSet<Blog> Blogs { get; set; }
             public virtual DbSet<Post> Posts { get; set; }
             public virtual DbSet<ArrayReaderTest> Tests { get; set; }
-        }
-
-        /// <summary>
-        /// Context that uses second grid.
-        /// </summary>
-        [DbConfigurationType(typeof(MyDbConfiguration2))]
-        private class BloggingContext2 : BloggingContext
-        {
-            public BloggingContext2(string nameOrConnectionString) : base(nameOrConnectionString)
-            {
-                // No-op.
-            }
         }
 
         private class Blog

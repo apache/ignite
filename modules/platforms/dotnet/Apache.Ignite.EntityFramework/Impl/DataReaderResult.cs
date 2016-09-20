@@ -54,9 +54,9 @@ namespace Apache.Ignite.EntityFramework.Impl
             }
             finally 
             {
+                reader.Close();
                 reader.Dispose();
             }
-
         }
 
         /// <summary>
