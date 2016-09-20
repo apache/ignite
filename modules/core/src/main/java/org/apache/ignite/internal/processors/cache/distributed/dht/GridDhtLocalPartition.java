@@ -889,6 +889,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                                 null,
                                 false);
                         }
+
+                        map.removeEntry(cached);
                     }
                 }
                 catch (GridDhtInvalidPartitionException e) {
