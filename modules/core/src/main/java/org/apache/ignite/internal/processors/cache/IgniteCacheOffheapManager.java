@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.database.RowStore;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
@@ -214,7 +215,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
     /**
      * @return Global remove ID counter.
      */
-    public AtomicLong globalRemoveId();
+    public GridAtomicLong globalRemoveId();
 
     // TODO GG-10884: moved from GridCacheSwapManager.
     void writeAll(Iterable<GridCacheBatchSwapEntry> swapped) throws IgniteCheckedException;

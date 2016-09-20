@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -86,10 +87,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     private static final PendingRow START_PENDING_ROW = new PendingRow(Long.MIN_VALUE, 0);
 
     /** */
-    private final AtomicLong globalRmvId = new AtomicLong(U.currentTimeMillis() * 1000_000);
+    private final GridAtomicLong globalRmvId = new GridAtomicLong(U.currentTimeMillis() * 1000_000);
 
     /** {@inheritDoc} */
-    @Override public AtomicLong globalRemoveId() {
+    @Override public GridAtomicLong globalRemoveId() {
         return globalRmvId;
     }
 
