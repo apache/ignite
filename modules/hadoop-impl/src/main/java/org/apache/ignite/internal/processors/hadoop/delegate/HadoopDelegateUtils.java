@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.hadoop.delegate;
 
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.hadoop.fs.BasicHadoopFileSystemFactory;
+import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
+
 /**
  * Utility methods for Hadoop delegates.
  */
@@ -27,9 +31,18 @@ public class HadoopDelegateUtils {
      * @param proxy Proxy.
      * @return Delegate.
      */
+    @SuppressWarnings("unchecked")
     public static <T> T delegate(Object proxy) {
-        // TODO
-        return null;
+        Object res;
+
+        if (proxy instanceof IgniteHadoopIgfsSecondaryFileSystem)
+            res = new HadoopIgfsSecondaryFileSystemDelegateImpl((IgniteHadoopIgfsSecondaryFileSystem)proxy);
+        else if (proxy instanceof BasicHadoopFileSystemFactory)
+            res = new BasicHadoopFileSystemFactoryDelegate((BasicHadoopFileSystemFactory)proxy);
+        else
+            throw new IgniteException("Unsupported proxy: " + proxy);
+
+        return (T)res;
     }
 
     /**
