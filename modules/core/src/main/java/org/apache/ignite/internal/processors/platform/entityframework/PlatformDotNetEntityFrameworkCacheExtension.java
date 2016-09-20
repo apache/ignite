@@ -20,12 +20,15 @@ package org.apache.ignite.internal.processors.platform.entityframework;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtension;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
+import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
@@ -74,13 +77,25 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
 
                 // Initiate old entries cleanup.
                 Ignite grid = target.platformContext().kernalContext().grid();
+                IgniteCompute asyncCompute = grid.compute().withAsync();
 
-                grid.compute().broadcast(new IgniteRunnable() {
+                // Set a flag about running cleanup.
+                // TODO: How to atomically check if there is no cleanup?
+                ((IgniteCache)metaCache).put(CLEANUP_NODE_ID, grid.cluster().localNode().id());
+
+                asyncCompute.broadcast(new IgniteRunnable() {
                     @IgniteInstanceResource
                     private Ignite ignite;
 
                     @Override public void run() {
                         removeOldEntries(ignite, dataCacheName, currentVersions);
+                    }
+                });
+
+                asyncCompute.future().listen(new CI1<IgniteFuture<Object>>() {
+                    @Override public void apply(IgniteFuture<Object> future) {
+                        // Reset cleanup flag.
+                        ((IgniteCache)metaCache).put(CLEANUP_NODE_ID, null);
                     }
                 });
 
