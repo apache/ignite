@@ -583,12 +583,6 @@ public class GridReduceQueryExecutor {
                         mapQry.marshallParams(m);
                 }
 
-                cancel.set(new Runnable() {
-                    @Override public void run() {
-                        send(finalNodes, new GridQueryCancelRequest(qryReqId), null);
-                    }
-                });
-
                 boolean retry = false;
 
                 if (cancel.cancelRequested())
@@ -596,7 +590,11 @@ public class GridReduceQueryExecutor {
 
                 if (send(nodes,
                     new GridQueryRequest(qryReqId, r.pageSize, space, mapQrys, topVer, extraSpaces, null, timeoutMillis), partsMap)) {
-                    cancel.enterCancellableState(); // Enter cancellable state.
+                    cancel.set(new Runnable() {
+                        @Override public void run() {
+                            send(finalNodes, new GridQueryCancelRequest(qryReqId), null);
+                        }
+                    });
 
                     awaitAllReplies(r, nodes);
 
@@ -688,8 +686,6 @@ public class GridReduceQueryExecutor {
                 return new GridQueryCacheObjectsIterator(resIter, cctx, keepBinary);
             }
             catch (IgniteCheckedException | RuntimeException e) {
-                cancel.leaveCancellableState();
-
                 U.closeQuiet(r.conn);
 
                 if (e instanceof CacheException) {

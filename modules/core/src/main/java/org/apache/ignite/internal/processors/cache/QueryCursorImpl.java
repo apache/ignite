@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.processors.cache.QueryCursorImpl.State.
  */
 public class QueryCursorImpl<T> implements QueryCursorEx<T> {
     /** Query cursor state */
-    enum State {
+    protected enum State {
         /** Idle. */IDLE,
         /** Executing. */EXECUTION,
         /** Result ready. */RESULT_READY,

@@ -868,6 +868,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             ((Session)((JdbcConnection)conn).getSession()).setQueryTimeout(timeoutMillis);
 
         if (cancel != null) {
+            if (cancel.cancelRequested())
+                throw new QueryCancelledException();
+
             cancel.set(new Runnable() {
                 @Override public void run() {
                     try {
@@ -878,8 +881,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     }
                 }
             });
-
-            cancel.enterCancellableState();
         }
 
         try {
@@ -892,6 +893,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             throw new IgniteCheckedException("Failed to execute SQL query.", e);
         } finally {
+            if (cancel != null)
+                cancel.setCompleted();
+
             if (timeoutMillis > 0)
                 ((Session)((JdbcConnection)conn).getSession()).setQueryTimeout(0);
         }
@@ -1047,7 +1051,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final GridQueryCancel cancel) {
         return new Iterable<List<?>>() {
             @Override public Iterator<List<?>> iterator() {
-                return rdcQryExec.query(cctx, qry, keepCacheObj, timeoutMillis, cancel);
+                try {
+                    return rdcQryExec.query(cctx, qry, keepCacheObj, timeoutMillis, cancel);
+                } finally {
+                    if (cancel != null)
+                        cancel.setCompleted();
+                }
             }
         };
     }
@@ -1541,7 +1550,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return -1;
 
         IgniteSpiCloseableIterator<List<?>> iter = execute(spaceName,
-            "SELECT COUNT(*) FROM " + tbl.fullTableName(), null, null, 0, null).iterator();
+                "SELECT COUNT(*) FROM " + tbl.fullTableName(), null, null, 0, null).iterator();
 
         return ((Number)iter.next().get(0)).longValue();
     }

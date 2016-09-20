@@ -34,9 +34,6 @@ public class GridQueryCancel {
     /** Cancellation closure. */
     private volatile Runnable clo;
 
-    /** Cancellable state flag. */
-    private boolean cancellable;
-
     /** Updater. */
     private final AtomicReferenceFieldUpdater<GridQueryCancel, Runnable> updater =
         AtomicReferenceFieldUpdater.newUpdater(GridQueryCancel.class, Runnable.class, "clo");
@@ -45,60 +42,58 @@ public class GridQueryCancel {
     private volatile boolean cancelRequested;
 
     /**
+     * Sets cancellation closure and notifies waiters.
+     *
      * @param clo Clo.
      */
-    public void set(Runnable clo) {
+    public synchronized void set(Runnable clo) {
+        assert clo != null;
+
         this.clo = clo;
+
+        // Entered state there cancellation is possible.
+        notifyAll();
     }
 
     /**
      * Waits for cancellable state.
      */
     public synchronized void waitForCancellableState() {
-        while (!cancellable)
+        while (clo == null)
             try {
                 wait();
             }
-            catch (InterruptedException e) {
+            catch (InterruptedException ignored) {
                 Thread.currentThread().interrupt();
 
-                throw new IgniteException("Interrtuped while waiting for cancellable state.");
+                throw new IgniteException("Interrupted while waiting for cancellable state.");
             }
-    }
-
-    /**
-     * Enters cancellable state notifying all waiters.
-     */
-    public synchronized void enterCancellableState() {
-        cancellable = true;
-
-        notifyAll();
-    }
-
-    /**
-     * Leaves cancellable state.
-     */
-    public synchronized void leaveCancellableState() {
-        cancellable = false;
     }
 
     /**
      * Tries cancelling a query. If query is already completed or cancelled, this is no-op.
      */
     public void cancel() {
+        cancelRequested = true;
+
+        waitForCancellableState();
+
         Runnable clo0 = clo;
 
-        if (clo0 != null && updater.compareAndSet(this, clo0, NO_OP)) {
-            cancelRequested = true;
-
-            waitForCancellableState();
-
-            clo.run();
-        }
+        if (updater.compareAndSet(this, clo0, NO_OP))
+            clo0.run();
     }
 
     /**
-     * @return Cancel requested.
+     * Set completed state.
+     */
+    public synchronized void setCompleted() {
+        if (updater.compareAndSet(this, null, NO_OP))
+            notifyAll(); // Wake up threads waiting for setting a closure.
+    }
+
+    /**
+     * @return Used for detecting cancelled state to fail-fast before executing a query.
      */
     public boolean cancelRequested() {
         return cancelRequested;
