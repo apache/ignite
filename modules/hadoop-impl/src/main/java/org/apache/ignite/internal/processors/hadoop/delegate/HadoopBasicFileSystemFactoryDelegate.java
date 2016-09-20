@@ -21,6 +21,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.fs.BasicHadoopFileSystemFactory;
+import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 import org.apache.ignite.hadoop.util.UserNameMapper;
 import org.apache.ignite.internal.processors.hadoop.HadoopUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
@@ -37,14 +38,17 @@ import java.util.Arrays;
  * Basic Hadoop file system factory delegate.
  */
 public class HadoopBasicFileSystemFactoryDelegate implements HadoopFileSystemFactoryDelegate {
+    /** Proxy. */
+    protected final HadoopFileSystemFactory proxy;
+
     /** Configuration of the secondary filesystem, never null. */
-    protected final Configuration cfg;
+    protected Configuration cfg;
 
     /** Resulting URI. */
-    protected final URI fullUri;
+    protected URI fullUri;
 
     /** User name mapper. */
-    private final UserNameMapper usrNameMapper;
+    private UserNameMapper usrNameMapper;
 
     /**
      * Constructor.
@@ -52,40 +56,7 @@ public class HadoopBasicFileSystemFactoryDelegate implements HadoopFileSystemFac
      * @param proxy Proxy.
      */
     public HadoopBasicFileSystemFactoryDelegate(BasicHadoopFileSystemFactory proxy) {
-        cfg = HadoopUtils.safeCreateConfiguration();
-
-        if (proxy.getConfigPaths() != null) {
-            for (String cfgPath : proxy.getConfigPaths()) {
-                if (cfgPath == null)
-                    throw new NullPointerException("Configuration path cannot be null: " +
-                        Arrays.toString(proxy.getConfigPaths()));
-                else {
-                    URL url = U.resolveIgniteUrl(cfgPath);
-
-                    if (url == null) {
-                        // If secConfPath is given, it should be resolvable:
-                        throw new IgniteException("Failed to resolve secondary file system configuration path " +
-                            "(ensure that it exists locally and you have read access to it): " + cfgPath);
-                    }
-
-                    cfg.addResource(url);
-                }
-            }
-        }
-
-        // If secondary fs URI is not given explicitly, try to get it from the configuration:
-        if (proxy.getUri() == null)
-            fullUri = FileSystem.getDefaultUri(cfg);
-        else {
-            try {
-                fullUri = new URI(proxy.getUri());
-            }
-            catch (URISyntaxException use) {
-                throw new IgniteException("Failed to resolve secondary file system URI: " + proxy.getUri());
-            }
-        }
-
-        usrNameMapper = proxy.getUserNameMapper();
+        this.proxy = proxy;
     }
 
     /** {@inheritDoc} */
@@ -142,6 +113,43 @@ public class HadoopBasicFileSystemFactoryDelegate implements HadoopFileSystemFac
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
+        BasicHadoopFileSystemFactory proxy0 = (BasicHadoopFileSystemFactory)proxy;
+
+        cfg = HadoopUtils.safeCreateConfiguration();
+
+        if (proxy0.getConfigPaths() != null) {
+            for (String cfgPath : proxy0.getConfigPaths()) {
+                if (cfgPath == null)
+                    throw new NullPointerException("Configuration path cannot be null: " +
+                        Arrays.toString(proxy0.getConfigPaths()));
+                else {
+                    URL url = U.resolveIgniteUrl(cfgPath);
+
+                    if (url == null) {
+                        // If secConfPath is given, it should be resolvable:
+                        throw new IgniteException("Failed to resolve secondary file system configuration path " +
+                            "(ensure that it exists locally and you have read access to it): " + cfgPath);
+                    }
+
+                    cfg.addResource(url);
+                }
+            }
+        }
+
+        // If secondary fs URI is not given explicitly, try to get it from the configuration:
+        if (proxy0.getUri() == null)
+            fullUri = FileSystem.getDefaultUri(cfg);
+        else {
+            try {
+                fullUri = new URI(proxy0.getUri());
+            }
+            catch (URISyntaxException use) {
+                throw new IgniteException("Failed to resolve secondary file system URI: " + proxy0.getUri());
+            }
+        }
+
+        usrNameMapper = proxy0.getUserNameMapper();
+
         if (usrNameMapper != null && usrNameMapper instanceof LifecycleAware)
             ((LifecycleAware)usrNameMapper).start();
     }

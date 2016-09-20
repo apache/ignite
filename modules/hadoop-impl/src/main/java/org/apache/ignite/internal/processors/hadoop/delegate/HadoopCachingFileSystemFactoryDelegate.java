@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.hadoop.delegate;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.hadoop.fs.BasicHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
 import org.apache.ignite.internal.processors.hadoop.fs.HadoopFileSystemsUtils;
 import org.apache.ignite.internal.processors.hadoop.fs.HadoopLazyConcurrentMap;
@@ -47,14 +46,19 @@ public class HadoopCachingFileSystemFactoryDelegate extends HadoopBasicFileSyste
      */
     public HadoopCachingFileSystemFactoryDelegate(CachingHadoopFileSystemFactory proxy) {
         super(proxy);
-
-        // Disable caching.
-        cfg.setBoolean(HadoopFileSystemsUtils.disableFsCachePropertyName(fullUri.getScheme()), true);
     }
 
     /** {@inheritDoc} */
     @Override public FileSystem getWithMappedName(String name) throws IOException {
         return cache.getOrCreate(name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteException {
+        super.start();
+
+        // Disable caching.
+        cfg.setBoolean(HadoopFileSystemsUtils.disableFsCachePropertyName(fullUri.getScheme()), true);
     }
 
     /** {@inheritDoc} */

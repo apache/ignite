@@ -33,7 +33,7 @@ import java.security.PrivilegedExceptionAction;
  */
 public class HadoopKerberosFileSystemFactoryDelegate extends HadoopBasicFileSystemFactoryDelegate {
     /** The re-login interval. */
-    private final long reloginInterval;
+    private long reloginInterval;
 
     /** Time of last re-login attempt, in system milliseconds. */
     private volatile long lastReloginTime;
@@ -45,21 +45,6 @@ public class HadoopKerberosFileSystemFactoryDelegate extends HadoopBasicFileSyst
      */
     public HadoopKerberosFileSystemFactoryDelegate(KerberosHadoopFileSystemFactory proxy) {
         super(proxy);
-
-        A.ensure(!F.isEmpty(proxy.getKeyTab()), "keyTab cannot not be empty.");
-        A.ensure(!F.isEmpty(proxy.getKeyTabPrincipal()), "keyTabPrincipal cannot not be empty.");
-        A.ensure(proxy.getReloginInterval() >= 0, "reloginInterval cannot not be negative.");
-
-        reloginInterval = proxy.getReloginInterval();
-
-        try {
-            UserGroupInformation.setConfiguration(cfg);
-            UserGroupInformation.loginUserFromKeytab(proxy.getKeyTabPrincipal(), proxy.getKeyTab());
-        }
-        catch (IOException ioe) {
-            throw new IgniteException("Failed login from keytab [keyTab=" + proxy.getKeyTab() +
-                ", keyTabPrincipal=" + proxy.getKeyTabPrincipal() + ']', ioe);
-        }
     }
 
     /** {@inheritDoc} */
@@ -79,6 +64,27 @@ public class HadoopKerberosFileSystemFactoryDelegate extends HadoopBasicFileSyst
                 return FileSystem.get(fullUri, cfg);
             }
         });
+    }
+
+    @Override public void start() throws IgniteException {
+        super.start();
+
+        KerberosHadoopFileSystemFactory proxy0 = (KerberosHadoopFileSystemFactory)proxy;
+
+        A.ensure(!F.isEmpty(proxy0.getKeyTab()), "keyTab cannot not be empty.");
+        A.ensure(!F.isEmpty(proxy0.getKeyTabPrincipal()), "keyTabPrincipal cannot not be empty.");
+        A.ensure(proxy0.getReloginInterval() >= 0, "reloginInterval cannot not be negative.");
+
+        reloginInterval = proxy0.getReloginInterval();
+
+        try {
+            UserGroupInformation.setConfiguration(cfg);
+            UserGroupInformation.loginUserFromKeytab(proxy0.getKeyTabPrincipal(), proxy0.getKeyTab());
+        }
+        catch (IOException ioe) {
+            throw new IgniteException("Failed login from keytab [keyTab=" + proxy0.getKeyTab() +
+                ", keyTabPrincipal=" + proxy0.getKeyTabPrincipal() + ']', ioe);
+        }
     }
 
     /**
