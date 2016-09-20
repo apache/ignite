@@ -178,7 +178,7 @@ public class IgnitePersistentStoreTest {
 
             LOGGER.info("Running single operation write tests");
             longCache.put(1L, 1L);
-            personCache.put(1L, TestsHelper.generateRandomPerson());
+            personCache.put(1L, TestsHelper.generateRandomPerson(1L));
             LOGGER.info("Single operation write tests passed");
 
             LOGGER.info("Running bulk operation write tests");
@@ -251,9 +251,15 @@ public class IgnitePersistentStoreTest {
             IgniteCache<PersonId, Person> personCache3 = ignite.getOrCreateCache(new CacheConfiguration<PersonId, Person>("cache3"));
 
             LOGGER.info("Running single operation write tests");
-            personCache1.put(1L, TestsHelper.generateRandomPerson());
-            personCache2.put(TestsHelper.generateRandomPersonId(), TestsHelper.generateRandomPerson());
-            personCache3.put(TestsHelper.generateRandomPersonId(), TestsHelper.generateRandomPerson());
+
+            personCache1.put(1L, TestsHelper.generateRandomPerson(1L));
+
+            PersonId id = TestsHelper.generateRandomPersonId();
+            personCache2.put(id, TestsHelper.generateRandomPerson(id.getPersonNumber()));
+
+            id = TestsHelper.generateRandomPersonId();
+            personCache3.put(id, TestsHelper.generateRandomPerson(id.getPersonNumber()));
+
             LOGGER.info("Single operation write tests passed");
 
             LOGGER.info("Running bulk operation write tests");
