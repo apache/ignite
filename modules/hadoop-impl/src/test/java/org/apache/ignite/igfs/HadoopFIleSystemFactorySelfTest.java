@@ -26,20 +26,24 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
+import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
 import org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
+import org.apache.ignite.internal.processors.hadoop.delegate.HadoopDelegateUtils;
+import org.apache.ignite.internal.processors.hadoop.delegate.HadoopFileSystemFactoryDelegate;
 import org.apache.ignite.internal.processors.igfs.IgfsCommonAbstractTest;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.jetbrains.annotations.Nullable;
-import java.io.Externalizable;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -176,19 +180,22 @@ public class HadoopFIleSystemFactorySelfTest extends IgfsCommonAbstractTest {
 
         writeConfigurationToFile(conf);
 
-        // Configure factory.
-        TestFactory factory = new TestFactory();
+        // Get file system instance to be used.
+        CachingHadoopFileSystemFactory delegate = new CachingHadoopFileSystemFactory();
 
-        factory.setUri("igfs://secondary:secondary@127.0.0.1:11500/");
-        factory.setConfigPaths(SECONDARY_CFG_PATH);
+        delegate.setUri("igfs://secondary:secondary@127.0.0.1:11500/");
+        delegate.setConfigPaths(SECONDARY_CFG_PATH);
+
+        // Configure factory.
+        TestFactory factory = new TestFactory(delegate);
 
         // Configure file system.
-        IgniteHadoopIgfsSecondaryFileSystem fs = new IgniteHadoopIgfsSecondaryFileSystem();
+        IgniteHadoopIgfsSecondaryFileSystem secondaryFs = new IgniteHadoopIgfsSecondaryFileSystem();
 
-        fs.setFileSystemFactory(factory);
+        secondaryFs.setFileSystemFactory(factory);
 
         // Start.
-        return start("primary", 10500, IgfsMode.DUAL_ASYNC, fs);
+        return start("primary", 10500, IgfsMode.DUAL_ASYNC, secondaryFs);
     }
 
     /**
@@ -292,26 +299,42 @@ public class HadoopFIleSystemFactorySelfTest extends IgfsCommonAbstractTest {
     /**
      * Test factory.
      */
-    private static class TestFactory extends CachingHadoopFileSystemFactory {
+    private static class TestFactory implements HadoopFileSystemFactory, LifecycleAware {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** File system factory. */
+        private CachingHadoopFileSystemFactory factory;
+
+        /** File system. */
+        private transient HadoopFileSystemFactoryDelegate delegate;
+
         /**
-         * {@link Externalizable} support.
+         * Constructor.
+         *
+         * @param factory File system factory.
          */
-        public TestFactory() {
-            // No-op.
+        public TestFactory(CachingHadoopFileSystemFactory factory) {
+            this.factory = factory;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object get(String usrName) throws IOException {
+            return delegate.get(usrName);
         }
 
         /** {@inheritDoc} */
         @Override public void start() throws IgniteException {
-            START_CNT.incrementAndGet();
+            delegate = HadoopDelegateUtils.fileSystemFactoryDelegate(factory);
 
-            super.start();
+            delegate.start();
+
+            START_CNT.incrementAndGet();
         }
 
         /** {@inheritDoc} */
         @Override public void stop() throws IgniteException {
             STOP_CNT.incrementAndGet();
-
-            super.stop();
         }
     }
 }

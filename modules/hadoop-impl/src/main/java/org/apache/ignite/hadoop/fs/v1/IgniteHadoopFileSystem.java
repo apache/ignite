@@ -42,6 +42,8 @@ import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathSummary;
 import org.apache.ignite.internal.igfs.common.IgfsLogger;
+import org.apache.ignite.internal.processors.hadoop.delegate.HadoopDelegateUtils;
+import org.apache.ignite.internal.processors.hadoop.delegate.HadoopFileSystemFactoryDelegate;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsInputStream;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsOutputStream;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsProxyInputStream;
@@ -58,7 +60,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedOutputStream;
@@ -165,7 +166,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
     private IgfsModeResolver modeRslvr;
 
     /** The secondary file system factory. */
-    private HadoopFileSystemFactory factory;
+    private HadoopFileSystemFactoryDelegate factory;
 
     /** Management connection flag. */
     private boolean mgmt;
@@ -332,7 +333,10 @@ public class IgniteHadoopFileSystem extends FileSystem {
 
             if (initSecondary) {
                 try {
-                    factory = (HadoopFileSystemFactory) paths.getPayload(getClass().getClassLoader());
+                    HadoopFileSystemFactory factory0 =
+                        (HadoopFileSystemFactory)paths.getPayload(getClass().getClassLoader());
+
+                    factory = HadoopDelegateUtils.fileSystemFactoryDelegate(factory0);
                 }
                 catch (IgniteCheckedException e) {
                     throw new IOException("Failed to get secondary file system factory.", e);
@@ -343,11 +347,10 @@ public class IgniteHadoopFileSystem extends FileSystem {
                         IgniteHadoopIgfsSecondaryFileSystem.class.getName() + " as \"secondaryFIleSystem\" in " +
                         FileSystemConfiguration.class.getName() + "?)");
 
-                if (factory instanceof LifecycleAware)
-                    ((LifecycleAware) factory).start();
+                factory.start();
 
                 try {
-                    FileSystem secFs = factory.get(user);
+                    FileSystem secFs = (FileSystem)factory.get(user);
 
                     secondaryUri = secFs.getUri();
 
@@ -423,8 +426,8 @@ public class IgniteHadoopFileSystem extends FileSystem {
         if (clientLog.isLogEnabled())
             clientLog.close();
 
-        if (factory instanceof LifecycleAware)
-            ((LifecycleAware) factory).stop();
+        if (factory != null)
+            factory.stop();
 
         // Reset initialized resources.
         uri = null;
@@ -1359,6 +1362,6 @@ public class IgniteHadoopFileSystem extends FileSystem {
         if (factory == null)
             return null;
 
-        return factory.get(user);
+        return (FileSystem)factory.get(user);
     }
 }

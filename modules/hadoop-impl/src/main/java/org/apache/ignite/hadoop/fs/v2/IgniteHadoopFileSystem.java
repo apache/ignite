@@ -46,6 +46,8 @@ import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.igfs.common.IgfsLogger;
+import org.apache.ignite.internal.processors.hadoop.delegate.HadoopDelegateUtils;
+import org.apache.ignite.internal.processors.hadoop.delegate.HadoopFileSystemFactoryDelegate;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsEndpoint;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsInputStream;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsOutputStream;
@@ -63,7 +65,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedOutputStream;
@@ -169,7 +170,7 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
     private IgfsModeResolver modeRslvr;
 
     /** The secondary file system factory. */
-    private HadoopFileSystemFactory factory;
+    private HadoopFileSystemFactoryDelegate factory;
 
     /** Whether custom sequential reads before prefetch value is provided. */
     private boolean seqReadsBeforePrefetchOverride;
@@ -341,7 +342,10 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
 
             if (initSecondary) {
                 try {
-                    factory = (HadoopFileSystemFactory) paths.getPayload(getClass().getClassLoader());
+                    HadoopFileSystemFactory factory0 =
+                        (HadoopFileSystemFactory) paths.getPayload(getClass().getClassLoader());
+
+                    factory = HadoopDelegateUtils.fileSystemFactoryDelegate(factory0);
                 }
                 catch (IgniteCheckedException e) {
                     throw new IOException("Failed to get secondary file system factory.", e);
@@ -354,11 +358,10 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
 
                 assert factory != null;
 
-                if (factory instanceof LifecycleAware)
-                    ((LifecycleAware) factory).start();
+                factory.start();
 
                 try {
-                    FileSystem secFs = factory.get(user);
+                    FileSystem secFs = (FileSystem)factory.get(user);
 
                     secondaryUri = secFs.getUri();
 
@@ -385,8 +388,8 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
             if (clientLog.isLogEnabled())
                 clientLog.close();
 
-            if (factory instanceof LifecycleAware)
-                ((LifecycleAware) factory).stop();
+            if (factory != null)
+                factory.stop();
 
             // Reset initialized resources.
             rmtClient = null;
@@ -1071,6 +1074,6 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
     private FileSystem secondaryFileSystem() throws IOException{
         assert factory != null;
 
-        return factory.get(user);
+        return (FileSystem)factory.get(user);
     }
 }
