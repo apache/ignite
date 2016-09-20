@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDeploymentException;
 import org.apache.ignite.IgniteException;
@@ -1106,15 +1107,13 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     releaseDep = false;
 
                     //Try to deploy job class
-                    Class<?> deployedClass;
-                    try {
-                        deployedClass = dep.deployedClass(req.getTaskClassName());
+                    Class<?> deployedCls;
 
-                        if (deployedClass == null)
-                            throw new ClassNotFoundException(req.getTaskClassName());
+                    try {
+                        deployedCls = dep.deployedClass(req.getTaskClassName());
                     }
-                    catch (Throwable t) {
-                        IgniteException ex = new ComputeUserUndeclaredException(t);
+                    catch (LinkageError e) {
+                        IgniteException ex = new IgniteException(e);
 
                         U.error(log, ex.getMessage(), ex);
 
@@ -1123,7 +1122,17 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         return;
                     }
 
-                    if (job.initialize(dep, deployedClass)) {
+                    if (deployedCls == null) {
+                        IgniteException ex = new IgniteException("ClassNotFound:" + req.getTaskClassName());
+
+                        U.error(log, ex.getMessage(), ex);
+
+                        handleException(node, req, ex, endTime);
+
+                        return;
+                    }
+
+                    if (job.initialize(dep, deployedCls)) {
                         // Internal jobs will always be executed synchronously.
                         if (job.isInternal()) {
                             // This is an internal job and can be executed inside busy lock
