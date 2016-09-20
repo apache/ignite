@@ -130,8 +130,7 @@ public class PropertyMappingHelper {
             return list;
 
         for (PropertyDescriptor descriptor : descriptors) {
-            if (descriptor.getReadMethod() == null || descriptor.getWriteMethod() == null ||
-                (primitive && !isPrimitivePropertyDescriptor(descriptor)))
+            if (descriptor.getReadMethod() == null || (primitive && !isPrimitivePropertyDescriptor(descriptor)))
                 continue;
 
             if (annotation == null || descriptor.getReadMethod().getAnnotation(annotation) != null)

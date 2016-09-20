@@ -21,8 +21,14 @@ import com.datastax.driver.core.DataType;
 import java.beans.PropertyDescriptor;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
+import java.util.Collections;
+
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.store.cassandra.common.CassandraHelper;
 import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
 import org.apache.ignite.cache.store.cassandra.serializer.JavaSerializer;
 import org.apache.ignite.cache.store.cassandra.serializer.Serializer;
@@ -57,6 +63,15 @@ public abstract class PersistenceSettings implements Serializable {
 
     /** Serializer for BLOBs. */
     private Serializer serializer = new JavaSerializer();
+
+    /** List of Cassandra table columns */
+    private List<String> tableColumns;
+
+    /**
+     * List of POJO fields having unique mapping to Cassandra columns - skipping aliases pointing
+     *  to the same Cassandra table column.
+     */
+    private List<PojoField> casUniqueFields;
 
     /**
      * Extracts property descriptor from the descriptors list by its name.
@@ -96,11 +111,11 @@ public abstract class PersistenceSettings implements Serializable {
         try {
             stgy = PersistenceStrategy.valueOf(el.getAttribute(STRATEGY_ATTR).trim().toUpperCase());
         }
-        catch (IllegalArgumentException e) {
+        catch (IllegalArgumentException ignored) {
             throw new IllegalArgumentException("Incorrect persistence strategy specified: " + el.getAttribute(STRATEGY_ATTR));
         }
 
-        if (!el.hasAttribute(CLASS_ATTR) && !PersistenceStrategy.BLOB.equals(stgy)) {
+        if (!el.hasAttribute(CLASS_ATTR) && PersistenceStrategy.BLOB != stgy) {
             throw new IllegalArgumentException("DOM element representing key/value persistence object should have '" +
                 CLASS_ATTR + "' attribute or have BLOB persistence strategy");
         }
@@ -113,19 +128,19 @@ public abstract class PersistenceSettings implements Serializable {
                 "for Cassandra persistence", e);
         }
 
-        if (!PersistenceStrategy.BLOB.equals(stgy) &&
+        if (PersistenceStrategy.BLOB != stgy &&
             (ByteBuffer.class.equals(javaCls) || byte[].class.equals(javaCls))) {
             throw new IllegalArgumentException("Java class '" + el.getAttribute(CLASS_ATTR) + "' " +
                 "specified could only be persisted using BLOB persistence strategy");
         }
 
-        if (PersistenceStrategy.PRIMITIVE.equals(stgy) &&
+        if (PersistenceStrategy.PRIMITIVE == stgy &&
             PropertyMappingHelper.getCassandraType(javaCls) == null) {
             throw new IllegalArgumentException("Current implementation doesn't support persisting '" +
                 javaCls.getName() + "' object using PRIMITIVE strategy");
         }
 
-        if (PersistenceStrategy.POJO.equals(stgy)) {
+        if (PersistenceStrategy.POJO == stgy) {
             if (javaCls == null)
                 throw new IllegalStateException("Object java class should be specified for POJO persistence strategy");
 
@@ -139,7 +154,7 @@ public abstract class PersistenceSettings implements Serializable {
         }
 
         if (el.hasAttribute(COLUMN_ATTR)) {
-            if (!PersistenceStrategy.BLOB.equals(stgy) && !PersistenceStrategy.PRIMITIVE.equals(stgy)) {
+            if (PersistenceStrategy.BLOB != stgy && PersistenceStrategy.PRIMITIVE != stgy) {
                 throw new IllegalArgumentException("Incorrect configuration of Cassandra key/value persistence settings, " +
                     "'" + COLUMN_ATTR + "' attribute is only applicable for PRIMITIVE or BLOB strategy");
             }
@@ -148,7 +163,7 @@ public abstract class PersistenceSettings implements Serializable {
         }
 
         if (el.hasAttribute(SERIALIZER_ATTR)) {
-            if (!PersistenceStrategy.BLOB.equals(stgy) && !PersistenceStrategy.POJO.equals(stgy)) {
+            if (PersistenceStrategy.BLOB != stgy && PersistenceStrategy.POJO != stgy) {
                 throw new IllegalArgumentException("Incorrect configuration of Cassandra key/value persistence settings, " +
                     "'" + SERIALIZER_ATTR + "' attribute is only applicable for BLOB and POJO strategies");
             }
@@ -164,7 +179,7 @@ public abstract class PersistenceSettings implements Serializable {
             serializer = (Serializer)obj;
         }
 
-        if ((PersistenceStrategy.BLOB.equals(stgy) || PersistenceStrategy.PRIMITIVE.equals(stgy)) && col == null)
+        if ((PersistenceStrategy.BLOB == stgy || PersistenceStrategy.PRIMITIVE == stgy) && col == null)
             col = defaultColumnName();
     }
 
@@ -206,36 +221,99 @@ public abstract class PersistenceSettings implements Serializable {
     }
 
     /**
-     * Returns list of POJO fields to be persisted.
+     * Returns a list of POJO fields to be persisted.
      *
      * @return list of fields.
      */
     public abstract List<PojoField> getFields();
 
     /**
+     * Returns POJO field by Cassandra table column name.
+     *
+     * @param column column name.
+     *
+     * @return POJO field or null if not exists.
+     */
+    public PojoField getFieldByColumn(String column) {
+        List<PojoField> fields = getFields();
+
+        if (fields == null || fields.isEmpty())
+            return null;
+
+        for (PojoField field : fields) {
+            if (field.getColumn().equals(column))
+                return field;
+        }
+
+        return null;
+    }
+
+    /**
+     * List of POJO fields having unique mapping to Cassandra columns - skipping aliases pointing
+     * to the same Cassandra table column.
+     *
+     * @return List of fields.
+     */
+    public List<PojoField> cassandraUniqueFields() {
+        return casUniqueFields;
+    }
+
+    /**
+     * Returns set of database column names, used to persist field values
+     *
+     * @return set of database column names
+     */
+    public List<String> getTableColumns() {
+        return tableColumns;
+    }
+
+    /**
      * Returns Cassandra table columns DDL, corresponding to POJO fields which should be persisted.
      *
-     * @return DDL statement for Cassandra table fields
+     * @return DDL statement for Cassandra table fields.
      */
     public String getTableColumnsDDL() {
-        if (PersistenceStrategy.BLOB.equals(stgy))
+        return getTableColumnsDDL(null);
+    }
+
+    /**
+     * Returns Cassandra table columns DDL, corresponding to POJO fields which should be persisted.
+     *
+     * @param ignoreColumns Table columns to ignore (exclude) from DDL.
+     * @return DDL statement for Cassandra table fields.
+     */
+    public String getTableColumnsDDL(Set<String> ignoreColumns) {
+        if (PersistenceStrategy.BLOB == stgy)
             return "  \"" + col + "\" " + DataType.Name.BLOB.toString();
 
-        if (PersistenceStrategy.PRIMITIVE.equals(stgy))
+        if (PersistenceStrategy.PRIMITIVE == stgy)
             return "  \"" + col + "\" " + PropertyMappingHelper.getCassandraType(javaCls);
+
+        List<PojoField> fields = getFields();
+
+        if (fields == null || fields.isEmpty()) {
+            throw new IllegalStateException("There are no POJO fields found for '" + javaCls.toString()
+                + "' class to be presented as a Cassandra primary key");
+        }
+
+        // Accumulating already processed columns in the set, to prevent duplicating columns
+        // shared by two different POJO fields.
+        Set<String> processedColumns = new HashSet<>();
 
         StringBuilder builder = new StringBuilder();
 
-        for (PojoField field : getFields()) {
+        for (PojoField field : fields) {
+            if ((ignoreColumns != null && ignoreColumns.contains(field.getColumn())) ||
+                    processedColumns.contains(field.getColumn())) {
+                continue;
+            }
+
             if (builder.length() > 0)
                 builder.append(",\n");
 
             builder.append("  ").append(field.getColumnDDL());
-        }
 
-        if (builder.length() == 0) {
-            throw new IllegalStateException("There are no POJO fields found for '" + javaCls.toString()
-                + "' class to be presented as a Cassandra primary key");
+            processedColumns.add(field.getColumn());
         }
 
         return builder.toString();
@@ -249,9 +327,40 @@ public abstract class PersistenceSettings implements Serializable {
     protected abstract String defaultColumnName();
 
     /**
-     * Checks if there are POJO filed with the same name or same Cassandra column specified in persistence settings
+     * Class instance initialization.
+     */
+    protected void init() {
+        if (getColumn() != null && !getColumn().trim().isEmpty()) {
+            tableColumns = new LinkedList<>();
+            tableColumns.add(getColumn());
+            tableColumns = Collections.unmodifiableList(tableColumns);
+
+            return;
+        }
+
+        List<PojoField> fields = getFields();
+
+        if (fields == null || fields.isEmpty())
+            return;
+
+        tableColumns = new LinkedList<>();
+        casUniqueFields = new LinkedList<>();
+
+        for (PojoField field : fields) {
+            if (!tableColumns.contains(field.getColumn())) {
+                tableColumns.add(field.getColumn());
+                casUniqueFields.add(field);
+            }
+        }
+
+        tableColumns = Collections.unmodifiableList(tableColumns);
+        casUniqueFields = Collections.unmodifiableList(casUniqueFields);
+    }
+
+    /**
+     * Checks if there are POJO filed with the same name or same Cassandra column specified in persistence settings.
      *
-     * @param fields list of fields to be persisted into Cassandra
+     * @param fields List of fields to be persisted into Cassandra.
      */
     protected void checkDuplicates(List<PojoField> fields) {
         if (fields == null || fields.isEmpty())
@@ -264,7 +373,7 @@ public abstract class PersistenceSettings implements Serializable {
             for (PojoField field2 : fields) {
                 if (field1.getName().equals(field2.getName())) {
                     if (sameNames) {
-                        throw new IllegalArgumentException("Incorrect Cassandra key persistence settings, " +
+                        throw new IllegalArgumentException("Incorrect Cassandra persistence settings, " +
                             "two POJO fields with the same name '" + field1.getName() + "' specified");
                     }
 
@@ -272,9 +381,11 @@ public abstract class PersistenceSettings implements Serializable {
                 }
 
                 if (field1.getColumn().equals(field2.getColumn())) {
-                    if (sameCols) {
-                        throw new IllegalArgumentException("Incorrect Cassandra persistence settings, " +
-                            "two POJO fields with the same column '" + field1.getColumn() + "' specified");
+                    if (sameCols && !CassandraHelper.isCassandraCompatibleTypes(field1.getJavaClass(), field2.getJavaClass())) {
+                        throw new IllegalArgumentException("Field '" + field1.getName() + "' shares the same Cassandra table " +
+                                "column '" + field1.getColumn() + "' with field '" + field2.getName() + "', but their Java " +
+                                "classes are different. Fields sharing the same column should have the same " +
+                                "Java class as their type or should be mapped to the same Cassandra primitive type.");
                     }
 
                     sameCols = true;

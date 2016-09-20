@@ -72,7 +72,7 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
     private int maxPoolSize = Runtime.getRuntime().availableProcessors();
 
     /** Controller component responsible for serialization logic. */
-    private PersistenceController controller;
+    private final PersistenceController controller;
 
     /**
      * Store constructor.

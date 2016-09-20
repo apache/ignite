@@ -20,7 +20,10 @@ package org.apache.ignite.cache.store.cassandra.persistence;
 import java.beans.PropertyDescriptor;
 import java.util.LinkedList;
 import java.util.List;
+
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -55,8 +58,11 @@ public class KeyPersistenceSettings extends PersistenceSettings {
     public KeyPersistenceSettings(Element el) {
         super(el);
 
-        if (!PersistenceStrategy.POJO.equals(getStrategy()))
+        if (PersistenceStrategy.POJO != getStrategy()) {
+            init();
+
             return;
+        }
 
         NodeList keyElem = el.getElementsByTagName(PARTITION_KEY_ELEMENT);
 
@@ -84,6 +90,8 @@ public class KeyPersistenceSettings extends PersistenceSettings {
         fields.addAll(clusterKeyFields);
 
         checkDuplicates(fields);
+
+        init();
     }
 
     /** {@inheritDoc} */
@@ -120,8 +128,8 @@ public class KeyPersistenceSettings extends PersistenceSettings {
         }
 
         return clusterKey.length() == 0 ?
-            "  primary key ((" + partKey.toString() + "))" :
-            "  primary key ((" + partKey.toString() + "), " + clusterKey.toString() + ")";
+            "  primary key ((" + partKey + "))" :
+            "  primary key ((" + partKey + "), " + clusterKey + ")";
     }
 
     /**
@@ -141,12 +149,12 @@ public class KeyPersistenceSettings extends PersistenceSettings {
             if (builder.length() != 0)
                 builder.append(", ");
 
-            boolean asc = PojoKeyField.SortOrder.ASC.equals(sortOrder);
+            boolean asc = PojoKeyField.SortOrder.ASC == sortOrder;
 
             builder.append("\"").append(field.getColumn()).append("\" ").append(asc ? "asc" : "desc");
         }
 
-        return builder.length() == 0 ? null : "clustering order by (" + builder.toString() + ")";
+        return builder.length() == 0 ? null : "clustering order by (" + builder + ")";
     }
 
     /** {@inheritDoc} */
@@ -162,7 +170,7 @@ public class KeyPersistenceSettings extends PersistenceSettings {
     private List<String> getPartitionKeyColumns() {
         List<String> cols = new LinkedList<>();
 
-        if (PersistenceStrategy.BLOB.equals(getStrategy()) || PersistenceStrategy.PRIMITIVE.equals(getStrategy())) {
+        if (PersistenceStrategy.BLOB == getStrategy() || PersistenceStrategy.PRIMITIVE == getStrategy()) {
             cols.add(getColumn());
             return cols;
         }
@@ -205,8 +213,15 @@ public class KeyPersistenceSettings extends PersistenceSettings {
             return list;
 
         if (el == null) {
-            for (PropertyDescriptor descriptor : descriptors)
-                list.add(new PojoKeyField(descriptor));
+            for (PropertyDescriptor desc : descriptors) {
+                boolean valid = desc.getWriteMethod() != null ||
+                        desc.getReadMethod().getAnnotation(QuerySqlField.class) != null ||
+                        desc.getReadMethod().getAnnotation(AffinityKeyMapped.class) != null;
+
+                // Skip POJO field if it's read-only and is not annotated with @QuerySqlField or @AffinityKeyMapped.
+                if (valid)
+                    list.add(new PojoKeyField(desc));
+            }
 
             return list;
         }
@@ -217,7 +232,7 @@ public class KeyPersistenceSettings extends PersistenceSettings {
 
         if (cnt == 0) {
             throw new IllegalArgumentException("Incorrect configuration of Cassandra key persistence settings, " +
-                "no cluster key fields specified inside '" + PARTITION_KEY_ELEMENT + "/" +
+                "no key fields specified inside '" + PARTITION_KEY_ELEMENT + "/" +
                 CLUSTER_KEY_ELEMENT + "' element");
         }
 
@@ -244,9 +259,25 @@ public class KeyPersistenceSettings extends PersistenceSettings {
         List<PropertyDescriptor> primitivePropDescriptors = PropertyMappingHelper.getPojoPropertyDescriptors(getJavaClass(),
             AffinityKeyMapped.class, true);
 
-        return primitivePropDescriptors != null && !primitivePropDescriptors.isEmpty() ?
-            primitivePropDescriptors :
-            PropertyMappingHelper.getPojoPropertyDescriptors(getJavaClass(), true);
+        primitivePropDescriptors = primitivePropDescriptors != null && !primitivePropDescriptors.isEmpty() ?
+            primitivePropDescriptors : PropertyMappingHelper.getPojoPropertyDescriptors(getJavaClass(), true);
+
+        boolean valid = false;
+
+        for (PropertyDescriptor desc : primitivePropDescriptors) {
+            if (desc.getWriteMethod() != null) {
+                valid = true;
+
+                break;
+            }
+        }
+
+        if (!valid) {
+            throw new IgniteException("Partition key can't have only calculated read-only fields, there should be " +
+                    "some fields with setter method");
+        }
+
+        return primitivePropDescriptors;
     }
 
     /**
