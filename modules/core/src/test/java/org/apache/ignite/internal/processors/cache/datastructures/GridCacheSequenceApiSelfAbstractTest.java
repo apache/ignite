@@ -17,6 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures;
 
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -31,9 +38,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.*;
-import java.util.concurrent.Callable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -570,28 +574,22 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
         // Sequences.
         final IgniteAtomicSequence[] locSeqs = new IgniteAtomicSequence[3];
 
-        final Map<Integer, Set<Long>> resMap = new HashMap<>();
-
         for (int i = 0; i < locSeqs.length; i++) {
             locSeqs[i] = grid(i).atomicSequence(locSeqName, initVal, true);
 
             locSeqs[i].batchSize(batchSize);
 
             locSeqs[i].reservePercentage(percentage);
-
-            resMap.put(i,new ConcurrentHashSet<Long>());
         }
+
+        final Set<Long> resSet = new ConcurrentHashSet<>();
 
         multithreaded(
             new Callable() {
                 @Nullable @Override public Object call() throws Exception {
                     // Get sequence value and try to put it result set.
                     for (int i = 0; i < MAX_LOOPS_NUM; i++) {
-                        int idx=i % locSeqs.length;
-
-                        Long val = locSeqs[idx].getAndIncrement();
-
-                        Set<Long> resSet = resMap.get(idx);
+                        Long val = locSeqs[i % locSeqs.length].getAndIncrement();
 
                         assert !resSet.contains(val) : "Element already in set : " + val;
 
@@ -602,12 +600,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
                 }
             }, THREAD_NUM);
 
-        int totalSize = 0;
-
-        for (Set<Long> resSet : resMap.values())
-            totalSize += resSet.size();
-
-        assert totalSize == MAX_LOOPS_NUM * THREAD_NUM;
+        assert resSet.size() == MAX_LOOPS_NUM * THREAD_NUM;
 
         removeSequence(locSeqName);
     }
