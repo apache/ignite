@@ -35,10 +35,8 @@ public class IgniteAtomicSequenceBenchmark extends IgniteAbstractBenchmark {
 
         seq = ignite().atomicSequence("benchSequence", 0, true);
 
-        String batchSize = cfg.customProperties().get("BATCH_SIZE");
+        seq.batchSize(args.batch());
 
-        if (batchSize != null)
-            seq.batchSize(Integer.parseInt(batchSize));
     }
 
     /** {@inheritDoc} */
