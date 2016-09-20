@@ -17,6 +17,8 @@
 
 package org.apache.ignite.yardstick.cache;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
@@ -40,15 +42,35 @@ public class IgniteSqlDeleteBenchmark extends IgniteCacheAbstractBenchmark<Integ
     private final ConcurrentLinkedQueue<Integer> keys = new ConcurrentLinkedQueue<>();
 
     /** {@inheritDoc} */
-    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
+    @Override public void setUp(final BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
-        for (int i = 0; i < args.range(); i++) {
-            cache().put(i, new Person1(i));
-            keys.add(i);
-            if (i % 100000 == 0)
-                BenchmarkUtils.println(cfg, "DELETE setUp: have successfully put " + i + " items");
+        final AtomicInteger i = new AtomicInteger();
+
+        Collection<Thread> setupThreads = new ArrayList<>(cfg.threads());
+
+        for (int j = 0; j < cfg.threads(); j++) {
+            Thread t = new Thread() {
+                /** {@inheritDoc} */
+                @Override public void run() {
+                    int k;
+
+                    while ((k = i.getAndIncrement()) < args.range()) {
+                        cache().put(k, new Person1(k));
+                        keys.add(k);
+                        if (k % 100000 == 0)
+                            BenchmarkUtils.println(cfg, "DELETE setUp: have successfully put " + k + " items");
+                    }
+                }
+            };
+
+            setupThreads.add(t);
+
+            t.start();
         }
+
+        for (Thread t : setupThreads)
+            t.join();
     }
 
     /** {@inheritDoc} */
