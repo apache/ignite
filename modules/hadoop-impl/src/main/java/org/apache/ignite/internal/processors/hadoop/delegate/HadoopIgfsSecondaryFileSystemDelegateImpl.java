@@ -45,7 +45,6 @@ import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.FileNotFoundException;
@@ -61,19 +60,21 @@ import java.util.Map;
 /**
  * Secondary file system implementation.
  */
+@SuppressWarnings("unused")
 public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSecondaryFileSystemDelegate
      {
     /** The default user name. It is used if no user context is set. */
     private final String dfltUsrName;
 
     /** Factory. */
-    private final HadoopFileSystemFactory factory;
+    private final HadoopFileSystemFactoryDelegate factory;
 
     /**
      * Constructor.
      *
      * @param proxy Proxy.
     */
+    @SuppressWarnings("unused")
     public HadoopIgfsSecondaryFileSystemDelegateImpl(IgniteHadoopIgfsSecondaryFileSystem proxy) {
         assert proxy.getFileSystemFactory() != null;
 
@@ -84,7 +85,7 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
         if (factory0 == null)
             factory0 = new CachingHadoopFileSystemFactory();
 
-        this.factory = factory0;
+        factory = HadoopDelegateUtils.delegate(factory0);
     }
 
     /** {@inheritDoc} */
@@ -372,14 +373,12 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
 
     /** {@inheritDoc} */
     public void start() {
-        if (factory instanceof LifecycleAware)
-            ((LifecycleAware) factory).start();
+        factory.start();
     }
 
     /** {@inheritDoc} */
     public void stop() {
-        if (factory instanceof LifecycleAware)
-            ((LifecycleAware)factory).stop();
+        factory.stop();
     }
 
     /**
