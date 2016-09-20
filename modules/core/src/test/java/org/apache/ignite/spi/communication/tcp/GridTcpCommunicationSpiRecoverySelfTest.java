@@ -742,9 +742,8 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
             spi.spiStop();
         }
 
-        for (IgniteTestResources rsrcs : spiRsrcs) {
+        for (IgniteTestResources rsrcs : spiRsrcs)
             rsrcs.stopThreads();
-        }
 
         spis.clear();
         nodes.clear();
