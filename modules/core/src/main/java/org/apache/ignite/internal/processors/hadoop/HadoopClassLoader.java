@@ -243,7 +243,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
                     throw e;
             }
             catch (IOException e) {
-                throw new IgniteException("Failed to initialize native librarires due to unexpected exception.", e);
+                throw new IgniteException("Failed to initialize native libraries due to unexpected exception.", e);
             }
         }
 
