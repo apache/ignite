@@ -45,6 +45,9 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
     /** Operation: increment entity set versions. */
     private static final int OP_INVALIDATE_SETS = 1;
 
+    /** Cache key for cleanup node ID. Contains characters not allowed in SQL table name. */
+    private static final String CLEANUP_NODE_ID = " ^CLEANUP_NODE_ID^ ";
+
     /** {@inheritDoc} */
     @Override public int id() {
         return EXT_ID;
