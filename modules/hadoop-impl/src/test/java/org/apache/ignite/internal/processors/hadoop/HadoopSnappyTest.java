@@ -45,10 +45,10 @@ public class HadoopSnappyTest extends GridCommonAbstractTest {
      */
     public void testSnappy() throws Throwable {
         // Run Snappy test in default class loader:
-        //checkSnappy();
+        checkSnappy();
 
         // Run the same in several more class loaders simulating jobs and tasks:
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 2; i++) {
             ClassLoader hadoopClsLdr = new HadoopClassLoader(null, "cl-" + i, null, new HadoopHelperImpl());
 
             Class<?> cls = (Class)Class.forName(HadoopSnappyTest.class.getName(), true, hadoopClsLdr);
@@ -57,8 +57,6 @@ public class HadoopSnappyTest extends GridCommonAbstractTest {
 
             U.invoke(cls, null, "checkSnappy");
         }
-
-        checkSnappy();
     }
 
     /**

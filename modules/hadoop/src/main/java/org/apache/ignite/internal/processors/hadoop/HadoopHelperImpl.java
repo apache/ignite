@@ -89,7 +89,7 @@ public class HadoopHelperImpl implements HadoopHelper {
      * @return {@code true} If this is Hadoop class.
      */
     @Override public boolean isHadoop(String cls) {
-        return cls.startsWith("org.apache.hadoop.") || cls.equals(XXX.class.getName());
+        return cls.startsWith("org.apache.hadoop.");
     }
 
     /**
