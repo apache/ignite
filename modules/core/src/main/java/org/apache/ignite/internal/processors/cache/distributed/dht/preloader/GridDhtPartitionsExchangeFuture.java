@@ -794,7 +794,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 cacheCtx.topology().beforeExchange(this, !centralizedAff);
             }
 
-            cctx.database().beforeExchange(discoEvt);
+            cctx.database().beforeExchange(this);
 
             if (!F.isEmpty(reqs)) {
                 for (DynamicCacheChangeRequest req : reqs) {
