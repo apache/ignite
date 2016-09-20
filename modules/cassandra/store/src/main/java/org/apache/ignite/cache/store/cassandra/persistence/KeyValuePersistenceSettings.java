@@ -184,16 +184,6 @@ public class KeyValuePersistenceSettings implements Serializable {
     }
 
     /**
-     * Returns full name of Cassandra table to use (including keyspace).
-     *
-     * @return full table name in format "keyspace.table".
-     */
-    public String getTableFullName()
-    {
-        return keyspace + "." + tbl;
-    }
-
-    /**
      * Returns persistence settings for Ignite cache keys.
      *
      * @return keys persistence settings.
@@ -282,9 +272,14 @@ public class KeyValuePersistenceSettings implements Serializable {
     /**
      * Returns DDL statement to create Cassandra table.
      *
+     * @param table table name
+     *
      * @return Table DDL statement.
      */
-    public String getTableDDLStatement() {
+    public String getTableDDLStatement(String table) {
+        if (table == null || table.trim().isEmpty())
+            throw new IllegalArgumentException("Table name should be specified");
+
         String keyColumnsDDL = keyPersistenceSettings.getTableColumnsDDL();
         String valColumnsDDL = valPersistenceSettings.getTableColumnsDDL(new HashSet<>(keyPersistenceSettings.getTableColumns()));
 
@@ -307,7 +302,7 @@ public class KeyValuePersistenceSettings implements Serializable {
 
         StringBuilder builder = new StringBuilder();
 
-        builder.append("create table if not exists \"").append(keyspace).append("\".\"").append(tbl).append("\"");
+        builder.append("create table if not exists \"").append(keyspace).append("\".\"").append(table).append("\"");
         builder.append("\n(\n").append(colsDDL).append(",\n").append(primaryKeyDDL).append("\n)");
 
         if (!optionsDDL.isEmpty())
@@ -321,9 +316,11 @@ public class KeyValuePersistenceSettings implements Serializable {
     /**
      * Returns DDL statements to create Cassandra table secondary indexes.
      *
+     * @param table table name
+     *
      * @return DDL statements to create secondary indexes.
      */
-    public List<String> getIndexDDLStatements() {
+    public List<String> getIndexDDLStatements(String table) {
         List<String> idxDDLs = new LinkedList<>();
 
         Set<String> keyColumns = new HashSet<>(keyPersistenceSettings.getTableColumns());
@@ -331,7 +328,7 @@ public class KeyValuePersistenceSettings implements Serializable {
 
         for (PojoField field : fields) {
             if (!keyColumns.contains(field.getColumn()) && ((PojoValueField)field).isIndexed())
-                idxDDLs.add(((PojoValueField)field).getIndexDDL(keyspace, tbl));
+                idxDDLs.add(((PojoValueField)field).getIndexDDL(keyspace, table));
         }
 
         return idxDDLs;
@@ -419,13 +416,8 @@ public class KeyValuePersistenceSettings implements Serializable {
                 "' attribute should be specified");
         }
 
-        if (!root.hasAttribute(TABLE_ATTR)) {
-            throw new IllegalArgumentException("Incorrect persistence settings '" + TABLE_ATTR +
-                "' attribute should be specified");
-        }
-
         keyspace = root.getAttribute(KEYSPACE_ATTR).trim();
-        tbl = root.getAttribute(TABLE_ATTR).trim();
+        tbl = root.hasAttribute(TABLE_ATTR) ? root.getAttribute(TABLE_ATTR).trim() : null;
 
         if (root.hasAttribute(TTL_ATTR))
             ttl = extractIntAttribute(root, TTL_ATTR);
