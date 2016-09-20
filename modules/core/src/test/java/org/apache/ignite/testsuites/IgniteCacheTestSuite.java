@@ -37,6 +37,7 @@ import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreOptimizedMarshallerS
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreTest;
 import org.apache.ignite.cache.store.jdbc.GridCacheJdbcBlobStoreMultithreadedSelfTest;
 import org.apache.ignite.cache.store.jdbc.GridCacheJdbcBlobStoreSelfTest;
+import org.apache.ignite.internal.managers.communication.IgniteVariousConnectionNumberTest;
 import org.apache.ignite.internal.processors.cache.CacheAffinityCallSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheDeferredDeleteSanitySelfTest;
 import org.apache.ignite.internal.processors.cache.CacheEntryProcessorCopySelfTest;
@@ -318,6 +319,8 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteTxConfigCacheSelfTest.class);
 
         suite.addTestSuite(CacheTxFastFinishTest.class);
+
+        suite.addTestSuite(IgniteVariousConnectionNumberTest.class);
 
         return suite;
     }
