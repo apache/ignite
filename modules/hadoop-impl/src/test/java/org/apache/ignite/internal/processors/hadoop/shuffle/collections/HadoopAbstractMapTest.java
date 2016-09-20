@@ -23,6 +23,7 @@ import org.apache.commons.collections.comparators.ComparableComparator;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
 import org.apache.ignite.internal.processors.hadoop.HadoopJob;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
@@ -144,7 +145,7 @@ public abstract class HadoopAbstractMapTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public HadoopJob createJob(Class<? extends HadoopJob> jobCls, HadoopJobId jobId, IgniteLogger log,
-            @Nullable String[] libNames) throws IgniteCheckedException {
+            @Nullable String[] libNames, HadoopHelper helper) throws IgniteCheckedException {
             assert false;
 
             return null;

@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.internal.processors.hadoop;
 
 import org.apache.ignite.internal.util.typedef.F;
@@ -43,7 +42,7 @@ import java.util.Set;
 /**
  * Utility methods for Hadoop classloader required to avoid direct 3rd-party dependencies in class loader.
  */
-public class HadoopClassLoaderUtils {
+public class HadoopHelperImpl implements HadoopHelper {
     /** Cache for resolved dependency info. */
     private static final Map<String, Boolean> dependenciesCache = new ConcurrentHashMap8<>();
 
@@ -55,7 +54,7 @@ public class HadoopClassLoaderUtils {
      * @param replaceName Replacer class name.
      * @return Result.
      */
-    public static byte[] loadReplace(InputStream in, final String originalName, final String replaceName) {
+    @Override public byte[] loadReplace(InputStream in, final String originalName, final String replaceName) {
         ClassReader rdr;
 
         try {
@@ -89,7 +88,7 @@ public class HadoopClassLoaderUtils {
      * @param cls Class name.
      * @return {@code true} If this is Hadoop class.
      */
-    public static boolean isHadoop(String cls) {
+    @Override public boolean isHadoop(String cls) {
         return cls.startsWith("org.apache.hadoop.") || cls.equals(XXX.class.getName());
     }
 
@@ -99,7 +98,7 @@ public class HadoopClassLoaderUtils {
      * @param cls Class name.
      * @return {@code true} if we need to check this class.
      */
-    public static boolean isHadoopIgfs(String cls) {
+    @Override public boolean isHadoopIgfs(String cls) {
         String ignitePkgPrefix = "org.apache.ignite";
 
         int len = ignitePkgPrefix.length();
@@ -115,7 +114,7 @@ public class HadoopClassLoaderUtils {
      * @param clsName Class.
      * @return Input stream.
      */
-    @Nullable public static InputStream loadClassBytes(ClassLoader ldr, String clsName) {
+    @Override @Nullable public InputStream loadClassBytes(ClassLoader ldr, String clsName) {
         return ldr.getResourceAsStream(clsName.replace('.', '/') + ".class");
     }
 
@@ -126,7 +125,7 @@ public class HadoopClassLoaderUtils {
      * @param parentClsLdr Parent class loader.
      * @return {@code True} if class has external dependencies.
      */
-    static boolean hasExternalDependencies(String clsName, ClassLoader parentClsLdr) {
+    @Override public boolean hasExternalDependencies(String clsName, ClassLoader parentClsLdr) {
         Boolean hasDeps = dependenciesCache.get(clsName);
 
         if (hasDeps == null) {
@@ -153,7 +152,7 @@ public class HadoopClassLoaderUtils {
      * @param ctx Context.
      * @return {@code true} If the class has external dependencies.
      */
-    static boolean hasExternalDependencies(String clsName, ClassLoader parentClsLdr, CollectingContext ctx) {
+    boolean hasExternalDependencies(String clsName, ClassLoader parentClsLdr, CollectingContext ctx) {
         if (isHadoop(clsName)) // Hadoop must not be in classpath but Idea sucks, so filtering explicitly as external.
             return true;
 
@@ -231,7 +230,7 @@ public class HadoopClassLoaderUtils {
     /**
      * Context for dependencies collection.
      */
-    private static class CollectingContext {
+    private class CollectingContext {
         /** Visited classes. */
         private final Set<String> visited = new HashSet<>();
 
@@ -681,4 +680,5 @@ public class HadoopClassLoaderUtils {
             ctx.onInternalTypeName(type);
         }
     }
+
 }
