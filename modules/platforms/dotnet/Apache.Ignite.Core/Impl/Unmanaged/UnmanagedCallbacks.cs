@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.IO;
     using System.Runtime.InteropServices;
     using System.Threading;
     using Apache.Ignite.Core.Cache.Affinity;
@@ -312,6 +313,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }, true);
         }
 
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         private int CacheStoreInvoke(void* target, long objPtr, long memPtr, void* cb)
         {
@@ -326,7 +328,18 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
-                    return t.Invoke(stream, cb0, _ignite);
+                    try
+                    {
+                        return t.Invoke(stream, cb0, _ignite);
+                    }
+                    catch (Exception e)
+                    {
+                        stream.Seek(0, SeekOrigin.Begin);
+
+                        _ignite.Marshaller.StartMarshal(stream).WriteObject(e);
+
+                        return -1;
+                    }
                 }
             });
         }
@@ -756,8 +769,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     string errCls = reader.ReadString();
                     string errMsg = reader.ReadString();
                     string stackTrace = reader.ReadString();
+                    Exception inner = reader.ReadBoolean() ? reader.ReadObject<Exception>() : null;
 
-                    Exception err = ExceptionUtils.GetException(_ignite, errCls, errMsg, stackTrace, reader);
+                    Exception err = ExceptionUtils.GetException(_ignite, errCls, errMsg, stackTrace, reader, inner);
 
                     ProcessFuture(futPtr, fut => { fut.OnError(err); });
                 }
@@ -1084,7 +1098,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                         // Stream disposal intentionally omitted: IGNITE-1598
                         var stream = new PlatformRawMemory(errData, errDataLen).GetStream();
 
-                        throw ExceptionUtils.GetException(_ignite, errCls, errMsg, stackTrace, 
+                        throw ExceptionUtils.GetException(_ignite, errCls, errMsg, stackTrace,
                             _ignite.Marshaller.StartUnmarshal(stream));
                     }
 
