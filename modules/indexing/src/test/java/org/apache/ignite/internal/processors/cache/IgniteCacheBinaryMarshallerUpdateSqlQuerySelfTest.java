@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.testframework.config.GridTestProperties;
 
@@ -26,5 +28,20 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 public class IgniteCacheBinaryMarshallerUpdateSqlQuerySelfTest extends IgniteCacheUpdateSqlQuerySelfTest {
     static {
         GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteCache<?, ?> cache() {
+        return super.cache().withKeepBinary();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfig() {
+        return createBinCacheConfig();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Object createPerson(int id, String name, String secondName) {
+        return createPersonBinary(id, name, secondName);
     }
 }
