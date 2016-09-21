@@ -55,34 +55,6 @@ public abstract class PageHandler<X, R> {
         throws IgniteCheckedException;
 
     /**
-     * @param page Page.
-     */
-    protected void onWriteLock(Page page) {
-        // No-op.
-    }
-
-    /**
-     * @param page Page.
-     */
-    protected void onWriteUnlock(Page page) {
-        // No-op.
-    }
-
-    /**
-     * @param page Page.
-     */
-    protected void onReadLock(Page page) {
-        // No-op.
-    }
-
-    /**
-     * @param page Page.
-     */
-    protected void onReadUnlock(Page page) {
-        // No-op.
-    }
-
-    /**
      * @param pageId Page ID.
      * @param page Page.
      * @param arg Argument.
@@ -102,12 +74,18 @@ public abstract class PageHandler<X, R> {
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
-    public static <X, R> R readPage(long pageId, Page page, PageHandler<X, R> h, X arg, int intArg)
-        throws IgniteCheckedException {
+    public static <X, R> R readPage(
+        long pageId,
+        Page page,
+        PageLockListener lockListener,
+        PageHandler<X, R> h,
+        X arg,
+        int intArg
+    ) throws IgniteCheckedException {
         ByteBuffer buf = page.getForRead();
 
         try {
-            h.onReadLock(page);
+            lockListener.onReadLock(page);
 
             PageIO io = PageIO.getPageIO(buf);
 
@@ -116,7 +94,7 @@ public abstract class PageHandler<X, R> {
         finally {
             page.releaseRead();
 
-            h.onReadUnlock(page);
+            lockListener.onReadUnlock(page);
         }
     }
 
@@ -129,29 +107,38 @@ public abstract class PageHandler<X, R> {
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
-    public static <X, R> R writePage(long pageId, Page page, PageHandler<X, R> h, X arg, int intArg)
-        throws IgniteCheckedException {
-        return writePage(pageId, page, h, null, null, arg, intArg);
+    public static <X, R> R writePage(
+        long pageId,
+        Page page,
+        PageLockListener lockListener,
+        PageHandler<X, R> h,
+        X arg,
+        int intArg
+    ) throws IgniteCheckedException {
+        return writePage(pageId, page, lockListener, h, null, null, arg, intArg);
     }
 
     /**
      * @param pageId Page ID.
      * @param page Page.
+     * @param lockListener Lock listener.
      * @param init IO for new page initialization or {@code null} if it is an existing page.
      * @throws IgniteCheckedException If failed.
      */
     public static void initPage(
         long pageId,
         Page page,
+        PageLockListener lockListener,
         PageIO init,
         IgniteWriteAheadLogManager wal
     ) throws IgniteCheckedException {
-        writePage(pageId, page, NOOP, init, wal, null, 0);
+        writePage(pageId, page, lockListener, NOOP, init, wal, null, 0);
     }
 
     /**
      * @param pageId Page ID.
      * @param page Page.
+     * @param lockListener Lock listener.
      * @param h Handler.
      * @param init IO for new page initialization or {@code null} if it is an existing page.
      * @param arg Argument.
@@ -162,6 +149,7 @@ public abstract class PageHandler<X, R> {
     public static <X, R> R writePage(
         long pageId,
         Page page,
+        PageLockListener lockListener,
         PageHandler<X, R> h,
         PageIO init,
         IgniteWriteAheadLogManager wal,
@@ -177,7 +165,7 @@ public abstract class PageHandler<X, R> {
         assert buf != null;
 
         try {
-            h.onWriteLock(page);
+            lockListener.onWriteLock(page);
 
             if (init != null) // It is a new page and we have to initialize it.
                 doInitPage(pageId, page, buf, init, wal);
@@ -194,7 +182,7 @@ public abstract class PageHandler<X, R> {
             if (h.releaseAfterWrite(pageId, page, arg, intArg)) {
                 page.releaseWrite(ok);
 
-                h.onWriteUnlock(page);
+                lockListener.onWriteUnlock(page);
             }
         }
 

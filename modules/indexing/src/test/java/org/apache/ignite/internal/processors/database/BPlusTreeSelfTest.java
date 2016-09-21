@@ -1137,28 +1137,28 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void onReadLock(Page page) {
+        @Override public void onReadLock(Page page) {
             boolean ok = readLocks.get().add(page.id());
 
             assert ok: page;
         }
 
         /** {@inheritDoc} */
-        @Override protected void onReadUnlock(Page page) {
+        @Override public void onReadUnlock(Page page) {
             boolean ok = readLocks.get().remove(page.id());
 
             assert ok: page;
         }
 
         /** {@inheritDoc} */
-        @Override protected void onWriteLock(Page page) {
+        @Override public void onWriteLock(Page page) {
             boolean ok = writeLocks.get().add(page.id());
 
             assert ok: page;
         }
 
         /** {@inheritDoc} */
-        @Override protected void onWriteUnlock(Page page) {
+        @Override public void onWriteUnlock(Page page) {
             boolean ok = writeLocks.get().remove(page.id());
 
             assert ok: page;

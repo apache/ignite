@@ -27,13 +27,14 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.database.tree.util.PageLockListener;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 
 /**
  * Base class for all the data structures based on {@link PageMemory}.
  */
-public abstract class DataStructure {
+public abstract class DataStructure implements PageLockListener {
     /** For tests. */
     public static Random rnd;
 
@@ -178,31 +179,23 @@ public abstract class DataStructure {
         onReadUnlock(page);
     }
 
-    /**
-     * @param page Page.
-     */
-    protected void onWriteLock(Page page) {
+    /** {@inheritDoc} */
+    @Override public void onWriteLock(Page page) {
         // No-op.
     }
 
-    /**
-     * @param page Page.
-     */
-    protected void onWriteUnlock(Page page) {
+    /** {@inheritDoc} */
+    @Override public void onWriteUnlock(Page page) {
         // No-op.
     }
 
-    /**
-     * @param page Page.
-     */
-    protected void onReadLock(Page page) {
+    /** {@inheritDoc} */
+    @Override public void onReadLock(Page page) {
         // No-op.
     }
 
-    /**
-     * @param page Page.
-     */
-    protected void onReadUnlock(Page page) {
+    /** {@inheritDoc} */
+    @Override public void onReadUnlock(Page page) {
         // No-op.
     }
 }

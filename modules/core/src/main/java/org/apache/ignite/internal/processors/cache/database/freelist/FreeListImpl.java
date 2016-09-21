@@ -315,7 +315,7 @@ public final class FreeListImpl extends PagesList implements FreeList, ReuseList
                 // If it is an existing page, we do not need to initialize it.
                 DataPageIO init = reuseBucket || pageId == 0L ? DataPageIO.VERSIONS.latest() : null;
 
-                written = writePage(page.id(), page, writeRow, init, wal, row, written);
+                written = writePage(page.id(), page, this, writeRow, init, wal, row, written);
             }
         }
         while (written != COMPLETE);
@@ -331,7 +331,7 @@ public final class FreeListImpl extends PagesList implements FreeList, ReuseList
         long nextLink;
 
         try (Page page = pageMem.page(cacheId, pageId)) {
-            nextLink = writePage(pageId, page, rmvRow, null, itemId);
+            nextLink = writePage(pageId, page, this, rmvRow, null, itemId);
         }
 
         while (nextLink != 0) {
@@ -339,7 +339,7 @@ public final class FreeListImpl extends PagesList implements FreeList, ReuseList
             pageId = PageIdUtils.pageId(nextLink);
 
             try (Page page = pageMem.page(cacheId, pageId)) {
-                nextLink = writePage(pageId, page, rmvRow, null, itemId);
+                nextLink = writePage(pageId, page, this, rmvRow, null, itemId);
             }
         }
     }
