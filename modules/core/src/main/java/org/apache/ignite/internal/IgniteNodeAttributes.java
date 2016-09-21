@@ -124,6 +124,9 @@ public final class IgniteNodeAttributes {
     /** Internal attribute name constant. */
     public static final String ATTR_STREAMER = ATTR_PREFIX + ".streamer";
 
+    /** Internal attribute name constant. */
+    public static final String ATTR_CACHE_KEYS = ATTR_PREFIX + ".cache.keys";
+
     /** Time server host attribute name. */
     public static final String ATTR_TIME_SERVER_HOST = ATTR_PREFIX + ".time.host";
 
