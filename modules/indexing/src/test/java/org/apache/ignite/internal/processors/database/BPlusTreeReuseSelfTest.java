@@ -17,8 +17,12 @@
 
 package org.apache.ignite.internal.processors.database;
 
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseListImpl;
 
@@ -29,6 +33,81 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
     /** {@inheritDoc} */
     @Override protected ReuseList createReuseList(int cacheId, PageMemory pageMem, long rootId, boolean initNew)
         throws IgniteCheckedException {
-        return new ReuseListImpl(cacheId, "test", pageMem, null, rootId, initNew);
+        return new TestReuseList(cacheId, "test", pageMem, null, rootId, initNew);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void assertNoLocks() {
+        super.assertNoLocks();
+
+        assertTrue(TestReuseList.checkNoLocks());
+    }
+
+    private static class TestReuseList extends ReuseListImpl {
+        /** */
+        private static ThreadLocal<Set<Long>> readLocks = new ThreadLocal<Set<Long>>() {
+            @Override protected Set<Long> initialValue() {
+                return new HashSet<>();
+            }
+        };
+
+        /** */
+        private static ThreadLocal<Set<Long>> writeLocks = new ThreadLocal<Set<Long>>() {
+            @Override protected Set<Long> initialValue() {
+                return new HashSet<>();
+            }
+        };
+
+        /**
+         * @param cacheId    Cache ID.
+         * @param name       Name (for debug purpose).
+         * @param pageMem    Page memory.
+         * @param wal        Write ahead log manager.
+         * @param metaPageId Metadata page ID.
+         * @param initNew    {@code True} if new metadata should be initialized.
+         * @throws IgniteCheckedException If failed.
+         */
+        public TestReuseList(
+            int cacheId,
+            String name,
+            PageMemory pageMem,
+            IgniteWriteAheadLogManager wal,
+            long metaPageId,
+            boolean initNew
+        ) throws IgniteCheckedException {
+            super(cacheId, name, pageMem, wal, metaPageId, initNew);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void onReadLock(Page page) {
+            boolean ok = readLocks.get().add(page.id());
+
+            assert ok: page;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void onReadUnlock(Page page) {
+            boolean ok = readLocks.get().remove(page.id());
+
+            assert ok: page;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void onWriteLock(Page page) {
+            boolean ok = writeLocks.get().add(page.id());
+
+            assert ok: page;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void onWriteUnlock(Page page) {
+            boolean ok = writeLocks.get().remove(page.id());
+
+            assert ok: page;
+        }
+
+        static boolean checkNoLocks() {
+            return readLocks.get().isEmpty() && writeLocks.get().isEmpty();
+        }
     }
 }

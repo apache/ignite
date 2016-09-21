@@ -127,11 +127,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                 return null;
 
             try (Page page = page(pageId)) {
-                ByteBuffer buf = page.getForRead(); // No correctness guaranties.
+                ByteBuffer buf = readLock(page); // No correctness guaranties.
 
                 try {
-                    onReadLock(page);
-
                     BPlusIO io = io(buf);
 
                     if (io.isLeaf())
@@ -160,9 +158,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                     return res;
                 }
                 finally {
-                    page.releaseRead();
-
-                    onReadUnlock(page);
+                    readUnlock(page);
                 }
             }
             catch (IgniteCheckedException e) {
@@ -178,19 +174,15 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                 return "<Zero>";
 
             try (Page page = page(pageId)) {
-                ByteBuffer buf = page.getForRead(); // No correctness guaranties.
+                ByteBuffer buf = readLock(page); // No correctness guaranties.
 
                 try {
-                    onReadLock(page);
-
                     BPlusIO<L> io = io(buf);
 
                     return printPage(io, buf, keys);
                 }
                 finally {
-                    page.releaseRead();
-
-                    onReadUnlock(page);
+                    readUnlock(page);
                 }
             }
             catch (IgniteCheckedException e) {
@@ -662,17 +654,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
      * @return Root level.
      */
     private int getRootLevel(Page meta) {
-        ByteBuffer buf = meta.getForRead(); // Meta can't be removed.
+        ByteBuffer buf = readLock(meta); // Meta can't be removed.
 
         try {
-            onReadLock(meta);
-
             return BPlusMetaIO.VERSIONS.forPage(buf).getRootLevel(buf);
         }
         finally {
-            meta.releaseRead();
-
-            onReadUnlock(meta);
+            readUnlock(meta);
         }
     }
 
@@ -682,11 +670,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
      * @return Page ID.
      */
     private long getFirstPageId(Page meta, int lvl) {
-        ByteBuffer buf = meta.getForRead(); // Meta can't be removed.
+        ByteBuffer buf = readLock(meta); // Meta can't be removed.
 
         try {
-            onReadLock(meta);
-
             BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(buf);
 
             if (lvl < 0)
@@ -698,9 +684,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
             return io.getFirstPageId(buf, lvl);
         }
         finally {
-            meta.releaseRead();
-
-            onReadUnlock(meta);
+            readUnlock(meta);
         }
     }
 
@@ -718,17 +702,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
         }
 
         try (Page first = page(firstPageId)) {
-            ByteBuffer buf = first.getForRead(); // We always merge pages backwards, the first page is never removed.
+            ByteBuffer buf = readLock(first); // We always merge pages backwards, the first page is never removed.
 
             try {
-                onReadLock(first);
-
                 cursor.fillFromBuffer(buf, io(buf), 0);
             }
             finally {
-                first.releaseRead();
-
-                onReadUnlock(first);
+                readUnlock(first);
             }
         }
 
@@ -940,11 +920,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
      */
     private void validateDownKeys(long pageId, L minRow) throws IgniteCheckedException {
         try (Page page = page(pageId)) {
-            ByteBuffer buf = page.getForRead();
+            ByteBuffer buf = readLock(page);
 
             try {
-                onReadLock(page);
-
                 BPlusIO<L> io = io(buf);
 
                 int cnt = io.getCount(buf);
@@ -991,9 +969,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                 validateDownKeys(rightId, minRow);
             }
             finally {
-                page.releaseRead();
-
-                onReadUnlock(page);
+                readUnlock(page);
             }
         }
     }
@@ -1005,11 +981,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
      */
     private L getGreatestRowInSubTree(long pageId) throws IgniteCheckedException {
         try (Page page = page(pageId)) {
-            ByteBuffer buf = page.getForRead();
+            ByteBuffer buf = readLock(page);
 
             try {
-                onReadLock(page);
-
                 BPlusIO<L> io = io(buf);
 
                 int cnt = io.getCount(buf);
@@ -1026,9 +1000,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                 return getGreatestRowInSubTree(rightId);
             }
             finally {
-                page.releaseRead();
-
-                onReadUnlock(page);
+                readUnlock(page);
             }
         }
     }
@@ -1064,11 +1036,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
         long leftmostChildId;
 
         try (Page page = page(pageId)) {
-            ByteBuffer buf = page.getForRead(); // No correctness guaranties.
+            ByteBuffer buf = readLock(page); // No correctness guaranties.
 
             try {
-                onReadLock(page);
-
                 BPlusIO<L> io = io(buf);
 
                 if (io.isLeaf())
@@ -1077,9 +1047,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                 leftmostChildId = inner(io).getLeft(buf, 0);
             }
             finally {
-                page.releaseRead();
-
-                onReadUnlock(page);
+                readUnlock(page);
             }
         }
 
@@ -1098,11 +1066,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
      */
     private void validateDownPages(Page meta, long pageId, long fwdId, final int lvl) throws IgniteCheckedException {
         try (Page page = page(pageId)) {
-            ByteBuffer buf = page.getForRead(); // No correctness guaranties.
+            ByteBuffer buf = readLock(page); // No correctness guaranties.
 
             try {
-                onReadLock(page);
-
                 long realPageId = BPlusIO.getPageId(buf);
 
                 if (realPageId != pageId)
@@ -1135,20 +1101,16 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                     if (fwdId != 0) {
                         // For the rightmost child ask neighbor.
                         try (Page fwd = page(fwdId)) {
-                            ByteBuffer fwdBuf = fwd.getForRead(); // No correctness guaranties.
+                            ByteBuffer fwdBuf = readLock(fwd); // No correctness guaranties.
 
                             try {
-                                onReadLock(fwd);
-
                                 if (io(fwdBuf) != io)
                                     fail("IO on the same level must be the same");
 
                                 fwdId = inner(io).getLeft(fwdBuf, 0);
                             }
                             finally {
-                                fwd.releaseRead();
-
-                                onReadUnlock(fwd);
+                                readUnlock(fwd);
                             }
                         }
                     }
@@ -1159,9 +1121,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                 }
             }
             finally {
-                page.releaseRead();
-
-                onReadUnlock(page);
+                readUnlock(page);
             }
         }
     }
@@ -1522,11 +1482,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
 
         while (pageId != 0) {
             try (Page page = page(pageId)) {
-                ByteBuffer buf = page.getForRead(); // No correctness guaranties.
+                ByteBuffer buf = readLock(page); // No correctness guaranties.
 
                 try {
-                    onReadLock(page);
-
                     if (io == null) {
                         io = io(buf);
 
@@ -1538,9 +1496,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                     pageId = io.getForward(buf);
                 }
                 finally {
-                    page.releaseRead();
-
-                    onReadUnlock(page);
+                    readUnlock(page);
                 }
             }
         }
@@ -1651,21 +1607,17 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
         long pagesCnt = 0;
 
         try (Page meta = page(metaPageId)) {
-            ByteBuffer metaBuf = meta.getForWrite(); // No checks, we must be out of use.
+            ByteBuffer metaBuf = writeLock(meta); // No checks, we must be out of use.
 
             try {
-                onWriteLock(meta);
-
                 for (long pageId : getFirstPageIds(metaBuf)) {
                     assert pageId != 0;
 
                     do {
                         try (Page page = page(pageId)) {
-                            ByteBuffer buf = page.getForWrite(); // No checks, we must be out of use.
+                            ByteBuffer buf = writeLock(page); // No checks, we must be out of use.
 
                             try {
-                                onWriteLock(page);
-
                                 BPlusIO<L> io = io(buf);
 
                                 long fwdPageId = io.getForward(buf);
@@ -1676,9 +1628,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                                 pageId = fwdPageId;
                             }
                             finally {
-                                page.releaseWrite(true);
-
-                                onWriteUnlock(page);
+                                writeUnlock(page, true);
                             }
                         }
 
@@ -1695,9 +1645,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                 pagesCnt++;
             }
             finally {
-                meta.releaseWrite(true);
-
-                onWriteUnlock(meta);
+                writeUnlock(meta, true);
             }
         }
 
@@ -1801,9 +1749,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
      */
     private void writeUnlockAndClose(Page page) {
         try {
-            page.releaseWrite(true);
-
-            onWriteUnlock(page);
+            writeUnlock(page, true);
         }
         finally {
             page.close();
@@ -1929,34 +1875,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
         return res;
     }
 
-    /**
-     * @param page Page.
-     */
-    protected void onWriteLock(Page page) {
-        // No-op.
-    }
-
-    /**
-     * @param page Page.
-     */
-    protected void onWriteUnlock(Page page) {
-        // No-op.
-    }
-
-    /**
-     * @param page Page.
-     */
-    protected void onReadLock(Page page) {
-        // No-op.
-    }
-
-    /**
-     * @param page Page.
-     */
-    protected void onReadUnlock(Page page) {
-        // No-op.
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(BPlusTree.class, this);
@@ -2016,20 +1934,16 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
             int rootLvl;
             long rootId;
 
-            ByteBuffer buf = meta.getForRead(); // Meta can't be removed.
+            ByteBuffer buf = readLock(meta); // Meta can't be removed.
 
             try {
-                onReadLock(meta);
-
                 BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(buf);
 
                 rootLvl = io.getRootLevel(buf);
                 rootId = io.getFirstPageId(buf, rootLvl);
             }
             finally {
-                meta.releaseRead();
-
-                onReadUnlock(meta);
+                readUnlock(meta);
             }
 
             restartFromRoot(rootId, rootLvl, globalRmvId.get());
@@ -2298,11 +2212,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                 // Need to check this before the actual split, because after the split we will have new forward page here.
                 boolean hadFwd = io.getForward(buf) != 0;
 
-                ByteBuffer fwdBuf = fwd.getForWrite(); // Initial write, no need to check for concurrent modification.
+                ByteBuffer fwdBuf = writeLock(fwd); // Initial write, no need to check for concurrent modification.
 
                 try {
-                    onWriteLock(fwd);
-
                     // Never write full forward page, because it is known to be new.
                     fwd.fullPageWalRecordPolicy(Boolean.FALSE);
 
@@ -2345,11 +2257,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                             if (io.isLeaf())
                                 io = latestInnerIO();
 
-                            ByteBuffer newRootBuf = newRoot.getForWrite(); // Initial write, no concurrent modification.
+                            ByteBuffer newRootBuf = writeLock(newRoot); // Initial write, no concurrent modification.
 
                             try {
-                                onWriteLock(newRoot);
-
                                 // Never write full new root page, because it is known to be new.
                                 newRoot.fullPageWalRecordPolicy(Boolean.FALSE);
 
@@ -2362,9 +2272,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                                         inner(io), pageId, moveUpRow, null, fwdId));
                             }
                             finally {
-                                newRoot.releaseWrite(true);
-
-                                onWriteUnlock(newRoot);
+                                writeUnlock(newRoot, true);
                             }
                         }
 
@@ -2377,9 +2285,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                     return moveUpRow;
                 }
                 finally {
-                    fwd.releaseWrite(true);
-
-                    onWriteUnlock(fwd);
+                    writeUnlock(fwd, true);
                 }
             }
         }
@@ -3672,11 +3578,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
             boolean reinitialize = false;
 
             try (Page next = page(nextPageId)) {
-                ByteBuffer buf = next.getForRead(); // Doing explicit page ID check.
+                ByteBuffer buf = readLock(next); // Doing explicit page ID check.
 
                 try {
-                    onReadLock(next);
-
                     // If concurrent merge occurred we have to reinitialize cursor from the last returned row.
                     if (PageIO.getPageId(buf) != nextPageId)
                         reinitialize = true;
@@ -3684,9 +3588,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                         fillFromBuffer(buf, io(buf), 0);
                 }
                 finally {
-                    next.releaseRead();
-
-                    onReadUnlock(next);
+                    readUnlock(next);
                 }
             }
 

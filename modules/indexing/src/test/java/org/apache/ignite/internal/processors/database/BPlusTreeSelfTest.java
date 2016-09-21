@@ -105,6 +105,13 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 //        return 25 * 60 * 1000;
 //    }
 
+    /**
+     * Check that we do not keep any locks at the moment.
+     */
+    protected void assertNoLocks() {
+        assertTrue(TestTree.checkNoLocks());
+    }
+    
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         long seed = System.nanoTime();
@@ -462,27 +469,27 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
             tree.put(x);
 
-            assertTrue(TestTree.checkNoLocks());
+            assertNoLocks();
 
             assertEquals(x, tree.findOne(x).longValue());
 
-            assertTrue(TestTree.checkNoLocks());
+            assertNoLocks();
 
             tree.validateTree();
 
-            assertTrue(TestTree.checkNoLocks());
+            assertNoLocks();
         }
 
         X.println(tree.printTree());
 
-        assertTrue(TestTree.checkNoLocks());
+        assertNoLocks();
 
         assertNull(tree.findOne(-1L));
 
         for (long x = 0; x < cnt; x++)
             assertEquals(x, tree.findOne(x).longValue());
 
-        assertTrue(TestTree.checkNoLocks());
+        assertNoLocks();
 
         assertNull(tree.findOne(cnt));
 
@@ -491,26 +498,26 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
             assertEquals(Long.valueOf(x), tree.remove(x));
 
-            assertTrue(TestTree.checkNoLocks());
+            assertNoLocks();
 
             X.println(tree.printTree());
 
-            assertTrue(TestTree.checkNoLocks());
+            assertNoLocks();
 
             assertNull(tree.findOne(x));
 
-            assertTrue(TestTree.checkNoLocks());
+            assertNoLocks();
 
             tree.validateTree();
 
-            assertTrue(TestTree.checkNoLocks());
+            assertNoLocks();
         }
 
         assertFalse(tree.find(null, null).next());
         assertEquals(0, tree.size());
         assertEquals(0, tree.rootLevel());
 
-        assertTrue(TestTree.checkNoLocks());
+        assertNoLocks();
     }
 
     /**
@@ -737,7 +744,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
                     assertNull(tree.put((long)idx));
 
-                    assertTrue(TestTree.checkNoLocks());
+                    assertNoLocks();
                 }
 
                 return null;
@@ -757,7 +764,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         assertEquals(keys, x);
 
-        assertTrue(TestTree.checkNoLocks());
+        assertNoLocks();
     }
 
     /**
@@ -790,7 +797,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                 assertNull(tree.remove(x));
             }
 
-            assertTrue(TestTree.checkNoLocks());
+            assertNoLocks();
 
 //            X.println(tree.printTree());
             tree.validateTree();
@@ -805,12 +812,12 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
                     assertEquals(map.get(x), x);
 
-                    assertTrue(TestTree.checkNoLocks());
+                    assertNoLocks();
                 }
 
                 assertEquals(map.size(), tree.size());
 
-                assertTrue(TestTree.checkNoLocks());
+                assertNoLocks();
             }
         }
     }
@@ -835,7 +842,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         assertFalse(tree.find(4L, null).next());
         assertFalse(tree.find(null, 0L).next());
 
-        assertTrue(TestTree.checkNoLocks());
+        assertNoLocks();
     }
 
     /**
@@ -858,7 +865,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             assertEquals(map.put(row, row), tree.put(row));
             assertEquals(row, tree.findOne(row));
 
-            assertTrue(TestTree.checkNoLocks());
+            assertNoLocks();
         }
 
         final int off = rnd.nextInt(5 * MAX_PER_PAGE);
@@ -879,7 +886,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
             last = c.get();
 
-            assertTrue(TestTree.checkNoLocks());
+            assertNoLocks();
         }
 
         if (last != null) {
@@ -890,7 +897,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             assertTrue(c.next());
             assertEquals(last, c.get());
 
-            assertTrue(TestTree.checkNoLocks());
+            assertNoLocks();
         }
 
         while (c.next()) {
@@ -902,12 +909,12 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
             i.remove();
 
-            assertTrue(TestTree.checkNoLocks());
+            assertNoLocks();
         }
 
         assertEquals(map.size(), size(tree.find(null, null)));
 
-        assertTrue(TestTree.checkNoLocks());
+        assertNoLocks();
     }
 
     /**
@@ -1001,18 +1008,18 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                         if (put) {
                             assertEquals(map.put(x, x), tree.put(x));
 
-                            assertTrue(TestTree.checkNoLocks());
+                            assertNoLocks();
                         }
                         else {
                             if (map.remove(x) != null) {
                                 assertEquals(x, tree.remove(x));
 
-                                assertTrue(TestTree.checkNoLocks());
+                                assertNoLocks();
                             }
 
                             assertNull(tree.remove(x));
 
-                            assertTrue(TestTree.checkNoLocks());
+                            assertNoLocks();
                         }
                     }
                     finally {
@@ -1040,7 +1047,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         tree.validateTree();
 
-        assertTrue(TestTree.checkNoLocks());
+        assertNoLocks();
     }
 
     /**

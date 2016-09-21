@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.database;
 
+import java.nio.ByteBuffer;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
@@ -126,5 +127,89 @@ public abstract class DataStructure {
             flag == FLAG_DATA && PageIdUtils.partId(pageId) <= MAX_PARTITION_ID : U.hexLong(pageId);
 
         return pageMem.page(cacheId, pageId);
+    }
+
+    /**
+     * @param page Page.
+     * @return Buffer.
+     */
+    protected final ByteBuffer tryWriteLock(Page page) {
+        ByteBuffer buf = page.tryGetForWrite();
+
+        if (buf != null)
+            onWriteLock(page);
+
+        return buf;
+    }
+
+
+    /**
+     * @param page Page.
+     * @return Buffer.
+     */
+    protected final ByteBuffer writeLock(Page page) {
+        ByteBuffer buf = page.getForWrite();
+
+        onWriteLock(page);
+
+        return buf;
+    }
+
+    /**
+     * @param page Page.
+     */
+    protected final void writeUnlock(Page page, boolean dirty) {
+        page.releaseWrite(dirty);
+
+        onWriteUnlock(page);
+    }
+
+    /**
+     * @param page Page.
+     * @return Buffer.
+     */
+    protected final ByteBuffer readLock(Page page) {
+        ByteBuffer buf = page.getForRead();
+
+        onReadLock(page);
+
+        return buf;
+    }
+
+    /**
+     * @param page Page.
+     */
+    protected final void readUnlock(Page page) {
+        page.releaseRead();
+
+        onReadUnlock(page);
+    }
+
+    /**
+     * @param page Page.
+     */
+    protected void onWriteLock(Page page) {
+        // No-op.
+    }
+
+    /**
+     * @param page Page.
+     */
+    protected void onWriteUnlock(Page page) {
+        // No-op.
+    }
+
+    /**
+     * @param page Page.
+     */
+    protected void onReadLock(Page page) {
+        // No-op.
+    }
+
+    /**
+     * @param page Page.
+     */
+    protected void onReadUnlock(Page page) {
+        // No-op.
     }
 }

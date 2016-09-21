@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.cache.database.freelist.PagesList;
 /**
  * Reuse list.
  */
-public final class ReuseListImpl extends PagesList implements ReuseList {
+public class ReuseListImpl extends PagesList implements ReuseList {
     /** */
     private static final AtomicReferenceFieldUpdater<ReuseListImpl, Stripe[]> bucketUpdater =
         AtomicReferenceFieldUpdater.newUpdater(ReuseListImpl.class, Stripe[].class, "bucket");
