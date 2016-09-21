@@ -1143,9 +1143,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 throw new IgniteCheckedException("Hadoop module cannot be used with peer class loading enabled " +
                     "(set IgniteConfiguration.peerClassLoadingEnabled to \"false\").");
 
-            HadoopClassLoader ldr = ctx.hadoopHelper().commonClassLoader();
-
-            HadoopProcessorAdapter res = IgniteComponentType.HADOOP.createIfInClassPath(ctx, ldr, true);
+            HadoopProcessorAdapter res = IgniteComponentType.HADOOP.createIfInClassPath(ctx, true);
 
             res.validateEnvironment();
 
@@ -1160,19 +1158,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     "to use Hadoop module).");
             }
             else {
-                if (!ctx.hadoopHelper().isNoOp()) {
-                    HadoopClassLoader ldr = ctx.hadoopHelper().commonClassLoader();
+                cmp = IgniteComponentType.HADOOP.createIfInClassPath(ctx, false);
 
-                    cmp = IgniteComponentType.HADOOP.createIfInClassPath(ctx, ldr, false);
+                try {
+                    cmp.validateEnvironment();
+                }
+                catch (IgniteException | IgniteCheckedException e) {
+                    U.quietAndWarn(log, "Hadoop module will not start due to exception: " + e.getMessage());
 
-                    try {
-                        cmp.validateEnvironment();
-                    }
-                    catch (IgniteException | IgniteCheckedException e) {
-                        U.quietAndWarn(log, "Hadoop module will not start due to exception: " + e.getMessage());
-
-                        cmp = null;
-                    }
+                    cmp = null;
                 }
             }
 
