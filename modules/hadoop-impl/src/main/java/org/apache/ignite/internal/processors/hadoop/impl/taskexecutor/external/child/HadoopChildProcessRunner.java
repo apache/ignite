@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskOutput;
-import org.apache.ignite.internal.processors.hadoop.impl.message.HadoopMessage;
+import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
 import org.apache.ignite.internal.processors.hadoop.impl.shuffle.HadoopShuffleAck;
 import org.apache.ignite.internal.processors.hadoop.impl.shuffle.HadoopShuffleJob;
 import org.apache.ignite.internal.processors.hadoop.impl.shuffle.HadoopShuffleMessage;

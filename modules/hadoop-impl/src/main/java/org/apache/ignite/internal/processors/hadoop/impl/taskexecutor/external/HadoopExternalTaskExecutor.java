@@ -41,7 +41,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskType;
 import org.apache.ignite.internal.processors.hadoop.impl.jobtracker.HadoopJobMetadata;
 import org.apache.ignite.internal.processors.hadoop.impl.jobtracker.HadoopJobTracker;
-import org.apache.ignite.internal.processors.hadoop.impl.message.HadoopMessage;
+import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
 import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.HadoopTaskExecutorAdapter;
 import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.HadoopTaskState;
 import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.HadoopTaskStatus;

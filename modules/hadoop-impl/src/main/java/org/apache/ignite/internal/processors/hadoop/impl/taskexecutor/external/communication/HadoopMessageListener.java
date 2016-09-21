@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.external.communication;
 
-import org.apache.ignite.internal.processors.hadoop.impl.message.HadoopMessage;
+import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
 import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.external.HadoopProcessDescriptor;
 
 /**
