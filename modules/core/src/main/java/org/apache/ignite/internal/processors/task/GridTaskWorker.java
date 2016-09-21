@@ -626,7 +626,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 res.setOccupied(true);
 
                 if (resCache && jobRes.size() > ctx.discovery().size() && jobRes.size() % SPLIT_WARN_THRESHOLD == 0)
-                    LT.warn(log, null, "Number of jobs in task is too large for task: " + ses.getTaskName() +
+                    LT.warn(log, "Number of jobs in task is too large for task: " + ses.getTaskName() +
                         ". Consider reducing number of jobs or disabling job result cache with " +
                         "@ComputeTaskNoResultCache annotation.");
             }

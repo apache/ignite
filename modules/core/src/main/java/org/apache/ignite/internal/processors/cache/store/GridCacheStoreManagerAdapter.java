@@ -547,7 +547,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             return true;
         }
 
-        LT.warn(log, null, "Calling Cache.loadCache() method will have no effect, " +
+        LT.warn(log, "Calling Cache.loadCache() method will have no effect, " +
             "CacheConfiguration.getStore() is not defined for cache: " + cctx.namexx());
 
         return false;

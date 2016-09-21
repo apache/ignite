@@ -331,7 +331,7 @@ public class FairAffinityFunction implements AffinityFunction {
                 balance(tier, pendingParts, fullMap, topSnapshot, true);
 
                 if (!exclNeighborsWarn) {
-                    LT.warn(log, null, "Affinity function excludeNeighbors property is ignored " +
+                    LT.warn(log, "Affinity function excludeNeighbors property is ignored " +
                         "because topology has no enough nodes to assign backups.");
 
                     exclNeighborsWarn = true;

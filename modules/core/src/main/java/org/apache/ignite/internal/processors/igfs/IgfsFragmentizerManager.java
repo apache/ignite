@@ -383,7 +383,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
                 }
                 catch (IgniteCheckedException | IgniteException e) {
                     if (!X.hasCause(e, InterruptedException.class) && !X.hasCause(e, IgniteInterruptedCheckedException.class))
-                        LT.warn(log, e, "Failed to get fragmentizer file info (will retry).");
+                        LT.error(log, e, "Failed to get fragmentizer file info (will retry).");
                     else {
                         if (log.isDebugEnabled())
                             log.debug("Got interrupted exception in fragmentizer coordinator (grid is stopping).");

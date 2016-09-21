@@ -4072,7 +4072,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Logs warning message in both verbose and quite modes.
+     * Logs warning message in both verbose and quiet modes.
      *
      * @param log Logger to use.
      * @param msg Message to log.
@@ -4082,7 +4082,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Logs warning message in both verbose and quite modes.
+     * Logs warning message in both verbose and quiet modes.
      *
      * @param log Logger to use.
      * @param shortMsg Short message.
@@ -4252,7 +4252,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Prints out the message in quite and info modes.
+     * Prints out the message in quiet and info modes.
      *
      * @param log Logger.
      * @param msg Message to print.

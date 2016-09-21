@@ -303,7 +303,7 @@ abstract class TcpDiscoveryImpl {
      */
     protected boolean checkAckTimeout(long ackTimeout) {
         if (ackTimeout > spi.getMaxAckTimeout()) {
-            LT.warn(log, null, "Acknowledgement timeout is greater than maximum acknowledgement timeout " +
+            LT.warn(log, "Acknowledgement timeout is greater than maximum acknowledgement timeout " +
                 "(consider increasing 'maxAckTimeout' configuration property) " +
                 "[ackTimeout=" + ackTimeout + ", maxAckTimeout=" + spi.getMaxAckTimeout() + ']');
 
