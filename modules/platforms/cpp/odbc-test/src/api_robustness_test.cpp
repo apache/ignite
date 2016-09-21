@@ -453,6 +453,34 @@ BOOST_AUTO_TEST_CASE(TestSQLColumns)
     SQLColumns(dbc, 0, 0, 0, 0, 0, 0, 0, 0);
 }
 
+BOOST_AUTO_TEST_CASE(TestSQLBindCol)
+{
+    // There are no checks because we do not really care what is the result of these
+    // calls as long as they do not cause segmentation fault.
+
+    Connect("driver={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+
+    SQLINTEGER ind1;
+    SQLLEN len1 = 0;
+
+    // Everithing is ok.
+    SQLRETURN ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &ind1, sizeof(ind1), &len1);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    // Size is null.
+    SQLBindCol(stmt, 1, SQL_C_SLONG, &ind1, 0, &len1);
+
+    // Res size is null.
+    SQLBindCol(stmt, 2, SQL_C_SLONG, &ind1, sizeof(ind1), 0);
+
+    // Value is null.
+    SQLBindCol(stmt, 3, SQL_C_SLONG, 0, sizeof(ind1), &len1);
+
+    // All nulls.
+    SQLBindCol(stmt, 4, SQL_C_SLONG, 0, 0, 0);
+}
+
 BOOST_AUTO_TEST_CASE(TestSQLBindParameter)
 {
     // There are no checks because we do not really care what is the result of these
@@ -515,6 +543,464 @@ BOOST_AUTO_TEST_CASE(TestSQLNativeSql)
 
     // All nulls.
     SQLNativeSql(dbc, sql, 0, 0, 0, 0);
+}
+
+BOOST_AUTO_TEST_CASE(TestSQLColAttribute)
+{
+    // There are no checks because we do not really care what is the result of these
+    // calls as long as they do not cause segmentation fault.
+
+    Connect("driver={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+
+    SQLCHAR sql[] = "SELECT strField FROM TestType";
+
+    SQLRETURN ret = SQLExecDirect(stmt, sql, sizeof(sql));
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    SQLCHAR buffer[ODBC_BUFFER_SIZE];
+    SQLSMALLINT resLen = 0;
+    SQLLEN numericAttr = 0;
+
+    // Everithing is ok. Character attribute.
+    ret = SQLColAttribute(stmt, 1, SQL_COLUMN_TABLE_NAME, buffer, sizeof(buffer), &resLen, &numericAttr);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    // Everithing is ok. Numeric attribute.
+    ret = SQLColAttribute(stmt, 1, SQL_DESC_COUNT, buffer, sizeof(buffer), &resLen, &numericAttr);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    SQLColAttribute(stmt, 1, SQL_COLUMN_TABLE_NAME, buffer, sizeof(buffer), &resLen, 0);
+    SQLColAttribute(stmt, 1, SQL_COLUMN_TABLE_NAME, buffer, sizeof(buffer), 0, &numericAttr);
+    SQLColAttribute(stmt, 1, SQL_COLUMN_TABLE_NAME, buffer, 0, &resLen, &numericAttr);
+    SQLColAttribute(stmt, 1, SQL_COLUMN_TABLE_NAME, 0, sizeof(buffer), &resLen, &numericAttr);
+    SQLColAttribute(stmt, 1, SQL_COLUMN_TABLE_NAME, 0, 0, 0, 0);
+
+    SQLColAttribute(stmt, 1, SQL_DESC_COUNT, buffer, sizeof(buffer), &resLen, 0);
+    SQLColAttribute(stmt, 1, SQL_DESC_COUNT, buffer, sizeof(buffer), 0, &numericAttr);
+    SQLColAttribute(stmt, 1, SQL_DESC_COUNT, buffer, 0, &resLen, &numericAttr);
+    SQLColAttribute(stmt, 1, SQL_DESC_COUNT, 0, sizeof(buffer), &resLen, &numericAttr);
+    SQLColAttribute(stmt, 1, SQL_DESC_COUNT, 0, 0, 0, 0);
+}
+
+BOOST_AUTO_TEST_CASE(TestSQLDescribeCol)
+{
+    // There are no checks because we do not really care what is the result of these
+    // calls as long as they do not cause segmentation fault.
+
+    Connect("driver={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+
+    SQLCHAR sql[] = "SELECT strField FROM TestType";
+
+    SQLRETURN ret = SQLExecDirect(stmt, sql, sizeof(sql));
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    SQLCHAR columnName[ODBC_BUFFER_SIZE];
+    SQLSMALLINT columnNameLen = 0;
+    SQLSMALLINT dataType = 0;
+    SQLULEN columnSize = 0;
+    SQLSMALLINT decimalDigits = 0;
+    SQLSMALLINT nullable = 0;
+
+    // Everithing is ok.
+    ret = SQLDescribeCol(stmt, 1, columnName, sizeof(columnName),
+        &columnNameLen, &dataType, &columnSize, &decimalDigits, &nullable);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    SQLDescribeCol(stmt, 1, 0, sizeof(columnName), &columnNameLen, &dataType, &columnSize, &decimalDigits, &nullable);
+    SQLDescribeCol(stmt, 1, columnName, 0, &columnNameLen, &dataType, &columnSize, &decimalDigits, &nullable);
+    SQLDescribeCol(stmt, 1, columnName, sizeof(columnName), 0, &dataType, &columnSize, &decimalDigits, &nullable);
+    SQLDescribeCol(stmt, 1, columnName, sizeof(columnName), &columnNameLen, 0, &columnSize, &decimalDigits, &nullable);
+    SQLDescribeCol(stmt, 1, columnName, sizeof(columnName), &columnNameLen, &dataType, 0, &decimalDigits, &nullable);
+    SQLDescribeCol(stmt, 1, columnName, sizeof(columnName), &columnNameLen, &dataType, &columnSize, 0, &nullable);
+    SQLDescribeCol(stmt, 1, columnName, sizeof(columnName), &columnNameLen, &dataType, &columnSize, &decimalDigits, 0);
+    SQLDescribeCol(stmt, 1, 0, 0, 0, 0, 0, 0, 0);
+}
+
+BOOST_AUTO_TEST_CASE(TestSQLRowCount)
+{
+    // There are no checks because we do not really care what is the result of these
+    // calls as long as they do not cause segmentation fault.
+
+    Connect("driver={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+
+    SQLCHAR sql[] = "SELECT strField FROM TestType";
+
+    SQLRETURN ret = SQLExecDirect(stmt, sql, sizeof(sql));
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    SQLLEN rows = 0;
+
+    // Everithing is ok.
+    ret = SQLRowCount(stmt, &rows);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    SQLRowCount(stmt, 0);
+}
+
+BOOST_AUTO_TEST_CASE(TestSQLForeignKeys)
+{
+    // There are no checks because we do not really care what is the result of these
+    // calls as long as they do not cause segmentation fault.
+
+    Connect("driver={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+
+    SQLCHAR catalogName[] = "";
+    SQLCHAR schemaName[] = "cache";
+    SQLCHAR tableName[] = "TestType";
+
+    // Everithing is ok.
+    SQLRETURN ret = SQLForeignKeys(stmt, catalogName, sizeof(catalogName), schemaName, sizeof(schemaName),
+        tableName, sizeof(tableName), catalogName, sizeof(catalogName),
+        schemaName, sizeof(schemaName), tableName, sizeof(tableName));
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    SQLCloseCursor(stmt);
+
+    SQLForeignKeys(stmt, 0, sizeof(catalogName), schemaName, sizeof(schemaName), tableName, sizeof(tableName),
+        catalogName, sizeof(catalogName), schemaName, sizeof(schemaName), tableName, sizeof(tableName));
+
+    SQLCloseCursor(stmt);
+
+    SQLForeignKeys(stmt, catalogName, 0, schemaName, sizeof(schemaName), tableName, sizeof(tableName),
+        catalogName, sizeof(catalogName), schemaName, sizeof(schemaName), tableName, sizeof(tableName));
+
+    SQLCloseCursor(stmt);
+
+    SQLForeignKeys(stmt, catalogName, sizeof(catalogName), 0, sizeof(schemaName), tableName, sizeof(tableName),
+        catalogName, sizeof(catalogName), schemaName, sizeof(schemaName), tableName, sizeof(tableName));
+
+    SQLCloseCursor(stmt);
+
+    SQLForeignKeys(stmt, catalogName, sizeof(catalogName), schemaName, 0, tableName, sizeof(tableName),
+        catalogName, sizeof(catalogName), schemaName, sizeof(schemaName), tableName, sizeof(tableName));
+
+    SQLCloseCursor(stmt);
+
+    SQLForeignKeys(stmt, catalogName, sizeof(catalogName), schemaName, sizeof(schemaName), 0, sizeof(tableName),
+        catalogName, sizeof(catalogName), schemaName, sizeof(schemaName), tableName, sizeof(tableName));
+
+    SQLCloseCursor(stmt);
+
+    SQLForeignKeys(stmt, catalogName, sizeof(catalogName), schemaName, sizeof(schemaName), tableName, 0, catalogName,
+        sizeof(catalogName), schemaName, sizeof(schemaName), tableName, sizeof(tableName));
+
+    SQLCloseCursor(stmt);
+
+    SQLForeignKeys(stmt, catalogName, sizeof(catalogName), schemaName, sizeof(schemaName), tableName, sizeof(tableName),
+        0, sizeof(catalogName), schemaName, sizeof(schemaName), tableName, sizeof(tableName));
+
+    SQLCloseCursor(stmt);
+
+    SQLForeignKeys(stmt, catalogName, sizeof(catalogName), schemaName, sizeof(schemaName), tableName, sizeof(tableName),
+        catalogName, 0, schemaName, sizeof(schemaName), tableName, sizeof(tableName));
+
+    SQLCloseCursor(stmt);
+
+    SQLForeignKeys(stmt, catalogName, sizeof(catalogName), schemaName, sizeof(schemaName), tableName, sizeof(tableName),
+        catalogName, sizeof(catalogName), 0, sizeof(schemaName), tableName, sizeof(tableName));
+
+    SQLCloseCursor(stmt);
+
+    SQLForeignKeys(stmt, catalogName, sizeof(catalogName), schemaName, sizeof(schemaName), tableName, sizeof(tableName),
+        catalogName, sizeof(catalogName), schemaName, 0, tableName, sizeof(tableName));
+
+    SQLCloseCursor(stmt);
+
+    SQLForeignKeys(stmt, catalogName, sizeof(catalogName), schemaName, sizeof(schemaName), tableName, sizeof(tableName),
+        catalogName, sizeof(catalogName), schemaName, sizeof(schemaName), 0, sizeof(tableName));
+
+    SQLCloseCursor(stmt);
+
+    SQLForeignKeys(stmt, catalogName, sizeof(catalogName), schemaName, sizeof(schemaName), tableName, sizeof(tableName),
+        catalogName, sizeof(catalogName), schemaName, sizeof(schemaName), tableName, 0);
+
+    SQLCloseCursor(stmt);
+
+    SQLForeignKeys(stmt, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+
+    SQLCloseCursor(stmt);
+}
+
+BOOST_AUTO_TEST_CASE(TestSQLGetStmtAttr)
+{
+    // There are no checks because we do not really care what is the result of these
+    // calls as long as they do not cause segmentation fault.
+
+    Connect("driver={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+
+    SQLCHAR buffer[ODBC_BUFFER_SIZE];
+    SQLINTEGER resLen = 0;
+
+    // Everithing is ok.
+    SQLRETURN ret = SQLGetStmtAttr(stmt, SQL_ATTR_ROW_ARRAY_SIZE, buffer, sizeof(buffer), &resLen);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    SQLGetStmtAttr(stmt, SQL_ATTR_ROW_ARRAY_SIZE, 0, sizeof(buffer), &resLen);
+    SQLGetStmtAttr(stmt, SQL_ATTR_ROW_ARRAY_SIZE, buffer, 0, &resLen);
+    SQLGetStmtAttr(stmt, SQL_ATTR_ROW_ARRAY_SIZE, buffer, sizeof(buffer), 0);
+    SQLGetStmtAttr(stmt, SQL_ATTR_ROW_ARRAY_SIZE, 0, 0, 0);
+}
+
+BOOST_AUTO_TEST_CASE(TestSQLSetStmtAttr)
+{
+    // There are no checks because we do not really care what is the result of these
+    // calls as long as they do not cause segmentation fault.
+
+    Connect("driver={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+
+    SQLULEN val = 1;
+
+    // Everithing is ok.
+    SQLRETURN ret = SQLSetStmtAttr(stmt, SQL_ATTR_ROW_ARRAY_SIZE, reinterpret_cast<SQLPOINTER>(val), sizeof(val));
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    SQLSetStmtAttr(stmt, SQL_ATTR_ROW_ARRAY_SIZE, 0, sizeof(val));
+    SQLSetStmtAttr(stmt, SQL_ATTR_ROW_ARRAY_SIZE, reinterpret_cast<SQLPOINTER>(val), 0);
+    SQLSetStmtAttr(stmt, SQL_ATTR_ROW_ARRAY_SIZE, 0, 0);
+}
+
+BOOST_AUTO_TEST_CASE(TestSQLPrimaryKeys)
+{
+    // There are no checks because we do not really care what is the result of these
+    // calls as long as they do not cause segmentation fault.
+
+    Connect("driver={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+
+    SQLCHAR catalogName[] = "";
+    SQLCHAR schemaName[] = "cache";
+    SQLCHAR tableName[] = "TestType";
+
+    // Everithing is ok.
+    SQLRETURN ret = SQLPrimaryKeys(stmt, catalogName, sizeof(catalogName), schemaName, sizeof(schemaName),
+        tableName, sizeof(tableName));
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    SQLPrimaryKeys(stmt, 0, sizeof(catalogName), schemaName, sizeof(schemaName), tableName, sizeof(tableName));
+    SQLPrimaryKeys(stmt, catalogName, 0, schemaName, sizeof(schemaName), tableName, sizeof(tableName));
+    SQLPrimaryKeys(stmt, catalogName, sizeof(catalogName), 0, sizeof(schemaName), tableName, sizeof(tableName));
+    SQLPrimaryKeys(stmt, catalogName, sizeof(catalogName), schemaName, 0, tableName, sizeof(tableName));
+    SQLPrimaryKeys(stmt, catalogName, sizeof(catalogName), schemaName, sizeof(schemaName), 0, sizeof(tableName));
+    SQLPrimaryKeys(stmt, catalogName, sizeof(catalogName), schemaName, sizeof(schemaName), tableName, 0);
+    SQLPrimaryKeys(stmt, 0, 0, 0, 0, 0, 0);
+}
+
+BOOST_AUTO_TEST_CASE(TestSQLNumParams)
+{
+    // There are no checks because we do not really care what is the result of these
+    // calls as long as they do not cause segmentation fault.
+
+    Connect("driver={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+
+    SQLCHAR sql[] = "SELECT strField FROM TestType";
+
+    // Everyting is ok.
+    SQLRETURN ret = SQLPrepare(stmt, sql, sizeof(sql));
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    SQLSMALLINT params;
+
+    // Everithing is ok.
+    ret = SQLNumParams(stmt, &params);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    SQLNumParams(stmt, 0);
+}
+
+BOOST_AUTO_TEST_CASE(TestSQLGetDiagField)
+{
+    // There are no checks because we do not really care what is the result of these
+    // calls as long as they do not cause segmentation fault.
+
+    Connect("driver={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+
+    // Should fail.
+    SQLRETURN ret = SQLGetTypeInfo(stmt, SQL_INTERVAL_MONTH);
+
+    BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
+
+    SQLCHAR buffer[ODBC_BUFFER_SIZE];
+    SQLSMALLINT resLen = 0;
+
+    // Everithing is ok
+    ret = SQLGetDiagField(SQL_HANDLE_STMT, stmt, 1, SQL_DIAG_MESSAGE_TEXT, buffer, sizeof(buffer), &resLen);
+
+    BOOST_REQUIRE_EQUAL(ret, SQL_SUCCESS);
+
+    SQLGetDiagField(SQL_HANDLE_STMT, stmt, 1, SQL_DIAG_MESSAGE_TEXT, 0, sizeof(buffer), &resLen);
+    SQLGetDiagField(SQL_HANDLE_STMT, stmt, 1, SQL_DIAG_MESSAGE_TEXT, buffer, 0, &resLen);
+    SQLGetDiagField(SQL_HANDLE_STMT, stmt, 1, SQL_DIAG_MESSAGE_TEXT, buffer, sizeof(buffer), 0);
+    SQLGetDiagField(SQL_HANDLE_STMT, stmt, 1, SQL_DIAG_MESSAGE_TEXT, 0, 0, 0);
+}
+
+BOOST_AUTO_TEST_CASE(TestSQLGetDiagRec)
+{
+    // There are no checks because we do not really care what is the result of these
+    // calls as long as they do not cause segmentation fault.
+
+    Connect("driver={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+
+    // Should fail.
+    SQLRETURN ret = SQLGetTypeInfo(stmt, SQL_INTERVAL_MONTH);
+
+    BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
+
+    SQLCHAR state[ODBC_BUFFER_SIZE];
+    SQLINTEGER nativeError = 0;
+    SQLCHAR message[ODBC_BUFFER_SIZE];
+    SQLSMALLINT messageLen = 0;
+
+    // Everithing is ok
+    ret = SQLGetDiagRec(SQL_HANDLE_STMT, stmt, 1, state, &nativeError, message, sizeof(message), &messageLen);
+
+    BOOST_REQUIRE_EQUAL(ret, SQL_SUCCESS);
+
+    SQLGetDiagRec(SQL_HANDLE_STMT, stmt, 1, 0, &nativeError, message, sizeof(message), &messageLen);
+    SQLGetDiagRec(SQL_HANDLE_STMT, stmt, 1, state, 0, message, sizeof(message), &messageLen);
+    SQLGetDiagRec(SQL_HANDLE_STMT, stmt, 1, state, &nativeError, 0, sizeof(message), &messageLen);
+    SQLGetDiagRec(SQL_HANDLE_STMT, stmt, 1, state, &nativeError, message, 0, &messageLen);
+    SQLGetDiagRec(SQL_HANDLE_STMT, stmt, 1, state, &nativeError, message, sizeof(message), 0);
+    SQLGetDiagRec(SQL_HANDLE_STMT, stmt, 1, 0, 0, 0, 0, 0);
+}
+
+BOOST_AUTO_TEST_CASE(TestSQLGetData)
+{
+    // There are no checks because we do not really care what is the result of these
+    // calls as long as they do not cause segmentation fault.
+
+    for (int i = 0; i < 100; ++i)
+    {
+        TestType obj;
+
+        obj.strField = LexicalCast<std::string>(i);
+
+        testCache.Put(i, obj);
+    }
+
+    Connect("driver={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+
+    SQLCHAR sql[] = "SELECT strField FROM TestType";
+
+    SQLRETURN ret = SQLExecDirect(stmt, sql, sizeof(sql));
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    ret = SQLFetch(stmt);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    SQLCHAR buffer[ODBC_BUFFER_SIZE];
+    SQLLEN resLen = 0;
+
+    // Everything is ok.
+    ret = SQLGetData(stmt, 1, SQL_C_CHAR, buffer, sizeof(buffer), &resLen);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    SQLFetch(stmt);
+
+    SQLGetData(stmt, 1, SQL_C_CHAR, 0, sizeof(buffer), &resLen);
+
+    SQLFetch(stmt);
+
+    SQLGetData(stmt, 1, SQL_C_CHAR, buffer, 0, &resLen);
+
+    SQLFetch(stmt);
+
+    SQLGetData(stmt, 1, SQL_C_CHAR, buffer, sizeof(buffer), 0);
+
+    SQLFetch(stmt);
+
+    SQLGetData(stmt, 1, SQL_C_CHAR, 0, 0, 0);
+
+    SQLFetch(stmt);
+}
+
+BOOST_AUTO_TEST_CASE(TestSQLGetEnvAttr)
+{
+    // There are no checks because we do not really care what is the result of these
+    // calls as long as they do not cause segmentation fault.
+
+    Connect("driver={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+
+    SQLCHAR buffer[ODBC_BUFFER_SIZE];
+    SQLINTEGER resLen = 0;
+
+    // Everything is ok.
+    SQLRETURN ret = SQLGetEnvAttr(env, SQL_ATTR_ODBC_VERSION, buffer, sizeof(buffer), &resLen);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_ENV, env);
+
+    SQLGetEnvAttr(env, SQL_ATTR_ODBC_VERSION, 0, sizeof(buffer), &resLen);
+    SQLGetEnvAttr(env, SQL_ATTR_ODBC_VERSION, buffer, 0, &resLen);
+    SQLGetEnvAttr(env, SQL_ATTR_ODBC_VERSION, buffer, sizeof(buffer), 0);
+    SQLGetEnvAttr(env, SQL_ATTR_ODBC_VERSION, 0, 0, 0);
+}
+
+BOOST_AUTO_TEST_CASE(TestSQLSpecialColumns)
+{
+    // There are no checks because we do not really care what is the result of these
+    // calls as long as they do not cause segmentation fault.
+
+    Connect("driver={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+
+    SQLCHAR catalogName[] = "";
+    SQLCHAR schemaName[] = "cache";
+    SQLCHAR tableName[] = "TestType";
+
+    // Everything is ok.
+    SQLRETURN ret = SQLSpecialColumns(stmt, SQL_BEST_ROWID, catalogName, sizeof(catalogName),
+        schemaName, sizeof(schemaName), tableName, sizeof(tableName), SQL_SCOPE_CURROW, SQL_NO_NULLS);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    SQLCloseCursor(stmt);
+
+    SQLSpecialColumns(stmt, SQL_BEST_ROWID, 0, sizeof(catalogName), schemaName, sizeof(schemaName), tableName,
+        sizeof(tableName), SQL_SCOPE_CURROW, SQL_NO_NULLS);
+
+    SQLCloseCursor(stmt);
+
+    SQLSpecialColumns(stmt, SQL_BEST_ROWID, catalogName, 0, schemaName, sizeof(schemaName), tableName,
+        sizeof(tableName), SQL_SCOPE_CURROW, SQL_NO_NULLS);
+
+    SQLCloseCursor(stmt);
+
+    SQLSpecialColumns(stmt, SQL_BEST_ROWID, catalogName, sizeof(catalogName), 0, sizeof(schemaName), tableName,
+        sizeof(tableName), SQL_SCOPE_CURROW, SQL_NO_NULLS);
+
+    SQLCloseCursor(stmt);
+
+    SQLSpecialColumns(stmt, SQL_BEST_ROWID, catalogName, sizeof(catalogName), schemaName, 0, tableName,
+        sizeof(tableName), SQL_SCOPE_CURROW, SQL_NO_NULLS);
+
+    SQLCloseCursor(stmt);
+
+    SQLSpecialColumns(stmt, SQL_BEST_ROWID, catalogName, sizeof(catalogName), schemaName, sizeof(schemaName),
+        0, sizeof(tableName), SQL_SCOPE_CURROW, SQL_NO_NULLS);
+
+    SQLCloseCursor(stmt);
+
+    SQLSpecialColumns(stmt, SQL_BEST_ROWID, catalogName, sizeof(catalogName), schemaName, sizeof(schemaName),
+        tableName, 0, SQL_SCOPE_CURROW, SQL_NO_NULLS);
+
+    SQLCloseCursor(stmt);
+
+    SQLSpecialColumns(stmt, SQL_BEST_ROWID, 0, 0, 0, 0, 0, 0, SQL_SCOPE_CURROW, SQL_NO_NULLS);
+
+    SQLCloseCursor(stmt);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

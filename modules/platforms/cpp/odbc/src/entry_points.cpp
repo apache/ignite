@@ -373,15 +373,15 @@ SQLRETURN SQL_API SQLGetEnvAttr(SQLHENV     env,
 }
 
 SQLRETURN SQL_API SQLSpecialColumns(SQLHSTMT    stmt,
-                                    SQLSMALLINT idType,
+                                    SQLUSMALLINT idType,
                                     SQLCHAR*    catalogName,
                                     SQLSMALLINT catalogNameLen,
                                     SQLCHAR*    schemaName,
                                     SQLSMALLINT schemaNameLen,
                                     SQLCHAR*    tableName,
                                     SQLSMALLINT tableNameLen,
-                                    SQLSMALLINT scope,
-                                    SQLSMALLINT nullable)
+                                    SQLUSMALLINT scope,
+                                    SQLUSMALLINT nullable)
 {
     return ignite::SQLSpecialColumns(stmt, idType, catalogName,
         catalogNameLen, schemaName, schemaNameLen, tableName,
