@@ -69,7 +69,8 @@ public abstract class PagesList extends DataStructure {
 
     /** */
     private static final int MAX_STRIPES_PER_BUCKET =
-        IgniteSystemProperties.getInteger("IGNITE_PAGES_LIST_STRIPES_PER_BUCKET", Math.min(8, Runtime.getRuntime().availableProcessors() * 2));
+        IgniteSystemProperties.getInteger("IGNITE_PAGES_LIST_STRIPES_PER_BUCKET",
+            Math.min(8, Runtime.getRuntime().availableProcessors() * 2));
 
     /** Page ID to store list metadata. */
     private final long metaPageId;
@@ -106,13 +107,15 @@ public abstract class PagesList extends DataStructure {
 
     /** */
     private final CheckingPageHandler<Page, ByteBuffer> putDataPage = new CheckingPageHandler<Page, ByteBuffer>() {
-        @Override protected boolean run0(long pageId,
+        @Override protected boolean run0(
+            long pageId,
             Page page,
             ByteBuffer buf,
             PagesListNodeIO io,
             Page dataPage,
             ByteBuffer dataPageBuf,
-            int bucket) throws IgniteCheckedException {
+            int bucket
+        ) throws IgniteCheckedException {
             if (io.getNextId(buf) != 0L)
                 return false; // Splitted.
 
@@ -217,13 +220,15 @@ public abstract class PagesList extends DataStructure {
     /** */
     private final CheckingPageHandler<ReuseBag, Void> putReuseBag = new CheckingPageHandler<ReuseBag, Void>() {
         @SuppressWarnings("ForLoopReplaceableByForEach")
-        @Override protected boolean run0(final long pageId,
+        @Override protected boolean run0(
+            final long pageId,
             Page page,
             final ByteBuffer buf,
             PagesListNodeIO io,
             ReuseBag bag,
             Void ignore,
-            int bucket) throws IgniteCheckedException {
+            int bucket
+        ) throws IgniteCheckedException {
             if (io.getNextId(buf) != 0L)
                 return false; // Splitted.
 
@@ -295,13 +300,16 @@ public abstract class PagesList extends DataStructure {
      * @param metaPageId Metadata page ID.
      * @throws IgniteCheckedException If failed.
      */
-    public PagesList(int cacheId,
+    public PagesList(
+        int cacheId,
         String name,
         PageMemory pageMem,
         int buckets,
         IgniteWriteAheadLogManager wal,
-        long metaPageId) throws IgniteCheckedException {
+        long metaPageId
+    ) throws IgniteCheckedException {
         super(cacheId, pageMem, wal);
+
         this.name = name;
         this.buckets = buckets;
         this.metaPageId = metaPageId;
@@ -631,8 +639,8 @@ public abstract class PagesList extends DataStructure {
         Stripe[] tails = getBucket(bucket);
 
         if (tails != null) {
-            for (int i = 0; i < tails.length; i++) {
-                long pageId = tails[i].tailId;
+            for (Stripe tail : tails) {
+                long pageId = tail.tailId;
 
                 try (Page page = page(pageId)) {
                     ByteBuffer buf = page.getForRead();
@@ -703,13 +711,15 @@ public abstract class PagesList extends DataStructure {
         }
     }
 
-    private static <X, Y> boolean writePage0(long pageId,
+    private static <X, Y> boolean writePage0(
+        long pageId,
         ByteBuffer buf,
         Page page,
         CheckingPageHandler<X, Y> h,
         X arg1,
         Y arg2,
-        int bucket) throws IgniteCheckedException {
+        int bucket
+    ) throws IgniteCheckedException {
         PageIO io = PageIO.getPageIO(buf);
 
         return h.run(pageId, page, io, buf, arg1, arg2, bucket);
@@ -813,8 +823,10 @@ public abstract class PagesList extends DataStructure {
 
                             initIo.initNewPage(tailBuf, tailId);
 
-                            if (isWalDeltaRecordNeeded(wal, tail))
-                                wal.log(new InitNewPageRecord(cacheId, tail.id(), initIo.getType(), initIo.getVersion(), tailId));
+                            if (isWalDeltaRecordNeeded(wal, tail)) {
+                                wal.log(new InitNewPageRecord(cacheId, tail.id(), initIo.getType(),
+                                    initIo.getVersion(), tailId));
+                            }
                         }
                         else {
                             tailId = PageIdUtils.rotatePageId(tailId);
@@ -1015,8 +1027,8 @@ public abstract class PagesList extends DataStructure {
         Page next,
         long nextId,
         ByteBuffer nextBuf,
-        int bucket)
-        throws IgniteCheckedException {
+        int bucket
+    ) throws IgniteCheckedException {
         long prevId = io.getPreviousId(buf);
 
         if (nextId == 0L)
