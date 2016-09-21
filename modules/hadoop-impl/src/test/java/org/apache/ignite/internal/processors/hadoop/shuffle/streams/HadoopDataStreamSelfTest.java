@@ -15,13 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.impl.shuffle.streams;
+package org.apache.ignite.internal.processors.hadoop.shuffle.streams;
 
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.ignite.internal.processors.hadoop.impl.shuffle.streams.HadoopDataInStream;
-import org.apache.ignite.internal.processors.hadoop.impl.shuffle.streams.HadoopDataOutStream;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 

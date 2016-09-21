@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections;
+package org.apache.ignite.internal.processors.hadoop.shuffle.collections;
 
 import java.util.Comparator;
 import java.util.concurrent.Callable;

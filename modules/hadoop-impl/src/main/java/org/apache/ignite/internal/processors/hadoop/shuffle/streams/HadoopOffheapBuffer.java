@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.impl.shuffle.streams;
+package org.apache.ignite.internal.processors.hadoop.shuffle.streams;
 
 /**
  * Offheap buffer.

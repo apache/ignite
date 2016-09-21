@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections;
+package org.apache.ignite.internal.processors.hadoop.shuffle.collections;
 
 import java.io.DataInput;
 import org.apache.ignite.IgniteCheckedException;

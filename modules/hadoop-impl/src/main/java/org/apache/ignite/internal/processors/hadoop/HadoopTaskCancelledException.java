@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.impl;
+package org.apache.ignite.internal.processors.hadoop;
 
 import org.apache.ignite.IgniteException;
 

@@ -28,6 +28,9 @@ import java.util.TreeSet;
  * Common Hadoop utility methods which do not depend on Hadoop API.
  */
 public class HadoopCommonUtils {
+    /** Job class name. */
+    public static final String JOB_CLS_NAME = "org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopV2Job";
+
     /** Property to store timestamp of new job id request. */
     public static final String REQ_NEW_JOBID_TS_PROPERTY = "ignite.job.requestNewIdTs";
 
