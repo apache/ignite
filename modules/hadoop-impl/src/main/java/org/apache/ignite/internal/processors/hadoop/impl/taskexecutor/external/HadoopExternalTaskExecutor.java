@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.taskexecutor.external;
+package org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.external;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -39,15 +39,15 @@ import org.apache.ignite.internal.processors.hadoop.HadoopJobPhase;
 import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlan;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskType;
-import org.apache.ignite.internal.processors.hadoop.jobtracker.HadoopJobMetadata;
-import org.apache.ignite.internal.processors.hadoop.jobtracker.HadoopJobTracker;
-import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopTaskExecutorAdapter;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopTaskState;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopTaskStatus;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.child.HadoopExternalProcessStarter;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.communication.HadoopExternalCommunication;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.communication.HadoopMessageListener;
+import org.apache.ignite.internal.processors.hadoop.impl.jobtracker.HadoopJobMetadata;
+import org.apache.ignite.internal.processors.hadoop.impl.jobtracker.HadoopJobTracker;
+import org.apache.ignite.internal.processors.hadoop.impl.message.HadoopMessage;
+import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.HadoopTaskExecutorAdapter;
+import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.HadoopTaskState;
+import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.HadoopTaskStatus;
+import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.external.child.HadoopExternalProcessStarter;
+import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.external.communication.HadoopExternalCommunication;
+import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.external.communication.HadoopMessageListener;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -60,8 +60,8 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
 
-import static org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopTaskState.CRASHED;
-import static org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopTaskState.FAILED;
+import static org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.HadoopTaskState.CRASHED;
+import static org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.HadoopTaskState.FAILED;
 
 /**
  * External process registry. Handles external process lifecycle.

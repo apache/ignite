@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.taskexecutor;
+package org.apache.ignite.internal.processors.hadoop.impl.taskexecutor;
 
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.hadoop.impl.HadoopComponent;
 import org.apache.ignite.internal.processors.hadoop.HadoopJob;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
-import org.apache.ignite.internal.processors.hadoop.jobtracker.HadoopJobMetadata;
+import org.apache.ignite.internal.processors.hadoop.impl.jobtracker.HadoopJobMetadata;
 
 /**
  * Common superclass for task executor.

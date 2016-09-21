@@ -34,8 +34,8 @@ import org.apache.hadoop.mapreduce.FileSystemCounter;
 import org.apache.hadoop.mapreduce.counters.AbstractCounters;
 import org.apache.hadoop.mapreduce.counters.Limits;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounter;
-import org.apache.ignite.internal.processors.hadoop.counter.HadoopLongCounter;
-import org.apache.ignite.internal.processors.hadoop.v2.HadoopV2Counter;
+import org.apache.ignite.internal.processors.hadoop.impl.counter.HadoopLongCounter;
+import org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopV2Counter;
 import org.apache.ignite.internal.util.typedef.T2;
 
 /**

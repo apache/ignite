@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.shuffle.collections;
+package org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections;
 
 import java.io.DataInput;
 import java.util.Collection;
@@ -27,9 +27,9 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
-import org.apache.ignite.internal.processors.hadoop.shuffle.streams.HadoopDataInStream;
-import org.apache.ignite.internal.processors.hadoop.shuffle.streams.HadoopDataOutStream;
-import org.apache.ignite.internal.processors.hadoop.shuffle.streams.HadoopOffheapBuffer;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.streams.HadoopDataInStream;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.streams.HadoopDataOutStream;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.streams.HadoopOffheapBuffer;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.jetbrains.annotations.Nullable;
 

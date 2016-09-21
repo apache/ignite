@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.v2;
+package org.apache.ignite.internal.processors.hadoop.impl.v2;
 
 import java.io.DataInput;
 import java.io.File;
@@ -60,13 +60,13 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskType;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounter;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
-import org.apache.ignite.internal.processors.hadoop.counter.HadoopCountersImpl;
-import org.apache.ignite.internal.processors.hadoop.fs.HadoopLazyConcurrentMap;
-import org.apache.ignite.internal.processors.hadoop.v1.HadoopV1CleanupTask;
-import org.apache.ignite.internal.processors.hadoop.v1.HadoopV1MapTask;
-import org.apache.ignite.internal.processors.hadoop.v1.HadoopV1Partitioner;
-import org.apache.ignite.internal.processors.hadoop.v1.HadoopV1ReduceTask;
-import org.apache.ignite.internal.processors.hadoop.v1.HadoopV1SetupTask;
+import org.apache.ignite.internal.processors.hadoop.impl.counter.HadoopCountersImpl;
+import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopLazyConcurrentMap;
+import org.apache.ignite.internal.processors.hadoop.impl.v1.HadoopV1CleanupTask;
+import org.apache.ignite.internal.processors.hadoop.impl.v1.HadoopV1MapTask;
+import org.apache.ignite.internal.processors.hadoop.impl.v1.HadoopV1Partitioner;
+import org.apache.ignite.internal.processors.hadoop.impl.v1.HadoopV1ReduceTask;
+import org.apache.ignite.internal.processors.hadoop.impl.v1.HadoopV1SetupTask;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -76,10 +76,10 @@ import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.jobL
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.taskLocalDir;
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.transformException;
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.unwrapSplit;
-import static org.apache.ignite.internal.processors.hadoop.fs.HadoopFileSystemCacheUtils.FsCacheKey;
-import static org.apache.ignite.internal.processors.hadoop.fs.HadoopFileSystemCacheUtils.createHadoopLazyConcurrentMap;
-import static org.apache.ignite.internal.processors.hadoop.fs.HadoopFileSystemCacheUtils.fileSystemForMrUserWithCaching;
-import static org.apache.ignite.internal.processors.hadoop.fs.HadoopParameters.PARAM_IGFS_PREFER_LOCAL_WRITES;
+import static org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopFileSystemCacheUtils.FsCacheKey;
+import static org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopFileSystemCacheUtils.createHadoopLazyConcurrentMap;
+import static org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopFileSystemCacheUtils.fileSystemForMrUserWithCaching;
+import static org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopParameters.PARAM_IGFS_PREFER_LOCAL_WRITES;
 
 /**
  * Context for task execution.

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.v2;
+package org.apache.ignite.internal.processors.hadoop.impl.v2;
 
 import org.apache.hadoop.mapred.JobContextImpl;
 import org.apache.hadoop.mapreduce.OutputFormat;

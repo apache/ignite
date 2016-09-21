@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.v1;
+package org.apache.ignite.internal.processors.hadoop.impl.v1;
 
 import org.apache.hadoop.mapred.Counters;
 import org.apache.hadoop.mapred.InputSplit;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
-import org.apache.ignite.internal.processors.hadoop.counter.HadoopLongCounter;
+import org.apache.ignite.internal.processors.hadoop.impl.counter.HadoopLongCounter;
 
 /**
  * Hadoop reporter implementation for v1 API.

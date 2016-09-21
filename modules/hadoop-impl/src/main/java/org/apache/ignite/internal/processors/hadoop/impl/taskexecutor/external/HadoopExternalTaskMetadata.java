@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.taskexecutor.external;
+package org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.external;
 
 import java.util.Collection;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;

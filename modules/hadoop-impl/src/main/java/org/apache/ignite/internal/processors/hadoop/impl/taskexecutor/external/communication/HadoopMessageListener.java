@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.taskexecutor.external.communication;
+package org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.external.communication;
 
-import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.HadoopProcessDescriptor;
+import org.apache.ignite.internal.processors.hadoop.impl.message.HadoopMessage;
+import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.external.HadoopProcessDescriptor;
 
 /**
  * Hadoop communication message listener.

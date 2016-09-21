@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.taskexecutor.external.communication;
+package org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.external.communication;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -36,8 +36,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.HadoopProcessDescriptor;
+import org.apache.ignite.internal.processors.hadoop.impl.message.HadoopMessage;
+import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.external.HadoopProcessDescriptor;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridKeyLock;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;

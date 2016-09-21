@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.taskexecutor.external.child;
+package org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.external.child;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -29,23 +29,23 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskOutput;
-import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
-import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleAck;
-import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleJob;
-import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleMessage;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopExecutorService;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopRunnableTask;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopTaskState;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopTaskStatus;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.HadoopJobInfoUpdateRequest;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.HadoopPrepareForJobRequest;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.HadoopProcessDescriptor;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.HadoopProcessStartedAck;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.HadoopTaskExecutionRequest;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.HadoopTaskFinishedMessage;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.communication.HadoopExternalCommunication;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.communication.HadoopMessageListener;
-import org.apache.ignite.internal.processors.hadoop.v2.HadoopV2Job;
+import org.apache.ignite.internal.processors.hadoop.impl.message.HadoopMessage;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.HadoopShuffleAck;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.HadoopShuffleJob;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.HadoopShuffleMessage;
+import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.HadoopExecutorService;
+import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.HadoopRunnableTask;
+import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.HadoopTaskState;
+import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.HadoopTaskStatus;
+import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.external.HadoopJobInfoUpdateRequest;
+import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.external.HadoopPrepareForJobRequest;
+import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.external.HadoopProcessDescriptor;
+import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.external.HadoopProcessStartedAck;
+import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.external.HadoopTaskExecutionRequest;
+import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.external.HadoopTaskFinishedMessage;
+import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.external.communication.HadoopExternalCommunication;
+import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.external.communication.HadoopMessageListener;
+import org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopV2Job;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;

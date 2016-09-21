@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.fs;
+package org.apache.ignite.internal.processors.hadoop.impl.fs;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FsConstants;

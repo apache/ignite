@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.igfs;
+package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

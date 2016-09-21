@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.jobtracker;
+package org.apache.ignite.internal.processors.hadoop.impl.jobtracker;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -61,11 +61,11 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounterWriter;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
-import org.apache.ignite.internal.processors.hadoop.counter.HadoopCountersImpl;
-import org.apache.ignite.internal.processors.hadoop.counter.HadoopPerformanceCounter;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopTaskStatus;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.HadoopProcessDescriptor;
-import org.apache.ignite.internal.processors.hadoop.v2.HadoopV2Job;
+import org.apache.ignite.internal.processors.hadoop.impl.counter.HadoopCountersImpl;
+import org.apache.ignite.internal.processors.hadoop.impl.counter.HadoopPerformanceCounter;
+import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.HadoopTaskStatus;
+import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.external.HadoopProcessDescriptor;
+import org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopV2Job;
 import org.apache.ignite.internal.util.GridMutex;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -91,10 +91,10 @@ import static org.apache.ignite.internal.processors.hadoop.HadoopTaskType.COMMIT
 import static org.apache.ignite.internal.processors.hadoop.HadoopTaskType.MAP;
 import static org.apache.ignite.internal.processors.hadoop.HadoopTaskType.REDUCE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopTaskType.SETUP;
-import static org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopTaskState.COMPLETED;
-import static org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopTaskState.CRASHED;
-import static org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopTaskState.FAILED;
-import static org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopTaskState.RUNNING;
+import static org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.HadoopTaskState.COMPLETED;
+import static org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.HadoopTaskState.CRASHED;
+import static org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.HadoopTaskState.FAILED;
+import static org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.HadoopTaskState.RUNNING;
 
 /**
  * Hadoop job tracker.

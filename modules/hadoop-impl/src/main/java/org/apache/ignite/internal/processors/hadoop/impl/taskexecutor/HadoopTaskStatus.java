@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.taskexecutor;
+package org.apache.ignite.internal.processors.hadoop.impl.taskexecutor;
 
 import java.io.Externalizable;
 import java.io.IOException;

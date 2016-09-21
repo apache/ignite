@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.v1;
+package org.apache.ignite.internal.processors.hadoop.impl.v1;
 
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.Reducer;
@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.hadoop.impl.HadoopTaskCancelledExce
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
-import org.apache.ignite.internal.processors.hadoop.v2.HadoopV2TaskContext;
+import org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopV2TaskContext;
 
 /**
  * Hadoop reduce task implementation for v1 API.

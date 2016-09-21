@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.igfs;
+package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
 /**
  * Listens to the events of {@link HadoopIgfsIpcIo}.

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.fs;
+package org.apache.ignite.internal.processors.hadoop.impl.fs;
 
 import java.io.BufferedOutputStream;
 import java.io.File;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.message;
+package org.apache.ignite.internal.processors.hadoop.impl.message;
 
 import java.io.Externalizable;
 

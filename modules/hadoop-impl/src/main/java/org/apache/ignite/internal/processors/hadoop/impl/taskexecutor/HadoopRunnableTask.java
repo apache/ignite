@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.taskexecutor;
+package org.apache.ignite.internal.processors.hadoop.impl.taskexecutor;
 
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -27,10 +27,10 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskOutput;
-import org.apache.ignite.internal.processors.hadoop.counter.HadoopPerformanceCounter;
-import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopHashMultimap;
-import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopMultimap;
-import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopSkipList;
+import org.apache.ignite.internal.processors.hadoop.impl.counter.HadoopPerformanceCounter;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopHashMultimap;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopMultimap;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopSkipList;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 

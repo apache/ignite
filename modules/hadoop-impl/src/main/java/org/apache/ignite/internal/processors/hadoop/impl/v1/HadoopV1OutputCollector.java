@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.v1;
+package org.apache.ignite.internal.processors.hadoop.impl.v1;
 
 import java.io.IOException;
 import org.apache.hadoop.mapred.JobConf;

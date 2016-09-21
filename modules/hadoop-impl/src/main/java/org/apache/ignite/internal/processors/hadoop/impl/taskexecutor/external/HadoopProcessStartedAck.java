@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.taskexecutor.external;
+package org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.external;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
+import org.apache.ignite.internal.processors.hadoop.impl.message.HadoopMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**

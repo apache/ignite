@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.fs;
+package org.apache.ignite.internal.processors.hadoop.impl.fs;
 
 /**
  * This class lists parameters that can be specified in Hadoop configuration.

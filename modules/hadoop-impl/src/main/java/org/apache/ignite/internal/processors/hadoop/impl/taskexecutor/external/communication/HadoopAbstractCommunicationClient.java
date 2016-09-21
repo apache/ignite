@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.taskexecutor.external.communication;
+package org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.external.communication;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.util.typedef.internal.S;

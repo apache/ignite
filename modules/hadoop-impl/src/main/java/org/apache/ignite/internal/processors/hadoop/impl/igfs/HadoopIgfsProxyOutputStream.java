@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.igfs;
+package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
 import java.io.IOException;
 import java.io.OutputStream;

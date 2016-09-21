@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.delegate;
+package org.apache.ignite.internal.processors.hadoop.impl.delegate;
 
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
+import org.apache.ignite.internal.processors.hadoop.delegate.HadoopFileSystemFactoryDelegate;
 import org.apache.ignite.lifecycle.LifecycleAware;
 
 import java.io.IOException;

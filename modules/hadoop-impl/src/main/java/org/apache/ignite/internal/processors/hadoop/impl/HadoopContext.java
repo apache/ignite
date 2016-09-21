@@ -26,10 +26,10 @@ import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlan;
 import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlanner;
-import org.apache.ignite.internal.processors.hadoop.jobtracker.HadoopJobMetadata;
-import org.apache.ignite.internal.processors.hadoop.jobtracker.HadoopJobTracker;
-import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffle;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopTaskExecutorAdapter;
+import org.apache.ignite.internal.processors.hadoop.impl.jobtracker.HadoopJobMetadata;
+import org.apache.ignite.internal.processors.hadoop.impl.jobtracker.HadoopJobTracker;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.HadoopShuffle;
+import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.HadoopTaskExecutorAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.v1;
+package org.apache.ignite.internal.processors.hadoop.impl.v1;
 
 import java.io.IOException;
 import org.apache.hadoop.mapred.JobContext;
@@ -24,7 +24,7 @@ import org.apache.hadoop.mapred.OutputCommitter;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
-import org.apache.ignite.internal.processors.hadoop.v2.HadoopV2TaskContext;
+import org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopV2TaskContext;
 
 /**
  * Hadoop cleanup task implementation for v1 API.
