@@ -34,7 +34,7 @@ public class IgniteSqlInsertIndexedValue1Benchmark extends IgniteCacheAbstractBe
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        int key = insCnt.incrementAndGet();
+        int key = insCnt.getAndIncrement();
 
         cache.query(new SqlFieldsQuery("insert into Person1(_key, _val) values (?, ?)")
             .setArgs(key, new Person1(key)));

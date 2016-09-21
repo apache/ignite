@@ -23,20 +23,15 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.yardstick.cache.model.Person;
 import org.apache.ignite.yardstick.cache.model.Person1;
-import org.apache.ignite.yardstick.cache.model.Person2;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
-
-import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
  * Ignite benchmark that performs SQL UPDATE operations.
  */
-public class IgniteSqlUpdateBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
+public class IgniteReplaceIndexedValue1Benchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** {@inheritDoc} */
     @Override public void setUp(final BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
@@ -54,7 +49,7 @@ public class IgniteSqlUpdateBenchmark extends IgniteCacheAbstractBenchmark<Integ
                     while ((k = i.getAndIncrement()) < args.range()) {
                         cache().put(k, new Person1(k));
                         if (++k % 100000 == 0)
-                            BenchmarkUtils.println(cfg, "UPDATE setUp: have successfully put " + k + " items");
+                            BenchmarkUtils.println(cfg, "REPLACE setUp: have successfully put " + k + " items");
                     }
                 }
             };
@@ -72,8 +67,7 @@ public class IgniteSqlUpdateBenchmark extends IgniteCacheAbstractBenchmark<Integ
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-        cache().query(new SqlFieldsQuery("update Person1 set _val = ? where _key = ?")
-            .setArgs(new Person1(rnd.nextInt(args.range())), rnd.nextInt(args.range())));
+        cache.replace(rnd.nextInt(args.range()), new Person1(rnd.nextInt(args.range())));
 
         return true;
     }
