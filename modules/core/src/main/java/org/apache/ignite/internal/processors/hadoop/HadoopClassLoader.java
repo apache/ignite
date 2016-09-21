@@ -354,6 +354,10 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
      */
     @SuppressWarnings("RedundantIfStatement")
     private static boolean loadByCurrentClassloader(String clsName) {
+        // TODO: experimental
+        if (clsName.contains("Test") && !clsName.contains("Test$") )
+            return false;
+
         // All impl classes.
         if (clsName.startsWith("org.apache.ignite.internal.processors.hadoop.impl"))
             return true;

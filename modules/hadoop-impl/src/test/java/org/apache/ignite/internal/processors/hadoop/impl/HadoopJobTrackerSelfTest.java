@@ -59,19 +59,19 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
     private static final int BLOCK_CNT = 10;
 
     /** */
-    private static HadoopSharedMap m = HadoopSharedMap.map(HadoopJobTrackerSelfTest.class);
+    public static final HadoopSharedMap m = HadoopSharedMap.map(HadoopJobTrackerSelfTest.class);
 
     /** Map task execution count. */
-    private static final AtomicInteger mapExecCnt = m.put("mapExecCnt", new AtomicInteger());
+    public static final AtomicInteger mapExecCnt = m.put("mapExecCnt", new AtomicInteger());
 
     /** Reduce task execution count. */
-    private static final AtomicInteger reduceExecCnt = m.put("reduceExecCnt", new AtomicInteger());
+    public static final AtomicInteger reduceExecCnt = m.put("reduceExecCnt", new AtomicInteger());
 
     /** Reduce task execution count. */
-    private static final AtomicInteger combineExecCnt = m.put("combineExecCnt", new AtomicInteger());
+    public static final AtomicInteger combineExecCnt = m.put("combineExecCnt", new AtomicInteger());
 
     /** */
-    private static final Map<String, CountDownLatch> latch = m.put("latch", new HashMap<String, CountDownLatch>());
+    public static final Map<String, CountDownLatch> latch = m.put("latch", new HashMap<String, CountDownLatch>());
 
     /** {@inheritDoc} */
     @Override protected boolean igfsEnabled() {
@@ -98,6 +98,12 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
         latch.put("reduceAwaitLatch", new CountDownLatch(1));
         latch.put("combineAwaitLatch", new CountDownLatch(1));
     }
+
+//    static void initLatchMap(Map<?,?> latch) {
+//        latch.put("mapAwaitLatch", new CountDownLatch(1));
+//        latch.put("reduceAwaitLatch", new CountDownLatch(1));
+//        latch.put("combineAwaitLatch", new CountDownLatch(1));
+//    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -307,6 +313,9 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
     private static class TestMapper extends Mapper {
         @Override public void run(Context ctx) throws IOException, InterruptedException {
             System.out.println("Running task: " + ctx.getTaskAttemptID().getTaskID().getId());
+
+            //assertEquals(getClass().getClassLoader(), HadoopJobTrackerSelfTest.class.getClassLoader());
+            System.out.println("###### cl = " + HadoopJobTrackerSelfTest.class.getClassLoader());
 
             latch.get("mapAwaitLatch").await();
 

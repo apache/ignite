@@ -63,30 +63,29 @@ import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.crea
  */
 public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
     /** */
-    private static HadoopSharedMap m = HadoopSharedMap.map(HadoopTaskExecutionSelfTest.class);
+    public static HadoopSharedMap m = HadoopSharedMap.map(HadoopTaskExecutionSelfTest.class);
 
     /** Line count. */
-    private static final AtomicInteger totalLineCnt = m.put("totalLineCnt", new AtomicInteger());
+    public static final AtomicInteger totalLineCnt = m.put("totalLineCnt", new AtomicInteger());
 
     /** Executed tasks. */
-    private static final AtomicInteger executedTasks = m.put("executedTasks", new AtomicInteger());
+    public static final AtomicInteger executedTasks = m.put("executedTasks", new AtomicInteger());
 
     /** Cancelled tasks. */
-    private static final AtomicInteger cancelledTasks = m.put("cancelledTasks", new AtomicInteger());
+    public static final AtomicInteger cancelledTasks = m.put("cancelledTasks", new AtomicInteger());
 
     /** Working directory of each task. */
-    private static final Map<String, String> taskWorkDirs = m.put("taskWorkDirs",
+    public static final Map<String, String> taskWorkDirs = m.put("taskWorkDirs",
         new ConcurrentHashMap<String, String>());
 
     /** Mapper id to fail. */
-    private static final AtomicInteger failMapperId = m.put("failMapperId", new AtomicInteger());
+    public static final AtomicInteger failMapperId = m.put("failMapperId", new AtomicInteger());
 
     /** Number of splits of the current input. */
-    private static final AtomicInteger splitsCount = m.put("splitsCount", new AtomicInteger());
+    public static final AtomicInteger splitsCount = m.put("splitsCount", new AtomicInteger());
 
     /** Test param. */
     private static final String MAP_WRITE = "test.map.write";
-
 
     /** {@inheritDoc} */
     @Override public FileSystemConfiguration igfsConfiguration() throws Exception {
