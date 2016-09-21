@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 
 import java.io.Serializable;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Database configuration used to configure database.
@@ -57,6 +58,7 @@ public class MemoryConfiguration implements Serializable {
      */
     public void setPageSize(int pageSize) {
         A.ensure(pageSize >= 1024 && pageSize <= 16 * 1024, "Page size must be between 1kB and 16kB.");
+        A.ensure(U.isPow2(pageSize), "Page size must be a power of 2.");
 
         this.pageSize = pageSize;
     }

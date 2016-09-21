@@ -20,7 +20,7 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 
@@ -57,10 +57,10 @@ public class InnerReplaceRecord<L> extends PageDeltaRecord {
     }
 
     /** {@inheritDoc} */
-    @Override public void applyDelta(GridCacheContext<?,?> cctx, ByteBuffer dstBuf) throws IgniteCheckedException {
+    @Override public void applyDelta(PageMemory pageMem, ByteBuffer dstBuf) throws IgniteCheckedException {
         BPlusIO<L> io = PageIO.getBPlusIO(dstBuf);
 
-        try (Page src = cctx.shared().database().pageMemory().page(cacheId(), srcPageId)) {
+        try (Page src = pageMem.page(cacheId(), srcPageId)) {
             ByteBuffer srcBuf = src.getForRead();
 
             try {

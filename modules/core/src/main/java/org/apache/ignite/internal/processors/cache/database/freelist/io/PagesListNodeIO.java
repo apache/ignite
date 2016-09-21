@@ -93,39 +93,78 @@ public class PagesListNodeIO extends PageIO {
     }
 
     /**
-     * @param buf Buffer.
+     * @param buf Page buffer.
      * @param prevId Previous  page ID.
      */
     public void setPreviousId(ByteBuffer buf, long prevId) {
         buf.putLong(PREV_PAGE_ID_OFF, prevId);
     }
 
+    /**
+     * Gets total count of entries in this page. Does not change the buffer state.
+     *
+     * @param buf Page buffer to get count from.
+     * @return Total number of entries.
+     */
     public int getCount(ByteBuffer buf) {
         return buf.getShort(CNT_OFF);
     }
 
+    /**
+     * Sets total count of entries in this page. Does not change the buffer state.
+     *
+     * @param buf Page buffer to write to.
+     * @param cnt Count.
+     */
     private void setCount(ByteBuffer buf, int cnt) {
         assert cnt >= 0 && cnt <= Short.MAX_VALUE : cnt;
 
         buf.putShort(CNT_OFF, (short)cnt);
     }
 
+    /**
+     * Gets capacity of this page in items.
+     *
+     * @param buf Page buffer to get capacity.
+     * @return Capacity of this page in items.
+     */
     private int getCapacity(ByteBuffer buf) {
         return (buf.capacity() - PAGE_IDS_OFF) >>> 3; // /8
     }
 
+    /**
+     * @param idx Item index.
+     * @return Item offset.
+     */
     private int offset(int idx) {
         return PAGE_IDS_OFF + 8 * idx;
     }
 
+    /**
+     * @param buf Page buffer.
+     * @param idx Item index.
+     * @return Item at the given index.
+     */
     private long getAt(ByteBuffer buf, int idx) {
         return buf.getLong(offset(idx));
     }
 
+    /**
+     * @param buf Buffer.
+     * @param idx Item index.
+     * @param pageId Item value to write.
+     */
     private void setAt(ByteBuffer buf, int idx, long pageId) {
         buf.putLong(offset(idx), pageId);
     }
 
+    /**
+     * Adds page to the end of pages list.
+     *
+     * @param buf Page buffer.
+     * @param pageId Page ID.
+     * @return Total number of items in this page.
+     */
     public int addPage(ByteBuffer buf, long pageId) {
         int cnt = getCount(buf);
 
@@ -138,6 +177,12 @@ public class PagesListNodeIO extends PageIO {
         return cnt;
     }
 
+    /**
+     * Removes any page from the pages list.
+     *
+     * @param buf Page buffer.
+     * @return Removed page ID.
+     */
     public long takeAnyPage(ByteBuffer buf) {
         int cnt = getCount(buf);
 
@@ -149,6 +194,13 @@ public class PagesListNodeIO extends PageIO {
         return getAt(buf, cnt);
     }
 
+    /**
+     * Removes the given page ID from the pages list.
+     *
+     * @param buf Page buffer.
+     * @param dataPageId Page ID to remove.
+     * @return {@code true} if page was in the list and was removed, {@code false} otherwise.
+     */
     public boolean removePage(ByteBuffer buf, long dataPageId) {
         assert dataPageId != 0;
 
@@ -168,6 +220,10 @@ public class PagesListNodeIO extends PageIO {
         return false;
     }
 
+    /**
+     * @param buf Page buffer.
+     * @return {@code true} if there are no items in this page.
+     */
     public boolean isEmpty(ByteBuffer buf) {
         return getCount(buf) == 0;
     }

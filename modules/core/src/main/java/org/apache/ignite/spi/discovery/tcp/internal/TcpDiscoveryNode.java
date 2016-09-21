@@ -35,7 +35,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -46,13 +45,14 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DAEMON;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
 
 /**
- * Node for {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}.
+ * Node for {@link TcpDiscoverySpi}.
  * <p>
  * <strong>This class is not intended for public use</strong> and has been made
  * <tt>public</tt> due to certain limitations of Java technology.
@@ -132,7 +132,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
     /** */
     @GridToStringExclude
-    private volatile transient InetSocketAddress lastSuccessfulAddr;
+    private transient volatile InetSocketAddress lastSuccessfulAddr;
 
     /** Cache client initialization flag. */
     @GridToStringExclude
@@ -292,7 +292,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
      * <p>
      * Cache metrics are updated with some delay which is directly related to heartbeat
      * frequency. For example, when used with default
-     * {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi} the update will happen every {@code 2} seconds.
+     * {@link TcpDiscoverySpi} the update will happen every {@code 2} seconds.
      *
      * @return Runtime metrics snapshots for this node.
      */
@@ -620,7 +620,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
         for (int i = 0; i < size; i++) {
             int id = in.readInt();
-            CacheMetricsSnapshot m = (CacheMetricsSnapshot) in.readObject();
+            CacheMetrics m = (CacheMetrics)in.readObject();
 
             cacheMetrics.put(id, m);
         }

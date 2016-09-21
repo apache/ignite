@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteProductVersion;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
 
@@ -40,9 +39,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Used since. */
-    public static final IgniteProductVersion SINCE = IgniteProductVersion.fromString("1.5.0");
 
     /** Node ID. */
     protected UUID nodeId;
@@ -298,7 +294,8 @@ public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, E
      * @return Full string representation.
      */
     public String toFullString() {
-        return S.toString(GridDhtPartitionMap2.class, this, "size", size(), "map", map.toString(), "top", top);
+        return S.toString(GridDhtPartitionMap2.class, this, "size", size(), "map", map.toString(), "top", top,
+            "nodeId", nodeId);
     }
 
     /** {@inheritDoc} */

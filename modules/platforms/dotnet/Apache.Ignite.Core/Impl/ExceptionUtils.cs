@@ -115,10 +115,14 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="msg">Exception message.</param>
         /// <param name="stackTrace">Native stack trace.</param>
         /// <param name="reader">Error data reader.</param>
+        /// <param name="innerException">Inner exception.</param>
         /// <returns>Exception.</returns>
-        public static Exception GetException(IIgnite ignite, string clsName, string msg, string stackTrace, BinaryReader reader = null)
+        public static Exception GetException(IIgnite ignite, string clsName, string msg, string stackTrace,
+            BinaryReader reader = null, Exception innerException = null)
         {
-            Exception innerException = string.IsNullOrEmpty(stackTrace) ? null : new JavaException(stackTrace);
+            // Set JavaException as inner only if there is no InnerException.
+            if (innerException == null && !string.IsNullOrEmpty(stackTrace))
+                innerException = new JavaException(stackTrace);
 
             ExceptionFactoryDelegate ctor;
 
@@ -158,7 +162,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="reader">Reader.</param>
         /// <returns>CachePartialUpdateException.</returns>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        private static Exception ProcessCachePartialUpdateException(IIgnite ignite, string msg, string stackTrace, 
+        private static Exception ProcessCachePartialUpdateException(IIgnite ignite, string msg, string stackTrace,
             BinaryReader reader)
         {
             if (reader == null)
@@ -201,6 +205,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="msg">Message.</param>
         /// <param name="stackTrace">Stack trace.</param>
         /// <returns>Exception.</returns>
+        [ExcludeFromCodeCoverage]  // Covered by a test in a separate process.
         public static Exception GetJvmInitializeException(string clsName, string msg, string stackTrace)
         {
             if (clsName != null)

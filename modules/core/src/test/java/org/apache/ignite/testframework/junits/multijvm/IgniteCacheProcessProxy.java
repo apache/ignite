@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -135,6 +136,11 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteCache<K, V> withPartitionRecover() {
+        throw new UnsupportedOperationException("Method should be supported.");
+    }
+
+    /** {@inheritDoc} */
     @Override public void loadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args)
         throws CacheException {
         throw new UnsupportedOperationException("Method should be supported.");
@@ -168,6 +174,11 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public <R> QueryCursor<R> query(Query<R> qry) {
+        throw new UnsupportedOperationException("Method should be supported.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T, R> QueryCursor<R> query(Query<T> qry, IgniteClosure<T, R> transformer) {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 
@@ -227,10 +238,9 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override  public <T> Map<K, EntryProcessorResult<T>> invokeAll(
+    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(
         Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
-        Object... args)
-    {
+        Object... args) {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 
@@ -265,8 +275,8 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override  public void loadAll(Set<? extends K> keys, boolean replaceExistVals, CompletionListener completionLsnr) {
-        throw new UnsupportedOperationException("Oparetion can't be supported automatically.");
+    @Override public void loadAll(Set<? extends K> keys, boolean replaceExistVals, CompletionListener completionLsnr) {
+        throw new UnsupportedOperationException("Operation can't be supported automatically.");
     }
 
     /** {@inheritDoc} */
@@ -370,11 +380,10 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override  public <T> Map<K, EntryProcessorResult<T>> invokeAll(
+    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(
         Set<? extends K> keys,
         EntryProcessor<K, V, T> processor,
-        Object... args)
-    {
+        Object... args) {
         return compute.call(new InvokeAllTask<>(cacheName, isAsync, keys, processor, args));
     }
 
@@ -419,12 +428,12 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override  public void registerCacheEntryListener(CacheEntryListenerConfiguration<K, V> lsnrCfg) {
+    @Override public void registerCacheEntryListener(CacheEntryListenerConfiguration<K, V> lsnrCfg) {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /** {@inheritDoc} */
-    @Override  public void deregisterCacheEntryListener(CacheEntryListenerConfiguration<K, V> lsnrCfg) {
+    @Override public void deregisterCacheEntryListener(CacheEntryListenerConfiguration<K, V> lsnrCfg) {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 
@@ -471,6 +480,16 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public <K1, V1> IgniteCache<K1, V1> withKeepBinary() {
+        throw new UnsupportedOperationException("Method should be supported.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<Integer> lostPartitions() {
+        throw new UnsupportedOperationException("Method should be supported.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resetLostPartitions() {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 
@@ -1066,7 +1085,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     /**
      *
      */
-    private static class GetEntriesTask<K, V> extends CacheTaskAdapter<K, V, Collection<CacheEntry<K, V>> > {
+    private static class GetEntriesTask<K, V> extends CacheTaskAdapter<K, V, Collection<CacheEntry<K, V>>> {
         /** Keys. */
         private final Set<? extends K> keys;
 
@@ -1081,7 +1100,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<CacheEntry<K, V>>  call() throws Exception {
+        @Override public Collection<CacheEntry<K, V>> call() throws Exception {
             return cache().getEntries(keys);
         }
     }

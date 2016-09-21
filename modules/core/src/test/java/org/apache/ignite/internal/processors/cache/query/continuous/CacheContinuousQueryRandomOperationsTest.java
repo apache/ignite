@@ -1194,6 +1194,8 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
 
         Ignite ignite = cache.unwrap(Ignite.class);
 
+        Map<Object, Long> expEvtCntrs = new ConcurrentHashMap<>();
+
         Transaction tx = null;
 
         if (cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL && rnd.nextBoolean())
@@ -1209,9 +1211,9 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                     if (tx != null)
                         tx.commit();
 
-                    updatePartitionCounter(cache, key, partCntr);
+                    updatePartitionCounter(cache, key, partCntr, expEvtCntrs);
 
-                    waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, newVal, oldVal);
+                    waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, newVal, oldVal);
 
                     expData.put(key, newVal);
 
@@ -1224,9 +1226,9 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                     if (tx != null)
                         tx.commit();
 
-                    updatePartitionCounter(cache, key, partCntr);
+                    updatePartitionCounter(cache, key, partCntr, expEvtCntrs);
 
-                    waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, newVal, oldVal);
+                    waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, newVal, oldVal);
 
                     expData.put(key, newVal);
 
@@ -1239,9 +1241,9 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                     if (tx != null)
                         tx.commit();
 
-                    updatePartitionCounter(cache, key, partCntr);
+                    updatePartitionCounter(cache, key, partCntr, expEvtCntrs);
 
-                    waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, null, oldVal);
+                    waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, null, oldVal);
 
                     expData.remove(key);
 
@@ -1254,9 +1256,9 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                     if (tx != null)
                         tx.commit();
 
-                    updatePartitionCounter(cache, key, partCntr);
+                    updatePartitionCounter(cache, key, partCntr, expEvtCntrs);
 
-                    waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, null, oldVal);
+                    waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, null, oldVal);
 
                     expData.remove(key);
 
@@ -1269,9 +1271,9 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                     if (tx != null)
                         tx.commit();
 
-                    updatePartitionCounter(cache, key, partCntr);
+                    updatePartitionCounter(cache, key, partCntr, expEvtCntrs);
 
-                    waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, newVal, oldVal);
+                    waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, newVal, oldVal);
 
                     expData.put(key, newVal);
 
@@ -1284,9 +1286,9 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                     if (tx != null)
                         tx.commit();
 
-                    updatePartitionCounter(cache, key, partCntr);
+                    updatePartitionCounter(cache, key, partCntr, expEvtCntrs);
 
-                    waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, null, oldVal);
+                    waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, null, oldVal);
 
                     expData.remove(key);
 
@@ -1300,9 +1302,9 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                         tx.commit();
 
                     if (oldVal == null) {
-                        updatePartitionCounter(cache, key, partCntr);
+                        updatePartitionCounter(cache, key, partCntr, expEvtCntrs);
 
-                        waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, newVal, null);
+                        waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, newVal, null);
 
                         expData.put(key, newVal);
                     }
@@ -1319,9 +1321,9 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                         tx.commit();
 
                     if (oldVal == null) {
-                        updatePartitionCounter(cache, key, partCntr);
+                        updatePartitionCounter(cache, key, partCntr, expEvtCntrs);
 
-                        waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, newVal, null);
+                        waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, newVal, null);
 
                         expData.put(key, newVal);
                     }
@@ -1338,9 +1340,9 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                         tx.commit();
 
                     if (oldVal != null) {
-                        updatePartitionCounter(cache, key, partCntr);
+                        updatePartitionCounter(cache, key, partCntr, expEvtCntrs);
 
-                        waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, newVal, oldVal);
+                        waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, newVal, oldVal);
 
                         expData.put(key, newVal);
                     }
@@ -1357,9 +1359,9 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                         tx.commit();
 
                     if (oldVal != null) {
-                        updatePartitionCounter(cache, key, partCntr);
+                        updatePartitionCounter(cache, key, partCntr, expEvtCntrs);
 
-                        waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, newVal, oldVal);
+                        waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, newVal, oldVal);
 
                         expData.put(key, newVal);
                     }
@@ -1381,9 +1383,9 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                             if (tx != null)
                                 tx.commit();
 
-                            updatePartitionCounter(cache, key, partCntr);
+                            updatePartitionCounter(cache, key, partCntr, expEvtCntrs);
 
-                            waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, newVal, oldVal);
+                            waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, newVal, oldVal);
 
                             expData.put(key, newVal);
                         }
@@ -1420,9 +1422,9 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                         tx.commit();
 
                     for (Map.Entry<Object, Object> e : vals.entrySet())
-                        updatePartitionCounter(cache, e.getKey(), partCntr);
+                        updatePartitionCounter(cache, e.getKey(), partCntr, expEvtCntrs);
 
-                    waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), vals, expData);
+                    waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), vals, expData);
 
                     expData.putAll(vals);
 
@@ -1441,9 +1443,9 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                         tx.commit();
 
                     for (Map.Entry<Object, Object> e : vals.entrySet())
-                        updatePartitionCounter(cache, e.getKey(), partCntr);
+                        updatePartitionCounter(cache, e.getKey(), partCntr, expEvtCntrs);
 
-                    waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), vals, expData);
+                    waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), vals, expData);
 
                     for (Object o : vals.keySet())
                         expData.put(o, newVal);
@@ -1469,6 +1471,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
      */
     private void waitAndCheckEvent(List<BlockingQueue<CacheEntryEvent<?, ?>>> evtsQueues,
         Map<Integer, Long> partCntrs,
+        Map<Object, Long> evtCntrs,
         Affinity<Object> aff,
         SortedMap<Object, Object> vals,
         Map<Object, Object> expData)
@@ -1503,13 +1506,16 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                 assertEquals(val, evt.getValue());
                 assertEquals(oldVal, evt.getOldValue());
 
-                long cntr = partCntrs.get(aff.partition(key));
+                Long curPartCntr = partCntrs.get(aff.partition(key));
+                Long cntr = evtCntrs.get(key);
                 CacheQueryEntryEvent qryEntryEvt = (CacheQueryEntryEvent)evt.unwrap(CacheQueryEntryEvent.class);
 
                 assertNotNull(cntr);
+                assertNotNull(curPartCntr);
                 assertNotNull(qryEntryEvt);
+                assertTrue(cntr <= curPartCntr);
 
-                assertEquals(cntr, qryEntryEvt.getPartitionUpdateCounter());
+                assertEquals((long)cntr, qryEntryEvt.getPartitionUpdateCounter());
             }
         }
     }
@@ -1542,7 +1548,8 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
      * @param key Key
      * @param cntrs Partition counters.
      */
-    private void updatePartitionCounter(IgniteCache<Object, Object> cache, Object key, Map<Integer, Long> cntrs) {
+    private void updatePartitionCounter(IgniteCache<Object, Object> cache, Object key, Map<Integer, Long> cntrs,
+        Map<Object, Long> evtCntrs) {
         Affinity<Object> aff = cache.unwrap(Ignite.class).affinity(cache.getName());
 
         int part = aff.partition(key);
@@ -1553,6 +1560,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             partCntr = 0L;
 
         cntrs.put(part, ++partCntr);
+        evtCntrs.put(key, partCntr);
     }
 
     /**
@@ -1574,6 +1582,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
      */
     private void waitAndCheckEvent(List<BlockingQueue<CacheEntryEvent<?, ?>>> evtsQueues,
         Map<Integer, Long> partCntrs,
+        Map<Object, Long> evtCntrs,
         Affinity<Object> aff,
         Object key,
         Object val,
@@ -1593,13 +1602,17 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             assertEquals(val, evt.getValue());
             assertEquals(oldVal, evt.getOldValue());
 
-            long cntr = partCntrs.get(aff.partition(key));
+            Long curPartCntr = partCntrs.get(aff.partition(key));
+
+            Long cntr = evtCntrs.get(key);
             CacheQueryEntryEvent qryEntryEvt = evt.unwrap(CacheQueryEntryEvent.class);
 
             assertNotNull(cntr);
+            assertNotNull(curPartCntr);
             assertNotNull(qryEntryEvt);
+            assertTrue(cntr <= curPartCntr);
 
-            assertEquals(cntr, qryEntryEvt.getPartitionUpdateCounter());
+            assertEquals((long)cntr, qryEntryEvt.getPartitionUpdateCounter());
         }
     }
 

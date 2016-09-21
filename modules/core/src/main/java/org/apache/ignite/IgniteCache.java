@@ -56,6 +56,7 @@ import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.transactions.TransactionHeuristicException;
@@ -135,6 +136,14 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Cache with no-retries behavior enabled.
      */
     public IgniteCache<K, V> withNoRetries();
+
+    /**
+     * Gets an instance of {@code IgniteCache} that will be allowed to execute cache operations (read, write)
+     * regardless of partition loss policy.
+     *
+     * @return Cache without partition loss protection.
+     */
+    public IgniteCache<K, V> withPartitionRecover();
 
     /**
      * Returns cache that will operate with binary objects.
@@ -295,6 +304,20 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public <R> QueryCursor<R> query(Query<R> qry);
 
     /**
+     * Queries the cache transforming the entries on the server nodes. Can be used, for example,
+     * to avoid network overhead in case only one field out of the large is required by client.
+     * <p>
+     * Currently transformers are supported ONLY for {@link ScanQuery}. Passing any other
+     * subclass of {@link Query} interface to this method will end up with
+     * {@link UnsupportedOperationException}.
+     *
+     * @param qry Query.
+     * @param transformer Transformer.
+     * @return Cursor.
+     */
+    public <T, R> QueryCursor<R> query(Query<T> qry, IgniteClosure<T, R> transformer);
+
+    /**
      * Allows for iteration over local cache entries.
      *
      * @param peekModes Peek modes.
@@ -320,7 +343,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public void localEvict(Collection<? extends K> keys);
 
     /**
-     * Peeks at in-memory cached value using default optinal peek mode.
+     * Peeks at in-memory cached value using default optional peek mode.
      * <p>
      * This method will not load value from any persistent store or from a remote node.
      * <h2 class="header">Transactions</h2>
@@ -808,7 +831,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * For distributed caches, if called on clients, stops client cache, if called on a server node,
      * just closes this cache instance and does not destroy cache data.
      * <p>
-     * After cache instance is closed another {@link IgniteCache} instance for the same
+     * After cache instance is closed another {@code IgniteCache} instance for the same
      * cache can be created using {@link Ignite#cache(String)} method.
      */
     @Override public void close();
@@ -875,4 +898,17 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return MxBean.
      */
     public CacheMetricsMXBean localMxBean();
+
+    /**
+     * Gets a collection of lost partition IDs.
+     *
+     * @return Lost paritions.
+     */
+    public Collection<Integer> lostPartitions();
+
+    /**
+     * Clears partition's lost state and moves cache to a normal mode.
+     */
+    @IgniteAsyncSupported
+    public void resetLostPartitions();
 }

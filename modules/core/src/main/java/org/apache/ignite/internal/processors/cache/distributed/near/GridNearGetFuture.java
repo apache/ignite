@@ -110,7 +110,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         boolean skipVals,
         boolean canRemap,
         boolean needVer,
-        boolean keepCacheObjects
+        boolean keepCacheObjects,
+        boolean recovery
     ) {
         super(cctx,
             keys,
@@ -123,7 +124,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             skipVals,
             canRemap,
             needVer,
-            keepCacheObjects);
+            keepCacheObjects,
+            recovery);
 
         assert !F.isEmpty(keys);
 
@@ -317,7 +319,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         subjId,
                         taskName == null ? 0 : taskName.hashCode(),
                         expiryPlc,
-                        skipVals);
+                        skipVals,
+                        recovery);
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -376,7 +379,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     taskName == null ? 0 : taskName.hashCode(),
                     expiryPlc != null ? expiryPlc.forAccess() : -1L,
                     skipVals,
-                    cctx.deploymentEnabled());
+                    cctx.deploymentEnabled(),
+                    recovery);
 
                 add(fut); // Append new future.
 

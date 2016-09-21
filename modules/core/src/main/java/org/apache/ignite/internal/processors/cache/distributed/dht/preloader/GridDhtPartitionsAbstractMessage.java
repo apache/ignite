@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
+import java.util.Map;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -71,6 +72,12 @@ abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage {
     @Nullable public GridDhtPartitionExchangeId exchangeId() {
         return exchId;
     }
+
+    /**
+     * @param cacheId Cache ID.
+     * @return Parition update counters.
+     */
+    public abstract Map<Integer, Long> partitionUpdateCounters(int cacheId);
 
     /**
      * @return Last used version among all nodes.

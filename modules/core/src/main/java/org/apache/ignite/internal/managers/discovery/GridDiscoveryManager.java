@@ -129,6 +129,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_ACTIVE_ON_START;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LATE_AFFINITY_ASSIGNMENT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
@@ -397,7 +398,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     @Override protected void onKernalStart0() throws IgniteCheckedException {
         if (Boolean.TRUE.equals(ctx.config().isClientMode()) && !getSpi().isClientMode())
             ctx.performance().add("Enable client mode for TcpDiscoverySpi " +
-                    "(set TcpDiscoverySpi.forceServerMode to false)");
+                "(set TcpDiscoverySpi.forceServerMode to false)");
     }
 
     /** {@inheritDoc} */
@@ -530,6 +531,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
 
                     nextTopVer = new AffinityTopologyVersion(topVer, minorTopVer);
+
+                    if (verChanged)
+                        ctx.cache().onDiscoveryEvent(type, node, nextTopVer);
                 }
                 else {
                     nextTopVer = new AffinityTopologyVersion(topVer, minorTopVer);
@@ -1058,6 +1062,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             locMarshStrSerVer2;
 
         boolean locDelayAssign = locNode.attribute(ATTR_LATE_AFFINITY_ASSIGNMENT);
+        boolean locActiveOnStart = locNode.attribute(ATTR_ACTIVE_ON_START);
 
         Boolean locSrvcCompatibilityEnabled = locNode.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
 
@@ -1147,6 +1152,17 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     ", locDelayAssign=" + locDelayAssign +
                     ", rmtId8=" + U.id8(n.id()) +
                     ", rmtLateAssign=" + rmtLateAssign +
+                    ", rmtAddrs=" + U.addressesAsString(n) + ']');
+            }
+
+            boolean rmtActiveOnStart = n.attribute(ATTR_ACTIVE_ON_START);
+
+            if (locActiveOnStart != rmtActiveOnStart) {
+                throw new IgniteCheckedException("Remote node has active on start flag different from local " +
+                    "[locId8=" + U.id8(locNode.id()) +
+                    ", locActiveOnStart=" + locActiveOnStart +
+                    ", rmtId8=" + U.id8(n.id()) +
+                    ", rmtActiveOnStart=" + rmtActiveOnStart +
                     ", rmtAddrs=" + U.addressesAsString(n) + ']');
             }
 

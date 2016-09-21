@@ -122,7 +122,7 @@ namespace ignite
                 return connect_string_buffer.str();
             }
 
-            void Configuration::FillFromConfigAttributes(const char * attributes)
+            void Configuration::FillFromConfigAttributes(const char* attributes)
             {
                 // Initializing map.
                 arguments.clear();
@@ -150,6 +150,11 @@ namespace ignite
                 }
             }
 
+            void Configuration::SetTcpPort(uint16_t port)
+            {
+                arguments[Key::port] = common::LexicalCast<std::string>(port);
+            }
+
             ProtocolVersion Configuration::GetProtocolVersion() const
             {
                 ArgumentMap::const_iterator it = arguments.find(Key::protocolVersion);
@@ -158,6 +163,11 @@ namespace ignite
                     return ProtocolVersion::FromString(it->second);
 
                 return DefaultValue::protocolVersion;
+            }
+
+            void Configuration::SetProtocolVersion(const std::string& version)
+            {
+                arguments[Key::protocolVersion] = version;
             }
 
             const std::string& Configuration::GetStringValue(const std::string& key, const std::string& dflt) const
@@ -204,6 +214,11 @@ namespace ignite
                 }
 
                 return dflt;
+            }
+
+            void Configuration::SetBoolValue(const std::string& key, bool val)
+            {
+                arguments[key] = val ? "true" : "false";
             }
 
             void Configuration::ParseAttributeList(const char * str, size_t len, char delimeter, ArgumentMap & args)

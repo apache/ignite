@@ -39,6 +39,9 @@ namespace Apache.Ignite.Core.Tests
         /** Indicates long running and/or memory/cpu intensive test. */
         public const string CategoryIntensive = "LONG_TEST";
 
+        /** Indicates examples tests. */
+        public const string CategoryExamples = "EXAMPLES_TEST";
+
         /** */
         public const int DfltBusywaitSleepInterval = 200;
 
@@ -50,7 +53,8 @@ namespace Apache.Ignite.Core.Tests
                 "-XX:+HeapDumpOnOutOfMemoryError",
                 "-Xms1g",
                 "-Xmx4g",
-                "-ea"
+                "-ea",
+                "-DIGNITE_QUIET=true"
             }
             : new List<string>
             {
@@ -58,7 +62,8 @@ namespace Apache.Ignite.Core.Tests
                 "-Xms512m",
                 "-Xmx512m",
                 "-ea",
-                "-DIGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE=1000"
+                "-DIGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE=1000",
+                "-DIGNITE_QUIET=true"
             };
 
         /** */

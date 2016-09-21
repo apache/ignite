@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 
@@ -59,14 +58,12 @@ public class MergeRecord<L> extends PageDeltaRecord {
     }
 
     /** {@inheritDoc} */
-    @Override public void applyDelta(GridCacheContext<?,?> cctx, ByteBuffer leftBuf) throws IgniteCheckedException {
+    @Override public void applyDelta(PageMemory pageMem, ByteBuffer leftBuf) throws IgniteCheckedException {
         BPlusIO<L> io = PageIO.getBPlusIO(leftBuf);
 
-        PageMemory m = cctx.shared().database().pageMemory();
-
         try (
-            Page prnt = m.page(cacheId(), prntId);
-            Page right = m.page(cacheId(), rightId)
+            Page prnt = pageMem.page(cacheId(), prntId);
+            Page right = pageMem.page(cacheId(), rightId)
         ) {
             ByteBuffer prntBuf = prnt.getForRead();
 

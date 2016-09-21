@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -108,6 +109,9 @@ import org.jetbrains.annotations.Nullable;
 public final class GridTestUtils {
     /** Default busy wait sleep interval in milliseconds.  */
     public static final long DFLT_BUSYWAIT_SLEEP_INTERVAL = 200;
+
+    /** */
+    static final String ALPHABETH = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890_";
 
     /** */
     private static final Map<Class<?>, String> addrs = new HashMap<>();
@@ -1793,6 +1797,25 @@ public final class GridTestUtils {
 
         ccfg.setOffHeapMaxMemory(offheapMaxMem);
     }
+
+    /**
+     * Generate random alphabetical string.
+     *
+     * @param rnd Random object.
+     * @param maxLen Maximal length of string
+     * @return Random string object.
+     */
+    public static String randomString(Random rnd, int maxLen) {
+        int len = rnd.nextInt(maxLen);
+
+        StringBuilder b = new StringBuilder(len);
+
+        for (int i = 0; i < len; i++)
+            b.append(ALPHABETH.charAt(rnd.nextInt(ALPHABETH.length())));
+
+        return b.toString();
+    }
+
 
     /**
      *

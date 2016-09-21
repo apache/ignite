@@ -20,9 +20,11 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
@@ -82,6 +84,11 @@ public interface GridDhtPartitionTopology {
      * @return {@code True} if cache is being stopped.
      */
     public boolean stopping();
+
+    /**
+     * @return Cache ID.
+     */
+    public int cacheId();
 
     /**
      * Pre-initializes this topology.
@@ -220,6 +227,27 @@ public interface GridDhtPartitionTopology {
         @Nullable Map<Integer, Long> cntrMap);
 
     /**
+     * Checks if there is at least one owner for each partition in the cache topology.
+     * If not, marks such a partition as LOST.
+     * <p>
+     * This method should be called on topology coordinator after all partition messages are received.
+     *
+     * @param discoEvt Discovery event for which we detect lost partitions.
+     * @return {@code True} if partitons state got updated.
+     */
+    public boolean detectLostPartitions(DiscoveryEvent discoEvt);
+
+    /**
+     * Resets the state of all LOST partitions to OWNING.
+     */
+    public void resetLostPartitions();
+
+    /**
+     * @return Collection of lost partitions, if any.
+     */
+    public Collection<Integer> lostPartitions();
+
+    /**
      * @return Partition update counters.
      */
     public Map<Integer, Long> updateCounters();
@@ -254,4 +282,12 @@ public interface GridDhtPartitionTopology {
      * @return {@code True} if rebalance process finished.
      */
     public boolean rebalanceFinished(AffinityTopologyVersion topVer);
+
+    /**
+     * Make nodes from provided set owners for a given partition.
+     * State of all current owners that aren't contained in the set will be reset to MOVING.
+     * @param p Partition ID.
+     * @param owners Set of new owners.
+     */
+    public void setOwners(int p, Set<UUID> owners);
 }

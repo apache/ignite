@@ -300,14 +300,14 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
                 log.info("Iteration: " + i);
 
                 try {
-                    final GridNioSession ses0 = communicationSession(spi0);
-                    final GridNioSession ses1 = communicationSession(spi1);
+                    final GridNioSession ses0 = communicationSession(spi0, false);
+                    final GridNioSession ses1 = communicationSession(spi1, true);
 
                     ses1.pauseReads().get();
 
                     IgniteInternalFuture<?> sndFut = GridTestUtils.runAsync(new Callable<Void>() {
                         @Override public Void call() throws Exception {
-                            for (int i = 0; i < 5000; i++) {
+                            for (int i = 0; i < 6000; i++) {
                                 spi0.sendMessage(node1, new GridTestMessage(node0.id(), msgId.incrementAndGet(), 0));
 
                                 sentCnt.incrementAndGet();
@@ -410,14 +410,14 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
                 log.info("Iteration: " + i);
 
                 try {
-                    final GridNioSession ses0 = communicationSession(spi0);
-                    final GridNioSession ses1 = communicationSession(spi1);
+                    final GridNioSession ses0 = communicationSession(spi0, false);
+                    final GridNioSession ses1 = communicationSession(spi1, true);
 
                     ses1.pauseReads().get();
 
                     IgniteInternalFuture<?> sndFut = GridTestUtils.runAsync(new Callable<Void>() {
                         @Override public Void call() throws Exception {
-                            for (int i = 0; i < 5000; i++) {
+                            for (int i = 0; i < 6000; i++) {
                                 spi0.sendMessage(node1, new GridTestMessage(node0.id(), msgId.incrementAndGet(), 0));
 
                                 expCnt1.incrementAndGet();
@@ -527,14 +527,14 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
                 log.info("Iteration: " + i);
 
                 try {
-                    final GridNioSession ses0 = communicationSession(spi0);
-                    final GridNioSession ses1 = communicationSession(spi1);
+                    final GridNioSession ses0 = communicationSession(spi0, false);
+                    final GridNioSession ses1 = communicationSession(spi1, true);
 
                     ses1.pauseReads().get();
 
                     IgniteInternalFuture<?> sndFut = GridTestUtils.runAsync(new Callable<Void>() {
                         @Override public Void call() throws Exception {
-                            for (int i = 0; i < 5000; i++) {
+                            for (int i = 0; i < 6000; i++) {
                                 spi0.sendMessage(node1, new GridTestMessage(node0.id(), msgId.incrementAndGet(), 0));
 
                                 sentCnt.incrementAndGet();
@@ -604,7 +604,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    private GridNioSession communicationSession(TcpCommunicationSpi spi) throws Exception {
+    private GridNioSession communicationSession(TcpCommunicationSpi spi, boolean in) throws Exception {
         final GridNioServer srv = U.field(spi, "nioSrvr");
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
@@ -617,9 +617,14 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
         Collection<? extends GridNioSession> sessions = GridTestUtils.getFieldValue(srv, "sessions");
 
-        assertEquals(1, sessions.size());
+        for (GridNioSession ses : sessions) {
+            if (in == ses.accepted())
+                return ses;
+        }
 
-        return sessions.iterator().next();
+        fail("Failed to find session");
+
+        return null;
     }
 
     /**

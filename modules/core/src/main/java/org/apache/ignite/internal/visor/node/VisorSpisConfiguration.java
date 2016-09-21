@@ -64,9 +64,6 @@ public class VisorSpisConfiguration implements Serializable, LessNamingBean {
     /** Load balancing SPIs. */
     private IgniteBiTuple<String, Map<String, Object>>[] loadBalancingSpis;
 
-    /** Swap space SPIs. */
-    private IgniteBiTuple<String, Map<String, Object>> swapSpaceSpis;
-
     /** Indexing SPIs. */
     private IgniteBiTuple<String, Map<String, Object>>[] indexingSpis;
 
@@ -213,13 +210,6 @@ public class VisorSpisConfiguration implements Serializable, LessNamingBean {
      */
     public IgniteBiTuple<String, Map<String, Object>>[] loadBalancingSpis() {
         return loadBalancingSpis;
-    }
-
-    /**
-     * @return Swap space SPIs.
-     */
-    public IgniteBiTuple<String, Map<String, Object>> swapSpaceSpi() {
-        return swapSpaceSpis;
     }
 
     /**

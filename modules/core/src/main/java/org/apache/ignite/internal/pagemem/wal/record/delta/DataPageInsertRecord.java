@@ -19,150 +19,49 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.database.tree.io.CacheVersionIO;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 
 /**
  * Insert into data page.
  */
-public class DataPageInsertRecord extends PageDeltaRecord implements CacheDataRow {
+public class DataPageInsertRecord extends PageDeltaRecord {
     /** */
-    private KeyCacheObject key;
-
-    /** */
-    private CacheObject val;
-
-    /** */
-    private GridCacheVersion ver;
-
-    /** */
-    private long expireTime;
-
-    /** */
-    private int rowSize;
-
-    /** */
-    private byte[] remainder;
+    private byte[] payload;
 
     /**
      * @param cacheId Cache ID.
      * @param pageId Page ID.
-     * @param key Key.
-     * @param val Value.
-     * @param ver Version.
-     * @param expireTime Expire time.
-     * @param rowSize Row size.
+     * @param payload Remainder of the record.
      */
     public DataPageInsertRecord(
         int cacheId,
         long pageId,
-        KeyCacheObject key,
-        CacheObject val,
-        GridCacheVersion ver,
-        long expireTime,
-        int rowSize
+        byte[] payload
     ) {
         super(cacheId, pageId);
 
-        this.key = key;
-        this.val = val;
-        this.ver = ver;
-        this.expireTime = expireTime;
-        this.rowSize = rowSize;
+        this.payload = payload;
     }
 
     /**
-     * @param cacheId Cache ID.
-     * @param pageId Page ID.
-     * @param remainder Remainder of the record.
+     * @return Insert record payload.
      */
-    public DataPageInsertRecord(
-        int cacheId,
-        long pageId,
-        byte[] remainder
-    ) {
-        super(cacheId, pageId);
-
-        this.remainder = remainder;
-    }
-
-    /**
-     * @return Key.
-     */
-    @Override public KeyCacheObject key() {
-        return key;
-    }
-
-    /**
-     * @return Value.
-     */
-    @Override public CacheObject value() {
-        return val;
-    }
-
-    /**
-     * @return Version.
-     */
-    @Override public GridCacheVersion version() {
-        return ver;
+    public byte[] payload() {
+        return payload;
     }
 
     /** {@inheritDoc} */
-    @Override public long expireTime() {
-        return expireTime;
-    }
-
-    /**
-     * @return Row size in bytes.
-     */
-    public int rowSize() {
-        return rowSize;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void applyDelta(GridCacheContext<?,?> cctx, ByteBuffer buf)
-        throws IgniteCheckedException {
-        IgniteCacheObjectProcessor co = cctx.cacheObjects();
-        CacheObjectContext coctx = cctx.cacheObjectContext();
-
-        assert remainder != null;
-
-        ByteBuffer in = ByteBuffer.wrap(remainder);
-
-        key = co.toKeyCacheObject(coctx, in);
-        val = co.toCacheObject(coctx, in);
-        ver = CacheVersionIO.read(in, false);
-        expireTime = in.getLong();
+    @Override public void applyDelta(PageMemory pageMem, ByteBuffer buf) throws IgniteCheckedException {
+        assert payload != null;
 
         DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
-        io.addRow(buf, this, rowSize);
+        io.addRow(buf, payload);
     }
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.DATA_PAGE_INSERT_RECORD;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int partition() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long link() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void link(final long link) {
-        // No-op.
     }
 }

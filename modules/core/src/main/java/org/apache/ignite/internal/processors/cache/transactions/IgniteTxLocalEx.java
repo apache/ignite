@@ -192,5 +192,6 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
         boolean skipVals,
         boolean needVer,
         boolean keepBinary,
+        boolean recovery,
         GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c);
 }

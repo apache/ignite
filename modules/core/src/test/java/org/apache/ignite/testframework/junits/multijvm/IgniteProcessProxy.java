@@ -63,7 +63,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
-import org.apache.ignite.internal.pagemem.backup.BackupFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.hadoop.Hadoop;
@@ -217,8 +216,10 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /**
+     * Gracefully shut down the Grid.
+     *
      * @param gridName Grid name.
-     * @param cancel Cacnel flag.
+     * @param cancel If {@code true} then all jobs currently will be cancelled.
      */
     public static void stop(String gridName, boolean cancel) {
         IgniteProcessProxy proxy = gridProxies.get(gridName);
@@ -228,6 +229,26 @@ public class IgniteProcessProxy implements IgniteEx {
 
             gridProxies.remove(gridName, proxy);
         }
+    }
+
+    /**
+     * Forcefully shut down the Grid.
+     *
+     * @param gridName Grid name.
+     */
+    public static void kill(String gridName) {
+        IgniteProcessProxy proxy = gridProxies.get(gridName);
+
+        A.notNull(gridName, "gridName");
+
+        try {
+            proxy.getProcess().kill();
+        }
+        catch (Exception e) {
+            U.error(proxy.log, "Exception while killing " + gridName, e);
+        }
+
+        gridProxies.remove(gridName, proxy);
     }
 
     /**
@@ -624,7 +645,12 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Override public BackupFuture makeBackupAsync(Collection<String> cacheNames) {
+    @Override public boolean active() {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void active(boolean active) {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
