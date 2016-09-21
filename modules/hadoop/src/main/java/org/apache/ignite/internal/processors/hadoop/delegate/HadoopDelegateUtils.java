@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.hadoop.delegate;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.fs.BasicHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
+import org.apache.ignite.hadoop.fs.IgniteHadoopFileSystemCounterWriter;
 import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
 import org.apache.ignite.hadoop.fs.KerberosHadoopFileSystemFactory;
 
@@ -41,6 +42,10 @@ public class HadoopDelegateUtils {
 
     /** Factory proxy to delegate class name mapping. */
     private static final Map<String, String> FACTORY_CLS_MAP;
+
+    /** Counter writer delegate implementation. */
+    private static final String COUNTER_WRITER_DELEGATE_CLS =
+        "org.apache.ignite.internal.processors.hadoop.delegate.HadoopFileSystemCounterWriterDelegateImpl";
 
     static {
         FACTORY_CLS_MAP = new HashMap<>();
@@ -80,6 +85,17 @@ public class HadoopDelegateUtils {
             clsName = DFLT_FACTORY_CLS;
 
         return newInstance(clsName, proxy);
+    }
+
+    /**
+     * Create delegate for Hadoop counter writer.
+     *
+     * @param proxy Proxy.
+     * @return Delegate.
+     */
+    public static HadoopFileSystemCounterWriterDelegate counterWriterDelegate(
+        IgniteHadoopFileSystemCounterWriter proxy) {
+        return newInstance(COUNTER_WRITER_DELEGATE_CLS, proxy);
     }
 
     /**

@@ -15,48 +15,51 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.hadoop.fs;
+package org.apache.ignite.internal.processors.hadoop.delegate;
 
-import java.io.IOException;
-import java.io.PrintStream;
-import java.util.Map;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.hadoop.fs.IgniteHadoopFileSystemCounterWriter;
 import org.apache.ignite.internal.processors.hadoop.HadoopDefaultJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopJob;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopUtils;
-import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounterWriter;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopPerformanceCounter;
 import org.apache.ignite.internal.processors.hadoop.v2.HadoopV2Job;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.T2;
 
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.Map;
+
 /**
- * Statistic writer implementation that writes info into any Hadoop file system.
+ * Counter writer delegate implementation.
  */
-public class IgniteHadoopFileSystemCounterWriter implements HadoopCounterWriter {
-    /** */
-    public static final String PERFORMANCE_COUNTER_FILE_NAME = "performance";
-
-    /** */
-    public static final String COUNTER_WRITER_DIR_PROPERTY = "ignite.counters.fswriter.directory";
-
+@SuppressWarnings("unused")
+public class HadoopFileSystemCounterWriterDelegateImpl implements HadoopFileSystemCounterWriterDelegate {
     /** */
     private static final String USER_MACRO = "${USER}";
 
     /** */
     private static final String DEFAULT_COUNTER_WRITER_DIR = "/user/" + USER_MACRO;
 
-    /** {@inheritDoc} */
-    @Override public void write(HadoopJob job, HadoopCounters cntrs)
-        throws IgniteCheckedException {
+    /**
+     * Constructor.
+     *
+     * @param proxy Proxy (not used).
+     */
+    public HadoopFileSystemCounterWriterDelegateImpl(IgniteHadoopFileSystemCounterWriter proxy) {
+        // No-op.
+    }
 
+    /** {@inheritDoc} */
+    public void write(HadoopJob job, HadoopCounters cntrs) throws IgniteCheckedException {
         Configuration hadoopCfg = HadoopUtils.safeCreateConfiguration();
 
         final HadoopJobInfo jobInfo = job.info();
@@ -70,7 +73,7 @@ public class IgniteHadoopFileSystemCounterWriter implements HadoopCounterWriter 
 
         user = IgfsUtils.fixUserName(user);
 
-        String dir = jobInfo.property(COUNTER_WRITER_DIR_PROPERTY);
+        String dir = jobInfo.property(IgniteHadoopFileSystemCounterWriter.COUNTER_WRITER_DIR_PROPERTY);
 
         if (dir == null)
             dir = DEFAULT_COUNTER_WRITER_DIR;
@@ -86,7 +89,8 @@ public class IgniteHadoopFileSystemCounterWriter implements HadoopCounterWriter 
 
             fs.mkdirs(jobStatPath);
 
-            try (PrintStream out = new PrintStream(fs.create(new Path(jobStatPath, PERFORMANCE_COUNTER_FILE_NAME)))) {
+            try (PrintStream out = new PrintStream(fs.create(
+                new Path(jobStatPath, IgniteHadoopFileSystemCounterWriter.PERFORMANCE_COUNTER_FILE_NAME)))) {
                 for (T2<String, Long> evt : perfCntr.evts()) {
                     out.print(evt.get1());
                     out.print(':');
