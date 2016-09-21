@@ -49,6 +49,8 @@ class IgfsOutputStreamProxyImpl extends IgfsAbstractOutputStream {
         @Nullable IgfsFileWorkerBatch batch) {
         super(igfsCtx, path, bufSize, batch);
 
+        assert batch != null;
+
         this.info = info;
     }
 
@@ -95,22 +97,18 @@ class IgfsOutputStreamProxyImpl extends IgfsAbstractOutputStream {
 
             // Finish batch before file unlocking to support the assertion that unlocked file batch,
             // if any, must be in finishing state (e.g. append see more IgfsImpl.newBatch)
-            if (batch != null)
-                batch.finish();
-
+            batch.finish();
 
             // Finally, await secondary file system flush.
-            if (batch != null) {
-                try {
-                    batch.await();
-                }
-                catch (IgniteCheckedException e) {
-                    if (err == null)
-                        err = new IOException("Failed to close secondary file system stream [path=" + path +
-                            ", fileInfo=" + info + ']', e);
-                    else
-                        err.addSuppressed(e);
-                }
+            try {
+                batch.await();
+            }
+            catch (IgniteCheckedException e) {
+                if (err == null)
+                    err = new IOException("Failed to close secondary file system stream [path=" + path +
+                        ", fileInfo=" + info + ']', e);
+                else
+                    err.addSuppressed(e);
             }
 
             // Throw error, if any.
