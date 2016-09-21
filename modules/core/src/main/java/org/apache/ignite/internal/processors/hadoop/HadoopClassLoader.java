@@ -343,6 +343,21 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     }
 
     /**
+     * Check whether file must be loaded with current class loader, or normal delegation model should be used.
+     * <p>
+     * Override is only necessary for Ignite classes which have direct or transitive dependencies on Hadoop classes.
+     * These are all classes from "org.apache.ignite.internal.processors.hadoop" package except of "common" subpackage,
+     * and these are several well-know classes from "org.apache.ignite.hadoop" package.
+     *
+     * @param clsName Class name.
+     * @return Whether class must be loaded by current classloader without delegation.
+     */
+    private static boolean loadByCurrentClassloader(String clsName) {
+        // TODO.
+        return false;
+    }
+
+    /**
      * @param name Class name.
      * @param resolve Resolve class.
      * @return Class.

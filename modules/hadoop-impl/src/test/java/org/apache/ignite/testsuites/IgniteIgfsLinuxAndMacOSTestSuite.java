@@ -18,17 +18,17 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.hadoop.igfs.HadoopIgfs20FileSystemShmemPrimarySelfTest;
-import org.apache.ignite.hadoop.igfs.IgfsEventsTestSuite;
-import org.apache.ignite.hadoop.igfs.IgniteHadoopFileSystemIpcCacheSelfTest;
-import org.apache.ignite.hadoop.igfs.IgniteHadoopFileSystemShmemEmbeddedDualAsyncSelfTest;
-import org.apache.ignite.hadoop.igfs.IgniteHadoopFileSystemShmemEmbeddedDualSyncSelfTest;
-import org.apache.ignite.hadoop.igfs.IgniteHadoopFileSystemShmemEmbeddedPrimarySelfTest;
-import org.apache.ignite.hadoop.igfs.IgniteHadoopFileSystemShmemEmbeddedSecondarySelfTest;
-import org.apache.ignite.hadoop.igfs.IgniteHadoopFileSystemShmemExternalDualAsyncSelfTest;
-import org.apache.ignite.hadoop.igfs.IgniteHadoopFileSystemShmemExternalDualSyncSelfTest;
-import org.apache.ignite.hadoop.igfs.IgniteHadoopFileSystemShmemExternalPrimarySelfTest;
-import org.apache.ignite.hadoop.igfs.IgniteHadoopFileSystemShmemExternalSecondarySelfTest;
+import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfs20FileSystemShmemPrimarySelfTest;
+import org.apache.ignite.internal.processors.hadoop.igfs.IgfsEventsTestSuite;
+import org.apache.ignite.internal.processors.hadoop.igfs.IgniteHadoopFileSystemIpcCacheSelfTest;
+import org.apache.ignite.internal.processors.hadoop.igfs.IgniteHadoopFileSystemShmemEmbeddedDualAsyncSelfTest;
+import org.apache.ignite.internal.processors.hadoop.igfs.IgniteHadoopFileSystemShmemEmbeddedDualSyncSelfTest;
+import org.apache.ignite.internal.processors.hadoop.igfs.IgniteHadoopFileSystemShmemEmbeddedPrimarySelfTest;
+import org.apache.ignite.internal.processors.hadoop.igfs.IgniteHadoopFileSystemShmemEmbeddedSecondarySelfTest;
+import org.apache.ignite.internal.processors.hadoop.igfs.IgniteHadoopFileSystemShmemExternalDualAsyncSelfTest;
+import org.apache.ignite.internal.processors.hadoop.igfs.IgniteHadoopFileSystemShmemExternalDualSyncSelfTest;
+import org.apache.ignite.internal.processors.hadoop.igfs.IgniteHadoopFileSystemShmemExternalPrimarySelfTest;
+import org.apache.ignite.internal.processors.hadoop.igfs.IgniteHadoopFileSystemShmemExternalSecondarySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsServerManagerIpcEndpointRegistrationOnLinuxAndMacSelfTest;
 
 import static org.apache.ignite.testsuites.IgniteHadoopTestSuite.downloadHadoop;
