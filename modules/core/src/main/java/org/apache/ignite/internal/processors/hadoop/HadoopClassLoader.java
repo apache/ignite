@@ -53,11 +53,11 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     public static final String CLS_SHUTDOWN_HOOK_MANAGER = "org.apache.hadoop.util.ShutdownHookManager";
 
     /** Hadoop class name: Daemon replacement. */
-    public static final String CLS_DAEMON_REPLACE = "org.apache.ignite.internal.processors.hadoop.v2.HadoopDaemon";
+    public static final String CLS_DAEMON_REPLACE = "org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopDaemon";
 
     /** Hadoop class name: ShutdownHookManager replacement. */
     public static final String CLS_SHUTDOWN_HOOK_MANAGER_REPLACE =
-        "org.apache.ignite.internal.processors.hadoop.v2.HadoopShutdownHookManager";
+        "org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopShutdownHookManager";
 
     /** */
     private static final URLClassLoader APP_CLS_LDR = (URLClassLoader)HadoopClassLoader.class.getClassLoader();
@@ -346,14 +346,32 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
      * Check whether file must be loaded with current class loader, or normal delegation model should be used.
      * <p>
      * Override is only necessary for Ignite classes which have direct or transitive dependencies on Hadoop classes.
-     * These are all classes from "org.apache.ignite.internal.processors.hadoop" package except of "common" subpackage,
+     * These are all classes from "org.apache.ignite.internal.processors.hadoop.impl" package,
      * and these are several well-know classes from "org.apache.ignite.hadoop" package.
      *
      * @param clsName Class name.
      * @return Whether class must be loaded by current classloader without delegation.
      */
+    @SuppressWarnings("RedundantIfStatement")
     private static boolean loadByCurrentClassloader(String clsName) {
-        // TODO.
+        // All impl classes.
+        if (clsName.startsWith("org.apache.ignite.internal.processors.hadoop.impl"))
+            return true;
+
+        // Several classes from public API.
+        if (clsName.startsWith("org.apache.ignite.hadoop")) {
+            if (clsName.equals("org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem") ||
+                clsName.equals("org.apache.ignite.hadoop.fs.v2.IgniteHadoopFileSystem") ||
+                clsName.equals("org.apache.ignite.hadoop.mapreduce.IgniteHadoopClientProtocolProvider"))
+                return true;
+        }
+
+        // TODO: Move suites to "impl" package.
+        // Test suites (to be removed).
+        if (clsName.equals("org.apache.ignite.testsuites.IgniteHadoopTestSuite") ||
+            clsName.equals("org.apache.ignite.testsuites.IgniteIgfsLinuxAndMacOSTestSuite"))
+            return true;
+
         return false;
     }
 
