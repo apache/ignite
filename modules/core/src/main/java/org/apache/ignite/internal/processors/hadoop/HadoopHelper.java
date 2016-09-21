@@ -25,6 +25,11 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface HadoopHelper {
     /**
+     * @return Whether this is no-op implementation.
+     */
+    public boolean isNoOp();
+
+    /**
      * Get common Hadoop class loader.
      *
      * @return Common Hadoop class loader.

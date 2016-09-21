@@ -38,6 +38,11 @@ public class HadoopNoopHelper implements HadoopHelper {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isNoOp() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override public HadoopClassLoader commonClassLoader() {
         throw unsupported();
     }

@@ -54,6 +54,11 @@ public class HadoopHelperImpl implements HadoopHelper {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isNoOp() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public HadoopClassLoader commonClassLoader() {
         HadoopClassLoader res = ldr;
 

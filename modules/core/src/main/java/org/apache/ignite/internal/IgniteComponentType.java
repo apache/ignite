@@ -199,6 +199,32 @@ public enum IgniteComponentType {
     /**
      * Creates component.
      *
+     * @param ctx Kernal context.
+     * @param ldr Class loader.
+     * @param mandatory If the component is mandatory.
+     * @return Created component.
+     * @throws IgniteCheckedException If failed.
+     */
+    public <T> T createIfInClassPath(GridKernalContext ctx, ClassLoader ldr, boolean mandatory)
+        throws IgniteCheckedException {
+        String cls = clsName;
+
+        try {
+            Class.forName(cls, true, ldr);
+        }
+        catch (ClassNotFoundException e) {
+            if (mandatory)
+                throw componentException(e);
+
+            cls = noOpClsName;
+        }
+
+        return create0(ctx, ldr, cls);
+    }
+
+    /**
+     * Creates component.
+     *
      * @param noOp No-op flag.
      * @return Created component.
      * @throws IgniteCheckedException If failed.
@@ -280,6 +306,37 @@ public enum IgniteComponentType {
     private <T> T create0(@Nullable GridKernalContext ctx, String clsName) throws IgniteCheckedException {
         try {
             Class<?> cls = Class.forName(clsName);
+
+            if (ctx == null) {
+                Constructor<?> ctor = cls.getConstructor();
+
+                return (T)ctor.newInstance();
+            }
+            else {
+                Constructor<?> ctor = cls.getConstructor(GridKernalContext.class);
+
+                return (T)ctor.newInstance(ctx);
+            }
+        }
+        catch (Throwable e) {
+            throw componentException(e);
+        }
+    }
+
+    /**
+     * Creates component instance.
+     *
+     * @param ctx Kernal context.
+     * @param ldr Class loader.
+     * @param clsName Component class name.
+     * @return Component instance.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private <T> T create0(@Nullable GridKernalContext ctx, ClassLoader ldr, String clsName)
+        throws IgniteCheckedException {
+        try {
+            Class<?> cls = Class.forName(clsName, true, ldr);
 
             if (ctx == null) {
                 Constructor<?> ctor = cls.getConstructor();

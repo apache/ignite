@@ -115,6 +115,7 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.hadoop.Hadoop;
+import org.apache.ignite.internal.processors.hadoop.HadoopClassLoader;
 import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
@@ -1142,7 +1143,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 throw new IgniteCheckedException("Hadoop module cannot be used with peer class loading enabled " +
                     "(set IgniteConfiguration.peerClassLoadingEnabled to \"false\").");
 
-            HadoopProcessorAdapter res = IgniteComponentType.HADOOP.createIfInClassPath(ctx, true);
+            HadoopClassLoader ldr = ctx.hadoopHelper().commonClassLoader();
+
+            HadoopProcessorAdapter res = IgniteComponentType.HADOOP.createIfInClassPath(ctx, ldr, true);
 
             res.validateEnvironment();
 
@@ -1151,21 +1154,25 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         else {
             HadoopProcessorAdapter cmp = null;
 
-            if (IgniteComponentType.HADOOP.inClassPath() && cfg.isPeerClassLoadingEnabled()) {
+            if (!ctx.hadoopHelper().isNoOp() && cfg.isPeerClassLoadingEnabled()) {
                 U.warn(log, "Hadoop module is found in classpath, but will not be started because peer class " +
                     "loading is enabled (set IgniteConfiguration.peerClassLoadingEnabled to \"false\" if you want " +
                     "to use Hadoop module).");
             }
             else {
-                cmp = IgniteComponentType.HADOOP.createIfInClassPath(ctx, false);
+                if (!ctx.hadoopHelper().isNoOp()) {
+                    HadoopClassLoader ldr = ctx.hadoopHelper().commonClassLoader();
 
-                try {
-                    cmp.validateEnvironment();
-                }
-                catch (IgniteException | IgniteCheckedException e) {
-                    U.quietAndWarn(log, "Hadoop module will not start due to exception: " + e.getMessage());
+                    cmp = IgniteComponentType.HADOOP.createIfInClassPath(ctx, ldr, false);
 
-                    cmp = null;
+                    try {
+                        cmp.validateEnvironment();
+                    }
+                    catch (IgniteException | IgniteCheckedException e) {
+                        U.quietAndWarn(log, "Hadoop module will not start due to exception: " + e.getMessage());
+
+                        cmp = null;
+                    }
                 }
             }
 
