@@ -609,7 +609,13 @@ public abstract class PagesList extends DataStructure {
                 wal.log(new PagesListSetNextRecord(cacheId, pageId, dataPageId));
 
             if (isWalDeltaRecordNeeded(wal, dataPage))
-                wal.log(new PagesListInitNewPageRecord(cacheId, dataPageId, pageId, 0L));
+                wal.log(new PagesListInitNewPageRecord(
+                    cacheId,
+                    dataPageId,
+                    io.getType(),
+                    io.getVersion(),
+                    dataPageId,
+                    pageId, 0L));
 
             updateTail(bucket, pageId, dataPageId);
         }
@@ -632,7 +638,15 @@ public abstract class PagesList extends DataStructure {
                     next.fullPageWalRecordPolicy(Boolean.FALSE);
 
                     if (isWalDeltaRecordNeeded(wal, next))
-                        wal.log(new PagesListInitNewPageRecord(cacheId, nextId, pageId, dataPageId));
+                        wal.log(new PagesListInitNewPageRecord(
+                            cacheId,
+                            nextId,
+                            io.getType(),
+                            io.getVersion(),
+                            nextId,
+                            pageId,
+                            dataPageId
+                        ));
 
                     assert idx != -1;
 
@@ -700,7 +714,15 @@ public abstract class PagesList extends DataStructure {
                         next.fullPageWalRecordPolicy(Boolean.FALSE);
 
                         if (isWalDeltaRecordNeeded(wal, next))
-                            wal.log(new PagesListInitNewPageRecord(cacheId, nextId, pageId, 0L));
+                            wal.log(new PagesListInitNewPageRecord(
+                                cacheId,
+                                nextId,
+                                io.getType(),
+                                io.getVersion(),
+                                nextId,
+                                pageId,
+                                0L
+                            ));
 
                         // Switch to this new page, which is now a part of our list
                         // to add the rest of the bag to the new page.
