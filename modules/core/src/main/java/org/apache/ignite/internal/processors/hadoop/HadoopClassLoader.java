@@ -275,16 +275,12 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     @Override protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
         try {
             // Always load Hadoop classes explicitly, since Hadoop can be available in App classpath.
-            if (helper.isHadoop(name)) {
-                if (name.equals(CLS_SHUTDOWN_HOOK_MANAGER))  // Dirty hack to get rid of Hadoop shutdown hooks.
-                    return loadReplace(name, CLS_SHUTDOWN_HOOK_MANAGER_REPLACE);
-                else if (name.equals(CLS_DAEMON))
-                    // We replace this in order to be able to forcibly stop some daemon threads
-                    // that otherwise never stop (e.g. PeerCache runnables):
-                    return loadReplace(name, CLS_DAEMON_REPLACE);
-
-                return loadClassExplicitly(name, resolve);
-            }
+            if (name.equals(CLS_SHUTDOWN_HOOK_MANAGER))  // Dirty hack to get rid of Hadoop shutdown hooks.
+                return loadReplace(name, CLS_SHUTDOWN_HOOK_MANAGER_REPLACE);
+            else if (name.equals(CLS_DAEMON))
+                // We replace this in order to be able to forcibly stop some daemon threads
+                // that otherwise never stop (e.g. PeerCache runnables):
+                return loadReplace(name, CLS_DAEMON_REPLACE);
 
             // For Ignite Hadoop and IGFS classes we have to check if they depend on Hadoop.
             if (loadByCurrentClassloader(name))
@@ -399,16 +395,6 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
 
             return c;
         }
-    }
-
-    /**
-     * Check whether class has external dependencies on Hadoop.
-     *
-     * @param clsName Class name.
-     * @return {@code True} if class has external dependencies.
-     */
-    public boolean hasExternalDependencies(String clsName) {
-        return helper.hasExternalDependencies(clsName, getParent());
     }
 
     /**
