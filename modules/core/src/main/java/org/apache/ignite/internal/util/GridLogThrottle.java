@@ -133,6 +133,8 @@ public class GridLogThrottle {
      * @param msg Message.
      */
     public static void info(@Nullable IgniteLogger log, String msg) {
+        assert !F.isEmpty(msg);
+
         info(log, msg, false);
     }
 
@@ -154,8 +156,7 @@ public class GridLogThrottle {
      */
     @SuppressWarnings({"RedundantTypeArguments"})
     private static void log(@Nullable IgniteLogger log, @Nullable Throwable e, String longMsg,
-        @Nullable String shortMsg,
-        LogLevel level, boolean quiet) {
+        @Nullable String shortMsg, LogLevel level, boolean quiet) {
         assert !F.isEmpty(longMsg);
 
         IgniteBiTuple<Class<? extends Throwable>, String> tup =
