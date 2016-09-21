@@ -1320,10 +1320,6 @@ public class GridNioServer<T> {
         }
     }
 
-    public interface NioWorker {
-
-    }
-
     /**
      * Thread performing only read operations from the channel.
      */
@@ -1448,7 +1444,7 @@ public class GridNioServer<T> {
          *
          * @param req Change request.
          */
-        @Override  public void offer(GridNioFuture req) {
+        @Override public void offer(GridNioFuture req) {
             changeReqs.offer((NioOperationFuture)req);
 
             selector.wakeup();
@@ -2115,8 +2111,6 @@ public class GridNioServer<T> {
          * @throws IgniteCheckedException If failed.
          */
         private void accept() throws IgniteCheckedException {
-            long lastBalance = U.currentTimeMillis();
-
             try {
                 while (!closed && selector.isOpen() && !Thread.currentThread().isInterrupted()) {
                     // Wake up every 2 seconds to check if closed.
