@@ -146,7 +146,9 @@ public class PojoValueField extends PojoField {
      * @param sqlField {@link QuerySqlField} annotation.
      */
     protected void init(QuerySqlField sqlField) {
+/*
         if (sqlField.index())
             isIndexed = true;
+*/
     }
 }
