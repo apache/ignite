@@ -103,6 +103,22 @@ public abstract class PagesList extends DataStructure {
 
             return Boolean.TRUE;
         }
+
+        @Override protected void onReadLock(Page page) {
+            PagesList.this.onReadLock(page);
+        }
+
+        @Override protected void onReadUnlock(Page page) {
+            PagesList.this.onReadUnlock(page);
+        }
+
+        @Override protected void onWriteLock(Page page) {
+            PagesList.this.onWriteLock(page);
+        }
+
+        @Override protected void onWriteUnlock(Page page) {
+            PagesList.this.onWriteUnlock(page);
+        }
     };
 
     /**
