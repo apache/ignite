@@ -106,8 +106,7 @@ public abstract class PagesList extends DataStructure {
     };
 
     /** */
-    private final CheckingPageHandler<Page, ByteBuffer> putDataPage = new CheckingPageHandler<Page, ByteBuffer>() {
-        @Override protected boolean run0(
+    private boolean putDataPage(
             long pageId,
             Page page,
             ByteBuffer buf,
@@ -215,18 +214,14 @@ public abstract class PagesList extends DataStructure {
                 }
             }
         }
-    };
 
     /** */
-    private final CheckingPageHandler<ReuseBag, Void> putReuseBag = new CheckingPageHandler<ReuseBag, Void>() {
-        @SuppressWarnings("ForLoopReplaceableByForEach")
-        @Override protected boolean run0(
+    private boolean putReuseBag(
             final long pageId,
             Page page,
             final ByteBuffer buf,
             PagesListNodeIO io,
             ReuseBag bag,
-            Void ignore,
             int bucket
         ) throws IgniteCheckedException {
             if (io.getNextId(buf) != 0L)
@@ -289,7 +284,6 @@ public abstract class PagesList extends DataStructure {
 
             return true;
         }
-    };
 
     /**
      * @param cacheId Cache ID.
@@ -690,16 +684,21 @@ public abstract class PagesList extends DataStructure {
                 boolean ok = false;
 
                 try {
+                    if (PageIO.getPageId(buf) != tailId)
+                        continue; // Page was recycled -> retry.
+
+                    PagesListNodeIO io = PageIO.getPageIO(buf);
+
                     ok = bag != null ?
                         // Here we can always take pages from the bag to build our list.
-                        writePage0(tailId, buf, tail, putReuseBag, bag, null, bucket) :
+                        putReuseBag(tailId, tail, buf, io, bag, bucket) :
                         // Here we can use the data page to build list only if it is empty and
                         // it is being put into reuse bucket. Usually this will be true, but there is
                         // a case when there is no reuse bucket in the free list, but then deadlock
                         // on node page allocation from separate reuse list is impossible.
                         // If the data page is not empty it can not be put into reuse bucket and thus
                         // the deadlock is impossible as well.
-                        writePage0(tailId, buf, tail, putDataPage, dataPage, dataPageBuf, bucket);
+                        putDataPage(tailId, tail, buf, io, dataPage, dataPageBuf, bucket);
 
                     if (ok)
                         return;
@@ -709,20 +708,6 @@ public abstract class PagesList extends DataStructure {
                 }
             }
         }
-    }
-
-    private static <X, Y> boolean writePage0(
-        long pageId,
-        ByteBuffer buf,
-        Page page,
-        CheckingPageHandler<X, Y> h,
-        X arg1,
-        Y arg2,
-        int bucket
-    ) throws IgniteCheckedException {
-        PageIO io = PageIO.getPageIO(buf);
-
-        return h.run(pageId, page, io, buf, arg1, arg2, bucket);
     }
 
     /**
@@ -1115,51 +1100,6 @@ public abstract class PagesList extends DataStructure {
             wal.log(new RecycleRecord(cacheId, page.id(), pageId));
 
         return pageId;
-    }
-
-    /**
-     * Page handler.
-     */
-    private static abstract class CheckingPageHandler<X, Y>  {
-        /**
-         * @param pageId Page ID.
-         * @param page Page.
-         * @param buf Buffer.
-         * @param io IO.
-         * @param arg1 Argument 1.
-         * @param arg2 Argument 2.
-         * @param bucket Bucket.
-         * @throws IgniteCheckedException If failed.
-         * @return Result.
-         */
-        public final boolean run(long pageId, Page page, PageIO io, ByteBuffer buf, X arg1, Y arg2, int bucket)
-            throws IgniteCheckedException {
-            if (getPageId(buf) != pageId)
-                return Boolean.FALSE;
-
-            assert io instanceof PagesListNodeIO : io;
-
-            return run0(pageId, page, buf, (PagesListNodeIO)io, arg1, arg2, bucket);
-        }
-
-        /**
-         * @param pageId Page ID.
-         * @param page Page.
-         * @param buf Buffer.
-         * @param io IO.
-         * @param arg1 Argument 1.
-         * @param arg2 Argument 2.
-         * @param bucket Bucket.
-         * @throws IgniteCheckedException If failed.
-         * @return Result.
-         */
-        protected abstract boolean run0(long pageId,
-            Page page,
-            ByteBuffer buf,
-            PagesListNodeIO io,
-            X arg1,
-            Y arg2,
-            int bucket) throws IgniteCheckedException;
     }
 
     /**
