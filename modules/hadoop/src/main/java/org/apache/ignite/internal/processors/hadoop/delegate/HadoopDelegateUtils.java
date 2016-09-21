@@ -93,12 +93,13 @@ public class HadoopDelegateUtils {
     /**
      * Create delegate for Hadoop counter writer.
      *
+     * @param ldr Class loader.
      * @param proxy Proxy.
      * @return Delegate.
      */
-    public static HadoopFileSystemCounterWriterDelegate counterWriterDelegate(
+    public static HadoopFileSystemCounterWriterDelegate counterWriterDelegate(ClassLoader ldr,
         IgniteHadoopFileSystemCounterWriter proxy) {
-        return newInstance(COUNTER_WRITER_DELEGATE_CLS, null, proxy);
+        return newInstance(COUNTER_WRITER_DELEGATE_CLS, ldr, proxy);
     }
 
     /**
