@@ -105,186 +105,6 @@ public abstract class PagesList extends DataStructure {
         }
     };
 
-    /** */
-    private boolean putDataPage(
-            long pageId,
-            Page page,
-            ByteBuffer buf,
-            PagesListNodeIO io,
-            Page dataPage,
-            ByteBuffer dataPageBuf,
-            int bucket
-        ) throws IgniteCheckedException {
-            if (io.getNextId(buf) != 0L)
-                return false; // Splitted.
-
-            long dataPageId = dataPage.id();
-
-            int idx = io.addPage(buf, dataPageId);
-
-            if (idx == -1)
-                handlePageFull(pageId, page, buf, io, dataPage, dataPageBuf, bucket);
-            else {
-                if (isWalDeltaRecordNeeded(wal, page))
-                    wal.log(new PagesListAddPageRecord(cacheId, pageId, dataPageId));
-
-                DataPageIO dataIO = DataPageIO.VERSIONS.forPage(dataPageBuf);
-                dataIO.setFreeListPageId(dataPageBuf, pageId);
-
-                if (isWalDeltaRecordNeeded(wal, dataPage))
-                    wal.log(new DataPageSetFreeListPageRecord(cacheId, dataPage.id(), pageId));
-            }
-
-            return true;
-        }
-
-        /**
-         * @param pageId Page ID.
-         * @param page Page.
-         * @param buf Buffer.
-         * @param io IO.
-         * @param dataPage Data page.
-         * @param dataPageBuf Data page buffer.
-         * @param bucket Bucket index.
-         * @throws IgniteCheckedException If failed.
-         */
-        private void handlePageFull(
-            long pageId,
-            Page page,
-            ByteBuffer buf,
-            PagesListNodeIO io,
-            Page dataPage,
-            ByteBuffer dataPageBuf,
-            int bucket
-        ) throws IgniteCheckedException {
-            long dataPageId = dataPage.id();
-            DataPageIO dataIO = DataPageIO.VERSIONS.forPage(dataPageBuf);
-
-            // Attempt to add page failed: the node page is full.
-            if (isReuseBucket(bucket)) {
-                // If we are on the reuse bucket, we can not allocate new page, because it may cause deadlock.
-                assert dataIO.isEmpty(dataPageBuf); // We can put only empty data pages to reuse bucket.
-
-                // Change page type to index and add it as next node page to this list.
-                dataPageId = PageIdUtils.changeType(dataPageId, FLAG_IDX);
-
-                setupNextPage(io, pageId, buf, dataPageId, dataPageBuf);
-
-                if (isWalDeltaRecordNeeded(wal, page))
-                    wal.log(new PagesListSetNextRecord(cacheId, pageId, dataPageId));
-
-                if (isWalDeltaRecordNeeded(wal, dataPage))
-                    wal.log(new PagesListInitNewPageRecord(cacheId, dataPageId, pageId, 0L));
-
-                updateTail(bucket, pageId, dataPageId);
-            }
-            else {
-                // Just allocate a new node page and add our data page there.
-                long nextId = allocatePage(null);
-
-                try (Page next = page(nextId)) {
-                    ByteBuffer nextBuf = writeLock(next);
-
-                    try {
-                        setupNextPage(io, pageId, buf, nextId, nextBuf);
-
-                        if (isWalDeltaRecordNeeded(wal, page))
-                            wal.log(new PagesListSetNextRecord(cacheId, pageId, nextId));
-
-                        int idx = io.addPage(nextBuf, dataPageId);
-
-                        // Here we should never write full page, because it is known to be new.
-                        next.fullPageWalRecordPolicy(Boolean.FALSE);
-
-                        if (isWalDeltaRecordNeeded(wal, next))
-                            wal.log(new PagesListInitNewPageRecord(cacheId, nextId, pageId, dataPageId));
-
-                        assert idx != -1;
-
-                        dataIO.setFreeListPageId(dataPageBuf, nextId);
-
-                        if (isWalDeltaRecordNeeded(wal, dataPage))
-                            wal.log(new DataPageSetFreeListPageRecord(cacheId, dataPageId, nextId));
-
-                        updateTail(bucket, pageId, nextId);
-                    }
-                    finally {
-                        writeUnlock(next, true);
-                    }
-                }
-            }
-        }
-
-    /** */
-    private boolean putReuseBag(
-            final long pageId,
-            Page page,
-            final ByteBuffer buf,
-            PagesListNodeIO io,
-            ReuseBag bag,
-            int bucket
-        ) throws IgniteCheckedException {
-            if (io.getNextId(buf) != 0L)
-                return false; // Splitted.
-
-            long nextId;
-            ByteBuffer prevBuf = buf;
-            long prevId = pageId;
-
-            List<Page> locked = null;
-
-            try {
-                while ((nextId = bag.pollFreePage()) != 0L) {
-                    int idx = io.addPage(prevBuf, nextId);
-
-                    if (idx == -1) { // Attempt to add page failed: the node page is full.
-                        try (Page next = page(nextId)) {
-                            ByteBuffer nextBuf = writeLock(next);
-
-                            if (locked == null)
-                                locked = new ArrayList<>(2);
-
-                            locked.add(next);
-
-                            setupNextPage(io, prevId, prevBuf, nextId, nextBuf);
-
-                            if (isWalDeltaRecordNeeded(wal, page))
-                                wal.log(new PagesListSetNextRecord(cacheId, pageId, nextId));
-
-                            // Here we should never write full page, because it is known to be new.
-                            next.fullPageWalRecordPolicy(Boolean.FALSE);
-
-                            if (isWalDeltaRecordNeeded(wal, next))
-                                wal.log(new PagesListInitNewPageRecord(cacheId, nextId, pageId, 0L));
-
-                            // Switch to this new page, which is now a part of our list
-                            // to add the rest of the bag to the new page.
-                            prevBuf = nextBuf;
-                            prevId = nextId;
-                            page = next;
-                        }
-                    }
-                    else {
-                        // TODO: use single WAL record for bag?
-                        if (isWalDeltaRecordNeeded(wal, page))
-                            wal.log(new PagesListAddPageRecord(cacheId, pageId, nextId));
-                    }
-                }
-            }
-            finally {
-                if (locked != null) {
-                    // We have to update our bucket with the new tail.
-                    updateTail(bucket, pageId, prevId);
-
-                    // Release write.
-                    for (int i = 0; i < locked.size(); i++)
-                        writeUnlock(locked.get(i), true);
-                }
-            }
-
-            return true;
-        }
-
     /**
      * @param cacheId Cache ID.
      * @param name Name (for debug purpose).
@@ -708,6 +528,206 @@ public abstract class PagesList extends DataStructure {
                 }
             }
         }
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param page Page.
+     * @param buf Byte buffer.
+     * @param io IO.
+     * @param dataPage Data page.
+     * @param dataPageBuf Data page buffer.
+     * @param bucket Bucket.
+     * @return {@code true} If succeeded.
+     * @throws IgniteCheckedException If failed.
+     */
+    private boolean putDataPage(
+        long pageId,
+        Page page,
+        ByteBuffer buf,
+        PagesListNodeIO io,
+        Page dataPage,
+        ByteBuffer dataPageBuf,
+        int bucket
+    ) throws IgniteCheckedException {
+        if (io.getNextId(buf) != 0L)
+            return false; // Splitted.
+
+        long dataPageId = dataPage.id();
+
+        int idx = io.addPage(buf, dataPageId);
+
+        if (idx == -1)
+            handlePageFull(pageId, page, buf, io, dataPage, dataPageBuf, bucket);
+        else {
+            if (isWalDeltaRecordNeeded(wal, page))
+                wal.log(new PagesListAddPageRecord(cacheId, pageId, dataPageId));
+
+            DataPageIO dataIO = DataPageIO.VERSIONS.forPage(dataPageBuf);
+            dataIO.setFreeListPageId(dataPageBuf, pageId);
+
+            if (isWalDeltaRecordNeeded(wal, dataPage))
+                wal.log(new DataPageSetFreeListPageRecord(cacheId, dataPage.id(), pageId));
+        }
+
+        return true;
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param page Page.
+     * @param buf Buffer.
+     * @param io IO.
+     * @param dataPage Data page.
+     * @param dataPageBuf Data page buffer.
+     * @param bucket Bucket index.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void handlePageFull(
+        long pageId,
+        Page page,
+        ByteBuffer buf,
+        PagesListNodeIO io,
+        Page dataPage,
+        ByteBuffer dataPageBuf,
+        int bucket
+    ) throws IgniteCheckedException {
+        long dataPageId = dataPage.id();
+        DataPageIO dataIO = DataPageIO.VERSIONS.forPage(dataPageBuf);
+
+        // Attempt to add page failed: the node page is full.
+        if (isReuseBucket(bucket)) {
+            // If we are on the reuse bucket, we can not allocate new page, because it may cause deadlock.
+            assert dataIO.isEmpty(dataPageBuf); // We can put only empty data pages to reuse bucket.
+
+            // Change page type to index and add it as next node page to this list.
+            dataPageId = PageIdUtils.changeType(dataPageId, FLAG_IDX);
+
+            setupNextPage(io, pageId, buf, dataPageId, dataPageBuf);
+
+            if (isWalDeltaRecordNeeded(wal, page))
+                wal.log(new PagesListSetNextRecord(cacheId, pageId, dataPageId));
+
+            if (isWalDeltaRecordNeeded(wal, dataPage))
+                wal.log(new PagesListInitNewPageRecord(cacheId, dataPageId, pageId, 0L));
+
+            updateTail(bucket, pageId, dataPageId);
+        }
+        else {
+            // Just allocate a new node page and add our data page there.
+            long nextId = allocatePage(null);
+
+            try (Page next = page(nextId)) {
+                ByteBuffer nextBuf = writeLock(next);
+
+                try {
+                    setupNextPage(io, pageId, buf, nextId, nextBuf);
+
+                    if (isWalDeltaRecordNeeded(wal, page))
+                        wal.log(new PagesListSetNextRecord(cacheId, pageId, nextId));
+
+                    int idx = io.addPage(nextBuf, dataPageId);
+
+                    // Here we should never write full page, because it is known to be new.
+                    next.fullPageWalRecordPolicy(Boolean.FALSE);
+
+                    if (isWalDeltaRecordNeeded(wal, next))
+                        wal.log(new PagesListInitNewPageRecord(cacheId, nextId, pageId, dataPageId));
+
+                    assert idx != -1;
+
+                    dataIO.setFreeListPageId(dataPageBuf, nextId);
+
+                    if (isWalDeltaRecordNeeded(wal, dataPage))
+                        wal.log(new DataPageSetFreeListPageRecord(cacheId, dataPageId, nextId));
+
+                    updateTail(bucket, pageId, nextId);
+                }
+                finally {
+                    writeUnlock(next, true);
+                }
+            }
+        }
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param page Page.
+     * @param buf Buffer.
+     * @param io IO.
+     * @param bag Reuse bag.
+     * @param bucket Bucket.
+     * @return {@code true} If succeeded.
+     * @throws IgniteCheckedException if failed.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    private boolean putReuseBag(
+        final long pageId,
+        Page page,
+        final ByteBuffer buf,
+        PagesListNodeIO io,
+        ReuseBag bag,
+        int bucket
+    ) throws IgniteCheckedException {
+        if (io.getNextId(buf) != 0L)
+            return false; // Splitted.
+
+        long nextId;
+        ByteBuffer prevBuf = buf;
+        long prevId = pageId;
+
+        List<Page> locked = null;
+
+        try {
+            while ((nextId = bag.pollFreePage()) != 0L) {
+                int idx = io.addPage(prevBuf, nextId);
+
+                if (idx == -1) { // Attempt to add page failed: the node page is full.
+                    try (Page next = page(nextId)) {
+                        ByteBuffer nextBuf = writeLock(next);
+
+                        if (locked == null)
+                            locked = new ArrayList<>(2);
+
+                        locked.add(next);
+
+                        setupNextPage(io, prevId, prevBuf, nextId, nextBuf);
+
+                        if (isWalDeltaRecordNeeded(wal, page))
+                            wal.log(new PagesListSetNextRecord(cacheId, pageId, nextId));
+
+                        // Here we should never write full page, because it is known to be new.
+                        next.fullPageWalRecordPolicy(Boolean.FALSE);
+
+                        if (isWalDeltaRecordNeeded(wal, next))
+                            wal.log(new PagesListInitNewPageRecord(cacheId, nextId, pageId, 0L));
+
+                        // Switch to this new page, which is now a part of our list
+                        // to add the rest of the bag to the new page.
+                        prevBuf = nextBuf;
+                        prevId = nextId;
+                        page = next;
+                    }
+                }
+                else {
+                    // TODO: use single WAL record for bag?
+                    if (isWalDeltaRecordNeeded(wal, page))
+                        wal.log(new PagesListAddPageRecord(cacheId, pageId, nextId));
+                }
+            }
+        }
+        finally {
+            if (locked != null) {
+                // We have to update our bucket with the new tail.
+                updateTail(bucket, pageId, prevId);
+
+                // Release write.
+                for (int i = 0; i < locked.size(); i++)
+                    writeUnlock(locked.get(i), true);
+            }
+        }
+
+        return true;
     }
 
     /**
