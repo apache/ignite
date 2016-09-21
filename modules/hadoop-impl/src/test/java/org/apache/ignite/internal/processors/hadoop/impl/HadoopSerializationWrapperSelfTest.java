@@ -27,7 +27,8 @@ import java.util.Arrays;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.serializer.JavaSerialization;
 import org.apache.hadoop.io.serializer.WritableSerialization;
-import org.apache.ignite.internal.processors.hadoop.v2.HadoopSerializationWrapper;
+import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
+import org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopSerializationWrapper;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**

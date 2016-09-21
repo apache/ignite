@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
+import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.igfs.common.IgfsLogger;
 import org.apache.ignite.internal.processors.igfs.IgfsCommonAbstractTest;
 import org.apache.ignite.internal.util.typedef.internal.SB;

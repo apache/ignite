@@ -409,7 +409,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
      * @param clsName Class name.
      * @return {@code True} if class has external dependencies.
      */
-    boolean hasExternalDependencies(String clsName) {
+    public boolean hasExternalDependencies(String clsName) {
         return helper.hasExternalDependencies(clsName, getParent());
     }
 
