@@ -31,10 +31,7 @@ import com.datastax.driver.core.exceptions.AlreadyExistsException;
 import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.datastax.driver.core.querybuilder.Batch;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteException;
@@ -43,6 +40,7 @@ import org.apache.ignite.cache.store.cassandra.common.CassandraHelper;
 import org.apache.ignite.cache.store.cassandra.common.RandomSleeper;
 import org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSettings;
 import org.apache.ignite.cache.store.cassandra.session.pool.SessionPool;
+import org.apache.ignite.cache.store.cassandra.session.transaction.Mutation;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 
 /**
@@ -398,6 +396,101 @@ public class CassandraSessionImpl implements CassandraSession {
 
         log.error(errorMsg, error);
 
+        throw new IgniteException(errorMsg, error);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void execute(List<Mutation> mutations) {
+        if (mutations == null || mutations.isEmpty())
+            return;
+
+        Throwable error = null;
+        String errorMsg = "Failed to apply " + mutations.size() + " mutations performed withing Ignite " +
+                "transaction into Cassandra";
+
+        int attempt = 0;
+        boolean tableExistenceRequired = false;
+        Map<String, PreparedStatement> statements = new HashMap<>();
+        Map<String, KeyValuePersistenceSettings> tableSettings = new HashMap<>();
+        RandomSleeper sleeper = newSleeper();
+
+        incrementSessionRefs();
+
+        try {
+            while (attempt < CQL_EXECUTION_ATTEMPTS_COUNT) {
+                error = null;
+
+                if (attempt != 0) {
+                    log.warning("Trying " + (attempt + 1) + " attempt to apply " + mutations.size() + " mutations " +
+                            "performed withing Ignite transaction into Cassandra");
+                }
+
+                try {
+                    BatchStatement batch = new BatchStatement();
+
+                    // accumulating all the mutations into one Cassandra logged batch
+                    for (Mutation mutation : mutations) {
+                        String key = mutation.getTable() + mutation.getClass().getName();
+                        PreparedStatement st = statements.get(key);
+
+                        if (st == null) {
+                            st = prepareStatement(mutation.getTable(), mutation.getStatement(),
+                                    mutation.getPersistenceSettings(), mutation.tableExistenceRequired());
+
+                            if (st != null)
+                                statements.put(key, st);
+                        }
+
+                        if (st != null)
+                            batch.add(mutation.bindStatement(st));
+
+                        if (attempt == 0) {
+                            if (mutation.tableExistenceRequired())
+                                tableExistenceRequired = true;
+
+                            if (!tableSettings.containsKey(mutation.getTable()))
+                                tableSettings.put(mutation.getTable(), mutation.getPersistenceSettings());
+                        }
+                    }
+
+                    // committing logged batch into Cassandra
+                    if (batch.size() > 0)
+                        session().execute(tuneStatementExecutionOptions(batch));
+
+                    return;
+                } catch (Throwable e) {
+                    error = e;
+
+                    if (CassandraHelper.isTableAbsenceError(e)) {
+                        if (tableExistenceRequired) {
+                            for (Map.Entry<String, KeyValuePersistenceSettings> entry : tableSettings.entrySet())
+                                handleTableAbsenceError(entry.getKey(), entry.getValue());
+                        }
+                        else
+                            return;
+                    } else if (CassandraHelper.isHostsAvailabilityError(e)) {
+                        if (handleHostsAvailabilityError(e, attempt, errorMsg))
+                            statements.clear();
+                    } else if (CassandraHelper.isPreparedStatementClusterError(e)) {
+                        handlePreparedStatementClusterError(e);
+                        statements.clear();
+                    } else {
+                        // For an error which we don't know how to handle, we will not try next attempts and terminate.
+                        throw new IgniteException(errorMsg, e);
+                    }
+                }
+
+                sleeper.sleep();
+
+                attempt++;
+            }
+        } catch (Throwable e) {
+            error = e;
+        } finally {
+            decrementSessionRefs();
+        }
+
+        log.error(errorMsg, error);
         throw new IgniteException(errorMsg, error);
     }
 
