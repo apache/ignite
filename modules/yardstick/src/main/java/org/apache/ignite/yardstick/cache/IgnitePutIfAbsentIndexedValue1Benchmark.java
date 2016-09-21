@@ -20,11 +20,10 @@ package org.apache.ignite.yardstick.cache;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.yardstick.cache.model.Person1;
 
 /**
- * Ignite benchmark that performs SQL INSERT operations for entity with indexed fields.
+ * Ignite benchmark that performs putIfAbsent operations for entity with indexed fields.
  */
 public class IgnitePutIfAbsentIndexedValue1Benchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** */
@@ -41,6 +40,6 @@ public class IgnitePutIfAbsentIndexedValue1Benchmark extends IgniteCacheAbstract
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().cache("atomic-index");
+        return ignite().cache("atomic-index-with-eviction");
     }
 }

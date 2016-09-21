@@ -26,7 +26,7 @@ import org.apache.ignite.yardstick.cache.model.Person1;
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- * Ignite benchmark that performs SQL INSERT operations for entity with indexed fields.
+ * Ignite benchmark that performs SQL INSERT operations for entity with 1 indexed field.
  */
 public class IgniteSqlInsertIndexedValue1Benchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** */
@@ -44,6 +44,6 @@ public class IgniteSqlInsertIndexedValue1Benchmark extends IgniteCacheAbstractBe
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().cache("atomic-index");
+        return ignite().cache("atomic-index-with-eviction");
     }
 }

@@ -26,7 +26,7 @@ import org.apache.ignite.yardstick.cache.model.Person2;
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- * Ignite benchmark that performs SQL INSERT operations for entity with indexed fields.
+ * Ignite benchmark that performs SQL INSERT operations for entity with 2 indexed fields.
  */
 public class IgniteSqlInsertIndexedValue2Benchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** */
@@ -34,7 +34,7 @@ public class IgniteSqlInsertIndexedValue2Benchmark extends IgniteCacheAbstractBe
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        int key = insCnt.incrementAndGet();
+        int key = insCnt.getAndIncrement();
 
         cache.query(new SqlFieldsQuery("insert into Person2(_key, _val) values (?, ?)")
             .setArgs(key, new Person2(key)));
@@ -44,6 +44,6 @@ public class IgniteSqlInsertIndexedValue2Benchmark extends IgniteCacheAbstractBe
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().cache("atomic-index");
+        return ignite().cache("atomic-index-with-eviction");
     }
 }
