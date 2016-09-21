@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.delegate;
+package org.apache.ignite.internal.processors.hadoop.common.delegate;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.fs.BasicHadoopFileSystemFactory;

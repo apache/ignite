@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.hadoop.planner.HadoopDefaultMapReducePlan;
+import org.apache.ignite.internal.processors.hadoop.common.planner.HadoopDefaultMapReducePlan;
 import org.jetbrains.annotations.Nullable;
 
 /**

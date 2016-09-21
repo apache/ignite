@@ -23,7 +23,7 @@ import org.apache.ignite.hadoop.mapreduce.IgniteHadoopWeightedMapReducePlanner;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.processors.hadoop.planner.HadoopAbstractMapReducePlanner;
+import org.apache.ignite.internal.processors.hadoop.common.planner.HadoopAbstractMapReducePlanner;
 import org.apache.ignite.internal.processors.igfs.IgfsIgniteMock;
 import org.apache.ignite.internal.processors.igfs.IgfsMock;
 import org.apache.ignite.internal.util.typedef.F;

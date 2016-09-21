@@ -15,22 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.delegate;
+package org.apache.ignite.internal.processors.hadoop.common.delegate;
 
+import org.apache.ignite.internal.processors.igfs.IgfsSecondaryFileSystemV2;
 import org.apache.ignite.lifecycle.LifecycleAware;
 
-import java.io.IOException;
-
 /**
- * Hadoop file system factory delegate.
+ * Interface to secondary file system implementation.
  */
-public interface HadoopFileSystemFactoryDelegate extends LifecycleAware {
-    /**
-     * Gets file system for the given user name.
-     *
-     * @param usrName User name
-     * @return File system.
-     * @throws IOException In case of error.
-     */
-    public Object get(String usrName) throws IOException;
+public interface HadoopIgfsSecondaryFileSystemDelegate extends IgfsSecondaryFileSystemV2, LifecycleAware {
+    // No-op.
 }

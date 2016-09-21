@@ -15,7 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop;
+package org.apache.ignite.internal.processors.hadoop.common;
+
+import org.apache.ignite.internal.processors.hadoop.HadoopFileBlock;
+import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
 
 import java.util.ArrayList;
 import java.util.Collection;

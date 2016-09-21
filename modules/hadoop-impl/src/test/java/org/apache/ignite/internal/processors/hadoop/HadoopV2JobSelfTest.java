@@ -30,6 +30,7 @@ import org.apache.hadoop.io.serializer.Deserializer;
 import org.apache.hadoop.io.serializer.WritableSerialization;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.hadoop.common.HadoopHelperImpl;
 import org.apache.ignite.internal.processors.hadoop.v2.HadoopSerializationWrapper;
 import org.apache.ignite.internal.processors.hadoop.v2.HadoopV2Job;
 

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.hadoop;
 import java.io.IOException;
 import java.util.UUID;
 import org.apache.hadoop.mapred.JobConf;
+import org.apache.ignite.internal.processors.hadoop.common.HadoopHelperImpl;
 import org.apache.ignite.internal.processors.hadoop.examples.HadoopWordCount1;
 import org.apache.ignite.internal.processors.hadoop.v2.HadoopV2Job;
 

@@ -15,14 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.delegate;
+package org.apache.ignite.internal.processors.hadoop.common.delegate;
 
-import org.apache.ignite.internal.processors.igfs.IgfsSecondaryFileSystemV2;
-import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
 
 /**
- * Interface to secondary file system implementation.
+ * Counter writer delegate interface.
  */
-public interface HadoopIgfsSecondaryFileSystemDelegate extends IgfsSecondaryFileSystemV2, LifecycleAware {
-    // No-op.
+public interface HadoopFileSystemCounterWriterDelegate {
+    /**
+     * Writes counters of given job to some statistics storage.
+     *
+     * @param job The job.
+     * @param cntrs Counters.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void write(HadoopJob job, HadoopCounters cntrs) throws IgniteCheckedException;
 }

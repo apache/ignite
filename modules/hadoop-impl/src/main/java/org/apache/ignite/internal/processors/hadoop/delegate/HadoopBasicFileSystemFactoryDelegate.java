@@ -24,6 +24,7 @@ import org.apache.ignite.hadoop.fs.BasicHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 import org.apache.ignite.hadoop.util.UserNameMapper;
 import org.apache.ignite.internal.processors.hadoop.HadoopUtils;
+import org.apache.ignite.internal.processors.hadoop.common.delegate.HadoopFileSystemFactoryDelegate;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;

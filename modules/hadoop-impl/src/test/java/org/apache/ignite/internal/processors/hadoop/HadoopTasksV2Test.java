@@ -25,6 +25,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.ignite.internal.processors.hadoop.common.HadoopHelperImpl;
 import org.apache.ignite.internal.processors.hadoop.examples.HadoopWordCount2;
 import org.apache.ignite.internal.processors.hadoop.v2.HadoopV2Job;
 

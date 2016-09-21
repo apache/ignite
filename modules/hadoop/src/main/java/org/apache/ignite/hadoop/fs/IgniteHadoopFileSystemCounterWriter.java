@@ -21,8 +21,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopJob;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounterWriter;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
-import org.apache.ignite.internal.processors.hadoop.delegate.HadoopDelegateUtils;
-import org.apache.ignite.internal.processors.hadoop.delegate.HadoopFileSystemCounterWriterDelegate;
+import org.apache.ignite.internal.processors.hadoop.common.delegate.HadoopDelegateUtils;
+import org.apache.ignite.internal.processors.hadoop.common.delegate.HadoopFileSystemCounterWriterDelegate;
 
 /**
  * Statistic writer implementation that writes info into any Hadoop file system.

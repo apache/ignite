@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.hadoop;
 import javax.security.auth.AuthPermission;
 import junit.framework.TestCase;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.ignite.internal.processors.hadoop.common.HadoopHelperImpl;
 import org.apache.ignite.internal.processors.hadoop.deps.CircularWIthHadoop;
 import org.apache.ignite.internal.processors.hadoop.deps.CircularWithoutHadoop;
 import org.apache.ignite.internal.processors.hadoop.deps.WithIndirectField;

@@ -15,22 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.delegate;
+package org.apache.ignite.internal.processors.hadoop.common.delegate;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
-import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
+import org.apache.ignite.lifecycle.LifecycleAware;
+
+import java.io.IOException;
 
 /**
- * Counter writer delegate interface.
+ * Hadoop file system factory delegate.
  */
-public interface HadoopFileSystemCounterWriterDelegate {
+public interface HadoopFileSystemFactoryDelegate extends LifecycleAware {
     /**
-     * Writes counters of given job to some statistics storage.
+     * Gets file system for the given user name.
      *
-     * @param job The job.
-     * @param cntrs Counters.
-     * @throws IgniteCheckedException If failed.
+     * @param usrName User name
+     * @return File system.
+     * @throws IOException In case of error.
      */
-    public void write(HadoopJob job, HadoopCounters cntrs) throws IgniteCheckedException;
+    public Object get(String usrName) throws IOException;
 }

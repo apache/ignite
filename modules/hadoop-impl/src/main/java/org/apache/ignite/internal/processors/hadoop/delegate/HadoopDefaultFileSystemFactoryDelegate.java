@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.hadoop.delegate;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
+import org.apache.ignite.internal.processors.hadoop.common.delegate.HadoopFileSystemFactoryDelegate;
 import org.apache.ignite.lifecycle.LifecycleAware;
 
 import java.io.IOException;

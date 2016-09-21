@@ -14,9 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.hadoop;
+package org.apache.ignite.internal.processors.hadoop.common;
 
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.hadoop.HadoopClassLoader;
+import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;

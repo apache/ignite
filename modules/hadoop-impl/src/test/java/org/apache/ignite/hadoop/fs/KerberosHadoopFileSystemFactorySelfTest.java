@@ -25,9 +25,8 @@ import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.util.concurrent.Callable;
 
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.hadoop.delegate.HadoopDelegateUtils;
-import org.apache.ignite.internal.processors.hadoop.delegate.HadoopFileSystemFactoryDelegate;
+import org.apache.ignite.internal.processors.hadoop.common.delegate.HadoopDelegateUtils;
+import org.apache.ignite.internal.processors.hadoop.common.delegate.HadoopFileSystemFactoryDelegate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
