@@ -184,7 +184,7 @@ public abstract class PagesList extends DataStructure {
                 long nextId = allocatePage(null);
 
                 try (Page next = page(nextId)) {
-                    ByteBuffer nextBuf = next.getForWrite();
+                    ByteBuffer nextBuf = writeLock(next);
 
                     try {
                         setupNextPage(io, pageId, buf, nextId, nextBuf);
@@ -210,7 +210,7 @@ public abstract class PagesList extends DataStructure {
                         updateTail(bucket, pageId, nextId);
                     }
                     finally {
-                        next.releaseWrite(true);
+                        writeUnlock(next, true);
                     }
                 }
             }
@@ -244,7 +244,7 @@ public abstract class PagesList extends DataStructure {
 
                     if (idx == -1) { // Attempt to add page failed: the node page is full.
                         try (Page next = page(nextId)) {
-                            ByteBuffer nextBuf = next.getForWrite();
+                            ByteBuffer nextBuf = writeLock(next);
 
                             if (locked == null)
                                 locked = new ArrayList<>(2);
@@ -283,7 +283,7 @@ public abstract class PagesList extends DataStructure {
 
                     // Release write.
                     for (int i = 0; i < locked.size(); i++)
-                        locked.get(i).releaseWrite(true);
+                        writeUnlock(locked.get(i), true);
                 }
             }
 
@@ -334,7 +334,7 @@ public abstract class PagesList extends DataStructure {
 
                 while (nextPageId != 0) {
                     try (Page page = page(nextPageId)) {
-                        ByteBuffer buf = page.getForRead();
+                        ByteBuffer buf = readLock(page);
 
                         try {
                             PagesListMetaIO io = PagesListMetaIO.VERSIONS.forPage(buf);
@@ -349,7 +349,7 @@ public abstract class PagesList extends DataStructure {
                             nextPageId = next0;
                         }
                         finally {
-                            page.releaseRead();
+                            readUnlock(page);
                         }
                     }
                 }
@@ -408,7 +408,7 @@ public abstract class PagesList extends DataStructure {
                                 }
 
                                 curPage = page(nextPageId);
-                                curBuf = curPage.getForWrite();
+                                curBuf = writeLock(curPage);
 
                                 curIo = PagesListMetaIO.VERSIONS.latest();
 
@@ -419,7 +419,7 @@ public abstract class PagesList extends DataStructure {
                                 curPage = null;
 
                                 curPage = page(nextPageId);
-                                curBuf = curPage.getForWrite();
+                                curBuf = writeLock(curPage);
 
                                 curIo = PagesListMetaIO.VERSIONS.forPage(curBuf);
 
@@ -441,7 +441,7 @@ public abstract class PagesList extends DataStructure {
         while (nextPageId != 0L) {
             try (Page page = page(nextPageId)) {
                 try {
-                    ByteBuffer buf = page.getForWrite();
+                    ByteBuffer buf = writeLock(page);
                     PagesListMetaIO io = PagesListMetaIO.VERSIONS.forPage(buf);
 
                     io.resetCount(buf);
@@ -449,7 +449,7 @@ public abstract class PagesList extends DataStructure {
                     nextPageId = io.getNextMetaPageId(buf);
                 }
                 finally {
-                    page.releaseWrite(true);
+                    writeUnlock(page, true);
                 }
             }
         }
@@ -464,7 +464,7 @@ public abstract class PagesList extends DataStructure {
                 // No special WAL record because we most likely changed the whole page.
                 page.fullPageWalRecordPolicy(true);
 
-                page.releaseWrite(true);
+                writeUnlock(page, true);
             }
             finally {
                 page.close();
@@ -643,7 +643,7 @@ public abstract class PagesList extends DataStructure {
                 long pageId = tail.tailId;
 
                 try (Page page = page(pageId)) {
-                    ByteBuffer buf = page.getForRead();
+                    ByteBuffer buf = readLock(page);
 
                     try {
                         PagesListNodeIO io = PagesListNodeIO.VERSIONS.forPage(buf);
@@ -655,7 +655,7 @@ public abstract class PagesList extends DataStructure {
                         res += cnt;
                     }
                     finally {
-                        page.releaseRead();
+                        readUnlock(page);
                     }
                 }
             }
@@ -705,7 +705,7 @@ public abstract class PagesList extends DataStructure {
                         return;
                 }
                 finally {
-                    tail.releaseWrite(ok);
+                    writeUnlock(tail, ok);
                 }
             }
         }
@@ -746,7 +746,7 @@ public abstract class PagesList extends DataStructure {
      * @throws IgniteCheckedException If failed.
      */
     @Nullable private ByteBuffer writeLockPage(Page page, int bucket, int lockAttempt) throws IgniteCheckedException {
-        ByteBuffer buf = page.tryGetForWrite();
+        ByteBuffer buf = tryWriteLock(page);
 
         if (buf != null)
             return buf;
@@ -761,7 +761,7 @@ public abstract class PagesList extends DataStructure {
             }
         }
 
-        return lockAttempt < TRY_LOCK_ATTEMPTS ? null : page.getForWrite();
+        return lockAttempt < TRY_LOCK_ATTEMPTS ? null : writeLock(page);
     }
 
     /**
@@ -848,7 +848,7 @@ public abstract class PagesList extends DataStructure {
                     return 0L;
                 }
                 finally {
-                    tail.releaseWrite(true);
+                    writeUnlock(tail, true);
                 }
             }
         }
@@ -876,7 +876,7 @@ public abstract class PagesList extends DataStructure {
 
             long recycleId = 0L;
 
-            ByteBuffer buf = page.getForWrite();
+            ByteBuffer buf = writeLock(page);
 
             boolean rmvd = false;
 
@@ -913,7 +913,7 @@ public abstract class PagesList extends DataStructure {
                     recycleId = mergeNoNext(pageId, page, buf, prevId, bucket);
             }
             finally {
-                page.releaseWrite(rmvd);
+                writeUnlock(page, rmvd);
             }
 
             // Perform a fair merge after lock release (to have a correct locking order).
@@ -973,8 +973,8 @@ public abstract class PagesList extends DataStructure {
             try (Page next = nextId == 0L ? null : page(nextId)) {
                 boolean write = false;
 
-                ByteBuffer nextBuf = next == null ? null : next.getForWrite();
-                ByteBuffer buf = page.getForWrite();
+                ByteBuffer nextBuf = next == null ? null : writeLock(next);
+                ByteBuffer buf = writeLock(page);
 
                 try {
                     if (getPageId(buf) != pageId)
@@ -999,9 +999,9 @@ public abstract class PagesList extends DataStructure {
                 }
                 finally {
                     if (next != null)
-                        next.releaseWrite(write);
+                        writeUnlock(next, write);
 
-                    page.releaseWrite(write);
+                    writeUnlock(page, write);
                 }
             }
         }
@@ -1071,7 +1071,7 @@ public abstract class PagesList extends DataStructure {
         ByteBuffer nextBuf)
         throws IgniteCheckedException {
         try (Page prev = page(prevId)) {
-            ByteBuffer prevBuf = prev.getForWrite();
+            ByteBuffer prevBuf = writeLock(prev);
 
             try {
                 assert getPageId(prevBuf) == prevId; // Because we keep a reference.
@@ -1094,7 +1094,7 @@ public abstract class PagesList extends DataStructure {
                     wal.log(new PagesListSetPreviousRecord(cacheId, nextId, prevId));
             }
             finally {
-                prev.releaseWrite(true);
+                writeUnlock(prev, true);
             }
         }
     }

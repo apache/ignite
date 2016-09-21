@@ -126,6 +126,20 @@ public abstract class DataStructure {
      * @param page Page.
      * @return Buffer.
      */
+    protected final ByteBuffer tryWriteLock(Page page) {
+        ByteBuffer buf = page.tryGetForWrite();
+
+        if (buf != null)
+            onWriteLock(page);
+
+        return buf;
+    }
+
+
+    /**
+     * @param page Page.
+     * @return Buffer.
+     */
     protected final ByteBuffer writeLock(Page page) {
         ByteBuffer buf = page.getForWrite();
 
