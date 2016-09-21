@@ -37,7 +37,7 @@ public enum IgniteComponentType {
     /** Hadoop. */
     HADOOP(
         "org.apache.ignite.internal.processors.hadoop.HadoopNoopProcessor",
-        "org.apache.ignite.internal.processors.hadoop.impl.HadoopProcessor",
+        "org.apache.ignite.internal.processors.hadoop.HadoopProcessor",
         "ignite-hadoop-impl"
     ),
 

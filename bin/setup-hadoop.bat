@@ -23,6 +23,6 @@
 
 if "%OS%" == "Windows_NT" setlocal
 
-set MAIN_CLASS=org.apache.ignite.internal.processors.hadoop.impl.HadoopSetup
+set MAIN_CLASS=org.apache.ignite.internal.processors.hadoop.HadoopSetup
 
 call "%~dp0\ignite.bat" %*
