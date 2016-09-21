@@ -34,7 +34,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 
@@ -44,13 +43,15 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
  * Eagerly removes expired entries from cache when
  * {@link CacheConfiguration#isEagerTtl()} flag is set.
  */
-@SuppressWarnings("NakedNotify")
+@SuppressWarnings("NakedNotify, TooBroadScope")
 public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
     /** Pending entries pointer factory */
+    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private MyGridOffHeapSmartPointerFactory pointerFactory;
 
     /** Entries pending removal. */
+    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private GridOffHeapSnapTreeSet<EntryGridOffHeapSmartPointer> pendingPointers;
 
     /** Cleanup worker. */
@@ -70,6 +71,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     private GridUnsafeMemory unsafeMemory;
 
     /** */
+    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private GridUnsafeGuard guard;
 
     /** {@inheritDoc} */
@@ -120,9 +122,12 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
         guard.begin();
 
-        pendingPointers.add(pointerFactory.createPointer(e));
-
-        guard.end();
+        try {
+            pendingPointers.add(pointerFactory.createPointer(e));
+        }
+        finally {
+            guard.end();
+        }
 
         while (true) {
             long nextExpireTime = this.nextExpireTime;
@@ -274,7 +279,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                     }
 
                     long waitTime;
-                    if (pendingEntry == null) {
+                    if (key0 == null) {
                         waitTime = 500;
                         nextExpireTime = curTime + 500;
                     }
@@ -292,7 +297,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                             EntryGridOffHeapSmartPointer key1 = pendingPointers.firstx();
 
                             boolean firstEntryChanged = (key0 != key1) &&
-                                (key0 == null || key1==null || key0.pointer() != key1.pointer());
+                                (key0 == null || key1 == null || key0.pointer() != key1.pointer());
 
                             if (firstEntryChanged)
                                 continue;
@@ -619,6 +624,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                 return entry().hashCode();
             }
 
+            /** {@inheritDoc} */
             @Override public String toString() {
                 return "MyGridOffHeapSmartPointer{ptr=" + ptr + '}';
             }
