@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
+import org.apache.ignite.internal.GridKernalContext;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.InputStream;
@@ -24,24 +25,30 @@ import java.io.InputStream;
 /**
  * Noop Hadoop Helper implementation.
  */
+@SuppressWarnings("unused")
 public class HadoopNoopHelper implements HadoopHelper {
+    /**
+     * Constructor.
+     *
+     * @param ctx Kernal context.
+     */
+    @SuppressWarnings("UnusedParameters")
+    public HadoopNoopHelper(GridKernalContext ctx) {
+        // No-op.
+    }
+
     /** {@inheritDoc} */
-    @Override public boolean hasExternalDependencies(String clsName, ClassLoader parentClsLdr) {
+    @Override public boolean isNoOp() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public HadoopClassLoader commonClassLoader() {
         throw unsupported();
     }
 
     /** {@inheritDoc} */
     @Override public byte[] loadReplace(InputStream in, String originalName, String replaceName) {
-        throw unsupported();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isHadoop(String cls) {
-        throw unsupported();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isHadoopIgfs(String cls) {
         throw unsupported();
     }
 

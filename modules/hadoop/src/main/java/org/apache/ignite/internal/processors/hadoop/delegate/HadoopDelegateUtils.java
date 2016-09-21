@@ -20,8 +20,11 @@ package org.apache.ignite.internal.processors.hadoop.delegate;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.fs.BasicHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
+import org.apache.ignite.hadoop.fs.IgniteHadoopFileSystemCounterWriter;
 import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
 import org.apache.ignite.hadoop.fs.KerberosHadoopFileSystemFactory;
+import org.apache.ignite.internal.processors.hadoop.HadoopClassLoader;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Constructor;
 import java.util.HashMap;
@@ -33,37 +36,42 @@ import java.util.Map;
 public class HadoopDelegateUtils {
     /** Secondary file system delegate class. */
     private static final String SECONDARY_FILE_SYSTEM_CLS =
-        "org.apache.ignite.internal.processors.hadoop.delegate.HadoopIgfsSecondaryFileSystemDelegateImpl";
+        "org.apache.ignite.internal.processors.hadoop.impl.delegate.HadoopIgfsSecondaryFileSystemDelegateImpl";
 
     /** Default file system factory class. */
     private static final String DFLT_FACTORY_CLS =
-        "org.apache.ignite.internal.processors.hadoop.delegate.HadoopDefaultFileSystemFactoryDelegate";
+        "org.apache.ignite.internal.processors.hadoop.impl.delegate.HadoopDefaultFileSystemFactoryDelegate";
 
     /** Factory proxy to delegate class name mapping. */
     private static final Map<String, String> FACTORY_CLS_MAP;
+
+    /** Counter writer delegate implementation. */
+    private static final String COUNTER_WRITER_DELEGATE_CLS =
+        "org.apache.ignite.internal.processors.hadoop.impl.delegate.HadoopFileSystemCounterWriterDelegateImpl";
 
     static {
         FACTORY_CLS_MAP = new HashMap<>();
 
         FACTORY_CLS_MAP.put(BasicHadoopFileSystemFactory.class.getName(),
-            "org.apache.ignite.internal.processors.hadoop.delegate.HadoopBasicFileSystemFactoryDelegate");
+            "org.apache.ignite.internal.processors.hadoop.impl.delegate.HadoopBasicFileSystemFactoryDelegate");
 
         FACTORY_CLS_MAP.put(CachingHadoopFileSystemFactory.class.getName(),
-            "org.apache.ignite.internal.processors.hadoop.delegate.HadoopCachingFileSystemFactoryDelegate");
+            "org.apache.ignite.internal.processors.hadoop.impl.delegate.HadoopCachingFileSystemFactoryDelegate");
 
         FACTORY_CLS_MAP.put(KerberosHadoopFileSystemFactory.class.getName(),
-            "org.apache.ignite.internal.processors.hadoop.delegate.HadoopKerberosFileSystemFactoryDelegate");
+            "org.apache.ignite.internal.processors.hadoop.impl.delegate.HadoopKerberosFileSystemFactoryDelegate");
     }
 
     /**
      * Create delegate for secondary file system.
      *
+     * @param ldr Hadoop class loader.
      * @param proxy Proxy.
      * @return Delegate.
      */
-    public static HadoopIgfsSecondaryFileSystemDelegate secondaryFileSystemDelegate(
+    public static HadoopIgfsSecondaryFileSystemDelegate secondaryFileSystemDelegate(HadoopClassLoader ldr,
         IgniteHadoopIgfsSecondaryFileSystem proxy) {
-        return newInstance(SECONDARY_FILE_SYSTEM_CLS, proxy);
+        return newInstance(SECONDARY_FILE_SYSTEM_CLS, ldr, proxy);
     }
 
     /**
@@ -79,20 +87,33 @@ public class HadoopDelegateUtils {
         if (clsName == null)
             clsName = DFLT_FACTORY_CLS;
 
-        return newInstance(clsName, proxy);
+        return newInstance(clsName, null, proxy);
+    }
+
+    /**
+     * Create delegate for Hadoop counter writer.
+     *
+     * @param ldr Class loader.
+     * @param proxy Proxy.
+     * @return Delegate.
+     */
+    public static HadoopFileSystemCounterWriterDelegate counterWriterDelegate(ClassLoader ldr,
+        IgniteHadoopFileSystemCounterWriter proxy) {
+        return newInstance(COUNTER_WRITER_DELEGATE_CLS, ldr, proxy);
     }
 
     /**
      * Get new delegate instance.
      *
      * @param clsName Class name.
+     * @param ldr Optional class loader.
      * @param proxy Proxy.
      * @return Instance.
      */
     @SuppressWarnings("unchecked")
-    private static <T> T newInstance(String clsName, Object proxy) {
+    private static <T> T newInstance(String clsName, @Nullable ClassLoader ldr, Object proxy) {
         try {
-            Class delegateCls = Class.forName(clsName);
+            Class delegateCls = ldr == null ? Class.forName(clsName) : Class.forName(clsName, true, ldr);
 
             Constructor[] ctors = delegateCls.getConstructors();
 

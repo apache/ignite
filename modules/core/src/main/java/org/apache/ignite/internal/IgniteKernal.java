@@ -115,6 +115,7 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.hadoop.Hadoop;
+import org.apache.ignite.internal.processors.hadoop.HadoopClassLoader;
 import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
@@ -822,7 +823,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             addHelper(IGFS_HELPER.create(F.isEmpty(cfg.getFileSystemConfiguration())));
 
-            addHelper(HADOOP_HELPER.createIfInClassPath(null, false));
+            addHelper(HADOOP_HELPER.createIfInClassPath(ctx, false));
 
             startProcessor(new IgnitePluginProcessor(ctx, cfg, plugins));
 
@@ -1151,7 +1152,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         else {
             HadoopProcessorAdapter cmp = null;
 
-            if (IgniteComponentType.HADOOP.inClassPath() && cfg.isPeerClassLoadingEnabled()) {
+            if (!ctx.hadoopHelper().isNoOp() && cfg.isPeerClassLoadingEnabled()) {
                 U.warn(log, "Hadoop module is found in classpath, but will not be started because peer class " +
                     "loading is enabled (set IgniteConfiguration.peerClassLoadingEnabled to \"false\" if you want " +
                     "to use Hadoop module).");

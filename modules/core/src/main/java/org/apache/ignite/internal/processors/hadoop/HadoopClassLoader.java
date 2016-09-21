@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.hadoop;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.ClassCache;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -25,14 +26,16 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Map;
-import java.util.UUID;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -43,35 +46,33 @@ import java.util.concurrent.ConcurrentMap;
  * unavailable for parent.
  */
 public class HadoopClassLoader extends URLClassLoader implements ClassCache {
-    static {
-        // We are very parallel capable.
-        registerAsParallelCapable();
-    }
-
     /** Hadoop class name: Daemon. */
     public static final String CLS_DAEMON = "org.apache.hadoop.util.Daemon";
 
     /** Hadoop class name: ShutdownHookManager. */
     public static final String CLS_SHUTDOWN_HOOK_MANAGER = "org.apache.hadoop.util.ShutdownHookManager";
 
-    /** Hadoop class name: NativeCodeLoader. */
-    public static final String CLS_NATIVE_CODE_LOADER = "org.apache.hadoop.util.NativeCodeLoader";
-
     /** Hadoop class name: Daemon replacement. */
-    public static final String CLS_DAEMON_REPLACE = "org.apache.ignite.internal.processors.hadoop.v2.HadoopDaemon";
+    public static final String CLS_DAEMON_REPLACE = "org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopDaemon";
 
     /** Hadoop class name: ShutdownHookManager replacement. */
     public static final String CLS_SHUTDOWN_HOOK_MANAGER_REPLACE =
-        "org.apache.ignite.internal.processors.hadoop.v2.HadoopShutdownHookManager";
-
-    /** Name of libhadoop library. */
-    private static final String LIBHADOOP = "hadoop.";
+        "org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopShutdownHookManager";
 
     /** */
     private static final URLClassLoader APP_CLS_LDR = (URLClassLoader)HadoopClassLoader.class.getClassLoader();
 
     /** */
     private static final Collection<URL> appJars = F.asList(APP_CLS_LDR.getURLs());
+
+    /** Mutex for native libraries initialization. */
+    private static final Object LIBS_MUX = new Object();
+
+    /** Predefined native libraries to load. */
+    private static final Collection<String> PREDEFINED_NATIVE_LIBS;
+
+    /** Native libraries. */
+    private static Collection<Object> NATIVE_LIBS;
 
     /** */
     private static volatile Collection<URL> hadoopJars;
@@ -86,19 +87,16 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
     private final String name;
 
-    /** Native library names. */
-    private final String[] libNames;
-
     /** Igfs Helper. */
     private final HadoopHelper helper;
 
-    /**
-     * Gets name for Job class loader. The name is specific for local node id.
-     * @param locNodeId The local node id.
-     * @return The class loader name.
-     */
-    public static String nameForJob(UUID locNodeId) {
-        return "hadoop-job-node-" + locNodeId.toString();
+    static {
+        // We are very parallel capable.
+        registerAsParallelCapable();
+
+        PREDEFINED_NATIVE_LIBS = new HashSet<>();
+
+        PREDEFINED_NATIVE_LIBS.add("hadoop");
     }
 
     /**
@@ -127,10 +125,9 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
         assert !(getParent() instanceof HadoopClassLoader);
 
         this.name = name;
-        this.libNames = libNames;
         this.helper = helper;
 
-        initializeNativeLibraries();
+        initializeNativeLibraries(libNames);
     }
 
     /**
@@ -145,71 +142,149 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
      * @see <a href="http://docs.oracle.com/javase/1.5.0/docs/guide/jni/spec/invocation.html#library_version">
      *     JNI specification</a>
      */
-    private void initializeNativeLibraries() {
-        try {
-            // This must trigger native library load.
-            // TODO: Do not delegate to APP LDR
-            Class.forName(CLS_NATIVE_CODE_LOADER, true, APP_CLS_LDR);
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    private void initializeNativeLibraries(@Nullable String[] usrLibs) {
+        Collection<Object> res;
 
-            final Vector<Object> curVector = U.field(this, "nativeLibraries");
+        synchronized (LIBS_MUX) {
+            if (NATIVE_LIBS == null) {
+                LinkedList<NativeLibrary> libs = new LinkedList<>();
 
-            // TODO: Do not delegate to APP LDR
-            ClassLoader ldr = APP_CLS_LDR;
+                for (String lib : PREDEFINED_NATIVE_LIBS)
+                    libs.add(new NativeLibrary(lib, true));
 
-            while (ldr != null) {
-                Vector vector = U.field(ldr, "nativeLibraries");
+                if (!F.isEmpty(usrLibs)) {
+                    for (String usrLib : usrLibs)
+                        libs.add(new NativeLibrary(usrLib, false));
+                }
 
-                for (Object lib : vector) {
-                    String name = U.field(lib, "name");
+                NATIVE_LIBS = initializeNativeLibraries0(libs);
+            }
 
-                    boolean add = name.contains(LIBHADOOP);
+            res = NATIVE_LIBS;
+        }
 
-                    if (!add && libNames != null) {
-                        for (String libName : libNames) {
-                            if (libName != null && name.contains(libName)) {
-                                add = true;
+        // Link libraries to class loader.
+        Vector<Object> ldrLibs = nativeLibraries(this);
 
-                                break;
+        synchronized (ldrLibs) {
+            ldrLibs.addAll(res);
+        }
+    }
+
+    /**
+     * Initialize native libraries.
+     *
+     * @param libs Libraries to initialize.
+     * @return Initialized libraries.
+     */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    private static Collection<Object> initializeNativeLibraries0(Collection<NativeLibrary> libs) {
+        assert Thread.holdsLock(LIBS_MUX);
+
+        Collection<Object> res = new HashSet<>();
+
+        for (NativeLibrary lib : libs) {
+            String libName = lib.name;
+
+            File libFile = new File(libName);
+
+            try {
+                // Load library.
+                if (libFile.isAbsolute())
+                    System.load(libName);
+                else
+                    System.loadLibrary(libName);
+
+                // Find library in class loader internals.
+                Object libObj = null;
+
+                ClassLoader ldr = APP_CLS_LDR;
+
+                while (ldr != null) {
+                    Vector<Object> ldrLibObjs = nativeLibraries(ldr);
+
+                    synchronized (ldrLibObjs) {
+                        for (Object ldrLibObj : ldrLibObjs) {
+                            String name = nativeLibraryName(ldrLibObj);
+
+                            if (libFile.isAbsolute()) {
+                                if (F.eq(name, libFile.getCanonicalPath())) {
+                                    libObj = ldrLibObj;
+
+                                    break;
+                                }
+                            } else {
+                                if (name.contains(libName)) {
+                                    libObj = ldrLibObj;
+
+                                    break;
+                                }
                             }
                         }
                     }
 
-                    if (add) {
-                        curVector.add(lib);
+                    if (libObj != null)
+                        break;
 
-                        return;
-                    }
+                    ldr = ldr.getParent();
                 }
 
-                ldr = ldr.getParent();
+                if (libObj == null)
+                    throw new IgniteException("Failed to find loaded library: " + libName);
+
+                res.add(libObj);
+            }
+            catch (UnsatisfiedLinkError e) {
+                if (!lib.optional)
+                    throw e;
+            }
+            catch (IOException e) {
+                throw new IgniteException("Failed to initialize native libraries due to unexpected exception.", e);
             }
         }
-        catch (Exception e) {
-            U.quietAndWarn(null, "Failed to initialize Hadoop native library " +
-                "(native Hadoop methods might not work properly): " + e);
-        }
+
+        return res;
+    }
+
+    /**
+     * Get native libraries collection for the given class loader.
+     *
+     * @param ldr Class loaded.
+     * @return Native libraries.
+     */
+    private static Vector<Object> nativeLibraries(ClassLoader ldr) {
+        assert ldr != null;
+
+        return U.field(ldr, "nativeLibraries");
+    }
+
+    /**
+     * Get native library name.
+     *
+     * @param lib Library.
+     * @return Name.
+     */
+    private static String nativeLibraryName(Object lib) {
+        assert lib != null;
+
+        return U.field(lib, "name");
     }
 
     /** {@inheritDoc} */
     @Override protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
         try {
             // Always load Hadoop classes explicitly, since Hadoop can be available in App classpath.
-            if (helper.isHadoop(name)) {
-                if (name.equals(CLS_SHUTDOWN_HOOK_MANAGER))  // Dirty hack to get rid of Hadoop shutdown hooks.
-                    return loadReplace(name, CLS_SHUTDOWN_HOOK_MANAGER_REPLACE);
-                else if (name.equals(CLS_DAEMON))
-                    // We replace this in order to be able to forcibly stop some daemon threads
-                    // that otherwise never stop (e.g. PeerCache runnables):
-                    return loadReplace(name, CLS_DAEMON_REPLACE);
-
-                return loadClassExplicitly(name, resolve);
-            }
+            if (name.equals(CLS_SHUTDOWN_HOOK_MANAGER))  // Dirty hack to get rid of Hadoop shutdown hooks.
+                return loadReplace(name, CLS_SHUTDOWN_HOOK_MANAGER_REPLACE);
+            else if (name.equals(CLS_DAEMON))
+                // We replace this in order to be able to forcibly stop some daemon threads
+                // that otherwise never stop (e.g. PeerCache runnables):
+                return loadReplace(name, CLS_DAEMON_REPLACE);
 
             // For Ignite Hadoop and IGFS classes we have to check if they depend on Hadoop.
-            if (helper.isHadoopIgfs(name)) {
-                if (hasExternalDependencies(name))
-                    return loadClassExplicitly(name, resolve);
-            }
+            if (loadByCurrentClassloader(name))
+                return loadClassExplicitly(name, resolve);
 
             return super.loadClass(name, resolve);
         }
@@ -262,6 +337,40 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     }
 
     /**
+     * Check whether file must be loaded with current class loader, or normal delegation model should be used.
+     * <p>
+     * Override is only necessary for Ignite classes which have direct or transitive dependencies on Hadoop classes.
+     * These are all classes from "org.apache.ignite.internal.processors.hadoop.impl" package,
+     * and these are several well-know classes from "org.apache.ignite.hadoop" package.
+     *
+     * @param clsName Class name.
+     * @return Whether class must be loaded by current classloader without delegation.
+     */
+    @SuppressWarnings("RedundantIfStatement")
+    private static boolean loadByCurrentClassloader(String clsName) {
+        // All impl classes.
+        if (clsName.startsWith("org.apache.ignite.internal.processors.hadoop.impl"))
+            return true;
+
+        // Several classes from public API.
+        if (clsName.startsWith("org.apache.ignite.hadoop")) {
+            // We use "contains" instead of "equals" to handle subclasses properly.
+            if (clsName.contains("org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem") ||
+                clsName.contains("org.apache.ignite.hadoop.fs.v2.IgniteHadoopFileSystem") ||
+                clsName.contains("org.apache.ignite.hadoop.mapreduce.IgniteHadoopClientProtocolProvider"))
+                return true;
+        }
+
+        // TODO: Move suites to "impl" package.
+        // Test suites (to be removed).
+        if (clsName.equals("org.apache.ignite.testsuites.IgniteHadoopTestSuite") ||
+            clsName.equals("org.apache.ignite.testsuites.IgniteIgfsLinuxAndMacOSTestSuite"))
+            return true;
+
+        return false;
+    }
+
+    /**
      * @param name Class name.
      * @param resolve Resolve class.
      * @return Class.
@@ -287,16 +396,6 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
 
             return c;
         }
-    }
-
-    /**
-     * Check whether class has external dependencies on Hadoop.
-     *
-     * @param clsName Class name.
-     * @return {@code True} if class has external dependencies.
-     */
-    boolean hasExternalDependencies(String clsName) {
-        return helper.hasExternalDependencies(clsName, getParent());
     }
 
     /**
@@ -363,5 +462,27 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
      */
     public String name() {
         return name;
+    }
+
+    /**
+     * Native library abstraction.
+     */
+    private static class NativeLibrary {
+        /** Library name. */
+        private final String name;
+
+        /** Whether library is optional. */
+        private final boolean optional;
+
+        /**
+         * Constructor.
+         *
+         * @param name Library name.
+         * @param optional Optional flag.
+         */
+        public NativeLibrary(String name, boolean optional) {
+            this.name = name;
+            this.optional = optional;
+        }
     }
 }

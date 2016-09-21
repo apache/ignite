@@ -25,6 +25,18 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface HadoopHelper {
     /**
+     * @return Whether this is no-op implementation.
+     */
+    public boolean isNoOp();
+
+    /**
+     * Get common Hadoop class loader.
+     *
+     * @return Common Hadoop class loader.
+     */
+    public HadoopClassLoader commonClassLoader();
+
+    /**
      * Load special replacement and impersonate.
      *
      * @param in Input stream.
@@ -35,32 +47,9 @@ public interface HadoopHelper {
     public byte[] loadReplace(InputStream in, final String originalName, final String replaceName);
 
     /**
-     * @param cls Class name.
-     * @return {@code true} If this is Hadoop class.
-     */
-    public boolean isHadoop(String cls);
-
-    /**
-     * Need to parse only Ignite Hadoop and IGFS classes.
-     *
-     * @param cls Class name.
-     * @return {@code true} if we need to check this class.
-     */
-    public boolean isHadoopIgfs(String cls);
-
-    /**
      * @param ldr Loader.
      * @param clsName Class.
      * @return Input stream.
      */
     @Nullable public InputStream loadClassBytes(ClassLoader ldr, String clsName);
-
-    /**
-     * Check whether class has external dependencies on Hadoop.
-     *
-     * @param clsName Class name.
-     * @param parentClsLdr Parent class loader.
-     * @return {@code True} if class has external dependencies.
-     */
-    public boolean hasExternalDependencies(String clsName, ClassLoader parentClsLdr);
 }
