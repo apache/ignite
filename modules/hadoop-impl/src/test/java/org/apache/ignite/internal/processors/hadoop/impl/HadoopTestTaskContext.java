@@ -36,7 +36,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopJob;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskOutput;
-import org.apache.ignite.internal.processors.hadoop.v2.HadoopV2TaskContext;
+import org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopV2TaskContext;
 
 /**
  * Context for test purpose.

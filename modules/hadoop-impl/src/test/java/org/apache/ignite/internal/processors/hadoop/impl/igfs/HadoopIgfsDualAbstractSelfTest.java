@@ -58,7 +58,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
 import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
-import static org.apache.ignite.internal.processors.hadoop.fs.HadoopParameters.PARAM_IGFS_SEQ_READS_BEFORE_PREFETCH;
+import static org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopParameters.PARAM_IGFS_SEQ_READS_BEFORE_PREFETCH;
 import static org.apache.ignite.internal.processors.igfs.IgfsAbstractSelfTest.awaitFileClose;
 import static org.apache.ignite.internal.processors.igfs.IgfsAbstractSelfTest.clear;
 import static org.apache.ignite.internal.processors.igfs.IgfsAbstractSelfTest.create;

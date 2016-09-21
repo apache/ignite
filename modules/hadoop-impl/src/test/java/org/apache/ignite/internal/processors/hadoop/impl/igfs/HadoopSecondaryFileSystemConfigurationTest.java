@@ -37,7 +37,7 @@ import org.apache.ignite.igfs.IgfsIpcEndpointType;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.internal.processors.hadoop.delegate.HadoopDelegateUtils;
 import org.apache.ignite.internal.processors.hadoop.delegate.HadoopFileSystemFactoryDelegate;
-import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsUtils;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsCommonAbstractTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
