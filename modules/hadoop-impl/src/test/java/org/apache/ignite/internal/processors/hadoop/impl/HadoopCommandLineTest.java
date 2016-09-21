@@ -37,6 +37,7 @@ import org.apache.ignite.hadoop.fs.IgniteHadoopFileSystemCounterWriter;
 import org.apache.ignite.igfs.IgfsInputStream;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopJob;
 import org.apache.ignite.internal.processors.hadoop.impl.jobtracker.HadoopJobTracker;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
@@ -184,7 +185,7 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
                 if (line.startsWith("</configuration>"))
                     out.println(
                         "    <property>\n" +
-                        "        <name>" + HadoopUtils.JOB_COUNTER_WRITER_PROPERTY + "</name>\n" +
+                        "        <name>" + HadoopCommonUtils.JOB_COUNTER_WRITER_PROPERTY + "</name>\n" +
                         "        <value>" + IgniteHadoopFileSystemCounterWriter.class.getName() + "</value>\n" +
                         "    </property>\n");
 

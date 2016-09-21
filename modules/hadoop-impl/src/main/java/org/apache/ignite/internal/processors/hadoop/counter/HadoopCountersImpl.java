@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.impl.counter;
+package org.apache.ignite.internal.processors.hadoop.counter;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -25,8 +25,6 @@ import java.lang.reflect.Constructor;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounter;
-import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;

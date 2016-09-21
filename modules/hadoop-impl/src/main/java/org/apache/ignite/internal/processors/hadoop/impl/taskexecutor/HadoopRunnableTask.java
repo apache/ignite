@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskOutput;
-import org.apache.ignite.internal.processors.hadoop.impl.counter.HadoopPerformanceCounter;
+import org.apache.ignite.internal.processors.hadoop.counter.HadoopPerformanceCounter;
 import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopHashMultimap;
 import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopMultimap;
 import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopSkipList;

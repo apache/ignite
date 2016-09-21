@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.hadoop.impl.HadoopTaskCancelledExce
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskOutput;
-import org.apache.ignite.internal.processors.hadoop.impl.counter.HadoopLongCounter;
+import org.apache.ignite.internal.processors.hadoop.counter.HadoopLongCounter;
 
 /**
  * Hadoop context implementation for v2 API. It provides IO operations for hadoop tasks.

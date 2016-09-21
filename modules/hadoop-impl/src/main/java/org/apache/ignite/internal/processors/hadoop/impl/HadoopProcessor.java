@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.hadoop.Hadoop;
 import org.apache.ignite.internal.processors.hadoop.HadoopAttributes;
 import org.apache.ignite.internal.processors.hadoop.HadoopClassLoader;
 import org.apache.ignite.internal.processors.hadoop.HadoopClasspathUtils;
+import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobStatus;
@@ -173,7 +174,14 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> submit(HadoopJobId jobId, HadoopJobInfo jobInfo) {
-        return hctx.jobTracker().submit(jobId, jobInfo);
+        ClassLoader oldLdr = HadoopCommonUtils.setContextClassLoader(getClass().getClassLoader());
+
+        try {
+            return hctx.jobTracker().submit(jobId, jobInfo);
+        }
+        finally {
+            HadoopCommonUtils.restoreContextClassLoader(oldLdr);
+        }
     }
 
     /** {@inheritDoc} */

@@ -46,6 +46,7 @@ import org.apache.hadoop.security.token.Token;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobProperty;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobStatus;
@@ -54,9 +55,6 @@ import org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.JOB_SUBMISSION_START_TS_PROPERTY;
-import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.REQ_NEW_JOBID_TS_PROPERTY;
-import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.RESPONSE_NEW_JOBID_TS_PROPERTY;
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
 
 /**
@@ -97,11 +95,11 @@ public class HadoopClientProtocol implements ClientProtocol {
     /** {@inheritDoc} */
     @Override public JobID getNewJobID() throws IOException, InterruptedException {
         try {
-            conf.setLong(REQ_NEW_JOBID_TS_PROPERTY, U.currentTimeMillis());
+            conf.setLong(HadoopCommonUtils.REQ_NEW_JOBID_TS_PROPERTY, U.currentTimeMillis());
 
             HadoopJobId jobID = cli.compute().execute(HadoopProtocolNextTaskIdTask.class.getName(), null);
 
-            conf.setLong(RESPONSE_NEW_JOBID_TS_PROPERTY, U.currentTimeMillis());
+            conf.setLong(HadoopCommonUtils.RESPONSE_NEW_JOBID_TS_PROPERTY, U.currentTimeMillis());
 
             return new JobID(jobID.globalId().toString(), jobID.localId());
         }
@@ -114,7 +112,7 @@ public class HadoopClientProtocol implements ClientProtocol {
     @Override public JobStatus submitJob(JobID jobId, String jobSubmitDir, Credentials ts) throws IOException,
         InterruptedException {
         try {
-            conf.setLong(JOB_SUBMISSION_START_TS_PROPERTY, U.currentTimeMillis());
+            conf.setLong(HadoopCommonUtils.JOB_SUBMISSION_START_TS_PROPERTY, U.currentTimeMillis());
 
             HadoopJobStatus status = cli.compute().execute(HadoopProtocolSubmitJobTask.class.getName(),
                 new HadoopProtocolTaskArguments(jobId.getJtIdentifier(), jobId.getId(), createJobInfo(conf)));

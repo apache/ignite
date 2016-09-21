@@ -50,6 +50,7 @@ import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.hadoop.mapreduce.IgniteHadoopClientProtocolProvider;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopAbstractSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -114,7 +115,6 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
         stopAllGrids();
 
         super.afterTestsStopped();
-
 //        IgniteHadoopClientProtocolProvider.cliMap.clear();
     }
 

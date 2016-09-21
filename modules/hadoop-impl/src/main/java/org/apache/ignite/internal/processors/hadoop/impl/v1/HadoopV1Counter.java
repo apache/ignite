@@ -22,7 +22,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import org.apache.hadoop.mapred.Counters;
 import org.apache.hadoop.mapreduce.Counter;
-import org.apache.ignite.internal.processors.hadoop.impl.counter.HadoopLongCounter;
+import org.apache.ignite.internal.processors.hadoop.counter.HadoopLongCounter;
 import org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopV2Counter;
 
 import static org.apache.hadoop.mapreduce.util.CountersStrings.toEscapedCompactString;

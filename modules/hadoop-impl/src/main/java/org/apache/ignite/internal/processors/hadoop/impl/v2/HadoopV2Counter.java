@@ -21,7 +21,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import org.apache.hadoop.mapreduce.Counter;
-import org.apache.ignite.internal.processors.hadoop.impl.counter.HadoopLongCounter;
+import org.apache.ignite.internal.processors.hadoop.counter.HadoopLongCounter;
 
 /**
  * Adapter from own counter implementation into Hadoop API Counter od version 2.0.

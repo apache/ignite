@@ -23,7 +23,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -54,8 +53,6 @@ public class HadoopLazyConcurrentMap<K, V extends Closeable> {
      */
     public HadoopLazyConcurrentMap(ValueFactory<K, V> factory) {
         this.factory = factory;
-
-        assert getClass().getClassLoader() == Ignite.class.getClassLoader();
     }
 
     /**

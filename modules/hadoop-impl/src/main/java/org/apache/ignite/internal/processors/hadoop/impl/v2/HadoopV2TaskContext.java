@@ -58,10 +58,9 @@ import org.apache.ignite.internal.processors.hadoop.impl.HadoopTaskCancelledExce
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskType;
-import org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounter;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
-import org.apache.ignite.internal.processors.hadoop.impl.counter.HadoopCountersImpl;
+import org.apache.ignite.internal.processors.hadoop.counter.HadoopCountersImpl;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopLazyConcurrentMap;
 import org.apache.ignite.internal.processors.hadoop.impl.v1.HadoopV1CleanupTask;
 import org.apache.ignite.internal.processors.hadoop.impl.v1.HadoopV1MapTask;

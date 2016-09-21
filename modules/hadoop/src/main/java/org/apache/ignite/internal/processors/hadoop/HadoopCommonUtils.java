@@ -28,6 +28,18 @@ import java.util.TreeSet;
  * Common Hadoop utility methods which do not depend on Hadoop API.
  */
 public class HadoopCommonUtils {
+    /** Property to store timestamp of new job id request. */
+    public static final String REQ_NEW_JOBID_TS_PROPERTY = "ignite.job.requestNewIdTs";
+
+    /** Property to store timestamp of response of new job id request. */
+    public static final String RESPONSE_NEW_JOBID_TS_PROPERTY = "ignite.job.responseNewIdTs";
+
+    /** Property to store timestamp of job submission. */
+    public static final String JOB_SUBMISSION_START_TS_PROPERTY = "ignite.job.submissionStartTs";
+
+    /** Property to set custom writer of job statistics. */
+    public static final String JOB_COUNTER_WRITER_PROPERTY = "ignite.counters.writer";
+
     /**
      * Sort input splits by length.
      *

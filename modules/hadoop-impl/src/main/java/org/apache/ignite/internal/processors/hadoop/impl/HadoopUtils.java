@@ -38,6 +38,7 @@ import org.apache.hadoop.mapreduce.JobStatus;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
+import org.apache.ignite.internal.processors.hadoop.HadoopDefaultJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobStatus;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
@@ -48,18 +49,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * Hadoop utility methods.
  */
 public class HadoopUtils {
-    /** Property to store timestamp of new job id request. */
-    public static final String REQ_NEW_JOBID_TS_PROPERTY = "ignite.job.requestNewIdTs";
-
-    /** Property to store timestamp of response of new job id request. */
-    public static final String RESPONSE_NEW_JOBID_TS_PROPERTY = "ignite.job.responseNewIdTs";
-
-    /** Property to store timestamp of job submission. */
-    public static final String JOB_SUBMISSION_START_TS_PROPERTY = "ignite.job.submissionStartTs";
-
-    /** Property to set custom writer of job statistics. */
-    public static final String JOB_COUNTER_WRITER_PROPERTY = "ignite.counters.writer";
-
     /** Staging constant. */
     private static final String STAGING_CONSTANT = ".staging";
 

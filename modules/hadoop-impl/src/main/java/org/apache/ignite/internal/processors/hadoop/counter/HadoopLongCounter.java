@@ -15,9 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.impl.counter;
-
-import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounter;
+package org.apache.ignite.internal.processors.hadoop.counter;
 
 import java.io.Externalizable;
 import java.io.IOException;

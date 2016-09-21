@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.impl.counter;
+package org.apache.ignite.internal.processors.hadoop.counter;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -24,19 +24,15 @@ import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
+
+import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskType;
-import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounter;
-import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.JOB_SUBMISSION_START_TS_PROPERTY;
-import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.REQ_NEW_JOBID_TS_PROPERTY;
-import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.RESPONSE_NEW_JOBID_TS_PROPERTY;
 
 /**
  * Counter for the job statistics accumulation.
@@ -223,9 +219,9 @@ public class HadoopPerformanceCounter extends HadoopCounterAdapter {
     public void clientSubmissionEvents(HadoopJobInfo info) {
         assert nodeId != null;
 
-        addEventFromProperty("JOB requestId", info, REQ_NEW_JOBID_TS_PROPERTY);
-        addEventFromProperty("JOB responseId", info, RESPONSE_NEW_JOBID_TS_PROPERTY);
-        addEventFromProperty("JOB submit", info, JOB_SUBMISSION_START_TS_PROPERTY);
+        addEventFromProperty("JOB requestId", info, HadoopCommonUtils.REQ_NEW_JOBID_TS_PROPERTY);
+        addEventFromProperty("JOB responseId", info, HadoopCommonUtils.RESPONSE_NEW_JOBID_TS_PROPERTY);
+        addEventFromProperty("JOB submit", info, HadoopCommonUtils.JOB_SUBMISSION_START_TS_PROPERTY);
     }
 
     /**
