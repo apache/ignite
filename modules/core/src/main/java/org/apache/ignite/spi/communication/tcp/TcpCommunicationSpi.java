@@ -334,7 +334,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     public static final byte HANDSHAKE_MSG_TYPE = -3;
 
     /** */
-    public static final byte HANDSHAKE_MSG_TYPE2 = -4;
+    public static final byte HANDSHAKE_MSG_TYPE2 = 125;
 
     /** */
     private ConnectGateway connectGate;
