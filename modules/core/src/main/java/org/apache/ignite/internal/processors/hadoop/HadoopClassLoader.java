@@ -287,10 +287,8 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
             }
 
             // For Ignite Hadoop and IGFS classes we have to check if they depend on Hadoop.
-            if (helper.isHadoopIgfs(name)) {
-                if (hasExternalDependencies(name))
-                    return loadClassExplicitly(name, resolve);
-            }
+            if (loadByCurrentClassloader(name))
+                return loadClassExplicitly(name, resolve);
 
             return super.loadClass(name, resolve);
         }
