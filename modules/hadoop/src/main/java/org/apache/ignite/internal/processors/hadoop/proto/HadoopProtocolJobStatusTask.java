@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.impl.proto;
+package org.apache.ignite.internal.processors.hadoop.proto;
 
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;

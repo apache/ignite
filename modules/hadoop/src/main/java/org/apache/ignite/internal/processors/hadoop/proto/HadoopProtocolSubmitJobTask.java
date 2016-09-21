@@ -15,32 +15,45 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.impl.proto;
+package org.apache.ignite.internal.processors.hadoop.proto;
 
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.compute.ComputeJobContext;
 import org.apache.ignite.internal.processors.hadoop.Hadoop;
+import org.apache.ignite.internal.processors.hadoop.HadoopDefaultJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobStatus;
+
+import static org.apache.ignite.internal.processors.hadoop.HadoopJobPhase.PHASE_CANCELLING;
 
 /**
- * Kill job task.
+ * Submit job task.
  */
-public class HadoopProtocolKillJobTask extends HadoopProtocolTaskAdapter<Boolean> {
+public class HadoopProtocolSubmitJobTask extends HadoopProtocolTaskAdapter<HadoopJobStatus> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override public Boolean run(ComputeJobContext jobCtx, Hadoop hadoop,
+    @Override public HadoopJobStatus run(ComputeJobContext jobCtx, Hadoop hadoop,
         HadoopProtocolTaskArguments args) throws IgniteCheckedException {
         UUID nodeId = UUID.fromString(args.<String>get(0));
         Integer id = args.get(1);
+        HadoopDefaultJobInfo info = args.get(2);
 
         assert nodeId != null;
         assert id != null;
+        assert info != null;
 
         HadoopJobId jobId = new HadoopJobId(nodeId, id);
 
-        return hadoop.kill(jobId);
+        hadoop.submit(jobId, info);
+
+        HadoopJobStatus res = hadoop.status(jobId);
+
+        if (res == null) // Submission failed.
+            res = new HadoopJobStatus(jobId, info.jobName(), info.user(), 0, 0, 0, 0, PHASE_CANCELLING, true, 1);
+
+        return res;
     }
 }

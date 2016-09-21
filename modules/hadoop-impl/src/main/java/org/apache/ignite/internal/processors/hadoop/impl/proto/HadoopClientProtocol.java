@@ -53,6 +53,12 @@ import org.apache.ignite.internal.processors.hadoop.HadoopJobStatus;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopMapReduceCounters;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
+import org.apache.ignite.internal.processors.hadoop.proto.HadoopProtocolJobCountersTask;
+import org.apache.ignite.internal.processors.hadoop.proto.HadoopProtocolJobStatusTask;
+import org.apache.ignite.internal.processors.hadoop.proto.HadoopProtocolKillJobTask;
+import org.apache.ignite.internal.processors.hadoop.proto.HadoopProtocolNextTaskIdTask;
+import org.apache.ignite.internal.processors.hadoop.proto.HadoopProtocolSubmitJobTask;
+import org.apache.ignite.internal.processors.hadoop.proto.HadoopProtocolTaskArguments;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;

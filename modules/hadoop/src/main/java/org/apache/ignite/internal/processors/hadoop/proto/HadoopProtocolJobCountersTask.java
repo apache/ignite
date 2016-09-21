@@ -15,22 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.impl.proto;
+package org.apache.ignite.internal.processors.hadoop.proto;
 
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.compute.ComputeJobContext;
 import org.apache.ignite.internal.processors.hadoop.Hadoop;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
+import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
 
 /**
- * Task to get the next job ID.
+ * Task to get job counters.
  */
-public class HadoopProtocolNextTaskIdTask extends HadoopProtocolTaskAdapter<HadoopJobId> {
+public class HadoopProtocolJobCountersTask extends HadoopProtocolTaskAdapter<HadoopCounters> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override public HadoopJobId run(ComputeJobContext jobCtx, Hadoop hadoop,
-        HadoopProtocolTaskArguments args) {
-        return hadoop.nextJobId();
+    @Override public HadoopCounters run(ComputeJobContext jobCtx, Hadoop hadoop,
+        HadoopProtocolTaskArguments args) throws IgniteCheckedException {
+
+        UUID nodeId = UUID.fromString(args.<String>get(0));
+        Integer id = args.get(1);
+
+        assert nodeId != null;
+        assert id != null;
+
+        return hadoop.counters(new HadoopJobId(nodeId, id));
     }
 }
