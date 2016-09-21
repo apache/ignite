@@ -24,9 +24,13 @@ import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsUserContext;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.hadoop.HadoopClassLoader;
+import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopPayloadAware;
 import org.apache.ignite.internal.processors.hadoop.delegate.HadoopDelegateUtils;
 import org.apache.ignite.internal.processors.hadoop.delegate.HadoopIgfsSecondaryFileSystemDelegate;
+import org.apache.ignite.internal.processors.igfs.IgfsKernalContextAware;
 import org.apache.ignite.internal.processors.igfs.IgfsSecondaryFileSystemV2;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lifecycle.LifecycleAware;
@@ -42,16 +46,19 @@ import java.util.concurrent.Callable;
  * <p>
  * Target {@code FileSystem}'s are created on per-user basis using passed {@link HadoopFileSystemFactory}.
  */
-public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSystemV2, LifecycleAware,
-    HadoopPayloadAware {
+public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSystemV2, IgfsKernalContextAware,
+    LifecycleAware, HadoopPayloadAware {
     /** The default user name. It is used if no user context is set. */
     private String dfltUsrName;
 
     /** Factory. */
     private HadoopFileSystemFactory factory;
 
+    /** Kernal context. */
+    private volatile GridKernalContext ctx;
+
     /** Target. */
-    volatile private HadoopIgfsSecondaryFileSystemDelegate target;
+    private volatile HadoopIgfsSecondaryFileSystemDelegate target;
 
     /**
      * Default constructor for Spring.
@@ -238,10 +245,24 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteException {
-        target = HadoopDelegateUtils.secondaryFileSystemDelegate(this);
+    @Override public void setKernalContext(GridKernalContext ctx) {
+        this.ctx = ctx;
+    }
 
-        target.start();
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteException {
+        HadoopClassLoader ldr = ctx.hadoopHelper().commonClassLoader();
+
+        ClassLoader oldLdr = HadoopCommonUtils.setContextClassLoader(ldr);
+
+        try {
+            target = HadoopDelegateUtils.secondaryFileSystemDelegate(ldr, this);
+
+            target.start();
+        }
+        finally {
+            HadoopCommonUtils.restoreContextClassLoader(oldLdr);
+        }
     }
 
     /** {@inheritDoc} */

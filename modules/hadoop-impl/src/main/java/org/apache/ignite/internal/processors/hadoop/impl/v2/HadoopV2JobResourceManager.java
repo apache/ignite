@@ -36,6 +36,7 @@ import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.util.RunJar;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopFileSystemsUtils;
@@ -95,7 +96,7 @@ class HadoopV2JobResourceManager {
     private void setLocalFSWorkingDirectory(File dir) throws IOException {
         JobConf cfg = ctx.getJobConf();
 
-        ClassLoader oldLdr = HadoopUtils.setContextClassLoader(cfg.getClassLoader());
+        ClassLoader oldLdr = HadoopCommonUtils.setContextClassLoader(cfg.getClassLoader());
 
         try {
             cfg.set(HadoopFileSystemsUtils.LOC_FS_WORK_DIR_PROP, dir.getAbsolutePath());
@@ -104,7 +105,7 @@ class HadoopV2JobResourceManager {
                 FileSystem.getLocal(cfg).setWorkingDirectory(new Path(dir.getAbsolutePath()));
         }
         finally {
-            HadoopUtils.restoreContextClassLoader(oldLdr);
+            HadoopCommonUtils.restoreContextClassLoader(oldLdr);
         }
     }
 

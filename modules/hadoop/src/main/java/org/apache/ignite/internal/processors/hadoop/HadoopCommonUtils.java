@@ -17,8 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import org.apache.ignite.internal.processors.hadoop.HadoopFileBlock;
-import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -52,6 +51,33 @@ public class HadoopCommonUtils {
             res.add(sortedSplit.split);
 
         return res;
+    }
+
+    /**
+     * Set context class loader.
+     *
+     * @param newLdr New class loader.
+     * @return Old class loader.
+     */
+    @Nullable public static ClassLoader setContextClassLoader(@Nullable ClassLoader newLdr) {
+        ClassLoader oldLdr = Thread.currentThread().getContextClassLoader();
+
+        if (newLdr != oldLdr)
+            Thread.currentThread().setContextClassLoader(newLdr);
+
+        return oldLdr;
+    }
+
+    /**
+     * Restore context class loader.
+     *
+     * @param oldLdr Original class loader.
+     */
+    public static void restoreContextClassLoader(@Nullable ClassLoader oldLdr) {
+        ClassLoader newLdr = Thread.currentThread().getContextClassLoader();
+
+        if (newLdr != oldLdr)
+            Thread.currentThread().setContextClassLoader(oldLdr);
     }
 
     /**

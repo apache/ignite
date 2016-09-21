@@ -23,6 +23,8 @@ import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.IgniteHadoopFileSystemCounterWriter;
 import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
 import org.apache.ignite.hadoop.fs.KerberosHadoopFileSystemFactory;
+import org.apache.ignite.internal.processors.hadoop.HadoopClassLoader;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Constructor;
 import java.util.HashMap;
@@ -63,12 +65,13 @@ public class HadoopDelegateUtils {
     /**
      * Create delegate for secondary file system.
      *
+     * @param ldr Hadoop class loader.
      * @param proxy Proxy.
      * @return Delegate.
      */
-    public static HadoopIgfsSecondaryFileSystemDelegate secondaryFileSystemDelegate(
+    public static HadoopIgfsSecondaryFileSystemDelegate secondaryFileSystemDelegate(HadoopClassLoader ldr,
         IgniteHadoopIgfsSecondaryFileSystem proxy) {
-        return newInstance(SECONDARY_FILE_SYSTEM_CLS, proxy);
+        return newInstance(SECONDARY_FILE_SYSTEM_CLS, ldr, proxy);
     }
 
     /**
@@ -84,7 +87,7 @@ public class HadoopDelegateUtils {
         if (clsName == null)
             clsName = DFLT_FACTORY_CLS;
 
-        return newInstance(clsName, proxy);
+        return newInstance(clsName, null, proxy);
     }
 
     /**
@@ -95,20 +98,21 @@ public class HadoopDelegateUtils {
      */
     public static HadoopFileSystemCounterWriterDelegate counterWriterDelegate(
         IgniteHadoopFileSystemCounterWriter proxy) {
-        return newInstance(COUNTER_WRITER_DELEGATE_CLS, proxy);
+        return newInstance(COUNTER_WRITER_DELEGATE_CLS, null, proxy);
     }
 
     /**
      * Get new delegate instance.
      *
      * @param clsName Class name.
+     * @param ldr Optional class loader.
      * @param proxy Proxy.
      * @return Instance.
      */
     @SuppressWarnings("unchecked")
-    private static <T> T newInstance(String clsName, Object proxy) {
+    private static <T> T newInstance(String clsName, @Nullable ClassLoader ldr, Object proxy) {
         try {
-            Class delegateCls = Class.forName(clsName);
+            Class delegateCls = ldr == null ? Class.forName(clsName) : Class.forName(clsName, true, ldr);
 
             Constructor[] ctors = delegateCls.getConstructors();
 

@@ -37,12 +37,12 @@ import org.apache.hadoop.mapreduce.JobPriority;
 import org.apache.hadoop.mapreduce.JobStatus;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobStatus;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopSplitWrapper;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Hadoop utility methods.
@@ -326,42 +326,13 @@ public class HadoopUtils {
      * @return New instance of {@link Configuration}.
      */
     public static Configuration safeCreateConfiguration() {
-        final ClassLoader oldLdr = setContextClassLoader(Configuration.class.getClassLoader());
+        final ClassLoader oldLdr = HadoopCommonUtils.setContextClassLoader(Configuration.class.getClassLoader());
 
         try {
             return new Configuration();
         }
         finally {
-            restoreContextClassLoader(oldLdr);
+            HadoopCommonUtils.restoreContextClassLoader(oldLdr);
         }
-    }
-
-
-
-    /**
-     * Set context class loader.
-     *
-     * @param newLdr New class loader.
-     * @return Old class loader.
-     */
-    @Nullable public static ClassLoader setContextClassLoader(@Nullable ClassLoader newLdr) {
-        ClassLoader oldLdr = Thread.currentThread().getContextClassLoader();
-
-        if (newLdr != oldLdr)
-            Thread.currentThread().setContextClassLoader(newLdr);
-
-        return oldLdr;
-    }
-
-    /**
-     * Restore context class loader.
-     *
-     * @param oldLdr Original class loader.
-     */
-    public static void restoreContextClassLoader(@Nullable ClassLoader oldLdr) {
-        ClassLoader newLdr = Thread.currentThread().getContextClassLoader();
-
-        if (newLdr != oldLdr)
-            Thread.currentThread().setContextClassLoader(oldLdr);
     }
 }

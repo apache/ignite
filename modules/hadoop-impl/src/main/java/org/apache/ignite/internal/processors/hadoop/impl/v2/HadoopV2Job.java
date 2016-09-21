@@ -50,6 +50,7 @@ import org.apache.hadoop.mapreduce.split.SplitMetaInfoReader;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.hadoop.HadoopClassLoader;
+import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopDefaultJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopFileBlock;
 import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
@@ -143,7 +144,7 @@ public class HadoopV2Job implements HadoopJob {
         this.libNames = libNames;
         this.helper = helper;
 
-        ClassLoader oldLdr = HadoopUtils.setContextClassLoader(getClass().getClassLoader());
+        ClassLoader oldLdr = HadoopCommonUtils.setContextClassLoader(getClass().getClassLoader());
 
         try {
             hadoopJobID = new JobID(jobId.globalId().toString(), jobId.localId());
@@ -160,7 +161,7 @@ public class HadoopV2Job implements HadoopJob {
             rsrcMgr = new HadoopV2JobResourceManager(jobId, jobCtx, log, this);
         }
         finally {
-            HadoopUtils.setContextClassLoader(oldLdr);
+            HadoopCommonUtils.restoreContextClassLoader(oldLdr);
         }
     }
 
@@ -176,7 +177,7 @@ public class HadoopV2Job implements HadoopJob {
 
     /** {@inheritDoc} */
     @Override public Collection<HadoopInputSplit> input() throws IgniteCheckedException {
-        ClassLoader oldLdr = HadoopUtils.setContextClassLoader(jobConf.getClassLoader());
+        ClassLoader oldLdr = HadoopCommonUtils.setContextClassLoader(jobConf.getClassLoader());
 
         try {
             String jobDirPath = jobConf.get(MRJobConfig.MAPREDUCE_JOB_DIR);
@@ -233,7 +234,7 @@ public class HadoopV2Job implements HadoopJob {
             }
         }
         finally {
-            HadoopUtils.restoreContextClassLoader(oldLdr);
+            HadoopCommonUtils.restoreContextClassLoader(oldLdr);
         }
     }
 
@@ -306,13 +307,13 @@ public class HadoopV2Job implements HadoopJob {
 
         this.locNodeId = locNodeId;
 
-        ClassLoader oldLdr = HadoopUtils.setContextClassLoader(getClass().getClassLoader());
+        ClassLoader oldLdr = HadoopCommonUtils.setContextClassLoader(getClass().getClassLoader());
 
         try {
             rsrcMgr.prepareJobEnvironment(!external, jobLocalDir(locNodeId, jobId));
         }
         finally {
-            HadoopUtils.restoreContextClassLoader(oldLdr);
+            HadoopCommonUtils.restoreContextClassLoader(oldLdr);
         }
     }
 

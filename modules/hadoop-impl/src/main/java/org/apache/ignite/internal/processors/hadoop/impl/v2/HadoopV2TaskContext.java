@@ -47,6 +47,7 @@ import org.apache.hadoop.mapreduce.TaskType;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopClassLoader;
+import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
 import org.apache.ignite.internal.processors.hadoop.HadoopJob;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
@@ -159,7 +160,7 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
         this.locNodeId = locNodeId;
 
         // Before create JobConf instance we should set new context class loader.
-        ClassLoader oldLdr = HadoopUtils.setContextClassLoader(getClass().getClassLoader());
+        ClassLoader oldLdr = HadoopCommonUtils.setContextClassLoader(getClass().getClassLoader());
 
         try {
             JobConf jobConf = new JobConf();
@@ -181,7 +182,7 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
             useNewCombiner = jobConf.getCombinerClass() == null;
         }
         finally {
-            HadoopUtils.restoreContextClassLoader(oldLdr);
+            HadoopCommonUtils.restoreContextClassLoader(oldLdr);
         }
     }
 
@@ -230,7 +231,7 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
 
     /** {@inheritDoc} */
     @Override public void run() throws IgniteCheckedException {
-        ClassLoader oldLdr = HadoopUtils.setContextClassLoader(jobConf().getClassLoader());
+        ClassLoader oldLdr = HadoopCommonUtils.setContextClassLoader(jobConf().getClassLoader());
 
         try {
             try {
@@ -259,7 +260,7 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
         finally {
             task = null;
 
-            HadoopUtils.restoreContextClassLoader(oldLdr);
+            HadoopCommonUtils.restoreContextClassLoader(oldLdr);
         }
     }
 
@@ -290,7 +291,7 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
                 locDir = jobLocalDir(locNodeId, taskInfo().jobId());
         }
 
-        ClassLoader oldLdr = HadoopUtils.setContextClassLoader(jobConf().getClassLoader());
+        ClassLoader oldLdr = HadoopCommonUtils.setContextClassLoader(jobConf().getClassLoader());
 
         try {
             FileSystem.get(jobConf());
@@ -306,7 +307,7 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
             throw transformException(e);
         }
         finally {
-            HadoopUtils.restoreContextClassLoader(oldLdr);
+            HadoopCommonUtils.restoreContextClassLoader(oldLdr);
         }
     }
 

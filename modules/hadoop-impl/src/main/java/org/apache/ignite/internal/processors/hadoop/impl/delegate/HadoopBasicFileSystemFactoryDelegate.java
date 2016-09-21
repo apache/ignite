@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.fs.BasicHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 import org.apache.ignite.hadoop.util.UserNameMapper;
+import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.delegate.HadoopFileSystemFactoryDelegate;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
@@ -84,13 +85,13 @@ public class HadoopBasicFileSystemFactoryDelegate implements HadoopFileSystemFac
             // FileSystem.get() might delegate to ServiceLoader to get the list of file system implementation.
             // And ServiceLoader is known to be sensitive to context classloader. Therefore, we change context
             // classloader to classloader of current class to avoid strange class-cast-exceptions.
-            ClassLoader oldLdr = HadoopUtils.setContextClassLoader(getClass().getClassLoader());
+            ClassLoader oldLdr = HadoopCommonUtils.setContextClassLoader(getClass().getClassLoader());
 
             try {
                 return create(usrName);
             }
             finally {
-                HadoopUtils.restoreContextClassLoader(oldLdr);
+                HadoopCommonUtils.restoreContextClassLoader(oldLdr);
             }
         }
         catch (InterruptedException e) {
