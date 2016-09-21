@@ -41,7 +41,8 @@ goto :eof
 :: The following libraries are required for Ignite.
 set IGNITE_LIBS=%IGNITE_HOME%\libs\*
 
-for /D %%F in (%IGNITE_HOME%\libs\*) do if not "%%F" == "%IGNITE_HOME%\libs\optional" call :concat %%F\*
+for /D %%F in (%IGNITE_HOME%\libs\*) do if not "%%F" == "%IGNITE_HOME%\libs\optional" ^
+    and not "%%F" == "%IGNITE_HOME%\libs\ignite-hadoop-impl" call :concat %%F\*
 
 if defined USER_LIBS set IGNITE_LIBS=%USER_LIBS%;%IGNITE_LIBS%
 

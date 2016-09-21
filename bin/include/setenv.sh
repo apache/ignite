@@ -58,11 +58,14 @@ IGNITE_LIBS="${IGNITE_HOME}/libs/*"
 
 for file in ${IGNITE_HOME}/libs/*
 do
-    if [ -d ${file} ] && [ "${file}" != "${IGNITE_HOME}"/libs/optional ]; then
+    if [ -d ${file} ] \
+        && [ "${file}" != "${IGNITE_HOME}"/libs/optional ] \
+        && [ "${file}" != "${IGNITE_HOME}"/libs/ignite-hadoop-impl ]; then
         IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/*
     fi
 done
 
+# Add user-defined libs:
 if [ "${USER_LIBS}" != "" ]; then
     IGNITE_LIBS=${USER_LIBS}${SEP}${IGNITE_LIBS}
 fi
