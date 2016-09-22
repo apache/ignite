@@ -30,7 +30,6 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -78,31 +77,31 @@ public class HadoopClasspathUtils {
             }
         }
 
-        String igniteHome = U.getIgniteHome();
-
-        if (igniteHome == null)
-            throw new IgniteException("Cannot determine ignite home.");
-
-        File dir = new File(igniteHome, "libs/ignite-hadoop-impl");
-
-        File[] files;
-
-        // TODO: determine if we're in test environment somehow:
-        if (/* U.isTest() && */ !dir.exists()) {
-            // Branch for tests:
-            File implClasses = new File(igniteHome, "modules/hadoop-impl/target/classes");
-
-            if (!implClasses.exists())
-                throw new IgniteIllegalStateException("Hadoop implementation module classes not found, [dir="
-                    + implClasses + ']');
-
-            files = new File[] { implClasses };
-        }
-        else
-            files = new SearchDirectory(dir, AcceptAllDirectoryFilter.INSTANCE, true).files();
-
-        for (File f: files)
-            res.add(f.toURI().toURL());
+//        String igniteHome = U.getIgniteHome();
+//
+//        if (igniteHome == null)
+//            throw new IgniteException("Cannot determine ignite home.");
+//
+//        File dir = new File(igniteHome, "libs/ignite-hadoop-impl");
+//
+//        File[] files;
+//
+//        // TODO: determine if we're in test environment somehow:
+//        if (/* U.isTest() && */ !dir.exists()) {
+//            // Branch for tests:
+//            File implClasses = new File(igniteHome, "modules/hadoop-impl/target/classes");
+//
+//            if (!implClasses.exists())
+//                throw new IgniteIllegalStateException("Hadoop implementation module classes not found, [dir="
+//                    + implClasses + ']');
+//
+//            files = new File[] { implClasses };
+//        }
+//        else
+//            files = new SearchDirectory(dir, AcceptAllDirectoryFilter.INSTANCE, true).files();
+//
+//        for (File f: files)
+//            res.add(f.toURI().toURL());
 
         return res;
     }
@@ -194,6 +193,7 @@ public class HadoopClasspathUtils {
 
         Collection<SearchDirectory> res = new ArrayList<>();
 
+        // 1. Add libraries from Hadoop distribution:
         res.add(new SearchDirectory(new File(loc.common(), "lib"), AcceptAllDirectoryFilter.INSTANCE));
         res.add(new SearchDirectory(new File(loc.hdfs(), "lib"), AcceptAllDirectoryFilter.INSTANCE));
         res.add(new SearchDirectory(new File(loc.mapred(), "lib"), AcceptAllDirectoryFilter.INSTANCE));
@@ -208,7 +208,32 @@ public class HadoopClasspathUtils {
         res.add(new SearchDirectory(new File(loc.mapred()),
             new PrefixDirectoryFilter("hadoop-mapreduce-client-core")));
 
+        // 2. Add user provided libs:
         res.addAll(parseUserLibs());
+
+        // 3.
+        String igniteHome = U.getIgniteHome();
+
+        if (igniteHome == null)
+            throw new IgniteException("Cannot determine ignite home.");
+
+        File dir = new File(igniteHome, "libs/ignite-hadoop-impl");
+
+//        File[] files;
+//
+//        // TODO: determine if we're in test environment somehow:
+//        if (/* U.isTest() && */ !dir.exists()) {
+//            // Branch for tests:
+//            File implClasses = new File(igniteHome, "modules/hadoop-impl/target/classes");
+//
+//            if (!implClasses.exists())
+//                throw new IgniteIllegalStateException("Hadoop implementation module classes not found, [dir="
+//                    + implClasses + ']');
+//
+//            files = new File[] { implClasses };
+//        }
+//        else
+        res.add(new SearchDirectory(dir, AcceptAllDirectoryFilter.INSTANCE, true));
 
         return res;
     }

@@ -250,8 +250,6 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
             ConcurrentHashMap8.class.getProtectionDomain().getCodeSource().getLocation().getPath()
             + sep + U.getIgniteHome() + "/modules/hadoop-impl/target/classes";
 
-        System.out.println("### HADOOP_CLASSPATH = [" + ggClsPath + "]");
-
         ProcessBuilder res = new ProcessBuilder();
 
         res.environment().put("HADOOP_HOME", hadoopHome);
