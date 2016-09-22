@@ -21,7 +21,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 
 /**
- * Class for {@code PojoCacheStore} tests.
+ * Test for {@link CacheJdbcPojoStore} with binary marshaller.
  */
 public class CacheJdbcPojoStoreBinaryMarshallerSelfTest extends CacheJdbcPojoStoreAbstractSelfTest {
     /** {@inheritDoc} */
