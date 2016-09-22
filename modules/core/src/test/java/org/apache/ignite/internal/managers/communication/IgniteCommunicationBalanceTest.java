@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.managers.communication;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -105,7 +107,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
                 client.compute(client.cluster().forNode(node)).run(new DummyRunnable(null));
             }
 
-            waitNioBalanceStop(client, 30_000);
+            waitNioBalanceStop(Collections.singletonList(client), 10_000);
 
             final GridNioServer srv = GridTestUtils.getFieldValue(client.configuration().getCommunicationSpi(), "nioSrvr");
 
@@ -135,7 +137,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
                     }
                 }, 10_000);
 
-                waitNioBalanceStop(client, 30_000);
+                waitNioBalanceStop(Collections.singletonList(client), 30_000);
 
                 long readMoveCnt2 = srv.readerMoveCount();
                 long writeMoveCnt2 = srv.writerMoveCount();
@@ -147,8 +149,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
                 writeMoveCnt1 = writeMoveCnt2;
             }
 
-            for (Ignite node : G.allGrids())
-                waitNioBalanceStop(node, 10_000);
+            waitNioBalanceStop(G.allGrids(), 10_000);
         }
         finally {
             System.setProperty(GridNioServer.IGNITE_NIO_SES_BALANCER_BALANCE_PERIOD, "");
@@ -168,7 +169,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
 
             startGridsMultiThreaded(5, 5);
 
-            for (int i = 0; i < 20; i++) {
+            for (int i = 0; i < 10; i++) {
                 log.info("Iteration: " + i);
 
                 final AtomicInteger idx = new AtomicInteger();
@@ -195,8 +196,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
                     }
                 }, 30, "test-thread");
 
-                for (Ignite node : G.allGrids())
-                    waitNioBalanceStop(node, 10_000);
+                waitNioBalanceStop(G.allGrids(), 10_000);
             }
         }
         finally {
@@ -205,34 +205,57 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param node Node.
+     * @param nodes Node.
      * @param timeout Timeout.
      * @throws Exception If failed.
      */
-    private void waitNioBalanceStop(Ignite node, long timeout) throws Exception {
-        TcpCommunicationSpi spi = (TcpCommunicationSpi)node.configuration().getCommunicationSpi();
+    private void waitNioBalanceStop(List<Ignite> nodes, long timeout) throws Exception {
+        final List<GridNioServer> srvs = new ArrayList<>();
 
-        final GridNioServer srv = GridTestUtils.getFieldValue(spi, "nioSrvr");
+        for (Ignite node : nodes) {
+            TcpCommunicationSpi spi = (TcpCommunicationSpi) node.configuration().getCommunicationSpi();
+
+            GridNioServer srv = GridTestUtils.getFieldValue(spi, "nioSrvr");
+
+            srvs.add(srv);
+        }
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicateX() {
             @Override public boolean applyx() throws IgniteCheckedException {
-                long readerMovCnt1 = srv.readerMoveCount();
-                long writerMovCnt1 = srv.writerMoveCount();
+                List<Long> rCnts = new ArrayList<>();
+                List<Long> wCnts = new ArrayList<>();
+
+                for (GridNioServer srv : srvs) {
+                    long readerMovCnt1 = srv.readerMoveCount();
+                    long writerMovCnt1 = srv.writerMoveCount();
+
+                    rCnts.add(readerMovCnt1);
+                    wCnts.add(writerMovCnt1);
+                }
 
                 U.sleep(2000);
 
-                long readerMovCnt2 = srv.readerMoveCount();
-                long writerMovCnt2 = srv.writerMoveCount();
+                for (int i = 0; i < srvs.size(); i++) {
+                    GridNioServer srv = srvs.get(i);
 
-                if (readerMovCnt1 != readerMovCnt2) {
-                    log.info("Readers balance is in progress [cnt1=" + readerMovCnt1 + ", cnt2=" + readerMovCnt2 + ']');
+                    long readerMovCnt1 = rCnts.get(i);
+                    long writerMovCnt1 = wCnts.get(i);
 
-                    return false;
-                }
-                if (writerMovCnt1 != writerMovCnt2) {
-                    log.info("Writers balance is in progress [cnt1=" + writerMovCnt1 + ", cnt2=" + writerMovCnt2 + ']');
+                    long readerMovCnt2 = srv.readerMoveCount();
+                    long writerMovCnt2 = srv.writerMoveCount();
 
-                    return false;
+                    if (readerMovCnt1 != readerMovCnt2) {
+                        log.info("Readers balance is in progress [node=" + i + ", cnt1=" + readerMovCnt1 +
+                            ", cnt2=" + readerMovCnt2 + ']');
+
+                        return false;
+                    }
+                    if (writerMovCnt1 != writerMovCnt2) {
+                        log.info("Writers balance is in progress [node=" + i + ", cnt1=" + writerMovCnt1 +
+                            ", cnt2=" + writerMovCnt2 + ']');
+
+                        return false;
+                    }
                 }
 
                 return true;
@@ -265,7 +288,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
             }, 20, "test-thread");
         }
         finally {
-            System.setProperty(GridNioServer.IGNITE_NIO_SES_BALANCER_CLASS_NAME, null);
+            System.setProperty(GridNioServer.IGNITE_NIO_SES_BALANCER_CLASS_NAME, "");
         }
     }
 
