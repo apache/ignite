@@ -15,7 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop;
+package org.apache.ignite.internal.processors.hadoop.values;
+
+import org.apache.ignite.internal.processors.hadoop.HadoopSharedMap;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
