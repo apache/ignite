@@ -1323,10 +1323,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         final int threadCnt = 4;
         final int cnt = 90000;
 
-        final Set<String> keys = new HashSet(1);
-        keys.add("myKey");
-
-        assert cache != null;
+        final Set<String> keys = Collections.singleton("myKey");
 
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
@@ -1339,9 +1336,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             }
         }, threadCnt, "testInvokeAllMultithreaded");
 
-        final long cacheVal = (long)cache.get("myKey");
-        assertEquals(cnt*threadCnt, cacheVal);
-        System.out.println(cacheVal);
+        assertEquals(cnt*threadCnt, (long)cache.get("myKey"));
     }
 
     public void testInvokeAllMultithreaded2() throws Exception {
