@@ -189,6 +189,9 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
     /** Types transformer. */
     protected JdbcTypesTransformer transformer = JdbcTypesDefaultTransformer.INSTANCE;
 
+    /** Flag indicating that table and field names should be escaped in all SQL queries created by JDBC POJO store. */
+    private boolean sqlEscapeAll;
+
     /**
      * Get field value from object for use as query parameter.
      *
@@ -650,7 +653,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
                     checkTypeConfiguration(cacheName, valKind, valType, type.getValueFields());
 
-                    entryMappings.put(keyTypeId, new EntryMapping(cacheName, dialect, type, keyKind, valKind));
+                    entryMappings.put(keyTypeId, new EntryMapping(cacheName, dialect, type, keyKind, valKind, sqlEscapeAll));
 
                     // Add one more binding to binary typeId for POJOs,
                     // because object could be passed to store in binary format.
@@ -659,7 +662,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
                         valKind = valKind == TypeKind.POJO ? TypeKind.BINARY : valKind;
 
-                        entryMappings.put(keyTypeId, new EntryMapping(cacheName, dialect, type, TypeKind.BINARY, valKind));
+                        entryMappings.put(keyTypeId, new EntryMapping(cacheName, dialect, type, TypeKind.BINARY, valKind, sqlEscapeAll));
                     }
                 }
 
@@ -1616,6 +1619,28 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
     }
 
     /**
+     * If {@code true} all the SQL table and field names will be escaped with double quotes like
+     * ({@code "tableName"."fieldsName"}). This enforces case sensitivity for field names and
+     * also allows having special characters in table and field names.
+     *
+     * @return Flag value.
+     */
+    public boolean isSqlEscapeAll() {
+        return sqlEscapeAll;
+    }
+
+    /**
+     * If {@code true} all the SQL table and field names will be escaped with double quotes like
+     * ({@code "tableName"."fieldsName"}). This enforces case sensitivity for field names and
+     * also allows having special characters in table and field names.
+     *
+     * @param sqlEscapeAll Flag value.
+     */
+    public void setSqlEscapeAll(boolean sqlEscapeAll) {
+        this.sqlEscapeAll = sqlEscapeAll;
+    }
+
+    /**
      * @return Ignite instance.
      */
     protected Ignite ignite() {
@@ -1681,8 +1706,14 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
         /** Database key columns. */
         private final Collection<String> keyCols;
 
+        /** Database key columns prepared for building SQL queries.. */
+        private final Collection<String> sqlKeyCols;
+
         /** Database unique value columns. */
         private final Collection<String> cols;
+
+        /** Database unique value columns prepared for building SQL queries. */
+        private final Collection<String> sqlCols;
 
         /** Select query columns index. */
         private final Map<String, Integer> loadColIdxs;
@@ -1702,13 +1733,34 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
         /** Full table name. */
         private final String fullTblName;
 
+        /** Full table name prepared for building SQL queries. */
+        private final String sqlFullTblName;
+
+        /**
+         * Escape collection of column names.
+         * @param dialect Database dialect.
+         * @param cols Columns.
+         * @return Collection of escaped names.
+         */
+        private static Collection<String> escape(JdbcDialect dialect, Collection<String> cols) {
+            Collection<String> res = new ArrayList<>(cols.size());
+
+            for (String col : cols)
+                res.add(dialect.escape(col));
+
+            return res;
+        }
+
         /**
          * @param cacheName Cache name.
          * @param dialect JDBC dialect.
          * @param typeMeta Type metadata.
+         * @param keyKind Type kind.
+         * @param valKind Value kind.
+         * @param escape Escape SQL identifiers flag.
          */
         public EntryMapping(@Nullable String cacheName, JdbcDialect dialect, JdbcType typeMeta,
-            TypeKind keyKind, TypeKind valKind) {
+            TypeKind keyKind, TypeKind valKind, boolean escape) {
             this.cacheName = cacheName;
 
             this.dialect = dialect;
@@ -1735,11 +1787,9 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
             String tblName = typeMeta.getDatabaseTable();
 
-            fullTblName = F.isEmpty(schema) ? tblName : schema + "." + tblName;
+            Collection<String> uniqueValCols = databaseColumns(uniqValFlds);
 
-            Collection<String> uniqValCols = databaseColumns(uniqValFlds);
-
-            cols = F.concat(false, keyCols, uniqValCols);
+            cols = F.concat(false, keyCols, uniqueValCols);
 
             loadColIdxs = U.newHashMap(cols.size());
 
@@ -1748,23 +1798,41 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
             for (String col : cols)
                 loadColIdxs.put(col.toUpperCase(), idx++);
 
-            loadCacheQry = dialect.loadCacheQuery(fullTblName, cols);
+            fullTblName = F.isEmpty(schema) ? tblName : schema + "." + tblName;
 
-            loadCacheSelRangeQry = dialect.loadCacheSelectRangeQuery(fullTblName, keyCols);
+            Collection<String> sqlUniqueValCols;
 
-            loadQrySingle = dialect.loadQuery(fullTblName, keyCols, cols, 1);
+            if (escape) {
+                sqlFullTblName = F.isEmpty(schema) ? dialect.escape(tblName) : dialect.escape(schema) + "." + dialect.escape(tblName);
 
-            maxKeysPerStmt = dialect.getMaxParameterCount() / keyCols.size();
+                sqlCols = escape(dialect, cols);
+                sqlKeyCols = escape(dialect, keyCols);
+                sqlUniqueValCols = escape(dialect, uniqueValCols);
+            }
+            else {
+                sqlFullTblName = fullTblName;
+                sqlCols = cols;
+                sqlKeyCols = keyCols;
+                sqlUniqueValCols = uniqueValCols;
+            }
 
-            loadQry = dialect.loadQuery(fullTblName, keyCols, cols, maxKeysPerStmt);
+            loadCacheQry = dialect.loadCacheQuery(sqlFullTblName, sqlCols);
 
-            insQry = dialect.insertQuery(fullTblName, keyCols, uniqValCols);
+            loadCacheSelRangeQry = dialect.loadCacheSelectRangeQuery(sqlFullTblName, sqlKeyCols);
 
-            updQry = dialect.updateQuery(fullTblName, keyCols, uniqValCols);
+            loadQrySingle = dialect.loadQuery(sqlFullTblName, sqlKeyCols, sqlCols, 1);
 
-            mergeQry = dialect.mergeQuery(fullTblName, keyCols, uniqValCols);
+            maxKeysPerStmt = dialect.getMaxParameterCount() / sqlKeyCols.size();
 
-            remQry = dialect.removeQuery(fullTblName, keyCols);
+            loadQry = dialect.loadQuery(sqlFullTblName, sqlKeyCols, sqlCols, maxKeysPerStmt);
+
+            insQry = dialect.insertQuery(sqlFullTblName, sqlKeyCols, sqlUniqueValCols);
+
+            updQry = dialect.updateQuery(sqlFullTblName, sqlKeyCols, sqlUniqueValCols);
+
+            mergeQry = dialect.mergeQuery(sqlFullTblName, sqlKeyCols, sqlUniqueValCols);
+
+            remQry = dialect.removeQuery(sqlFullTblName, sqlKeyCols);
         }
 
         /**
@@ -1825,7 +1893,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
             if (keyCnt == 1)
                 return loadQrySingle;
 
-            return dialect.loadQuery(fullTblName, keyCols, cols, keyCnt);
+            return dialect.loadQuery(sqlFullTblName, sqlKeyCols, sqlCols, keyCnt);
         }
 
         /**
@@ -1836,7 +1904,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
          * @return Query with range.
          */
         protected String loadCacheRangeQuery(boolean appendLowerBound, boolean appendUpperBound) {
-            return dialect.loadCacheRangeQuery(fullTblName, keyCols, cols, appendLowerBound, appendUpperBound);
+            return dialect.loadCacheRangeQuery(sqlFullTblName, sqlKeyCols, sqlCols, appendLowerBound, appendUpperBound);
         }
 
         /**
