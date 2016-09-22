@@ -21,12 +21,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.InputSplit;
@@ -47,6 +44,10 @@ import org.apache.ignite.internal.processors.hadoop.HadoopJobStatus;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopJobTrackerSelfTestState.combineExecCnt;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopJobTrackerSelfTestState.latch;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopJobTrackerSelfTestState.mapExecCnt;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopJobTrackerSelfTestState.reduceExecCnt;
 
 /**
  * Job tracker self test.
@@ -57,21 +58,6 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
 
     /** Test block count parameter name. */
     private static final int BLOCK_CNT = 10;
-
-    /** */
-    private static HadoopSharedMap m = HadoopSharedMap.map(HadoopJobTrackerSelfTest.class);
-
-    /** Map task execution count. */
-    private static final AtomicInteger mapExecCnt = m.put("mapExecCnt", new AtomicInteger());
-
-    /** Reduce task execution count. */
-    private static final AtomicInteger reduceExecCnt = m.put("reduceExecCnt", new AtomicInteger());
-
-    /** Reduce task execution count. */
-    private static final AtomicInteger combineExecCnt = m.put("combineExecCnt", new AtomicInteger());
-
-    /** */
-    private static final Map<String, CountDownLatch> latch = m.put("latch", new HashMap<String, CountDownLatch>());
 
     /** {@inheritDoc} */
     @Override protected boolean igfsEnabled() {

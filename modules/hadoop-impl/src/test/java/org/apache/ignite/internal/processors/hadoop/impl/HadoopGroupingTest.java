@@ -17,15 +17,6 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
-import java.util.UUID;
 import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
@@ -41,11 +32,21 @@ import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.ignite.configuration.HadoopConfiguration;
+import org.apache.ignite.internal.processors.hadoop.state.HadoopGroupingTestState;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
 
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
 
@@ -53,13 +54,6 @@ import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.crea
  * Grouping test.
  */
 public class HadoopGroupingTest extends HadoopAbstractSelfTest {
-    /** */
-    private static final String PATH_OUTPUT = "/test-out";
-
-    /** */
-    private static final GridConcurrentHashSet<UUID> vals = HadoopSharedMap.map(HadoopGroupingTest.class)
-        .put("vals", new GridConcurrentHashSet<UUID>());
-
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 3;
@@ -109,7 +103,7 @@ public class HadoopGroupingTest extends HadoopAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void doTestGrouping(boolean combiner) throws Exception {
-        vals.clear();
+        HadoopGroupingTestState.values().clear();
 
         Job job = Job.getInstance();
 
@@ -135,7 +129,7 @@ public class HadoopGroupingTest extends HadoopAbstractSelfTest {
         grid(0).hadoop().submit(new HadoopJobId(UUID.randomUUID(), 2),
             createJobInfo(job.getConfiguration())).get(30000);
 
-        assertTrue(vals.isEmpty());
+        assertTrue(HadoopGroupingTestState.values().isEmpty());
     }
 
     public static class MyReducer extends Reducer<YearTemperature, Text, Text, Object> {
@@ -161,7 +155,7 @@ public class HadoopGroupingTest extends HadoopAbstractSelfTest {
             lastYear = key.year;
 
             for (Text val : vals0)
-                assertTrue(vals.remove(UUID.fromString(val.toString())));
+                assertTrue(HadoopGroupingTestState.values().remove(UUID.fromString(val.toString())));
         }
     }
 
@@ -268,7 +262,7 @@ public class HadoopGroupingTest extends HadoopAbstractSelfTest {
                 @Override public Text getCurrentValue() {
                     UUID id = UUID.randomUUID();
 
-                    assertTrue(vals.add(id));
+                    assertTrue(HadoopGroupingTestState.values().add(id));
 
                     val.set(id.toString());
 
