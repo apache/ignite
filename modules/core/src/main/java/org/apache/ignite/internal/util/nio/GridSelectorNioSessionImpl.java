@@ -20,7 +20,9 @@ package org.apache.ignite.internal.util.nio;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteLogger;
@@ -43,8 +45,8 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     @GridToStringExclude
     private SelectionKey key;
 
-    /** */
-    public GridNioWorker worker;
+    /** Current worker thread. */
+    private GridNioWorker worker;
 
     /** Size counter. */
     private final AtomicInteger queueSize = new AtomicInteger();
@@ -67,6 +69,9 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
 
     /** Logger. */
     private final IgniteLogger log;
+
+    /** */
+    private List<GridNioFuture> pendingStateChanges;
 
     /**
      * Creates session instance.
@@ -153,13 +158,60 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
         return key;
     }
 
+    /**
+     * @param fut
+     */
     void offerStateChange(GridNioFuture fut) {
-        GridNioWorker worker0 = worker;
+        synchronized (this) {
+            GridNioWorker worker0 = worker;
 
-        if (worker0 != null)
-            worker0.offer(fut);
+            if (worker0 == null) {
+                if (pendingStateChanges == null)
+                    pendingStateChanges = new ArrayList<>();
+
+                pendingStateChanges.add(fut);
+            }
+            else
+                worker0.offer(fut);
+        }
     }
 
+    /**
+     * @param moveFrom
+     */
+    void startMoveSession(GridNioWorker moveFrom) {
+        synchronized (this) {
+            assert this.worker == moveFrom;
+
+            List<GridNioFuture> sesReqs = moveFrom.clearSessionRequests(this);
+
+            worker = null;
+
+            if (sesReqs != null) {
+                if (pendingStateChanges == null)
+                    pendingStateChanges = new ArrayList<>();
+
+                pendingStateChanges.addAll(sesReqs);
+            }
+        }
+    }
+
+    /**
+     * @param moveTo
+     */
+    void finishMoveSession(GridNioWorker moveTo) {
+        synchronized (this) {
+            assert worker == null;
+
+            worker = moveTo;
+
+            if (pendingStateChanges != null) {
+                moveTo.offer(pendingStateChanges);
+
+                pendingStateChanges = null;
+            }
+        }
+    }
 
     /**
      * Adds write future at the front of the queue without acquiring back pressure semaphore.

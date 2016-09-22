@@ -17,12 +17,27 @@
 
 package org.apache.ignite.internal.util.nio;
 
+import java.util.Collection;
+import java.util.List;
+import org.jetbrains.annotations.Nullable;
+
 /**
  *
  */
 public interface GridNioWorker {
     /**
-     * @param fut Future.
+     * @param req Change request.
      */
-    void offer(GridNioFuture fut);
+    void offer(GridNioFuture req);
+
+    /**
+     * @param reqs Change requests.
+     */
+    void offer(Collection<GridNioFuture> reqs);
+
+    /**
+     * @param ses Session.
+     * @return Session state change requests.
+     */
+    @Nullable List<GridNioFuture> clearSessionRequests(GridNioSession ses);
 }

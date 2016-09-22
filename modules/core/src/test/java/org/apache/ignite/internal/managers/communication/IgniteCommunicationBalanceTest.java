@@ -147,7 +147,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
     /**
      *
      */
-    static class DummyRunnable implements IgniteRunnable {
+    private static class DummyRunnable implements IgniteRunnable {
         /** {@inheritDoc} */
         @Override public void run() {
             // No-op.
