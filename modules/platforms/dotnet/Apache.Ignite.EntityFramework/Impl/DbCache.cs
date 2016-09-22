@@ -125,7 +125,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// <summary>
         /// Puts the item to cache.
         /// </summary>
-        public void PutItem(DbCacheKey key, object value, TimeSpan absoluteExpiration)
+        public void PutItemAsync(DbCacheKey key, object value, TimeSpan absoluteExpiration)
         {
             var cache = GetCacheWithExpiry(absoluteExpiration);
 
@@ -133,7 +133,10 @@ namespace Apache.Ignite.EntityFramework.Impl
             Console.WriteLine("Adding to cache: {0} | {1}", key.GetStringKey(), Thread.CurrentThread.ManagedThreadId);
 
             // TODO: Do not put if key is already old!
-            cache[key.GetStringKey()] = new EntityFrameworkCacheEntry(value, key.EntitySetVersions);
+            //cache[key.GetStringKey()] = new EntityFrameworkCacheEntry(value, key.EntitySetVersions);
+
+            // Put asynchronously to avoid unnecessary delay in the requesting thread.
+            cache.PutAsync(key.GetStringKey(), new EntityFrameworkCacheEntry(value, key.EntitySetVersions));
         }
 
         /// <summary>
