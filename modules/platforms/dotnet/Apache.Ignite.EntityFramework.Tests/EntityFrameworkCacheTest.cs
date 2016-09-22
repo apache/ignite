@@ -717,11 +717,18 @@ namespace Apache.Ignite.EntityFramework.Tests
             var cache = (ICacheInternal) _metaCache;
 
             const string key = "myKey";
+            const int cnt = 1000000;
+            const int threadCnt = 4;
 
-            for (var i = 0; i < 10000; i++)
+            TestUtils.RunMultiThreaded(() =>
             {
-                cache.DoOutInOpExtension<object>(1, 2, w => w.WriteString(key), null);
-            }
+                for (var i = 0; i < cnt; i++)
+                {
+                    cache.DoOutInOpExtension<object>(1, 2, w => w.WriteString(key), null);
+                }
+            }, threadCnt);
+
+            Assert.AreEqual(cnt * threadCnt, _metaCache[key]);
         }
 
         /// <summary>
