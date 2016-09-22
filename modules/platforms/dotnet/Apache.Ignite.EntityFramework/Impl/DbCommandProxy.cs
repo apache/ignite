@@ -152,7 +152,7 @@ namespace Apache.Ignite.EntityFramework.Impl
                 // Execute reader, then invalidate cached data.
                 var dbReader = _command.ExecuteReader(behavior);
 
-                _commandInfo.Cache.InvalidateSets(_commandInfo.AffectedEntitySets);
+                InvalidateCache();
 
                 return dbReader;
             }
@@ -193,6 +193,14 @@ namespace Apache.Ignite.EntityFramework.Impl
             return res.CreateReader();
         }
 
+        /// <summary>
+        /// Invalidates the cache.
+        /// </summary>
+        private void InvalidateCache()
+        {
+            _commandInfo.Cache.InvalidateSets(_commandInfo.AffectedEntitySets);
+        }
+
         /** <inheritDoc /> */
         public override int ExecuteNonQuery()
         {
@@ -200,7 +208,7 @@ namespace Apache.Ignite.EntityFramework.Impl
 
             // Invalidate AFTER updating the data.
             if (_commandInfo.IsModification)
-                _commandInfo.Cache.InvalidateSets(_commandInfo.AffectedEntitySets);
+                InvalidateCache();
 
             return res;
         }
