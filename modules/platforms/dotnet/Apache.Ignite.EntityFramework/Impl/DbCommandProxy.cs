@@ -150,12 +150,12 @@ namespace Apache.Ignite.EntityFramework.Impl
             if (_commandInfo.IsModification)
             {
                 // Execute reader, then invalidate cached data.
-                Console.WriteLine("ExecuteReader... | {0}", Thread.CurrentThread.ManagedThreadId);
+                Console.WriteLine("ExecuteReaderModify... | {0}", Thread.CurrentThread.ManagedThreadId);
 
                 var readerRes = new DataReaderResult(_command.ExecuteReader(behavior));
                 var dbReader = readerRes.CreateReader();
 
-                Console.WriteLine("ExecuteReader done | {0}", Thread.CurrentThread.ManagedThreadId);
+                Console.WriteLine("ExecuteReaderModify done | {0}", Thread.CurrentThread.ManagedThreadId);
 
                 InvalidateCache();
 
@@ -187,7 +187,9 @@ namespace Apache.Ignite.EntityFramework.Impl
                 return reader;
 
             // Read into memory.
+            Console.WriteLine("ExecuteReader... | {0}", Thread.CurrentThread.ManagedThreadId);
             var res = new DataReaderResult(reader);
+            Console.WriteLine("ExecuteReader done | {0}", Thread.CurrentThread.ManagedThreadId);
 
             // Check if specific row count is cacheable.
             if (!_commandInfo.Policy.CanBeCached(queryInfo, res.RowCount))
