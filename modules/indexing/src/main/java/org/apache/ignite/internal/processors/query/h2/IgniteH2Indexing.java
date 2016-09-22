@@ -1231,39 +1231,30 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return new GridReduceQueryExecutor.Iter(res);
         }
         else {
-            int res = executeSqlUpdateQuery(cacheContext(space), qry);
+            int res;
+
+            if (qry.tables().size() != 1)
+                throw new CacheException("SQL update operations don't support more than one table");
+
+            String tbl = qry.tables().iterator().next();
+
+            GridCacheContext cctx = cacheContext(space);
+
+            TableDescriptor desc = tableDescriptorForNativeName(tbl, schema(cctx.name()));
+            if (desc == null)
+                throw createSqlException("Table descriptor not found [tbl=" + tbl + ']', ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1);
+
+            if (qry.initialStatement() instanceof GridSqlMerge)
+                res = doMerge(cctx, (GridSqlMerge)qry.initialStatement(), desc, qry.reduceQuery().parameters());
+             else if (qry.initialStatement() instanceof GridSqlInsert)
+                res = doInsert(cctx, (GridSqlInsert)qry.initialStatement(), desc, qry.reduceQuery().parameters(),
+                    qry.skipDuplicateKeys());
+            else
+                throw new UnsupportedOperationException("Unsupported SQL data modification statement [cls=" +
+                    qry.initialStatement().getClass() + ']');
 
             return new IgniteSingletonIterator(Collections.singletonList(res));
         }
-    }
-
-    /**
-     * Executes sql query.
-     *
-     * @param cctx Cache context.
-     * @param qry Two-step query that contains the statement to execute and its params.
-     * @throws IgniteCheckedException If failed.
-     */
-    private int executeSqlUpdateQuery(GridCacheContext<?, ?> cctx, GridCacheTwoStepQuery qry)
-        throws IgniteCheckedException {
-        if (qry.tables().size() != 1)
-            throw new CacheException("SQL update operations don't support more than one table");
-
-        String tbl = qry.tables().iterator().next();
-
-        TableDescriptor desc = tableDescriptorForNativeName(tbl, schema(cctx.name()));
-        if (desc == null)
-            throw createSqlException("Table descriptor not found [tbl=" + tbl + ']', ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1);
-
-        if (qry.initialStatement() instanceof GridSqlMerge)
-            return doMerge(cctx, (GridSqlMerge)qry.initialStatement(), desc, qry.reduceQuery().parameters());
-
-        if (qry.initialStatement() instanceof GridSqlInsert)
-            return doInsert(cctx, (GridSqlInsert)qry.initialStatement(), desc, qry.reduceQuery().parameters(),
-                qry.skipDuplicateKeys());
-
-        throw new UnsupportedOperationException("Unsupported SQL data modification statement [cls=" +
-            qry.initialStatement().getClass() + ']');
     }
 
     /**
