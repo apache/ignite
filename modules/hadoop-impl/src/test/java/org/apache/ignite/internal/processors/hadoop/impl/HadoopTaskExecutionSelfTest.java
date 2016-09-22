@@ -62,6 +62,11 @@ import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.crea
  * Tests map-reduce task execution basics.
  */
 public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
+    /*
+     * NB: Static fields below are public because will be accessed from classes
+     * loaded by another class loader as well.
+     */
+
     /** */
     public static HadoopSharedMap m = HadoopSharedMap.map(HadoopTaskExecutionSelfTest.class);
 

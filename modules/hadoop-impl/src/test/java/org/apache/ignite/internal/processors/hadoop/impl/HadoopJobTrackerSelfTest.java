@@ -58,6 +58,11 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
     /** Test block count parameter name. */
     private static final int BLOCK_CNT = 10;
 
+    /*
+     * NB: Static fields below are public because will be accessed from classes
+     * loaded by another class loader as well.
+     */
+
     /** */
     public static final HadoopSharedMap m = HadoopSharedMap.map(HadoopJobTrackerSelfTest.class);
 
@@ -98,12 +103,6 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
         latch.put("reduceAwaitLatch", new CountDownLatch(1));
         latch.put("combineAwaitLatch", new CountDownLatch(1));
     }
-
-//    static void initLatchMap(Map<?,?> latch) {
-//        latch.put("mapAwaitLatch", new CountDownLatch(1));
-//        latch.put("reduceAwaitLatch", new CountDownLatch(1));
-//        latch.put("combineAwaitLatch", new CountDownLatch(1));
-//    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -313,9 +312,6 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
     private static class TestMapper extends Mapper {
         @Override public void run(Context ctx) throws IOException, InterruptedException {
             System.out.println("Running task: " + ctx.getTaskAttemptID().getTaskID().getId());
-
-            //assertEquals(getClass().getClassLoader(), HadoopJobTrackerSelfTest.class.getClassLoader());
-            System.out.println("###### cl = " + HadoopJobTrackerSelfTest.class.getClassLoader());
 
             latch.get("mapAwaitLatch").await();
 
