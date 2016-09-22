@@ -1316,31 +1316,38 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals(3, res.size());
     }
 
-    public void testInvokeAllMultithreaded() {
+    public void testInvokeAllMultithreaded() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
 
         assert cache != null;
 
-        for (int i = 0; i < 100; i++) {
-            cache.invokeAll(Collections.singleton("myKey"), new CacheEntryProcessor<String, Integer, Object>() {
-                @Override
-                public Object process(MutableEntry<String, Integer> entry,
-                    Object... objects) throws EntryProcessorException {
-                    Integer val = entry.getValue();
+        GridTestUtils.runMultiThreaded(new Runnable() {
+            @Override public void run() {
+                for (int i = 0; i < 100000; i++) {
+                    final Map<String, EntryProcessorResult<Object>> res =
+                        cache.invokeAll(Collections.singleton("myKey"), new CacheEntryProcessor<String, Integer, Object>() {
+                        @Override
+                        public Object process(MutableEntry<String, Integer> entry,
+                            Object... objects) throws EntryProcessorException {
+                            Integer val = entry.getValue();
 
-                    if (val == null)
-                        val = 0;
+                            if (val == null)
+                                val = 0;
 
-                    val++;
+                            val++;
 
-                    entry.setValue(val);
+                            entry.setValue(val);
 
-                    return val;
+                            return val;
+                        }
+                    });
+
+                    assertEquals(1, res.size());
                 }
-            });
-        }
+            }
+        }, 8, "testInvokeAllMultithreaded");
 
-        assertEquals(100, (int)cache.get("myKey"));
+        System.out.println(cache.get("myKey"));
     }
 
     /**
