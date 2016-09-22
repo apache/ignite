@@ -1347,6 +1347,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         final int threadCnt = 8;
         final int cnt = 300000;
 
+        CacheConfiguration cfg = cache.getConfiguration(CacheConfiguration.class);
+
+        assert cfg != null;
+
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
                 for (int i = 0; i < cnt; i++) {
