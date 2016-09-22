@@ -128,6 +128,9 @@ namespace Apache.Ignite.EntityFramework.Impl
         {
             var cache = GetCacheWithExpiry(absoluteExpiration);
 
+            // TODO: Remove!
+            Console.WriteLine("Adding to cache: " + key.GetStringKey());
+
             cache[key.GetStringKey()] = new EntityFrameworkCacheEntry(value, key.EntitySetVersions);
         }
 
