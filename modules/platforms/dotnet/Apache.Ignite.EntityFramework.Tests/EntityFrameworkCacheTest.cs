@@ -696,6 +696,8 @@ namespace Apache.Ignite.EntityFramework.Tests
 
             var meta3 = getMeta();
 
+            Console.WriteLine("Removing blog: " + blog.BlogId + " = " + meta3);
+
             using (var ctx = GetDbContext())
             {
                 ctx.Blogs.Attach(blog);
