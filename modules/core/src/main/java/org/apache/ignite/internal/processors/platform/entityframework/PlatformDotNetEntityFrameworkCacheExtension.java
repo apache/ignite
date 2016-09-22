@@ -191,8 +191,8 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
         // Run in a separate thread to avoid starving public pool.
 
         // TODO: Run in system pool.
-        new Thread() {
-            @Override public void run() {
+        //new Thread() {
+        //    @Override public void run() {
                 IgniteCache<String, PlatformDotNetEntityFrameworkCacheEntry> cache = ignite.cache(dataCacheName);
 
                 for (Cache.Entry<String, PlatformDotNetEntityFrameworkCacheEntry> cacheEntry :
@@ -207,10 +207,10 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
                     }
                 }
 
-                jobCtx.callcc();
+        /*        jobCtx.callcc();
             }
         }.start();
 
-        jobCtx.holdcc();
+        jobCtx.holdcc();*/
     }
 }
