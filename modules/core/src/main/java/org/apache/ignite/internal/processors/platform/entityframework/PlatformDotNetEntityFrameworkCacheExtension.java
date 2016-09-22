@@ -123,6 +123,8 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
                     throw new IgniteCheckedException("Failed to update entity set versions, expected: 1, " +
                         "actual: " + currentVersions.size());
                 }
+
+                return target.writeResult(mem, null);
             }
         }
 
