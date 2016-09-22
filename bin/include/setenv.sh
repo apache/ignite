@@ -65,7 +65,6 @@ do
     fi
 done
 
-# Add user-defined libs:
 if [ "${USER_LIBS}" != "" ]; then
     IGNITE_LIBS=${USER_LIBS}${SEP}${IGNITE_LIBS}
 fi
