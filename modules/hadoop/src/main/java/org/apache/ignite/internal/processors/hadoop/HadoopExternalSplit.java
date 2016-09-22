@@ -15,13 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.impl.v2;
+package org.apache.ignite.internal.processors.hadoop;
 
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
 
 /**
  * Split serialized in external file.

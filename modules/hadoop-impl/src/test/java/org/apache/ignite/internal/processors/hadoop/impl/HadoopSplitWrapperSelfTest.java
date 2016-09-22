@@ -27,11 +27,11 @@ import java.util.Arrays;
 import java.util.concurrent.Callable;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
-import org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopSplitWrapper;
+import org.apache.ignite.internal.processors.hadoop.HadoopSplitWrapper;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
- * Self test of {@link org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopSplitWrapper}.
+ * Self test of {@link HadoopSplitWrapper}.
  */
 public class HadoopSplitWrapperSelfTest extends HadoopAbstractSelfTest {
     /**
