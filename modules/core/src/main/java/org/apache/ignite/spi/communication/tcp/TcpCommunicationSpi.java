@@ -3947,6 +3947,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /**
      *
      */
+    @SuppressWarnings("PublicInnerClass")
     public static class HandshakeMessage2 extends HandshakeMessage {
         /** */
         private static final long serialVersionUID = 0L;
@@ -3969,6 +3970,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          */
         HandshakeMessage2(UUID nodeId, long connectCnt, long rcvCnt, int connIdx) {
             super(nodeId, connectCnt, rcvCnt);
+
             this.connIdx = connIdx;
         }
 
