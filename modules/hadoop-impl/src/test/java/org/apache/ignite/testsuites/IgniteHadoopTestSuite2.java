@@ -57,8 +57,7 @@ public class IgniteHadoopTestSuite2 extends TestSuite {
                 for (URL url : allJars) {
                     String urlStr = url.toString();
 
-                    if (urlStr.contains("modules/hadoop/") ||
-                        urlStr.contains("modules/hadoop-impl/") ||
+                    if (urlStr.contains("modules/hadoop-impl/") ||
                         urlStr.contains("org/apache/hadoop")) {
                         res.add(url);
 

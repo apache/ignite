@@ -311,13 +311,11 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
             byte[] bytes = bytesCache.get(originalName);
 
             if (bytes == null) {
-                ClassLoader cl = this;
-
-                InputStream in = helper.loadClassBytes(cl, replaceName);
+                InputStream in = helper.loadClassBytes(this, replaceName);
 
                 if (in == null)
-                    throw new IllegalStateException("Failed to load class. [ldr=" + cl
-                        + ", replaceName=" +  replaceName + ']');
+                    throw new IgniteException("Failed to replace class [ldr=" + this
+                        + ", originalName=" + originalName + ", replaceName=" +  replaceName + ']');
 
                 bytes = helper.loadReplace(in, originalName, replaceName);
 
@@ -354,10 +352,6 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
      */
     @SuppressWarnings("RedundantIfStatement")
     private static boolean loadByCurrentClassloader(String clsName) {
-        // TODO: experimental
-        if (clsName.contains("Test") && !clsName.contains("Test$") )
-            return false;
-
         // All impl classes.
         if (clsName.startsWith("org.apache.ignite.internal.processors.hadoop.impl"))
             return true;
