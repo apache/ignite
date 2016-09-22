@@ -65,8 +65,6 @@ import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.crea
  * Tests map-reduce task execution basics.
  */
 public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
-
-
     /** Test param. */
     private static final String MAP_WRITE = "test.map.write";
 

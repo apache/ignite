@@ -18,23 +18,28 @@
 package org.apache.ignite.internal.processors.hadoop.values;
 
 import org.apache.ignite.internal.processors.hadoop.HadoopSharedMap;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 
-import java.util.Collection;
-import java.util.UUID;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Static values for HadoopGroupingTest.
+ * Static values for HadoopJobTrackerSelfTest.
  */
-public class HadoopGroupingTestValues {
-    /** Values. */
-    private static final GridConcurrentHashSet<UUID> vals = HadoopSharedMap.map(HadoopGroupingTestValues.class)
-        .put("vals", new GridConcurrentHashSet<UUID>());
+public class HadoopJobTrackerSelfTestValues {
+    /** */
+    private static HadoopSharedMap m = HadoopSharedMap.map(HadoopJobTrackerSelfTestValues.class);
 
-    /**
-     * @return Values.
-     */
-    public static Collection<UUID> values() {
-        return vals;
-    }
+    /** Map task execution count. */
+    public static final AtomicInteger mapExecCnt = m.put("mapExecCnt", new AtomicInteger());
+
+    /** Reduce task execution count. */
+    public static final AtomicInteger reduceExecCnt = m.put("reduceExecCnt", new AtomicInteger());
+
+    /** Reduce task execution count. */
+    public static final AtomicInteger combineExecCnt = m.put("combineExecCnt", new AtomicInteger());
+
+    /** */
+    public static final Map<String, CountDownLatch> latch = m.put("latch", new HashMap<String, CountDownLatch>());
 }

@@ -41,15 +41,12 @@ import org.apache.ignite.internal.processors.hadoop.impl.examples.HadoopWordCoun
 import org.apache.ignite.internal.processors.hadoop.impl.examples.HadoopWordCount2;
 
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
+import static org.apache.ignite.internal.processors.hadoop.values.HadoopMapReduceEmbeddedSelfTestValues.flags;
 
 /**
  * Tests map-reduce execution with embedded mode.
  */
 public class HadoopMapReduceEmbeddedSelfTest extends HadoopMapReduceTest {
-    /** */
-    private static Map<String, Boolean> flags = HadoopSharedMap.map(HadoopMapReduceEmbeddedSelfTest.class)
-        .put("flags", new HashMap<String, Boolean>());
-
     /** {@inheritDoc} */
     @Override public HadoopConfiguration hadoopConfiguration(String gridName) {
         HadoopConfiguration cfg = super.hadoopConfiguration(gridName);
