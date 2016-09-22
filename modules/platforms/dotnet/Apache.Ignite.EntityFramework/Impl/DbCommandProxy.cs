@@ -23,6 +23,7 @@ namespace Apache.Ignite.EntityFramework.Impl
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+    using System.Threading;
 
     /// <summary>
     /// Command proxy.
@@ -164,6 +165,8 @@ namespace Apache.Ignite.EntityFramework.Impl
             var queryInfo = GetQueryInfo();
             var strategy = _commandInfo.Policy.GetCachingStrategy(queryInfo);
             var cacheKey = _commandInfo.Cache.GetCacheKey(GetKey(), _commandInfo.AffectedEntitySets, strategy);
+
+            Console.WriteLine("Got cache key: {0} | {1}", cacheKey.GetStringKey(), Thread.CurrentThread.ManagedThreadId);
 
             object cachedRes;
             if (_commandInfo.Cache.GetItem(cacheKey, out cachedRes))
