@@ -132,6 +132,7 @@ namespace Apache.Ignite.EntityFramework.Impl
             // TODO: Remove!
             Console.WriteLine("Adding to cache: {0} | {1}", key.GetStringKey(), Thread.CurrentThread.ManagedThreadId);
 
+            // TODO: Do not put if key is already old!
             cache[key.GetStringKey()] = new EntityFrameworkCacheEntry(value, key.EntitySetVersions);
         }
 
