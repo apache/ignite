@@ -22,6 +22,7 @@ namespace Apache.Ignite.EntityFramework.Impl
     using System.Data;
     using System.Data.Common;
     using System.Linq;
+    using System.Threading;
 
     /// <summary>
     /// Cacheable result of a DbDataReader.
@@ -85,6 +86,9 @@ namespace Apache.Ignite.EntityFramework.Impl
                 var vals = new object[reader.FieldCount];
 
                 reader.GetValues(vals);
+
+                Console.WriteLine("Values: {0} | {1}", vals.Select(x => x.ToString()).Aggregate((x, y) => x + "," + y),
+                    Thread.CurrentThread.ManagedThreadId);
 
                 yield return vals;
             }

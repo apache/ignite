@@ -169,7 +169,7 @@ namespace Apache.Ignite.EntityFramework.Impl
             var strategy = _commandInfo.Policy.GetCachingStrategy(queryInfo);
             var cacheKey = _commandInfo.Cache.GetCacheKey(GetKey(), _commandInfo.AffectedEntitySets, strategy);
 
-            Console.WriteLine("Got cache key: {0} | {1}", cacheKey.GetStringKey(), Thread.CurrentThread.ManagedThreadId);
+            //Console.WriteLine("Got cache key: {0} | {1}", cacheKey.GetStringKey(), Thread.CurrentThread.ManagedThreadId);
 
             object cachedRes;
             if (_commandInfo.Cache.GetItem(cacheKey, out cachedRes))
@@ -209,7 +209,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         {
             var res = _command.ExecuteNonQuery();
 
-            Console.WriteLine("ExecuteNonQuery done | " + Thread.CurrentThread.ManagedThreadId);
+            Console.WriteLine("ExecuteNonQuery done {0} | {1}", GetKey(), Thread.CurrentThread.ManagedThreadId);
 
             // Invalidate AFTER updating the data.
             if (_commandInfo.IsModification)
@@ -250,6 +250,7 @@ namespace Apache.Ignite.EntityFramework.Impl
                 throw new NotSupportedException("Ignite Entity Framework Caching " +
                                                 "requires non-empty DbCommand.CommandText.");
 
+            // TODO: Remove LINQ, use single StringBuilder!
             var parameters = string.Join("|",
                 Parameters.Cast<DbParameter>().Select(x => x.ParameterName + "=" + x.Value));
 
