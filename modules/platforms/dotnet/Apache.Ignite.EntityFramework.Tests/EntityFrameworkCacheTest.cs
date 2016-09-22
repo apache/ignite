@@ -656,6 +656,9 @@ namespace Apache.Ignite.EntityFramework.Tests
         [Category(TestUtils.CategoryIntensive)]
         public void TestOldEntriesCleanupMultithreaded()
         {
+            // TODO: Is there a race because "all version increments are the same"?
+            // Should we try GUIDs for versions instead?
+
             TestUtils.RunMultiThreaded(CreateRemoveBlog, 4, 20);
 
             // Wait for the cleanup to complete.
