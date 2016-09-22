@@ -17,18 +17,15 @@
 
 package org.apache.ignite.tests.utils;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.ResourceBundle;
+import java.util.*;
+
+import org.apache.ignite.cache.store.cassandra.common.SystemHelper;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.tests.load.Generator;
 import org.apache.ignite.tests.pojos.Person;
 import org.apache.ignite.tests.pojos.PersonId;
+import org.apache.ignite.tests.pojos.Product;
+import org.apache.ignite.tests.pojos.ProductOrder;
 import org.springframework.core.io.ClassPathResource;
 
 /**
@@ -66,6 +63,21 @@ public class TestsHelper {
     private static final int LOAD_TESTS_REQUESTS_LATENCY = parseTestSettings("load.tests.requests.latency");
 
     /** */
+    private static final int TRANSACTION_PRODUCTS_COUNT = parseTestSettings("transaction.products.count");
+
+    /** */
+    private static final int TRANSACTION_ORDERS_COUNT = parseTestSettings("transaction.orders.count");
+
+    /** */
+    private static final int ORDERS_YEAR;
+
+    /** */
+    private static final int ORDERS_MONTH;
+
+    /** */
+    private static final int ORDERS_DAY;
+
+    /** */
     private static final String LOAD_TESTS_PERSISTENCE_SETTINGS = TESTS_SETTINGS.getString("load.tests.persistence.settings");
 
     /** */
@@ -78,18 +90,39 @@ public class TestsHelper {
     private static final Generator LOAD_TESTS_VALUE_GENERATOR;
 
     /** */
-    private static int parseTestSettings(String name) {
-        return Integer.parseInt(TESTS_SETTINGS.getString(name));
-    }
+    private static final String HOST_PREFIX;
 
     static {
         try {
             LOAD_TESTS_KEY_GENERATOR = (Generator)Class.forName(TESTS_SETTINGS.getString("load.tests.key.generator")).newInstance();
             LOAD_TESTS_VALUE_GENERATOR = (Generator)Class.forName(TESTS_SETTINGS.getString("load.tests.value.generator")).newInstance();
+
+            String[] parts = SystemHelper.HOST_IP.split("\\.");
+
+            String prefix = parts[3];
+            prefix = prefix.length() > 2 ? prefix.substring(prefix.length() - 2) : prefix;
+
+            HOST_PREFIX = prefix;
+
+            Calendar cl = Calendar.getInstance();
+
+            String year = TESTS_SETTINGS.getString("orders.year");
+            ORDERS_YEAR = !year.trim().isEmpty() ? Integer.parseInt(year) : cl.get(Calendar.YEAR);
+
+            String month = TESTS_SETTINGS.getString("orders.month");
+            ORDERS_MONTH = !month.trim().isEmpty() ? Integer.parseInt(month) : cl.get(Calendar.MONTH);
+
+            String day = TESTS_SETTINGS.getString("orders.day");
+            ORDERS_DAY = !day.trim().isEmpty() ? Integer.parseInt(day) : cl.get(Calendar.DAY_OF_MONTH);
         }
         catch (Throwable e) {
             throw new RuntimeException("Failed to initialize TestsHelper", e);
         }
+    }
+
+    /** */
+    private static int parseTestSettings(String name) {
+        return Integer.parseInt(TESTS_SETTINGS.getString(name));
     }
 
     /** */
@@ -275,6 +308,66 @@ public class TestsHelper {
     }
 
     /** */
+    public static List<CacheEntryImpl<Long, Product>> generateProductEntries() {
+        List<CacheEntryImpl<Long, Product>> entries = new LinkedList<>();
+
+        for (long i = 0; i < BULK_OPERATION_SIZE; i++)
+            entries.add(new CacheEntryImpl<>(i, generateRandomProduct(i)));
+
+        return entries;
+    }
+
+    /** */
+    public static Collection<Long> getProductIds(Collection<CacheEntryImpl<Long, Product>> entries) {
+        List<Long> ids = new LinkedList<>();
+
+        for (CacheEntryImpl<Long, Product> entry : entries)
+            ids.add(entry.getKey());
+
+        return ids;
+    }
+
+    /** */
+    public static Collection<CacheEntryImpl<Long, ProductOrder>> generateOrderEntries() {
+        Collection<CacheEntryImpl<Long, ProductOrder>> entries = new LinkedList<>();
+
+        for (long i = 0; i < BULK_OPERATION_SIZE; i++) {
+            ProductOrder order = generateRandomOrder(i);
+            entries.add(new CacheEntryImpl<>(order.getId(), order));
+        }
+
+        return entries;
+    }
+
+    /** */
+    public static Map<Long, List<CacheEntryImpl<Long, ProductOrder>>> generateOrdersPerProductEntries(
+            Collection<CacheEntryImpl<Long, Product>> products) {
+        Map<Long, List<CacheEntryImpl<Long, ProductOrder>>> map = new HashMap<>();
+
+        for (CacheEntryImpl<Long, Product> entry : products) {
+            List<CacheEntryImpl<Long, ProductOrder>> orders = new LinkedList<>();
+
+            for (long i = 0; i < TRANSACTION_ORDERS_COUNT; i++)
+                orders.add(new CacheEntryImpl<>(i, generateRandomOrder(entry.getKey())));
+
+            map.put(entry.getKey(), orders);
+        }
+
+        return map;
+    }
+
+    public static Collection<Long> getOrderIds(Map<Long, List<CacheEntryImpl<Long, ProductOrder>>> orders) {
+        List<Long> ids = new LinkedList<>();
+
+        for (Long key : orders.keySet()) {
+            for (CacheEntryImpl<Long, ProductOrder> entry : orders.get(key))
+                ids.add(entry.getKey());
+        }
+
+        return ids;
+    }
+
+    /** */
     public static Person generateRandomPerson(long personNum) {
         int phonesCnt = RANDOM.nextInt(4);
 
@@ -290,6 +383,33 @@ public class TestsHelper {
     /** */
     public static PersonId generateRandomPersonId() {
         return new PersonId(randomString(4), randomString(4), RANDOM.nextInt(100));
+    }
+
+    /** */
+    public static Product generateRandomProduct(long id) {
+        return new Product(id, randomString(2), randomString(6), randomString(20), generateProductPrice(id));
+    }
+
+    /** */
+    private static ProductOrder generateRandomOrder(long productId) {
+        return generateRandomOrder(productId, 0);
+    }
+
+    /** */
+    private static ProductOrder generateRandomOrder(long productId, int saltedNumber) {
+        Calendar cl = Calendar.getInstance();
+        cl.set(Calendar.YEAR, ORDERS_YEAR);
+        cl.set(Calendar.MONTH, ORDERS_MONTH);
+        cl.set(Calendar.DAY_OF_MONTH, ORDERS_DAY);
+
+        long orderId = Long.parseLong(System.currentTimeMillis() + HOST_PREFIX + saltedNumber);
+
+        return generateRandomOrder(productId, orderId, cl.getTime());
+    }
+
+    /** */
+    public static ProductOrder generateRandomOrder(long id, long productId, Date date) {
+        return new ProductOrder(id, productId, generateProductPrice(productId), date, 1 + RANDOM.nextInt(20));
     }
 
     /** */
@@ -360,6 +480,30 @@ public class TestsHelper {
     }
 
     /** */
+    public static <K> boolean checkProductCollectionsEqual(Map<K, Product> map, Collection<CacheEntryImpl<K, Product>> col) {
+        if (map == null || col == null || map.size() != col.size())
+            return false;
+
+        for (CacheEntryImpl<K, Product> entry : col)
+            if (!entry.getValue().equals(map.get(entry.getKey())))
+                return false;
+
+        return true;
+    }
+
+    /** */
+    public static <K> boolean checkOrderCollectionsEqual(Map<K, ProductOrder> map, Collection<CacheEntryImpl<K, ProductOrder>> col) {
+        if (map == null || col == null || map.size() != col.size())
+            return false;
+
+        for (CacheEntryImpl<K, ProductOrder> entry : col)
+            if (!entry.getValue().equals(map.get(entry.getKey())))
+                return false;
+
+        return true;
+    }
+
+    /** */
     public static String randomString(int len) {
         StringBuilder builder = new StringBuilder(len);
 
@@ -377,5 +521,27 @@ public class TestsHelper {
             builder.append(NUMBERS_ALPHABET.charAt(RANDOM.nextInt(NUMBERS_ALPHABET.length())));
 
         return builder.toString();
+    }
+
+    /** */
+    private static float generateProductPrice(long productId) {
+        long id = productId < 1000 ?
+                (((productId + 1) * (productId + 1) * 1000) / 2) * 10 :
+                (productId / 20) * (productId / 20);
+
+        float price = Long.parseLong(Long.toString(id).replace("0", ""));
+
+        int i = 0;
+
+        while (price > 100) {
+            if (i % 2 != 0)
+                price = price / 2;
+            else
+                price = (float) Math.sqrt(price);
+
+            i++;
+        }
+
+        return ((float)((int)(price * 100))) / 100.0F;
     }
 }
