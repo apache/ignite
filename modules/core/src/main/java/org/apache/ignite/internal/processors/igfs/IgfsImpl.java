@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import javax.naming.OperationNotSupportedException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -1231,6 +1232,9 @@ public final class IgfsImpl implements IgfsEx {
         safeOp(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 IgfsMode mode = resolveMode(path);
+
+                if (mode == PROXY)
+                    throw new OperationNotSupportedException("The operation setTimes is not supported in PROXY mode");
 
                 boolean useSecondary = IgfsUtils.isDualMode(mode) && secondaryFs instanceof IgfsSecondaryFileSystemV2;
 

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.igfs;
 import static org.apache.ignite.igfs.IgfsMode.PROXY;
 
 /**
- * Tests for PRIMARY mode.
+ * Tests for PROXY mode.
  */
 public class IgfsProxySelfTest extends IgfsAbstractSelfTest {
     /**
@@ -28,5 +28,10 @@ public class IgfsProxySelfTest extends IgfsAbstractSelfTest {
      */
     public IgfsProxySelfTest() {
         super(PROXY);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean timesSupported() {
+        return false;
     }
 }

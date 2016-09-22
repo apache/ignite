@@ -52,6 +52,8 @@ import org.apache.ignite.internal.processors.igfs.IgfsPrimaryRelaxedConsistencyS
 import org.apache.ignite.internal.processors.igfs.IgfsPrimarySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorValidationSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsProxySelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsProxyToLocalFilesystemSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsSizeSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsStartCacheTest;
@@ -150,6 +152,10 @@ public class IgniteIgfsTestSuite extends TestSuite {
         //suite.addTestSuite(IgfsBackupFailoverSelfTest.class);
 
         suite.addTestSuite(IgfsMaxSizeSelfTest.class);
+
+
+        suite.addTestSuite(IgfsProxySelfTest.class);
+        suite.addTestSuite(IgfsProxyToLocalFilesystemSelfTest.class);
 
         return suite;
     }
