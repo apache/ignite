@@ -74,6 +74,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
+import org.apache.ignite.internal.processors.platform.entityframework.PlatformDotNetEntityFrameworkCacheExtension;
 import org.apache.ignite.internal.processors.platform.entityframework.PlatformDotNetEntityFrameworkIncreaseVersionProcessor;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -1334,6 +1335,28 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                         cache.invokeAll(keys, new PlatformDotNetEntityFrameworkIncreaseVersionProcessor());
 
                     assertEquals(1, res.size());
+                }
+            }
+        }, threadCnt, "testInvokeAllMultithreaded");
+
+        assertEquals(cnt*threadCnt, (long)cache.get("myKey"));
+    }
+
+    public void testInvokeAllMultithreaded2() throws Exception {
+        final IgniteCache<String, Long> cache = (IgniteCache<String, Long>)(IgniteCache)jcache();
+        final int threadCnt = 8;
+        final int cnt = 300000;
+
+        GridTestUtils.runMultiThreaded(new Runnable() {
+            @Override public void run() {
+                for (int i = 0; i < cnt; i++) {
+                    try {
+                        PlatformDotNetEntityFrameworkCacheExtension.testInvoker(cache, "myKey");
+                    }
+                    catch (IgniteCheckedException e) {
+                        e.printStackTrace();
+                        return;
+                    }
                 }
             }
         }, threadCnt, "testInvokeAllMultithreaded");
