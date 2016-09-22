@@ -634,7 +634,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(obj.b, (byte)po.field("b"));
         assertEquals(obj.s, (short)po.field("s"));
         assertEquals(obj.i, (int)po.field("i"));
+        assertEquals(obj.zi, (int)po.field("zi"));
         assertEquals(obj.l, (long)po.field("l"));
+        assertEquals(obj.zl, (long)po.field("zl"));
         assertEquals(obj.f, (float)po.field("f"), 0);
         assertEquals(obj.d, (double)po.field("d"), 0);
         assertEquals(obj.c, (char)po.field("c"));
@@ -669,7 +671,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(obj.inner.b, (byte)innerPo.field("b"));
         assertEquals(obj.inner.s, (short)innerPo.field("s"));
         assertEquals(obj.inner.i, (int)innerPo.field("i"));
+        assertEquals(obj.inner.zi, (int)innerPo.field("zi"));
         assertEquals(obj.inner.l, (long)innerPo.field("l"));
+        assertEquals(obj.inner.zl, (long)innerPo.field("zl"));
         assertEquals(obj.inner.f, (float)innerPo.field("f"), 0);
         assertEquals(obj.inner.d, (double)innerPo.field("d"), 0);
         assertEquals(obj.inner.c, (char)innerPo.field("c"));
@@ -720,6 +724,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(obj.b, (byte)po.field("_b"));
         assertEquals(obj.s, (short)po.field("_s"));
         assertEquals(obj.i, (int)po.field("_i"));
+        assertEquals(obj.zi, (int)po.field("_zi"));
         assertEquals(obj.l, (long)po.field("_l"));
         assertEquals(obj.zl, (long)po.field("_zl"));
         assertEquals(obj.f, (float)po.field("_f"), 0);
@@ -755,7 +760,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(obj.simple.b, (byte)simplePo.field("b"));
         assertEquals(obj.simple.s, (short)simplePo.field("s"));
         assertEquals(obj.simple.i, (int)simplePo.field("i"));
+        assertEquals(obj.simple.zi, (int)simplePo.field("zi"));
         assertEquals(obj.simple.l, (long)simplePo.field("l"));
+        assertEquals(obj.simple.zl, (long)simplePo.field("zl"));
         assertEquals(obj.simple.f, (float)simplePo.field("f"), 0);
         assertEquals(obj.simple.d, (double)simplePo.field("d"), 0);
         assertEquals(obj.simple.c, (char)simplePo.field("c"));
@@ -793,7 +800,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(obj.binary.b, (byte)binaryPo.field("_b"));
         assertEquals(obj.binary.s, (short)binaryPo.field("_s"));
         assertEquals(obj.binary.i, (int)binaryPo.field("_i"));
+        assertEquals(obj.binary.zi, (int)binaryPo.field("_zi"));
         assertEquals(obj.binary.l, (long)binaryPo.field("_l"));
+        assertEquals(obj.binary.zl, (long)binaryPo.field("_zl"));
         assertEquals(obj.binary.f, (float)binaryPo.field("_f"), 0);
         assertEquals(obj.binary.d, (double)binaryPo.field("_d"), 0);
         assertEquals(obj.binary.c, (char)binaryPo.field("_c"));
@@ -957,7 +966,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(obj.b, (byte)po.field("b"));
         assertEquals(obj.s, (short)po.field("s"));
         assertEquals(obj.i, (int)po.field("i"));
+        assertEquals(obj.zi, (int)po.field("zi"));
         assertEquals(obj.l, (long)po.field("l"));
+        assertEquals(obj.zl, (long)po.field("zl"));
         assertEquals(obj.f, (float)po.field("f"), 0);
         assertEquals(obj.d, (double)po.field("d"), 0);
         assertEquals(obj.c, (char)po.field("c"));

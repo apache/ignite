@@ -183,6 +183,23 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
     }
 
     /**
+     * Test int field within compact mode on.
+     * Compact Integer zeroes should become default mode in Apache Ignite 2.0, so this test will be redundant.
+     *
+     * @deprecated Should be removed in Apache Ignite 2.0.
+     * @throws Exception If failed.
+     */
+    @Deprecated
+    public void testOIntZero() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_BINARY_COMPACT_INT_ZEROES, "true");
+
+        check("fInt");
+        check("fIntZero");
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_BINARY_COMPACT_INT_ZEROES);
+    }
+
+    /**
      * Test int array field.
      *
      * @throws Exception If failed.
@@ -591,6 +608,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
         public short fShort;
         public char fChar;
         public int fInt;
+        public int fIntZero;
         public long fLong;
         public long fLongZero;
         public float fFloat;
@@ -644,6 +662,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
             fShort = 2;
             fChar = 3;
             fInt = 4;
+            fIntZero = 0;
             fLong = 5;
             fLongZero = 0;
             fFloat = 6.6f;
