@@ -347,7 +347,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
      * @return Whether class must be loaded by current classloader without delegation.
      */
     @SuppressWarnings("RedundantIfStatement")
-    private static boolean loadByCurrentClassloader(String clsName) {
+    public static boolean loadByCurrentClassloader(String clsName) {
         // All impl classes.
         if (clsName.startsWith("org.apache.ignite.internal.processors.hadoop.impl"))
             return true;
@@ -360,12 +360,6 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
                 clsName.contains("org.apache.ignite.hadoop.mapreduce.IgniteHadoopClientProtocolProvider"))
                 return true;
         }
-
-        // TODO: Move suites to "impl" package.
-        // Test suites (to be removed).
-        if (clsName.equals("org.apache.ignite.testsuites.IgniteHadoopTestSuite") ||
-            clsName.equals("org.apache.ignite.testsuites.IgniteIgfsLinuxAndMacOSTestSuite"))
-            return true;
 
         return false;
     }

@@ -57,29 +57,31 @@ public class HadoopTestClassLoader extends URLClassLoader {
 
     /** {@inheritDoc} */
     @Override protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        try {
-            synchronized (getClassLoadingLock(name)) {
-                // First, check if the class has already been loaded
-                Class c = findLoadedClass(name);
+        if (HadoopClassLoader.loadByCurrentClassloader(name)) {
+            try {
+                synchronized (getClassLoadingLock(name)) {
+                    // First, check if the class has already been loaded
+                    Class c = findLoadedClass(name);
 
-                if (c == null) {
-                    long t1 = System.nanoTime();
+                    if (c == null) {
+                        long t1 = System.nanoTime();
 
-                    c = findClass(name);
+                        c = findClass(name);
 
-                    // this is the defining class loader; record the stats
-                    sun.misc.PerfCounter.getFindClassTime().addElapsedTimeFrom(t1);
-                    sun.misc.PerfCounter.getFindClasses().increment();
+                        // this is the defining class loader; record the stats
+                        sun.misc.PerfCounter.getFindClassTime().addElapsedTimeFrom(t1);
+                        sun.misc.PerfCounter.getFindClasses().increment();
+                    }
+
+                    if (resolve)
+                        resolveClass(c);
+
+                    return c;
                 }
-
-                if (resolve)
-                    resolveClass(c);
-
-                return c;
             }
-        }
-        catch (NoClassDefFoundError | ClassNotFoundException e) {
-            // No-op. Will delegate to parent.
+            catch (NoClassDefFoundError | ClassNotFoundException e) {
+                throw new IgniteException("Failed to load class by test class loader: " + name, e);
+            }
         }
 
         return super.loadClass(name, resolve);
