@@ -20,7 +20,10 @@ package org.apache.ignite.internal.processors.igfs;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -54,6 +57,18 @@ public class IgfsContext {
     /** IGFS instance. */
     private final IgfsEx igfs;
 
+    /** Local metrics holder. */
+    private final IgfsLocalMetrics metrics = new IgfsLocalMetrics();
+
+    /** Local cluster node. */
+    private volatile ClusterNode locNode;
+
+    /** IGFS executor service. */
+    private ExecutorService igfsSvc;
+
+    /** Logger. */
+    protected IgniteLogger log;
+
     /**
      * @param ctx Kernal context.
      * @param cfg IGFS configuration.
@@ -78,6 +93,10 @@ public class IgfsContext {
         this.dataMgr = add(dataMgr);
         this.srvMgr = add(srvMgr);
         this.fragmentizerMgr = add(fragmentizerMgr);
+
+        log = ctx.log(IgfsContext.class);
+
+        igfsSvc = ctx.getIgfsExecutorService();
 
         igfs = new IgfsImpl(this);
     }
@@ -176,6 +195,49 @@ public class IgfsContext {
      */
     public boolean igfsNode(ClusterNode node) {
         return IgfsUtils.isIgfsNode(node, cfg.getName());
+    }
+
+    /**
+     * Get local metrics.
+     *
+     * @return Local metrics.
+     */
+    public IgfsLocalMetrics metrics() {
+        return metrics;
+    }
+
+    /**
+     * Get local node.
+     *
+     * @return Local node.
+     */
+    public ClusterNode localNode() {
+        if (locNode == null)
+            locNode = ctx.discovery().localNode();
+
+        return locNode;
+    }
+
+    /**
+     * Executes runnable in IGFS executor service. If execution rejected, runnable will be executed
+     * in caller thread.
+     *
+     * @param r Runnable to execute.
+     */
+    public void runInIgfsThreadPool(Runnable r) {
+        try {
+            igfsSvc.submit(r);
+        }
+        catch (RejectedExecutionException ignored) {
+            // This exception will happen if network speed is too low and data comes faster
+            // than we can send it to remote nodes.
+            try {
+                r.run();
+            }
+            catch (Exception e) {
+                log.warning("Failed to execute IGFS runnable: " + r, e);
+            }
+        }
     }
 
     /**
