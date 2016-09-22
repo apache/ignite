@@ -29,13 +29,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Hadoop classpath utilities.
  */
 public class HadoopClasspathUtils {
+    /** Ignite home. */
+    private static final String IGNITE_HOME = "IGNITE_HOME";
+
     /** Prefix directory. */
     public static final String PREFIX = "HADOOP_PREFIX";
 
@@ -76,32 +77,6 @@ public class HadoopClasspathUtils {
                 }
             }
         }
-
-//        String igniteHome = U.getIgniteHome();
-//
-//        if (igniteHome == null)
-//            throw new IgniteException("Cannot determine ignite home.");
-//
-//        File dir = new File(igniteHome, "libs/ignite-hadoop-impl");
-//
-//        File[] files;
-//
-//        // TODO: determine if we're in test environment somehow:
-//        if (/* U.isTest() && */ !dir.exists()) {
-//            // Branch for tests:
-//            File implClasses = new File(igniteHome, "modules/hadoop-impl/target/classes");
-//
-//            if (!implClasses.exists())
-//                throw new IgniteIllegalStateException("Hadoop implementation module classes not found, [dir="
-//                    + implClasses + ']');
-//
-//            files = new File[] { implClasses };
-//        }
-//        else
-//            files = new SearchDirectory(dir, AcceptAllDirectoryFilter.INSTANCE, true).files();
-//
-//        for (File f: files)
-//            res.add(f.toURI().toURL());
 
         return res;
     }
@@ -211,29 +186,15 @@ public class HadoopClasspathUtils {
         // 2. Add user provided libs:
         res.addAll(parseUserLibs());
 
-        // 3.
-        String igniteHome = U.getIgniteHome();
+        // 3. Add hadoop-impl module.
+        String home = systemOrEnv(IGNITE_HOME, null);
 
-        if (igniteHome == null)
-            throw new IgniteException("Cannot determine ignite home.");
+        if (home != null) {
+            File dir = new File(home, "libs/ignite-hadoop-impl");
 
-        File dir = new File(igniteHome, "libs/ignite-hadoop-impl");
-
-//        File[] files;
-//
-//        // TODO: determine if we're in test environment somehow:
-//        if (/* U.isTest() && */ !dir.exists()) {
-//            // Branch for tests:
-//            File implClasses = new File(igniteHome, "modules/hadoop-impl/target/classes");
-//
-//            if (!implClasses.exists())
-//                throw new IgniteIllegalStateException("Hadoop implementation module classes not found, [dir="
-//                    + implClasses + ']');
-//
-//            files = new File[] { implClasses };
-//        }
-//        else
-        res.add(new SearchDirectory(dir, AcceptAllDirectoryFilter.INSTANCE, true));
+            if (dir.exists())
+                res.add(new SearchDirectory(dir, AcceptAllDirectoryFilter.INSTANCE, true));
+        }
 
         return res;
     }
@@ -382,13 +343,6 @@ public class HadoopClasspathUtils {
         }
 
         /**
-         * @return Absolute path.
-         */
-        public String absolutePath() {
-            return dir.getAbsolutePath();
-        }
-
-        /**
          * @return Child files.
          */
         public File[] files() throws IOException {
@@ -406,13 +360,6 @@ public class HadoopClasspathUtils {
             }
             else
                 return files;
-        }
-
-        /**
-         * @return {@code True} if wildcard can be used.
-         */
-        public boolean useWildcard() {
-            return filter instanceof AcceptAllDirectoryFilter;
         }
     }
 
