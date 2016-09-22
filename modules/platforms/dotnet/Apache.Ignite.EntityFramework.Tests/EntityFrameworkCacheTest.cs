@@ -711,26 +711,6 @@ namespace Apache.Ignite.EntityFramework.Tests
             }
         }
 
-        [Test]
-        public void TestProcessor()  // TODO: Remove!
-        {
-            var cache = (ICacheInternal) _metaCache;
-
-            const string key = "myKey";
-            const int cnt = 30000;
-            const int threadCnt = 4;
-
-            TestUtils.RunMultiThreaded(() =>
-            {
-                for (var i = 0; i < cnt; i++)
-                {
-                    cache.DoOutInOpExtension<object>(1, 2, w => w.WriteString(key), null);
-                }
-            }, threadCnt);
-
-            Assert.AreEqual(cnt * threadCnt, _metaCache[key]);
-        }
-
         /// <summary>
         /// Executes the entity SQL.
         /// </summary>
