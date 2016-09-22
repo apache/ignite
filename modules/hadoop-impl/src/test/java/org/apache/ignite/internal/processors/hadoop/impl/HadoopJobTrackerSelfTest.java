@@ -21,12 +21,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.InputSplit;
@@ -47,6 +44,10 @@ import org.apache.ignite.internal.processors.hadoop.HadoopJobStatus;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopJobTrackerSelfTestState.combineExecCnt;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopJobTrackerSelfTestState.latch;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopJobTrackerSelfTestState.mapExecCnt;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopJobTrackerSelfTestState.reduceExecCnt;
 
 /**
  * Job tracker self test.
@@ -57,21 +58,6 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
 
     /** Test block count parameter name. */
     private static final int BLOCK_CNT = 10;
-
-    /** */
-    public static final HadoopSharedMap m = HadoopSharedMap.map(HadoopJobTrackerSelfTest.class);
-
-    /** Map task execution count. */
-    public static final AtomicInteger mapExecCnt = m.put("mapExecCnt", new AtomicInteger());
-
-    /** Reduce task execution count. */
-    public static final AtomicInteger reduceExecCnt = m.put("reduceExecCnt", new AtomicInteger());
-
-    /** Reduce task execution count. */
-    public static final AtomicInteger combineExecCnt = m.put("combineExecCnt", new AtomicInteger());
-
-    /** */
-    public static final Map<String, CountDownLatch> latch = m.put("latch", new HashMap<String, CountDownLatch>());
 
     /** {@inheritDoc} */
     @Override protected boolean igfsEnabled() {
@@ -98,12 +84,6 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
         latch.put("reduceAwaitLatch", new CountDownLatch(1));
         latch.put("combineAwaitLatch", new CountDownLatch(1));
     }
-
-//    static void initLatchMap(Map<?,?> latch) {
-//        latch.put("mapAwaitLatch", new CountDownLatch(1));
-//        latch.put("reduceAwaitLatch", new CountDownLatch(1));
-//        latch.put("combineAwaitLatch", new CountDownLatch(1));
-//    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -313,9 +293,6 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
     private static class TestMapper extends Mapper {
         @Override public void run(Context ctx) throws IOException, InterruptedException {
             System.out.println("Running task: " + ctx.getTaskAttemptID().getTaskID().getId());
-
-            //assertEquals(getClass().getClassLoader(), HadoopJobTrackerSelfTest.class.getClassLoader());
-            System.out.println("###### cl = " + HadoopJobTrackerSelfTest.class.getClassLoader());
 
             latch.get("mapAwaitLatch").await();
 

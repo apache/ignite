@@ -22,11 +22,8 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
@@ -56,34 +53,18 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.cancelledTasks;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.executedTasks;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.failMapperId;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.splitsCount;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.taskWorkDirs;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.totalLineCnt;
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
 
 /**
  * Tests map-reduce task execution basics.
  */
 public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
-    /** */
-    public static HadoopSharedMap m = HadoopSharedMap.map(HadoopTaskExecutionSelfTest.class);
-
-    /** Line count. */
-    public static final AtomicInteger totalLineCnt = m.put("totalLineCnt", new AtomicInteger());
-
-    /** Executed tasks. */
-    public static final AtomicInteger executedTasks = m.put("executedTasks", new AtomicInteger());
-
-    /** Cancelled tasks. */
-    public static final AtomicInteger cancelledTasks = m.put("cancelledTasks", new AtomicInteger());
-
-    /** Working directory of each task. */
-    public static final Map<String, String> taskWorkDirs = m.put("taskWorkDirs",
-        new ConcurrentHashMap<String, String>());
-
-    /** Mapper id to fail. */
-    public static final AtomicInteger failMapperId = m.put("failMapperId", new AtomicInteger());
-
-    /** Number of splits of the current input. */
-    public static final AtomicInteger splitsCount = m.put("splitsCount", new AtomicInteger());
-
     /** Test param. */
     private static final String MAP_WRITE = "test.map.write";
 
