@@ -443,7 +443,7 @@ public class CassandraDirectPersistenceTest {
 
         List<CacheEntryImpl<Long, Product>> productEntries = TestsHelper.generateProductEntries();
         Map<Long, List<CacheEntryImpl<Long, ProductOrder>>> ordersPerProduct =
-                TestsHelper.generateOrdersPerProductEntries(productEntries);
+                TestsHelper.generateOrdersPerProductEntries(productEntries, 2);
 
         Collection<Long> productIds =  TestsHelper.getProductIds(productEntries);
         Collection<Long> orderIds =  TestsHelper.getOrderIds(ordersPerProduct);
@@ -475,6 +475,8 @@ public class CassandraDirectPersistenceTest {
 
         //noinspection deprecation
         orderStore.sessionEnd(true);
+        //noinspection deprecation
+        productStore.sessionEnd(true);
 
         Product product1 = (Product)productStore.load(product.getId());
         ProductOrder order1 = (ProductOrder)orderStore.load(order.getId());
@@ -556,6 +558,8 @@ public class CassandraDirectPersistenceTest {
 
         //noinspection deprecation
         productStore.sessionEnd(true);
+        //noinspection deprecation
+        orderStore.sessionEnd(true);
 
         for (CacheEntryImpl<Long, Product> entry : productEntries) {
             product = (Product)productStore.load(entry.getKey());
@@ -661,6 +665,8 @@ public class CassandraDirectPersistenceTest {
 
         //noinspection deprecation
         productStore.sessionEnd(true);
+        //noinspection deprecation
+        orderStore.sessionEnd(true);
 
         if (productStore.load(deletedProduct.getId()) != null || orderStore.load(deletedOrder.getId()) != null) {
             throw new RuntimeException("Single delete operation test failed. Transaction was committed, but " +
@@ -694,6 +700,8 @@ public class CassandraDirectPersistenceTest {
 
         //noinspection deprecation
         orderStore.sessionEnd(true);
+        //noinspection deprecation
+        productStore.sessionEnd(true);
 
         products = (Map<Long, Product>)productStore.loadAll(productIds);
         orders = (Map<Long, ProductOrder>)orderStore.loadAll(orderIds);

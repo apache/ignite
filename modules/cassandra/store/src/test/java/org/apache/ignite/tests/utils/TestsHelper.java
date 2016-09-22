@@ -342,13 +342,21 @@ public class TestsHelper {
     /** */
     public static Map<Long, List<CacheEntryImpl<Long, ProductOrder>>> generateOrdersPerProductEntries(
             Collection<CacheEntryImpl<Long, Product>> products) {
+        return generateOrdersPerProductEntries(products, TRANSACTION_ORDERS_COUNT);
+    }
+
+    /** */
+    public static Map<Long, List<CacheEntryImpl<Long, ProductOrder>>> generateOrdersPerProductEntries(
+            Collection<CacheEntryImpl<Long, Product>> products, int ordersPerProductCount) {
         Map<Long, List<CacheEntryImpl<Long, ProductOrder>>> map = new HashMap<>();
 
         for (CacheEntryImpl<Long, Product> entry : products) {
             List<CacheEntryImpl<Long, ProductOrder>> orders = new LinkedList<>();
 
-            for (long i = 0; i < TRANSACTION_ORDERS_COUNT; i++)
-                orders.add(new CacheEntryImpl<>(i, generateRandomOrder(entry.getKey())));
+            for (long i = 0; i < ordersPerProductCount; i++) {
+                ProductOrder order = generateRandomOrder(entry.getKey());
+                orders.add(new CacheEntryImpl<>(order.getId(), order));
+            }
 
             map.put(entry.getKey(), orders);
         }
@@ -357,7 +365,7 @@ public class TestsHelper {
     }
 
     public static Collection<Long> getOrderIds(Map<Long, List<CacheEntryImpl<Long, ProductOrder>>> orders) {
-        List<Long> ids = new LinkedList<>();
+        Set<Long> ids = new HashSet<>();
 
         for (Long key : orders.keySet()) {
             for (CacheEntryImpl<Long, ProductOrder> entry : orders.get(key))
@@ -392,7 +400,7 @@ public class TestsHelper {
 
     /** */
     private static ProductOrder generateRandomOrder(long productId) {
-        return generateRandomOrder(productId, 0);
+        return generateRandomOrder(productId, RANDOM.nextInt(10000));
     }
 
     /** */
@@ -402,9 +410,9 @@ public class TestsHelper {
         cl.set(Calendar.MONTH, ORDERS_MONTH);
         cl.set(Calendar.DAY_OF_MONTH, ORDERS_DAY);
 
-        long orderId = Long.parseLong(System.currentTimeMillis() + HOST_PREFIX + saltedNumber);
+        long id = Long.parseLong(productId + System.currentTimeMillis() + HOST_PREFIX + saltedNumber);
 
-        return generateRandomOrder(productId, orderId, cl.getTime());
+        return generateRandomOrder(id, productId, cl.getTime());
     }
 
     /** */
