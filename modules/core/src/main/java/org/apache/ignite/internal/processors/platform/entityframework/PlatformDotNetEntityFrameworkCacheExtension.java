@@ -106,6 +106,24 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
 
                 return target.writeResult(mem, null);
             }
+
+            case 2: {  // TODO: Remove!
+                final IgniteCache<String, Long> metaCache = (IgniteCache<String, Long>)target.rawCache();
+                final String key = reader.readString();
+
+                final Set<String> entitySetNames = new HashSet(1);
+                entitySetNames.add(key);
+
+                final Map<String, EntryProcessorResult<Long>> currentVersions =
+                    metaCache.invokeAll(entitySetNames,
+                        new PlatformDotNetEntityFrameworkIncreaseVersionProcessor());
+
+                if (currentVersions.size() != 1)
+                {
+                    throw new IgniteCheckedException("Failed to update entity set versions, expected: 1, " +
+                        "actual: " + currentVersions.size());
+                }
+            }
         }
 
         throw new IgniteCheckedException("Unsupported operation type: " + type);
