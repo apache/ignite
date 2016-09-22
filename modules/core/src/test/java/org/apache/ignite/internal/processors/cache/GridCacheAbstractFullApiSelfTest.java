@@ -1317,22 +1317,24 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     public void testInvokeAllMultithreaded() throws Exception {
-        final IgniteCache<String, Integer> cache = jcache();
+        final IgniteCache<String, Long> cache = (IgniteCache<String, Long>)(IgniteCache)jcache();
+        final int threadCnt = 8;
+        final int cnt = 900000;
 
         assert cache != null;
 
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
-                for (int i = 0; i < 100000; i++) {
+                for (int i = 0; i < cnt; i++) {
                     final Map<String, EntryProcessorResult<Object>> res =
-                        cache.invokeAll(Collections.singleton("myKey"), new CacheEntryProcessor<String, Integer, Object>() {
+                        cache.invokeAll(Collections.singleton("myKey"), new CacheEntryProcessor<String, Long, Object>() {
                         @Override
-                        public Object process(MutableEntry<String, Integer> entry,
+                        public Object process(MutableEntry<String, Long> entry,
                             Object... objects) throws EntryProcessorException {
-                            Integer val = entry.getValue();
+                            Long val = entry.getValue();
 
                             if (val == null)
-                                val = 0;
+                                val = 0L;
 
                             val++;
 
@@ -1345,9 +1347,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                     assertEquals(1, res.size());
                 }
             }
-        }, 8, "testInvokeAllMultithreaded");
+        }, threadCnt, "testInvokeAllMultithreaded");
 
-        System.out.println(cache.get("myKey"));
+        assertEquals(cnt*threadCnt, (long)cache.get("myKey"));
     }
 
     /**
