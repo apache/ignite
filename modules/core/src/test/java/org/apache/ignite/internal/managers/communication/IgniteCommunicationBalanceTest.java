@@ -22,12 +22,19 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -58,6 +65,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
         TcpCommunicationSpi commSpi = ((TcpCommunicationSpi)cfg.getCommunicationSpi());
 
         commSpi.setSharedMemoryPort(-1);
+        commSpi.setConnectionsPerNode(1);
 
         if (selectors > 0)
             commSpi.setSelectorsCount(selectors);
@@ -79,45 +87,157 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testBalance() throws Exception {
-        selectors = 4;
+    public void testBalance1() throws Exception {
+        System.setProperty(GridNioServer.IGNITE_NIO_SES_BALANCER_BALANCE_PERIOD, "500");
 
-        startGrid(0);
+        try {
+            selectors = 4;
 
-        client = true;
+            startGridsMultiThreaded(4);
 
-        Ignite client = startGrid(4);
+            client = true;
 
-        startGridsMultiThreaded(1, 3);
+            Ignite client = startGrid(4);
 
-        for (int i = 0; i < 4; i++) {
-            ClusterNode node = client.cluster().node(ignite(i).cluster().localNode().id());
+            for (int i = 0; i < 4; i++) {
+                ClusterNode node = client.cluster().node(ignite(i).cluster().localNode().id());
 
-            client.compute(client.cluster().forNode(node)).run(new DummyRunnable());
+                client.compute(client.cluster().forNode(node)).run(new DummyRunnable(null));
+            }
+
+            waitNioBalanceStop(client, 30_000);
+
+            final GridNioServer srv = GridTestUtils.getFieldValue(client.configuration().getCommunicationSpi(), "nioSrvr");
+
+            ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+            long readMoveCnt1 = srv.readerMoveCount();
+            long writeMoveCnt1 = srv.writerMoveCount();
+
+            for (int iter = 0; iter < 10; iter++) {
+                log.info("Iteration: " + iter);
+
+                int nodeIdx = rnd.nextInt(4);
+
+                ClusterNode node = client.cluster().node(ignite(nodeIdx).cluster().localNode().id());
+
+                IgniteCompute compute = client.compute(client.cluster().forNode(node));
+
+                for (int i = 0; i < 10_000; i++)
+                    compute.run(new DummyRunnable(null));
+
+                final long readMoveCnt = readMoveCnt1;
+                final long writeMoveCnt = writeMoveCnt1;
+
+                GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                    @Override public boolean apply() {
+                        return srv.readerMoveCount() > readMoveCnt && srv.writerMoveCount() > writeMoveCnt;
+                    }
+                }, 10_000);
+
+                waitNioBalanceStop(client, 30_000);
+
+                long readMoveCnt2 = srv.readerMoveCount();
+                long writeMoveCnt2 = srv.writerMoveCount();
+
+                assertTrue(readMoveCnt2 > readMoveCnt1);
+                assertTrue(writeMoveCnt2 > writeMoveCnt1);
+
+                readMoveCnt1 = readMoveCnt2;
+                writeMoveCnt1 = writeMoveCnt2;
+            }
+
+            for (Ignite node : G.allGrids())
+                waitNioBalanceStop(node, 10_000);
         }
-
-//        ThreadLocalRandom rnd = ThreadLocalRandom.current();
-//
-//        for (int iter = 0; iter < 10; iter++) {
-//            log.info("Iteration: " + iter);
-//
-//            int nodeIdx = rnd.nextInt(4);
-//
-//            ClusterNode node = client.cluster().node(ignite(nodeIdx).cluster().localNode().id());
-//
-//            for (int i = 0; i < 10_000; i++)
-//                client.compute(client.cluster().forNode(node)).run(new DummyRunnable());
-//
-//            U.sleep(5000);
-//        }
-
-        while (true) {
-            ((IgniteKernal) client).dumpDebugInfo();
-
-            Thread.sleep(5000);
+        finally {
+            System.setProperty(GridNioServer.IGNITE_NIO_SES_BALANCER_BALANCE_PERIOD, "");
         }
+    }
 
-        //Thread.sleep(Long.MAX_VALUE);
+    /**
+     * @throws Exception If failed.
+     */
+    public void testBalance2() throws Exception {
+        System.setProperty(GridNioServer.IGNITE_NIO_SES_BALANCER_BALANCE_PERIOD, "500");
+
+        try {
+            startGridsMultiThreaded(5);
+
+            client = true;
+
+            startGridsMultiThreaded(5, 5);
+
+            for (int i = 0; i < 20; i++) {
+                log.info("Iteration: " + i);
+
+                final AtomicInteger idx = new AtomicInteger();
+
+                GridTestUtils.runMultiThreaded(new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        Ignite node = ignite(idx.incrementAndGet() % 10);
+
+                        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                        int msgs = rnd.nextInt(1000);
+
+                        for (int i = 0; i < msgs; i++) {
+                            int sndTo = rnd.nextInt(10);
+
+                            ClusterNode sntToNode = node.cluster().node(ignite(sndTo).cluster().localNode().id());
+
+                            IgniteCompute compute = node.compute(node.cluster().forNode(sntToNode));
+
+                            compute.run(new DummyRunnable(new byte[rnd.nextInt(1024)]));
+                        }
+
+                        return null;
+                    }
+                }, 30, "test-thread");
+
+                for (Ignite node : G.allGrids())
+                    waitNioBalanceStop(node, 10_000);
+            }
+        }
+        finally {
+            System.setProperty(GridNioServer.IGNITE_NIO_SES_BALANCER_BALANCE_PERIOD, "");
+        }
+    }
+
+    /**
+     * @param node Node.
+     * @param timeout Timeout.
+     * @throws Exception If failed.
+     */
+    private void waitNioBalanceStop(Ignite node, long timeout) throws Exception {
+        TcpCommunicationSpi spi = (TcpCommunicationSpi)node.configuration().getCommunicationSpi();
+
+        final GridNioServer srv = GridTestUtils.getFieldValue(spi, "nioSrvr");
+
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicateX() {
+            @Override public boolean applyx() throws IgniteCheckedException {
+                long readerMovCnt1 = srv.readerMoveCount();
+                long writerMovCnt1 = srv.writerMoveCount();
+
+                U.sleep(2000);
+
+                long readerMovCnt2 = srv.readerMoveCount();
+                long writerMovCnt2 = srv.writerMoveCount();
+
+                if (readerMovCnt1 != readerMovCnt2) {
+                    log.info("Readers balance is in progress [cnt1=" + readerMovCnt1 + ", cnt2=" + readerMovCnt2 + ']');
+
+                    return false;
+                }
+                if (writerMovCnt1 != writerMovCnt2) {
+                    log.info("Writers balance is in progress [cnt1=" + writerMovCnt1 + ", cnt2=" + writerMovCnt2 + ']');
+
+                    return false;
+                }
+
+                return true;
+            }
+        }, timeout));
     }
 
     /**
@@ -126,28 +246,43 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
     public void testRandomBalance() throws Exception {
         System.setProperty(GridNioServer.IGNITE_NIO_SES_BALANCER_CLASS_NAME, TestBalancer.class.getName());
 
-        final int NODES = 10;
+        try {
+            final int NODES = 10;
 
-        startGridsMultiThreaded(NODES);
+            startGridsMultiThreaded(NODES);
 
-        final long stopTime = System.currentTimeMillis() + 60_000;
+            final long stopTime = System.currentTimeMillis() + 60_000;
 
-        GridTestUtils.runMultiThreaded(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                ThreadLocalRandom rnd = ThreadLocalRandom.current();
+            GridTestUtils.runMultiThreaded(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                while (System.currentTimeMillis() < stopTime)
-                    ignite(rnd.nextInt(NODES)).compute().broadcast(new DummyRunnable());
+                    while (System.currentTimeMillis() < stopTime)
+                        ignite(rnd.nextInt(NODES)).compute().broadcast(new DummyRunnable(null));
 
-                return null;
-            }
-        }, 20, "test-thread");
+                    return null;
+                }
+            }, 20, "test-thread");
+        }
+        finally {
+            System.setProperty(GridNioServer.IGNITE_NIO_SES_BALANCER_CLASS_NAME, null);
+        }
     }
 
     /**
      *
      */
     private static class DummyRunnable implements IgniteRunnable {
+        /** */
+        private byte[] data;
+
+        /**
+         * @param data Data.
+         */
+        public DummyRunnable(byte[] data) {
+            this.data = data;
+        }
+
         /** {@inheritDoc} */
         @Override public void run() {
             // No-op.

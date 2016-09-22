@@ -47,6 +47,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -91,6 +92,9 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.NIO_OPER
 public class GridNioServer<T> {
     /** */
     public static final String IGNITE_NIO_SES_BALANCER_CLASS_NAME = "IGNITE_NIO_SES_BALANCER_CLASS_NAME";
+
+    /** */
+    public static final String IGNITE_NIO_SES_BALANCER_BALANCE_PERIOD = "IGNITE_NIO_SES_BALANCER_BALANCE_PERIOD";
 
     /** Default session write timeout. */
     public static final int DFLT_SES_WRITE_TIMEOUT = 5000;
@@ -215,10 +219,10 @@ public class GridNioServer<T> {
     private IgniteBiInClosure<GridNioSession, Integer> msgQueueLsnr;
 
     /** */
-    private volatile long writerMoveCnt;
+    private final AtomicLong readerMoveCnt = new AtomicLong();
 
     /** */
-    private volatile long readerMoveCnt;
+    private final AtomicLong writerMoveCnt = new AtomicLong();
 
     /** */
     private final Balancer balancer;
@@ -359,6 +363,14 @@ public class GridNioServer<T> {
         }
 
         this.balancer = balancer0;
+    }
+
+    public long readerMoveCount() {
+        return readerMoveCnt.get();
+    }
+
+    public long writerMoveCount() {
+        return writerMoveCnt.get();
     }
 
     /**
@@ -1504,6 +1516,11 @@ public class GridNioServer<T> {
                                     assert add;
 
                                     ses.finishMoveSession(this);
+
+                                    if (idx % 2 == 0)
+                                        readerMoveCnt.incrementAndGet();
+                                    else
+                                        writerMoveCnt.incrementAndGet();
 
                                     SelectionKey key = f.movedSocketChannel().register(selector,
                                         SelectionKey.OP_READ | SelectionKey.OP_WRITE,
@@ -2948,10 +2965,13 @@ public class GridNioServer<T> {
         /** */
         private long lastBalance;
 
+        /** */
+        private final long balancePeriod = IgniteSystemProperties.getLong(IGNITE_NIO_SES_BALANCER_BALANCE_PERIOD, 5000);
+
         /**
          * @param srv Server.
          */
-        public SizeBasedBalancer(GridNioServer<?> srv) {
+        SizeBasedBalancer(GridNioServer<?> srv) {
             this.srv = srv;
 
             log = srv.log;
@@ -2961,13 +2981,13 @@ public class GridNioServer<T> {
         @Override public void balance() {
             long now = U.currentTimeMillis();
 
-            if (lastBalance + 5000 < now) {
+            if (lastBalance + balancePeriod < now) {
                 lastBalance = now;
 
                 long maxRcvd0 = -1, minRcvd0 = -1, maxSent0 = -1, minSent0 = -1;
                 int maxRcvdIdx = -1, minRcvdIdx = -1, maxSentIdx = -1, minSentIdx = -1;
 
-                boolean print = Thread.currentThread().getName().contains("IgniteCommunicationBalanceTest4");
+                boolean print = false;//Thread.currentThread().getName().contains("IgniteCommunicationBalanceTest4");
 
                 List<GridNioServer.AbstractNioClientWorker> clientWorkers = (List)srv.clientWorkers;
 
@@ -3051,7 +3071,7 @@ public class GridNioServer<T> {
                             log.info("Will move session to less loaded writer [diff=" + sentDiff + ", ses=" + ses +
                                 ", from=" + maxSentIdx + ", to=" + minSentIdx + ']');
 
-                        srv.writerMoveCnt++;
+                        srv.writerMoveCnt.incrementAndGet();
 
                         clientWorkers.get(maxSentIdx).offer(new SessionMoveFuture(ses, minSentIdx));
                     }
@@ -3093,7 +3113,7 @@ public class GridNioServer<T> {
                             log.info("Will move session to less loaded reader [diff=" + rcvdDiff + ", ses=" + ses +
                                 ", from=" + maxSentIdx + ", to=" + minSentIdx + ']');
 
-                        srv.readerMoveCnt++;
+                        srv.readerMoveCnt.incrementAndGet();
 
                         clientWorkers.get(maxRcvdIdx).offer(new SessionMoveFuture(ses, minRcvdIdx));
                     }

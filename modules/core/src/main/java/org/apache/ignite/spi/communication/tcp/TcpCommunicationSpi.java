@@ -3110,8 +3110,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             rcvCnt = buf.getLong(1);
                         }
 
-                       // if (log.isDebugEnabled())
-                            log.info("Received handshake message [rmtNode=" + rmtNodeId + ", rcvCnt=" + rcvCnt + ']');
+                       if (log.isDebugEnabled())
+                            log.debug("Received handshake message [rmtNode=" + rmtNodeId + ", rcvCnt=" + rcvCnt + ']');
 
                         if (rcvCnt == -1) {
                             if (log.isDebugEnabled())
