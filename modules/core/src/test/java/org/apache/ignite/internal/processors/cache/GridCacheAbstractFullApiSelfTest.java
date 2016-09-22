@@ -1321,7 +1321,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testInvokeAllMultithreaded() throws Exception {
         final IgniteCache<String, Long> cache = (IgniteCache<String, Long>)(IgniteCache)jcache();
         final int threadCnt = 8;
-        final int cnt = 900000;
+        final int cnt = 90000;
 
         final Set<String> keys = new HashSet(1);
         keys.add("myKey");
@@ -1339,7 +1339,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             }
         }, threadCnt, "testInvokeAllMultithreaded");
 
-        assertEquals(cnt*threadCnt, (long)cache.get("myKey"));
+        final long cacheVal = (long)cache.get("myKey");
+        assertEquals(cnt*threadCnt, cacheVal);
+        System.out.println(cacheVal);
     }
 
     public void testInvokeAllMultithreaded2() throws Exception {
