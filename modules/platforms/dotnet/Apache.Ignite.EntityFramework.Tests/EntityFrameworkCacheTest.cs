@@ -657,7 +657,7 @@ namespace Apache.Ignite.EntityFramework.Tests
         [Category(TestUtils.CategoryIntensive)]
         public void TestOldEntriesCleanupMultithreaded()
         {
-            TestUtils.RunMultiThreaded(CreateRemoveBlog, 4, 10);
+            TestUtils.RunMultiThreaded(CreateRemoveBlog, 4, 20);
 
             // Wait for the cleanup to complete.
             Thread.Sleep(200);
@@ -677,7 +677,7 @@ namespace Apache.Ignite.EntityFramework.Tests
             Func<object> getMeta = () => _metaCache.Where(x => x.Key.Equals("Blog"))
                 .Select(x => x.Value).SingleOrDefault() ?? "null";
 
-            //var meta1 = getMeta();
+            var meta1 = getMeta();
 
             using (var ctx = GetDbContext())
             {
@@ -685,15 +685,15 @@ namespace Apache.Ignite.EntityFramework.Tests
                 ctx.SaveChanges();
             }
 
-            //var meta2 = getMeta();
+            var meta2 = getMeta();
 
-            //using (var ctx = GetDbContext())
-            //{
-            //    Assert.AreEqual(1, ctx.Blogs.ToArray().Count(x => x.BlogId == blog.BlogId),
-            //        string.Format(meta1 + ", " + meta2));
-            //}
+            using (var ctx = GetDbContext())
+            {
+                Assert.AreEqual(1, ctx.Blogs.ToArray().Count(x => x.BlogId == blog.BlogId),
+                    string.Format(meta1 + ", " + meta2));
+            }
 
-            //var meta3 = getMeta();
+            var meta3 = getMeta();
 
             using (var ctx = GetDbContext())
             {
@@ -702,13 +702,13 @@ namespace Apache.Ignite.EntityFramework.Tests
                 ctx.SaveChanges();
             }
 
-            //var meta4 = getMeta();
+            var meta4 = getMeta();
 
-            //using (var ctx = GetDbContext())
-            //{
-            //    Assert.AreEqual(0, ctx.Blogs.ToArray().Count(x => x.BlogId == blog.BlogId),
-            //        string.Format(meta1 + ", " + meta2 + ", " + meta3 + ", " + meta4));
-            //}
+            using (var ctx = GetDbContext())
+            {
+                Assert.AreEqual(0, ctx.Blogs.ToArray().Count(x => x.BlogId == blog.BlogId),
+                    string.Format(meta1 + ", " + meta2 + ", " + meta3 + ", " + meta4));
+            }
         }
 
         [Test]
@@ -717,7 +717,7 @@ namespace Apache.Ignite.EntityFramework.Tests
             var cache = (ICacheInternal) _metaCache;
 
             const string key = "myKey";
-            const int cnt = 10000;
+            const int cnt = 30000;
             const int threadCnt = 4;
 
             TestUtils.RunMultiThreaded(() =>

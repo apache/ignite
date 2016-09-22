@@ -1347,7 +1347,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testInvokeAllMultithreaded2() throws Exception {
         final IgniteCache<String, Long> cache = (IgniteCache<String, Long>)(IgniteCache)jcache();
         final int threadCnt = 4;
-        final int cnt = 80000;
+        final int cnt = 800;
 
         CacheConfiguration cfg = cache.getConfiguration(CacheConfiguration.class);
 

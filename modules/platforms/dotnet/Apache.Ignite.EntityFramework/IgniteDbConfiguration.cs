@@ -203,7 +203,9 @@ namespace Apache.Ignite.EntityFramework
         {
             return new CacheConfiguration((namePrefix ?? DefaultCacheNamePrefix) + MetaCacheSuffix)
             {
-                Backups = 1
+                Backups = 1,
+                // TODO: Enforce on user caches. Necessary for proper entry processor updates.
+                AtomicityMode = CacheAtomicityMode.Transactional
             };
         }
 
