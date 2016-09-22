@@ -91,12 +91,14 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
                 }
 
                 // TODO: Remove!
+                /**
                 StringBuilder sb = new StringBuilder("Updated versions: ");
 
                 for (Map.Entry<String, EntryProcessorResult<Long>> e : currentVersions.entrySet())
                     sb.append(e.getKey()).append("=").append(e.getValue().get()).append(",");
 
                 System.out.println(sb.toString());
+                 */
 
                 Ignite grid = target.platformContext().kernalContext().grid();
 

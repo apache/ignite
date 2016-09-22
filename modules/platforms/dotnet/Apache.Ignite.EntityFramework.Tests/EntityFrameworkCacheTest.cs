@@ -686,17 +686,17 @@ namespace Apache.Ignite.EntityFramework.Tests
 
             var meta2 = getMeta();
 
-            Console.WriteLine("Blog created: " + blog.BlogId + " = " + meta2);
+            Console.WriteLine("Blog created: {0} = {1} | {2}", blog.BlogId, meta2, Thread.CurrentThread.ManagedThreadId);
 
             using (var ctx = GetDbContext())
             {
                 Assert.AreEqual(1, ctx.Blogs.ToArray().Count(x => x.BlogId == blog.BlogId),
-                    string.Format("Existing blog not found: " + blog.BlogId + " = " + meta1 + ", " + meta2));
+                    string.Format("Existing blog not found: {0} = {1}, {2} | {3}", blog.BlogId, meta1, meta2, Thread.CurrentThread.ManagedThreadId));
             }
 
             var meta3 = getMeta();
 
-            Console.WriteLine("Removing blog: " + blog.BlogId + " = " + meta3);
+            Console.WriteLine("Removing blog: {0} = {1} | {2}", blog.BlogId, meta3, Thread.CurrentThread.ManagedThreadId);
 
             using (var ctx = GetDbContext())
             {
@@ -707,12 +707,12 @@ namespace Apache.Ignite.EntityFramework.Tests
 
             var meta4 = getMeta();
 
-            Console.WriteLine("Blog removed: " + blog.BlogId + " = " + meta4);
+            Console.WriteLine("Blog removed: {0} = {1} | {2}", blog.BlogId, meta4, Thread.CurrentThread.ManagedThreadId);
 
             using (var ctx = GetDbContext())
             {
                 Assert.AreEqual(0, ctx.Blogs.ToArray().Count(x => x.BlogId == blog.BlogId),
-                    string.Format("Found removed blog: " + blog.BlogId + " = " + meta1 + ", " + meta2 + ", " + meta3 + ", " + meta4));
+                    string.Format("Found removed blog: {0} = {1}, {2}, {3}, {4} | {5}", blog.BlogId, meta1, meta2, meta3, meta4, Thread.CurrentThread.ManagedThreadId));
             }
         }
 

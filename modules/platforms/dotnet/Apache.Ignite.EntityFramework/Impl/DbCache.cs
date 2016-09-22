@@ -23,6 +23,7 @@ namespace Apache.Ignite.EntityFramework.Impl
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+    using System.Threading;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -116,7 +117,7 @@ namespace Apache.Ignite.EntityFramework.Impl
 
             // TODO: Remove!
             if (success)
-                Console.WriteLine("Returning from cache with key: " + key.GetStringKey());
+                Console.WriteLine("Returning from cache with key: {0} | {1}", key.GetStringKey(), Thread.CurrentThread.ManagedThreadId);
 
             return success;
         }
@@ -129,7 +130,7 @@ namespace Apache.Ignite.EntityFramework.Impl
             var cache = GetCacheWithExpiry(absoluteExpiration);
 
             // TODO: Remove!
-            Console.WriteLine("Adding to cache: " + key.GetStringKey());
+            Console.WriteLine("Adding to cache: {0} | {1}", key.GetStringKey(), Thread.CurrentThread.ManagedThreadId);
 
             cache[key.GetStringKey()] = new EntityFrameworkCacheEntry(value, key.EntitySetVersions);
         }
@@ -141,6 +142,10 @@ namespace Apache.Ignite.EntityFramework.Impl
         {
             Debug.Assert(entitySets != null && entitySets.Count > 0);
 
+            // TODO: Remove!
+            var name = entitySets.First().Name;
+            Console.WriteLine("Invalidating: {0} {1} | {2}", name, _metaCache[name], Thread.CurrentThread.ManagedThreadId);
+
             // Increase version for each dependent entity set and run a task to clean up old entries.
             ((ICacheInternal) _metaCache).DoOutInOpExtension<object>(ExtensionId, OpInvalidateSets, w =>
             {
@@ -151,6 +156,9 @@ namespace Apache.Ignite.EntityFramework.Impl
                 foreach (var set in entitySets)
                     w.WriteString(set.Name);
             }, null);
+
+            // TODO: Remove!
+            Console.WriteLine("Invalidated: {0} {1} | {2}", name, _metaCache[name], Thread.CurrentThread.ManagedThreadId);
         }
 
         /// <summary>
