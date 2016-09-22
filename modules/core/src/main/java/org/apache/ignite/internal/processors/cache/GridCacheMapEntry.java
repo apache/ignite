@@ -4201,10 +4201,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             }
                         }
                         else {
-                            if (this.expireTime() > 0 && cctx.expiry() != null) {
-                                synchronized (this) {
+                            synchronized (this) {
+                                if (this.expireTimeUnlocked() > 0)
                                     cctx.ttl().removeTrackedEntry(this);
-                                }
                             }
 
                             clearIndex(prev);
@@ -4262,10 +4261,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                                 }
                             }
                             else {
-                                if (this.expireTime() > 0 && cctx.expiry() != null) {
-                                    synchronized (this) {
+                                synchronized (this) {
+                                    if (this.expireTimeUnlocked() > 0)
                                         cctx.ttl().removeTrackedEntry(this);
-                                    }
                                 }
 
                                 clearIndex(prevVal);
@@ -4287,13 +4285,18 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
             }
         }
-        catch (GridCacheEntryRemovedException ignore) {
+        catch (
+            GridCacheEntryRemovedException ignore)
+
+        {
             if (log.isDebugEnabled())
                 log.debug("Got removed entry when evicting (will simply return): " + this);
 
             return true;
         }
-        finally {
+        finally
+
+        {
             if (marked)
                 onMarkedObsolete();
         }

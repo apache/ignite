@@ -144,7 +144,7 @@ public class GridCacheTtlManagerEvictionTest extends GridCommonAbstractTest {
 
                 assertTrue("last key should NOT be evicted", cache.containsKey(lastKey));
 
-                assertEquals(1000, cctx.ttl().pendingSize());
+                assertEquals("Ttl Manager should NOT track evicted entries",1000, cctx.ttl().pendingSize());
             }
 
 //            cctx.ttl().printMemoryStats();
