@@ -727,6 +727,7 @@ namespace Apache.Ignite.EntityFramework.Tests
 
             using (var ctx = GetDbContext())
             {
+                // Use ToArray so that there is always the same DB query.
                 Assert.AreEqual(1, ctx.Blogs.ToArray().Count(x => x.BlogId == blog.BlogId),
                     string.Format("Existing blog not found: {0} = {1}, {2} | {3}", blog.BlogId, meta1, meta2, Thread.CurrentThread.ManagedThreadId));
             }
@@ -748,6 +749,7 @@ namespace Apache.Ignite.EntityFramework.Tests
 
             using (var ctx = GetDbContext())
             {
+                // Use ToArray so that there is always the same DB query.
                 Assert.AreEqual(0, ctx.Blogs.ToArray().Count(x => x.BlogId == blog.BlogId),
                     string.Format("Found removed blog: {0} = {1}, {2}, {3}, {4} | {5}", blog.BlogId, meta1, meta2, meta3, meta4, Thread.CurrentThread.ManagedThreadId));
             }
