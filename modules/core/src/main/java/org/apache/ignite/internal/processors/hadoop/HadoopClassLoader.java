@@ -53,11 +53,11 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     public static final String CLS_SHUTDOWN_HOOK_MANAGER = "org.apache.hadoop.util.ShutdownHookManager";
 
     /** Hadoop class name: Daemon replacement. */
-    public static final String CLS_DAEMON_REPLACE = "org.apache.ignite.internal.processors.hadoop.v2.HadoopDaemon";
+    public static final String CLS_DAEMON_REPLACE = "org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopDaemon";
 
     /** Hadoop class name: ShutdownHookManager replacement. */
     public static final String CLS_SHUTDOWN_HOOK_MANAGER_REPLACE =
-        "org.apache.ignite.internal.processors.hadoop.v2.HadoopShutdownHookManager";
+        "org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopShutdownHookManager";
 
     /** */
     private static final URLClassLoader APP_CLS_LDR = (URLClassLoader)HadoopClassLoader.class.getClassLoader();
@@ -275,22 +275,16 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     @Override protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
         try {
             // Always load Hadoop classes explicitly, since Hadoop can be available in App classpath.
-            if (helper.isHadoop(name)) {
-                if (name.equals(CLS_SHUTDOWN_HOOK_MANAGER))  // Dirty hack to get rid of Hadoop shutdown hooks.
-                    return loadReplace(name, CLS_SHUTDOWN_HOOK_MANAGER_REPLACE);
-                else if (name.equals(CLS_DAEMON))
-                    // We replace this in order to be able to forcibly stop some daemon threads
-                    // that otherwise never stop (e.g. PeerCache runnables):
-                    return loadReplace(name, CLS_DAEMON_REPLACE);
-
-                return loadClassExplicitly(name, resolve);
-            }
+            if (name.equals(CLS_SHUTDOWN_HOOK_MANAGER))  // Dirty hack to get rid of Hadoop shutdown hooks.
+                return loadReplace(name, CLS_SHUTDOWN_HOOK_MANAGER_REPLACE);
+            else if (name.equals(CLS_DAEMON))
+                // We replace this in order to be able to forcibly stop some daemon threads
+                // that otherwise never stop (e.g. PeerCache runnables):
+                return loadReplace(name, CLS_DAEMON_REPLACE);
 
             // For Ignite Hadoop and IGFS classes we have to check if they depend on Hadoop.
-            if (helper.isHadoopIgfs(name)) {
-                if (hasExternalDependencies(name))
-                    return loadClassExplicitly(name, resolve);
-            }
+            if (loadByCurrentClassloader(name))
+                return loadClassExplicitly(name, resolve);
 
             return super.loadClass(name, resolve);
         }
@@ -343,6 +337,40 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     }
 
     /**
+     * Check whether file must be loaded with current class loader, or normal delegation model should be used.
+     * <p>
+     * Override is only necessary for Ignite classes which have direct or transitive dependencies on Hadoop classes.
+     * These are all classes from "org.apache.ignite.internal.processors.hadoop.impl" package,
+     * and these are several well-know classes from "org.apache.ignite.hadoop" package.
+     *
+     * @param clsName Class name.
+     * @return Whether class must be loaded by current classloader without delegation.
+     */
+    @SuppressWarnings("RedundantIfStatement")
+    private static boolean loadByCurrentClassloader(String clsName) {
+        // All impl classes.
+        if (clsName.startsWith("org.apache.ignite.internal.processors.hadoop.impl"))
+            return true;
+
+        // Several classes from public API.
+        if (clsName.startsWith("org.apache.ignite.hadoop")) {
+            // We use "contains" instead of "equals" to handle subclasses properly.
+            if (clsName.contains("org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem") ||
+                clsName.contains("org.apache.ignite.hadoop.fs.v2.IgniteHadoopFileSystem") ||
+                clsName.contains("org.apache.ignite.hadoop.mapreduce.IgniteHadoopClientProtocolProvider"))
+                return true;
+        }
+
+        // TODO: Move suites to "impl" package.
+        // Test suites (to be removed).
+        if (clsName.equals("org.apache.ignite.testsuites.IgniteHadoopTestSuite") ||
+            clsName.equals("org.apache.ignite.testsuites.IgniteIgfsLinuxAndMacOSTestSuite"))
+            return true;
+
+        return false;
+    }
+
+    /**
      * @param name Class name.
      * @param resolve Resolve class.
      * @return Class.
@@ -368,16 +396,6 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
 
             return c;
         }
-    }
-
-    /**
-     * Check whether class has external dependencies on Hadoop.
-     *
-     * @param clsName Class name.
-     * @return {@code True} if class has external dependencies.
-     */
-    boolean hasExternalDependencies(String clsName) {
-        return helper.hasExternalDependencies(clsName, getParent());
     }
 
     /**

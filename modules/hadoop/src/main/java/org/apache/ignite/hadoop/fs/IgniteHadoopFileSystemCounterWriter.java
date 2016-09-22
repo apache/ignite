@@ -43,15 +43,16 @@ public class IgniteHadoopFileSystemCounterWriter implements HadoopCounterWriter 
     /** {@inheritDoc} */
     @Override public void write(HadoopJob job, HadoopCounters cntrs)
         throws IgniteCheckedException {
-        delegate().write(job, cntrs);
+        delegate(job).write(job, cntrs);
     }
 
     /**
      * Get delegate creating it if needed.
      *
+     * @param job Job.
      * @return Delegate.
      */
-    private HadoopFileSystemCounterWriterDelegate delegate() {
+    private HadoopFileSystemCounterWriterDelegate delegate(HadoopJob job) {
         HadoopFileSystemCounterWriterDelegate delegate0 = delegate;
 
         if (delegate0 == null) {
@@ -59,7 +60,7 @@ public class IgniteHadoopFileSystemCounterWriter implements HadoopCounterWriter 
                 delegate0 = delegate;
 
                 if (delegate0 == null) {
-                    delegate0 = HadoopDelegateUtils.counterWriterDelegate(this);
+                    delegate0 = HadoopDelegateUtils.counterWriterDelegate(job.getClass().getClassLoader(), this);
 
                     delegate = delegate0;
                 }

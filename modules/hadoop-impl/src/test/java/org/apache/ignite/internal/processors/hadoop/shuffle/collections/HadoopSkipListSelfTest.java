@@ -103,7 +103,7 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
 
         HadoopMultimap m = new HadoopSkipList(job, mem);
 
-        HadoopConcurrentHashMultimap.Adder a = m.startAdding(taskCtx);
+        HadoopMultimap.Adder a = m.startAdding(taskCtx);
 
         Multimap<Integer, Integer> mm = ArrayListMultimap.create();
         Multimap<Integer, Integer> vis = ArrayListMultimap.create();
@@ -180,7 +180,7 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
 
         final GridDataInput dataInput = new GridUnsafeDataInput();
 
-        m.visit(false, new HadoopConcurrentHashMultimap.Visitor() {
+        m.visit(false, new HadoopMultimap.Visitor() {
             /** */
             IntWritable key = new IntWritable();
 

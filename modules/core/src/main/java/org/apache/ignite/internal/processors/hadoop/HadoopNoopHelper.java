@@ -38,27 +38,17 @@ public class HadoopNoopHelper implements HadoopHelper {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isNoOp() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override public HadoopClassLoader commonClassLoader() {
         throw unsupported();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasExternalDependencies(String clsName, ClassLoader parentClsLdr) {
-        throw unsupported();
-    }
-
-    /** {@inheritDoc} */
     @Override public byte[] loadReplace(InputStream in, String originalName, String replaceName) {
-        throw unsupported();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isHadoop(String cls) {
-        throw unsupported();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isHadoopIgfs(String cls) {
         throw unsupported();
     }
 
