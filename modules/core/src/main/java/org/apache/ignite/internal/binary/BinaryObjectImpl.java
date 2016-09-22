@@ -321,6 +321,11 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
                 break;
 
+            case GridBinaryMarshaller.ZERO_INT:
+                val = 0;
+
+                break;
+
             case GridBinaryMarshaller.LONG:
                 val = BinaryPrimitives.readLong(arr, fieldPos + 1);
 

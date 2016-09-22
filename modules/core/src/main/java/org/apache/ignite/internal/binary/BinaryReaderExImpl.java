@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
+
 import org.apache.ignite.binary.BinaryCollectionFactory;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryMapFactory;
@@ -80,6 +81,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TIMESTAMP_A
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UNREGISTERED_TYPE_ID;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UUID;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UUID_ARR;
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.ZERO_INT;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.ZERO_LONG;
 
 /**
@@ -650,7 +652,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /** {@inheritDoc} */
     @Override public int readInt(String fieldName) throws BinaryObjectException {
-        return findFieldByName(fieldName) && checkFlagNoHandles(INT) == Flag.NORMAL ? in.readInt() : 0;
+        return findFieldByName(fieldName) && checkFlagNoHandles(INT,ZERO_INT) == INT ? in.readInt() : 0;
     }
 
     /**
@@ -659,7 +661,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @throws BinaryObjectException If failed.
      */
     int readInt(int fieldId) throws BinaryObjectException {
-        return findFieldById(fieldId) && checkFlagNoHandles(INT) == Flag.NORMAL ? in.readInt() : 0;
+        return findFieldById(fieldId) && checkFlagNoHandles(INT,ZERO_INT) == INT ? in.readInt() : 0;
     }
 
     /**
@@ -668,7 +670,16 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @throws BinaryObjectException In case of error.
      */
     @Nullable Integer readIntNullable(int fieldId) throws BinaryObjectException {
-        return findFieldById(fieldId) && checkFlagNoHandles(INT) == Flag.NORMAL ? in.readInt() : null;
+        if(findFieldById(fieldId)) {
+            switch (checkFlagNoHandles(INT, ZERO_INT)) {
+                case INT:
+                    return in.readInt();
+
+                case ZERO_INT:
+                    return 0;
+            }
+        }
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -706,18 +717,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /** {@inheritDoc} */
     @Override public long readLong(String fieldName) throws BinaryObjectException {
-        if (findFieldByName(fieldName)) {
-            switch (checkFlagNoHandles(LONG, ZERO_LONG)) {
-                case LONG:
-                    return in.readLong();
-
-                case ZERO_LONG:
-                case NULL:
-                    return 0L;
-            }
-        }
-
-        return 0L;
+        return (findFieldByName(fieldName) && checkFlagNoHandles(LONG, ZERO_LONG) == LONG) ? in.readLong() : 0L;
     }
 
     /**
@@ -726,18 +726,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @throws BinaryObjectException If failed.
      */
     long readLong(int fieldId) throws BinaryObjectException {
-        if (findFieldById(fieldId)) {
-            switch (checkFlagNoHandles(LONG, ZERO_LONG)) {
-                case LONG:
-                    return in.readLong();
-
-                case ZERO_LONG:
-                case NULL:
-                    return 0L;
-            }
-        }
-
-        return 0L;
+        return (findFieldById(fieldId) && checkFlagNoHandles(LONG, ZERO_LONG) == LONG) ? in.readLong() : 0L;
     }
 
     /**
@@ -753,9 +742,6 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
                 case ZERO_LONG:
                     return 0L;
-
-                case NULL:
-                    return null;
             }
         }
 
@@ -1574,6 +1560,11 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
             case INT:
                 obj = in.readInt();
+
+                break;
+
+            case ZERO_INT:
+                obj = 0;
 
                 break;
 

@@ -1719,6 +1719,9 @@ public class BinaryUtils {
             case GridBinaryMarshaller.INT:
                 return in.readInt();
 
+            case GridBinaryMarshaller.ZERO_INT:
+                return 0;
+
             case GridBinaryMarshaller.LONG:
                 return in.readLong();
 

@@ -930,10 +930,18 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeIntFieldPrimitive(int val) {
-        out.unsafeEnsure(1 + 4);
+        if (val == 0 &&
+            IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_BINARY_COMPACT_INT_ZEROES, false)) {
+            out.unsafeEnsure(1);
 
-        out.unsafeWriteByte(GridBinaryMarshaller.INT);
-        out.unsafeWriteInt(val);
+            out.unsafeWriteByte(GridBinaryMarshaller.ZERO_INT);
+        }
+        else {
+            out.unsafeEnsure(1 + 4);
+
+            out.unsafeWriteByte(GridBinaryMarshaller.INT);
+            out.unsafeWriteInt(val);
+        }
     }
 
     /**
@@ -950,9 +958,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeLongFieldPrimitive(long val) {
-
         if (val == 0L &&
-            IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_BINARY_COMPACT_LONG_ZEROES, false)) {
+            IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_BINARY_COMPACT_INT_ZEROES, false)) {
             out.unsafeEnsure(1);
 
             out.unsafeWriteByte(GridBinaryMarshaller.ZERO_LONG);

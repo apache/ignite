@@ -209,12 +209,12 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      */
     @Deprecated
     public void testLongZero() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_BINARY_COMPACT_LONG_ZEROES, "true");
+        System.setProperty(IgniteSystemProperties.IGNITE_BINARY_COMPACT_INT_ZEROES, "true");
 
         check("fLong");
         check("fLongZero");
 
-        System.clearProperty(IgniteSystemProperties.IGNITE_BINARY_COMPACT_LONG_ZEROES);
+        System.clearProperty(IgniteSystemProperties.IGNITE_BINARY_COMPACT_INT_ZEROES);
     }
 
     /**

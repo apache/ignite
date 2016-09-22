@@ -199,6 +199,11 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
                 break;
 
+            case GridBinaryMarshaller.ZERO_INT:
+                val = 0;
+
+                break;
+
             case GridBinaryMarshaller.LONG:
                 val = BinaryPrimitives.readLong(ptr, fieldPos + 1);
 

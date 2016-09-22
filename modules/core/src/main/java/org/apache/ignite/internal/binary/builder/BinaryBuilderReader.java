@@ -223,6 +223,8 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
 
         switch (type) {
             case GridBinaryMarshaller.NULL:
+            case GridBinaryMarshaller.ZERO_INT:
+            case GridBinaryMarshaller.ZERO_LONG:
                 return;
 
             case GridBinaryMarshaller.OBJ:
@@ -257,11 +259,6 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.LONG:
             case GridBinaryMarshaller.DOUBLE:
                 len = 8;
-
-                break;
-
-            case GridBinaryMarshaller.ZERO_LONG:
-                len = 0;
 
                 break;
 
@@ -412,6 +409,9 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.INT:
                 return BinaryPrimitives.readInt(arr, pos + 1);
 
+            case GridBinaryMarshaller.ZERO_INT:
+                return 0;
+
             case GridBinaryMarshaller.LONG:
                 return BinaryPrimitives.readLong(arr, pos + 1);
 
@@ -545,6 +545,11 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
 
             case GridBinaryMarshaller.INT:
                 return readInt();
+
+            case GridBinaryMarshaller.ZERO_INT:
+                plainLazyValLen = 0;
+
+                break;
 
             case GridBinaryMarshaller.LONG:
                 plainLazyValLen = 8;

@@ -127,6 +127,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testInt() throws Exception {
+        assertEquals(0, marshalUnmarshal(0).intValue());
         assertEquals(100, marshalUnmarshal(100).intValue());
     }
 
@@ -134,6 +135,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLong() throws Exception {
+        assertEquals(0L, marshalUnmarshal(0L).longValue());
         assertEquals(100L, marshalUnmarshal(100L).longValue());
     }
 
@@ -2299,6 +2301,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         SimpleObject newObj = new SimpleObject();
 
         newObj.i = 12345;
+        newObj.zi = 0;
         newObj.fArr = new float[] {5, 8, 0};
         newObj.str = "newStr";
 
@@ -2328,6 +2331,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         SimpleObject newObj = new SimpleObject();
 
         newObj.i = 12345;
+        newObj.zi = 0;
         newObj.fArr = new float[] {5, 8, 0};
         newObj.str = "newStr";
 
@@ -3320,7 +3324,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         inner.b = 1;
         inner.s = 1;
         inner.i = 1;
+        inner.zi = 0;
         inner.l = 1;
+        inner.zl = 0L;
         inner.f = 1.1f;
         inner.d = 1.1d;
         inner.c = 1;
@@ -3360,7 +3366,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         outer.b = 2;
         outer.s = 2;
         outer.i = 2;
+        outer.zi = 0;
         outer.l = 2;
+        outer.zl = 0L;
         outer.f = 2.2f;
         outer.d = 2.2d;
         outer.c = 2;
@@ -3408,6 +3416,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         innerSimple.b = 1;
         innerSimple.s = 1;
         innerSimple.i = 1;
+        innerSimple.zi = 0;
         innerSimple.l = 1;
         innerSimple.zl = 0L;
         innerSimple.f = 1.1f;
@@ -3448,6 +3457,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         innerBinary.b = 2;
         innerBinary.s = 2;
         innerBinary.i = 2;
+        innerBinary.zi = 0;
         innerBinary.l = 2;
         innerBinary.zl = 0L;
         innerBinary.f = 2.2f;
@@ -3524,6 +3534,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         outer.b = 4;
         outer.s = 4;
         outer.i = 4;
+        outer.zi = 0;
         outer.l = 4;
         outer.zl = 0L;
         outer.f = 4.4f;
@@ -3618,6 +3629,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         /** */
         private int i;
+
+        /** */
+        private int zi;
 
         /** */
         private long l;
@@ -3739,6 +3753,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         /** */
         private int i;
+
+        /** */
+        private int zi;
 
         /** */
         private int iRaw;
@@ -3913,6 +3930,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             writer.writeByte("_b", b);
             writer.writeShort("_s", s);
             writer.writeInt("_i", i);
+            writer.writeInt("_zi", zi);
             writer.writeLong("_l", l);
             writer.writeLong("_zl", zl);
             writer.writeFloat("_f", f);
@@ -3981,6 +3999,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             b = reader.readByte("_b");
             s = reader.readShort("_s");
             i = reader.readInt("_i");
+            zi = reader.readInt("_zi");
             l = reader.readLong("_l");
             zl = reader.readLong("_zl");
             f = reader.readFloat("_f");
