@@ -1316,6 +1316,33 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals(3, res.size());
     }
 
+    public void testInvokeAllMultithreaded() {
+        final IgniteCache<String, Integer> cache = jcache();
+
+        assert cache != null;
+
+        for (int i = 0; i < 100; i++) {
+            cache.invokeAll(Collections.singleton("myKey"), new CacheEntryProcessor<String, Integer, Object>() {
+                @Override
+                public Object process(MutableEntry<String, Integer> entry,
+                    Object... objects) throws EntryProcessorException {
+                    Integer val = entry.getValue();
+
+                    if (val == null)
+                        val = 0;
+
+                    val++;
+
+                    entry.setValue(val);
+
+                    return val;
+                }
+            });
+        }
+
+        assertEquals(100, (int)cache.get("myKey"));
+    }
+
     /**
      * @throws Exception If failed.
      */
