@@ -44,10 +44,10 @@ import org.apache.ignite.internal.processors.hadoop.HadoopJobStatus;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
-import static org.apache.ignite.internal.processors.hadoop.values.HadoopJobTrackerSelfTestValues.combineExecCnt;
-import static org.apache.ignite.internal.processors.hadoop.values.HadoopJobTrackerSelfTestValues.latch;
-import static org.apache.ignite.internal.processors.hadoop.values.HadoopJobTrackerSelfTestValues.mapExecCnt;
-import static org.apache.ignite.internal.processors.hadoop.values.HadoopJobTrackerSelfTestValues.reduceExecCnt;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopJobTrackerSelfTestState.combineExecCnt;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopJobTrackerSelfTestState.latch;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopJobTrackerSelfTestState.mapExecCnt;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopJobTrackerSelfTestState.reduceExecCnt;
 
 /**
  * Job tracker self test.

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.values;
+package org.apache.ignite.internal.processors.hadoop.state;
 
 import org.apache.ignite.internal.processors.hadoop.HadoopSharedMap;
 
@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Static values for HadoopTaskExecutionSelfTest.
+ * Shared state for HadoopTaskExecutionSelfTest.
  */
 public class HadoopTaskExecutionSelfTestValues {
     /** */

@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
@@ -36,12 +34,11 @@ import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
-import org.apache.ignite.internal.processors.hadoop.HadoopSharedMap;
 import org.apache.ignite.internal.processors.hadoop.impl.examples.HadoopWordCount1;
 import org.apache.ignite.internal.processors.hadoop.impl.examples.HadoopWordCount2;
 
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
-import static org.apache.ignite.internal.processors.hadoop.values.HadoopMapReduceEmbeddedSelfTestValues.flags;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopMapReduceEmbeddedSelfTestState.flags;
 
 /**
  * Tests map-reduce execution with embedded mode.

@@ -53,12 +53,12 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 
-import static org.apache.ignite.internal.processors.hadoop.values.HadoopTaskExecutionSelfTestValues.cancelledTasks;
-import static org.apache.ignite.internal.processors.hadoop.values.HadoopTaskExecutionSelfTestValues.executedTasks;
-import static org.apache.ignite.internal.processors.hadoop.values.HadoopTaskExecutionSelfTestValues.failMapperId;
-import static org.apache.ignite.internal.processors.hadoop.values.HadoopTaskExecutionSelfTestValues.splitsCount;
-import static org.apache.ignite.internal.processors.hadoop.values.HadoopTaskExecutionSelfTestValues.taskWorkDirs;
-import static org.apache.ignite.internal.processors.hadoop.values.HadoopTaskExecutionSelfTestValues.totalLineCnt;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.cancelledTasks;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.executedTasks;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.failMapperId;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.splitsCount;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.taskWorkDirs;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.totalLineCnt;
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
 
 /**

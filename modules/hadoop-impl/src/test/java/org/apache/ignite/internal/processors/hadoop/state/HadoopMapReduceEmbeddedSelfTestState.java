@@ -15,26 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.values;
+package org.apache.ignite.internal.processors.hadoop.state;
 
 import org.apache.ignite.internal.processors.hadoop.HadoopSharedMap;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 
-import java.util.Collection;
-import java.util.UUID;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * Static values for HadoopGroupingTest.
+ * Sharead state for HadoopMapReduceEmbeddedSelfTest.
  */
-public class HadoopGroupingTestValues {
-    /** Values. */
-    private static final GridConcurrentHashSet<UUID> vals = HadoopSharedMap.map(HadoopGroupingTestValues.class)
-        .put("vals", new GridConcurrentHashSet<UUID>());
-
-    /**
-     * @return Values.
-     */
-    public static Collection<UUID> values() {
-        return vals;
-    }
+public class HadoopMapReduceEmbeddedSelfTestState {
+    /** */
+    public static Map<String, Boolean> flags = HadoopSharedMap.map(HadoopMapReduceEmbeddedSelfTestState.class)
+        .put("flags", new HashMap<String, Boolean>());
 }

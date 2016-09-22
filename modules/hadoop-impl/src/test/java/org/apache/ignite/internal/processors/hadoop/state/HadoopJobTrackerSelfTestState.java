@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.values;
+package org.apache.ignite.internal.processors.hadoop.state;
 
 import org.apache.ignite.internal.processors.hadoop.HadoopSharedMap;
 
@@ -25,11 +25,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Static values for HadoopJobTrackerSelfTest.
+ * Shared state for HadoopJobTrackerSelfTest.
  */
-public class HadoopJobTrackerSelfTestValues {
+public class HadoopJobTrackerSelfTestState {
     /** */
-    private static HadoopSharedMap m = HadoopSharedMap.map(HadoopJobTrackerSelfTestValues.class);
+    private static HadoopSharedMap m = HadoopSharedMap.map(HadoopJobTrackerSelfTestState.class);
 
     /** Map task execution count. */
     public static final AtomicInteger mapExecCnt = m.put("mapExecCnt", new AtomicInteger());

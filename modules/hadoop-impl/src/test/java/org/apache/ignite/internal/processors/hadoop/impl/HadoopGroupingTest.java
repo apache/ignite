@@ -32,7 +32,7 @@ import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.ignite.configuration.HadoopConfiguration;
-import org.apache.ignite.internal.processors.hadoop.values.HadoopGroupingTestValues;
+import org.apache.ignite.internal.processors.hadoop.state.HadoopGroupingTestState;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.X;
@@ -103,7 +103,7 @@ public class HadoopGroupingTest extends HadoopAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void doTestGrouping(boolean combiner) throws Exception {
-        HadoopGroupingTestValues.values().clear();
+        HadoopGroupingTestState.values().clear();
 
         Job job = Job.getInstance();
 
@@ -129,7 +129,7 @@ public class HadoopGroupingTest extends HadoopAbstractSelfTest {
         grid(0).hadoop().submit(new HadoopJobId(UUID.randomUUID(), 2),
             createJobInfo(job.getConfiguration())).get(30000);
 
-        assertTrue(HadoopGroupingTestValues.values().isEmpty());
+        assertTrue(HadoopGroupingTestState.values().isEmpty());
     }
 
     public static class MyReducer extends Reducer<YearTemperature, Text, Text, Object> {
@@ -155,7 +155,7 @@ public class HadoopGroupingTest extends HadoopAbstractSelfTest {
             lastYear = key.year;
 
             for (Text val : vals0)
-                assertTrue(HadoopGroupingTestValues.values().remove(UUID.fromString(val.toString())));
+                assertTrue(HadoopGroupingTestState.values().remove(UUID.fromString(val.toString())));
         }
     }
 
@@ -262,7 +262,7 @@ public class HadoopGroupingTest extends HadoopAbstractSelfTest {
                 @Override public Text getCurrentValue() {
                     UUID id = UUID.randomUUID();
 
-                    assertTrue(HadoopGroupingTestValues.values().add(id));
+                    assertTrue(HadoopGroupingTestState.values().add(id));
 
                     val.set(id.toString());
 
