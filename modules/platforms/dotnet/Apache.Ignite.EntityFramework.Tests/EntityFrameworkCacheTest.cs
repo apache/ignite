@@ -691,7 +691,7 @@ namespace Apache.Ignite.EntityFramework.Tests
             using (var ctx = GetDbContext())
             {
                 Assert.AreEqual(1, ctx.Blogs.ToArray().Count(x => x.BlogId == blog.BlogId),
-                    string.Format(meta1 + ", " + meta2));
+                    string.Format("Existing blog not found: " + blog.BlogId + " = " + meta1 + ", " + meta2));
             }
 
             var meta3 = getMeta();

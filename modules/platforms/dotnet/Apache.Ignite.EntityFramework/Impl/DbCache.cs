@@ -114,6 +114,10 @@ namespace Apache.Ignite.EntityFramework.Impl
 
             value = success ? res.Data : null;
 
+            // TODO: Remove!
+            if (success)
+                Console.WriteLine("Returning from cache with key: " + key.GetStringKey());
+
             return success;
         }
 

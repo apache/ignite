@@ -150,6 +150,8 @@ namespace Apache.Ignite.EntityFramework.Impl
             {
                 _commandInfo.Cache.InvalidateSets(_commandInfo.AffectedEntitySets);
 
+                // TODO: What if at this moment another thread caches the result? Race!
+
                 return _command.ExecuteReader(behavior);
             }
 
