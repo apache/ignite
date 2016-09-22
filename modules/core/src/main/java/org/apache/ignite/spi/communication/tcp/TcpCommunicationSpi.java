@@ -315,7 +315,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     public static final long DFLT_SOCK_WRITE_TIMEOUT = 2000;
 
     /** Default connections per node. */
-    public static final int DFLT_CONN_PER_NODE = 1;
+    public static final int DFLT_CONN_PER_NODE = 2;
 
     /** No-op runnable. */
     private static final IgniteRunnable NOOP = new IgniteRunnable() {
@@ -334,7 +334,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     public static final byte HANDSHAKE_MSG_TYPE = -3;
 
     /** */
-    public static final byte HANDSHAKE_MSG_TYPE2 = -4;
+    public static final byte HANDSHAKE_MSG_TYPE2 = 125;
 
     /** */
     private ConnectGateway connectGate;
@@ -424,13 +424,15 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                 if (msg instanceof NodeIdMessage) {
                     sndId = U.bytesToUuid(((NodeIdMessage) msg).nodeIdBytes, 0);
-                    connKey = new ConnectionKey(sndId, 0);
+                    connKey = new ConnectionKey(sndId, 0, -1);
                 }
                 else {
                     assert msg instanceof HandshakeMessage : msg;
 
+                    HandshakeMessage msg0 = (HandshakeMessage)msg;
+
                     sndId = ((HandshakeMessage)msg).nodeId();
-                    connKey = new ConnectionKey(sndId, ((HandshakeMessage)msg).connectionIndex());
+                    connKey = new ConnectionKey(sndId, msg0.connectionIndex(), msg0.connectCount());
                 }
 
                 if (log.isDebugEnabled())
@@ -470,8 +472,19 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     if (reserve)
                         connectedNew(recoveryDesc, ses, true);
                     else {
-                        if (c.failed)
-                            ses.close();
+                        if (c.failed) {
+                            ses.send(new RecoveryLastReceivedMessage(-1));
+
+                            for (GridNioSession ses0 : nioSrvr.sessions()) {
+                                ConnectionKey key0 = ses0.meta(CONN_IDX_META);
+
+                                if (ses0.accepted() && key0 != null &&
+                                    key0.nodeId().equals(connKey.nodeId()) &&
+                                    key0.connectionIndex() == connKey.connectionIndex() &&
+                                    key0.connectCount() < connKey.connectCount())
+                                    ses0.close();
+                            }
+                        }
                     }
                 }
                 else {
@@ -1119,7 +1132,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /**
      * TODO
      *
-     * @param maxConnectionsPerNode
+     * @param maxConnectionsPerNode Number of connections per node.
      */
     public void setConnectionsPerNode(int maxConnectionsPerNode) {
         this.connectionsPerNode = maxConnectionsPerNode;
@@ -1128,7 +1141,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /**
      * TODO
      *
-     * @return
+     * @return Number of connections per node.
      */
     public int getConnectionsPerNode() {
         return connectionsPerNode;
@@ -2369,7 +2382,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 // Do not allow concurrent connects.
                 GridFutureAdapter<GridCommunicationClient> fut = new ConnectFuture();
 
-                ConnectionKey connKey = new ConnectionKey(nodeId, connIdx);
+                ConnectionKey connKey = new ConnectionKey(nodeId, connIdx, -1);
 
                 GridFutureAdapter<GridCommunicationClient> oldFut = clientFuts.putIfAbsent(connKey, fut);
 
@@ -2705,7 +2718,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             "(node left topology): " + node);
                     }
 
-                    ConnectionKey connKey = new ConnectionKey(node.id(), connIdx);
+                    ConnectionKey connKey = new ConnectionKey(node.id(), connIdx, -1);
 
                     GridNioRecoveryDescriptor recoveryDesc = outRecoveryDescriptor(node, connKey);
 
@@ -3097,8 +3110,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             rcvCnt = buf.getLong(1);
                         }
 
-                        if (log.isDebugEnabled())
-                            log.debug("Received handshake message [rmtNode=" + rmtNodeId + ", rcvCnt=" + rcvCnt + ']');
+                       // if (log.isDebugEnabled())
+                            log.info("Received handshake message [rmtNode=" + rmtNodeId + ", rcvCnt=" + rcvCnt + ']');
 
                         if (rcvCnt == -1) {
                             if (log.isDebugEnabled())
@@ -3487,7 +3500,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     GridNioRecoveryDescriptor recovery = null;
 
                     if (!useMultipleConnections(node) && client instanceof GridTcpNioCommunicationClient) {
-                        recovery = recoveryDescs.get(new ConnectionKey(node.id(), client.connectionIndex()));
+                        recovery = recoveryDescs.get(new ConnectionKey(node.id(), client.connectionIndex(), -1));
 
                         if (recovery != null && recovery.lastAcknowledged() != recovery.received()) {
                             RecoveryLastReceivedMessage msg = new RecoveryLastReceivedMessage(recovery.received());
@@ -3508,7 +3521,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     if (idleTime >= idleConnTimeout) {
                         if (recovery == null && useMultipleConnections(node))
-                            recovery = outRecDescs.get(new ConnectionKey(node.id(), client.connectionIndex()));
+                            recovery = outRecDescs.get(new ConnectionKey(node.id(), client.connectionIndex(), -1));
 
                         if (recovery != null &&
                             recovery.nodeAlive(getSpiContext().node(nodeId)) &&
@@ -4273,13 +4286,25 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         /** */
         private final int idx;
 
+        /** */
+        private final long connCnt;
+
         /**
          * @param nodeId Node ID.
          * @param idx Connection index.
+         * @param connCnt Connection counter (set only for incoming connections).
          */
-        ConnectionKey(UUID nodeId, int idx) {
+        ConnectionKey(UUID nodeId, int idx, long connCnt) {
             this.nodeId = nodeId;
             this.idx = idx;
+            this.connCnt = connCnt;
+        }
+
+        /**
+         * @return Connection counter.
+         */
+        long connectCount() {
+            return connCnt;
         }
 
         /**

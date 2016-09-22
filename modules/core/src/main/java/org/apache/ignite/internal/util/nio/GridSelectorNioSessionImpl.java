@@ -304,7 +304,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
         if (!accepted() && val instanceof GridNioRecoveryDescriptor) {
             outRecovery = (GridNioRecoveryDescriptor)val;
 
-            outRecovery.connected();
+            outRecovery.onConnected();
 
             return null;
         }

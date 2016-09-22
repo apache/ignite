@@ -327,7 +327,12 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
                     assertTrue("Failed to wait for session close", ses0.closeTime() != 0);
 
-                    ses1.resumeReads().get();
+                    try {
+                        ses1.resumeReads().get();
+                    }
+                    catch (IgniteCheckedException ignore) {
+                        // Can fail is ses1 was closed.
+                    }
 
                     for (int j = 0; j < 100; j++) {
                         spi0.sendMessage(node1, new GridTestMessage(node0.id(), msgId.incrementAndGet(), 0));
@@ -437,7 +442,12 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
                     assertTrue("Failed to wait for session close", ses0.closeTime() != 0);
 
-                    ses1.resumeReads().get();
+                    try {
+                        ses1.resumeReads().get();
+                    }
+                    catch (IgniteCheckedException ignore) {
+                        // Can fail is ses1 was closed.
+                    }
 
                     // Wait when session is closed, then try to open new connection from node1.
                     GridTestUtils.waitForCondition(new GridAbsPredicate() {
@@ -554,7 +564,12 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
                     assertTrue("Failed to wait for session close", ses0.closeTime() != 0);
 
-                    ses1.resumeReads().get();
+                    try {
+                        ses1.resumeReads().get();
+                    }
+                    catch (IgniteCheckedException ignore) {
+                        // Can fail is ses1 was closed.
+                    }
 
                     sndFut.get();
 
