@@ -149,10 +149,10 @@ namespace Apache.Ignite.EntityFramework.Impl
         {
             if (_commandInfo.IsModification)
             {
-                InvalidateCache();
-
                 // Execute reader, then invalidate cached data.
                 var dbReader = _command.ExecuteReader(behavior);
+
+                Console.WriteLine("ExecuteReader done | " + Thread.CurrentThread.ManagedThreadId);
 
                 InvalidateCache();
 
@@ -206,13 +206,15 @@ namespace Apache.Ignite.EntityFramework.Impl
         /** <inheritDoc /> */
         public override int ExecuteNonQuery()
         {
-            InvalidateCache();
-
             var res = _command.ExecuteNonQuery();
+
+            Console.WriteLine("ExecuteNonQuery done | " + Thread.CurrentThread.ManagedThreadId);
 
             // Invalidate AFTER updating the data.
             if (_commandInfo.IsModification)
+            {
                 InvalidateCache();
+            }
 
             return res;
         }
