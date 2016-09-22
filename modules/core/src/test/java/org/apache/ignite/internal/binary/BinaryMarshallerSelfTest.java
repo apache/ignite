@@ -2665,7 +2665,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     public void testDuplicateNameSimpleNameMapper() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller(new BinaryBasicNameMapper(true),
-            new BinaryBasicIdMapper(true), null, null);
+            new BinaryBasicIdMapper(true), null, null, null);
 
         Test1.Job job1 = new Test1().new Job();
         Test2.Job job2 = new Test2().new Job();
@@ -2689,7 +2689,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     public void testDuplicateNameFullNameMapper() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller(new BinaryBasicNameMapper(false),
-            new BinaryBasicIdMapper(false), null, null);
+            new BinaryBasicIdMapper(false), null, null, null);
 
         Test1.Job job1 = new Test1().new Job();
         Test2.Job job2 = new Test2().new Job();
@@ -2925,6 +2925,17 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         BinaryObject innerBo = map.get("key");
 
         assertEquals(SingleHandleB.class, innerBo.deserialize().getClass());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testUnregisteredClass() throws Exception {
+        BinaryMarshaller m = binaryMarshaller(null, Collections.singletonList(Value.class.getName()));
+
+        ClassFieldObject res = m.unmarshal(m.marshal(new ClassFieldObject(Value.class)), null);
+
+        assertEquals(Value.class, res.cls);
     }
 
     /**
@@ -3244,9 +3255,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    protected BinaryMarshaller binaryMarshaller()
-        throws IgniteCheckedException {
-        return binaryMarshaller(null, null, null, null);
+    protected BinaryMarshaller binaryMarshaller() throws IgniteCheckedException {
+        return binaryMarshaller(null, null, null, null, null);
     }
 
     /**
@@ -3254,7 +3264,15 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     protected BinaryMarshaller binaryMarshaller(Collection<BinaryTypeConfiguration> cfgs)
         throws IgniteCheckedException {
-        return binaryMarshaller(null, null, null, cfgs);
+        return binaryMarshaller(null, null, null, cfgs, null);
+    }
+
+    /**
+     *
+     */
+    protected BinaryMarshaller binaryMarshaller(Collection<BinaryTypeConfiguration> cfgs,
+        Collection<String> excludedClasses) throws IgniteCheckedException {
+        return binaryMarshaller(null, null, null, cfgs, excludedClasses);
     }
 
     /**
@@ -3263,7 +3281,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     protected BinaryMarshaller binaryMarshaller(BinaryNameMapper nameMapper, BinaryIdMapper mapper,
         Collection<BinaryTypeConfiguration> cfgs)
         throws IgniteCheckedException {
-        return binaryMarshaller(nameMapper, mapper, null, cfgs);
+        return binaryMarshaller(nameMapper, mapper, null, cfgs, null);
     }
 
     /**
@@ -3271,7 +3289,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     protected BinaryMarshaller binaryMarshaller(BinarySerializer serializer, Collection<BinaryTypeConfiguration> cfgs)
         throws IgniteCheckedException {
-        return binaryMarshaller(null, null, serializer, cfgs);
+        return binaryMarshaller(null, null, serializer, cfgs, null);
     }
 
     /**
@@ -3281,7 +3299,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         BinaryNameMapper nameMapper,
         BinaryIdMapper mapper,
         BinarySerializer serializer,
-        Collection<BinaryTypeConfiguration> cfgs
+        Collection<BinaryTypeConfiguration> cfgs,
+        Collection<String> excludedClasses
     ) throws IgniteCheckedException {
         IgniteConfiguration iCfg = new IgniteConfiguration();
 
@@ -3300,7 +3319,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 
-        marsh.setContext(new MarshallerContextTestImpl(null));
+        marsh.setContext(new MarshallerContextTestImpl(null, excludedClasses));
 
         IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, iCfg);
 
@@ -4927,6 +4946,19 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
     /**
      */
-    private static class SingleHandleB {
+    private static class SingleHandleB {}
+
+    /**
+     */
+    private static class ClassFieldObject {
+        /** */
+        private Class<?> cls;
+
+        /**
+         * @param cls Class field.
+         */
+        public ClassFieldObject(Class<?> cls) {
+            this.cls = cls;
+        }
     }
 }
