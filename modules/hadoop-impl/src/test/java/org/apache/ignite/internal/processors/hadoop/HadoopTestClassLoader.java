@@ -23,9 +23,6 @@ public class HadoopTestClassLoader extends URLClassLoader {
     /** All participating URLs. */
     private static final URL[] URLS;
 
-    /** Singleton instance. */
-    private static final HadoopTestClassLoader instance = new HadoopTestClassLoader();
-
     static {
         try {
             List<URL> res = new ArrayList<>();
@@ -49,13 +46,6 @@ public class HadoopTestClassLoader extends URLClassLoader {
         catch (Exception e) {
             throw new IgniteException("Failed to initialize class loader JARs.", e);
         }
-    }
-
-    /**
-     * @return Singleton instance.
-     */
-    public static HadoopTestClassLoader instance() {
-        return instance;
     }
 
     /**
