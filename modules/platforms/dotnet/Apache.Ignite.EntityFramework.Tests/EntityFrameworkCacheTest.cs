@@ -684,9 +684,9 @@ namespace Apache.Ignite.EntityFramework.Tests
                 ctx.SaveChanges();
             }
 
-            Console.WriteLine("Blog created: " + blog.BlogId);
-
             var meta2 = getMeta();
+
+            Console.WriteLine("Blog created: " + blog.BlogId + " = " + meta2);
 
             using (var ctx = GetDbContext())
             {
@@ -704,6 +704,8 @@ namespace Apache.Ignite.EntityFramework.Tests
             }
 
             var meta4 = getMeta();
+
+            Console.WriteLine("Blog removed: " + blog.BlogId + " = " + meta4);
 
             using (var ctx = GetDbContext())
             {
