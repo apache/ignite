@@ -34,6 +34,9 @@ import java.util.List;
  * Hadoop classpath utilities.
  */
 public class HadoopClasspathUtils {
+    /** Ignite home. */
+    private static final String IGNITE_HOME = "IGNITE_HOME";
+
     /** Prefix directory. */
     public static final String PREFIX = "HADOOP_PREFIX";
 
@@ -54,31 +57,6 @@ public class HadoopClasspathUtils {
 
     /** Empty string. */
     private static final String EMPTY_STR = "";
-
-    /**
-     * Gets Hadoop class path as list of classpath elements for process.
-     *
-     * @return List of the class path elements.
-     * @throws IOException If failed.
-     */
-    public static List<String> classpathForProcess() throws IOException {
-        List<String> res = new ArrayList<>();
-
-        for (final SearchDirectory dir : classpathDirectories()) {
-            File[] files = dir.files();
-
-            if (dir.useWildcard()) {
-                if (files.length > 0)
-                    res.add(dir.absolutePath() + File.separator + '*');
-            }
-            else {
-                for (File file : files)
-                    res.add(file.getAbsolutePath());
-            }
-        }
-
-        return res;
-    }
 
     /**
      * Gets Hadoop class path as a list of URLs (for in-process class loader usage).
@@ -190,6 +168,7 @@ public class HadoopClasspathUtils {
 
         Collection<SearchDirectory> res = new ArrayList<>();
 
+        // 1. Add libraries from Hadoop distribution:
         res.add(new SearchDirectory(new File(loc.common(), "lib"), AcceptAllDirectoryFilter.INSTANCE));
         res.add(new SearchDirectory(new File(loc.hdfs(), "lib"), AcceptAllDirectoryFilter.INSTANCE));
         res.add(new SearchDirectory(new File(loc.mapred(), "lib"), AcceptAllDirectoryFilter.INSTANCE));
@@ -204,7 +183,18 @@ public class HadoopClasspathUtils {
         res.add(new SearchDirectory(new File(loc.mapred()),
             new PrefixDirectoryFilter("hadoop-mapreduce-client-core")));
 
+        // 2. Add user provided libs:
         res.addAll(parseUserLibs());
+
+        // 3. Add hadoop-impl module.
+        String home = systemOrEnv(IGNITE_HOME, null);
+
+        if (home != null) {
+            File dir = new File(home, "libs/ignite-hadoop-impl");
+
+            if (dir.exists())
+                res.add(new SearchDirectory(dir, AcceptAllDirectoryFilter.INSTANCE, true));
+        }
 
         return res;
     }
@@ -353,13 +343,6 @@ public class HadoopClasspathUtils {
         }
 
         /**
-         * @return Absolute path.
-         */
-        public String absolutePath() {
-            return dir.getAbsolutePath();
-        }
-
-        /**
          * @return Child files.
          */
         public File[] files() throws IOException {
@@ -377,13 +360,6 @@ public class HadoopClasspathUtils {
             }
             else
                 return files;
-        }
-
-        /**
-         * @return {@code True} if wildcard can be used.
-         */
-        public boolean useWildcard() {
-            return filter instanceof AcceptAllDirectoryFilter;
         }
     }
 
