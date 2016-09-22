@@ -144,7 +144,9 @@ namespace Apache.Ignite.EntityFramework.Impl
 
             // TODO: Remove!
             var name = entitySets.First().Name;
-            //Console.WriteLine("Invalidating: {0} {1} | {2}", name, _metaCache[name], Thread.CurrentThread.ManagedThreadId);
+            long id;
+            _metaCache.TryGet(name, out id);
+            Console.WriteLine("Invalidating: {0} {1} | {2}", name, id, Thread.CurrentThread.ManagedThreadId);
 
             // Increase version for each dependent entity set and run a task to clean up old entries.
             ((ICacheInternal) _metaCache).DoOutInOpExtension<object>(ExtensionId, OpInvalidateSets, w =>
