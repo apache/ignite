@@ -34,7 +34,6 @@ namespace Apache.Ignite.EntityFramework.Tests
     using System.Transactions;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.EntityFramework;
     using Apache.Ignite.Core.Tests;
     using Apache.Ignite.EntityFramework;
