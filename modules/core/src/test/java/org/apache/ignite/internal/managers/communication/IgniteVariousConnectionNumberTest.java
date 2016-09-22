@@ -115,6 +115,10 @@ public class IgniteVariousConnectionNumberTest extends GridCommonAbstractTest {
 
             int idx = ThreadLocalRandom.current().nextInt(NODES);
 
+            Ignite node = ignite(idx);
+
+            client = node.configuration().isClientMode();
+
             stopGrid(idx);
 
             startGrid(idx);
