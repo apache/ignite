@@ -22,6 +22,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.processors.hadoop.HadoopTestClassLoader;
 import org.apache.ignite.internal.processors.hadoop.impl.client.HadoopClientProtocolEmbeddedSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.client.HadoopClientProtocolSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopTxConfigCacheTest;
@@ -72,10 +73,10 @@ import org.apache.ignite.internal.processors.hadoop.impl.HadoopV2JobSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopValidationSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopWeightedMapReducePlannerTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopWeightedPlannerMapReduceTest;
-import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopConcurrentHashMultimapSelftest;
-import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopHashMapSelfTest;
-import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopSkipListSelfTest;
-import org.apache.ignite.internal.processors.hadoop.shuffle.streams.HadoopDataStreamSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopConcurrentHashMultimapSelftest;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopHashMapSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopSkipListSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.streams.HadoopDataStreamSelfTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -106,7 +107,7 @@ public class IgniteHadoopTestSuite extends TestSuite {
         downloadHadoop();
         downloadHive();
 
-        final ClassLoader ldr = TestSuite.class.getClassLoader();
+        final ClassLoader ldr = HadoopTestClassLoader.instance();
 
         TestSuite suite = new TestSuite("Ignite Hadoop MR Test Suite");
 

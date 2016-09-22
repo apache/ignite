@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.shuffle.collections;
+package org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;

@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.shuffle.collections;
+package org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.Iterator;
@@ -43,46 +42,11 @@ import org.apache.ignite.internal.util.io.GridUnsafeDataInput;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.X;
 
-import static java.lang.Math.abs;
-import static java.lang.Math.ceil;
-import static java.lang.Math.max;
-
 /**
- * Skip list tests.
+ *
  */
-public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
-    /**
-     *
-     */
-    public void testLevel() {
-        Random rnd = new GridRandom();
-
-        int[] levelsCnts = new int[32];
-
-        int all = 10000;
-
-        for (int i = 0; i < all; i++) {
-            int level = HadoopSkipList.randomLevel(rnd);
-
-            levelsCnts[level]++;
-        }
-
-        X.println("Distribution: " + Arrays.toString(levelsCnts));
-
-        for (int level = 0; level < levelsCnts.length; level++) {
-            int exp = (level + 1) == levelsCnts.length ? 0 : all >>> (level + 1);
-
-            double precission = 0.72 / Math.max(32 >>> level, 1);
-
-            int sigma = max((int)ceil(precission * exp), 5);
-
-            X.println("Level: " + level + " exp: " + exp + " act: " + levelsCnts[level] + " precision: " + precission +
-                " sigma: " + sigma);
-
-            assertTrue(abs(exp - levelsCnts[level]) <= sigma); // Sometimes fails.
-        }
-    }
-
+public class HadoopConcurrentHashMultimapSelftest extends HadoopAbstractMapTest {
+    /** */
     public void testMapSimple() throws Exception {
         GridUnsafeMemory mem = new GridUnsafeMemory(0);
 
@@ -95,15 +59,15 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
 
         Random rnd = new Random();
 
-        int mapSize = 16 << rnd.nextInt(6);
+        int mapSize = 16 << rnd.nextInt(3);
 
         HadoopJobInfo job = new JobInfo();
 
         HadoopTaskContext taskCtx = new TaskContext();
 
-        HadoopMultimap m = new HadoopSkipList(job, mem);
+        HadoopConcurrentHashMultimap m = new HadoopConcurrentHashMultimap(job, mem, mapSize);
 
-        HadoopMultimap.Adder a = m.startAdding(taskCtx);
+        HadoopConcurrentHashMultimap.Adder a = m.startAdding(taskCtx);
 
         Multimap<Integer, Integer> mm = ArrayListMultimap.create();
         Multimap<Integer, Integer> vis = ArrayListMultimap.create();
@@ -137,15 +101,13 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
         assertEquals(0, mem.allocatedSize());
     }
 
-    private void check(HadoopMultimap m, Multimap<Integer, Integer> mm, final Multimap<Integer, Integer> vis, HadoopTaskContext taskCtx)
-        throws Exception {
+    private void check(HadoopConcurrentHashMultimap m, Multimap<Integer, Integer> mm,
+        final Multimap<Integer, Integer> vis, HadoopTaskContext taskCtx) throws Exception {
         final HadoopTaskInput in = m.input(taskCtx);
 
         Map<Integer, Collection<Integer>> mmm = mm.asMap();
 
         int keys = 0;
-
-        int prevKey = Integer.MIN_VALUE;
 
         while (in.next()) {
             keys++;
@@ -153,10 +115,6 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
             IntWritable k = (IntWritable)in.key();
 
             assertNotNull(k);
-
-            assertTrue(k.get() > prevKey);
-
-            prevKey = k.get();
 
             Deque<Integer> vs = new LinkedList<>();
 
@@ -172,7 +130,9 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
 
         assertEquals(mmm.size(), keys);
 
-//!        assertEquals(m.keys(), keys);
+        assertEquals(m.keys(), keys);
+
+        X.println("keys: " + keys + " cap: " + m.capacity());
 
         // Check visitor.
 
@@ -180,7 +140,7 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
 
         final GridDataInput dataInput = new GridUnsafeDataInput();
 
-        m.visit(false, new HadoopMultimap.Visitor() {
+        m.visit(false, new HadoopConcurrentHashMultimap.Visitor() {
             /** */
             IntWritable key = new IntWritable();
 
@@ -235,7 +195,7 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
 
             final HadoopTaskContext taskCtx = new TaskContext();
 
-            final HadoopMultimap m = new HadoopSkipList(job, mem);
+            final HadoopConcurrentHashMultimap m = new HadoopConcurrentHashMultimap(job, mem, 16);
 
             final ConcurrentMap<Integer, Collection<Integer>> mm = new ConcurrentHashMap<>();
 
@@ -283,16 +243,16 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
                 }
             }, 3 + rnd.nextInt(27));
 
+            X.println("___ Check: " + m.capacity());
+
+            assertEquals(mm.size(), m.keys());
+
+            assertTrue(m.capacity() > 32000);
+
             HadoopTaskInput in = m.input(taskCtx);
 
-            int prevKey = Integer.MIN_VALUE;
-
             while (in.next()) {
-                IntWritable key = (IntWritable)in.key();
-
-                assertTrue(key.get() > prevKey);
-
-                prevKey = key.get();
+                IntWritable key = (IntWritable) in.key();
 
                 Iterator<?> valsIter = in.values();
 
