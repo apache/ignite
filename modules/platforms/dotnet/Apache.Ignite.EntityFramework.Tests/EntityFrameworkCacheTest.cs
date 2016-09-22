@@ -667,6 +667,34 @@ namespace Apache.Ignite.EntityFramework.Tests
         }
 
         /// <summary>
+        /// Tests the entity set version increment in multi-threaded scenario.
+        /// </summary>
+        [Test]
+        public void TestIncrementMultithreaded()  // TODO: Remove?
+        {
+            TestUtils.RunMultiThreaded(() =>
+            {
+                using (var ctx = GetDbContext())
+                {
+                    var blog = new Blog { Name = "my blog" };
+                    ctx.Blogs.Add(blog);
+                    ctx.SaveChanges();
+                }
+            }, 4, 20);
+
+            int blogCnt;
+
+            using (var ctx = GetDbContext())
+            {
+                blogCnt = ctx.Blogs.Count();
+            }
+
+            var setVersion = _metaCache["Blog"];
+
+            Assert.AreEqual(blogCnt, setVersion);
+        }
+
+        /// <summary>
         /// Creates and removes a blog.
         /// </summary>
         private void CreateRemoveBlog()
