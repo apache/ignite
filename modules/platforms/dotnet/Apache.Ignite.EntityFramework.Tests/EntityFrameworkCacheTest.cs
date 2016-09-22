@@ -672,26 +672,32 @@ namespace Apache.Ignite.EntityFramework.Tests
         [Test]
         public void TestIncrementMultithreaded()  // TODO: Remove?
         {
+            int opCnt = 0;
+
             TestUtils.RunMultiThreaded(() =>
             {
+                var blog = new Blog { Name = "my blog" };
                 using (var ctx = GetDbContext())
                 {
-                    var blog = new Blog { Name = "my blog" };
                     ctx.Blogs.Add(blog);
                     ctx.SaveChanges();
                 }
+
+                Interlocked.Increment(ref opCnt);
+
+                using (var ctx = GetDbContext())
+                {
+                    ctx.Blogs.Attach(blog);
+                    ctx.Blogs.Remove(blog);
+                    ctx.SaveChanges();
+                }
+
+                Interlocked.Increment(ref opCnt);
             }, 4, 20);
-
-            int blogCnt;
-
-            using (var ctx = GetDbContext())
-            {
-                blogCnt = ctx.Blogs.Count();
-            }
 
             var setVersion = _metaCache["Blog"];
 
-            Assert.AreEqual(blogCnt, setVersion);
+            Assert.AreEqual(opCnt, setVersion);
         }
 
         /// <summary>
