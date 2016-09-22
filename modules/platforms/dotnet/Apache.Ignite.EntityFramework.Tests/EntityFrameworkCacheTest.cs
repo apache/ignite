@@ -684,6 +684,8 @@ namespace Apache.Ignite.EntityFramework.Tests
                 ctx.SaveChanges();
             }
 
+            Console.WriteLine("Blog created: " + blog.BlogId);
+
             var meta2 = getMeta();
 
             using (var ctx = GetDbContext())
@@ -706,7 +708,7 @@ namespace Apache.Ignite.EntityFramework.Tests
             using (var ctx = GetDbContext())
             {
                 Assert.AreEqual(0, ctx.Blogs.ToArray().Count(x => x.BlogId == blog.BlogId),
-                    string.Format(meta1 + ", " + meta2 + ", " + meta3 + ", " + meta4));
+                    string.Format("Found removed blog: " + blog.BlogId + " = " + meta1 + ", " + meta2 + ", " + meta3 + ", " + meta4));
             }
         }
 
