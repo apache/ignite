@@ -717,7 +717,7 @@ namespace Apache.Ignite.EntityFramework.Tests
             var cache = (ICacheInternal) _metaCache;
 
             const string key = "myKey";
-            const int cnt = 1000000;
+            const int cnt = 10000;
             const int threadCnt = 4;
 
             TestUtils.RunMultiThreaded(() =>

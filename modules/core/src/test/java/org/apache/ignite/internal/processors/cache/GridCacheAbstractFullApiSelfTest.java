@@ -74,6 +74,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
+import org.apache.ignite.internal.processors.platform.entityframework.PlatformDotNetEntityFrameworkIncreaseVersionProcessor;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -1321,28 +1322,16 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         final int threadCnt = 8;
         final int cnt = 900000;
 
+        final Set<String> keys = new HashSet(1);
+        keys.add("myKey");
+
         assert cache != null;
 
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
                 for (int i = 0; i < cnt; i++) {
-                    final Map<String, EntryProcessorResult<Object>> res =
-                        cache.invokeAll(Collections.singleton("myKey"), new CacheEntryProcessor<String, Long, Object>() {
-                        @Override
-                        public Object process(MutableEntry<String, Long> entry,
-                            Object... objects) throws EntryProcessorException {
-                            Long val = entry.getValue();
-
-                            if (val == null)
-                                val = 0L;
-
-                            val++;
-
-                            entry.setValue(val);
-
-                            return val;
-                        }
-                    });
+                    final Map<String, EntryProcessorResult<Long>> res =
+                        cache.invokeAll(keys, new PlatformDotNetEntityFrameworkIncreaseVersionProcessor());
 
                     assertEquals(1, res.size());
                 }
