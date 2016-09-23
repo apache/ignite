@@ -206,6 +206,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         private void InvalidateCache()
         {
             // Invalidate after connection is closed
+            // TODO: Connection is not always closed! There will be pooling, and context can be reused..
             var conn = _command.Connection;
 
             conn.StateChange -= ConnectionOnStateChange;
