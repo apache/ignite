@@ -153,13 +153,13 @@ public class GridNioServer<T> {
     /** Flag indicating if this server should use direct buffers. */
     private final boolean directBuf;
 
-    /** Index to select which thread will serve next in socket channel. Using round-robin balancing. */
+    /** Index to select which thread will serve next incoming socket channel. Using round-robin balancing. */
     @GridToStringExclude
-    private final AtomicInteger readBalanceIdx = new AtomicInteger();
+    private int readBalanceIdx;
 
     /** Index to select which thread will serve next out socket channel. Using round-robin balancing. */
     @GridToStringExclude
-    private final AtomicInteger writeBalanceIdx = new AtomicInteger(1);
+    private int writeBalanceIdx = 1;
 
     /** Tcp no delay flag. */
     private final boolean tcpNoDelay;
@@ -760,9 +760,32 @@ public class GridNioServer<T> {
         assert req.operation() == NioOperation.REGISTER : req;
         assert req.socketChannel() != null : req;
 
-        int balanceIdx = req.accepted() ? readBalanceIdx.getAndAdd(2) : writeBalanceIdx.getAndAdd(2);
+        int workes = clientWorkers.size();
 
-        clientWorkers.get(balanceIdx & (clientWorkers.size() - 1)).offer(req);
+        int balanceIdx;
+
+        if (workes > 1) {
+            if (req.accepted()) {
+                balanceIdx = readBalanceIdx;
+
+                readBalanceIdx += 2;
+
+                if (readBalanceIdx >= workes)
+                    readBalanceIdx = 0;
+            }
+            else {
+                balanceIdx = writeBalanceIdx;
+
+                writeBalanceIdx += 2;
+
+                if (writeBalanceIdx >= workes)
+                    writeBalanceIdx = 1;
+            }
+        }
+        else
+            balanceIdx = 0;
+
+        clientWorkers.get(balanceIdx).offer(req);
     }
 
     /** {@inheritDoc} */

@@ -29,9 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorResult;
@@ -60,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult;
+import org.apache.ignite.internal.processors.cache.GridDeferredAckMessageSender;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
@@ -82,7 +80,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
-import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -102,11 +99,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_DEFERRED_ACK_BUFFER_SIZE;
@@ -144,7 +139,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     private CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> updateReplyClos;
 
     /** Pending */
-    private ConcurrentMap<UUID, DeferredResponseBuffer> pendingResponses = new ConcurrentHashMap8<>();
+    private GridDeferredAckMessageSender deferredUpdateMessageSender;
 
     /** */
     private GridNearAtomicCache<K, V> near;
@@ -239,6 +234,53 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @SuppressWarnings({"IfMayBeConditional", "SimplifiableIfStatement"})
     @Override public void start() throws IgniteCheckedException {
         super.start();
+
+        deferredUpdateMessageSender = new GridDeferredAckMessageSender(ctx.time(), ctx.closures()) {
+            @Override public int getTimeout() {
+                return DEFERRED_UPDATE_RESPONSE_TIMEOUT;
+            }
+
+            @Override public int getBufferSize() {
+                return DEFERRED_UPDATE_RESPONSE_BUFFER_SIZE;
+            }
+
+            @Override public void finish(UUID nodeId, ConcurrentLinkedDeque8<GridCacheVersion> vers) {
+                GridDhtAtomicDeferredUpdateResponse msg = new GridDhtAtomicDeferredUpdateResponse(ctx.cacheId(),
+                    vers, ctx.deploymentEnabled());
+
+                try {
+                    ctx.kernalContext().gateway().readLock();
+
+                    try {
+                        ctx.io().send(nodeId, msg, ctx.ioPolicy());
+
+                        if (msgLog.isDebugEnabled()) {
+                            msgLog.debug("Sent deferred DHT update response [futIds=" + msg.futureVersions() +
+                                ", node=" + nodeId + ']');
+                        }
+                    }
+                    finally {
+                        ctx.kernalContext().gateway().readUnlock();
+                    }
+                }
+                catch (IllegalStateException ignored) {
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("Failed to send deferred DHT update response, node is stopping [" +
+                            "futIds=" + msg.futureVersions() + ", node=" + nodeId + ']');
+                    }
+                }
+                catch (ClusterTopologyCheckedException ignored) {
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("Failed to send deferred DHT update response, node left [" +
+                            "futIds=" + msg.futureVersions() + ", node=" + nodeId + ']');
+                    }
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to send deferred DHT update response to remote node [" +
+                        "futIds=" + msg.futureVersions() + ", node=" + nodeId + ']', e);
+                }
+            }
+        };
 
         CacheMetricsImpl m = new CacheMetricsImpl(ctx);
 
@@ -405,8 +447,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void stop() {
-        for (DeferredResponseBuffer buf : pendingResponses.values())
-            buf.finish();
+        deferredUpdateMessageSender.stop();
     }
 
     /**
@@ -3208,28 +3249,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param ver Version to ack.
      */
     private void sendDeferredUpdateResponse(UUID nodeId, GridCacheVersion ver) {
-        while (true) {
-            DeferredResponseBuffer buf = pendingResponses.get(nodeId);
-
-            if (buf == null) {
-                buf = new DeferredResponseBuffer(nodeId);
-
-                DeferredResponseBuffer old = pendingResponses.putIfAbsent(nodeId, buf);
-
-                if (old == null) {
-                    // We have successfully added buffer to map.
-                    ctx.time().addTimeoutObject(buf);
-                }
-                else
-                    buf = old;
-            }
-
-            if (!buf.addResponse(ver))
-                // Some thread is sending filled up buffer, we can remove it.
-                pendingResponses.remove(nodeId, buf);
-            else
-                break;
-        }
+        deferredUpdateMessageSender.sendDeferredAckMessage(nodeId, ver);
     }
 
     /**
@@ -3450,151 +3470,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         /** {@inheritDoc} */
         @Override public Collection<Integer> invalidPartitions() {
             return Collections.emptyList();
-        }
-    }
-
-    /**
-     * Deferred response buffer.
-     */
-    private class DeferredResponseBuffer extends ReentrantReadWriteLock implements GridTimeoutObject {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Filled atomic flag. */
-        private AtomicBoolean guard = new AtomicBoolean(false);
-
-        /** Response versions. */
-        private ConcurrentLinkedDeque8<GridCacheVersion> respVers = new ConcurrentLinkedDeque8<>();
-
-        /** Node ID. */
-        private final UUID nodeId;
-
-        /** Timeout ID. */
-        private final IgniteUuid timeoutId;
-
-        /** End time. */
-        private final long endTime;
-
-        /**
-         * @param nodeId Node ID to send message to.
-         */
-        private DeferredResponseBuffer(UUID nodeId) {
-            this.nodeId = nodeId;
-
-            timeoutId = IgniteUuid.fromUuid(nodeId);
-
-            endTime = U.currentTimeMillis() + DEFERRED_UPDATE_RESPONSE_TIMEOUT;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteUuid timeoutId() {
-            return timeoutId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long endTime() {
-            return endTime;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onTimeout() {
-            if (guard.compareAndSet(false, true)) {
-                ctx.closures().runLocalSafe(new Runnable() {
-                    @Override public void run() {
-                        writeLock().lock();
-
-                        try {
-                            finish();
-                        }
-                        finally {
-                            writeLock().unlock();
-                        }
-                    }
-                });
-            }
-        }
-
-        /**
-         * Adds deferred response to buffer.
-         *
-         * @param ver Version to send.
-         * @return {@code True} if response was handled, {@code false} if this buffer is filled and cannot be used.
-         */
-        public boolean addResponse(GridCacheVersion ver) {
-            readLock().lock();
-
-            boolean snd = false;
-
-            try {
-                if (guard.get())
-                    return false;
-
-                respVers.add(ver);
-
-                if (respVers.sizex() > DEFERRED_UPDATE_RESPONSE_BUFFER_SIZE && guard.compareAndSet(false, true))
-                    snd = true;
-            }
-            finally {
-                readLock().unlock();
-            }
-
-            if (snd) {
-                // Wait all threads in read lock to finish.
-                writeLock().lock();
-
-                try {
-                    finish();
-
-                    ctx.time().removeTimeoutObject(this);
-                }
-                finally {
-                    writeLock().unlock();
-                }
-            }
-
-            return true;
-        }
-
-        /**
-         * Sends deferred notification message and removes this buffer from pending responses map.
-         */
-        private void finish() {
-            GridDhtAtomicDeferredUpdateResponse msg = new GridDhtAtomicDeferredUpdateResponse(ctx.cacheId(),
-                respVers, ctx.deploymentEnabled());
-
-            try {
-                ctx.kernalContext().gateway().readLock();
-
-                try {
-                    ctx.io().send(nodeId, msg, ctx.ioPolicy());
-
-                    if (msgLog.isDebugEnabled()) {
-                        msgLog.debug("Sent deferred DHT update response [futIds=" + msg.futureVersions() +
-                            ", node=" + nodeId + ']');
-                    }
-                }
-                finally {
-                    ctx.kernalContext().gateway().readUnlock();
-                }
-            }
-            catch (IllegalStateException ignored) {
-                if (msgLog.isDebugEnabled()) {
-                    msgLog.debug("Failed to send deferred DHT update response, node is stopping [" +
-                        "futIds=" + msg.futureVersions() + ", node=" + nodeId + ']');
-                }
-            }
-            catch (ClusterTopologyCheckedException ignored) {
-                if (msgLog.isDebugEnabled()) {
-                    msgLog.debug("Failed to send deferred DHT update response, node left [" +
-                        "futIds=" + msg.futureVersions() + ", node=" + nodeId + ']');
-                }
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to send deferred DHT update response to remote node [" +
-                    "futIds=" + msg.futureVersions() + ", node=" + nodeId + ']', e);
-            }
-
-            pendingResponses.remove(nodeId, this);
         }
     }
 }

@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
@@ -150,6 +151,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** Cache registry. */
     @GridToStringExclude
     protected GridCacheSharedContext<?, ?> cctx;
+
+    /** Need return value. */
+    protected boolean needRetVal;
 
     /**
      * End version (a.k.a. <tt>'tnc'</tt> or <tt>'transaction number counter'</tt>)
@@ -692,6 +696,20 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** {@inheritDoc} */
     @Override public long startTime() {
         return startTime;
+    }
+
+    /**
+     * @return Flag indicating whether transaction needs return value.
+     */
+    public boolean needReturnValue() {
+        return needRetVal;
+    }
+
+    /**
+     * @param needRetVal Need return value flag.
+     */
+    public void needReturnValue(boolean needRetVal) {
+        this.needRetVal = needRetVal;
     }
 
     /**
@@ -1285,7 +1303,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                         if (intercept || !F.isEmpty(e.entryProcessors()))
                             e.cached().unswap(false);
 
-                        IgniteBiTuple<GridCacheOperation, CacheObject> res = applyTransformClosures(e, false);
+                        IgniteBiTuple<GridCacheOperation, CacheObject> res = applyTransformClosures(e, false, null);
 
                         GridCacheContext cacheCtx = e.context();
 
@@ -1443,13 +1461,15 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /**
      * @param txEntry Entry to process.
      * @param metrics {@code True} if metrics should be updated.
+     * @param ret Optional return value to initialize.
      * @return Tuple containing transformation results.
      * @throws IgniteCheckedException If failed to get previous value for transform.
      * @throws GridCacheEntryRemovedException If entry was concurrently deleted.
      */
     protected IgniteBiTuple<GridCacheOperation, CacheObject> applyTransformClosures(
         IgniteTxEntry txEntry,
-        boolean metrics) throws GridCacheEntryRemovedException, IgniteCheckedException {
+        boolean metrics,
+        @Nullable GridCacheReturn ret) throws GridCacheEntryRemovedException, IgniteCheckedException {
         GridCacheContext cacheCtx = txEntry.context();
 
         assert cacheCtx != null;
@@ -1457,8 +1477,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         if (isSystemInvalidate())
             return F.t(cacheCtx.writeThrough() ? RELOAD : DELETE, null);
 
-        if (F.isEmpty(txEntry.entryProcessors()))
+        if (F.isEmpty(txEntry.entryProcessors())) {
+            if (ret != null)
+                ret.value(cacheCtx, txEntry.value(), txEntry.keepBinary());
+
             return F.t(txEntry.op(), txEntry.value());
+        }
         else {
             T2<GridCacheOperation, CacheObject> calcVal = txEntry.entryProcessorCalculatedValue();
 
@@ -1508,17 +1532,27 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(
                     txEntry.key(), key, cacheVal, val, ver, keepBinary, txEntry.cached());
 
+                Object procRes = null;
+                Exception err = null;
+
                 try {
                     EntryProcessor<Object, Object, Object> processor = t.get1();
 
-                    processor.process(invokeEntry, t.get2());
+                    procRes = processor.process(invokeEntry, t.get2());
 
                     val = invokeEntry.getValue();
 
                     key = invokeEntry.key();
                 }
-                catch (Exception ignore) {
-                    // No-op.
+                catch (Exception e) {
+                    err = e;
+                }
+
+                if (ret != null) {
+                    if (err != null || procRes != null)
+                        ret.addEntryProcessResult(txEntry.context(), txEntry.key(), null, procRes, err, keepBinary);
+                    else
+                        ret.invokeResult(true);
                 }
 
                 modified |= invokeEntry.modified();
