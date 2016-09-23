@@ -314,7 +314,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     public static final long DFLT_SOCK_WRITE_TIMEOUT = 2000;
 
     /** Default connections per node. */
-    public static final int DFLT_CONN_PER_NODE = 2;
+    public static final int DFLT_CONN_PER_NODE = 1;
 
     /** No-op runnable. */
     private static final IgniteRunnable NOOP = new IgniteRunnable() {
