@@ -713,7 +713,7 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
         throws Exception {
         checkNotExist(igfs, paths);
 
-        if (dual)
+        if (mode != PRIMARY)
             checkNotExist(igfsSecondary, paths);
     }
 

@@ -17,21 +17,12 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import static org.apache.ignite.igfs.IgfsMode.PROXY;
-
 /**
- * Tests for PROXY mode.
+ * Tests for PROXY mode with local FS is configured as a secondary.
  */
-public class IgfsProxySelfTest extends IgfsAbstractSelfTest {
-    /**
-     * Constructor.
-     */
-    public IgfsProxySelfTest() {
-        super(PROXY);
-    }
-
+public class IgfsLocalSecondaryFileSystemProxyClientSelfTest extends IgfsLocalSecondaryFileSystemProxySelfTest {
     /** {@inheritDoc} */
-    @Override public void testUpdatePathDoesNotExist() throws Exception {
-        // Disabled for PROXY mode due to IGNITE-3645
+    @Override protected boolean client() {
+        return true;
     }
 }
