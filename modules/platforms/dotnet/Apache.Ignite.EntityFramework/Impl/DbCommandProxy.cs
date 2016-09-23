@@ -23,7 +23,6 @@ namespace Apache.Ignite.EntityFramework.Impl
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
-    using System.Threading;
 
     /// <summary>
     /// Command proxy.
@@ -150,12 +149,8 @@ namespace Apache.Ignite.EntityFramework.Impl
             if (_commandInfo.IsModification)
             {
                 // Execute reader, then invalidate cached data.
-                Console.WriteLine("ExecuteReaderModify... | {0}", Thread.CurrentThread.ManagedThreadId);
-
-                var readerRes = new DataReaderResult(_command.ExecuteReader(behavior));
-                var dbReader = readerRes.CreateReader();
-
-                Console.WriteLine("ExecuteReaderModify done | {0}", Thread.CurrentThread.ManagedThreadId);
+                // TODO: Mark data for invalidation, it will be invalidated on commit.
+                var dbReader = _command.ExecuteReader(behavior);
 
                 InvalidateCache();
 
@@ -171,8 +166,6 @@ namespace Apache.Ignite.EntityFramework.Impl
             var strategy = _commandInfo.Policy.GetCachingStrategy(queryInfo);
             var cacheKey = _commandInfo.Cache.GetCacheKey(GetKey(), _commandInfo.AffectedEntitySets, strategy);
 
-            //Console.WriteLine("Got cache key: {0} | {1}", cacheKey.GetStringKey(), Thread.CurrentThread.ManagedThreadId);
-
             object cachedRes;
             if (_commandInfo.Cache.GetItem(cacheKey, out cachedRes))
                 return ((DataReaderResult) cachedRes).CreateReader();
@@ -187,9 +180,7 @@ namespace Apache.Ignite.EntityFramework.Impl
                 return reader;
 
             // Read into memory.
-            Console.WriteLine("ExecuteReader... | {0}", Thread.CurrentThread.ManagedThreadId);
             var res = new DataReaderResult(reader);
-            Console.WriteLine("ExecuteReader done | {0}", Thread.CurrentThread.ManagedThreadId);
 
             // Check if specific row count is cacheable.
             if (!_commandInfo.Policy.CanBeCached(queryInfo, res.RowCount))
@@ -233,11 +224,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         /** <inheritDoc /> */
         public override int ExecuteNonQuery()
         {
-            Console.WriteLine("ExecuteNonQuery... | {0}", Thread.CurrentThread.ManagedThreadId);
-
             var res = _command.ExecuteNonQuery();
-
-            Console.WriteLine("ExecuteNonQuery done {0} | {1}", GetKey(), Thread.CurrentThread.ManagedThreadId);
 
             // Invalidate AFTER updating the data.
             if (_commandInfo.IsModification)

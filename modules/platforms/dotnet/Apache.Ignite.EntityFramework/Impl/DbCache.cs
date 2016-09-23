@@ -23,7 +23,6 @@ namespace Apache.Ignite.EntityFramework.Impl
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
-    using System.Threading;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -115,10 +114,6 @@ namespace Apache.Ignite.EntityFramework.Impl
 
             value = success ? res.Data : null;
 
-            // TODO: Remove!
-            if (success)
-                Console.WriteLine("Returning from cache with key: {0} | {1}", key.GetStringKey(), Thread.CurrentThread.ManagedThreadId);
-
             return success;
         }
 
@@ -129,12 +124,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         {
             var cache = GetCacheWithExpiry(absoluteExpiration);
 
-            // TODO: Remove!
-            Console.WriteLine("Adding to cache: {0} | {1}", key.GetStringKey(), Thread.CurrentThread.ManagedThreadId);
-
-            // TODO: Do not put if key is already old!
-            //cache[key.GetStringKey()] = new EntityFrameworkCacheEntry(value, key.EntitySetVersions);
-
+            // TODO: Do not put if key is already old?
             // Put asynchronously to avoid unnecessary delay in the requesting thread.
             cache.PutAsync(key.GetStringKey(), new EntityFrameworkCacheEntry(value, key.EntitySetVersions));
         }
@@ -146,12 +136,6 @@ namespace Apache.Ignite.EntityFramework.Impl
         {
             Debug.Assert(entitySets != null && entitySets.Count > 0);
 
-            // TODO: Remove!
-            var name = entitySets.First().Name;
-            long id;
-            _metaCache.TryGet(name, out id);
-            Console.WriteLine("Invalidating: {0} {1} | {2}", name, id, Thread.CurrentThread.ManagedThreadId);
-
             // Increase version for each dependent entity set and run a task to clean up old entries.
             ((ICacheInternal) _metaCache).DoOutInOpExtension<object>(ExtensionId, OpInvalidateSets, w =>
             {
@@ -162,9 +146,6 @@ namespace Apache.Ignite.EntityFramework.Impl
                 foreach (var set in entitySets)
                     w.WriteString(set.Name);
             }, null);
-
-            // TODO: Remove!
-            Console.WriteLine("Invalidated: {0} {1} | {2}", name, _metaCache[name], Thread.CurrentThread.ManagedThreadId);
         }
 
         /// <summary>
