@@ -307,11 +307,11 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * Gets thread-local context value for a given {@code key}.
      *
      * @param key Thread-local context key.
-     * @return Thread-local context value associated with given {@code key} - or {@code null}
-     *      if value with given {@code key} doesn't exist.
+     * @return Thread-local context value associated with given {@code key} - or {@code null} if value with given {@code
+     * key} doesn't exist.
      */
     @Nullable public <T> T getThreadContext(GridTaskThreadContextKey key) {
-        assert(key != null);
+        assert (key != null);
 
         Map<GridTaskThreadContextKey, Object> map = thCtx.get();
 
@@ -354,9 +354,9 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     /**
      * @param taskCls Task class.
      * @param arg Optional execution argument.
-     * @return Task future.
      * @param <T> Task argument type.
      * @param <R> Task return value type.
+     * @return Task future.
      */
     public <T, R> ComputeTaskInternalFuture<R> execute(Class<? extends ComputeTask<T, R>> taskCls, @Nullable T arg) {
         assert taskCls != null;
@@ -377,9 +377,9 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     /**
      * @param task Actual task.
      * @param arg Optional task argument.
-     * @return Task future.
      * @param <T> Task argument type.
      * @param <R> Task return value type.
+     * @return Task future.
      */
     public <T, R> ComputeTaskInternalFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg) {
         return execute(task, arg, false);
@@ -389,9 +389,9 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param task Actual task.
      * @param arg Optional task argument.
      * @param sys If {@code true}, then system pool will be used.
-     * @return Task future.
      * @param <T> Task argument type.
      * @param <R> Task return value type.
+     * @return Task future.
      */
     public <T, R> ComputeTaskInternalFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg, boolean sys) {
         lock.readLock();
@@ -431,9 +431,9 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     /**
      * @param taskName Task name.
      * @param arg Optional execution argument.
-     * @return Task future.
      * @param <T> Task argument type.
      * @param <R> Task return value type.
+     * @return Task future.
      */
     public <T, R> ComputeTaskInternalFuture<R> execute(String taskName, @Nullable T arg) {
         assert taskName != null;
@@ -515,13 +515,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     throw new IgniteDeploymentCheckedException("Unknown task name or failed to auto-deploy " +
                         "task (was task (re|un)deployed?): " + taskName);
 
-                try {
-                    taskCls = dep.deployedClass(taskName);
-                }
-                catch (Throwable t){
-                    throw new IgniteDeploymentCheckedException("Failed to auto-deploy " +
-                        "task (was task (re|un)deployed?) [taskName=" + taskName + ", dep=" + dep + ']');
-                }
+                taskCls = dep.deployedClass(taskName);
 
                 if (taskCls == null)
                     throw new IgniteDeploymentCheckedException("Unknown task name or failed to auto-deploy " +
@@ -531,6 +525,9 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     throw new IgniteCheckedException("Failed to auto-deploy task (deployed class is not a task) " +
                         "[taskName=" +
                         taskName + ", depCls=" + taskCls + ']');
+            }
+            catch (NoClassDefFoundError e) {
+                deployEx = new IgniteCheckedException(e);
             }
             catch (IgniteCheckedException e) {
                 deployEx = e;
@@ -602,7 +599,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Task deployment: " + dep);
 
-        boolean fullSup = dep != null && taskCls!= null &&
+        boolean fullSup = dep != null && taskCls != null &&
             dep.annotation(taskCls, ComputeTaskSessionFullSupport.class) != null;
 
         Collection<? extends ClusterNode> nodes = (Collection<? extends ClusterNode>)map.get(TC_SUBGRID);
