@@ -503,6 +503,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             Iterator<InetSocketAddress> it = addrs.iterator();
 
+            boolean wait = false;
+
             while (it.hasNext()) {
                 if (Thread.currentThread().isInterrupted())
                     throw new InterruptedException();
@@ -521,12 +523,17 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 Socket sock = joinRes.sockStream.socket();
 
+                if (log.isDebugEnabled())
+                    log.debug("Received response to join request [addr=" + addr + ", res=" + joinRes.receipt + ']');
+
                 switch (joinRes.receipt) {
                     case RES_OK:
                         return joinRes;
 
                     case RES_CONTINUE_JOIN:
                     case RES_WAIT:
+                        wait = true;
+
                         U.closeQuiet(sock);
 
                         break;
@@ -539,7 +546,16 @@ class ClientImpl extends TcpDiscoveryImpl {
                 }
             }
 
-            if (addrs.isEmpty()) {
+            if (wait) {
+                if (timeout > 0 && (U.currentTimeMillis() - startTime) > timeout)
+                    return null;
+
+                if (log.isDebugEnabled())
+                    log.debug("Will wait before retry join.");
+
+                Thread.sleep(2000);
+            }
+            else if (addrs.isEmpty()) {
                 if (timeout > 0 && (U.currentTimeMillis() - startTime) > timeout)
                     return null;
 

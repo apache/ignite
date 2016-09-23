@@ -93,20 +93,13 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
             // FileSystem.get() might delegate to ServiceLoader to get the list of file system implementation.
             // And ServiceLoader is known to be sensitive to context classloader. Therefore, we change context
             // classloader to classloader of current class to avoid strange class-cast-exceptions.
-            ClassLoader ctxClsLdr = Thread.currentThread().getContextClassLoader();
-            ClassLoader clsLdr = getClass().getClassLoader();
+            ClassLoader oldLdr = HadoopUtils.setContextClassLoader(getClass().getClassLoader());
 
-            if (ctxClsLdr == clsLdr)
+            try {
                 return create(usrName);
-            else {
-                Thread.currentThread().setContextClassLoader(clsLdr);
-
-                try {
-                    return create(usrName);
-                }
-                finally {
-                    Thread.currentThread().setContextClassLoader(ctxClsLdr);
-                }
+            }
+            finally {
+                HadoopUtils.restoreContextClassLoader(oldLdr);
             }
         }
         catch (InterruptedException e) {
