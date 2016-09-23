@@ -47,6 +47,8 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
     /** Ignite test configuration file. */
     private static final String GRID_CONF_FILE = "modules/flink/src/test/resources/example-ignite.xml";
 
+    private IgniteConfiguration cfg;
+
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 10_000;
@@ -54,16 +56,18 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected void beforeTestsStarted() throws Exception {
-        IgniteConfiguration cfg = loadConfiguration(GRID_CONF_FILE);
+    @Override protected void beforeTest() throws Exception {
+        cfg = loadConfiguration(GRID_CONF_FILE);
 
         cfg.setClientMode(false);
 
-        startGrid("igniteServerNode", cfg);
+        cfg.setGridName(GRID_NAME);
+
+        G.getOrStart(cfg);
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
 
@@ -117,7 +121,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
 
         IgniteCache cache = ignite.cache(TEST_CACHE);
 
-        final IgniteSource igniteSrc = new IgniteSource(TEST_CACHE, GRID_CONF_FILE);
+        final IgniteSource igniteSrc = new IgniteSource(GRID_CONF_FILE, TEST_CACHE);
 
         igniteSrc.setEvtBatchSize(10);
         igniteSrc.setEvtBufTimeout(10);

@@ -98,12 +98,12 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
     /**
      * Default IgniteSource constructor.
      *
+     * @param igniteCfgFile Ignite Configuration file.
      * @param cacheName Cache name.
-     * @param igniteCfgFile Ignite configuration file.
      */
-    public IgniteSource(String cacheName, String igniteCfgFile) {
-        this.cacheName = cacheName;
+    public IgniteSource(String igniteCfgFile, String cacheName) {
         this.igniteCfgFile = igniteCfgFile;
+        this.cacheName = cacheName;
     }
 
     /**
