@@ -171,6 +171,7 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
             }
         });
 
+        // TODO: This is not called with holdcc/callcc
         asyncCompute.future().listen(new CI1<IgniteFuture<Object>>() {
             @Override public void apply(IgniteFuture<Object> future) {
                 // Reset cleanup flag.
