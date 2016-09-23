@@ -45,6 +45,7 @@ namespace Apache.Ignite.EntityFramework.Impl
             _cache = cache;
         }
 
+        /** <inheritDoc /> */
         public void InvalidateCache(ICollection<EntitySetBase> entitySets, DbTransaction transaction)
         {
 
@@ -63,31 +64,37 @@ namespace Apache.Ignite.EntityFramework.Impl
             }
         }
 
+        /** <inheritDoc /> */
         public void ConnectionGetting(DbTransaction transaction, DbTransactionInterceptionContext<DbConnection> interceptionContext)
         {
             // No-op
         }
 
+        /** <inheritDoc /> */
         public void ConnectionGot(DbTransaction transaction, DbTransactionInterceptionContext<DbConnection> interceptionContext)
         {
             // No-op
         }
 
+        /** <inheritDoc /> */
         public void IsolationLevelGetting(DbTransaction transaction, DbTransactionInterceptionContext<IsolationLevel> interceptionContext)
         {
             // No-op
         }
 
+        /** <inheritDoc /> */
         public void IsolationLevelGot(DbTransaction transaction, DbTransactionInterceptionContext<IsolationLevel> interceptionContext)
         {
             // No-op
         }
 
+        /** <inheritDoc /> */
         public void Committing(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
         {
             // No-op
         }
 
+        /** <inheritDoc /> */
         public void Committed(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
         {
             HashSet<EntitySetBase> entitySets;
@@ -95,22 +102,26 @@ namespace Apache.Ignite.EntityFramework.Impl
                 _cache.InvalidateSets(entitySets);
         }
 
+        /** <inheritDoc /> */
         public void Disposing(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
         {
             // No-op
         }
 
+        /** <inheritDoc /> */
         public void Disposed(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
         {
             HashSet<EntitySetBase> val;
             _entitySets.TryRemove(transaction, out val);
         }
 
+        /** <inheritDoc /> */
         public void RollingBack(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
         {
             // No-op
         }
 
+        /** <inheritDoc /> */
         public void RolledBack(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
         {
             // No-op
