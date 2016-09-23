@@ -29,12 +29,12 @@ namespace Apache.Ignite.EntityFramework.Impl
     /// </summary>
     internal class DbTransactionInterceptor : IDbTransactionInterceptor
     {
-        /** */
+        /** Cache. */
         private readonly DbCache _cache;
 
-        /** */
-        private readonly ConcurrentDictionary<DbTransaction, List<EntitySetBase>> _entitySets 
-            = new ConcurrentDictionary<DbTransaction, List<EntitySetBase>>();
+        /** Map from tx to dependent sets. HashSet because same sets can be affected multiple times within a tx. */
+        private readonly ConcurrentDictionary<DbTransaction, HashSet<EntitySetBase>> _entitySets 
+            = new ConcurrentDictionary<DbTransaction, HashSet<EntitySetBase>>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DbTransactionInterceptor"/> class.
@@ -56,9 +56,10 @@ namespace Apache.Ignite.EntityFramework.Impl
             else
             {
                 // Postpone until commit.
-                var sets = _entitySets.GetOrAdd(transaction, _ => new List<EntitySetBase>());
+                var sets = _entitySets.GetOrAdd(transaction, _ => new HashSet<EntitySetBase>());
 
-                sets.AddRange(entitySets);
+                foreach (var set in entitySets)
+                    sets.Add(set);
             }
         }
 
@@ -89,7 +90,7 @@ namespace Apache.Ignite.EntityFramework.Impl
 
         public void Committed(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
         {
-            List<EntitySetBase> entitySets;
+            HashSet<EntitySetBase> entitySets;
             if (_entitySets.TryGetValue(transaction, out entitySets))
                 _cache.InvalidateSets(entitySets);
         }
@@ -101,7 +102,7 @@ namespace Apache.Ignite.EntityFramework.Impl
 
         public void Disposed(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
         {
-            List<EntitySetBase> val;
+            HashSet<EntitySetBase> val;
             _entitySets.TryRemove(transaction, out val);
         }
 
