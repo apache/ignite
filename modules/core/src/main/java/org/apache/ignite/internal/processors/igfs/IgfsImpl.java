@@ -251,9 +251,7 @@ public final class IgfsImpl implements IgfsEx {
 
         modeRslvr = new IgfsModeResolver(dfltMode, modes);
 
-        Object secondaryFsPayload = null;
-
-        paths = new IgfsPaths(secondaryFsPayload, dfltMode, modeRslvr.modesOrdered());
+        paths = new IgfsPaths(dfltMode, modeRslvr.modesOrdered());
 
         // Check whether IGFS LRU eviction policy is set on data cache.
         String dataCacheName = igfsCtx.configuration().getDataCacheName();
