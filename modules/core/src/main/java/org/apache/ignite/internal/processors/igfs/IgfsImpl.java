@@ -51,7 +51,6 @@ import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadabl
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
-import org.apache.ignite.internal.processors.hadoop.HadoopPayloadAware;
 import org.apache.ignite.internal.processors.igfs.client.IgfsClientAffinityCallable;
 import org.apache.ignite.internal.processors.igfs.client.IgfsClientDeleteCallable;
 import org.apache.ignite.internal.processors.igfs.client.IgfsClientExistsCallable;
@@ -253,9 +252,6 @@ public final class IgfsImpl implements IgfsEx {
         modeRslvr = new IgfsModeResolver(dfltMode, modes);
 
         Object secondaryFsPayload = null;
-
-        if (secondaryFs instanceof HadoopPayloadAware)
-            secondaryFsPayload = ((HadoopPayloadAware) secondaryFs).getPayload();
 
         secondaryPaths = new IgfsPaths(secondaryFsPayload, dfltMode, modeRslvr.modesOrdered());
 
