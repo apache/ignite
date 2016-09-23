@@ -48,7 +48,6 @@ namespace Apache.Ignite.EntityFramework.Impl
         /** <inheritDoc /> */
         public void InvalidateCache(ICollection<EntitySetBase> entitySets, DbTransaction transaction)
         {
-
             if (transaction == null)
             {
                 // Invalidate immediately.

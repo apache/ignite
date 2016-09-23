@@ -546,7 +546,7 @@ namespace Apache.Ignite.EntityFramework.Tests
                     // Check schema.
                     Assert.Throws<NotSupportedException>(() => reader.GetSchemaTable());
                     Assert.AreEqual(0, reader.Depth);
-                    Assert.AreEqual(0, reader.RecordsAffected);
+                    Assert.AreEqual(-1, reader.RecordsAffected);
                     Assert.IsTrue(reader.HasRows);
                     Assert.IsFalse(reader.IsClosed);
                     Assert.AreEqual(11, reader.FieldCount);
