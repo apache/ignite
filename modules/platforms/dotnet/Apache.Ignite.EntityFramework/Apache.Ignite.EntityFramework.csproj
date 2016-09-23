@@ -66,6 +66,7 @@
     <Compile Include="DbCachingPolicy.cs" />
     <Compile Include="IgniteDbConfiguration.cs" />
     <Compile Include="Impl\DbCache.cs" />
+    <Compile Include="Impl\DbTransactionInterceptor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
