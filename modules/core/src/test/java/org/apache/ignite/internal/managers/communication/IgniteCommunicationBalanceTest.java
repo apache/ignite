@@ -30,7 +30,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.nio.GridNioServer;
@@ -38,7 +37,6 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -98,16 +96,18 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBalance1() throws Exception {
-        System.setProperty(GridNioServer.IGNITE_NIO_SES_BALANCER_BALANCE_PERIOD, "500");
+        System.setProperty(GridNioServer.IGNITE_NIO_SES_BALANCER_BALANCE_PERIOD, "5000");
 
         try {
             selectors = 4;
 
-            startGridsMultiThreaded(4);
+            final int SRVS = 4;
+
+            startGridsMultiThreaded(SRVS);
 
             client = true;
 
-            Ignite client = startGrid(4);
+            final Ignite client = startGrid(SRVS);
 
             for (int i = 0; i < 4; i++) {
                 ClusterNode node = client.cluster().node(ignite(i).cluster().localNode().id());
@@ -127,30 +127,37 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
             int prevNodeIdx = -1;
 
             for (int iter = 0; iter < 10; iter++) {
-                int nodeIdx = rnd.nextInt(4);
+                int nodeIdx = rnd.nextInt(SRVS);
 
                 while (prevNodeIdx == nodeIdx)
-                    nodeIdx = rnd.nextInt(4);
+                    nodeIdx = rnd.nextInt(SRVS);
 
                 prevNodeIdx = nodeIdx;
 
                 log.info("Iteration [iter=" + iter + ", node=" + nodeIdx + ']');
 
-                ClusterNode node = client.cluster().node(ignite(nodeIdx).cluster().localNode().id());
-
-                final IgniteCompute compute = client.compute(client.cluster().forNode(node));
-
-                for (int i = 0; i < 20_000; i++)
-                    compute.call(new DummyCallable(new byte[512]));
-
                 final long readMoveCnt = readMoveCnt1;
                 final long writeMoveCnt = writeMoveCnt1;
 
+                final int nodeIdx0 = nodeIdx;
+
                 GridTestUtils.waitForCondition(new GridAbsPredicate() {
                     @Override public boolean apply() {
+                        byte[] data = new byte[100_000];
+
+                        for (int j = 0; j < 10; j++) {
+                            for (int i = 0; i < SRVS; i++) {
+                                ClusterNode node = client.cluster().node(ignite(i).cluster().localNode().id());
+
+                                IgniteCompute compute = client.compute(client.cluster().forNode(node));
+
+                                compute.call(new DummyCallable(i == nodeIdx0 ? data : null));
+                            }
+                        }
+
                         return srv.readerMoveCount() > readMoveCnt && srv.writerMoveCount() > writeMoveCnt;
                     }
-                }, 10_000);
+                }, 30_000);
 
                 waitNioBalanceStop(Collections.singletonList(client), 30_000);
 
@@ -180,7 +187,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBalance2() throws Exception {
-        System.setProperty(GridNioServer.IGNITE_NIO_SES_BALANCER_BALANCE_PERIOD, "500");
+        System.setProperty(GridNioServer.IGNITE_NIO_SES_BALANCER_BALANCE_PERIOD, "1000");
 
         try {
             startGridsMultiThreaded(5);

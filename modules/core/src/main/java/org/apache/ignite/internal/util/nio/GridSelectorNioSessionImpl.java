@@ -159,6 +159,24 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     }
 
     /**
+     * @param from
+     * @param fut
+     * @return
+     */
+    boolean offerMove(GridNioWorker from, GridNioFuture fut) {
+        synchronized (this) {
+            GridNioWorker worker0 = worker;
+
+            if (worker0 != from)
+                return false;
+
+            worker.offer(fut);
+        }
+
+        return true;
+    }
+
+    /**
      * @param fut
      */
     void offerStateChange(GridNioFuture fut) {

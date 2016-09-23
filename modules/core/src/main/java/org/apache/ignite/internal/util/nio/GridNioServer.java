@@ -604,7 +604,12 @@ public class GridNioServer<T> {
         assert to >= 0 && to < clientWorkers.size() : to;
         assert from != to;
 
-        clientWorkers.get(from).offer(new SessionMoveFuture((GridSelectorNioSessionImpl)ses, to));
+        GridSelectorNioSessionImpl ses0 = (GridSelectorNioSessionImpl)ses;
+
+        SessionMoveFuture fut = new SessionMoveFuture(ses0, to);
+
+        if (!ses0.offerMove(clientWorkers.get(from), fut))
+            fut.onDone(false);
     }
 
     /**
@@ -990,6 +995,7 @@ public class GridNioServer<T> {
                 metricsLsnr.onBytesReceived(cnt);
 
             ses.bytesReceived(cnt);
+
             onRead(cnt);
 
             readBuf.flip();
@@ -1343,14 +1349,21 @@ public class GridNioServer<T> {
         /** Worker index. */
         private final int idx;
 
+        /** */
+        private long bytesRcvd;
+
+        /** */
+        private long bytesSent;
+
+        /** */
+        private volatile long bytesRcvd0;
+
+        /** */
+        private volatile long bytesSent0;
+
         /** Sessions assigned to this worker. */
         private final GridConcurrentHashSet<GridSelectorNioSessionImpl> workerSessions =
             new GridConcurrentHashSet<>();
-
-        private volatile long bytesRcvd;
-        private volatile long bytesSent;
-        private volatile long bytesRcvd0;
-        private volatile long bytesSent0;
 
         /**
          * @param idx Index of this worker in server's array.
@@ -1468,7 +1481,7 @@ public class GridNioServer<T> {
             List<GridNioFuture> sesReqs = null;
 
             for (GridNioServer.NioOperationFuture changeReq : changeReqs) {
-                if (changeReq.session() == ses) {
+                if (changeReq.session() == ses && !(changeReq instanceof SessionMoveFuture)) {
                     boolean rmv = changeReqs.remove(changeReq);
 
                     assert rmv : changeReq;
@@ -2070,17 +2083,26 @@ public class GridNioServer<T> {
          */
         protected abstract void processWrite(SelectionKey key) throws IOException;
 
-        protected void onRead(int cnt) { // TODO
+        /**
+         * @param cnt
+         */
+        final void onRead(int cnt) {
             bytesRcvd += cnt;
             bytesRcvd0 += cnt;
         }
 
-        protected void onWrite(int cnt) {
+        /**
+         * @param cnt
+         */
+        final void onWrite(int cnt) {
             bytesSent += cnt;
             bytesSent0 += cnt;
         }
 
-        protected void reset0() {
+        /**
+         *
+         */
+        final void reset0() {
             bytesSent0 = 0;
             bytesRcvd0 = 0;
 
@@ -2266,7 +2288,7 @@ public class GridNioServer<T> {
         /** Register read key selection. */
         REGISTER,
 
-        /** */
+        /** Move session between workers. */
         MOVE,
 
         /** Register write key selection. */
@@ -3001,16 +3023,22 @@ public class GridNioServer<T> {
                 for (int i = 0; i < clientWorkers.size(); i++) {
                     GridNioServer.AbstractNioClientWorker worker = clientWorkers.get(i);
 
-                    if ((i & 1) == 0) {
+                    int sesCnt = worker.workerSessions.size();
+
+                    if (i % 2 == 0) {
                         // Reader.
                         long bytesRcvd0 = worker.bytesRcvd0;
+//
+//                        if (print)
+//                            log.info("Reader [idx=" + i +
+//                                ", secCnt=" + sesCnt +
+//                                ", received=" + bytesRcvd0 +
+//                                ", sent=" + worker.bytesSent0 +
+//                                ']');
 
-                        if ((maxRcvd0 == -1 || bytesRcvd0 > maxRcvd0) && bytesRcvd0 > 0 &&
-                            worker.workerSessions.size() > 1) {
+                        if ((maxRcvd0 == -1 || bytesRcvd0 > maxRcvd0) && bytesRcvd0 > 0 && sesCnt > 1) {
                             maxRcvd0 = bytesRcvd0;
                             maxRcvdIdx = i;
-
-                            continue;
                         }
 
                         if (minRcvd0 == -1 || bytesRcvd0 < minRcvd0) {
@@ -3021,13 +3049,17 @@ public class GridNioServer<T> {
                     else {
                         // Writer.
                         long bytesSent0 = worker.bytesSent0;
+//
+//                        if (print)
+//                            log.info("Writer [idx=" + i +
+//                                ", secCnt=" + sesCnt +
+//                                ", received=" + worker.bytesRcvd0 +
+//                                ", sent=" + bytesSent0 +
+//                                ']');
 
-                        if ((maxSent0 == -1 || bytesSent0 > maxSent0) && bytesSent0 > 0 &&
-                            worker.workerSessions.size() > 1) {
+                        if ((maxSent0 == -1 || bytesSent0 > maxSent0) && bytesSent0 > 0 && sesCnt > 1) {
                             maxSent0 = bytesSent0;
                             maxSentIdx = i;
-
-                            continue;
                         }
 
                         if (minSent0 == -1 || bytesSent0 < minSent0) {
@@ -3117,8 +3149,10 @@ public class GridNioServer<T> {
                                 ", from=" + maxRcvdIdx + ", to=" + minRcvdIdx + ']');
 
                         if (print)
-                            log.info("Will move session to less loaded reader [diff=" + rcvdDiff + ", ses=" + ses +
-                                ", from=" + maxSentIdx + ", to=" + minSentIdx + ']');
+                            log.info("Will move session to less loaded reader [diff=" + rcvdDiff +
+                                ", from=" + maxSentIdx +
+                                ", to=" + minSentIdx +
+                                ", ses=" + ses + ']');
 
                         srv.readerMoveCnt.incrementAndGet();
 
