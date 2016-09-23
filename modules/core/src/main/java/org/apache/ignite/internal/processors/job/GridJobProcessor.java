@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDeploymentException;
 import org.apache.ignite.IgniteException;
@@ -40,7 +39,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeExecutionRejectedException;
 import org.apache.ignite.compute.ComputeJobSibling;
 import org.apache.ignite.compute.ComputeTaskSession;
-import org.apache.ignite.compute.ComputeUserUndeclaredException;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.JobEvent;
@@ -974,13 +972,13 @@ public class GridJobProcessor extends GridProcessorAdapter {
             return;
         }
 
+        long endTime = req.getCreateTime() + req.getTimeout();
+
+        // Account for overflow.
+        if (endTime < 0)
+            endTime = Long.MAX_VALUE;
+
         try {
-            long endTime = req.getCreateTime() + req.getTimeout();
-
-            // Account for overflow.
-            if (endTime < 0)
-                endTime = Long.MAX_VALUE;
-
             GridDeployment tmpDep = req.isForceLocalDeployment() ?
                 ctx.deploy().getLocalDeployment(req.getTaskClassName()) :
                 ctx.deploy().getGlobalDeployment(
@@ -1106,33 +1104,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     // If exception occurs on job initialization, deployment is released in job listener.
                     releaseDep = false;
 
-                    //Try to deploy job class
-                    Class<?> deployedCls;
-
-                    try {
-                        deployedCls = dep.deployedClass(req.getTaskClassName());
-                    }
-                    catch (LinkageError e) {
-                        IgniteException ex = new IgniteException(e);
-
-                        U.error(log, ex.getMessage(), ex);
-
-                        handleException(node, req, ex, endTime);
-
-                        return;
-                    }
-
-                    if (deployedCls == null) {
-                        IgniteException ex = new IgniteException("ClassNotFound:" + req.getTaskClassName());
-
-                        U.error(log, ex.getMessage(), ex);
-
-                        handleException(node, req, ex, endTime);
-
-                        return;
-                    }
-
-                    if (job.initialize(dep, deployedCls)) {
+                    if (job.initialize(dep, dep.deployedClass(req.getTaskClassName()))) {
                         // Internal jobs will always be executed synchronously.
                         if (job.isInternal()) {
                             // This is an internal job and can be executed inside busy lock
@@ -1198,6 +1170,16 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 if (dep != null && releaseDep)
                     release(dep);
             }
+        }
+        // Try to handle unexpected error and send feedback to prevent remote node infinite waiting.
+        catch (Throwable t) {
+            IgniteException ex = new IgniteException(t);
+
+            U.error(log, ex.getMessage(), ex);
+
+            handleException(node, req, ex, endTime);
+
+            return;
         }
         finally {
             rwLock.readUnlock();
