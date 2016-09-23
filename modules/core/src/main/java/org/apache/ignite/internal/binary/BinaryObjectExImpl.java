@@ -30,6 +30,7 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -248,6 +249,8 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
             buf.a(Arrays.toString((boolean[]) val));
         else if (val instanceof BigDecimal[])
             buf.a(Arrays.toString((BigDecimal[])val));
+        else if (val instanceof IgniteUuid)
+            buf.a(val);
         else if (val instanceof BinaryObjectExImpl) {
             BinaryObjectExImpl po = (BinaryObjectExImpl)val;
 
