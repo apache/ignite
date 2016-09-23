@@ -20,6 +20,7 @@
 // ReSharper disable ClassWithVirtualMembersNeverInherited.Local
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 // ReSharper disable VirtualMemberNeverOverridden.Global
+
 namespace Apache.Ignite.EntityFramework.Tests
 {
     using System;
@@ -28,6 +29,7 @@ namespace Apache.Ignite.EntityFramework.Tests
     using System.Data.Entity;
     using System.Data.Entity.Core.EntityClient;
     using System.Data.Entity.Infrastructure;
+    using System.Data.SqlServerCe;
     using System.IO;
     using System.Linq;
     using System.Threading;
@@ -161,7 +163,7 @@ namespace Apache.Ignite.EntityFramework.Tests
                 Assert.AreEqual(new[] {"Foo"}, ctx.Posts.Where(x => x.Title == "Bar").Select(x => x.Title).ToArray());
             }
         }
-    
+
         /// <summary>
         /// Tests the read-write strategy (default).
         /// </summary>
@@ -188,7 +190,7 @@ namespace Apache.Ignite.EntityFramework.Tests
                 // Add new post to check invalidation.
                 ctx.Posts.Add(new Post {BlogId = blog.BlogId, Title = "My Second Post", Content = "Foo bar."});
                 Assert.AreEqual(1, ctx.SaveChanges());
-                
+
                 Assert.AreEqual(0, _cache.GetSize()); // No cached entries.
 
                 Assert.AreEqual(2, ctx.Posts.Where(x => x.Title.StartsWith("My")).ToArray().Length);
@@ -304,7 +306,7 @@ namespace Apache.Ignite.EntityFramework.Tests
                 Assert.AreEqual(4, ctx.Posts.Count());
                 Assert.AreEqual(4, ctx.Posts.Count(x => x.Content == null));
                 Assert.AreEqual(4, GetEntityCommand(ctx, esql).ExecuteScalar());
-                Assert.AreEqual(blog.BlogId * 4, ctx.Posts.Sum(x => x.BlogId));
+                Assert.AreEqual(blog.BlogId*4, ctx.Posts.Sum(x => x.BlogId));
 
                 ctx.Posts.Remove(ctx.Posts.First());
                 ctx.SaveChanges();
@@ -312,7 +314,7 @@ namespace Apache.Ignite.EntityFramework.Tests
                 Assert.AreEqual(3, ctx.Posts.Count());
                 Assert.AreEqual(3, ctx.Posts.Count(x => x.Content == null));
                 Assert.AreEqual(3, GetEntityCommand(ctx, esql).ExecuteScalar());
-                Assert.AreEqual(blog.BlogId * 3, ctx.Posts.Sum(x => x.BlogId));
+                Assert.AreEqual(blog.BlogId*3, ctx.Posts.Sum(x => x.BlogId));
             }
         }
 
@@ -327,7 +329,7 @@ namespace Apache.Ignite.EntityFramework.Tests
             {
                 using (ctx.Database.BeginTransaction())
                 {
-                    ctx.Posts.Add(new Post { Title = "Foo", Blog = new Blog() });
+                    ctx.Posts.Add(new Post {Title = "Foo", Blog = new Blog()});
                     ctx.SaveChanges();
 
                     Assert.AreEqual(1, ctx.Posts.ToArray().Length);
@@ -344,7 +346,7 @@ namespace Apache.Ignite.EntityFramework.Tests
             {
                 using (var tx = ctx.Database.BeginTransaction())
                 {
-                    ctx.Posts.Add(new Post { Title = "Foo", Blog = new Blog() });
+                    ctx.Posts.Add(new Post {Title = "Foo", Blog = new Blog()});
                     ctx.SaveChanges();
 
                     Assert.AreEqual(1, ctx.Posts.ToArray().Length);
@@ -449,13 +451,15 @@ namespace Apache.Ignite.EntityFramework.Tests
                 }
             );
 
-            Policy.CanBeCachedFunc = qry => {
+            Policy.CanBeCachedFunc = qry =>
+            {
                 funcs.Add("CanBeCached");
                 checkQry(qry);
                 return true;
             };
 
-            Policy.CanBeCachedRowsFunc = (qry, rows) => {
+            Policy.CanBeCachedRowsFunc = (qry, rows) =>
+            {
                 funcs.Add("CanBeCachedRows");
                 Assert.AreEqual(3, rows);
                 checkQry(qry);
@@ -480,9 +484,9 @@ namespace Apache.Ignite.EntityFramework.Tests
             {
                 var blog = new Blog();
 
-                ctx.Posts.Add(new Post { Title = "Foo", Blog = blog });
-                ctx.Posts.Add(new Post { Title = "Bar", Blog = blog });
-                ctx.Posts.Add(new Post { Title = "Baz", Blog = blog });
+                ctx.Posts.Add(new Post {Title = "Foo", Blog = blog});
+                ctx.Posts.Add(new Post {Title = "Bar", Blog = blog});
+                ctx.Posts.Add(new Post {Title = "Baz", Blog = blog});
 
                 ctx.SaveChanges();
 
@@ -677,7 +681,7 @@ namespace Apache.Ignite.EntityFramework.Tests
 
             TestUtils.RunMultiThreaded(() =>
             {
-                var blog = new Blog { Name = "my blog" };
+                var blog = new Blog {Name = "my blog"};
                 using (var ctx = GetDbContext())
                 {
                     ctx.Blogs.Add(blog);
@@ -705,6 +709,23 @@ namespace Apache.Ignite.EntityFramework.Tests
         /// Creates and removes a blog.
         /// </summary>
         private void CreateRemoveBlog()
+        {
+            try
+            {
+                CreateRemoveBlog0();
+            }
+            catch (SqlCeException ex)
+            {
+                // Ignore SQL CE glitch.
+                if (ex.Message != "The current row was deleted.")
+                    throw;
+            }
+        }
+
+        /// <summary>
+        /// Creates and removes a blog.
+        /// </summary>
+        private void CreateRemoveBlog0()
         {
             var blog = new Blog {Name = "my blog"};
             var threadId = Thread.CurrentThread.ManagedThreadId;
