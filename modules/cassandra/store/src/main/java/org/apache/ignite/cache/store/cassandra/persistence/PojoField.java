@@ -42,13 +42,16 @@ public abstract class PojoField implements Serializable {
     private String name;
 
     /** Java class to which the field belongs. */
-    private Class javaCls;
+    private Class objJavaCls;
 
     /** Field column name in Cassandra table. */
     private String col;
 
     /** Field column DDL.  */
     private String colDDL;
+
+    /** Indicator for calculated field. */
+    private Boolean calculated;
 
     /** Field property descriptor. */
     private transient PropertyDescriptor desc;
@@ -88,7 +91,8 @@ public abstract class PojoField implements Serializable {
                 null :
                 desc.getWriteMethod().getAnnotation(QuerySqlField.class);
 
-        this.col = sqlField != null && sqlField.name() != null ? sqlField.name() : name.toLowerCase();
+        col = sqlField != null && sqlField.name() != null &&
+            !sqlField.name().trim().isEmpty() ? sqlField.name() : name.toLowerCase();
 
         init(desc);
 
@@ -104,6 +108,15 @@ public abstract class PojoField implements Serializable {
     }
 
     /**
+     * Returns java class of the field.
+     *
+     * @return Java class.
+     */
+    public Class getJavaClass() {
+        return propDesc().getPropertyType();
+    }
+
+    /**
      * @return Cassandra table column name.
      */
     public String getColumn() {
@@ -115,6 +128,21 @@ public abstract class PojoField implements Serializable {
      */
     public String getColumnDDL() {
         return colDDL;
+    }
+
+    /**
+     * Indicates if it's a calculated field - field which value just generated based on other field values.
+     * Such field will be stored in Cassandra as all other POJO fields, but it's value shouldn't be read from
+     * Cassandra - cause it's again just generated based on other field values. One of the good applications of such
+     * kind of fields - Cassandra materialized views build on top of other tables.
+     *
+     * @return {@code true} if it's auto generated field, {@code false} if not.
+     */
+    public boolean calculatedField() {
+        if (calculated != null)
+            return calculated;
+
+        return calculated = propDesc().getWriteMethod() == null;
     }
 
     /**
@@ -158,6 +186,9 @@ public abstract class PojoField implements Serializable {
      * @param serializer {@link org.apache.ignite.cache.store.cassandra.serializer.Serializer} to use.
      */
     public void setValueFromRow(Row row, Object obj, Serializer serializer) {
+        if (calculatedField())
+            return;
+
         Object val = PropertyMappingHelper.getCassandraColumnValue(row, col, propDesc().getPropertyType(), serializer);
 
         try {
@@ -188,24 +219,18 @@ public abstract class PojoField implements Serializable {
                 "' doesn't provide getter method");
         }
 
-        if (desc.getWriteMethod() == null) {
-            throw new IllegalArgumentException("Field '" + desc.getName() +
-                "' of POJO object instance of the class '" + desc.getPropertyType().getName() +
-                "' doesn't provide write method");
-        }
-
         if (!desc.getReadMethod().isAccessible())
             desc.getReadMethod().setAccessible(true);
 
-        if (!desc.getWriteMethod().isAccessible())
+        if (desc.getWriteMethod() != null && !desc.getWriteMethod().isAccessible())
             desc.getWriteMethod().setAccessible(true);
 
         DataType.Name cassandraType = PropertyMappingHelper.getCassandraType(desc.getPropertyType());
         cassandraType = cassandraType == null ? DataType.Name.BLOB : cassandraType;
 
-        this.javaCls = desc.getReadMethod().getDeclaringClass();
+        this.objJavaCls = desc.getReadMethod().getDeclaringClass();
         this.desc = desc;
-        this.colDDL = col + " " + cassandraType.toString();
+        this.colDDL = "\"" + col + "\" " + cassandraType.toString();
     }
 
     /**
@@ -214,6 +239,6 @@ public abstract class PojoField implements Serializable {
      * @return Property descriptor
      */
     private PropertyDescriptor propDesc() {
-        return desc != null ? desc : (desc = PropertyMappingHelper.getPojoPropertyDescriptor(javaCls, name));
+        return desc != null ? desc : (desc = PropertyMappingHelper.getPojoPropertyDescriptor(objJavaCls, name));
     }
 }

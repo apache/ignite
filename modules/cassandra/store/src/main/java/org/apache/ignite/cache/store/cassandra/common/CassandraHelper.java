@@ -18,6 +18,7 @@
 package org.apache.ignite.cache.store.cassandra.common;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
@@ -128,6 +129,23 @@ public class CassandraHelper {
         }
 
         return false;
+    }
+
+    /**
+     * Checks if two Java classes are Cassandra compatible - mapped to the same Cassandra type.
+     *
+     * @param type1 First type.
+     * @param type2 Second type.
+     * @return {@code true} if classes are compatible and {@code false} if not.
+     */
+    public static boolean isCassandraCompatibleTypes(Class type1, Class type2) {
+        if (type1 == null || type2 == null)
+            return false;
+
+        DataType.Name t1 = PropertyMappingHelper.getCassandraType(type1);
+        DataType.Name t2 = PropertyMappingHelper.getCassandraType(type2);
+
+        return t1 != null && t2 != null && t1.equals(t2);
     }
 }
 

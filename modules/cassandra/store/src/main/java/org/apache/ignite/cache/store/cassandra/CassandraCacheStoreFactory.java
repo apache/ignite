@@ -46,7 +46,7 @@ public class CassandraCacheStoreFactory<K, V> implements Factory<CassandraCacheS
     private String persistenceSettingsBean;
 
     /** Data source. */
-    private transient DataSource dataSrc;
+    private DataSource dataSrc;
 
     /** Persistence settings. */
     private KeyValuePersistenceSettings persistenceSettings;
