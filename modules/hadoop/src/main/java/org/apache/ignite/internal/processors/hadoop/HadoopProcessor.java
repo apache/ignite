@@ -40,6 +40,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Hadoop processor.
  */
 public class HadoopProcessor extends HadoopProcessorAdapter {
+    /** Class to probe for Hadoop libraries in Ignite classpath. */
+    private static final String HADOOP_PROBE_CLS = "org.apache.hadoop.conf.Configuration";
+
     /** Job ID counter. */
     private final AtomicInteger idCtr = new AtomicInteger();
 
@@ -210,6 +213,26 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
             throw new IgniteCheckedException(ioe.getMessage(), ioe);
         }
 
+        // Check if Hadoop is in parent class loader classpath.
+        try {
+            Class cls = Class.forName(HADOOP_PROBE_CLS, false, getClass().getClassLoader());
+
+            try {
+                String path = cls.getProtectionDomain().getCodeSource().getLocation().toString();
+
+                U.warn(log, "Hadoop libraries are found in Ignite classpath, this could lead to class loading " +
+                    "errors (please remove all Hadoop libraries from Ignite classpath) [path=" + path + ']');
+            }
+            catch (Throwable ignore) {
+                U.warn(log, "Hadoop libraries are found in Ignite classpath, this could lead to class loading " +
+                    "errors (please remove all Hadoop libraries from Ignite classpath)");
+            }
+        }
+        catch (Throwable ignore) {
+            // All is fine.
+        }
+
+        // Try assembling Hadoop URLs.
         HadoopClassLoader.hadoopUrls();
     }
 
