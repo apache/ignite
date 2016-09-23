@@ -106,9 +106,11 @@
         <level value="DEBUG"/>
     </category>
 
+    <!--
     <category name="org.apache.ignite.internal.processors.cache">
         <level value="DEBUG"/>
     </category>
+    -->
 
     <!-- Disable all open source debugging. -->
     <category name="org">
