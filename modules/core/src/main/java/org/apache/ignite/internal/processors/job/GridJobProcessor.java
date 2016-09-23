@@ -1173,7 +1173,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         }
         // Try to handle unexpected error and send feedback to prevent remote node infinite waiting.
         catch (Throwable t) {
-            IgniteException ex = new IgniteException(t);
+            IgniteException ex = new IgniteException("Job execution failed due to unexpected excaption.", t);
 
             U.error(log, ex.getMessage(), ex);
 
