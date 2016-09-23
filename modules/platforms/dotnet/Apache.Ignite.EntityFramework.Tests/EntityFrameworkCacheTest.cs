@@ -656,9 +656,6 @@ namespace Apache.Ignite.EntityFramework.Tests
         [Category(TestUtils.CategoryIntensive)]
         public void TestOldEntriesCleanupMultithreaded()
         {
-            // TODO: Is there a race because "all version increments are the same"?
-            // Should we try GUIDs for versions instead?
-
             TestUtils.RunMultiThreaded(CreateRemoveBlog, 4, 20);
 
             // Wait for the cleanup to complete.
@@ -710,6 +707,7 @@ namespace Apache.Ignite.EntityFramework.Tests
         private void CreateRemoveBlog()
         {
             var blog = new Blog {Name = "my blog"};
+            var threadId = Thread.CurrentThread.ManagedThreadId;
 
             Func<object> getMeta = () => _metaCache.Where(x => x.Key.Equals("Blog"))
                 .Select(x => x.Value).SingleOrDefault() ?? "null";
@@ -724,18 +722,19 @@ namespace Apache.Ignite.EntityFramework.Tests
 
             var meta2 = getMeta();
 
-            Console.WriteLine("Blog created: {0} = {1} | {2}", blog.BlogId, meta2, Thread.CurrentThread.ManagedThreadId);
+            Console.WriteLine("Blog created: {0} = {1} | {2}", blog.BlogId, meta2, threadId);
 
             using (var ctx = GetDbContext())
             {
                 // Use ToArray so that there is always the same DB query.
                 Assert.AreEqual(1, ctx.Blogs.ToArray().Count(x => x.BlogId == blog.BlogId),
-                    string.Format("Existing blog not found: {0} = {1}, {2} | {3}", blog.BlogId, meta1, meta2, Thread.CurrentThread.ManagedThreadId));
+                    string.Format("Existing blog not found: {0} = {1}, {2} | {3}", blog.BlogId, meta1, meta2, 
+                    threadId));
             }
 
             var meta3 = getMeta();
 
-            Console.WriteLine("Removing blog: {0} = {1} | {2}", blog.BlogId, meta3, Thread.CurrentThread.ManagedThreadId);
+            Console.WriteLine("Removing blog: {0} = {1} | {2}", blog.BlogId, meta3, threadId);
 
             using (var ctx = GetDbContext())
             {
@@ -746,13 +745,14 @@ namespace Apache.Ignite.EntityFramework.Tests
 
             var meta4 = getMeta();
 
-            Console.WriteLine("Blog removed: {0} = {1} | {2}", blog.BlogId, meta4, Thread.CurrentThread.ManagedThreadId);
+            Console.WriteLine("Blog removed: {0} = {1} | {2}", blog.BlogId, meta4, threadId);
 
             using (var ctx = GetDbContext())
             {
                 // Use ToArray so that there is always the same DB query.
                 Assert.AreEqual(0, ctx.Blogs.ToArray().Count(x => x.BlogId == blog.BlogId),
-                    string.Format("Found removed blog: {0} = {1}, {2}, {3}, {4} | {5}", blog.BlogId, meta1, meta2, meta3, meta4, Thread.CurrentThread.ManagedThreadId));
+                    string.Format("Found removed blog: {0} = {1}, {2}, {3}, {4} | {5}", blog.BlogId, meta1, 
+                    meta2, meta3, meta4, threadId));
             }
         }
 
