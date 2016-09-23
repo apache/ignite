@@ -18,8 +18,11 @@
 namespace Apache.Ignite.EntityFramework
 {
     using System.Configuration;
+    using System.Data;
+    using System.Data.Common;
     using System.Data.Entity;
     using System.Data.Entity.Core.Common;
+    using System.Data.Entity.Infrastructure.Interception;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using Apache.Ignite.Core;
@@ -161,6 +164,8 @@ namespace Apache.Ignite.EntityFramework
 
             var efCache = new DbCache(ignite, metaCacheConfiguration, dataCacheConfiguration);
 
+            AddInterceptor(new DbInterceptor());
+
             // SetProviderServices is not suitable. We should replace whatever provider there is with our proxy.
             Loaded += (sender, args) => args.ReplaceService<DbProviderServices>(
                 (services, a) => new DbProviderServicesProxy(services, policy, efCache));
@@ -215,6 +220,90 @@ namespace Apache.Ignite.EntityFramework
         private static CacheConfiguration GetDefaultDataCacheConfiguration(string namePrefix = null)
         {
             return new CacheConfiguration((namePrefix ?? DefaultCacheNamePrefix) + DataCacheSuffix);
+        }
+
+        private class DbInterceptor : IDbCommandInterceptor, IDbTransactionInterceptor
+        {
+            public void NonQueryExecuting(DbCommand command, DbCommandInterceptionContext<int> interceptionContext)
+            {
+                // No-op
+            }
+
+            public void NonQueryExecuted(DbCommand command, DbCommandInterceptionContext<int> interceptionContext)
+            {
+                // No-op
+            }
+
+            public void ReaderExecuting(DbCommand command, DbCommandInterceptionContext<DbDataReader> interceptionContext)
+            {
+                // No-op
+            }
+
+            public void ReaderExecuted(DbCommand command, DbCommandInterceptionContext<DbDataReader> interceptionContext)
+            {
+                // No-op
+            }
+
+            public void ScalarExecuting(DbCommand command, DbCommandInterceptionContext<object> interceptionContext)
+            {
+                // No-op
+            }
+
+            public void ScalarExecuted(DbCommand command, DbCommandInterceptionContext<object> interceptionContext)
+            {
+                // No-op
+            }
+
+            public void ConnectionGetting(DbTransaction transaction, DbTransactionInterceptionContext<DbConnection> interceptionContext)
+            {
+                // No-op
+            }
+
+            public void ConnectionGot(DbTransaction transaction, DbTransactionInterceptionContext<DbConnection> interceptionContext)
+            {
+                // No-op
+            }
+
+            public void IsolationLevelGetting(DbTransaction transaction, DbTransactionInterceptionContext<IsolationLevel> interceptionContext)
+            {
+                // No-op
+            }
+
+            public void IsolationLevelGot(DbTransaction transaction, DbTransactionInterceptionContext<IsolationLevel> interceptionContext)
+            {
+                // No-op
+            }
+
+            public void Committing(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
+            {
+                // No-op
+            }
+
+            public void Committed(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
+            {
+                // TODO: This is called on SaveChanges, this is where we have to invalidate cache! 
+                // EFCache implementation seems to be correct.
+            }
+
+            public void Disposing(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
+            {
+                // No-op
+            }
+
+            public void Disposed(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
+            {
+                // No-op
+            }
+
+            public void RollingBack(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
+            {
+                // No-op
+            }
+
+            public void RolledBack(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
+            {
+                // No-op
+            }
         }
     }
 }
