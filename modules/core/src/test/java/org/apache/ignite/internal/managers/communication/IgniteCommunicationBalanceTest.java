@@ -275,6 +275,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
      */
     public void testRandomBalance() throws Exception {
         System.setProperty(GridNioServer.IGNITE_NIO_SES_BALANCER_CLASS_NAME, TestBalancer.class.getName());
+        System.setProperty(GridNioServer.IGNITE_NIO_SES_BALANCER_BALANCE_PERIOD, "500");
 
         try {
             final int NODES = 10;
@@ -296,6 +297,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
         }
         finally {
             System.setProperty(GridNioServer.IGNITE_NIO_SES_BALANCER_CLASS_NAME, "");
+            System.setProperty(GridNioServer.IGNITE_NIO_SES_BALANCER_BALANCE_PERIOD, "");
         }
     }
 
@@ -349,9 +351,6 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
 
             while (w2 == w1)
                 w2 = rnd.nextInt(clientWorkers.size());
-
-            if (clientWorkers.get(w2).sessions().isEmpty())
-                return;
 
             GridNioSession ses = randomSession(clientWorkers.get(w1));
 
