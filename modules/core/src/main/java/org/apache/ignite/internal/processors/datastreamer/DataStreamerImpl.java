@@ -23,11 +23,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.DelayQueue;
@@ -35,18 +37,18 @@ import java.util.concurrent.Delayed;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
 import javax.cache.expiry.ExpiryPolicy;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteDataStreamerTimeoutException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteDataStreamerTimeoutException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -76,6 +78,8 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheFutureImpl;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.dr.GridDrType;
@@ -91,6 +95,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.GPC;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -99,8 +104,10 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.stream.StreamReceiver;
+import org.apache.ignite.stream.StreamReceiver2;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
+import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -116,7 +123,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private static final DefaultIoPolicyResolver DFLT_IO_PLC_RSLVR = new DefaultIoPolicyResolver();
 
     /** Isolated receiver. */
-    private static final StreamReceiver ISOLATED_UPDATER = new IsolatedUpdater();
+    private static final StreamReceiver ISOLATED_UPDATER = new IsolatedUpdater2();
+
+    /** Amount of permissions should be available to continue new data processing. */
+    private static final int REMAP_SEMAPHORE_PERMISSIONS_COUNT = Integer.MAX_VALUE;
 
     /** Cache receiver. */
     private StreamReceiver<K, V> rcvr = ISOLATED_UPDATER;
@@ -128,7 +138,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private IgniteClosure<ClusterNode, Byte> ioPlcRslvr = DFLT_IO_PLC_RSLVR;
 
     /** Max remap count before issuing an error. */
-    private static final int DFLT_MAX_REMAP_CNT = 32;
+    private static final int DFLT_MAX_REMAP_CNT = 64;
 
     /** Log reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
@@ -230,6 +240,15 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /** Whether a warning at {@link DataStreamerImpl#allowOverwrite()} printed */
     private static boolean isWarningPrinted;
+
+    /** Allows to pause new data processing while failed data processing. */
+    private final Semaphore remapSem = new Semaphore(REMAP_SEMAPHORE_PERMISSIONS_COUNT);
+
+    /** */
+    private final ConcurrentLinkedDeque8<Runnable> dataToRemap = new ConcurrentLinkedDeque8<>();
+
+    /** */
+    private final AtomicInteger remapOwning = new AtomicInteger();
 
     /**
      * @param ctx Grid kernal context.
@@ -646,6 +665,18 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     ) {
         assert entries != null;
 
+        boolean remap = remaps > 0;
+
+        if (!remap) // Failed data should be processed prior to new data.
+            try {
+                // Wait until failed data processed.
+                if (remapSem.tryAcquire(REMAP_SEMAPHORE_PERMISSIONS_COUNT, Integer.MAX_VALUE, TimeUnit.SECONDS))
+                    remapSem.release(REMAP_SEMAPHORE_PERMISSIONS_COUNT);
+            }
+            catch (InterruptedException e) {
+                log.error("Failed to wait for failed data processing.",e);
+            }
+
         if (!isWarningPrinted) {
             synchronized (this) {
                 if (!allowOverwrite() && !isWarningPrinted) {
@@ -758,10 +789,62 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         }
                         else if (remaps + 1 > maxRemapCnt) {
                             resFut.onDone(new IgniteCheckedException("Failed to finish operation (too many remaps): "
-                                + remaps), e1);
+                                + remaps, e1));
                         }
-                        else
-                            load0(entriesForNode, resFut, activeKeys, remaps + 1);
+                        else {
+                            try {
+                                remapSem.acquire();
+
+                                Runnable r = new Runnable() {
+                                    @Override public void run() {
+                                        try {
+                                            load0(entriesForNode, resFut, activeKeys, remaps + 1);
+                                        }
+                                        finally {
+                                            remapSem.release();
+                                        }
+                                    }
+                                };
+
+                                dataToRemap.add(r);
+
+                                if (remapOwning.get() == 0 && remapOwning.compareAndSet(0, 1)) {
+                                    ctx.closure().callLocalSafe(new GPC<Boolean>() {
+                                        @Override public Boolean call() {
+                                            boolean locked = true;
+
+                                            while (locked || !dataToRemap.isEmptyx()) {
+                                                if (!locked && !remapOwning.compareAndSet(0, 1))
+                                                    return false;
+
+                                                try {
+                                                    Runnable r = dataToRemap.poll();
+
+                                                    if (r != null)
+                                                        r.run();
+                                                }
+                                                finally {
+                                                    if (!dataToRemap.isEmptyx())
+                                                        locked = true;
+                                                    else {
+                                                        boolean res = remapOwning.compareAndSet(1, 0);
+
+                                                        assert res;
+
+                                                        locked = false;
+                                                    }
+                                                }
+                                            }
+
+                                            return true;
+                                        }
+                                    }, false);
+                                }
+                            }
+                            catch (InterruptedException e2) {
+                                resFut.onDone(e2);
+                            }
+                        }
                     }
                 }
             };
@@ -769,7 +852,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             final GridFutureAdapter<?> f;
 
             try {
-                f = buf.update(entriesForNode, topVer, lsnr);
+                f = buf.update(entriesForNode, topVer, lsnr, remap);
             }
             catch (IgniteInterruptedCheckedException e1) {
                 resFut.onDone(e1);
@@ -1139,6 +1222,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         /** */
         private final Semaphore sem;
 
+        /** Topology at batch preparation started. */
+        private volatile AffinityTopologyVersion batchTopVer;
+
         /** Closure to signal on task finish. */
         @GridToStringExclude
         private final IgniteInClosure<IgniteInternalFuture<Object>> signalC = new IgniteInClosure<IgniteInternalFuture<Object>>() {
@@ -1177,7 +1263,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
          */
         @Nullable GridFutureAdapter<?> update(Iterable<DataStreamerEntry> newEntries,
             AffinityTopologyVersion topVer,
-            IgniteInClosure<IgniteInternalFuture<?>> lsnr) throws IgniteInterruptedCheckedException {
+            IgniteInClosure<IgniteInternalFuture<?>> lsnr,
+            boolean remap) throws IgniteInterruptedCheckedException {
             List<DataStreamerEntry> entries0 = null;
             GridFutureAdapter<Object> curFut0;
 
@@ -1194,12 +1281,22 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                     entries = newEntries();
                     curFut = new GridFutureAdapter<>();
-                    curFut.listen(signalC);
+
+                    if (!remap)
+                        curFut.listen(signalC);
+
+                    if (!topVer.equals(batchTopVer) || ctx.cache().context().exchange().hasPendingExchange()) {
+                        entries0 = null;
+
+                        curFut0.onDone(null, new IgniteCheckedException("Topology changed during batch preparation."));
+                    }
+
+                    batchTopVer = topVer;
                 }
             }
 
             if (entries0 != null) {
-                submit(entries0, topVer, curFut0);
+                submit(entries0, topVer, curFut0, remap);
 
                 if (cancelled)
                     curFut0.onDone(new IgniteCheckedException("Data streamer has been cancelled: " +
@@ -1239,8 +1336,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 }
             }
 
+            AffinityTopologyVersion topVer = ctx.cache().context().exchange().readyAffinityVersion();
+
             if (entries0 != null)
-                submit(entries0, null, curFut0);
+                submit(entries0, topVer, curFut0, false);
 
             // Create compound future for this flush.
             GridCompoundFuture<Object, Object> res = null;
@@ -1299,18 +1398,22 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
          */
         private void submit(final Collection<DataStreamerEntry> entries,
             @Nullable AffinityTopologyVersion topVer,
-            final GridFutureAdapter<Object> curFut)
+            final GridFutureAdapter<Object> curFut,
+            boolean remap)
             throws IgniteInterruptedCheckedException {
             assert entries != null;
             assert !entries.isEmpty();
             assert curFut != null;
 
-            try {
-                incrementActiveTasks();
-            } catch (IgniteDataStreamerTimeoutException e) {
-                curFut.onDone(e);
-                throw e;
-            }
+            if (!remap)
+                try {
+                    incrementActiveTasks();
+                }
+                catch (IgniteDataStreamerTimeoutException e) {
+                    curFut.onDone(e);
+
+                    throw e;
+                }
 
             IgniteInternalFuture<Object> fut;
 
@@ -1321,7 +1424,17 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             if (isLocNode && plc == GridIoPolicy.PUBLIC_POOL) {
                 fut = ctx.closure().callLocalSafe(
-                    new DataStreamerUpdateJob(ctx, log, cacheName, entries, false, skipStore, keepBinary, rcvr), false);
+                    new DataStreamerUpdateJob(
+                        ctx,
+                        log,
+                        cacheName,
+                        entries,
+                        false,
+                        skipStore,
+                        keepBinary,
+                        rcvr,
+                        topVer),
+                    false);
 
                 locFuts.add(fut);
 
@@ -1614,14 +1727,15 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /**
      * Isolated receiver which only loads entry initial value.
      */
-    private static class IsolatedUpdater implements StreamReceiver<KeyCacheObject, CacheObject>,
+    private static class IsolatedUpdater2 implements StreamReceiver2<KeyCacheObject, CacheObject>,
         DataStreamerCacheUpdaters.InternalUpdater {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
         @Override public void receive(IgniteCache<KeyCacheObject, CacheObject> cache,
-            Collection<Map.Entry<KeyCacheObject, CacheObject>> entries) {
+            Collection<Entry<KeyCacheObject, CacheObject>> entries,
+            AffinityTopologyVersion reqTopVer) throws IgniteCheckedException {
             IgniteCacheProxy<KeyCacheObject, CacheObject> proxy = (IgniteCacheProxy<KeyCacheObject, CacheObject>)cache;
 
             GridCacheAdapter<KeyCacheObject, CacheObject> internalCache = proxy.context().cache();
@@ -1631,56 +1745,90 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             GridCacheContext cctx = internalCache.context();
 
-            AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
+            cctx.topology().readLock();
 
-            GridCacheVersion ver = cctx.versions().isolatedStreamerVersion();
+            try {
+                GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
 
-            long ttl = CU.TTL_ETERNAL;
-            long expiryTime = CU.EXPIRE_TIME_ETERNAL;
+                AffinityTopologyVersion topVer = fut.topologyVersion();
 
-            ExpiryPolicy plc = cctx.expiry();
+                if (!fut.isDone() || !topVer.equals(reqTopVer))
+                    throw new IgniteCheckedException("DataStreamer will retry data transfer at stable topology. " +
+                        "[reqTop=" + reqTopVer + " ,topVer=" + topVer + "]");
 
-            for (Entry<KeyCacheObject, CacheObject> e : entries) {
-                try {
-                    e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
+                GridCacheVersion ver = cctx.versions().isolatedStreamerVersion();
 
-                    GridCacheEntryEx entry = internalCache.entryEx(e.getKey(), topVer);
+                long ttl = CU.TTL_ETERNAL;
+                long expiryTime = CU.EXPIRE_TIME_ETERNAL;
 
-                    if (plc != null) {
-                        ttl = CU.toTtl(plc.getExpiryForCreation());
+                ExpiryPolicy plc = cctx.expiry();
 
-                        if (ttl == CU.TTL_ZERO)
-                            continue;
-                        else if (ttl == CU.TTL_NOT_CHANGED)
-                            ttl = 0;
+                GridDhtPartitionTopology top = cctx.dht().topology();
 
-                        expiryTime = CU.toExpireTime(ttl);
+                Set<Integer> parts = new HashSet<>();
+
+                for (Entry<KeyCacheObject, CacheObject> e : entries) {
+                    try {
+                        e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
+
+                        int p = cctx.affinity().partition(e.getKey());
+
+                        boolean check = parts.add(p);
+
+                        if (check) {
+                            Collection<ClusterNode> owners = top.nodes(p, topVer);
+
+                            Collection<ClusterNode> affNodes =
+                                cctx.affinity().assignment(topVer).idealAssignment().get(p);
+
+                            if (affNodes.size() != owners.size() || !affNodes.containsAll(owners))
+                                throw new IgniteCheckedException(
+                                    "DataStreamer will retry data transfer at stable topology. " +
+                                        "Partition owners not equals to expected. " +
+                                        "[node=" + cctx.localNodeId() + " ,part=" + p + "]");
+                        }
+
+                        GridCacheEntryEx entry = internalCache.entryEx(e.getKey(), topVer);
+
+                        if (plc != null) {
+                            ttl = CU.toTtl(plc.getExpiryForCreation());
+
+                            if (ttl == CU.TTL_ZERO)
+                                continue;
+                            else if (ttl == CU.TTL_NOT_CHANGED)
+                                ttl = 0;
+
+                            expiryTime = CU.toExpireTime(ttl);
+                        }
+
+                        entry.initialValue(e.getValue(),
+                            ver,
+                            ttl,
+                            expiryTime,
+                            false,
+                            topVer,
+                            GridDrType.DR_LOAD,
+                            false);
+
+                        cctx.evicts().touch(entry, topVer);
+
+                        CU.unwindEvicts(cctx);
+
+                        entry.onUnlock();
                     }
-
-                    entry.initialValue(e.getValue(),
-                        ver,
-                        ttl,
-                        expiryTime,
-                        false,
-                        topVer,
-                        GridDrType.DR_LOAD,
-                        false);
-
-                    cctx.evicts().touch(entry, topVer);
-
-                    CU.unwindEvicts(cctx);
-
-                    entry.onUnlock();
-                }
-                catch (GridDhtInvalidPartitionException | GridCacheEntryRemovedException ignored) {
-                    // No-op.
-                }
-                catch (IgniteCheckedException ex) {
-                    IgniteLogger log = cache.unwrap(Ignite.class).log();
-
-                    U.error(log, "Failed to set initial value for cache entry: " + e, ex);
+                    catch (GridDhtInvalidPartitionException | GridCacheEntryRemovedException ignored) {
+                        // No-op.
+                    }
                 }
             }
+            finally {
+                cctx.topology().readUnlock();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void receive(IgniteCache cache, Collection collection) throws IgniteException {
+            throw new IgniteException("StreamReceiver2 should be used instead.");
         }
     }
 

@@ -297,12 +297,16 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                 req.ignoreDeploymentOwnership(),
                 req.skipStore(),
                 req.keepBinary(),
-                updater);
+                updater,
+                req.topologyVersion());
 
             Exception err = null;
 
             try {
                 job.call();
+            }
+            catch (IgniteCheckedException e){
+                err = e;
             }
             catch (Exception e) {
                 U.error(log, "Failed to finish update job.", e);

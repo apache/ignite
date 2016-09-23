@@ -43,16 +43,11 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Tests for cache data loading during simultaneous grids start.
  */
 public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-500");
-    }
-
     /** Grids count */
-    private static int GRIDS_CNT = 5;
+    protected static int GRIDS_CNT = 5;
 
     /** Keys count */
-    private static int KEYS_CNT = 1_000_000;
+    protected static int KEYS_CNT = 1_000_000;
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -110,7 +105,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
      * @param f cache loading closure
      * @throws Exception if failed
      */
-    private void loadCache(IgniteInClosure<Ignite> f) throws Exception {
+    protected void loadCache(IgniteInClosure<Ignite> f) throws Exception {
         Ignite g0 = startGrid(0);
 
         IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Ignite>() {
@@ -130,17 +125,17 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     }
 
     /** Asserts cache size. */
-    private void assertCacheSize() {
+    protected void assertCacheSize() {
         IgniteCache<Integer, String> cache = grid(0).cache(null);
 
-        assertEquals(KEYS_CNT, cache.size(CachePeekMode.PRIMARY));
+        assertEquals("Data lost.", KEYS_CNT, cache.size(CachePeekMode.PRIMARY));
 
         int total = 0;
 
         for (int i = 0; i < GRIDS_CNT; i++)
             total += grid(i).cache(null).localSize(CachePeekMode.PRIMARY);
 
-        assertEquals(KEYS_CNT, total);
+        assertEquals("Data lost.", KEYS_CNT, total);
     }
 
     /**
