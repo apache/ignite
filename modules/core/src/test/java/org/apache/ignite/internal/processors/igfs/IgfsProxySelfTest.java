@@ -29,4 +29,9 @@ public class IgfsProxySelfTest extends IgfsAbstractSelfTest {
     public IgfsProxySelfTest() {
         super(PROXY);
     }
+
+    /** {@inheritDoc} */
+    @Override public void testUpdatePathDoesNotExist() throws Exception {
+        // Disabled for PROXY mode due to IGNITE-3645
+    }
 }
