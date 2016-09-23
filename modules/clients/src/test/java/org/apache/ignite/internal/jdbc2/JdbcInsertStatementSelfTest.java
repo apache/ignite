@@ -27,7 +27,7 @@ import java.sql.Statement;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.concurrent.Callable;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -264,9 +264,9 @@ public class JdbcInsertStatementSelfTest extends GridCommonAbstractTest {
 
         assertNotNull(reason);
 
-        assertEquals(IgniteCheckedException.class, reason.getClass());
+        assertEquals(IgniteException.class, reason.getClass());
 
-        assertEquals("Failed to INSERT some keys [keys=[p2]]", reason.getMessage());
+        assertEquals("Failed to INSERT some keys because they are already in cache [keys=[p2]]", reason.getMessage());
 
         assertEquals(3, jcache(0).getAll(new HashSet<>(Arrays.asList("p1", "p2", "p3"))).size());
     }

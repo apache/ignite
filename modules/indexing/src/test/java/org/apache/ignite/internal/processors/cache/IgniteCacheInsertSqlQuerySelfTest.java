@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.io.Serializable;
 import java.sql.SQLException;
 import java.util.concurrent.Callable;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -63,7 +64,7 @@ public class IgniteCacheInsertSqlQuerySelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(1, false);
 
-        ignite(0).createCache(cacheConfig("S2P", true, false, String.class, Person.class));
+        ignite(0).createCache(cacheConfig("S2P", true, false, String.class, Person.class, String.class, String.class));
         ignite(0).createCache(cacheConfig("I2P", true, false, Integer.class, Person.class));
         ignite(0).createCache(cacheConfig("K2P", true, false, Key.class, Person.class));
         ignite(0).createCache(cacheConfig("K22P", true, true, Key2.class, Person.class));
@@ -73,6 +74,16 @@ public class IgniteCacheInsertSqlQuerySelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        ignite(0).cache("S2P").clear();
+        ignite(0).cache("I2P").clear();
+        ignite(0).cache("K2P").clear();
+        ignite(0).cache("K22P").clear();
+        ignite(0).cache("I2I").clear();
+        super.afterTest();
     }
 
     /**
@@ -95,7 +106,7 @@ public class IgniteCacheInsertSqlQuerySelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testMergeWithExplicitKey() {
+    public void testInsertWithExplicitKey() {
         IgniteCache<String, Person> p = ignite(0).cache("S2P");
 
         p.query(new SqlFieldsQuery("insert into Person (_key, id, name) values ('s', ?, ?), " +
@@ -115,11 +126,38 @@ public class IgniteCacheInsertSqlQuerySelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testMergeWithExplicitPrimitiveKey() {
+    public void testInsertFromSubquery() {
+        IgniteCache p = ignite(0).cache("S2P");
+
+        p.query(new SqlFieldsQuery("insert into String (_key, _val) values ('s', ?), " +
+            "('a', ?)").setArgs("Sergi", "Alex"));
+
+        assertEquals("Sergi", p.get("s"));
+        assertEquals("Alex", p.get("a"));
+
+        p.query(new SqlFieldsQuery("insert into Person(_key, name) " +
+            "(select substring(lower(_val), 0, 2), _val from String)"));
+
+        Person p1 = new Person(0);
+        p1.name = "Sergi";
+
+        assertEquals(p1, p.get("se"));
+
+        Person p2 = new Person(0);
+        p2.name = "Alex";
+
+        assertEquals(p2, p.get("al"));
+    }
+
+    /**
+     *
+     */
+    public void testInsertWithExplicitPrimitiveKey() {
         IgniteCache<Integer, Person> p = ignite(0).cache("I2P");
 
         p.query(new SqlFieldsQuery(
-            "insert into Person (_key, id, name) values (1, ?, ?), (2, 2, 'Alex')").setArgs(1, "Sergi"));
+            "insert into Person (_key, id, name) values (cast('1' as int), ?, ?), (2, (5 - 3), 'Alex')")
+            .setArgs(1, "Sergi"));
 
         Person p1 = new Person(1);
         p1.name = "Sergi";
@@ -135,7 +173,7 @@ public class IgniteCacheInsertSqlQuerySelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testMergeWithDynamicKeyInstantiation() {
+    public void testInsertWithDynamicKeyInstantiation() {
         IgniteCache<Key, Person> p = ignite(0).cache("K2P");
 
         p.query(new SqlFieldsQuery(
@@ -204,7 +242,7 @@ public class IgniteCacheInsertSqlQuerySelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteSQLException.class, "Failed to INSERT some keys because they are already in cache [keys=[3]]");
+        }, CacheException.class, "Failed to INSERT some keys because they are already in cache [keys=[3]]");
 
         assertEquals(2, (int)p.get(1));
         assertEquals(5, (int)p.get(3));
@@ -214,7 +252,10 @@ public class IgniteCacheInsertSqlQuerySelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private final static class Key implements Serializable {
+    protected final static class Key implements Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         public Key(int key) {
             this.key = key;
@@ -244,7 +285,10 @@ public class IgniteCacheInsertSqlQuerySelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private final static class Key2 implements Serializable {
+    protected final static class Key2 implements Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         public Key2(int Id) {
             this.Id = Id;
@@ -274,7 +318,10 @@ public class IgniteCacheInsertSqlQuerySelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class Person implements Serializable {
+    protected static class Person implements Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         @SuppressWarnings("unused")
         private Person() {

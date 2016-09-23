@@ -56,9 +56,9 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGridsMultiThreaded(1, false);
+        startGridsMultiThreaded(3, false);
 
-        ignite(0).createCache(cacheConfig("S2P", true, false, String.class, Person.class));
+        ignite(0).createCache(cacheConfig("S2P", true, false, String.class, Person.class, String.class, String.class));
         ignite(0).createCache(cacheConfig("I2P", true, false, Integer.class, Person.class));
         ignite(0).createCache(cacheConfig("K2P", true, false, Key.class, Person.class));
         ignite(0).createCache(cacheConfig("K22P", true, true, Key2.class, Person.class));
@@ -110,11 +110,38 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    public void testMergeFromSubquery() {
+        IgniteCache p = ignite(0).cache("S2P");
+
+        p.query(new SqlFieldsQuery("merge into String (_key, _val) values ('s', ?), " +
+            "('a', ?)").setArgs("Sergi", "Alex"));
+
+        assertEquals("Sergi", p.get("s"));
+        assertEquals("Alex", p.get("a"));
+
+        p.query(new SqlFieldsQuery("merge into Person(_key, name) " +
+            "(select substring(lower(_val), 0, 2), _val from String)"));
+
+        Person p1 = new Person(0);
+        p1.name = "Sergi";
+
+        assertEquals(p1, p.get("se"));
+
+        Person p2 = new Person(0);
+        p2.name = "Alex";
+
+        assertEquals(p2, p.get("al"));
+    }
+
+    /**
+     *
+     */
     public void testMergeWithExplicitPrimitiveKey() {
         IgniteCache<Integer, Person> p = ignite(0).cache("I2P");
 
         p.query(new SqlFieldsQuery(
-            "merge into Person (_key, id, name) values (1, ?, ?), (2, 2, 'Alex')").setArgs(1, "Sergi"));
+            "merge into Person (_key, id, name) values (cast(? as int), ?, ?), (2, (5 - 3), 'Alex')")
+            .setArgs("1", 1, "Sergi"));
 
         Person p1 = new Person(1);
         p1.name = "Sergi";
@@ -186,6 +213,9 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
      */
     protected final static class Key implements Serializable {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         public Key(int key) {
             this.key = key;
         }
@@ -216,6 +246,9 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
      */
     protected final static class Key2 implements Serializable {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         public Key2(int Id) {
             this.Id = Id;
         }
@@ -245,6 +278,9 @@ public class IgniteCacheMergeSqlQuerySelfTest extends GridCommonAbstractTest {
      *
      */
     protected static class Person implements Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         @SuppressWarnings("unused")
         private Person() {

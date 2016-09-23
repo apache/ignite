@@ -679,7 +679,16 @@ public class GridReduceQueryExecutor {
                             if (qry.explain())
                                 return explainPlan(r.conn, space, qry);
 
-                            resIter = h2.doReduce(space, qry, r.conn);
+                            GridCacheSqlQuery rdc = qry.reduceQuery();
+
+                            ResultSet res = h2.executeSqlQueryWithTimer(space,
+                                r.conn,
+                                rdc.query(),
+                                F.asList(rdc.parameters()),
+                                // Let's use statements cache for 2-step queries that are free from map overhead
+                                F.isEmpty(qry.mapQueries()));
+
+                            resIter = new IgniteH2Indexing.FieldsIterator(res);
                         }
                         finally {
                             GridH2QueryContext.clearThreadLocal();
@@ -1302,31 +1311,6 @@ public class GridReduceQueryExecutor {
 
             for (GridMergeIndex idx : idxs) // Fail all merge indexes.
                 idx.fail(e);
-        }
-    }
-
-    /**
-     *
-     */
-    public static class Iter extends GridH2ResultSetIterator<List<?>> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * @param data Data array.
-         * @throws IgniteCheckedException If failed.
-         */
-        public Iter(ResultSet data) throws IgniteCheckedException {
-            super(data, true, false);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected List<?> createRow() {
-            ArrayList<Object> res = new ArrayList<>(row.length);
-
-            Collections.addAll(res, row);
-
-            return res;
         }
     }
 

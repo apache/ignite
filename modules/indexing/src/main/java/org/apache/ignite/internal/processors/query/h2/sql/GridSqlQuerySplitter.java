@@ -267,44 +267,80 @@ public class GridSqlQuerySplitter {
         if (gridStmt instanceof GridSqlDelete)
             return splitDelete((GridSqlDelete)gridStmt, params, keysFilter, collocatedGrpBy, distributedJoins);
 
-        GridSqlElement target = null;
+        GridSqlElement target;
 
-        if (gridStmt instanceof GridSqlInsert)
-            target = ((GridSqlInsert)gridStmt).into();
+        GridSqlQuery sel;
 
-        if (gridStmt instanceof GridSqlMerge)
-            target = ((GridSqlMerge)gridStmt).into();
+        boolean hasRows;
+
+        if (gridStmt instanceof GridSqlInsert) {
+            GridSqlInsert ins = (GridSqlInsert) gridStmt;
+            target = ins.into();
+            hasRows = !F.isEmpty(ins.rows());
+            sel = selectForInsertOrMerge(ins.rows(), ins.query());
+        }
+        else {
+            GridSqlMerge merge = (GridSqlMerge) gridStmt;
+            target = merge.into();
+            hasRows = !F.isEmpty(merge.rows());
+            sel = selectForInsertOrMerge(merge.rows(), merge.query());
+        }
 
         X.ensureX(target != null, "Failed to retrieve target for SQL update operation");
 
-        Set<String> tbls = new HashSet<>();
-        Set<String> schemas = new HashSet<>();
-
-        collectAllTablesInFrom(target, schemas, tbls);
-
         // Build resulting two step query.
-        GridCacheTwoStepQuery res = new GridCacheTwoStepQuery(schemas, tbls);
+        GridCacheTwoStepQuery res;
 
-        IntArray paramIdxs = new IntArray(params.length);
+        if (!hasRows) // INSERT or MERGE from SELECT
+            res = splitQuery(sel, params, collocatedGrpBy, distributedJoins);
+        else {
+            res = new GridCacheTwoStepQuery(Collections.<String>emptySet(), Collections.<String>emptySet());
 
-        GridCacheSqlQuery rdc = new GridCacheSqlQuery(gridStmt.getSQL(),
-            findParams(gridStmt, params, new ArrayList<>(), paramIdxs).toArray());
+            IntArray paramIdxs = new IntArray(params.length);
 
-        rdc.parameterIndexes(toArray(paramIdxs));
+            GridCacheSqlQuery rdc = new GridCacheSqlQuery(sel.getSQL(),
+                findParams(sel, params, new ArrayList<>(), paramIdxs).toArray());
 
-        res.reduceQuery(rdc);
+            rdc.parameterIndexes(toArray(paramIdxs));
 
-        // We do not have to look at each map query separately here, because if
-        // the whole initial query is collocated, then all the map sub-queries
-        // will be collocated as well.
-        // Statement left for clarity - currently update operations don't really care much about joins.
-        res.distributedJoins(distributedJoins && !isCollocated(query(prepared)));
+            res.reduceQuery(rdc);
 
-        res.skipDuplicateKeys(skipDuplicateKeys);
+            // We do not have to look at each map query separately here, because if
+            // the whole initial query is collocated, then all the map sub-queries
+            // will be collocated as well.
+            //
+            // Statement left for clarity - currently update operations don't really care much about joins.
+            res.distributedJoins(distributedJoins && !isCollocated(query(prepared)));
+
+            res.skipDuplicateKeys(skipDuplicateKeys);
+        }
 
         res.initialStatement(gridStmt);
 
         return res;
+    }
+
+    /**
+     * Create SELECT on which subsequent INSERT or MERGE will be based.
+     *
+     * @param rows Rows to create pseudo-SELECT upon.
+     * @param subQry Subquery to use rather than rows.
+     * @return Subquery or pseudo-SELECT to evaluate inserted expressions.
+     */
+    public static GridSqlQuery selectForInsertOrMerge(List<GridSqlElement[]> rows, GridSqlQuery subQry) {
+        if (!F.isEmpty(rows)) {
+            GridSqlSelect sel = new GridSqlSelect();
+
+            for (GridSqlElement[] row : rows)
+                sel.addColumn(new GridSqlArray(F.asList(row)), true);
+
+            return sel;
+        }
+        else {
+            assert subQry != null;
+
+            return subQry;
+        }
     }
 
     /** */

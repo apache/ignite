@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessor;
 import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
@@ -26,5 +27,17 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 public class IgniteCacheBinaryMarshallerInsertSqlQuerySelfTest extends IgniteCacheInsertSqlQuerySelfTest {
     static {
         GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        // We have to register these types on the node we'll call 'get' on
+        CacheObjectBinaryProcessor binProc = (CacheObjectBinaryProcessor)grid(0).context().cacheObjects();
+
+        binProc.registerType(Key.class);
+        binProc.registerType(Key2.class);
+        binProc.registerType(Person.class);
     }
 }

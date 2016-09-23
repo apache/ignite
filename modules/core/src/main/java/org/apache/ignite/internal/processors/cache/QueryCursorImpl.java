@@ -131,7 +131,11 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
      */
     @SuppressWarnings("unchecked")
     public static QueryCursorImpl<List<?>> forUpdateResult(int itemsCnt) {
-        return new QueryCursorImpl(Collections.singletonList(Collections.singletonList(itemsCnt)), false);
+        QueryCursorImpl<List<?>> res =
+            new QueryCursorImpl(Collections.singletonList(Collections.singletonList(itemsCnt)), false);
+        res.fieldsMeta(Collections.<GridQueryFieldMetadata>emptyList());
+
+        return res;
     }
 
     /**
