@@ -23,12 +23,23 @@ import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
+import org.apache.ignite.internal.util.typedef.PE;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
@@ -41,7 +52,7 @@ public class GridCacheOffHeapCleanupTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
-    /** */
+    /** Name of cache. */
     private static final String CACHE_NAME = "testCache";
 
     /** Memory mode. */
@@ -72,7 +83,23 @@ public class GridCacheOffHeapCleanupTest extends GridCommonAbstractTest {
 
         evictionPlc = evictionPlc0;
 
-        checkCleanupOffheapAfterCacheDestroy();
+        checkCleanupOffheapAfterCacheDestroy();;
+    }
+
+    /**
+     * Checks cache are correctly destroyed under load - ONHEAP_TIERED memory mode
+     *
+     * @throws Exception If failed
+     * */
+    public void testCacheDestroyUnderLoadOnheapTiered() throws Exception {
+        memoryMode = ONHEAP_TIERED;
+
+        FifoEvictionPolicy evictionPlc0 = new FifoEvictionPolicy();
+        evictionPlc0.setMaxSize(1);
+
+        evictionPlc = evictionPlc0;
+
+        checkCacheDestroyUnderLoad();
     }
 
     /**
@@ -85,32 +112,129 @@ public class GridCacheOffHeapCleanupTest extends GridCommonAbstractTest {
         evictionPlc = null;
 
         checkCleanupOffheapAfterCacheDestroy();
+        checkCacheDestroyUnderLoad();
     }
 
     /**
-     * TODO: IGNITE-2714.
+     * Checks cache are correctly destroyed under load - OFFHEAP_TIERED memory mode
      *
+     * @throws Exception If failed
+     * */
+    public void testCacheDestroyUnderLoadOffheapTiered() throws Exception {
+        memoryMode = OFFHEAP_TIERED;
+        evictionPlc = null;
+
+        checkCacheDestroyUnderLoad();
+    }
+
+    /**
      * Checks offheap resources are freed after cache destroy - OFFHEAP_VALUES memory mode
      *
      * @throws Exception If failed.
      */
-    public void _testCleanupOffheapAfterCacheDestroyOffheapValues() throws Exception {
+    public void testCleanupOffheapAfterCacheDestroyOffheapValues() throws Exception {
         memoryMode = OFFHEAP_VALUES;
         evictionPlc = null;
 
-        try (Ignite g = startGrid(0)) {
+        try {
+            Ignite g = startGrids(2);
+
             IgniteCache<Integer, String> cache = g.getOrCreateCache(createCacheConfiguration());
 
             cache.put(1, "value_1");
-            cache.put(2, "value_2");
+            cache.put(2, "value_22");
 
-            GridCacheContext ctx =  GridTestUtils.cacheContext(cache);
-            GridUnsafeMemory unsafeMemory = ctx.unsafeMemory();
+            GridUnsafeMemory nearCacheMem = internalCache(cache).context().unsafeMemory();
+            GridUnsafeMemory dhtCacheMem = dht(cache).context().unsafeMemory();
 
-            g.destroyCache(null);
+            g.destroyCache(cache.getName());
 
-            if (unsafeMemory != null)
-                assertEquals("Unsafe memory not freed", 0, unsafeMemory.allocatedSize());
+            if (nearCacheMem != null)
+                assertEquals("Unsafe memory not freed", 0, nearCacheMem.allocatedSize());
+            if (dhtCacheMem != null)
+                assertEquals("Unsafe memory not freed", 0, dhtCacheMem.allocatedSize());
+        } finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * Checks cache are correctly destroyed under load - OFFHEAP_VALUES memory mode
+     *
+     * @throws Exception If failed
+     * */
+    public void testCacheDestroyUnderLoadOffheapValues() throws Exception {
+        memoryMode = OFFHEAP_VALUES;
+        evictionPlc = null;
+
+        checkCacheDestroyUnderLoad();
+    }
+
+    /**
+     * Destroying cache when many thread are still reading. Expects that
+     * reader threads will get "Cache has been stopped" exception and wont
+     * get invalid value (that may be caused by incorrect offHeap memory
+     * deallocation).
+     *
+     * @throws Exception If failed.
+     * */
+    private void checkCacheDestroyUnderLoad() throws Exception {
+        try (Ignite g = startGrid(0)) {
+            final AtomicBoolean fail = new AtomicBoolean(false);
+            final IgniteCache<Integer, String> cache = g.getOrCreateCache(createCacheConfiguration());
+
+            final int totalCnt = 100_000;
+            final String[] values = new String[totalCnt];
+            for (int i = 0; i < totalCnt; i++) {
+                values[i] = "value-" + i;
+                cache.put(i, values[i]);
+            }
+
+            final int threadCnt = 20;
+            final CountDownLatch startLatch = new CountDownLatch(threadCnt);
+            final CountDownLatch stoppedLatch = new CountDownLatch(threadCnt);
+            final AtomicInteger threadNum = new AtomicInteger(0);
+
+            GridTestUtils.runMultiThreadedAsync(new Runnable() {
+                    @Override
+                    public void run() {
+                        final int num = threadNum.getAndIncrement();
+                        final int start = num * totalCnt / threadCnt;
+                        final int stop = (num + 1) * totalCnt / threadCnt;
+                        try {
+                            GridTestUtils.assertThrows(log, new Callable<Object>() {
+                                @Override
+                                public Object call() throws Exception {
+                                    startLatch.countDown();
+                                    int i = start;
+                                    while (true) {
+                                        if (i == stop)
+                                            i = start;
+                                        String value = cache.get(i);
+                                        assertEquals("Unexpected cache value", values[i], value);
+                                        i++;
+                                    }
+                                }
+                            }, IllegalStateException.class, "Cache has been stopped");
+                        } catch (Exception e) {
+                            error("Unexpected exception in in reader thread", e);
+                            fail.set(true);
+                        } finally {
+                            stoppedLatch.countDown();
+                        }
+                    }
+                },
+                threadCnt, "reader");
+
+            startLatch.await();
+
+            Thread.sleep(300);
+
+            g.destroyCache(cache.getName());
+
+            stoppedLatch.await();
+
+            assertTrue("Unexpected termination of reader thread. Please see log for details", !fail.get());
         }
     }
 
@@ -126,6 +250,8 @@ public class GridCacheOffHeapCleanupTest extends GridCommonAbstractTest {
         ccfg.setOffHeapMaxMemory(0);
         ccfg.setMemoryMode(memoryMode);
         ccfg.setEvictionPolicy(evictionPlc);
+
+        ccfg.setNearConfiguration(new NearCacheConfiguration<Integer, String>());
 
         return ccfg;
     }

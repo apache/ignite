@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.compute.ComputeJob;
@@ -43,7 +44,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSwapEntry;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
@@ -442,6 +442,16 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
             }
 
             return true;
+        }
+    }
+
+    @Override
+    public void stop() {
+        super.stop();
+
+        if (context().config().getMemoryMode().equals(CacheMemoryMode.OFFHEAP_VALUES)) {
+            for (GridCacheEntryEx entry : entries())
+                entry.clearOffHeap();
         }
     }
 }

@@ -1045,4 +1045,12 @@ public interface GridCacheEntryEx {
      * Calls {@link GridDhtLocalPartition#onUnlock()} for this entry's partition.
      */
     public void onUnlock();
+
+    /**
+     * Release offheap memory allocated for entry.
+     * <p></p>
+     * This method may make entry invalid. Use it only if entry is no longer be used.
+     * For example, at cache stopping.
+     * */
+    public void clearOffHeap();
 }

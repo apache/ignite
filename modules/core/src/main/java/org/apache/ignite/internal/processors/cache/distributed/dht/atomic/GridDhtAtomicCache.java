@@ -447,6 +447,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void stop() {
+        super.stop();
         deferredUpdateMessageSender.stop();
     }
 

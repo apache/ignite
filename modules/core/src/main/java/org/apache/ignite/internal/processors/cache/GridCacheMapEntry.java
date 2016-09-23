@@ -4619,6 +4619,18 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         // No-op.
     }
 
+    /** {@inheritDoc} */
+    @Override public void clearOffHeap() {
+        if (hasOffHeapPointer()) {
+            GridUnsafeMemory mem = cctx.unsafeMemory();
+
+            assert mem != null;
+
+            mem.removeOffHeap(offHeapPointer());
+            offHeapPointer(0);
+        }
+    }
+
     /**
      * @return Size of extras object.
      */
