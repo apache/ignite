@@ -22,7 +22,7 @@ namespace Apache.Ignite.EntityFramework.Impl
     using System.Data.Common;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
-    using System.Linq;
+    using System.Text;
 
     /// <summary>
     /// Command proxy.
@@ -149,7 +149,6 @@ namespace Apache.Ignite.EntityFramework.Impl
             if (_commandInfo.IsModification)
             {
                 // Execute reader, then invalidate cached data.
-                // TODO: Mark data for invalidation, it will be invalidated on commit.
                 var dbReader = _command.ExecuteReader(behavior);
 
                 InvalidateCache();
@@ -243,11 +242,14 @@ namespace Apache.Ignite.EntityFramework.Impl
                 throw new NotSupportedException("Ignite Entity Framework Caching " +
                                                 "requires non-empty DbCommand.CommandText.");
 
-            // TODO: Remove LINQ, use single StringBuilder!
-            var parameters = string.Join("|",
-                Parameters.Cast<DbParameter>().Select(x => x.ParameterName + "=" + x.Value));
+            var sb = new StringBuilder();
 
-            return string.Format("{0}:{1}|{2}", Connection.Database, CommandText, parameters);
+            sb.AppendFormat("{0}:{1}|", Connection.Database, CommandText);
+
+            foreach (DbParameter param in Parameters)
+                sb.AppendFormat("{0}={1},", param.ParameterName, param.Value);
+
+            return sb.ToString();
         }
 
         /// <summary>

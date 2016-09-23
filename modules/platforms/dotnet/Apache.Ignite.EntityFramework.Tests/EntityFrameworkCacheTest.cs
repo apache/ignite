@@ -673,9 +673,10 @@ namespace Apache.Ignite.EntityFramework.Tests
         /// Tests the entity set version increment in multi-threaded scenario.
         /// </summary>
         [Test]
-        public void TestIncrementMultithreaded()  // TODO: Remove?
+        [Category(TestUtils.CategoryIntensive)]
+        public void TestIncrementMultithreaded()
         {
-            int opCnt = 0;
+            var opCnt = 0;
 
             TestUtils.RunMultiThreaded(() =>
             {
@@ -696,7 +697,7 @@ namespace Apache.Ignite.EntityFramework.Tests
                 }
 
                 Interlocked.Increment(ref opCnt);
-            }, 4, 20);
+            }, 4, 10);
 
             var setVersion = _metaCache["Blog"];
 
