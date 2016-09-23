@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsCachePerBlockLruEvictionPo
 import org.apache.ignite.internal.processors.igfs.IgfsCacheSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsDualAsyncClientSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsDualSyncClientSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsLocalSecondaryFileSystemProxyClientSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsMaxSizeSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsPrimaryClientSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsDataManagerSelfTest;
@@ -53,7 +54,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsPrimarySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorValidationSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsProxySelfTest;
-import org.apache.ignite.internal.processors.igfs.IgfsProxyToLocalFilesystemSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsLocalSecondaryFileSystemProxySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsSizeSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsStartCacheTest;
@@ -155,7 +156,8 @@ public class IgniteIgfsTestSuite extends TestSuite {
 
 
         suite.addTestSuite(IgfsProxySelfTest.class);
-        suite.addTestSuite(IgfsProxyToLocalFilesystemSelfTest.class);
+        suite.addTestSuite(IgfsLocalSecondaryFileSystemProxySelfTest.class);
+        suite.addTestSuite(IgfsLocalSecondaryFileSystemProxyClientSelfTest.class);
 
         return suite;
     }
