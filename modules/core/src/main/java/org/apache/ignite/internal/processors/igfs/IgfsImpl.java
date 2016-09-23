@@ -1233,13 +1233,20 @@ public final class IgfsImpl implements IgfsEx {
             @Override public Void call() throws Exception {
                 IgfsMode mode = resolveMode(path);
 
-                if (mode == PROXY)
-                    throw new OperationNotSupportedException("The operation setTimes is not supported in PROXY mode");
+                if (mode == PROXY) {
+                    if (secondaryFs instanceof IgfsSecondaryFileSystemV2)
+                        ((IgfsSecondaryFileSystemV2)secondaryFs).setTimes(path, accessTime, modificationTime);
+                    else
+                        throw new UnsupportedOperationException("setTimes is not supported in PROXY mode for " +
+                            "this secondary file system,");
+                }
+                else {
+                    boolean useSecondary =
+                        IgfsUtils.isDualMode(mode) && secondaryFs instanceof IgfsSecondaryFileSystemV2;
 
-                boolean useSecondary = IgfsUtils.isDualMode(mode) && secondaryFs instanceof IgfsSecondaryFileSystemV2;
-
-                meta.updateTimes(path, accessTime, modificationTime,
-                    useSecondary ? (IgfsSecondaryFileSystemV2)secondaryFs : null);
+                    meta.updateTimes(path, accessTime, modificationTime,
+                        useSecondary ? (IgfsSecondaryFileSystemV2) secondaryFs : null);
+                }
 
                 return null;
             }
