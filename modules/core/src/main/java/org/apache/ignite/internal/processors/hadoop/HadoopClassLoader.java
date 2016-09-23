@@ -97,6 +97,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
         PREDEFINED_NATIVE_LIBS = new HashSet<>();
 
         PREDEFINED_NATIVE_LIBS.add("hadoop");
+        PREDEFINED_NATIVE_LIBS.add("MapRClient");
     }
 
     /**
