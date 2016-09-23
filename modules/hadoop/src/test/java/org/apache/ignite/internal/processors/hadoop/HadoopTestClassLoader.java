@@ -1,13 +1,11 @@
 package org.apache.ignite.internal.processors.hadoop;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 /**
@@ -17,24 +15,12 @@ public class HadoopTestClassLoader extends URLClassLoader {
     /** Parent class loader. */
     private static final URLClassLoader APP_CLS_LDR = (URLClassLoader)HadoopTestClassLoader.class.getClassLoader();
 
-    /** */
-    private static final Collection<URL> APP_JARS = F.asList(APP_CLS_LDR.getURLs());
-
     /** All participating URLs. */
     private static final URL[] URLS;
 
     static {
         try {
-            List<URL> res = new ArrayList<>();
-
-            for (URL url : APP_JARS) {
-                String urlStr = url.toString();
-
-                if (urlStr.contains("modules/hadoop-impl/"))
-                    res.add(url);
-            }
-
-            res.addAll(HadoopClasspathUtils.classpathForClassLoader());
+            List<URL> res = new ArrayList<>(HadoopClasspathUtils.classpathForClassLoader());
 
             X.println(">>> " + HadoopTestClassLoader.class.getSimpleName() + " static paths:");
 

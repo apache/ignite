@@ -34,9 +34,6 @@ import java.util.List;
  * Hadoop classpath utilities.
  */
 public class HadoopClasspathUtils {
-    /** Ignite home. */
-    private static final String IGNITE_HOME = "IGNITE_HOME";
-
     /** Prefix directory. */
     public static final String PREFIX = "HADOOP_PREFIX";
 
@@ -168,7 +165,7 @@ public class HadoopClasspathUtils {
 
         Collection<SearchDirectory> res = new ArrayList<>();
 
-        // 1. Add libraries from Hadoop distribution:
+        // Add libraries from Hadoop distribution:
         res.add(new SearchDirectory(new File(loc.common(), "lib"), AcceptAllDirectoryFilter.INSTANCE));
         res.add(new SearchDirectory(new File(loc.hdfs(), "lib"), AcceptAllDirectoryFilter.INSTANCE));
         res.add(new SearchDirectory(new File(loc.mapred(), "lib"), AcceptAllDirectoryFilter.INSTANCE));
@@ -183,18 +180,8 @@ public class HadoopClasspathUtils {
         res.add(new SearchDirectory(new File(loc.mapred()),
             new PrefixDirectoryFilter("hadoop-mapreduce-client-core")));
 
-        // 2. Add user provided libs:
+        // Add user provided libs:
         res.addAll(parseUserLibs());
-
-        // 3. Add hadoop-impl module.
-        String home = systemOrEnv(IGNITE_HOME, null);
-
-        if (home != null) {
-            File dir = new File(home, "libs/ignite-hadoop-impl");
-
-            if (dir.exists())
-                res.add(new SearchDirectory(dir, AcceptAllDirectoryFilter.INSTANCE, true));
-        }
 
         return res;
     }

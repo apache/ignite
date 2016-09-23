@@ -247,8 +247,7 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
 
         String ggClsPath = HadoopJob.class.getProtectionDomain().getCodeSource().getLocation().getPath() + sep +
             HadoopJobTracker.class.getProtectionDomain().getCodeSource().getLocation().getPath() + sep +
-            ConcurrentHashMap8.class.getProtectionDomain().getCodeSource().getLocation().getPath()
-            + sep + U.getIgniteHome() + "/modules/hadoop-impl/target/classes";
+            ConcurrentHashMap8.class.getProtectionDomain().getCodeSource().getLocation().getPath();
 
         ProcessBuilder res = new ProcessBuilder();
 
