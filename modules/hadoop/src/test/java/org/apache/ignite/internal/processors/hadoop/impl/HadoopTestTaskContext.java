@@ -173,7 +173,7 @@ class HadoopTestTaskContext extends HadoopV2TaskContext {
     public void makeTreeOfWritables(Iterable<Pair<String, Integer>> flatData) {
         Text key = new Text();
 
-        for (HadoopTestTaskContext.Pair<String, Integer> pair : flatData) {
+        for (Pair<String, Integer> pair : flatData) {
             key.set(pair.key);
             ArrayList<IntWritable> valList;
 
