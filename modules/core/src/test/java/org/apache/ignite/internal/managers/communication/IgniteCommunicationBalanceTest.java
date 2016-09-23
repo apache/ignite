@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.managers.communication;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
@@ -28,12 +26,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.nio.GridNioServer;
-import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
@@ -43,8 +41,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.internal.util.nio.GridNioServer.Balancer;
 
 /**
  *
@@ -96,7 +92,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBalance1() throws Exception {
-        System.setProperty(GridNioServer.IGNITE_NIO_SES_BALANCER_BALANCE_PERIOD, "5000");
+        System.setProperty(IgniteSystemProperties.IGNITE_IO_BALANCE_PERIOD, "5000");
 
         try {
             selectors = 4;
@@ -179,7 +175,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
             waitNioBalanceStop(G.allGrids(), 10_000);
         }
         finally {
-            System.setProperty(GridNioServer.IGNITE_NIO_SES_BALANCER_BALANCE_PERIOD, "");
+            System.setProperty(IgniteSystemProperties.IGNITE_IO_BALANCE_PERIOD, "");
         }
     }
 
@@ -187,7 +183,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBalance2() throws Exception {
-        System.setProperty(GridNioServer.IGNITE_NIO_SES_BALANCER_BALANCE_PERIOD, "1000");
+        System.setProperty(IgniteSystemProperties.IGNITE_IO_BALANCE_PERIOD, "1000");
 
         try {
             startGridsMultiThreaded(5);
@@ -227,7 +223,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            System.setProperty(GridNioServer.IGNITE_NIO_SES_BALANCER_BALANCE_PERIOD, "");
+            System.setProperty(IgniteSystemProperties.IGNITE_IO_BALANCE_PERIOD, "");
         }
     }
 
@@ -294,8 +290,8 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRandomBalance() throws Exception {
-        System.setProperty(GridNioServer.IGNITE_NIO_SES_BALANCER_CLASS_NAME, TestBalancer.class.getName());
-        System.setProperty(GridNioServer.IGNITE_NIO_SES_BALANCER_BALANCE_PERIOD, "500");
+        System.setProperty(GridNioServer.IGNITE_IO_BALANCE_RANDOM_BALANCE, "true");
+        System.setProperty(IgniteSystemProperties.IGNITE_IO_BALANCE_PERIOD, "500");
 
         try {
             final int NODES = 10;
@@ -316,8 +312,8 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
             }, 20, "test-thread");
         }
         finally {
-            System.setProperty(GridNioServer.IGNITE_NIO_SES_BALANCER_CLASS_NAME, "");
-            System.setProperty(GridNioServer.IGNITE_NIO_SES_BALANCER_BALANCE_PERIOD, "");
+            System.setProperty(GridNioServer.IGNITE_IO_BALANCE_RANDOM_BALANCE, "");
+            System.setProperty(IgniteSystemProperties.IGNITE_IO_BALANCE_PERIOD, "");
         }
     }
 
@@ -339,76 +335,5 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
         @Override public Object call() throws Exception {
             return data;
         }
-    }
-
-    /**
-     *
-     */
-    @SuppressWarnings("unchecked")
-    public static class TestBalancer implements Balancer {
-        /** */
-        private final GridNioServer srv;
-
-        /**
-         * @param srv Server.
-         */
-        public TestBalancer(GridNioServer srv) {
-            this.srv = srv;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void balance() {
-            List<GridNioServer.AbstractNioClientWorker> clientWorkers = srv.workers();
-
-            ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-            int w1 = rnd.nextInt(clientWorkers.size());
-
-            if (clientWorkers.get(w1).sessions().isEmpty())
-                return;
-
-            int w2 = rnd.nextInt(clientWorkers.size());
-
-            while (w2 == w1)
-                w2 = rnd.nextInt(clientWorkers.size());
-
-            GridNioSession ses = randomSession(clientWorkers.get(w1));
-
-            if (ses != null) {
-                System.out.println("[" + Thread.currentThread().getName() + "] Move session " +
-                    "[w1=" + w1 + ", w2=" + w2 + ", sesHash=" + System.identityHashCode(ses) + ", ses=" + ses + ']');
-
-                srv.moveSession(ses, w1, w2);
-            }
-        }
-
-        /**
-         * @param worker Worker.
-         * @return NIO session.
-         */
-        private GridNioSession randomSession(GridNioServer.AbstractNioClientWorker worker) {
-            Collection<GridNioSession> sessions = worker.sessions();
-
-            int size = sessions.size();
-
-            if (size == 0)
-                return null;
-
-            int idx = ThreadLocalRandom.current().nextInt(size);
-
-            Iterator<GridNioSession> it = sessions.iterator();
-
-            int cnt = 0;
-
-            while (it.hasNext()) {
-                GridNioSession ses = it.next();
-
-                if (cnt == idx)
-                    return ses;
-            }
-
-            return null;
-        }
-
     }
 }

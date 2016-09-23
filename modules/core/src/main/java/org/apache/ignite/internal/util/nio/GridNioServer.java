@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.util.nio;
 
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -46,6 +45,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
@@ -67,6 +67,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -91,10 +92,7 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.NIO_OPER
  */
 public class GridNioServer<T> {
     /** */
-    public static final String IGNITE_NIO_SES_BALANCER_CLASS_NAME = "IGNITE_NIO_SES_BALANCER_CLASS_NAME";
-
-    /** */
-    public static final String IGNITE_NIO_SES_BALANCER_BALANCE_PERIOD = "IGNITE_NIO_SES_BALANCER_BALANCE_PERIOD";
+    public static final String IGNITE_IO_BALANCE_RANDOM_BALANCE = "IGNITE_IO_BALANCE_RANDOM_BALANCER";
 
     /** Default session write timeout. */
     public static final int DFLT_SES_WRITE_TIMEOUT = 5000;
@@ -225,7 +223,7 @@ public class GridNioServer<T> {
     private final AtomicLong writerMoveCnt = new AtomicLong();
 
     /** */
-    private final Balancer balancer;
+    private final IgniteRunnable balancer;
 
     /**
      * @param addr Address.
@@ -339,36 +337,29 @@ public class GridNioServer<T> {
 
         this.skipRecoveryPred = skipRecoveryPred != null ? skipRecoveryPred : F.<Message>alwaysFalse();
 
-        boolean balanceEnabled = IgniteSystemProperties.getBoolean("IGNITE_NIO_SES_BALANCE_ENABLED", true);
+        long balancePeriod = IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_IO_BALANCE_PERIOD, 5000);
 
-        Balancer balancer0 = null;
+        IgniteRunnable balancer0 = null;
 
-        if (balanceEnabled) {
-            String balancerCls = IgniteSystemProperties.getString(IGNITE_NIO_SES_BALANCER_CLASS_NAME);
+        if (balancePeriod > 0) {
+            boolean rndBalance = IgniteSystemProperties.getBoolean(IGNITE_IO_BALANCE_RANDOM_BALANCE, false);
 
-            if (balancerCls != null) {
-                try {
-                    Class<?> cls = Class.forName(balancerCls);
-
-                    Constructor c = cls.getConstructor(GridNioServer.class);
-
-                    balancer0 = (Balancer)c.newInstance(this);
-                }
-                catch (Exception e) {
-                    U.error(log, "Failed to create balancer, balancing will be disabled [cls=" + balancerCls + ']', e);
-                }
-            }
-            else
-                balancer0 = new SizeBasedBalancer(this);
+            balancer0 = rndBalance ? new RandomBalancer() : new SizeBasedBalancer(balancePeriod);
         }
 
         this.balancer = balancer0;
     }
 
+    /**
+     * @return Number of reader sessions move.
+     */
     public long readerMoveCount() {
         return readerMoveCnt.get();
     }
 
+    /**
+     * @return Number of reader writer move.
+     */
     public long writerMoveCount() {
         return writerMoveCnt.get();
     }
@@ -599,7 +590,12 @@ public class GridNioServer<T> {
         return clientWorkers;
     }
 
-    public void moveSession(GridNioSession ses, int from, int to) {
+    /**
+     * @param ses Session.
+     * @param from Move from index.
+     * @param to Move to index.
+     */
+    private void moveSession(GridNioSession ses, int from, int to) {
         assert from >= 0 && from < clientWorkers.size() : from;
         assert to >= 0 && to < clientWorkers.size() : to;
         assert from != to;
@@ -638,8 +634,8 @@ public class GridNioServer<T> {
      *
      */
     public void dumpStats() {
-        U.warn(log, "NIO server statistics [readerSesBalanceCnt=" + readerMoveCount() +
-            ", writerSesBalanceCnt=" + writerMoveCount() + ']');
+        U.warn(log, "NIO server statistics [readerSesBalanceCnt=" + readerMoveCnt.get() +
+            ", writerSesBalanceCnt=" + writerMoveCnt.get() + ']');
 
         for (int i = 0; i < clientWorkers.size(); i++)
             clientWorkers.get(i).offer(new NioOperationFuture<Void>(null, NioOperation.DUMP_STATS));
@@ -995,7 +991,6 @@ public class GridNioServer<T> {
                 metricsLsnr.onBytesReceived(cnt);
 
             ses.bytesReceived(cnt);
-
             onRead(cnt);
 
             readBuf.flip();
@@ -1336,7 +1331,7 @@ public class GridNioServer<T> {
     /**
      * Thread performing only read operations from the channel.
      */
-    public abstract class AbstractNioClientWorker extends GridWorker implements GridNioWorker {
+    private abstract class AbstractNioClientWorker extends GridWorker implements GridNioWorker {
         /** Queue of change requests on this selector. */
         private final ConcurrentLinkedQueue<NioOperationFuture> changeReqs = new ConcurrentLinkedQueue<>();
 
@@ -1379,10 +1374,6 @@ public class GridNioServer<T> {
             createSelector();
 
             this.idx = idx;
-        }
-
-        public Collection<? extends GridNioSession> sessions() {
-            return workerSessions;
         }
 
         /** {@inheritDoc} */
@@ -2187,7 +2178,7 @@ public class GridNioServer<T> {
                         processSelectedKeys(selector.selectedKeys());
 
                     if (balancer != null)
-                        balancer.balance();
+                        balancer.run();
                 }
             }
             // Ignore this exception as thread interruption is equal to 'close' call.
@@ -2974,40 +2965,22 @@ public class GridNioServer<T> {
     /**
      *
      */
-    public interface Balancer {
-        /**
-         *
-         */
-        void balance();
-    }
-
-    /**
-     *
-     */
-    private static class SizeBasedBalancer implements Balancer {
-        /** */
-        private final GridNioServer<?> srv;
-
-        /** */
-        private final IgniteLogger log;
-
+    private class SizeBasedBalancer implements IgniteRunnable {
         /** */
         private long lastBalance;
 
         /** */
-        private final long balancePeriod = IgniteSystemProperties.getLong(IGNITE_NIO_SES_BALANCER_BALANCE_PERIOD, 5000);
+        private final long balancePeriod;
 
         /**
-         * @param srv Server.
+         * @param balancePeriod Period.
          */
-        SizeBasedBalancer(GridNioServer<?> srv) {
-            this.srv = srv;
-
-            log = srv.log;
+        SizeBasedBalancer(long balancePeriod) {
+            this.balancePeriod = balancePeriod;
         }
 
         /** {@inheritDoc} */
-        @Override public void balance() {
+        @Override public void run() {
             long now = U.currentTimeMillis();
 
             if (lastBalance + balancePeriod < now) {
@@ -3015,10 +2988,6 @@ public class GridNioServer<T> {
 
                 long maxRcvd0 = -1, minRcvd0 = -1, maxSent0 = -1, minSent0 = -1;
                 int maxRcvdIdx = -1, minRcvdIdx = -1, maxSentIdx = -1, minSentIdx = -1;
-
-                boolean print = false;//Thread.currentThread().getName().contains("IgniteCommunicationBalanceTest4");
-
-                List<GridNioServer.AbstractNioClientWorker> clientWorkers = (List)srv.clientWorkers;
 
                 for (int i = 0; i < clientWorkers.size(); i++) {
                     GridNioServer.AbstractNioClientWorker worker = clientWorkers.get(i);
@@ -3028,13 +2997,6 @@ public class GridNioServer<T> {
                     if (i % 2 == 0) {
                         // Reader.
                         long bytesRcvd0 = worker.bytesRcvd0;
-//
-//                        if (print)
-//                            log.info("Reader [idx=" + i +
-//                                ", secCnt=" + sesCnt +
-//                                ", received=" + bytesRcvd0 +
-//                                ", sent=" + worker.bytesSent0 +
-//                                ']');
 
                         if ((maxRcvd0 == -1 || bytesRcvd0 > maxRcvd0) && bytesRcvd0 > 0 && sesCnt > 1) {
                             maxRcvd0 = bytesRcvd0;
@@ -3049,13 +3011,6 @@ public class GridNioServer<T> {
                     else {
                         // Writer.
                         long bytesSent0 = worker.bytesSent0;
-//
-//                        if (print)
-//                            log.info("Writer [idx=" + i +
-//                                ", secCnt=" + sesCnt +
-//                                ", received=" + worker.bytesRcvd0 +
-//                                ", sent=" + bytesSent0 +
-//                                ']');
 
                         if ((maxSent0 == -1 || bytesSent0 > maxSent0) && bytesSent0 > 0 && sesCnt > 1) {
                             maxSent0 = bytesSent0;
@@ -3071,12 +3026,6 @@ public class GridNioServer<T> {
 
                 if (log.isDebugEnabled())
                     log.debug("Balancing data [minSent0=" + minSent0 + ", minSentIdx=" + minSentIdx +
-                        ", maxSent0=" + maxSent0 + ", maxSentIdx=" + maxSentIdx +
-                        ", minRcvd0=" + minRcvd0 + ", minRcvdIdx=" + minRcvdIdx +
-                        ", maxRcvd0=" + maxRcvd0 + ", maxRcvdIdx=" + maxRcvdIdx + ']');
-
-                if (print)
-                    log.info("Balancing data [minSent0=" + minSent0 + ", minSentIdx=" + minSentIdx +
                         ", maxSent0=" + maxSent0 + ", maxSentIdx=" + maxSentIdx +
                         ", minRcvd0=" + minRcvd0 + ", minRcvdIdx=" + minRcvdIdx +
                         ", maxRcvd0=" + maxRcvd0 + ", maxRcvdIdx=" + maxRcvdIdx + ']');
@@ -3106,20 +3055,11 @@ public class GridNioServer<T> {
                             log.debug("Will move session to less loaded writer [ses=" + ses +
                                 ", from=" + maxSentIdx + ", to=" + minSentIdx + ']');
 
-                        if (print)
-                            log.info("Will move session to less loaded writer [diff=" + sentDiff + ", ses=" + ses +
-                                ", from=" + maxSentIdx + ", to=" + minSentIdx + ']');
-
-                        srv.writerMoveCnt.incrementAndGet();
-
-                        srv.moveSession(ses, maxSentIdx, minSentIdx);
+                        moveSession(ses, maxSentIdx, minSentIdx);
                     }
                     else {
                         if (log.isDebugEnabled())
                             log.debug("Unable to find session to move for writers.");
-
-                        if (print)
-                            log.info("Unable to find session to move for writers.");
                     }
                 }
 
@@ -3148,22 +3088,11 @@ public class GridNioServer<T> {
                             log.debug("Will move session to less loaded reader [ses=" + ses +
                                 ", from=" + maxRcvdIdx + ", to=" + minRcvdIdx + ']');
 
-                        if (print)
-                            log.info("Will move session to less loaded reader [diff=" + rcvdDiff +
-                                ", from=" + maxSentIdx +
-                                ", to=" + minSentIdx +
-                                ", ses=" + ses + ']');
-
-                        srv.readerMoveCnt.incrementAndGet();
-
-                        srv.moveSession(ses, maxRcvdIdx, minRcvdIdx);
+                        moveSession(ses, maxRcvdIdx, minRcvdIdx);
                     }
                     else {
                         if (log.isDebugEnabled())
                             log.debug("Unable to find session to move for readers.");
-
-                        if (print)
-                            log.info("Unable to find session to move for readers.");
                     }
                 }
 
@@ -3174,5 +3103,65 @@ public class GridNioServer<T> {
                 }
             }
         }
+    }
+
+    /**
+     * For tests only.
+     */
+    @SuppressWarnings("unchecked")
+    private class RandomBalancer implements IgniteRunnable {
+        /** {@inheritDoc} */
+        @Override public void run() {
+            ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+            int w1 = rnd.nextInt(clientWorkers.size());
+
+            if (clientWorkers.get(w1).workerSessions.isEmpty())
+                return;
+
+            int w2 = rnd.nextInt(clientWorkers.size());
+
+            while (w2 == w1)
+                w2 = rnd.nextInt(clientWorkers.size());
+
+            GridNioSession ses = randomSession(clientWorkers.get(w1));
+
+            if (ses != null) {
+                log.info("Move session [from=" + w1 +
+                    ", to=" + w2 +
+                    ", ses=" + ses + ']');
+
+                moveSession(ses, w1, w2);
+            }
+        }
+
+        /**
+         * @param worker Worker.
+         * @return NIO session.
+         */
+        private GridNioSession randomSession(GridNioServer.AbstractNioClientWorker worker) {
+            Collection<GridNioSession> sessions = worker.workerSessions;
+
+            int size = sessions.size();
+
+            if (size == 0)
+                return null;
+
+            int idx = ThreadLocalRandom.current().nextInt(size);
+
+            Iterator<GridNioSession> it = sessions.iterator();
+
+            int cnt = 0;
+
+            while (it.hasNext()) {
+                GridNioSession ses = it.next();
+
+                if (cnt == idx)
+                    return ses;
+            }
+
+            return null;
+        }
+
     }
 }

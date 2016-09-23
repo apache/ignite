@@ -24,20 +24,20 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public interface GridNioWorker {
+interface GridNioWorker {
     /**
      * @param req Change request.
      */
-    void offer(GridNioFuture req);
+    public void offer(GridNioFuture req);
 
     /**
      * @param reqs Change requests.
      */
-    void offer(Collection<GridNioFuture> reqs);
+    public void offer(Collection<GridNioFuture> reqs);
 
     /**
      * @param ses Session.
      * @return Session state change requests.
      */
-    @Nullable List<GridNioFuture> clearSessionRequests(GridNioSession ses);
+    @Nullable public List<GridNioFuture> clearSessionRequests(GridNioSession ses);
 }

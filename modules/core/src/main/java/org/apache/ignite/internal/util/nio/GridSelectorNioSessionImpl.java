@@ -159,9 +159,9 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     }
 
     /**
-     * @param from
-     * @param fut
-     * @return
+     * @param from Current session worker.
+     * @param fut Move future.
+     * @return {@code True} if session move was scheduled.
      */
     boolean offerMove(GridNioWorker from, GridNioFuture fut) {
         synchronized (this) {
@@ -177,7 +177,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     }
 
     /**
-     * @param fut
+     * @param fut Future.
      */
     void offerStateChange(GridNioFuture fut) {
         synchronized (this) {
@@ -195,7 +195,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     }
 
     /**
-     * @param moveFrom
+     * @param moveFrom Current session worker.
      */
     void startMoveSession(GridNioWorker moveFrom) {
         synchronized (this) {
@@ -215,7 +215,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     }
 
     /**
-     * @param moveTo
+     * @param moveTo New session worker.
      */
     void finishMoveSession(GridNioWorker moveTo) {
         synchronized (this) {

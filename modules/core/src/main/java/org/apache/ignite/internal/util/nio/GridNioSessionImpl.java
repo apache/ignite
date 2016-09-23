@@ -51,10 +51,10 @@ public class GridNioSessionImpl implements GridNioSession {
     /** Received bytes counter. */
     private volatile long bytesRcvd;
 
-    /** Sent bytes counter since last re-balancing. */
+    /** Sent bytes since last NIO sessions balancing. */
     private volatile long bytesSent0;
 
-    /** Received bytes counter since last re-balancing. */
+    /** Received bytes since last NIO sessions balancing. */
     private volatile long bytesRcvd0;
 
     /** Last send schedule timestamp. */
@@ -169,14 +169,23 @@ public class GridNioSessionImpl implements GridNioSession {
         return bytesRcvd;
     }
 
+    /**
+     * @return Sent bytes since last NIO sessions balancing.
+     */
     public long bytesSent0() {
         return bytesSent0;
     }
 
+    /**
+     * @return Received bytes since last NIO sessions balancing.
+     */
     public long bytesReceived0() {
         return bytesRcvd0;
     }
 
+    /**
+     *
+     */
     public void reset0() {
         bytesSent0 = 0;
         bytesRcvd0 = 0;
