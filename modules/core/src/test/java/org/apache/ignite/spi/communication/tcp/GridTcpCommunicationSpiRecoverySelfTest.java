@@ -451,8 +451,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
                     // Wait when session is closed, then try to open new connection from node1.
                     GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                        @Override
-                        public boolean apply() {
+                        @Override public boolean apply() {
                             return ses1.closeTime() != 0;
                         }
                     }, awaitForSocketWriteTimeout());
