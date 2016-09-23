@@ -501,7 +501,7 @@ public class CassandraDirectPersistenceTest {
 
         if (products.size() > 1 || orders.size() > 1) {
             throw new RuntimeException("Single write operation test failed. There were committed more objects " +
-                    "than expected into Cassandra");
+                    "into Cassandra than expected");
         }
 
         product1 = products.entrySet().iterator().next().getValue();
@@ -581,12 +581,12 @@ public class CassandraDirectPersistenceTest {
 
         if (products.size() < productIds.size() || orders.size() < orderIds.size()) {
             throw new RuntimeException("Bulk write operation test failed. There were committed less objects " +
-                    "than expected into Cassandra");
+                    "into Cassandra than expected");
         }
 
         if (products.size() > productIds.size() || orders.size() > orderIds.size()) {
             throw new RuntimeException("Bulk write operation test failed. There were committed more objects " +
-                    "than expected into Cassandra");
+                    "into Cassandra than expected");
         }
 
         for (CacheEntryImpl<Long, Product> entry : productEntries) {
