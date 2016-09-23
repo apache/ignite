@@ -329,9 +329,14 @@ public class TestsHelper {
 
     /** */
     public static Map<Long, Product> generateProductsMap() {
+        return generateProductsMap(BULK_OPERATION_SIZE);
+    }
+
+    /** */
+    public static Map<Long, Product> generateProductsMap(int count) {
         Map<Long, Product> map = new HashMap<>();
 
-        for (long i = 0; i < BULK_OPERATION_SIZE; i++)
+        for (long i = 0; i < count; i++)
             map.put(i, generateRandomProduct(i));
 
         return map;
@@ -351,9 +356,14 @@ public class TestsHelper {
 
     /** */
     public static Map<Long, ProductOrder> generateOrdersMap() {
+        return generateOrdersMap(BULK_OPERATION_SIZE);
+    }
+
+    /** */
+    public static Map<Long, ProductOrder> generateOrdersMap(int count) {
         Map<Long, ProductOrder> map = new HashMap<>();
 
-        for (long i = 0; i < BULK_OPERATION_SIZE; i++) {
+        for (long i = 0; i < count; i++) {
             ProductOrder order = generateRandomOrder(i);
             map.put(order.getId(), order);
         }
