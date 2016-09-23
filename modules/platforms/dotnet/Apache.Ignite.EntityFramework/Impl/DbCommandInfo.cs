@@ -40,13 +40,17 @@ namespace Apache.Ignite.EntityFramework.Impl
         /** */
         private readonly IDbCachingPolicy _policy;
 
+        /** */
+        private readonly DbTransactionInterceptor _txHandler;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="DbCommandInfo"/> class.
         /// </summary>
-        public DbCommandInfo(DbCommandTree tree, DbCache cache, IDbCachingPolicy policy)
+        public DbCommandInfo(DbCommandTree tree, DbCache cache, IDbCachingPolicy policy, DbTransactionInterceptor txHandler)
         {
             Debug.Assert(tree != null);
             Debug.Assert(cache != null);
+            Debug.Assert(txHandler != null);
 
             var qryTree = tree as DbQueryCommandTree;
 
@@ -71,6 +75,7 @@ namespace Apache.Ignite.EntityFramework.Impl
 
             _cache = cache;
             _policy = policy;
+            _txHandler = txHandler;
         }
 
         /// <summary>
@@ -103,6 +108,14 @@ namespace Apache.Ignite.EntityFramework.Impl
         public IDbCachingPolicy Policy
         {
             get { return _policy; }
+        }
+
+        /// <summary>
+        /// Gets the tx handler.
+        /// </summary>
+        public DbTransactionInterceptor TxHandler
+        {
+            get { return _txHandler; }
         }
 
         /// <summary>

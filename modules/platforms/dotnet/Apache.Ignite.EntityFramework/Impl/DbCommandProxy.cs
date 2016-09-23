@@ -196,29 +196,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// </summary>
         private void InvalidateCache()
         {
-            // Invalidate after connection is closed
-            // TODO: Connection is not always closed! There will be pooling, and context can be reused..
-            var conn = _command.Connection;
-
-            conn.StateChange -= ConnectionOnStateChange;
-            conn.StateChange += ConnectionOnStateChange;
-        }
-
-        /// <summary>
-        /// Handles the OnStateChange event of the Connection.
-        /// </summary>
-        /// <param name="sender">The source of the event.</param>
-        /// <param name="stateChangeEventArgs">The <see cref="StateChangeEventArgs"/> instance 
-        /// containing the event data.</param>
-        private void ConnectionOnStateChange(object sender, StateChangeEventArgs stateChangeEventArgs)
-        {
-            // Invalidate sets on connection close.
-            if (stateChangeEventArgs.CurrentState == ConnectionState.Closed)
-            {
-                _commandInfo.Cache.InvalidateSets(_commandInfo.AffectedEntitySets);
-
-                _command.Connection.StateChange -= ConnectionOnStateChange;
-            }
+            _commandInfo.TxHandler.InvalidateCache(_commandInfo.AffectedEntitySets, Transaction);
         }
 
         /** <inheritDoc /> */

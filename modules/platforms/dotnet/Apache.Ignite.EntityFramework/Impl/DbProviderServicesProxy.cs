@@ -45,22 +45,29 @@ namespace Apache.Ignite.EntityFramework.Impl
         /** */
         private readonly DbCache _cache;
 
+        /** */
+        private readonly DbTransactionInterceptor _txHandler;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="DbProviderServicesProxy"/> class.
         /// </summary>
         /// <param name="services">The services.</param>
         /// <param name="policy">The policy.</param>
         /// <param name="cache">The cache.</param>
-        public DbProviderServicesProxy(DbProviderServices services, IDbCachingPolicy policy, DbCache cache)
+        /// <param name="txHandler">Transaction handler.</param>
+        public DbProviderServicesProxy(DbProviderServices services, IDbCachingPolicy policy, DbCache cache, 
+            DbTransactionInterceptor txHandler)
         {
             Debug.Assert(services != null);
             Debug.Assert(cache != null);
+            Debug.Assert(txHandler != null);
 
             var proxy = services as DbProviderServicesProxy;
             _services = proxy != null ? proxy._services : services;
 
             _policy = policy ?? DefaultPolicy;
             _cache = cache;
+            _txHandler = txHandler;
         }
 
         /** <inheritDoc /> */
@@ -81,7 +88,7 @@ namespace Apache.Ignite.EntityFramework.Impl
             DbCommandTree commandTree)
         {
             return new DbCommandDefinitionProxy(_services.CreateCommandDefinition(providerManifest, commandTree), 
-                new DbCommandInfo(commandTree, _cache, _policy));
+                new DbCommandInfo(commandTree, _cache, _policy, _txHandler));
         }
 
         /** <inheritDoc /> */

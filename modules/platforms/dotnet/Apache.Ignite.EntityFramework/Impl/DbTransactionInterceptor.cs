@@ -17,8 +17,10 @@
 
 namespace Apache.Ignite.EntityFramework.Impl
 {
+    using System.Collections.Generic;
     using System.Data;
     using System.Data.Common;
+    using System.Data.Entity.Core.Metadata.Edm;
     using System.Data.Entity.Infrastructure.Interception;
 
     /// <summary>
@@ -26,6 +28,33 @@ namespace Apache.Ignite.EntityFramework.Impl
     /// </summary>
     internal class DbTransactionInterceptor : IDbTransactionInterceptor
     {
+        /** */
+        private readonly DbCache _cache;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DbTransactionInterceptor"/> class.
+        /// </summary>
+        /// <param name="cache">The cache.</param>
+        public DbTransactionInterceptor(DbCache cache)
+        {
+            _cache = cache;
+        }
+
+        public void InvalidateCache(ICollection<EntitySetBase> entitySets, DbTransaction transaction)
+        {
+            if (transaction == null)
+            {
+                // Invalidate immediately.
+                _cache.InvalidateSets(entitySets);
+            }
+            else
+            {
+                // Postpone until commit.
+                // TODO:
+                
+            }
+        }
+
         public void ConnectionGetting(DbTransaction transaction, DbTransactionInterceptionContext<DbConnection> interceptionContext)
         {
             // No-op
