@@ -51,16 +51,27 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  * TTL manager self test.
  */
 public class GridCacheTtlManagerEvictionTest extends GridCommonAbstractTest {
-    /** IP finder. */
+    /**
+     * IP finder.
+     */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** Test cache mode. */
-    protected CacheMode cacheMode;
-    private CacheMemoryMode cacheMemoryMode;
-    public static final int ENTRIES_COUNT = 10_100;
+    /** */
+    private static final int ENTRIES_COUNT = 10_100;
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    /**
+     * Test cache mode.
+     */
+    protected CacheMode cacheMode;
+
+    /** */
+    private CacheMemoryMode cacheMemoryMode;
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
@@ -115,7 +126,7 @@ public class GridCacheTtlManagerEvictionTest extends GridCommonAbstractTest {
         cacheMode = mode;
         cacheMemoryMode = memoryMode;
 
-        final IgniteKernal g = (IgniteKernal)startGrid(0);
+        final IgniteKernal g = (IgniteKernal) startGrid(0);
 
         try {
             final IgniteCache<Object, Object> cache = g.cache(null);
@@ -129,6 +140,8 @@ public class GridCacheTtlManagerEvictionTest extends GridCommonAbstractTest {
                 cache.put(key, value);
             }
 
+            Thread.sleep(100);
+
 //            cctx.ttl().printMemoryStats();
 
             final String firstKey = "Some test entry key#0";
@@ -138,21 +151,17 @@ public class GridCacheTtlManagerEvictionTest extends GridCommonAbstractTest {
                 assertTrue("last key should NOT be evicted", cache.containsKey(lastKey));
 
                 assertEquals(ENTRIES_COUNT, cctx.ttl().pendingSize());
-            }
-            else {
+            } else {
                 assertFalse("first key should be evicted", cache.containsKey(firstKey));
 
                 assertTrue("last key should NOT be evicted", cache.containsKey(lastKey));
 
-                assertEquals("Ttl Manager should NOT track evicted entries",1000, cctx.ttl().pendingSize());
+                assertEquals("Ttl Manager should NOT track evicted entries", 1000, cctx.ttl().pendingSize());
             }
 
 //            cctx.ttl().printMemoryStats();
-        }
-        finally {
-            {
-                Ignition.stopAll(true);
-            }
+        } finally {
+            Ignition.stopAll(true);
         }
     }
 }
