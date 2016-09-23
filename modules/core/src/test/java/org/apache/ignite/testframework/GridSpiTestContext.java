@@ -333,10 +333,10 @@ public class GridSpiTestContext implements IgniteSpiContext {
 
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
-    @Override public void addUserMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p) {
+    @Override public void addLocalMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p) {
         try {
             addMessageListener(TOPIC_COMM_USER,
-                new GridUserMessageListener(topic, (IgniteBiPredicate<UUID, Object>)p));
+                new GridLocalMessageListener(topic, (IgniteBiPredicate<UUID, Object>)p));
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -366,10 +366,10 @@ public class GridSpiTestContext implements IgniteSpiContext {
 
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
-    @Override public void removeUserMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p) {
+    @Override public void removeLocalMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p) {
         try {
             removeMessageListener(TOPIC_COMM_USER,
-                new GridUserMessageListener(topic, (IgniteBiPredicate<UUID, Object>)p));
+                new GridLocalMessageListener(topic, (IgniteBiPredicate<UUID, Object>)p));
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -640,7 +640,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     /**
      * This class represents a message listener wrapper that knows about peer deployment.
      */
-    private class GridUserMessageListener implements GridMessageListener {
+    private class GridLocalMessageListener implements GridMessageListener {
         /** Predicate listeners. */
         private final IgniteBiPredicate<UUID, Object> predLsnr;
 
@@ -652,7 +652,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
          * @param predLsnr Predicate listener.
          * @throws IgniteCheckedException If failed to inject resources to predicates.
          */
-        GridUserMessageListener(@Nullable Object topic, @Nullable IgniteBiPredicate<UUID, Object> predLsnr)
+        GridLocalMessageListener(@Nullable Object topic, @Nullable IgniteBiPredicate<UUID, Object> predLsnr)
             throws IgniteCheckedException {
             this.topic = topic;
             this.predLsnr = predLsnr;
@@ -679,7 +679,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            GridUserMessageListener l = (GridUserMessageListener)o;
+            GridLocalMessageListener l = (GridLocalMessageListener)o;
 
             return F.eq(predLsnr, l.predLsnr) && F.eq(topic, l.topic);
         }
@@ -695,7 +695,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(GridUserMessageListener.class, this);
+            return S.toString(GridLocalMessageListener.class, this);
         }
     }
 }

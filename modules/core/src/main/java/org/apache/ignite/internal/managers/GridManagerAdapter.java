@@ -398,7 +398,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                     }
 
                     @SuppressWarnings("deprecation")
-                    @Override public void addUserMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p) {
+                    @Override public void addLocalMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p) {
                         A.notNull(topic, "topic");
                         A.notNull(p, "p");
 
@@ -406,7 +406,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                     }
 
                     @SuppressWarnings("deprecation")
-                    @Override public void removeUserMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p) {
+                    @Override public void removeLocalMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p) {
                         A.notNull(topic, "topic");
                         A.notNull(topic, "p");
 

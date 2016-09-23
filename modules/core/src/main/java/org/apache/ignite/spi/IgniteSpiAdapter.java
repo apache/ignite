@@ -760,7 +760,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         }
 
         /** {@inheritDoc} */
-        @Override public void addUserMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p) {
+        @Override public void addLocalMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p) {
             /* No-op. */
         }
 
@@ -855,7 +855,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         }
 
         /** {@inheritDoc} */
-        @Override public void removeUserMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p) {
+        @Override public void removeLocalMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p) {
              /* No-op. */
         }
 

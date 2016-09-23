@@ -123,7 +123,7 @@ public interface IgniteSpiContext {
      * @param topic Topic to subscribe to.
      * @param p Message predicate.
      */
-    public void addUserMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p);
+    public void addLocalMessageListener(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p);
 
     /**
      * Removes a previously registered user message listener.
@@ -131,7 +131,7 @@ public interface IgniteSpiContext {
      * @param topic Topic to unsubscribe from.
      * @param p Message predicate.
      */
-    public void removeUserMessageListener(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p);
+    public void removeLocalMessageListener(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p);
 
     /**
      * Register a message listener to receive messages sent by remote nodes. The underlying
@@ -142,6 +142,8 @@ public interface IgniteSpiContext {
      *
      * @param lsnr Message listener to register.
      * @param topic Topic to register listener for.
+     *
+     * @deprecated Use {@link #addLocalMessageListener(Object, IgniteBiPredicate)} instead.
      */
     public void addMessageListener(GridMessageListener lsnr, String topic);
 
@@ -152,6 +154,8 @@ public interface IgniteSpiContext {
      * @param topic Topic to unregister listener for.
      * @return {@code true} of message listener was removed, {@code false} if it was not
      *      previously registered.
+     *
+     * @deprecated Use {@link #removeLocalMessageListener(Object, IgniteBiPredicate)} instead.
      */
     public boolean removeMessageListener(GridMessageListener lsnr, String topic);
 
