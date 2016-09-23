@@ -68,7 +68,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
         TcpCommunicationSpi commSpi = ((TcpCommunicationSpi)cfg.getCommunicationSpi());
 
         commSpi.setSharedMemoryPort(-1);
-        commSpi.setConnectionsPerNode(1);
+        commSpi.setConnectionsPerNode(connectionsPerNode());
 
         if (selectors > 0)
             commSpi.setSelectorsCount(selectors);
@@ -78,6 +78,13 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
         cfg.setClientMode(client);
 
         return cfg;
+    }
+
+    /**
+     * @return Connections per node.
+     */
+    protected int connectionsPerNode() {
+        return 1;
     }
 
     /** {@inheritDoc} */
@@ -117,8 +124,15 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
             long readMoveCnt1 = srv.readerMoveCount();
             long writeMoveCnt1 = srv.writerMoveCount();
 
+            int prevNodeIdx = -1;
+
             for (int iter = 0; iter < 10; iter++) {
                 int nodeIdx = rnd.nextInt(4);
+
+                while (prevNodeIdx == nodeIdx)
+                    nodeIdx = rnd.nextInt(4);
+
+                prevNodeIdx = nodeIdx;
 
                 log.info("Iteration [iter=" + iter + ", node=" + nodeIdx + ']');
 
@@ -126,14 +140,8 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
 
                 final IgniteCompute compute = client.compute(client.cluster().forNode(node));
 
-                GridTestUtils.runMultiThreaded(new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        for (int i = 0; i < 5_000; i++)
-                            compute.call(new DummyCallable(null));
-
-                        return null;
-                    }
-                }, 10, "send-thread");
+                for (int i = 0; i < 20_000; i++)
+                    compute.call(new DummyCallable(new byte[512]));
 
                 final long readMoveCnt = readMoveCnt1;
                 final long writeMoveCnt = writeMoveCnt1;
@@ -148,6 +156,11 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
 
                 long readMoveCnt2 = srv.readerMoveCount();
                 long writeMoveCnt2 = srv.writerMoveCount();
+
+                log.info("Move counts [rc1=" + readMoveCnt1 +
+                    ", wc1=" + writeMoveCnt1 +
+                    ", rc2=" + readMoveCnt2 +
+                    ", wc2=" + writeMoveCnt2 + ']');
 
                 assertTrue(readMoveCnt2 > readMoveCnt1);
                 assertTrue(writeMoveCnt2 > writeMoveCnt1);
@@ -317,7 +330,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            return new byte[ThreadLocalRandom.current().nextInt(1024)];
+            return data;
         }
     }
 

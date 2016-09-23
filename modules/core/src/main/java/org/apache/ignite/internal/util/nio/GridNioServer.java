@@ -633,7 +633,7 @@ public class GridNioServer<T> {
      *
      */
     public void dumpStats() {
-        U.warn(log, "Server statistics [readerSesBalanceCnt=" + readerMoveCount() +
+        U.warn(log, "NIO server statistics [readerSesBalanceCnt=" + readerMoveCount() +
             ", writerSesBalanceCnt=" + writerMoveCount() + ']');
 
         for (int i = 0; i < clientWorkers.size(); i++)
