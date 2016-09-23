@@ -117,7 +117,7 @@ public interface IgniteSpiContext {
     public void send(ClusterNode node, Serializable msg, String topic) throws IgniteSpiException;
 
     /**
-     * Register an user message listener to receive messages sent by remote nodes. The underlying
+     * Register an local message listener to receive messages sent by remote nodes. The underlying
      * communication mechanism is defined by {@link org.apache.ignite.spi.communication.CommunicationSpi} implementation used.
      *
      * @param topic Topic to subscribe to.
@@ -126,7 +126,7 @@ public interface IgniteSpiContext {
     public void addLocalMessageListener(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p);
 
     /**
-     * Removes a previously registered user message listener.
+     * Removes a previously registered local message listener.
      *
      * @param topic Topic to unsubscribe from.
      * @param p Message predicate.
