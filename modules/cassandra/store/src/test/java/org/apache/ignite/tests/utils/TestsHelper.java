@@ -328,6 +328,16 @@ public class TestsHelper {
     }
 
     /** */
+    public static Map<Long, Product> generateProductsMap() {
+        Map<Long, Product> map = new HashMap<>();
+
+        for (long i = 0; i < BULK_OPERATION_SIZE; i++)
+            map.put(i, generateRandomProduct(i));
+
+        return map;
+    }
+
+    /** */
     public static Collection<CacheEntryImpl<Long, ProductOrder>> generateOrderEntries() {
         Collection<CacheEntryImpl<Long, ProductOrder>> entries = new LinkedList<>();
 
@@ -337,6 +347,18 @@ public class TestsHelper {
         }
 
         return entries;
+    }
+
+    /** */
+    public static Map<Long, ProductOrder> generateOrdersMap() {
+        Map<Long, ProductOrder> map = new HashMap<>();
+
+        for (long i = 0; i < BULK_OPERATION_SIZE; i++) {
+            ProductOrder order = generateRandomOrder(i);
+            map.put(order.getId(), order);
+        }
+
+        return map;
     }
 
     /** */
@@ -356,6 +378,30 @@ public class TestsHelper {
             for (long i = 0; i < ordersPerProductCount; i++) {
                 ProductOrder order = generateRandomOrder(entry.getKey());
                 orders.add(new CacheEntryImpl<>(order.getId(), order));
+            }
+
+            map.put(entry.getKey(), orders);
+        }
+
+        return map;
+    }
+
+    /** */
+    public static Map<Long, Map<Long, ProductOrder>> generateOrdersPerProductMap(Map<Long, Product> products) {
+        return generateOrdersPerProductMap(products, TRANSACTION_ORDERS_COUNT);
+    }
+
+    /** */
+    public static Map<Long, Map<Long, ProductOrder>> generateOrdersPerProductMap(Map<Long, Product> products,
+                                                                                 int ordersPerProductCount) {
+        Map<Long, Map<Long, ProductOrder>> map = new HashMap<>();
+
+        for (Map.Entry<Long, Product> entry : products.entrySet()) {
+            Map<Long, ProductOrder> orders = new HashMap<>();
+
+            for (long i = 0; i < ordersPerProductCount; i++) {
+                ProductOrder order = generateRandomOrder(entry.getKey());
+                orders.put(order.getId(), order);
             }
 
             map.put(entry.getKey(), orders);
@@ -399,7 +445,7 @@ public class TestsHelper {
     }
 
     /** */
-    private static ProductOrder generateRandomOrder(long productId) {
+    public static ProductOrder generateRandomOrder(long productId) {
         return generateRandomOrder(productId, RANDOM.nextInt(10000));
     }
 
@@ -500,6 +546,24 @@ public class TestsHelper {
     }
 
     /** */
+    public static <K> boolean checkProductMapsEqual(Map<K, Product> map1, Map<K, Product> map2) {
+        if (map1 == null || map2 == null || map1.size() != map2.size())
+            return false;
+
+        for (K key : map1.keySet()) {
+            Product product1 = map1.get(key);
+            Product product2 = map2.get(key);
+
+            boolean equals = product1 != null && product2 != null && product1.equals(product2);
+
+            if (!equals)
+                return false;
+        }
+
+        return true;
+    }
+
+    /** */
     public static <K> boolean checkOrderCollectionsEqual(Map<K, ProductOrder> map, Collection<CacheEntryImpl<K, ProductOrder>> col) {
         if (map == null || col == null || map.size() != col.size())
             return false;
@@ -507,6 +571,24 @@ public class TestsHelper {
         for (CacheEntryImpl<K, ProductOrder> entry : col)
             if (!entry.getValue().equals(map.get(entry.getKey())))
                 return false;
+
+        return true;
+    }
+
+    /** */
+    public static <K> boolean checkOrderMapsEqual(Map<K, ProductOrder> map1, Map<K, ProductOrder> map2) {
+        if (map1 == null || map2 == null || map1.size() != map2.size())
+            return false;
+
+        for (K key : map1.keySet()) {
+            ProductOrder order1 = map1.get(key);
+            ProductOrder order2 = map2.get(key);
+
+            boolean equals = order1 != null && order2 != null && order1.equals(order2);
+
+            if (!equals)
+                return false;
+        }
 
         return true;
     }
@@ -536,6 +618,8 @@ public class TestsHelper {
         long id = productId < 1000 ?
                 (((productId + 1) * (productId + 1) * 1000) / 2) * 10 :
                 (productId / 20) * (productId / 20);
+
+        id = id == 0 ? 24 : id;
 
         float price = Long.parseLong(Long.toString(id).replace("0", ""));
 

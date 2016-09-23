@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.store.CacheStore;
@@ -28,6 +29,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.tests.pojos.Person;
 import org.apache.ignite.tests.pojos.PersonId;
+import org.apache.ignite.tests.pojos.Product;
+import org.apache.ignite.tests.pojos.ProductOrder;
 import org.apache.ignite.tests.utils.CacheStoreHelper;
 import org.apache.ignite.tests.utils.CassandraHelper;
 import org.apache.ignite.tests.utils.TestsHelper;
@@ -244,12 +247,19 @@ public class IgnitePersistentStoreTest {
 
         Map<Long, Person> personMap1 = TestsHelper.generateLongsPersonsMap();
         Map<PersonId, Person> personMap2 = TestsHelper.generatePersonIdsPersonsMap();
+        Map<Long, Product> productsMap = TestsHelper.generateProductsMap();
+        Map<Long, ProductOrder> ordersMap = TestsHelper.generateOrdersMap();
+
+        Product product = TestsHelper.generateRandomProduct(-1L);
+        ProductOrder order = TestsHelper.generateRandomOrder(-1L);
 
         try (Ignite ignite = Ignition.start("org/apache/ignite/tests/persistence/pojo/ignite-config.xml")) {
             IgniteCache<Long, Person> personCache1 = ignite.getOrCreateCache(new CacheConfiguration<Long, Person>("cache1"));
             IgniteCache<PersonId, Person> personCache2 = ignite.getOrCreateCache(new CacheConfiguration<PersonId, Person>("cache2"));
             IgniteCache<PersonId, Person> personCache3 = ignite.getOrCreateCache(new CacheConfiguration<PersonId, Person>("cache3"));
             IgniteCache<PersonId, Person> personCache4 = ignite.getOrCreateCache(new CacheConfiguration<PersonId, Person>("cache4"));
+            IgniteCache<Long, Product> productCache = ignite.getOrCreateCache(new CacheConfiguration<Long, Product>("product"));
+            IgniteCache<Long, ProductOrder> orderCache = ignite.getOrCreateCache(new CacheConfiguration<Long, ProductOrder>("order"));
 
             LOGGER.info("Running single operation write tests");
 
@@ -262,6 +272,9 @@ public class IgnitePersistentStoreTest {
             personCache3.put(id, TestsHelper.generateRandomPerson(id.getPersonNumber()));
             personCache4.put(id, TestsHelper.generateRandomPerson(id.getPersonNumber()));
 
+            productCache.put(product.getId(), product);
+            orderCache.put(order.getId(), order);
+
             LOGGER.info("Single operation write tests passed");
 
             LOGGER.info("Running bulk operation write tests");
@@ -269,6 +282,8 @@ public class IgnitePersistentStoreTest {
             personCache2.putAll(personMap2);
             personCache3.putAll(personMap2);
             personCache4.putAll(personMap2);
+            productCache.putAll(productsMap);
+            orderCache.putAll(ordersMap);
             LOGGER.info("Bulk operation write tests passed");
         }
 
@@ -283,6 +298,8 @@ public class IgnitePersistentStoreTest {
             IgniteCache<PersonId, Person> personCache2 = ignite.getOrCreateCache(new CacheConfiguration<PersonId, Person>("cache2"));
             IgniteCache<PersonId, Person> personCache3 = ignite.getOrCreateCache(new CacheConfiguration<PersonId, Person>("cache3"));
             IgniteCache<PersonId, Person> personCache4 = ignite.getOrCreateCache(new CacheConfiguration<PersonId, Person>("cache4"));
+            IgniteCache<Long, Product> productCache = ignite.getOrCreateCache(new CacheConfiguration<Long, Product>("product"));
+            IgniteCache<Long, ProductOrder> orderCache = ignite.getOrCreateCache(new CacheConfiguration<Long, ProductOrder>("order"));
 
             LOGGER.info("Running single operation read tests");
             Person person = personCache1.get(1L);
@@ -302,6 +319,14 @@ public class IgnitePersistentStoreTest {
             person = personCache4.get(id);
             if (!person.equals(personMap2.get(id)))
                 throw new RuntimeException("Person value was incorrectly deserialized from Cassandra");
+
+            Product product1 = productCache.get(product.getId());
+            if (!product.equals(product1))
+                throw new RuntimeException("Product value was incorrectly deserialized from Cassandra");
+
+            ProductOrder order1 = orderCache.get(order.getId());
+            if (!order.equals(order1))
+                throw new RuntimeException("Order value was incorrectly deserialized from Cassandra");
 
             LOGGER.info("Single operation read tests passed");
 
@@ -323,6 +348,14 @@ public class IgnitePersistentStoreTest {
             if (!TestsHelper.checkPersonMapsEqual(persons4, personMap2, false))
                 throw new RuntimeException("Person values batch was incorrectly deserialized from Cassandra");
 
+            Map<Long, Product> productsMap1 = productCache.getAll(productsMap.keySet());
+            if (!TestsHelper.checkProductMapsEqual(productsMap, productsMap1))
+                throw new RuntimeException("Product values batch was incorrectly deserialized from Cassandra");
+
+            Map<Long, ProductOrder> ordersMap1 = orderCache.getAll(ordersMap.keySet());
+            if (!TestsHelper.checkOrderMapsEqual(ordersMap, ordersMap1))
+                throw new RuntimeException("Order values batch was incorrectly deserialized from Cassandra");
+
             LOGGER.info("Bulk operation read tests passed");
 
             LOGGER.info("POJO strategy read tests passed");
@@ -340,6 +373,12 @@ public class IgnitePersistentStoreTest {
 
             personCache4.remove(id);
             personCache4.removeAll(personMap2.keySet());
+
+            productCache.remove(product.getId());
+            productCache.removeAll(productsMap.keySet());
+
+            orderCache.remove(order.getId());
+            orderCache.removeAll(ordersMap.keySet());
 
             LOGGER.info("POJO strategy delete tests passed");
         }
