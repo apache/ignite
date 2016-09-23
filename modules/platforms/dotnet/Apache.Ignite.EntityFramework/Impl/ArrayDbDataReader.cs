@@ -101,7 +101,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         /** <inheritDoc /> */
         public override int RecordsAffected
         {
-            get { return 0; }
+            get { return -1; }
         }
 
         /** <inheritDoc /> */
