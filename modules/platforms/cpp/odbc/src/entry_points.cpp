@@ -218,6 +218,8 @@ SQLRETURN SQL_API SQLNativeSql(SQLHDBC      conn,
         outQueryBuffer, outQueryBufferLen, outQueryLen);
 }
 
+
+#if defined _WIN64 || !defined _WIN32
 SQLRETURN SQL_API SQLColAttribute(SQLHSTMT        stmt,
                                   SQLUSMALLINT    columnNum,
                                   SQLUSMALLINT    fieldId,
@@ -225,9 +227,18 @@ SQLRETURN SQL_API SQLColAttribute(SQLHSTMT        stmt,
                                   SQLSMALLINT     bufferLen,
                                   SQLSMALLINT*    strAttrLen,
                                   SQLLEN*         numericAttr)
+#else
+SQLRETURN SQL_API SQLColAttribute(SQLHSTMT       stmt,
+                                  SQLUSMALLINT   columnNum,
+                                  SQLUSMALLINT   fieldId,
+                                  SQLPOINTER     strAttr,
+                                  SQLSMALLINT    bufferLen,
+                                  SQLSMALLINT*   strAttrLen,
+                                  SQLPOINTER     numericAttr)
+#endif
 {
     return ignite::SQLColAttribute(stmt, columnNum, fieldId,
-        strAttr, bufferLen, strAttrLen, numericAttr);
+        strAttr, bufferLen, strAttrLen, (SQLLEN*)numericAttr);
 }
 
 SQLRETURN SQL_API SQLDescribeCol(SQLHSTMT       stmt,
