@@ -1,0 +1,83 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include ../../../../../../../app/helpers/jade/mixins.jade
+
+-var form = 'general'
+-var discoveryKind = 'ZooKeeper'
+-var required = 'backupItem.discovery.kind == "' + discoveryKind + '"'
+-var model = 'backupItem.discovery.ZooKeeper'
+-var modelRetryPolicyKind = model + '.retryPolicy.kind'
+
+div
+    .details-row
+        +java-class('Curator:', model + '.curator', '"curator"', 'true', 'false',
+            'The Curator framework in use<br/>\
+            By default generates curator of org.apache.curator. framework.imps.CuratorFrameworkImpl\
+            class with configured connect string, retry policy, and default session and connection timeouts')
+    .details-row
+        +text('Connect string:', model + '.zkConnectionString', '"' + discoveryKind + 'ConnectionString"', required, 'host:port[chroot][,host:port[chroot]]',
+            'When "IGNITE_ZK_CONNECTION_STRING" system property is not configured this property will be used')
+    .details-row
+        +dropdown('Retry policy:', model + '.retryPolicy.kind', '"retryPolicy"', 'true', 'Default',
+            '[\
+                {value: "ExponentialBackoff", label: "Exponential backoff"},\
+                {value: "BoundedExponentialBackoff", label: "Bounded exponential backoff"},\
+                {value: "UntilElapsed", label: "Until elapsed"},\
+                {value: "NTimes", label: "Max number of times"},\
+                {value: "OneTime", label: "Only once"},\
+                {value: "Forever", label: "Always allow retry"},\
+                {value: "Custom", label: "Custom"},\
+                {value: undefined, label: "Default"}\
+            ]',
+            'Available retry policies:\
+            <ul>\
+                <li>Exponential backoff - retries a set number of times with increasing sleep time between retries</li>\
+                <li>Bounded exponential backoff - retries a set number of times with an increasing (up to a maximum bound) sleep time between retries</li>\
+                <li>Until elapsed - retries until a given amount of time elapses</li>\
+                <li>Max number of times - retries a max number of times</li>\
+                <li>Only once - retries only once</li>\
+                <li>Always allow retry - retries infinitely</li>\
+                <li>Custom - custom retry policy implementation</li>\
+                <li>Default - exponential backoff retry policy with configured base sleep time equal to 1000ms and max retry count equal to 10</li>\
+            </ul>')
+    .details-row(ng-show='#{model}.retryPolicy.kind')
+        .panel-details
+                div(ng-show='#{modelRetryPolicyKind} === "ExponentialBackoff"')
+                    include ./zookeeper/retrypolicy/exponential-backoff.jade
+                div(ng-show='#{modelRetryPolicyKind} === "BoundedExponentialBackoff"')
+                    include ./zookeeper/retrypolicy/bounded-exponential-backoff.jade
+                div(ng-show='#{modelRetryPolicyKind} === "UntilElapsed"')
+                    include ./zookeeper/retrypolicy/until-elapsed.jade
+                div(ng-show='#{modelRetryPolicyKind} === "NTimes"')
+                    include ./zookeeper/retrypolicy/n-times.jade
+                div(ng-show='#{modelRetryPolicyKind} === "OneTime"')
+                    include ./zookeeper/retrypolicy/one-time.jade
+                div(ng-show='#{modelRetryPolicyKind} === "Forever"')
+                    include ./zookeeper/retrypolicy/forever.jade
+                div(ng-show='#{modelRetryPolicyKind} === "Custom"')
+                    include ./zookeeper/retrypolicy/custom.jade
+    .details-row
+        +text('Base path:', model + '.basePath', '"basePath"', 'false', '/services', 'Base path for service registration')
+    .details-row
+        +text('Service name:', model + '.serviceName', '"serviceName"', 'false', 'ignite',
+            'Service name to use, as defined by Curator&#39;s ServiceDiscovery recipe<br/>\
+            In physical ZooKeeper terms, it represents the node under basePath, under which services will be registered')
+    .details-row
+        +checkbox('Allow duplicate registrations', model + '.allowDuplicateRegistrations', '"allowDuplicateRegistrations"',
+            'Whether to register each node only once, or if duplicate registrations are allowed<br/>\
+            Nodes will attempt to register themselves, plus those they know about<br/>\
+            By default, duplicate registrations are not allowed, but you might want to set this property to <b>true</b> if you have multiple network interfaces or if you are facing troubles')

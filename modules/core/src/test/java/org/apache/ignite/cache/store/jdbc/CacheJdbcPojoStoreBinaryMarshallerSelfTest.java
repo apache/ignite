@@ -21,7 +21,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 
 /**
- * Class for {@code PojoCacheStore} tests.
+ * Test for {@link CacheJdbcPojoStore} with binary marshaller.
  */
 public class CacheJdbcPojoStoreBinaryMarshallerSelfTest extends CacheJdbcPojoStoreAbstractSelfTest {
     /** {@inheritDoc} */
@@ -35,7 +35,7 @@ public class CacheJdbcPojoStoreBinaryMarshallerSelfTest extends CacheJdbcPojoSto
     public void testLoadCacheNoKeyClasses() throws Exception {
         startTestGrid(false, true, false, false);
 
-        checkCacheContent();
+        checkCacheLoad();
     }
 
     /**
@@ -44,7 +44,7 @@ public class CacheJdbcPojoStoreBinaryMarshallerSelfTest extends CacheJdbcPojoSto
     public void testLoadCacheNoKeyClassesTx() throws Exception {
         startTestGrid(false, true, false, true);
 
-        checkCacheContent();
+        checkCacheLoad();
     }
 
     /**
@@ -53,7 +53,7 @@ public class CacheJdbcPojoStoreBinaryMarshallerSelfTest extends CacheJdbcPojoSto
     public void testLoadCacheNoValueClasses() throws Exception {
         startTestGrid(false, false, true, false);
 
-        checkCacheContent();
+        checkCacheLoad();
     }
 
     /**
@@ -62,7 +62,7 @@ public class CacheJdbcPojoStoreBinaryMarshallerSelfTest extends CacheJdbcPojoSto
     public void testLoadCacheNoValueClassesTx() throws Exception {
         startTestGrid(false, false, true, true);
 
-        checkCacheContent();
+        checkCacheLoad();
     }
 
     /**
@@ -71,7 +71,7 @@ public class CacheJdbcPojoStoreBinaryMarshallerSelfTest extends CacheJdbcPojoSto
     public void testLoadCacheNoKeyAndValueClasses() throws Exception {
         startTestGrid(false, true, true, false);
 
-        checkCacheContent();
+        checkCacheLoad();
     }
 
     /**
@@ -80,6 +80,6 @@ public class CacheJdbcPojoStoreBinaryMarshallerSelfTest extends CacheJdbcPojoSto
     public void testLoadCacheNoKeyAndValueClassesTx() throws Exception {
         startTestGrid(false, true, true, true);
 
-        checkCacheContent();
+        checkCacheLoad();
     }
 }

@@ -76,12 +76,15 @@ import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileUnlockProcess
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdatePropertiesProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdateTimesProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformJavaObjectFactoryProxy;
+import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionData;
+import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionLockResult;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -251,6 +254,8 @@ public class BinaryContext {
         assert metaHnd != null;
         assert igniteCfg != null;
 
+        MarshallerUtils.setNodeName(optmMarsh, igniteCfg.getGridName());
+
         this.metaHnd = metaHnd;
         this.igniteCfg = igniteCfg;
         this.log = log;
@@ -317,6 +322,9 @@ public class BinaryContext {
         registerPredefinedType(BinaryMetadataKey.class, 0);
         registerPredefinedType(BinaryMetadata.class, 0);
         registerPredefinedType(BinaryEnumObjectImpl.class, 0);
+
+        registerPredefinedType(PlatformDotNetSessionData.class, 0);
+        registerPredefinedType(PlatformDotNetSessionLockResult.class, 0);
 
         // IDs range [200..1000] is used by Ignite internal APIs.
     }

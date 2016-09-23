@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsFile;
+import org.apache.ignite.igfs.IgfsInputStream;
 import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathSummary;
@@ -35,7 +36,6 @@ import org.apache.ignite.igfs.IgfsUserContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.processors.igfs.IgfsHandshakeResponse;
-import org.apache.ignite.internal.processors.igfs.IgfsInputStreamAdapter;
 import org.apache.ignite.internal.processors.igfs.IgfsStatus;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -316,9 +316,9 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
         try {
             return IgfsUserContext.doAs(user, new IgniteOutClosure<HadoopIgfsStreamDelegate>() {
                 @Override public HadoopIgfsStreamDelegate apply() {
-                    IgfsInputStreamAdapter stream = igfs.open(path, bufSize);
+                    IgfsInputStream stream = igfs.open(path, bufSize);
 
-                    return new HadoopIgfsStreamDelegate(HadoopIgfsInProc.this, stream, stream.fileInfo().length());
+                    return new HadoopIgfsStreamDelegate(HadoopIgfsInProc.this, stream, stream.length());
                 }
             });
         }
@@ -336,9 +336,9 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
         try {
             return IgfsUserContext.doAs(user, new IgniteOutClosure<HadoopIgfsStreamDelegate>() {
                 @Override public HadoopIgfsStreamDelegate apply() {
-                    IgfsInputStreamAdapter stream = igfs.open(path, bufSize, seqReadsBeforePrefetch);
+                    IgfsInputStream stream = igfs.open(path, bufSize, seqReadsBeforePrefetch);
 
-                    return new HadoopIgfsStreamDelegate(HadoopIgfsInProc.this, stream, stream.fileInfo().length());
+                    return new HadoopIgfsStreamDelegate(HadoopIgfsInProc.this, stream, stream.length());
                 }
             });
         }
@@ -394,7 +394,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<byte[]> readData(HadoopIgfsStreamDelegate delegate, long pos, int len,
         @Nullable byte[] outBuf, int outOff, int outLen) {
-        IgfsInputStreamAdapter stream = delegate.target();
+        IgfsInputStream stream = delegate.target();
 
         try {
             byte[] res = null;

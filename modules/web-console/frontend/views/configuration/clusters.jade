@@ -1,0 +1,66 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include ../../app/helpers/jade/mixins.jade
+
+.docs-header
+    h1 Configure Ignite Clusters
+.docs-body(ng-controller='clustersController')
+    ignite-information
+        ul
+            li Configure #[a(href='https://apacheignite.readme.io/docs/clustering' target='_blank') clusters] properties
+            li Associate clusters with caches and in-memory file systems
+    div(ignite-loading='loadingClustersScreen' ignite-loading-text='Loading clusters...' ignite-loading-position='top')
+        div(ng-show='ui.ready')
+            hr
+            +main-table('clusters', 'clusters', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.label}}', 'label')
+            .padding-top-dflt(bs-affix)
+                .panel-tip-container(data-placement='bottom' bs-tooltip='' data-title='Create new cluster')
+                    button.btn.btn-primary(id='new-item' ng-click='createItem()') Add cluster
+                +save-remove-clone-undo-buttons('cluster')
+                hr
+            .bs-affix-fix
+            div(bs-collapse='' data-allow-multiple='true' ng-model='ui.activePanels')
+                form.form-horizontal(name='ui.inputForm' novalidate ng-if='contentVisible()')
+                    .panel-group
+                        include ../../app/modules/states/configuration/clusters/general.jade
+
+                        +advanced-options-toggle-default
+
+                        div(ng-show='ui.expanded')
+                            
+                            include ../../app/modules/states/configuration/clusters/atomic.jade
+                            include ../../app/modules/states/configuration/clusters/binary.jade
+                            include ../../app/modules/states/configuration/clusters/cache-key-cfg.jade
+                            include ../../app/modules/states/configuration/clusters/collision.jade
+                            include ../../app/modules/states/configuration/clusters/communication.jade
+                            include ../../app/modules/states/configuration/clusters/connector.jade
+                            include ../../app/modules/states/configuration/clusters/deployment.jade
+                            include ../../app/modules/states/configuration/clusters/discovery.jade
+                            include ../../app/modules/states/configuration/clusters/events.jade
+                            include ../../app/modules/states/configuration/clusters/failover.jade
+                            include ../../app/modules/states/configuration/clusters/igfs.jade
+                            include ../../app/modules/states/configuration/clusters/logger.jade
+                            include ../../app/modules/states/configuration/clusters/marshaller.jade
+                            include ../../app/modules/states/configuration/clusters/metrics.jade
+                            include ../../app/modules/states/configuration/clusters/ssl.jade
+                            include ../../app/modules/states/configuration/clusters/swap.jade
+                            include ../../app/modules/states/configuration/clusters/thread.jade
+                            include ../../app/modules/states/configuration/clusters/time.jade
+                            include ../../app/modules/states/configuration/clusters/transactions.jade
+                            include ../../app/modules/states/configuration/clusters/attributes.jade
+
+                            +advanced-options-toggle-default
