@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.EntityFramework.Impl
 {
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Data;
     using System.Data.Common;
@@ -31,6 +32,10 @@ namespace Apache.Ignite.EntityFramework.Impl
         /** */
         private readonly DbCache _cache;
 
+        /** */
+        private readonly ConcurrentDictionary<DbTransaction, List<EntitySetBase>> _entitySets 
+            = new ConcurrentDictionary<DbTransaction, List<EntitySetBase>>();
+
         /// <summary>
         /// Initializes a new instance of the <see cref="DbTransactionInterceptor"/> class.
         /// </summary>
@@ -42,6 +47,7 @@ namespace Apache.Ignite.EntityFramework.Impl
 
         public void InvalidateCache(ICollection<EntitySetBase> entitySets, DbTransaction transaction)
         {
+
             if (transaction == null)
             {
                 // Invalidate immediately.
@@ -50,8 +56,9 @@ namespace Apache.Ignite.EntityFramework.Impl
             else
             {
                 // Postpone until commit.
-                // TODO:
-                
+                var sets = _entitySets.GetOrAdd(transaction, _ => new List<EntitySetBase>());
+
+                sets.AddRange(entitySets);
             }
         }
 
@@ -82,8 +89,9 @@ namespace Apache.Ignite.EntityFramework.Impl
 
         public void Committed(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
         {
-            // TODO: This is called on SaveChanges, this is where we have to invalidate cache! 
-            // EFCache implementation seems to be correct.
+            List<EntitySetBase> entitySets;
+            if (_entitySets.TryGetValue(transaction, out entitySets))
+                _cache.InvalidateSets(entitySets);
         }
 
         public void Disposing(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
@@ -93,7 +101,8 @@ namespace Apache.Ignite.EntityFramework.Impl
 
         public void Disposed(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
         {
-            // No-op
+            List<EntitySetBase> val;
+            _entitySets.TryRemove(transaction, out val);
         }
 
         public void RollingBack(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
