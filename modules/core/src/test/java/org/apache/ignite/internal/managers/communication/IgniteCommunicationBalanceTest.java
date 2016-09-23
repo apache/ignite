@@ -37,6 +37,7 @@ import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -104,7 +105,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
             for (int i = 0; i < 4; i++) {
                 ClusterNode node = client.cluster().node(ignite(i).cluster().localNode().id());
 
-                client.compute(client.cluster().forNode(node)).run(new DummyRunnable(null));
+                client.compute(client.cluster().forNode(node)).call(new DummyCallable(null));
             }
 
             waitNioBalanceStop(Collections.singletonList(client), 10_000);
@@ -117,16 +118,22 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
             long writeMoveCnt1 = srv.writerMoveCount();
 
             for (int iter = 0; iter < 10; iter++) {
-                log.info("Iteration: " + iter);
-
                 int nodeIdx = rnd.nextInt(4);
+
+                log.info("Iteration [iter=" + iter + ", node=" + nodeIdx + ']');
 
                 ClusterNode node = client.cluster().node(ignite(nodeIdx).cluster().localNode().id());
 
-                IgniteCompute compute = client.compute(client.cluster().forNode(node));
+                final IgniteCompute compute = client.compute(client.cluster().forNode(node));
 
-                for (int i = 0; i < 10_000; i++)
-                    compute.run(new DummyRunnable(null));
+                GridTestUtils.runMultiThreaded(new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        for (int i = 0; i < 5_000; i++)
+                            compute.call(new DummyCallable(null));
+
+                        return null;
+                    }
+                }, 10, "send-thread");
 
                 final long readMoveCnt = readMoveCnt1;
                 final long writeMoveCnt = writeMoveCnt1;
@@ -189,7 +196,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
 
                             IgniteCompute compute = node.compute(node.cluster().forNode(sntToNode));
 
-                            compute.run(new DummyRunnable(new byte[rnd.nextInt(1024)]));
+                            compute.call(new DummyCallable(new byte[rnd.nextInt(1024)]));
                         }
 
                         return null;
@@ -281,7 +288,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                     while (System.currentTimeMillis() < stopTime)
-                        ignite(rnd.nextInt(NODES)).compute().broadcast(new DummyRunnable(null));
+                        ignite(rnd.nextInt(NODES)).compute().broadcast(new DummyCallable(null));
 
                     return null;
                 }
@@ -295,20 +302,20 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class DummyRunnable implements IgniteRunnable {
+    private static class DummyCallable implements IgniteCallable<Object> {
         /** */
         private byte[] data;
 
         /**
          * @param data Data.
          */
-        public DummyRunnable(byte[] data) {
+        DummyCallable(byte[] data) {
             this.data = data;
         }
 
         /** {@inheritDoc} */
-        @Override public void run() {
-            // No-op.
+        @Override public Object call() throws Exception {
+            return new byte[ThreadLocalRandom.current().nextInt(1024)];
         }
     }
 
@@ -350,7 +357,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
 
             if (ses != null) {
                 System.out.println("[" + Thread.currentThread().getName() + "] Move session " +
-                    "[w1=" + w1 + ", w2=" + w2 + ", ses=" + ses + ']');
+                    "[w1=" + w1 + ", w2=" + w2 + ", sesHash=" + System.identityHashCode(ses) + ", ses=" + ses + ']');
 
                 srv.moveSession(ses, w1, w2);
             }

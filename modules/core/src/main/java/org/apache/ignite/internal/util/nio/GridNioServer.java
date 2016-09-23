@@ -633,6 +633,9 @@ public class GridNioServer<T> {
      *
      */
     public void dumpStats() {
+        U.warn(log, "Server statistics [readerSesBalanceCnt=" + readerMoveCount() +
+            ", writerSesBalanceCnt=" + writerMoveCount() + ']');
+
         for (int i = 0; i < clientWorkers.size(); i++)
             clientWorkers.get(i).offer(new NioOperationFuture<Void>(null, NioOperation.DUMP_STATS));
     }
@@ -987,7 +990,6 @@ public class GridNioServer<T> {
                 metricsLsnr.onBytesReceived(cnt);
 
             ses.bytesReceived(cnt);
-            ses.onBytesRead(cnt, readBuf.capacity());
             onRead(cnt);
 
             readBuf.flip();
@@ -1303,7 +1305,6 @@ public class GridNioServer<T> {
                     metricsLsnr.onBytesSent(cnt);
 
                 ses.bytesSent(cnt);
-                ses.onBytesWritten(cnt, buf.capacity());
                 onWrite(cnt);
             }
             else {
@@ -1527,6 +1528,8 @@ public class GridNioServer<T> {
                                         ses);
 
                                     ses.key(key);
+
+                                    f.onDone(true);
                                 }
                                 else {
                                     assert f.movedSocketChannel() == null : f;
@@ -1536,12 +1539,16 @@ public class GridNioServer<T> {
 
                                         SelectionKey key = ses.key();
 
+                                        assert key.channel() != null : key;
+
                                         f.movedSocketChannel((SocketChannel)key.channel());
 
                                         key.cancel();
 
                                         clientWorkers.get(f.toIndex()).offer(f);
                                     }
+                                    else
+                                        f.onDone(false);
                                 }
 
                                 break;
@@ -1656,8 +1663,6 @@ public class GridNioServer<T> {
                                         .append(", bytesSent=").append(ses.bytesSent())
                                         .append(", bytesSent0=").append(ses.bytesSent0())
                                         .append(", opQueueSize=").append(ses.writeQueueSize())
-                                        .append(", writeStats=").append(Arrays.toString(ses.writeStats()))
-                                        .append(", readStats=").append(Arrays.toString(ses.readStats()))
                                         .append(", msgWriter=").append(writer != null ? writer.toString() : "null")
                                         .append(", msgReader=").append(reader != null ? reader.toString() : "null");
 
@@ -2487,7 +2492,7 @@ public class GridNioServer<T> {
     /**
      *
      */
-    private static class SessionMoveFuture<R> extends NioOperationFuture<R> {
+    private static class SessionMoveFuture extends NioOperationFuture<Boolean> {
         /** */
         private final int toIdx;
 
@@ -2526,6 +2531,8 @@ public class GridNioServer<T> {
          * @param movedSockCh Moved session socket channel.
          */
         void movedSocketChannel(SocketChannel movedSockCh) {
+            assert movedSockCh != null;
+
             this.movedSockCh = movedSockCh;
         }
 
@@ -3073,7 +3080,7 @@ public class GridNioServer<T> {
 
                         srv.writerMoveCnt.incrementAndGet();
 
-                        clientWorkers.get(maxSentIdx).offer(new SessionMoveFuture(ses, minSentIdx));
+                        srv.moveSession(ses, maxSentIdx, minSentIdx);
                     }
                     else {
                         if (log.isDebugEnabled())
@@ -3115,7 +3122,7 @@ public class GridNioServer<T> {
 
                         srv.readerMoveCnt.incrementAndGet();
 
-                        clientWorkers.get(maxRcvdIdx).offer(new SessionMoveFuture(ses, minRcvdIdx));
+                        srv.moveSession(ses, maxRcvdIdx, minRcvdIdx);
                     }
                     else {
                         if (log.isDebugEnabled())
