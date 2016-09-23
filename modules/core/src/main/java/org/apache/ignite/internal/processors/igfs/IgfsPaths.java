@@ -77,15 +77,6 @@ public class IgfsPaths implements Externalizable {
         return pathModes;
     }
 
-    /**
-     * @return Payload.
-     *
-     * @throws IgniteCheckedException If failed to deserialize the payload.
-     */
-    @Nullable public Object getPayload(ClassLoader clsLdr) throws IgniteCheckedException {
-        return null;
-    }
-
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeEnum(out, dfltMode);
