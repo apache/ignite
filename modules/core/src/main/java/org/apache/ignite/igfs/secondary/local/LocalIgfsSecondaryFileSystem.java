@@ -115,40 +115,41 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         if (!recursive)
             return f.delete();
         else
-            return deleteRecursive(f);
+            return deleteRecursive(f, false);
     }
 
     /**
      * Delete directory recursively.
      *
      * @param f Directory.
+     * @param deleteIfExists Ignore delete errors if the file doesn't exist.
      * @return {@code true} if successful.
      */
-    private boolean deleteRecursive(File f) {
+    private boolean deleteRecursive(File f, boolean deleteIfExists) {
         BasicFileAttributes attrs;
 
         try {
             attrs = Files.readAttributes(f.toPath(), BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
         }
         catch (IOException ignore) {
-            return false;
+            return deleteIfExists && !f.exists();
         }
 
         if (!attrs.isDirectory() || attrs.isSymbolicLink())
-            return f.delete();
+            return f.delete() || (deleteIfExists && !f.exists());
 
         File[] entries = f.listFiles();
 
         if (entries != null) {
             for (File entry : entries) {
-                boolean res = deleteRecursive(entry);
+                boolean res = deleteRecursive(entry, true);
 
                 if (!res)
                     return false;
             }
         }
 
-        return f.delete();
+        return f.delete() || (deleteIfExists && !f.exists());
     }
 
     /** {@inheritDoc} */
