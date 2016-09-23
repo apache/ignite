@@ -422,7 +422,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsPaths proxyPaths() {
+    @Override public IgfsPaths paths() {
         return secondaryPaths;
     }
 
