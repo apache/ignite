@@ -636,9 +636,9 @@ public class CassandraDirectPersistenceTest {
 
         LOGGER.info("Bulk write operation tests passed");
 
-        LOGGER.info("POJO strategy write tests passed");
+        LOGGER.info("POJO strategy transaction write tests passed");
 
-        LOGGER.info("Running POJO strategy delete tests");
+        LOGGER.info("Running POJO strategy transaction delete tests");
 
         LOGGER.info("Running single delete tests");
 
@@ -713,6 +713,6 @@ public class CassandraDirectPersistenceTest {
 
         LOGGER.info("Bulk delete tests passed");
 
-        LOGGER.info("POJO strategy delete tests passed");
+        LOGGER.info("POJO strategy transaction delete tests passed");
     }
 }
