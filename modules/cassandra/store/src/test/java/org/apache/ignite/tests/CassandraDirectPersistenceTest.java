@@ -494,22 +494,12 @@ public class CassandraDirectPersistenceTest {
         products = (Map<Long, Product>)productStore.loadAll(productIds);
         orders = (Map<Long, ProductOrder>)orderStore.loadAll(orderIds);
 
-        if (products == null || products.isEmpty()) {
+        if (products == null || products.isEmpty() || orders == null || orders.isEmpty()) {
             throw new RuntimeException("Single write operation test failed. Transaction was committed, but " +
                     "no objects were persisted into Cassandra");
         }
 
-        if (orders == null || orders.isEmpty()) {
-            throw new RuntimeException("Single write operation test failed. Transaction was committed, but " +
-                    "no objects were persisted into Cassandra");
-        }
-
-        if (products.size() > 1) {
-            throw new RuntimeException("Single write operation test failed. There were committed more objects " +
-                    "than expected into Cassandra");
-        }
-
-        if (orders.size() > 1) {
+        if (products.size() > 1 || orders.size() > 1) {
             throw new RuntimeException("Single write operation test failed. There were committed more objects " +
                     "than expected into Cassandra");
         }
@@ -584,32 +574,17 @@ public class CassandraDirectPersistenceTest {
         products = (Map<Long, Product>)productStore.loadAll(productIds);
         orders = (Map<Long, ProductOrder>)orderStore.loadAll(orderIds);
 
-        if (products == null || products.isEmpty()) {
+        if (products == null || products.isEmpty() || orders == null || orders.isEmpty()) {
             throw new RuntimeException("Bulk write operation test failed. Transaction was committed, but " +
                     "no objects were persisted into Cassandra");
         }
 
-        if (orders == null || orders.isEmpty()) {
-            throw new RuntimeException("Bulk write operation test failed. Transaction was committed, but " +
-                    "no objects were persisted into Cassandra");
-        }
-
-        if (products.size() < productIds.size()) {
+        if (products.size() < productIds.size() || orders.size() < orderIds.size()) {
             throw new RuntimeException("Bulk write operation test failed. There were committed less objects " +
                     "than expected into Cassandra");
         }
 
-        if (orders.size() < orderIds.size()) {
-            throw new RuntimeException("Bulk write operation test failed. There were committed less objects " +
-                    "than expected into Cassandra");
-        }
-
-        if (products.size() > productIds.size()) {
-            throw new RuntimeException("Bulk write operation test failed. There were committed more objects " +
-                    "than expected into Cassandra");
-        }
-
-        if (orders.size() > orderIds.size()) {
+        if (products.size() > productIds.size() || orders.size() > orderIds.size()) {
             throw new RuntimeException("Bulk write operation test failed. There were committed more objects " +
                     "than expected into Cassandra");
         }
