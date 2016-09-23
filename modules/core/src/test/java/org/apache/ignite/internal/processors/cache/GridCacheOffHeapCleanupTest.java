@@ -24,10 +24,7 @@ import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.events.Event;
-import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
-import org.apache.ignite.internal.util.typedef.PE;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -36,10 +33,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
@@ -83,7 +78,7 @@ public class GridCacheOffHeapCleanupTest extends GridCommonAbstractTest {
 
         evictionPlc = evictionPlc0;
 
-        checkCleanupOffheapAfterCacheDestroy();;
+        checkCleanupOffheapAfterCacheDestroy();
     }
 
     /**
@@ -112,7 +107,6 @@ public class GridCacheOffHeapCleanupTest extends GridCommonAbstractTest {
         evictionPlc = null;
 
         checkCleanupOffheapAfterCacheDestroy();
-        checkCacheDestroyUnderLoad();
     }
 
     /**

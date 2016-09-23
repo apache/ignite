@@ -15,28 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.store.jdbc.dialect;
+package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collection;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 
 /**
- * A dialect compatible with the H2 database.
+ *
  */
-public class H2Dialect extends BasicJdbcDialect {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class CacheSwapUnswapGetTestSmallQueueSize extends CacheSwapUnswapGetTest {
     /** {@inheritDoc} */
-    @Override public boolean hasMerge() {
-        return true;
-    }
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-    /** {@inheritDoc} */
-    @Override public String mergeQuery(String fullTblName, Collection<String> keyCols, Collection<String> uniqCols) {
-        Collection<String> cols = F.concat(false, keyCols, uniqCols);
+        ((FileSwapSpaceSpi)cfg.getSwapSpaceSpi()).setMaxWriteQueueSize(2);
 
-        return String.format("MERGE INTO %s (%s) KEY (%s) VALUES(%s)", fullTblName, mkString(cols, ","),
-            mkString(keyCols, ","), repeat("?", cols.size(), "", ", ", ""));
+        return cfg;
     }
 }

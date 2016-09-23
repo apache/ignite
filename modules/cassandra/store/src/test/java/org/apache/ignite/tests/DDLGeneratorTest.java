@@ -25,19 +25,33 @@ import org.junit.Test;
  * DDLGenerator test.
  */
 public class DDLGeneratorTest {
+    private static final String URL1 = "org/apache/ignite/tests/persistence/primitive/persistence-settings-1.xml";
+    private static final String URL2 = "org/apache/ignite/tests/persistence/pojo/persistence-settings-3.xml";
+    private static final String URL3 = "org/apache/ignite/tests/persistence/pojo/persistence-settings-4.xml";
+
     @Test
     @SuppressWarnings("unchecked")
     /** */
     public void generatorTest() {
         ClassLoader clsLdr = DDLGeneratorTest.class.getClassLoader();
 
-        URL url1 = clsLdr.getResource("org/apache/ignite/tests/persistence/primitive/persistence-settings-1.xml");
-        String file1 = url1.getFile(); // TODO IGNITE-1371 Possible NPE
+        URL url1 = clsLdr.getResource(URL1);
+        if (url1 == null)
+            throw new IllegalStateException("Failed to find resource: " + URL1);
 
-        URL url2 = clsLdr.getResource("org/apache/ignite/tests/persistence/pojo/persistence-settings-3.xml");
-        String file2 = url2.getFile();  // TODO IGNITE-1371 Possible NPE
+        URL url2 = clsLdr.getResource(URL2);
+        if (url2 == null)
+            throw new IllegalStateException("Failed to find resource: " + URL2);
 
-        DDLGenerator.main(new String[]{file1, file2});
+        URL url3 = clsLdr.getResource(URL3);
+        if (url3 == null)
+            throw new IllegalStateException("Failed to find resource: " + URL3);
+
+        String file1 = url1.getFile();
+        String file2 = url2.getFile();
+        String file3 = url3.getFile();
+
+        DDLGenerator.main(new String[]{file1, file2, file3});
     }
 
 }

@@ -38,6 +38,13 @@ public interface BatchExecutionAssistant<R, V> {
     public boolean tableExistenceRequired();
 
     /**
+     * Cassandra table to use for an operation.
+     *
+     * @return Table name.
+     */
+    public String getTable();
+
+    /**
      * Returns unbind CLQ statement for to be executed inside batch operation.
      *
      * @return Unbind CQL statement.

@@ -46,7 +46,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
- * Class for {@code PojoCacheStore} tests.
+ * Class for {@link CacheJdbcPojoStore} tests.
  */
 public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
@@ -75,6 +75,13 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
 
     /** Flag indicating that classes for values available on class path or not. */
     protected static boolean noValClasses;
+
+    /**
+     * @return Flag indicating that all internal SQL queries should use escaped identifiers.
+     */
+    protected boolean sqlEscapeAll(){
+        return false;
+    }
 
     /**
      * @return Connection to test in-memory H2 database.
@@ -164,10 +171,13 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
         }
 
         storeTypes[0].setValueType("org.apache.ignite.cache.store.jdbc.model.Organization" + (noValClasses ? "1" : ""));
+
+        boolean escape = sqlEscapeAll();
+
         storeTypes[0].setValueFields(
-            new JdbcTypeField(Types.INTEGER, "Id", Integer.class, "id"),
-            new JdbcTypeField(Types.VARCHAR, "Name", String.class, "name"),
-            new JdbcTypeField(Types.VARCHAR, "City", String.class, "city"));
+            new JdbcTypeField(Types.INTEGER, escape ? "ID" : "Id", Integer.class, "id"),
+            new JdbcTypeField(Types.VARCHAR, escape ? "NAME" : "Name", String.class, "name"),
+            new JdbcTypeField(Types.VARCHAR, escape ? "CITY" : "City", String.class, "city"));
 
         storeTypes[1] = new JdbcType();
         storeTypes[1].setCacheName(CACHE_NAME);
@@ -210,6 +220,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
         storeFactory.setDialect(new H2Dialect());
         storeFactory.setTypes(storeTypes());
         storeFactory.setDataSourceFactory(new H2DataSourceFactory()); // H2 DataSource factory.
+        storeFactory.setSqlEscapeAll(sqlEscapeAll());
 
         cc.setCacheStoreFactory(storeFactory);
         cc.setReadThrough(true);
@@ -227,8 +238,6 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
      */
     protected void fillSampleDatabase(Connection conn) throws SQLException {
         info("Start to fill sample database...");
-
-        Random rnd = new Random();
 
         PreparedStatement orgStmt = conn.prepareStatement("INSERT INTO Organization(id, name, city) VALUES (?, ?, ?)");
 
@@ -248,6 +257,8 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
 
         PreparedStatement prnStmt = conn.prepareStatement(
             "INSERT INTO Person(id, org_id, birthday, name) VALUES (?, ?, ?, ?)");
+
+        Random rnd = new Random();
 
         for (int i = 0; i < PERSON_CNT; i++) {
             prnStmt.setInt(1, i);
@@ -366,7 +377,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
-    private void checkPut() throws Exception {
+    private void checkPutRemove() throws Exception {
         IgniteCache<Object, Person> c1 = grid().cache(CACHE_NAME);
 
         Connection conn = getConnection();
@@ -419,6 +430,13 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
 
             assertFalse("Unexpected more data in result set", rs.next());
 
+            // Test remove.
+            c1.remove(key);
+
+            rs = stmt.executeQuery();
+
+            assertFalse("Unexpected non-empty result set", rs.next());
+
             U.closeQuiet(rs);
         }
         finally {
@@ -429,37 +447,37 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testPutBuiltIn() throws Exception {
+    public void testPutRemoveBuiltIn() throws Exception {
         startTestGrid(true, false, false, false);
 
-        checkPut();
+        checkPutRemove();
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testPut() throws Exception {
+    public void testPutRemove() throws Exception {
         startTestGrid(false, false, false, false);
 
-        checkPut();
+        checkPutRemove();
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testPutTxBuiltIn() throws Exception {
+    public void testPutRemoveTxBuiltIn() throws Exception {
         startTestGrid(true, false, false, true);
 
-        checkPut();
+        checkPutRemove();
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testPutTx() throws Exception {
+    public void testPutRemoveTx() throws Exception {
         startTestGrid(false, false, false, true);
 
-        checkPut();
+        checkPutRemove();
     }
 
     /**
