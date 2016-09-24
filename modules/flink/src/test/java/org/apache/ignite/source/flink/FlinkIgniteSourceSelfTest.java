@@ -38,16 +38,14 @@ import java.util.Map;
  */
 @SuppressWarnings("unchecked")
 public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
-    /** Grid Name. */
-    private static final String GRID_NAME = "igniteServerNode";
-
     /** Cache name. */
     private static final String TEST_CACHE = "testCache";
 
+    /** Grid Name. */
+    private static final String GRID_NAME = "igniteServerNode";
+
     /** Ignite test configuration file. */
     private static final String GRID_CONF_FILE = "modules/flink/src/test/resources/example-ignite.xml";
-
-    private IgniteConfiguration cfg;
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
@@ -57,7 +55,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void beforeTest() throws Exception {
-        cfg = loadConfiguration(GRID_CONF_FILE);
+        IgniteConfiguration cfg = loadConfiguration(GRID_CONF_FILE);
 
         cfg.setClientMode(false);
 
@@ -119,14 +117,15 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
         env.getConfig().disableSysoutLogging();
         env.getConfig().registerTypeWithKryoSerializer(CacheEvent.class, CacheEventSerializer.class);
 
-        IgniteCache cache = ignite.cache(TEST_CACHE);
+        final IgniteSource igniteSrc = new IgniteSource(TEST_CACHE);
 
-        final IgniteSource igniteSrc = new IgniteSource(GRID_CONF_FILE, TEST_CACHE);
-
+        igniteSrc.setIgnite(ignite);
         igniteSrc.setEvtBatchSize(10);
         igniteSrc.setEvtBufTimeout(10);
 
         igniteSrc.start(filter, EventType.EVT_CACHE_OBJECT_PUT);
+
+        IgniteCache cache = ignite.getOrCreateCache(TEST_CACHE);
 
         DataStream<CacheEvent> stream = env.addSource(igniteSrc).setParallelism(parallelismCnt);
 

@@ -31,7 +31,7 @@
         http://www.springframework.org/schema/util/spring-util.xsd">
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <!-- Enable client mode. -->
-        <property name="clientMode" value="true"/>
+        <property name="clientMode" value="false"/>
 
         <!-- Cache accessed from IgniteSink. -->
         <property name="cacheConfiguration">

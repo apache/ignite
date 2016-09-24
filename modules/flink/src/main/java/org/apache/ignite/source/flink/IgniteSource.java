@@ -26,11 +26,11 @@ import java.util.concurrent.TimeUnit;
 import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,14 +68,21 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
     /** Local listener. */
     private TaskLocalListener locLsnr = new TaskLocalListener();
 
-    /** Ignite grid configuration file. */
-    private String igniteCfgFile;
-
-    /** Ignite grid configuration file. */
-    private Ignite ignite;
+    /** Ignite instance. */
+    @IgniteInstanceResource
+    private transient Ignite ignite;
 
     /** Cache name. */
     private String cacheName;
+
+    /**
+     * Sets Ignite instance.
+     *
+     * @param ignite Ignite instance.
+     */
+    public void setIgnite(Ignite ignite) {
+        this.ignite = ignite;
+    }
 
     /**
      * Sets Event Batch Size.
@@ -98,11 +105,9 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
     /**
      * Default IgniteSource constructor.
      *
-     * @param igniteCfgFile Ignite Configuration file.
      * @param cacheName Cache name.
      */
-    public IgniteSource(String igniteCfgFile, String cacheName) {
-        this.igniteCfgFile = igniteCfgFile;
+    public IgniteSource(String cacheName) {
         this.cacheName = cacheName;
     }
 
@@ -115,12 +120,9 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
      */
     @SuppressWarnings("unchecked")
     public void start(IgnitePredicate<CacheEvent> filter, int... cacheEvts) throws Exception {
-        A.notNull(igniteCfgFile, "Ignite config file");
         A.notNull(cacheName, "Cache name");
 
         this.stopped = false;
-
-        ignite = Ignition.start(igniteCfgFile);
 
         TaskRemoteFilter rmtLsnr = new TaskRemoteFilter(cacheName, filter);
 
@@ -146,13 +148,14 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
 
         stopped = true;
 
-        if (rmtLsnrId != null)
+        if (rmtLsnrId != null && ignite != null) {
             ignite.events(ignite.cluster().forCacheNodes(cacheName))
-                    .stopRemoteListen(rmtLsnrId);
+                .stopRemoteListen(rmtLsnrId);
 
-        rmtLsnrId = null;
+            rmtLsnrId = null;
 
-        ignite.cache(cacheName).close();
+            ignite.cache(cacheName).close();
+        }
     }
 
     /**
