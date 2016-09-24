@@ -17,16 +17,22 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import static org.apache.ignite.igfs.IgfsMode.PROXY;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 
 /**
- * Tests for PROXY mode.
+ * Tests for PRIMARY mode.
  */
-public class IgfsProxySelfTest extends IgfsAbstractSelfTest {
-    /**
-     * Constructor.
-     */
-    public IgfsProxySelfTest() {
-        super(PROXY);
+public class IgfsAtomicPrimarySelfTest extends IgfsPrimarySelfTest {
+    /** {@inheritDoc} */
+    @Override protected boolean fragmentizerEnabled() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void prepareCacheConfigurations(CacheConfiguration dataCacheCfg, CacheConfiguration metaCacheCfg) {
+        super.prepareCacheConfigurations(dataCacheCfg, metaCacheCfg);
+
+        dataCacheCfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
     }
 }

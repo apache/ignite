@@ -220,6 +220,14 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
+     * @return FragmentizerEnabled IGFS config flag.
+     */
+    protected boolean fragmentizerEnabled() {
+        return true;
+    }
+
+
+    /**
      * @return Relaxed consistency flag.
      */
     protected boolean initializeDefaultPathModes() {
@@ -378,6 +386,7 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setPrefetchBlocks(PREFETCH_BLOCKS);
         igfsCfg.setSequentialReadsBeforePrefetch(SEQ_READS_BEFORE_PREFETCH);
         igfsCfg.setRelaxedConsistency(relaxedConsistency());
+        igfsCfg.setFragmentizerEnabled(fragmentizerEnabled());
 
         igfsCfg.setInitializeDefaultPathModes(initializeDefaultPathModes());
 
@@ -713,7 +722,7 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
         throws Exception {
         checkNotExist(igfs, paths);
 
-        if (dual)
+        if (mode != PRIMARY)
             checkNotExist(igfsSecondary, paths);
     }
 
