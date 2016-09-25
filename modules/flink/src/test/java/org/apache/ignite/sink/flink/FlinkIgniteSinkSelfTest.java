@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
@@ -46,7 +47,8 @@ public class FlinkIgniteSinkSelfTest extends GridCommonAbstractTest {
     private static final long DFLT_STREAMING_EVENT = 10000;
 
     /** Ignite instance. */
-    private Ignite ignite;
+    @IgniteInstanceResource
+    private transient Ignite ignite;
 
     /** Ignite test configuration file. */
     private static final String GRID_CONF_FILE = "modules/flink/src/test/resources/example-ignite.xml";
