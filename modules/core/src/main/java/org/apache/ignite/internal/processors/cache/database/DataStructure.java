@@ -118,84 +118,105 @@ public abstract class DataStructure implements PageLockListener {
      */
     protected final Page page(long pageId) throws IgniteCheckedException {
         if (PageIdUtils.flag(pageId) == FLAG_IDX)
-            pageId = PageIdUtils.maskPartId(pageId);
+            pageId = PageIdUtils.effectivePageId(pageId);
 
         return pageMem.page(cacheId, pageId);
     }
 
     /**
+     * @param pageId Virtual page ID.
      * @param page Page.
      * @return Buffer.
      */
-    protected final ByteBuffer tryWriteLock(Page page) {
+    protected final ByteBuffer tryWriteLock(long pageId, Page page) {
+        onBeforeWriteLock(pageId, page);
+
         ByteBuffer buf = page.tryGetForWrite();
 
-        if (buf != null)
-            onWriteLock(page);
+        onWriteLock(page, buf);
 
         return buf;
     }
 
 
     /**
+     * @param pageId Virtual page ID.
      * @param page Page.
      * @return Buffer.
      */
-    protected final ByteBuffer writeLock(Page page) {
+    protected final ByteBuffer writeLock(long pageId, Page page) {
+        onBeforeWriteLock(pageId, page);
+
         ByteBuffer buf = page.getForWrite();
 
-        onWriteLock(page);
+        onWriteLock(page, buf);
 
         return buf;
     }
 
     /**
      * @param page Page.
+     * @param buf Buffer.
+     * @param dirty Dirty page.
      */
-    protected final void writeUnlock(Page page, boolean dirty) {
-        page.releaseWrite(dirty);
+    protected final void writeUnlock(Page page, ByteBuffer buf, boolean dirty) {
+        onWriteUnlock(page, buf);
 
-        onWriteUnlock(page);
+        page.releaseWrite(dirty);
     }
 
     /**
+     * @param pageId Virtual page ID.
      * @param page Page.
      * @return Buffer.
      */
-    protected final ByteBuffer readLock(Page page) {
+    protected final ByteBuffer readLock(long pageId, Page page) {
+        onBeforeReadLock(pageId, page);
+
         ByteBuffer buf = page.getForRead();
 
-        onReadLock(page);
+        onReadLock(page, buf);
 
         return buf;
     }
 
     /**
      * @param page Page.
+     * @param buf Buffer.
      */
-    protected final void readUnlock(Page page) {
+    protected final void readUnlock(Page page, ByteBuffer buf) {
+        onReadUnlock(page, buf);
+
         page.releaseRead();
-
-        onReadUnlock(page);
     }
 
     /** {@inheritDoc} */
-    @Override public void onWriteLock(Page page) {
+    @Override public void onBeforeWriteLock(long pageId, Page page) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void onWriteUnlock(Page page) {
+    @Override public void onWriteLock(Page page, ByteBuffer buf) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void onReadLock(Page page) {
+    @Override public void onWriteUnlock(Page page, ByteBuffer buf) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void onReadUnlock(Page page) {
+    @Override public void onBeforeReadLock(long pageId, Page page) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onReadLock(Page page, ByteBuffer buf) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onReadUnlock(Page page, ByteBuffer buf) {
         // No-op.
     }
 }

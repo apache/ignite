@@ -17,14 +17,18 @@
 
 package org.apache.ignite.internal.processors.database;
 
+import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseListImpl;
+
+import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.checkPageId;
 
 /**
  * Test with reuse list.
@@ -79,31 +83,44 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onReadLock(Page page) {
-            boolean ok = readLocks.get().add(page.id());
-
-            assert ok: page;
+        @Override public void onBeforeReadLock(long pageId, Page page) {
+            assertEquals(page.id(), PageIdUtils.effectivePageId(pageId));
         }
 
         /** {@inheritDoc} */
-        @Override public void onReadUnlock(Page page) {
-            boolean ok = readLocks.get().remove(page.id());
+        @Override public void onReadLock(Page page, ByteBuffer buf) {
+            checkPageId(page, buf);
 
-            assert ok: page;
+            assertTrue(readLocks.get().add(page.id()));
         }
 
         /** {@inheritDoc} */
-        @Override public void onWriteLock(Page page) {
-            boolean ok = writeLocks.get().add(page.id());
+        @Override public void onReadUnlock(Page page, ByteBuffer buf) {
+            checkPageId(page, buf);
 
-            assert ok: page;
+            assertTrue(readLocks.get().remove(page.id()));
         }
 
         /** {@inheritDoc} */
-        @Override public void onWriteUnlock(Page page) {
-            boolean ok = writeLocks.get().remove(page.id());
+        @Override public void onBeforeWriteLock(long pageId, Page page) {
+            assertEquals(page.id(), PageIdUtils.effectivePageId(pageId));
+        }
 
-            assert ok: page;
+        /** {@inheritDoc} */
+        @Override public void onWriteLock(Page page, ByteBuffer buf) {
+            if (buf == null)
+                return; // Failed to lock.
+
+            checkPageId(page, buf);
+
+            assertTrue(writeLocks.get().add(page.id()));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onWriteUnlock(Page page, ByteBuffer buf) {
+            checkPageId(page, buf);
+
+            assertTrue(writeLocks.get().remove(page.id()));
         }
 
         static boolean checkNoLocks() {

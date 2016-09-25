@@ -20,10 +20,12 @@ package org.apache.ignite.internal.processors.cache.database.tree.util;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import sun.nio.ch.DirectBuffer;
 
 import static java.lang.Boolean.FALSE;
@@ -82,19 +84,21 @@ public abstract class PageHandler<X, R> {
         X arg,
         int intArg
     ) throws IgniteCheckedException {
+        lockListener.onBeforeReadLock(pageId, page);
+
         ByteBuffer buf = page.getForRead();
 
         try {
-            lockListener.onReadLock(page);
+            lockListener.onReadLock(page, buf);
 
             PageIO io = PageIO.getPageIO(buf);
 
             return h.run(pageId, page, io, buf, arg, intArg);
         }
         finally {
-            page.releaseRead();
+            lockListener.onReadUnlock(page, buf);
 
-            lockListener.onReadUnlock(page);
+            page.releaseRead();
         }
     }
 
@@ -156,6 +160,8 @@ public abstract class PageHandler<X, R> {
         X arg,
         int intArg
     ) throws IgniteCheckedException {
+        lockListener.onBeforeWriteLock(pageId, page);
+
         R res;
 
         boolean ok = false;
@@ -165,7 +171,7 @@ public abstract class PageHandler<X, R> {
         assert buf != null;
 
         try {
-            lockListener.onWriteLock(page);
+            lockListener.onWriteLock(page, buf);
 
             if (init != null) // It is a new page and we have to initialize it.
                 doInitPage(pageId, page, buf, init, wal);
@@ -180,9 +186,9 @@ public abstract class PageHandler<X, R> {
             assert PageIO.getCrc(buf) == 0; //TODO GG-11480
 
             if (h.releaseAfterWrite(pageId, page, arg, intArg)) {
-                page.releaseWrite(ok);
+                lockListener.onWriteUnlock(page, buf);
 
-                lockListener.onWriteUnlock(page);
+                page.releaseWrite(ok);
             }
         }
 
@@ -214,6 +220,18 @@ public abstract class PageHandler<X, R> {
         if (isWalDeltaRecordNeeded(wal, page))
             wal.log(new InitNewPageRecord(page.fullId().cacheId(), page.id(),
                 init.getType(), init.getVersion(), pageId));
+    }
+
+    /**
+     * @param page Page.
+     * @param buf Buffer.
+     */
+    public static void checkPageId(Page page, ByteBuffer buf) {
+        long pageId = PageIO.getPageId(buf);
+
+        // Page ID must be 0L for newly allocated page, for reused page effective ID must remain the same.
+        if (pageId != 0L && page.id() != PageIdUtils.effectivePageId(pageId))
+            throw new IllegalStateException("Page ID: " + U.hexLong(pageId));
     }
 
     /**
