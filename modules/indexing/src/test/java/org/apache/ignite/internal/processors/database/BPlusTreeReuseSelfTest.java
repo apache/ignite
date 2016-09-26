@@ -22,13 +22,13 @@ import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
-import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseListImpl;
 
-import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.checkPageId;
+import static org.apache.ignite.internal.pagemem.PageIdUtils.effectivePageId;
 
 /**
  * Test with reuse list.
@@ -84,7 +84,7 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
 
         /** {@inheritDoc} */
         @Override public void onBeforeReadLock(long pageId, Page page) {
-            assertEquals(page.id(), PageIdUtils.effectivePageId(pageId));
+            assertEquals(page.id(), effectivePageId(pageId));
         }
 
         /** {@inheritDoc} */
@@ -103,7 +103,7 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
 
         /** {@inheritDoc} */
         @Override public void onBeforeWriteLock(long pageId, Page page) {
-            assertEquals(page.id(), PageIdUtils.effectivePageId(pageId));
+            assertEquals(page.id(), effectivePageId(pageId));
         }
 
         /** {@inheritDoc} */
@@ -118,7 +118,7 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
 
         /** {@inheritDoc} */
         @Override public void onWriteUnlock(Page page, ByteBuffer buf) {
-            checkPageId(page, buf);
+            assertEquals(effectivePageId(page.id()), effectivePageId(PageIO.getPageId(buf)));
 
             assertTrue(writeLocks.get().remove(page.id()));
         }

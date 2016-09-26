@@ -61,7 +61,6 @@ import org.jsr166.ConcurrentLinkedHashMap;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.effectivePageId;
 import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.rnd;
-import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.checkPageId;
 
 /**
  */
@@ -1091,6 +1090,18 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param page Page.
+     * @param buf Buffer.
+     */
+    public static void checkPageId(Page page, ByteBuffer buf) {
+        long pageId = PageIO.getPageId(buf);
+
+        // Page ID must be 0L for newly allocated page, for reused page effective ID must remain the same.
+        if (pageId != 0L && page.id() != pageId)
+            throw new IllegalStateException("Page ID: " + U.hexLong(pageId));
+    }
+
+    /**
      * @param canGetRow Can get row from inner page.
      * @return Test tree instance.
      * @throws IgniteCheckedException If failed.
@@ -1239,7 +1250,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void onWriteUnlock(Page page, ByteBuffer buf) {
-            checkPageId(page, buf);
+            assertEquals(effectivePageId(page.id()), effectivePageId(PageIO.getPageId(buf)));
 
             assertEquals(Long.valueOf(page.id()), locks(false).remove(page.id()));
         }
