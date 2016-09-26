@@ -164,16 +164,6 @@ public final class PageIdUtils {
     }
 
     /**
-     * @param pageId Page ID.
-     * @return Page ID with masked partition ID.
-     */
-    public static long maskPartId(long pageId) {
-        assert flag(pageId) == PageIdAllocator.FLAG_IDX; // Possible only for index pages.
-
-        return pageId & ~(PART_ID_MASK << PAGE_IDX_SIZE);
-    }
-
-    /**
      * Change page type.
      *
      * @param pageId Old page ID.
