@@ -463,7 +463,7 @@ namespace ignite
                 if (found && strbuf)
                     outSize = utility::CopyStringToBuffer(out, strbuf, buflen);
 
-                if (found && strbuf)
+                if (found && reslen)
                     *reslen = static_cast<int16_t>(outSize);
             }
 
