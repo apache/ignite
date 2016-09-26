@@ -118,6 +118,8 @@ public class JdbcMetadataDialect extends DatabaseMetadataDialect {
 
         Set<String> sys = systemSchemas();
 
+        Collection<String> unsignedTypes = unsignedTypes(dbMeta);
+
         if (schemas.isEmpty())
             schemas.add(null);
 
@@ -146,8 +148,6 @@ public class JdbcMetadataDialect extends DatabaseMetadataDialect {
                     }
 
                     Collection<DbColumn> cols = new ArrayList<>();
-
-                    Collection<String> unsignedTypes = unsignedTypes(dbMeta);
 
                     try (ResultSet colsRs = dbMeta.getColumns(tblCatalog, tblSchema, tblName, null)) {
                         while (colsRs.next()) {
