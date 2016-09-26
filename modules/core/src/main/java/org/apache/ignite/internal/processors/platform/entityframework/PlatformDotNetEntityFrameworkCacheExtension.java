@@ -82,23 +82,11 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
                     metaCache.invokeAll(entitySetNames,
                     new PlatformDotNetEntityFrameworkIncreaseVersionProcessor());
 
-                // TODO: This fails. Talk to Sam?
-                // TODO: Reproduce in a test, create a ticket.
                 if (currentVersions.size() != cnt)
                 {
                     throw new IgniteCheckedException("Failed to update entity set versions, expected: "
                         + cnt + ", actual: " + currentVersions.size());
                 }
-
-                // TODO: Remove!
-                /**
-                StringBuilder sb = new StringBuilder("Updated versions: ");
-
-                for (Map.Entry<String, EntryProcessorResult<Long>> e : currentVersions.entrySet())
-                    sb.append(e.getKey()).append("=").append(e.getValue().get()).append(",");
-
-                System.out.println(sb.toString());
-                 */
 
                 Ignite grid = target.platformContext().kernalContext().grid();
 
