@@ -131,12 +131,11 @@ public abstract class DataStructure implements PageLockListener {
     }
 
     /**
-     * @param pageId Virtual page ID.
      * @param page Page.
      * @return Buffer.
      */
-    protected final ByteBuffer tryWriteLock(long pageId, Page page) {
-        onBeforeWriteLock(pageId, page);
+    protected final ByteBuffer tryWriteLock(Page page) {
+        onBeforeWriteLock(page);
 
         ByteBuffer buf = page.tryGetForWrite();
 
@@ -147,12 +146,11 @@ public abstract class DataStructure implements PageLockListener {
 
 
     /**
-     * @param pageId Virtual page ID.
      * @param page Page.
      * @return Buffer.
      */
-    protected final ByteBuffer writeLock(long pageId, Page page) {
-        onBeforeWriteLock(pageId, page);
+    protected final ByteBuffer writeLock(Page page) {
+        onBeforeWriteLock(page);
 
         ByteBuffer buf = page.getForWrite();
 
@@ -178,7 +176,7 @@ public abstract class DataStructure implements PageLockListener {
      * @return Buffer.
      */
     protected final ByteBuffer readLock(long pageId, Page page) {
-        onBeforeReadLock(pageId, page);
+        onBeforeReadLock(page);
 
         ByteBuffer buf = page.getForRead();
 
@@ -198,7 +196,7 @@ public abstract class DataStructure implements PageLockListener {
     }
 
     /** {@inheritDoc} */
-    @Override public void onBeforeWriteLock(long pageId, Page page) {
+    @Override public void onBeforeWriteLock(Page page) {
         // No-op.
     }
 
@@ -213,7 +211,7 @@ public abstract class DataStructure implements PageLockListener {
     }
 
     /** {@inheritDoc} */
-    @Override public void onBeforeReadLock(long pageId, Page page) {
+    @Override public void onBeforeReadLock(Page page) {
         // No-op.
     }
 

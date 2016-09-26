@@ -1201,10 +1201,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onBeforeReadLock(long pageId, Page page) {
-            assertEquals(page.id(), pageId);
-
-            assertNull(beforeReadLock.put(threadId(), pageId));
+        @Override public void onBeforeReadLock(Page page) {
+            assertNull(beforeReadLock.put(threadId(), page.id()));
         }
 
         /** {@inheritDoc} */
@@ -1228,10 +1226,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onBeforeWriteLock(long pageId, Page page) {
-            assertEquals(page.id(), pageId);
-
-            assertNull(beforeWriteLock.put(threadId(), pageId));
+        @Override public void onBeforeWriteLock(Page page) {
+            assertNull(beforeWriteLock.put(threadId(), page.id()));
         }
 
         /** {@inheritDoc} */

@@ -83,8 +83,8 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onBeforeReadLock(long pageId, Page page) {
-            assertEquals(page.id(), effectivePageId(pageId));
+        @Override public void onBeforeReadLock(Page page) {
+            // No-op.
         }
 
         /** {@inheritDoc} */
@@ -102,8 +102,8 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onBeforeWriteLock(long pageId, Page page) {
-            assertEquals(page.id(), effectivePageId(pageId));
+        @Override public void onBeforeWriteLock(Page page) {
+            // No-op.
         }
 
         /** {@inheritDoc} */
