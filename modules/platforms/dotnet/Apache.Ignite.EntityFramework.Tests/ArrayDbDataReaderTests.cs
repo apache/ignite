@@ -69,7 +69,7 @@ namespace Apache.Ignite.EntityFramework.Tests
             // Check basic props.
             Assert.IsTrue(reader.Read());
             Assert.AreEqual(0, reader.Depth);
-            Assert.AreEqual(0, reader.RecordsAffected);
+            Assert.AreEqual(-1, reader.RecordsAffected);
             Assert.AreEqual(14, reader.FieldCount);
             Assert.AreEqual(14, reader.VisibleFieldCount);
             Assert.IsFalse(reader.IsClosed);
