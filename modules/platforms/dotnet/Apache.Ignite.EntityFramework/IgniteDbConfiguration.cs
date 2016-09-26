@@ -18,11 +18,8 @@
 namespace Apache.Ignite.EntityFramework
 {
     using System.Configuration;
-    using System.Data;
-    using System.Data.Common;
     using System.Data.Entity;
     using System.Data.Entity.Core.Common;
-    using System.Data.Entity.Infrastructure.Interception;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using Apache.Ignite.Core;
@@ -162,6 +159,9 @@ namespace Apache.Ignite.EntityFramework
             metaCacheConfiguration = metaCacheConfiguration ?? GetDefaultMetaCacheConfiguration();
             dataCacheConfiguration = dataCacheConfiguration ?? GetDefaultDataCacheConfiguration();
 
+            // Transactional is required for EntryProcessor to work correctly.
+            metaCacheConfiguration.AtomicityMode = CacheAtomicityMode.Transactional;
+
             var efCache = new DbCache(ignite, metaCacheConfiguration, dataCacheConfiguration);
 
             var txHandler = new DbTransactionInterceptor(efCache);
@@ -210,9 +210,7 @@ namespace Apache.Ignite.EntityFramework
         {
             return new CacheConfiguration((namePrefix ?? DefaultCacheNamePrefix) + MetaCacheSuffix)
             {
-                Backups = 1,
-                // TODO: Enforce on user caches. Necessary for proper entry processor updates.
-                AtomicityMode = CacheAtomicityMode.Transactional
+                Backups = 1
             };
         }
 
