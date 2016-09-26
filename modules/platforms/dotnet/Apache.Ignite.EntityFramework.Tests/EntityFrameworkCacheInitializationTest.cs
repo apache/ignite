@@ -51,23 +51,36 @@ namespace Apache.Ignite.EntityFramework.Tests
             CheckCacheAndStop("myGrid2", "newCache", 
                 new IgniteDbConfiguration("igniteConfiguration2", "newCache", null));
 
-            // In-code configuration
+            // In-code configuration.
             CheckCacheAndStop("myGrid3", "myCache",
                 new IgniteDbConfiguration(new IgniteConfiguration
-                {
-                    GridName = "myGrid3",
-                }, new CacheConfiguration("myCache_metadata") {CacheMode = CacheMode.Replicated}, 
-                new CacheConfiguration("myCache_data") {CacheMode = CacheMode.Replicated}, null),
+                    {
+                        GridName = "myGrid3",
+                    }, new CacheConfiguration("myCache_metadata")
+                    {
+                        CacheMode = CacheMode.Replicated,
+                        AtomicityMode = CacheAtomicityMode.Transactional
+                    },
+                    new CacheConfiguration("myCache_data") {CacheMode = CacheMode.Replicated}, null),
                 CacheMode.Replicated);
 
             // Existing instance.
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
             CheckCacheAndStop(null, "123", new IgniteDbConfiguration(ignite,
-                new CacheConfiguration("123_metadata") {Backups = 1},
+                new CacheConfiguration("123_metadata")
+                {
+                    Backups = 1,
+                    AtomicityMode = CacheAtomicityMode.Transactional
+                },
+                new CacheConfiguration("123_data"), null));
+
+            // Non-tx meta cache.
+            var ignite2 = Ignition.Start(TestUtils.GetTestConfiguration());
+            CheckCacheAndStop(null, "123", new IgniteDbConfiguration(ignite2,
+                new CacheConfiguration("123_metadata"),
                 new CacheConfiguration("123_data"), null));
 
             // TODO: Test all ctors. Think about better overloads (Ignite+Policy?).
-            // TODO: Check backups warning.
             // TODO: Check same cache name exception.
         }
 
