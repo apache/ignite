@@ -1191,7 +1191,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void onBeforeReadLock(long pageId, Page page) {
-            assertEquals(page.id(), effectivePageId(pageId));
+            assertEquals(page.id(), pageId);
 
             assertNull(beforeReadLock.put(threadId(), pageId));
         }
@@ -1204,7 +1204,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
             assertNull(locks(true).put(page.id(), pageId));
 
-            assertEquals(page.id(), effectivePageId(beforeReadLock.remove(threadId())));
+            assertEquals(Long.valueOf(page.id()), beforeReadLock.remove(threadId()));
         }
 
         /** {@inheritDoc} */
@@ -1218,7 +1218,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void onBeforeWriteLock(long pageId, Page page) {
-            assertEquals(page.id(), effectivePageId(pageId));
+            assertEquals(page.id(), pageId);
 
             assertNull(beforeWriteLock.put(threadId(), pageId));
         }
@@ -1234,14 +1234,14 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
             assertNull(locks(false).put(page.id(), pageId));
 
-            assertEquals(page.id(), effectivePageId(beforeWriteLock.remove(threadId())));
+            assertEquals(Long.valueOf(page.id()), beforeWriteLock.remove(threadId()));
         }
 
         /** {@inheritDoc} */
         @Override public void onWriteUnlock(Page page, ByteBuffer buf) {
             checkPageId(page, buf);
 
-            assertEquals(page.id(), effectivePageId(locks(false).remove(page.id())));
+            assertEquals(Long.valueOf(page.id()), locks(false).remove(page.id()));
         }
 
         /**
