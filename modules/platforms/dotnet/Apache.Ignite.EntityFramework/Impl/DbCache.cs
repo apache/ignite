@@ -27,6 +27,7 @@ namespace Apache.Ignite.EntityFramework.Impl
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Expiry;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.EntityFramework;
@@ -76,6 +77,9 @@ namespace Apache.Ignite.EntityFramework.Impl
 
             IgniteArgumentCheck.Ensure(metaCacheConfiguration.Name != dataCacheConfiguration.Name, 
                 "dataCacheConfiguration", "Meta and Data cache can't have the same name.");
+
+            if (metaCacheConfiguration.AtomicityMode != CacheAtomicityMode.Transactional)
+                throw new IgniteException("EntityFramework meta cache should be Transactional.");
 
             if (metaCacheConfiguration.CacheMode == CacheMode.Partitioned && metaCacheConfiguration.Backups < 1)
                 ignite.Logger.Warn("EntityFramework meta cache is partitioned and has no backups. " +

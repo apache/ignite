@@ -159,9 +159,6 @@ namespace Apache.Ignite.EntityFramework
             metaCacheConfiguration = metaCacheConfiguration ?? GetDefaultMetaCacheConfiguration();
             dataCacheConfiguration = dataCacheConfiguration ?? GetDefaultDataCacheConfiguration();
 
-            // Transactional is required for EntryProcessor to work correctly.
-            metaCacheConfiguration.AtomicityMode = CacheAtomicityMode.Transactional;
-
             var efCache = new DbCache(ignite, metaCacheConfiguration, dataCacheConfiguration);
 
             var txHandler = new DbTransactionInterceptor(efCache);
@@ -210,7 +207,8 @@ namespace Apache.Ignite.EntityFramework
         {
             return new CacheConfiguration((namePrefix ?? DefaultCacheNamePrefix) + MetaCacheSuffix)
             {
-                Backups = 1
+                Backups = 1,
+                AtomicityMode = CacheAtomicityMode.Transactional
             };
         }
 
