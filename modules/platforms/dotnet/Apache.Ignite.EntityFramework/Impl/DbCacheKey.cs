@@ -67,8 +67,7 @@ namespace Apache.Ignite.EntityFramework.Impl
 
             var sb = new StringBuilder(_key);
 
-            // Versions should be in the same order!
-            // TODO: Add test
+            // Versions should be in the same order, so we can't iterate over the dictionary.
             foreach (var entitySet in _entitySets)
                 sb.AppendFormat("_{0}", _entitySetVersions[entitySet.Name]);
 
