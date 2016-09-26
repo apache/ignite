@@ -575,11 +575,14 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
         final IgniteAtomicSequence[] locSeqs = new IgniteAtomicSequence[3];
 
         for (int i = 0; i < locSeqs.length; i++) {
-            locSeqs[i] = grid(i).atomicSequence(locSeqName, initVal, true);
+            IgniteAtomicSequence seq = grid(i).atomicSequence(locSeqName, initVal, true);
 
-            locSeqs[i].batchSize(batchSize);
+            seq.batchSize(batchSize);
 
-            locSeqs[i].reservePercentage(percentage);
+            seq.reservePercentage(percentage);
+
+            locSeqs[i] = seq;
+
         }
 
         final Set<Long> resSet = new ConcurrentHashSet<>();

@@ -31,6 +31,7 @@ public class GridCacheReplicatedSequenceApiSelfTest extends GridCacheSequenceApi
         return REPLICATED;
     }
 
+    /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 3;
     }
