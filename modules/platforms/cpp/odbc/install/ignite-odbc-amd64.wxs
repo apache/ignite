@@ -3,7 +3,7 @@
 	<Product Name='Apache Ignite ODBC 64-bit Driver' Manufacturer='The Apache Software Foundation'
 		Id='F3E308E4-910C-4AF5-82DE-2ACF4D64830E' 
 		UpgradeCode='1D7AEFDF-6CD2-4FB5-88F2-811A89832D6D'
-		Language='1033' Codepage='1252' Version='1.6.7'>
+		Language='1033' Codepage='1252' Version='1.6.7.0'>
 		
 		<Package Id='*' Keywords='Installer' Description="Apache Ignite ODBC 64-bit Driver Installer"
 			Comments='Apache, Apache Ignite, the Apache feather and the Apache Ignite logo are trademarks of The Apache Software Foundation.'
@@ -17,7 +17,7 @@
 				<Directory Id='ApacheIgnite' Name='Apache Ignite'>
 					<Directory Id='INSTALLDIR' Name='ODBC Driver'>
 						<Component Id='Driver' Guid='E5F0DDF2-DD3C-4196-8A08-70921858A52F' Win64='yes'>
-							<File Id='IgniteOdbcDll' Name='ignite.odbc.dll' DiskId='1' Source='ignite.odbc.dll' KeyPath='yes'/>
+							<File Id='IgniteOdbcDll' Name='ignite.odbc.dll' DiskId='1' Source='../../project/vs/x64/Release/ignite.odbc.dll' KeyPath='yes'/>
 							
 							<RegistryValue Root='HKLM' Key='Software\ODBC\ODBCINST.INI\ODBC Drivers' Name='Apache Ignite' Type='string' Value='Installed'/>
 							
