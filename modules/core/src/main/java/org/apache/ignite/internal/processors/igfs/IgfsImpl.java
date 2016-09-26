@@ -183,8 +183,11 @@ public final class IgfsImpl implements IgfsEx {
         data = igfsCtx.data();
         secondaryFs = cfg.getSecondaryFileSystem();
 
+        if (secondaryFs instanceof IgfsKernalContextAware)
+            ((IgfsKernalContextAware)secondaryFs).setKernalContext(igfsCtx.kernalContext());
+
         if (secondaryFs instanceof LifecycleAware)
-            ((LifecycleAware) secondaryFs).start();
+            ((LifecycleAware)secondaryFs).start();
 
         /* Default IGFS mode. */
         IgfsMode dfltMode;

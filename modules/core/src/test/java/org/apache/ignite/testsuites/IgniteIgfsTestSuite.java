@@ -20,6 +20,10 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.igfs.IgfsFragmentizerSelfTest;
 import org.apache.ignite.igfs.IgfsFragmentizerTopologySelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsAtomicPrimaryMultiNodeSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsAtomicPrimaryOffheapTieredSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsAtomicPrimaryOffheapValuesSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsAtomicPrimarySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsAttributesSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsBackupsDualAsyncSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsBackupsDualSyncSelfTest;
@@ -154,10 +158,14 @@ public class IgniteIgfsTestSuite extends TestSuite {
 
         suite.addTestSuite(IgfsMaxSizeSelfTest.class);
 
-
         suite.addTestSuite(IgfsProxySelfTest.class);
         suite.addTestSuite(IgfsLocalSecondaryFileSystemProxySelfTest.class);
         suite.addTestSuite(IgfsLocalSecondaryFileSystemProxyClientSelfTest.class);
+
+        suite.addTestSuite(IgfsAtomicPrimarySelfTest.class);
+        suite.addTestSuite(IgfsAtomicPrimaryMultiNodeSelfTest.class);
+        suite.addTestSuite(IgfsAtomicPrimaryOffheapTieredSelfTest.class);
+        suite.addTestSuite(IgfsAtomicPrimaryOffheapValuesSelfTest.class);
 
         return suite;
     }
