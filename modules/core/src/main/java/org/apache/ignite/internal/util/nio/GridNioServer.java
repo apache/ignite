@@ -455,9 +455,10 @@ public class GridNioServer<T> {
             if (ses.removeFuture(fut))
                 fut.connectionClosed();
         }
-        else if (msgCnt == 1)
-            // Change from 0 to 1 means that worker thread should be waken up.
-            clientWorkers.get(ses.selectorIndex()).offer(fut);
+        else {
+            if (!ses.processWrite.get() && ses.processWrite.compareAndSet(false, true))
+                clientWorkers.get(ses.selectorIndex()).offer(fut);
+        }
 
         if (msgQueueLsnr != null)
             msgQueueLsnr.apply(ses, msgCnt);
@@ -1199,7 +1200,18 @@ public class GridNioServer<T> {
                 req = (NioOperationFuture<?>)ses.pollFuture();
 
                 if (req == null && buf.position() == 0) {
-                    key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+                    if (ses.processWrite.get()) {
+                        boolean set = ses.processWrite.compareAndSet(true, false);
+
+                        assert set;
+
+                        if (ses.writeQueue().isEmpty()) {
+                            key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+                        }
+                        else {
+                            ses.processWrite.set(true);
+                        }
+                    }
 
                     return;
                 }

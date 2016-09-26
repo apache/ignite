@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.util.Collection;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -47,7 +48,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     private final int selectorIdx;
 
     /** Size counter. */
-    private final AtomicInteger queueSize = new AtomicInteger();
+    //private final AtomicInteger queueSize = new AtomicInteger();
 
     /** Semaphore. */
     @GridToStringExclude
@@ -67,6 +68,8 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
 
     /** Logger. */
     private final IgniteLogger log;
+
+    public final AtomicBoolean processWrite = new AtomicBoolean();
 
     /**
      * Creates session instance.
@@ -173,7 +176,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
 
         assert res : "Future was not added to queue";
 
-        return queueSize.incrementAndGet();
+        return 0;//queueSize.incrementAndGet();
     }
 
     /**
@@ -198,7 +201,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
 
         assert res : "Future was not added to queue";
 
-        return queueSize.incrementAndGet();
+        return 0;//queueSize.incrementAndGet();
     }
 
     /**
@@ -211,9 +214,9 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
 
         assert add;
 
-        boolean set = queueSize.compareAndSet(0, futs.size());
+        //boolean set = queueSize.compareAndSet(0, futs.size());
 
-        assert set;
+        //assert set;
     }
 
     /**
@@ -223,7 +226,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
         GridNioFuture<?> last = queue.poll();
 
         if (last != null) {
-            queueSize.decrementAndGet();
+            //queueSize.decrementAndGet();
 
             if (sem != null && !last.messageThread())
                 sem.release();
@@ -264,7 +267,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      * @return Number of write requests.
      */
     int writeQueueSize() {
-        return queueSize.get();
+        return queue.sizex();//queueSize.get();
     }
 
     /**
