@@ -136,13 +136,7 @@ public abstract class DataStructure implements PageLockListener {
      * @return Buffer.
      */
     protected final ByteBuffer tryWriteLock(Page page) {
-        onBeforeWriteLock(page);
-
-        ByteBuffer buf = page.tryGetForWrite();
-
-        onWriteLock(page, buf);
-
-        return buf;
+        return PageHandler.writeLock(page, this, true);
     }
 
 
@@ -151,7 +145,7 @@ public abstract class DataStructure implements PageLockListener {
      * @return Buffer.
      */
     protected final ByteBuffer writeLock(Page page) {
-        return PageHandler.writeLock(page, this);
+        return PageHandler.writeLock(page, this, false);
     }
 
     /**
@@ -160,9 +154,7 @@ public abstract class DataStructure implements PageLockListener {
      * @param dirty Dirty page.
      */
     protected final void writeUnlock(Page page, ByteBuffer buf, boolean dirty) {
-        onWriteUnlock(page, buf);
-
-        page.releaseWrite(dirty);
+        PageHandler.writeUnlock(page, buf, this, dirty);
     }
 
     /**
@@ -178,9 +170,7 @@ public abstract class DataStructure implements PageLockListener {
      * @param buf Buffer.
      */
     protected final void readUnlock(Page page, ByteBuffer buf) {
-        onReadUnlock(page, buf);
-
-        page.releaseRead();
+        PageHandler.readUnlock(page, buf, this);
     }
 
     /** {@inheritDoc} */

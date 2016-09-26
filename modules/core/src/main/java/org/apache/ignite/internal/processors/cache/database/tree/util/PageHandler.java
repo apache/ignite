@@ -91,9 +91,7 @@ public abstract class PageHandler<X, R> {
             return h.run(page, io, buf, arg, intArg);
         }
         finally {
-            lockListener.onReadUnlock(page, buf);
-
-            page.releaseRead();
+            readUnlock(page, buf, lockListener);
         }
     }
 
@@ -151,17 +149,41 @@ public abstract class PageHandler<X, R> {
 
     /**
      * @param page Page.
+     * @param buf Page buffer.
      * @param lockListener Lock listener.
+     */
+    public static void readUnlock(Page page, ByteBuffer buf, PageLockListener lockListener) {
+        lockListener.onReadUnlock(page, buf);
+
+        page.releaseRead();
+    }
+
+    /**
+     * @param page Page.
+     * @param lockListener Lock listener.
+     * @param tryLock Only try to lock without waiting.
      * @return Byte buffer or {@code null} if failed to lock due to recycling.
      */
-    public static ByteBuffer writeLock(Page page, PageLockListener lockListener) {
+    public static ByteBuffer writeLock(Page page, PageLockListener lockListener, boolean tryLock) {
         lockListener.onBeforeWriteLock(page);
 
-        ByteBuffer buf = page.getForWrite();
+        ByteBuffer buf = tryLock ? page.tryGetForWrite() : page.getForWrite();
 
         lockListener.onWriteLock(page, buf);
 
         return buf;
+    }
+
+    /**
+     * @param page Page.
+     * @param buf Page buffer.
+     * @param lockListener Lock listener.
+     * @param dirty Page is dirty.
+     */
+    public static void writeUnlock(Page page, ByteBuffer buf, PageLockListener lockListener, boolean dirty) {
+        lockListener.onWriteUnlock(page, buf);
+
+        page.releaseWrite(dirty);
     }
 
     /**
@@ -185,7 +207,7 @@ public abstract class PageHandler<X, R> {
         int intArg,
         R lockFailed
     ) throws IgniteCheckedException {
-        ByteBuffer buf = writeLock(page, lockListener);
+        ByteBuffer buf = writeLock(page, lockListener, false);
 
         if (buf == null)
             return lockFailed;
@@ -207,11 +229,8 @@ public abstract class PageHandler<X, R> {
         finally {
             assert PageIO.getCrc(buf) == 0; //TODO GG-11480
 
-            if (h.releaseAfterWrite(page, arg, intArg)) {
-                lockListener.onWriteUnlock(page, buf);
-
-                page.releaseWrite(ok);
-            }
+            if (h.releaseAfterWrite(page, arg, intArg))
+                writeUnlock(page, buf, lockListener, ok);
         }
 
         return res;
