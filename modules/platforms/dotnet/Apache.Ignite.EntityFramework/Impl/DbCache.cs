@@ -78,15 +78,17 @@ namespace Apache.Ignite.EntityFramework.Impl
             IgniteArgumentCheck.Ensure(metaCacheConfiguration.Name != dataCacheConfiguration.Name, 
                 "dataCacheConfiguration", "Meta and Data cache can't have the same name.");
 
-            if (metaCacheConfiguration.AtomicityMode != CacheAtomicityMode.Transactional)
-                throw new IgniteException("EntityFramework meta cache should be Transactional.");
-
-            if (metaCacheConfiguration.CacheMode == CacheMode.Partitioned && metaCacheConfiguration.Backups < 1)
-                ignite.Logger.Warn("EntityFramework meta cache is partitioned and has no backups. " +
-                                   "This can lead to data loss and incorrect query results.");
-
             _metaCache = ignite.GetOrCreateCache<string, long>(metaCacheConfiguration);
             _cache = ignite.GetOrCreateCache<string, EntityFrameworkCacheEntry>(dataCacheConfiguration);
+
+            var metaCfg = _metaCache.GetConfiguration();
+
+            if (metaCfg.AtomicityMode != CacheAtomicityMode.Transactional)
+                throw new IgniteException("EntityFramework meta cache should be Transactional.");
+
+            if (metaCfg.CacheMode == CacheMode.Partitioned && metaCfg.Backups < 1)
+                ignite.Logger.Warn("EntityFramework meta cache is partitioned and has no backups. " +
+                                   "This can lead to data loss and incorrect query results.");
         }
 
         /// <summary>
