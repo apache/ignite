@@ -714,10 +714,10 @@ namespace Apache.Ignite.EntityFramework.Tests
             {
                 CreateRemoveBlog0();
             }
-            catch (SqlCeException ex)
+            catch (Exception ex)
             {
                 // Ignore SQL CE glitch.
-                if (ex.Message != "The current row was deleted.")
+                if (!ex.ToString().Contains("The current row was deleted."))
                     throw;
             }
         }
