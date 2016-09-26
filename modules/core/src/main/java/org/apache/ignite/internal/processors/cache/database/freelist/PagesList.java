@@ -52,6 +52,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.processors.cache.database.tree.io.PageIO.getPageId;
@@ -100,7 +102,7 @@ public abstract class PagesList extends DataStructure {
 
             updateTail(bucket, tailId, page.id());
 
-            return Boolean.TRUE;
+            return TRUE;
         }
     };
 
@@ -636,7 +638,7 @@ public abstract class PagesList extends DataStructure {
                     int idx = io.addPage(nextBuf, dataPageId);
 
                     // Here we should never write full page, because it is known to be new.
-                    next.fullPageWalRecordPolicy(Boolean.FALSE);
+                    next.fullPageWalRecordPolicy(FALSE);
 
                     if (isWalDeltaRecordNeeded(wal, next))
                         wal.log(new PagesListInitNewPageRecord(
@@ -703,8 +705,8 @@ public abstract class PagesList extends DataStructure {
                         ByteBuffer nextBuf = writeLock(next);
 
                         if (locked == null) {
-                            locked = new ArrayList<>(2);
                             lockedBufs = new ArrayList<>(2);
+                            locked = new ArrayList<>(2);
                         }
 
                         locked.add(next);
@@ -716,7 +718,7 @@ public abstract class PagesList extends DataStructure {
                             wal.log(new PagesListSetNextRecord(cacheId, pageId, nextId));
 
                         // Here we should never write full page, because it is known to be new.
-                        next.fullPageWalRecordPolicy(Boolean.FALSE);
+                        next.fullPageWalRecordPolicy(FALSE);
 
                         if (isWalDeltaRecordNeeded(wal, next))
                             wal.log(new PagesListInitNewPageRecord(
@@ -848,9 +850,9 @@ public abstract class PagesList extends DataStructure {
                     if (prevId != 0L) {
                         try (Page prev = page(prevId)) {
                             // Lock pages from next to previous.
-                            Boolean ok = writePage(prev, this, cutTail, null, bucket);
+                            Boolean ok = writePage(prev, this, cutTail, null, bucket, FALSE);
 
-                            assert ok;
+                            assert ok == TRUE: ok;
                         }
 
                         if (initIoVers != null) {
@@ -984,9 +986,9 @@ public abstract class PagesList extends DataStructure {
 
         if (prevId != 0L) { // Cut tail if we have a previous page.
             try (Page prev = page(prevId)) {
-                Boolean ok = writePage(prev, this, cutTail, null, bucket);
+                Boolean ok = writePage(prev, this, cutTail, null, bucket, FALSE);
 
-                assert ok; // Because we keep lock on current tail and do a world consistency check.
+                assert ok == TRUE: ok; // Because we keep lock on current tail and do a world consistency check.
             }
         }
         else // If we don't have a previous, then we are tail page of free list, just drop the stripe.

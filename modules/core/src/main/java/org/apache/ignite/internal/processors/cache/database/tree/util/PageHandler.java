@@ -34,10 +34,10 @@ import static java.lang.Boolean.TRUE;
  */
 public abstract class PageHandler<X, R> {
     /** */
-    private static final PageHandler<Void, Void> NOOP = new PageHandler<Void, Void>() {
-        @Override public Void run( Page page, PageIO io, ByteBuffer buf, Void arg, int intArg)
+    private static final PageHandler<Void, Boolean> NOOP = new PageHandler<Void, Boolean>() {
+        @Override public Boolean run( Page page, PageIO io, ByteBuffer buf, Void arg, int intArg)
             throws IgniteCheckedException {
-            return null;
+            return TRUE;
         }
     };
 
@@ -68,6 +68,7 @@ public abstract class PageHandler<X, R> {
      * @param h Handler.
      * @param arg Argument.
      * @param intArg Argument of type {@code int}.
+     * @param lockFailed  Result in case of lock failure due to page recycling.
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
@@ -76,11 +77,15 @@ public abstract class PageHandler<X, R> {
         PageLockListener lockListener,
         PageHandler<X, R> h,
         X arg,
-        int intArg
+        int intArg,
+        R lockFailed
     ) throws IgniteCheckedException {
         lockListener.onBeforeReadLock(page);
 
         ByteBuffer buf = page.getForRead();
+
+        if (buf == null)
+            return lockFailed;
 
         try {
             lockListener.onReadLock(page, buf);
@@ -101,6 +106,7 @@ public abstract class PageHandler<X, R> {
      * @param h Handler.
      * @param arg Argument.
      * @param intArg Argument of type {@code int}.
+     * @param lockFailed Result in case of lock failure due to page recycling.
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
@@ -109,9 +115,10 @@ public abstract class PageHandler<X, R> {
         PageLockListener lockListener,
         PageHandler<X, R> h,
         X arg,
-        int intArg
+        int intArg,
+        R lockFailed
     ) throws IgniteCheckedException {
-        return writePage(page, lockListener, h, null, null, arg, intArg);
+        return writePage(page, lockListener, h, null, null, arg, intArg, lockFailed);
     }
 
     /**
@@ -126,7 +133,9 @@ public abstract class PageHandler<X, R> {
         PageIO init,
         IgniteWriteAheadLogManager wal
     ) throws IgniteCheckedException {
-        writePage(page, lockListener, NOOP, init, wal, null, 0);
+        Boolean res = writePage(page, lockListener, NOOP, init, wal, null, 0, FALSE);
+
+        assert res == TRUE: res; // It must be newly allocated page, can't be recycled.
     }
 
     /**
@@ -136,6 +145,7 @@ public abstract class PageHandler<X, R> {
      * @param init IO for new page initialization or {@code null} if it is an existing page.
      * @param arg Argument.
      * @param intArg Argument of type {@code int}.
+     * @param lockFailed Result in case of lock failure due to page recycling.
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
@@ -146,7 +156,8 @@ public abstract class PageHandler<X, R> {
         PageIO init,
         IgniteWriteAheadLogManager wal,
         X arg,
-        int intArg
+        int intArg,
+        R lockFailed
     ) throws IgniteCheckedException {
         lockListener.onBeforeWriteLock(page);
 
@@ -156,7 +167,8 @@ public abstract class PageHandler<X, R> {
 
         ByteBuffer buf = page.getForWrite();
 
-        assert buf != null;
+        if (buf == null)
+            return lockFailed;
 
         try {
             lockListener.onWriteLock(page, buf);
