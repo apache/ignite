@@ -1784,8 +1784,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             int jvmPid = U.jvmPid();
 
-            if (log.isInfoEnabled())
-                log.info("PID: " + (jvmPid == -1 ? "N/A" : jvmPid));
+            log.info("PID: " + (jvmPid == -1 ? "N/A" : jvmPid));
         }
     }
 
