@@ -124,7 +124,6 @@ namespace Apache.Ignite.EntityFramework.Impl
         {
             var cache = GetCacheWithExpiry(absoluteExpiration);
 
-            // TODO: Do not put if key is already old?
             // Put asynchronously to avoid unnecessary delay in the requesting thread.
             cache.PutAsync(key.GetStringKey(), new EntityFrameworkCacheEntry(value, key.EntitySetVersions));
         }

@@ -50,22 +50,6 @@ namespace Apache.Ignite.EntityFramework.Impl
         }
 
         /// <summary>
-        /// Gets the original string key.
-        /// </summary>
-        public string Key
-        {
-            get { return _key; }
-        }
-
-        /// <summary>
-        /// Gets the dependent entity sets.
-        /// </summary>
-        public ICollection<EntitySetBase> EntitySets
-        {
-            get { return _entitySets; }
-        }
-
-        /// <summary>
         /// Gets the entity set versions.
         /// </summary>
         public IDictionary<string, long> EntitySetVersions
