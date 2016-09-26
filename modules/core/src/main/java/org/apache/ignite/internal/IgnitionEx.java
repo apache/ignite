@@ -2061,11 +2061,14 @@ public class IgnitionEx {
                 for (LoadBalancingSpi spi : cfg.getLoadBalancingSpi()) {
                     spis.add(spi);
 
-                    if (!dfltLoadBalancingSpi && spi instanceof RoundRobinLoadBalancingSpi)
+                    if (spi instanceof RoundRobinLoadBalancingSpi) {
                         dfltLoadBalancingSpi = true;
+
+                        break;
+                    }
                 }
 
-                // Install default load balancing SPI for internal tasks.
+                // Add default load balancing SPI for internal tasks.
                 if (!dfltLoadBalancingSpi)
                     spis.add(new RoundRobinLoadBalancingSpi());
 

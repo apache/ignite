@@ -29,10 +29,8 @@ import org.apache.ignite.compute.ComputeLoadBalancer;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTaskSessionImpl;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
-import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
 import org.jetbrains.annotations.Nullable;
@@ -41,8 +39,8 @@ import org.jetbrains.annotations.Nullable;
  * Load balancing manager.
  */
 public class GridLoadBalancerManager extends GridManagerAdapter<LoadBalancingSpi> {
-    /** */
-    private static final String DFLT_LOAD_BALANCING_SPI =  RoundRobinLoadBalancingSpi.class.getName();
+    /** Load balancing SPI to use for internal tasks. */
+    private static final String GRID_INTERNAL_LOAD_BALANCING_SPI =  RoundRobinLoadBalancingSpi.class.getSimpleName();
 
     /** Cache for internal task names. */
     private final Map<String, Boolean> internalTasks = new ConcurrentHashMap<>();
@@ -85,16 +83,16 @@ public class GridLoadBalancerManager extends GridManagerAdapter<LoadBalancingSpi
         assert top != null;
         assert job != null;
 
-        String spi = ses.getLoadBalancingSpi();
+        LoadBalancingSpi spi = getSpi(ses.getLoadBalancingSpi());
 
-        if (!DFLT_LOAD_BALANCING_SPI.equals(spi)) {
+        if (!spi.getName().equals(GRID_INTERNAL_LOAD_BALANCING_SPI)) {
             String taskCls = ses.getTaskClassName();
 
             Boolean internalTask = internalTasks.get(taskCls);
 
             if (internalTask == null) {
                 try {
-                    internalTask = U.hasAnnotation(Class.forName(taskCls), GridInternal.class);
+                    internalTask = ses.internalTask(Class.forName(taskCls));
                 }
                 catch (ClassNotFoundException ignored) {
                     internalTask = false;
@@ -104,10 +102,10 @@ public class GridLoadBalancerManager extends GridManagerAdapter<LoadBalancingSpi
             }
 
             if (internalTask)
-                return getSpi(DFLT_LOAD_BALANCING_SPI).getBalancedNode(ses, top, job);
+                return getSpi(GRID_INTERNAL_LOAD_BALANCING_SPI).getBalancedNode(ses, top, job);
         }
 
-        return getSpi(spi).getBalancedNode(ses, top, job);
+        return spi.getBalancedNode(ses, top, job);
     }
 
     /**

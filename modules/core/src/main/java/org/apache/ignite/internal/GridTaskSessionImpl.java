@@ -31,6 +31,7 @@ import org.apache.ignite.compute.ComputeJobSibling;
 import org.apache.ignite.compute.ComputeTaskSessionAttributeListener;
 import org.apache.ignite.compute.ComputeTaskSessionScope;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
+import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
@@ -858,6 +859,16 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> mapFuture() {
         return mapFut;
+    }
+
+    /**
+     * Checks whether task class is annotated with {@link GridInternal}.
+     *
+     * @param taskCls Task class.
+     * @return {@code True} if task is internal.
+     */
+    public boolean internalTask(Class<?> taskCls) {
+        return dep.internalTask(null, taskCls);
     }
 
     /** {@inheritDoc} */
