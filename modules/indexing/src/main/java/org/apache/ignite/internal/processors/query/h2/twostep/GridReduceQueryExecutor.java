@@ -475,9 +475,6 @@ public class GridReduceQueryExecutor {
                 }
             }
 
-            if (cancel.cancelRequested())
-                throw new CacheException(new QueryCancelledException());
-
             final long qryReqId = reqIdGen.incrementAndGet();
 
             QueryRun r = new QueryRun();
@@ -561,6 +558,8 @@ public class GridReduceQueryExecutor {
             runs.put(qryReqId, r);
 
             try {
+                cancel.checkCancelled();
+
                 if (ctx.clientDisconnected()) {
                     throw new CacheException("Query was cancelled, client node disconnected.",
                         new IgniteClientDisconnectedException(ctx.cluster().clientReconnectFuture(),
@@ -585,21 +584,17 @@ public class GridReduceQueryExecutor {
 
                 boolean retry = false;
 
-                if (cancel.cancelRequested())
-                    throw new QueryCancelledException();
+                cancel.set(new Runnable() {
+                    @Override public void run() {
+                        send(finalNodes, new GridQueryCancelRequest(qryReqId), null);
+                    }
+                });
 
                 if (send(nodes,
                     new GridQueryRequest(qryReqId, r.pageSize, space, mapQrys, topVer, extraSpaces, null, timeoutMillis), partsMap)) {
-                    cancel.set(new Runnable() {
-                        @Override public void run() {
-                            send(finalNodes, new GridQueryCancelRequest(qryReqId), null);
-                        }
-                    });
-
                     awaitAllReplies(r, nodes);
 
-                    if (cancel.cancelRequested())
-                        throw new QueryCancelledException();
+                    cancel.checkCancelled();
 
                     Object state = r.state.get();
 
@@ -658,8 +653,7 @@ public class GridReduceQueryExecutor {
                         resIter = res.iterator();
                     }
                     else {
-                        if (cancel.cancelRequested())
-                            throw new QueryCancelledException();
+                        cancel.checkCancelled();
 
                         GridCacheSqlQuery rdc = qry.reduceQuery();
 

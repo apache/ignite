@@ -17,85 +17,72 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.QueryCancelledException;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
 /**
  * Contains cancellation closure.
  */
 public class GridQueryCancel {
-    /** No op. static closure. Used for representing cancelled state. */
+    /**
+     * No op. static closure. Used for representing cancelled state.
+     */
     private static final Runnable NO_OP = new Runnable() {
-        @Override public void run() {
+        @Override
+        public void run() {
             // No-op.
         }
     };
 
-    /** Cancellation closure. */
-    private volatile Runnable clo;
-
-    /** Updater. */
-    private final AtomicReferenceFieldUpdater<GridQueryCancel, Runnable> updater =
-        AtomicReferenceFieldUpdater.newUpdater(GridQueryCancel.class, Runnable.class, "clo");
-
-    /** Cancel requested. */
-    private volatile boolean cancelRequested;
+    /**
+     * Cancel requested.
+     */
+    private volatile boolean cancelled;
 
     /**
-     * Sets cancellation closure and notifies waiters.
-     *
+     * Future.
+     */
+    private final GridFutureAdapter<Runnable> fut = new GridFutureAdapter<>();
+
+    /**
      * @param clo Clo.
      */
-    public synchronized void set(Runnable clo) {
-        assert clo != null;
+    public void set(Runnable clo) throws QueryCancelledException{
+        checkCancelled();
 
-        this.clo = clo;
-
-        // Entered state there cancellation is possible.
-        notifyAll();
+        fut.onDone(clo);
     }
 
     /**
-     * Waits for cancellable state.
-     */
-    public synchronized void waitForCancellableState() {
-        while (clo == null)
-            try {
-                wait();
-            }
-            catch (InterruptedException ignored) {
-                Thread.currentThread().interrupt();
-
-                throw new IgniteException("Interrupted while waiting for cancellable state.");
-            }
-    }
-
-    /**
-     * Tries cancelling a query. If query is already completed or cancelled, this is no-op.
+     * Tries to cancel a query. Only one thread can call this method. This is enforced by QueryCursorImpl.
      */
     public void cancel() {
-        cancelRequested = true;
+        cancelled = true;
 
-        waitForCancellableState();
+        try {
+            Runnable clo0 = fut.get();
 
-        Runnable clo0 = clo;
-
-        if (updater.compareAndSet(this, clo0, NO_OP))
             clo0.run();
+        } catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+
+    /**
+     * Check cancel state.
+     */
+    public void checkCancelled() throws QueryCancelledException{
+        if (cancelled)
+            throw new QueryCancelledException();
     }
 
     /**
-     * Set completed state.
+     * @return Cancel future. Used by queries to notify about entering cancellable state.
      */
-    public synchronized void setCompleted() {
-        if (updater.compareAndSet(this, null, NO_OP))
-            notifyAll(); // Wake up threads waiting for setting a closure.
-    }
-
-    /**
-     * @return Used for detecting cancelled state to fail-fast before executing a query.
-     */
-    public boolean cancelRequested() {
-        return cancelRequested;
+    public GridFutureAdapter<Runnable> future() {
+        return fut;
     }
 }
