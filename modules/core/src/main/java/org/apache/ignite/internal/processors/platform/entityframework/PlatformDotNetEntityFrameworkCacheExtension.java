@@ -178,11 +178,9 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
     private static void removeOldEntries(final Ignite ignite, final String dataCacheName,
         final Map<String, EntryProcessorResult<Long>> currentVersions, final ComputeJobContext jobCtx) {
 
-        // Run in a separate thread to avoid starving public pool.
-
-        // TODO: Run in system pool.
-        //new Thread() {
-        //    @Override public void run() {
+        // Run in a separate thread to offload public pool.
+        new Thread() {
+            @Override public void run() {
                 IgniteCache<String, PlatformDotNetEntityFrameworkCacheEntry> cache = ignite.cache(dataCacheName);
 
                 for (Cache.Entry<String, PlatformDotNetEntityFrameworkCacheEntry> cacheEntry :
@@ -197,10 +195,10 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
                     }
                 }
 
-        /*        jobCtx.callcc();
+                jobCtx.callcc();
             }
         }.start();
 
-        jobCtx.holdcc();*/
+        jobCtx.holdcc();
     }
 }
