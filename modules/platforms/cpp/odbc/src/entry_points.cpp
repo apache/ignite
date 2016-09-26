@@ -399,6 +399,19 @@ SQLRETURN SQL_API SQLSpecialColumns(SQLHSTMT    stmt,
         tableNameLen, scope, nullable);
 }
 
+SQLRETURN SQL_API SQLParamData(SQLHSTMT    stmt,
+                               SQLPOINTER* value)
+{
+    return ignite::SQLParamData(stmt, value);
+}
+
+SQLRETURN SQL_API SQLPutData(SQLHSTMT     stmt,
+                             SQLPOINTER   data,
+                             SQLLEN       strLengthOrIndicator)
+{
+    return ignite::SQLPutData(stmt, data, strLengthOrIndicator);
+}
+
 //
 // ==== Not implemented ====
 //
@@ -464,21 +477,6 @@ SQLRETURN SQL_API SQLGetStmtOption(SQLHSTMT     stmt,
                                    SQLPOINTER   value)
 {
     LOG_MSG("SQLGetStmtOption called\n");
-    return SQL_SUCCESS;
-}
-
-SQLRETURN SQL_API SQLParamData(SQLHSTMT    stmt,
-                               SQLPOINTER* value)
-{
-    LOG_MSG("SQLParamData called\n");
-    return SQL_SUCCESS;
-}
-
-SQLRETURN SQL_API SQLPutData(SQLHSTMT     stmt,
-                             SQLPOINTER   data,
-                             SQLLEN       strLengthOrIndicator)
-{
-    LOG_MSG("SQLPutData called\n");
     return SQL_SUCCESS;
 }
 
@@ -665,6 +663,7 @@ SQLRETURN SQL_API SQLColumnPrivileges(SQLHSTMT      stmt,
     return SQL_SUCCESS;
 }
 
+/*
 SQLRETURN SQL_API SQLDescribeParam(SQLHSTMT     stmt,
                                    SQLUSMALLINT paramNum,
                                    SQLSMALLINT* dataType,
@@ -675,6 +674,7 @@ SQLRETURN SQL_API SQLDescribeParam(SQLHSTMT     stmt,
     LOG_MSG("SQLDescribeParam called\n");
     return SQL_SUCCESS;
 }
+*/
 
 SQLRETURN SQL_API SQLParamOptions(SQLHSTMT  stmt,
                                   SQLULEN   paramSetSize,
