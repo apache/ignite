@@ -181,21 +181,28 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
         // Run in a separate thread to offload public pool.
         new Thread() {
             @Override public void run() {
-                IgniteCache<String, PlatformDotNetEntityFrameworkCacheEntry> cache = ignite.cache(dataCacheName);
+                try {
+                    IgniteCache<String, PlatformDotNetEntityFrameworkCacheEntry> cache = ignite.cache(dataCacheName);
 
-                for (Cache.Entry<String, PlatformDotNetEntityFrameworkCacheEntry> cacheEntry :
-                    cache.localEntries(CachePeekMode.ALL)) {
-                    PlatformDotNetEntityFrameworkCacheEntry entry = cacheEntry.getValue();
+                    for (Cache.Entry<String, PlatformDotNetEntityFrameworkCacheEntry> cacheEntry :
+                        cache.localEntries(CachePeekMode.ALL)) {
+                        PlatformDotNetEntityFrameworkCacheEntry entry = cacheEntry.getValue();
 
-                    for (Map.Entry<String, Long> entitySet : entry.entitySets().entrySet()) {
-                        EntryProcessorResult<Long> curVer = currentVersions.get(entitySet.getKey());
+                        for (Map.Entry<String, Long> entitySet : entry.entitySets().entrySet()) {
+                            EntryProcessorResult<Long> curVer = currentVersions.get(entitySet.getKey());
 
-                        if (curVer != null && entitySet.getValue() < curVer.get())
-                            cache.remove(cacheEntry.getKey());
+                            if (curVer != null && entitySet.getValue() < curVer.get())
+                                cache.remove(cacheEntry.getKey());
+                        }
                     }
                 }
-
-                jobCtx.callcc();
+                catch (Throwable t) {
+                    // TODO: ???
+                    t.printStackTrace();
+                }
+                finally {
+                    jobCtx.callcc();
+                }
             }
         }.start();
 
