@@ -29,7 +29,6 @@ namespace Apache.Ignite.EntityFramework.Tests
     using System.Data.Entity;
     using System.Data.Entity.Core.EntityClient;
     using System.Data.Entity.Infrastructure;
-    using System.Data.SqlServerCe;
     using System.IO;
     using System.Linq;
     using System.Threading;
