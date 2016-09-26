@@ -273,6 +273,12 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public IClusterGroup ForDaemons()
+        {
+            return _prj.ForDaemons();
+        }
+
+        /** <inheritdoc /> */
         public IClusterGroup ForHost(IClusterNode node)
         {
             IgniteArgumentCheck.NotNull(node, "node");
@@ -482,7 +488,9 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IClusterNode GetLocalNode()
         {
-            return _locNode ?? (_locNode = GetNodes().FirstOrDefault(x => x.IsLocal));
+            return _locNode ?? (_locNode =
+                       GetNodes().FirstOrDefault(x => x.IsLocal) ??
+                       ForDaemons().GetNodes().FirstOrDefault(x => x.IsLocal));
         }
 
         /** <inheritdoc /> */
