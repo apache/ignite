@@ -922,7 +922,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
      */
     private void validateDownKeys(long pageId, L minRow) throws IgniteCheckedException {
         try (Page page = page(pageId)) {
-            ByteBuffer buf = readLock(page);
+            ByteBuffer buf = readLock(page); // No correctness guaranties.
 
             try {
                 BPlusIO<L> io = io(buf);
@@ -983,7 +983,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
      */
     private L getGreatestRowInSubTree(long pageId) throws IgniteCheckedException {
         try (Page page = page(pageId)) {
-            ByteBuffer buf = readLock(page);
+            ByteBuffer buf = readLock(page); // No correctness guaranties.
 
             try {
                 BPlusIO<L> io = io(buf);
@@ -2213,6 +2213,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
 
                 ByteBuffer fwdBuf = writeLock(fwd); // Initial write, no need to check for concurrent modification.
 
+                assert fwdBuf != null;
+
                 try {
                     // Never write full forward page, because it is known to be new.
                     fwd.fullPageWalRecordPolicy(Boolean.FALSE);
@@ -2257,6 +2259,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                                 io = latestInnerIO();
 
                             ByteBuffer newRootBuf = writeLock(newRoot); // Initial write.
+
+                            assert newRootBuf != null;
 
                             try {
                                 // Never write full new root page, because it is known to be new.
