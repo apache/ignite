@@ -171,11 +171,10 @@ public abstract class DataStructure implements PageLockListener {
     }
 
     /**
-     * @param pageId Virtual page ID.
      * @param page Page.
      * @return Buffer.
      */
-    protected final ByteBuffer readLock(long pageId, Page page) {
+    protected final ByteBuffer readLock(Page page) {
         onBeforeReadLock(page);
 
         ByteBuffer buf = page.getForRead();

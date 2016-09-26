@@ -149,7 +149,7 @@ public abstract class PagesList extends DataStructure {
 
                 while (nextPageId != 0) {
                     try (Page page = page(nextPageId)) {
-                        ByteBuffer buf = readLock(nextPageId, page);
+                        ByteBuffer buf = readLock(page);
 
                         try {
                             PagesListMetaIO io = PagesListMetaIO.VERSIONS.forPage(buf);
@@ -460,7 +460,7 @@ public abstract class PagesList extends DataStructure {
                 long pageId = tail.tailId;
 
                 try (Page page = page(pageId)) {
-                    ByteBuffer buf = readLock(pageId, page);
+                    ByteBuffer buf = readLock(page);
 
                     try {
                         PagesListNodeIO io = PagesListNodeIO.VERSIONS.forPage(buf);
