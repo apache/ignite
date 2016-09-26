@@ -19,6 +19,7 @@
 #define _IGNITE_ODBC_COMMON_TYPES
 
 #include <stdint.h>
+#include "system/odbc_constants.h"
 
 #include <ignite/odbc/system/odbc_constants.h>
 

@@ -66,7 +66,7 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
      *
      * @param mode IGFS mode.
      */
-    public IgfsLocalSecondaryFileSystemDualAbstractSelfTest(IgfsMode mode) {
+    protected IgfsLocalSecondaryFileSystemDualAbstractSelfTest(IgfsMode mode) {
         super(mode);
     }
 
@@ -81,7 +81,6 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
         else
             cleanDirectory(extDir);
     }
-
 
     /**
      * Creates secondary filesystems.
