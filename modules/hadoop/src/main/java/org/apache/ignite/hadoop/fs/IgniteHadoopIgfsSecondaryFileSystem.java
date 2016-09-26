@@ -17,7 +17,9 @@
 
 package org.apache.ignite.hadoop.fs;
 
+import java.util.Arrays;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.ParentNotDirectoryException;
@@ -28,6 +30,8 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsDirectoryNotEmptyException;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
@@ -40,6 +44,7 @@ import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadabl
 import org.apache.ignite.internal.processors.hadoop.HadoopPayloadAware;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsProperties;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsSecondaryFileSystemPositionedReadable;
+import org.apache.ignite.internal.processors.igfs.IgfsBlockLocationImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsEntryInfo;
 import org.apache.ignite.internal.processors.igfs.IgfsFileImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsSecondaryFileSystemV2;
@@ -207,6 +212,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
     /**
      * Cast IO exception to IGFS exception.
      *
+     * @param msg Error message.
      * @param e IO exception.
      * @return IGFS exception.
      */
@@ -527,6 +533,24 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len,
+        long maxLen, Collection<ClusterNode> nodes) throws IgniteException {
+        try {
+            BlockLocation[] hadoopBlks = fileSystemForUser().getFileBlockLocations(convert(path), start, len);
+
+            Collection<IgfsBlockLocation> blks = new ArrayList<>(hadoopBlks.length);
+
+            for (int i = 0; i < hadoopBlks.length; ++i)
+                blks.add(convertBlockLocation(hadoopBlks[i]));
+
+            return blks;
+        }
+        catch (IOException e) {
+            throw handleSecondaryFsError(e, "Failed affinity for path: " + path);
+        }
+    }
+
     /**
      * Gets the underlying {@link FileSystem}.
      * This method is used solely for testing.
@@ -576,5 +600,24 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
     /** {@inheritDoc} */
     @Override public HadoopFileSystemFactory getPayload() {
         return fsFactory;
+    }
+
+    /**
+     * Convert IGFS affinity block location into Hadoop affinity block location.
+     *
+     * @param block IGFS affinity block location.
+     * @return Hadoop affinity block location.
+     */
+    private IgfsBlockLocation convertBlockLocation(BlockLocation block) {
+        try {
+            String[] names = block.getNames();
+            String[] hosts = block.getHosts();
+
+            return new IgfsBlockLocationImpl(
+                block.getOffset(), block.getLength(),
+                Arrays.asList(names), Arrays.asList(hosts));
+        } catch (IOException e) {
+            throw handleSecondaryFsError(e, "Failed convert block location: " + block);
+        }
     }
 }

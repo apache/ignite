@@ -18,14 +18,17 @@
 package org.apache.ignite.igfs.secondary.local;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathAlreadyExistsException;
 import org.apache.ignite.igfs.IgfsPathIsNotDirectoryException;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
-import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
+import org.apache.ignite.internal.processors.igfs.IgfsBlockLocationImpl;
+import org.apache.ignite.internal.processors.igfs.IgfsSecondaryFileSystemV2;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemIgfsFile;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemSizeVisitor;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalIgfsSecondaryFileSystemPositionedReadable;
@@ -52,7 +55,7 @@ import java.util.Map;
 /**
  * Secondary file system which delegates to local file system.
  */
-public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, LifecycleAware {
+public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystemV2, LifecycleAware {
     /** Default buffer size. */
     private static final int DFLT_BUF_SIZE = 8 * 1024;
 
@@ -327,6 +330,22 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteException {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException {
+        throw new UnsupportedOperationException("Update operation is not yet supported.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len,
+        long maxLen, Collection<ClusterNode> nodes) throws IgniteException {
+        File f = fileForPath(path);
+
+        if (!f.exists())
+            return null;
+
+        return Collections.<IgfsBlockLocation>singleton(new IgfsBlockLocationImpl(0, f.length(), nodes));
     }
 
     /**

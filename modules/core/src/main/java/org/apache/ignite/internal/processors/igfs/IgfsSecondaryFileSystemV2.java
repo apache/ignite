@@ -17,8 +17,12 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.util.Collection;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 
 /**
@@ -37,4 +41,22 @@ public interface IgfsSecondaryFileSystemV2 extends IgfsSecondaryFileSystem {
      * @throws IgniteException If failed.
      */
     public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException;
+
+    /**
+     * Get affinity block locations for data blocks of the file. In case {@code maxLen} parameter is set and
+     * particular block location length is greater than this value, block locations will be split into smaller
+     * chunks.
+     *
+     * @param path File path to get affinity for.
+     * @param start Position in the file to start affinity resolution from.
+     * @param len Size of data in the file to resolve affinity for.
+     * @param maxLen Maximum length of a single returned block location length.
+     * @param nodes Cluster nodes where secondary filesystem is available.
+     *
+     * @return Affinity block locations.
+     * @throws IgniteException In case of error.
+     * @throws IgfsPathNotFoundException If path doesn't exist.
+     */
+    public Collection<IgfsBlockLocation> affinity(final IgfsPath path, final long start, final long len,
+        final long maxLen, Collection<ClusterNode> nodes) throws IgniteException;
 }

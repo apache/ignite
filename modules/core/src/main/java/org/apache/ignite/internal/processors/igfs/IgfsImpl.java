@@ -1274,6 +1274,19 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgfsMode mode = resolveMode(path);
 
+                if (mode == PROXY) {
+                    if (secondaryFs instanceof IgfsSecondaryFileSystemV2)
+                        return ((IgfsSecondaryFileSystemV2)secondaryFs).affinity(path, start, len, maxLen,
+                            Collections.singleton(igfsCtx.localNode()));
+                    else {
+                        IgfsFile info = info(path);
+                        return (info != null) ?
+                            Collections.<IgfsBlockLocation>singleton(
+                                new IgfsBlockLocationImpl(0, info.length(), Collections.singleton(igfsCtx.localNode())))
+                            : Collections.<IgfsBlockLocation>emptySet();
+                    }
+                }
+
                 // Check memory first.
                 IgfsEntryInfo info = meta.infoForPath(path);
 

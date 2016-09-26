@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -99,6 +100,26 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable,
         this.len = len;
 
         convertFromNodes(nodes);
+    }
+
+    /**
+     * @param start Start.
+     * @param len Length.
+     * @param names Collection of host:port addresses.
+     * @param hosts Collection of host:port addresses.
+     */
+    public IgfsBlockLocationImpl(long start, long len, Collection<String> names, Collection<String> hosts) {
+        assert start >= 0;
+        assert len > 0;
+        assert names != null && !names.isEmpty();
+        assert hosts != null && !hosts.isEmpty();
+
+        this.start = start;
+        this.len = len;
+
+        nodeIds = Collections.emptySet();
+        this.names = names;
+        this.hosts = hosts;
     }
 
     /**
