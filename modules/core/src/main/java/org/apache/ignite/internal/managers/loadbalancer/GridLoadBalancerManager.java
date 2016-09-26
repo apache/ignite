@@ -19,6 +19,8 @@ package org.apache.ignite.internal.managers.loadbalancer;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -27,15 +29,24 @@ import org.apache.ignite.compute.ComputeLoadBalancer;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTaskSessionImpl;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
+import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
+import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Load balancing manager.
  */
 public class GridLoadBalancerManager extends GridManagerAdapter<LoadBalancingSpi> {
+    /** */
+    private static final String DFLT_LOAD_BALANCING_SPI =  RoundRobinLoadBalancingSpi.class.getName();
+
+    /** Cache for internal task names. */
+    private final Map<String, Boolean> internalTasks = new ConcurrentHashMap<>();
+
     /**
      * @param ctx Grid kernal context.
      */
@@ -55,6 +66,8 @@ public class GridLoadBalancerManager extends GridManagerAdapter<LoadBalancingSpi
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         stopSpi();
 
+        internalTasks.clear();
+
         if (log.isDebugEnabled())
             log.debug(stopInfo());
     }
@@ -72,7 +85,29 @@ public class GridLoadBalancerManager extends GridManagerAdapter<LoadBalancingSpi
         assert top != null;
         assert job != null;
 
-        return getSpi(ses.getLoadBalancingSpi()).getBalancedNode(ses, top, job);
+        String spi = ses.getLoadBalancingSpi();
+
+        if (!DFLT_LOAD_BALANCING_SPI.equals(spi)) {
+            String taskCls = ses.getTaskClassName();
+
+            Boolean internalTask = internalTasks.get(taskCls);
+
+            if (internalTask == null) {
+                try {
+                    internalTask = U.hasAnnotation(Class.forName(taskCls), GridInternal.class);
+                }
+                catch (ClassNotFoundException ignored) {
+                    internalTask = false;
+                }
+
+                internalTasks.put(taskCls, internalTask);
+            }
+
+            if (internalTask)
+                return getSpi(DFLT_LOAD_BALANCING_SPI).getBalancedNode(ses, top, job);
+        }
+
+        return getSpi(spi).getBalancedNode(ses, top, job);
     }
 
     /**
