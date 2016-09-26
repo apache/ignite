@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.database.tree.util;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
-import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
@@ -230,7 +229,7 @@ public abstract class PageHandler<X, R> {
         long pageId = PageIO.getPageId(buf);
 
         // Page ID must be 0L for newly allocated page, for reused page effective ID must remain the same.
-        if (pageId != 0L && page.id() != PageIdUtils.effectivePageId(pageId))
+        if (pageId != 0L && page.id() != pageId)
             throw new IllegalStateException("Page ID: " + U.hexLong(pageId));
     }
 
