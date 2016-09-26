@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.compute.ComputeJobContext;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtension;
@@ -32,7 +31,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.resources.JobContextResource;
 
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessorResult;
@@ -149,17 +147,11 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
             @IgniteInstanceResource
             private Ignite ignite;
 
-            /** Inject job context. */
-            @SuppressWarnings("unused")
-            @JobContextResource
-            private ComputeJobContext jobCtx;
-
             @Override public void run() {
-                removeOldEntries(ignite, dataCacheName, currentVersions, jobCtx);
+                removeOldEntries(ignite, dataCacheName, currentVersions);
             }
         });
 
-        // TODO: This is not called with holdcc/callcc
         asyncCompute.future().listen(new CI1<IgniteFuture<Object>>() {
             @Override public void apply(IgniteFuture<Object> future) {
                 // Reset cleanup flag.
@@ -176,36 +168,20 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
      * @param currentVersions Current versions.
      */
     private static void removeOldEntries(final Ignite ignite, final String dataCacheName,
-        final Map<String, EntryProcessorResult<Long>> currentVersions, final ComputeJobContext jobCtx) {
+        final Map<String, EntryProcessorResult<Long>> currentVersions) {
 
-        // Run in a separate thread to offload public pool.
-        new Thread() {
-            @Override public void run() {
-                try {
-                    IgniteCache<String, PlatformDotNetEntityFrameworkCacheEntry> cache = ignite.cache(dataCacheName);
+        IgniteCache<String, PlatformDotNetEntityFrameworkCacheEntry> cache = ignite.cache(dataCacheName);
 
-                    for (Cache.Entry<String, PlatformDotNetEntityFrameworkCacheEntry> cacheEntry :
-                        cache.localEntries(CachePeekMode.ALL)) {
-                        PlatformDotNetEntityFrameworkCacheEntry entry = cacheEntry.getValue();
+        for (Cache.Entry<String, PlatformDotNetEntityFrameworkCacheEntry> cacheEntry :
+            cache.localEntries(CachePeekMode.ALL)) {
+            PlatformDotNetEntityFrameworkCacheEntry entry = cacheEntry.getValue();
 
-                        for (Map.Entry<String, Long> entitySet : entry.entitySets().entrySet()) {
-                            EntryProcessorResult<Long> curVer = currentVersions.get(entitySet.getKey());
+            for (Map.Entry<String, Long> entitySet : entry.entitySets().entrySet()) {
+                EntryProcessorResult<Long> curVer = currentVersions.get(entitySet.getKey());
 
-                            if (curVer != null && entitySet.getValue() < curVer.get())
-                                cache.remove(cacheEntry.getKey());
-                        }
-                    }
-                }
-                catch (Throwable t) {
-                    // TODO: ???
-                    t.printStackTrace();
-                }
-                finally {
-                    jobCtx.callcc();
-                }
+                if (curVer != null && entitySet.getValue() < curVer.get())
+                    cache.remove(cacheEntry.getKey());
             }
-        }.start();
-
-        jobCtx.holdcc();
+        }
     }
 }
