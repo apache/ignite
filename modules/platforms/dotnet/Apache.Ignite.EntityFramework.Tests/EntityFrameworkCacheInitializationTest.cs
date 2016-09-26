@@ -20,6 +20,7 @@ namespace Apache.Ignite.EntityFramework.Tests
     using System;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Tests;
     using Apache.Ignite.EntityFramework;
@@ -44,11 +45,11 @@ namespace Apache.Ignite.EntityFramework.Tests
             CheckCacheAndStop("myGrid1", IgniteDbConfiguration.DefaultCacheNamePrefix, new IgniteDbConfiguration());
 
             // Specific config section.
-            CheckCacheAndStop("myGrid2", "cacheName2", 
+            CheckCacheAndStop("myGrid2", "cacheName2",
                 new IgniteDbConfiguration("igniteConfiguration2", "cacheName2", null));
 
             // Specific config section, nonexistent cache.
-            CheckCacheAndStop("myGrid2", "newCache", 
+            CheckCacheAndStop("myGrid2", "newCache",
                 new IgniteDbConfiguration("igniteConfiguration2", "newCache", null));
 
             // In-code configuration.
@@ -76,9 +77,13 @@ namespace Apache.Ignite.EntityFramework.Tests
 
             // Non-tx meta cache.
             var ignite2 = Ignition.Start(TestUtils.GetTestConfiguration());
-            CheckCacheAndStop(null, "123", new IgniteDbConfiguration(ignite2,
-                new CacheConfiguration("123_metadata"),
-                new CacheConfiguration("123_data"), null));
+
+            var ex = Assert.Throws<IgniteException>(() => CheckCacheAndStop(null, "123",
+                new IgniteDbConfiguration(ignite2,
+                    new CacheConfiguration("123_metadata"),
+                    new CacheConfiguration("123_data"), null)));
+
+            Assert.AreEqual("EntityFramework meta cache should be Transactional.", ex.Message);
 
             // TODO: Test all ctors. Think about better overloads (Ignite+Policy?).
             // TODO: Check same cache name exception.
@@ -91,26 +96,31 @@ namespace Apache.Ignite.EntityFramework.Tests
         private static void CheckCacheAndStop(string gridName, string cacheName, IgniteDbConfiguration cfg,
             CacheMode cacheMode = CacheMode.Partitioned)
         {
-            Assert.IsNotNull(cfg);
+            try
+            {
+                Assert.IsNotNull(cfg);
 
-            var ignite = Ignition.TryGetIgnite(gridName);
-            Assert.IsNotNull(ignite);
+                var ignite = Ignition.TryGetIgnite(gridName);
+                Assert.IsNotNull(ignite);
 
-            var metaCache = ignite.GetCache<object, object>(cacheName + "_metadata");
-            Assert.IsNotNull(metaCache);
-            Assert.AreEqual(cacheMode, metaCache.GetConfiguration().CacheMode);
+                var metaCache = ignite.GetCache<object, object>(cacheName + "_metadata");
+                Assert.IsNotNull(metaCache);
+                Assert.AreEqual(cacheMode, metaCache.GetConfiguration().CacheMode);
 
-            if (cacheMode == CacheMode.Partitioned)
-                Assert.AreEqual(1, metaCache.GetConfiguration().Backups);
+                if (cacheMode == CacheMode.Partitioned)
+                    Assert.AreEqual(1, metaCache.GetConfiguration().Backups);
 
-            var dataCache = ignite.GetCache<object, object>(cacheName + "_data");
-            Assert.IsNotNull(dataCache);
-            Assert.AreEqual(cacheMode, dataCache.GetConfiguration().CacheMode);
+                var dataCache = ignite.GetCache<object, object>(cacheName + "_data");
+                Assert.IsNotNull(dataCache);
+                Assert.AreEqual(cacheMode, dataCache.GetConfiguration().CacheMode);
 
-            if (cacheMode == CacheMode.Partitioned)
-                Assert.AreEqual(0, dataCache.GetConfiguration().Backups);
-
-            Ignition.StopAll(true);
+                if (cacheMode == CacheMode.Partitioned)
+                    Assert.AreEqual(0, dataCache.GetConfiguration().Backups);
+            }
+            finally
+            {
+                Ignition.StopAll(true);
+            }
         }
     }
 }
