@@ -781,7 +781,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         Map<Long,Long> map = new HashMap<>();
 
-        int loops = reuseList == null ? 300_000 : 1000_000;
+        int loops = reuseList == null ? 100_000 : 300_000;
 
         for (int i = 0 ; i < loops; i++) {
             Long x = (long)BPlusTree.randomInt(CNT);
@@ -991,7 +991,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         final Map<Long,Long> map = new ConcurrentHashMap8<>();
 
-        final int loops = reuseList == null ? 200_000 : 1000_000;
+        final int loops = reuseList == null ? 200_000 : 400_000;
 
         final GridStripedLock lock = new GridStripedLock(256);
 
