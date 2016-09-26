@@ -76,17 +76,20 @@ namespace Apache.Ignite.EntityFramework.Tests
                 new CacheConfiguration("123_data"), null));
 
             // Non-tx meta cache.
-            var ignite2 = Ignition.Start(TestUtils.GetTestConfiguration());
-
             var ex = Assert.Throws<IgniteException>(() => CheckCacheAndStop(null, "123",
-                new IgniteDbConfiguration(ignite2,
+                new IgniteDbConfiguration(TestUtils.GetTestConfiguration(), 
                     new CacheConfiguration("123_metadata"),
                     new CacheConfiguration("123_data"), null)));
 
             Assert.AreEqual("EntityFramework meta cache should be Transactional.", ex.Message);
 
-            // TODO: Test all ctors. Think about better overloads (Ignite+Policy?).
-            // TODO: Check same cache name exception.
+            // Same cache names.
+            var ex2 = Assert.Throws<ArgumentException>(() => CheckCacheAndStop(null, "abc",
+                new IgniteDbConfiguration(TestUtils.GetTestConfiguration(),
+                    new CacheConfiguration("abc"),
+                    new CacheConfiguration("abc"), null)));
+
+            Assert.IsTrue(ex2.Message.Contains("Meta and Data cache can't have the same name."));
         }
 
         /// <summary>
