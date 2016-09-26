@@ -292,17 +292,20 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
             @Override public void run() {
                 Callable<Void> reserveCall = retryTopologySafe(new Callable<Void>() {
                     @Override public Void call() throws Exception {
+
+                        // in some cases transaction can fail need restore previous state
+                        long oldReservedBottomBound = reservedBottomBound;
+
+                        long oldReservedUpBound = reservedUpBound;
+
+                        long oldReservationLine = newReservationLine;
+
                         try (IgniteInternalTx tx = CU.txStartInternal(ctx, seqView, PESSIMISTIC, REPEATABLE_READ)) {
                             GridCacheAtomicSequenceValue seq = seqView.get(key);
 
                             checkRemoved();
 
                             assert seq != null;
-
-                            // in some cases transaction can fail need restore previous state
-                            long oldReservedBottomBound = reservedBottomBound;
-                            long oldReservedUpBound = reservedUpBound;
-                            long oldReservationLine = newReservationLine;
 
                             lock.lock();
 
@@ -318,29 +321,28 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
                                 reservedUpBound = reservedBottomBound + batchSize;
 
                                 newReservationLine = reservedBottomBound + (batchSize * reservePercentage / 100);
-
-                                seq.set(reservedUpBound);
-
-                                seqView.put(key, seq);
-
-                                tx.commit();
-                            }
-                            catch (Error | Exception e) {
-                                U.error(log, "Failed to get and add: " + this, e);
-
-                                reservedBottomBound = oldReservedBottomBound;
-
-                                reservedUpBound = oldReservedUpBound;
-
-                                newReservationLine = oldReservationLine;
-
-                                isReserveFutResultsProcessed = true;
-
-                                throw e;
-                            }
-                            finally {
+                            } finally {
                                 lock.unlock();
                             }
+
+                            seq.set(reservedUpBound);
+
+                            seqView.put(key, seq);
+
+                            tx.commit();
+                        } catch (Error | Exception e) {
+                            U.error(log, "Failed to get and add: " + this, e);
+
+                            reservedBottomBound = oldReservedBottomBound;
+
+                            reservedUpBound = oldReservedUpBound;
+
+                            newReservationLine = oldReservationLine;
+
+                            isReserveFutResultsProcessed = true;
+
+                            throw e;
+
                         }
 
 
