@@ -113,7 +113,6 @@
         <moduleSet>
             <includes>
                 <include>org.apache.ignite:ignite-hadoop</include>
-                <include>org.apache.ignite:ignite-hadoop-impl</include>
             </includes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>

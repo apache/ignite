@@ -52,7 +52,6 @@
         <module>modules/tools</module>
         <module>modules/core</module>
         <module>modules/hadoop</module>
-        <module>modules/hadoop-impl</module>
         <module>modules/extdata/p2p</module>
         <module>modules/extdata/uri</module>
         <module>modules/clients</module>
