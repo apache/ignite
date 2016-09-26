@@ -3572,17 +3572,18 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
             boolean reinitialize = false;
 
             try (Page next = page(nextPageId)) {
-                ByteBuffer buf = readLock(next); // Doing explicit page ID check.
+                ByteBuffer buf = readLock(next); // Doing explicit null check.
 
-                try {
-                    // If concurrent merge occurred we have to reinitialize cursor from the last returned row.
-                    if (PageIO.getPageId(buf) != nextPageId)
-                        reinitialize = true;
-                    else
+                // If concurrent merge occurred we have to reinitialize cursor from the last returned row.
+                if (buf == null)
+                    reinitialize = true;
+                else {
+                    try {
                         fillFromBuffer(buf, io(buf), 0);
-                }
-                finally {
-                    readUnlock(next, buf);
+                    }
+                    finally {
+                        readUnlock(next, buf);
+                    }
                 }
             }
 

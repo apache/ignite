@@ -28,6 +28,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageLockListener;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -150,13 +151,7 @@ public abstract class DataStructure implements PageLockListener {
      * @return Buffer.
      */
     protected final ByteBuffer writeLock(Page page) {
-        onBeforeWriteLock(page);
-
-        ByteBuffer buf = page.getForWrite();
-
-        onWriteLock(page, buf);
-
-        return buf;
+        return PageHandler.writeLock(page, this);
     }
 
     /**
@@ -175,13 +170,7 @@ public abstract class DataStructure implements PageLockListener {
      * @return Buffer.
      */
     protected final ByteBuffer readLock(Page page) {
-        onBeforeReadLock(page);
-
-        ByteBuffer buf = page.getForRead();
-
-        onReadLock(page, buf);
-
-        return buf;
+        return PageHandler.readLock(page, this);
     }
 
     /**

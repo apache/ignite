@@ -91,6 +91,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
             try (Page page = page(pageId(nextLink), cctx)) {
                 ByteBuffer buf = page.getForRead();
 
+                assert buf != null: nextLink; // Non-empty data page must not be recycled.
+
                 try {
                     DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 

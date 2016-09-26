@@ -80,16 +80,12 @@ public abstract class PageHandler<X, R> {
         int intArg,
         R lockFailed
     ) throws IgniteCheckedException {
-        lockListener.onBeforeReadLock(page);
-
-        ByteBuffer buf = page.getForRead();
+        ByteBuffer buf = readLock(page, lockListener);
 
         if (buf == null)
             return lockFailed;
 
         try {
-            lockListener.onReadLock(page, buf);
-
             PageIO io = PageIO.getPageIO(buf);
 
             return h.run(page, io, buf, arg, intArg);
@@ -141,6 +137,36 @@ public abstract class PageHandler<X, R> {
     /**
      * @param page Page.
      * @param lockListener Lock listener.
+     * @return Byte buffer or {@code null} if failed to lock due to recycling.
+     */
+    public static ByteBuffer readLock(Page page, PageLockListener lockListener) {
+        lockListener.onBeforeReadLock(page);
+
+        ByteBuffer buf = page.getForRead();
+
+        lockListener.onReadLock(page, buf);
+
+        return buf;
+    }
+
+    /**
+     * @param page Page.
+     * @param lockListener Lock listener.
+     * @return Byte buffer or {@code null} if failed to lock due to recycling.
+     */
+    public static ByteBuffer writeLock(Page page, PageLockListener lockListener) {
+        lockListener.onBeforeWriteLock(page);
+
+        ByteBuffer buf = page.getForWrite();
+
+        lockListener.onWriteLock(page, buf);
+
+        return buf;
+    }
+
+    /**
+     * @param page Page.
+     * @param lockListener Lock listener.
      * @param h Handler.
      * @param init IO for new page initialization or {@code null} if it is an existing page.
      * @param arg Argument.
@@ -159,20 +185,16 @@ public abstract class PageHandler<X, R> {
         int intArg,
         R lockFailed
     ) throws IgniteCheckedException {
-        lockListener.onBeforeWriteLock(page);
+        ByteBuffer buf = writeLock(page, lockListener);
+
+        if (buf == null)
+            return lockFailed;
 
         R res;
 
         boolean ok = false;
 
-        ByteBuffer buf = page.getForWrite();
-
-        if (buf == null)
-            return lockFailed;
-
         try {
-            lockListener.onWriteLock(page, buf);
-
             if (init != null) // It is a new page and we have to initialize it.
                 doInitPage(page, buf, init, wal);
             else

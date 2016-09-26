@@ -1207,11 +1207,13 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void onReadLock(Page page, ByteBuffer buf) {
-            long pageId = PageIO.getPageId(buf);
+            if (buf != null) {
+                long pageId = PageIO.getPageId(buf);
 
-            checkPageId(page, buf);
+                checkPageId(page, buf);
 
-            assertNull(locks(true).put(page.id(), pageId));
+                assertNull(locks(true).put(page.id(), pageId));
+            }
 
             assertEquals(Long.valueOf(page.id()), beforeReadLock.remove(threadId()));
         }
@@ -1232,14 +1234,16 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void onWriteLock(Page page, ByteBuffer buf) {
-            checkPageId(page, buf);
+            if (buf != null) {
+                checkPageId(page, buf);
 
-            long pageId = PageIO.getPageId(buf);
+                long pageId = PageIO.getPageId(buf);
 
-            if (pageId == 0L)
-                pageId = page.id(); // It is a newly allocated page.
+                if (pageId == 0L)
+                    pageId = page.id(); // It is a newly allocated page.
 
-            assertNull(locks(false).put(page.id(), pageId));
+                assertNull(locks(false).put(page.id(), pageId));
+            }
 
             assertEquals(Long.valueOf(page.id()), beforeWriteLock.remove(threadId()));
         }
