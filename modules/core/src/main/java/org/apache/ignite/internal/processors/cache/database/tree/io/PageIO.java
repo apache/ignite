@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.database.MetadataStorage;
 import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesListNodeIO;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
+import org.apache.ignite.internal.processors.cache.database.tree.util.PageLockListener;
 
 /**
  * Base format for all the page types.
@@ -57,7 +58,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandle
  *
  * 7. It is almost always preferable to read or write (especially write) page contents using
  *    static methods on {@link PageHandler}. To just initialize new page use
- *    {@link PageHandler#initPage(long, Page, PageIO, IgniteWriteAheadLogManager)}
+ *    {@link PageHandler#initPage(long, Page, PageLockListener, PageIO, IgniteWriteAheadLogManager)}
  *    method with needed IO instance.
  */
 public abstract class PageIO {
