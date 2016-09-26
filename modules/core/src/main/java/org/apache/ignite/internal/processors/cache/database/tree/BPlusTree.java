@@ -638,7 +638,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
      */
     protected final void initNew() throws IgniteCheckedException {
         // Allocate the first leaf page, it will be our root.
-        long rootId = allocatePageForNew();
+        long rootId = allocatePage(null);
 
         try (Page root = page(rootId)) {
             initPage(rootId, root, this, latestLeafIO(), wal);
@@ -1580,7 +1580,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
      *     used as metadata storage, or {@code -1} if we don't have a reuse list and did not do recycling at all.
      * @throws IgniteCheckedException If failed.
      */
-    public long destroy() throws IgniteCheckedException {
+    public final long destroy() throws IgniteCheckedException {
         if (!markDestroyed())
             return 0;
 
@@ -1589,21 +1589,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
 
         DestroyBag bag = new DestroyBag();
 
-        long pagesCnt = destroy(bag);
-
-        reuseList.addForRecycle(bag);
-
-        assert bag.size() == 0 : bag.size();
-
-        return pagesCnt;
-    }
-
-    /**
-     * @param bag Destroy bag.
-     * @return Number of recycled pages.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected final long destroy(DestroyBag bag) throws IgniteCheckedException {
         long pagesCnt = 0;
 
         try (Page meta = page(metaPageId)) {
@@ -1648,6 +1633,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                 writeUnlock(meta, metaBuf, true);
             }
         }
+
+        reuseList.addForRecycle(bag);
+
+        assert bag.size() == 0 : bag.size();
 
         return pagesCnt;
     }
@@ -3398,16 +3387,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
         assert !io.isLeaf();
 
         return (BPlusInnerIO<L>)io;
-    }
-
-    /**
-     * Allocates page for new BPlus tree.
-     *
-     * @return New page ID.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected long allocatePageForNew() throws IgniteCheckedException {
-        return allocatePage(null);
     }
 
     /**
