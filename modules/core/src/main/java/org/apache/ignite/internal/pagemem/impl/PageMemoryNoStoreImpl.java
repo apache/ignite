@@ -345,8 +345,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /**
      * @param absPtr Page absolute address.
      */
-    void readLockPage(long absPtr) {
-        rwLock.readLock(absPtr + LOCK_OFFSET);
+    boolean readLockPage(long absPtr, int tag) {
+        return rwLock.readLock(absPtr + LOCK_OFFSET, tag);
     }
 
     /**
@@ -359,23 +359,23 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /**
      * @param absPtr Page absolute address.
      */
-    void writeLockPage(long absPtr) {
-        rwLock.writeLock(absPtr + LOCK_OFFSET);
+    boolean writeLockPage(long absPtr, int tag) {
+        return rwLock.writeLock(absPtr + LOCK_OFFSET, tag);
     }
 
     /**
      * @param absPtr Page absolute address.
      * @return {@code True} if locked page.
      */
-    boolean tryWriteLockPage(long absPtr) {
-        return rwLock.tryWriteLock(absPtr + LOCK_OFFSET);
+    boolean tryWriteLockPage(long absPtr, int tag) {
+        return rwLock.tryWriteLock(absPtr + LOCK_OFFSET, tag);
     }
 
     /**
      * @param absPtr Page absolute address.
      */
-    void writeUnlockPage(long absPtr) {
-        rwLock.writeUnlock(absPtr + LOCK_OFFSET);
+    void writeUnlockPage(long absPtr, int newTag) {
+        rwLock.writeUnlock(absPtr + LOCK_OFFSET, newTag);
     }
 
     /**
@@ -696,7 +696,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
                     GridUnsafe.putLong(absPtr, PAGE_MARKER);
 
-                    rwLock.init(absPtr + LOCK_OFFSET);
+                    rwLock.init(absPtr + LOCK_OFFSET, 0);
 
                     allocatedPages.incrementAndGet();
 

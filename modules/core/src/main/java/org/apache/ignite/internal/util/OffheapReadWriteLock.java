@@ -17,15 +17,21 @@
 
 package org.apache.ignite.internal.util;
 
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.util.typedef.internal.U;
-
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- *
+ * Lock state structure is as follows:
+ * <pre>
+ *     +----------------+---------------+---------+----------+
+ *     | WRITE WAIT CNT | READ WAIT CNT |   TAG   | LOCK CNT |
+ *     +----------------+---------------+---------+----------+
+ *     |     2 bytes    |     2 bytes   | 2 bytes |  2 bytes |
+ *     +----------------+---------------+---------+----------+
+ * </pre>
  */
 @SuppressWarnings({"NakedNotify", "SynchronizationOnLocalVariableOrMethodParameter", "CallToThreadYield", "WaitWhileNotSynced"})
 public class OffheapReadWriteLock {
@@ -36,6 +42,9 @@ public class OffheapReadWriteLock {
 
     /** */
     public static final boolean USE_RANDOM_RW_POLICY = IgniteSystemProperties.getBoolean("IGNITE_OFFHEAP_RANDOM_RW_POLICY", false);
+
+    /** Always lock tag. */
+    public static final int TAG_LOCK_ALWAYS = -1;
 
     /** Lock size. */
     public static final int LOCK_SIZE = 8;
@@ -85,14 +94,16 @@ public class OffheapReadWriteLock {
     /**
      * @param lock Lock pointer to initialize.
      */
-    public void init(long lock) {
-        GridUnsafe.putLong(lock, 0);
+    public void init(long lock, int tag) {
+        tag &= 0xFFFF;
+
+        GridUnsafe.putLong(lock, (long)tag << 16);
     }
 
     /**
      * @param lock Lock address.
      */
-    public void readLock(long lock) {
+    public boolean readLock(long lock, int tag) {
         long state = GridUnsafe.getLongVolatile(null, lock);
 
         // Check write waiters first.
@@ -100,9 +111,12 @@ public class OffheapReadWriteLock {
 
         if (writeWaitCnt == 0) {
             for (int i = 0; i < SPIN_CNT; i++) {
+                if (!checkTag(state, tag))
+                    return false;
+
                 if (canReadLock(state)) {
                     if (GridUnsafe.compareAndSwapLong(null, lock, state, updateState(state, 1, 0, 0)))
-                        return;
+                        return true;
                     else
                         // Retry CAS, do not count as spin cycle.
                         i--;
@@ -121,14 +135,7 @@ public class OffheapReadWriteLock {
         try {
             updateReadersWaitCount(lock, lockObj, 1);
 
-            while (true) {
-                state = waitCanLock(lock, lockObj, readConditions[idx], true);
-
-                assert canReadLock(state);
-
-                if (GridUnsafe.compareAndSwapLong(null, lock, state, updateState(state, 1, -1, 0)))
-                    break;
-            }
+            return waitAcquireReadLock(lock, idx, tag);
         }
         finally {
             lockObj.unlock();
@@ -171,22 +178,26 @@ public class OffheapReadWriteLock {
     /**
      * @param lock Lock address.
      */
-    public boolean tryWriteLock(long lock) {
+    public boolean tryWriteLock(long lock, int tag) {
         long state = GridUnsafe.getLongVolatile(null, lock);
 
-        return canWriteLock(state) && GridUnsafe.compareAndSwapLong(null, lock, state, updateState(state, -1, 0, 0));
+        return checkTag(state, tag) && canWriteLock(state) &&
+            GridUnsafe.compareAndSwapLong(null, lock, state, updateState(state, -1, 0, 0));
     }
 
     /**
      * @param lock Lock address.
      */
-    public void writeLock(long lock) {
+    public boolean writeLock(long lock, int tag) {
         for (int i = 0; i < SPIN_CNT; i++) {
             long state = GridUnsafe.getLongVolatile(null, lock);
 
+            if (!checkTag(state, tag))
+                return false;
+
             if (canWriteLock(state)) {
                 if (GridUnsafe.compareAndSwapLong(null, lock, state, updateState(state, -1, 0, 0)))
-                    return;
+                    return true;
                 else
                     // Retry CAS, do not count as spin cycle.
                     i--;
@@ -202,13 +213,7 @@ public class OffheapReadWriteLock {
         try {
             updateWritersWaitCount(lock, lockObj, 1);
 
-            while (true) {
-                long state = waitCanLock(lock, lockObj, writeConditions[idx], false);
-
-                // Update lock and write wait count simultaneously.
-                if (GridUnsafe.compareAndSwapLong(null, lock, state, updateState(state, -1, 0, -1)))
-                    break;
-            }
+            return waitAcquireWriteLock(lock, idx, tag);
         }
         finally {
             lockObj.unlock();
@@ -234,7 +239,7 @@ public class OffheapReadWriteLock {
     /**
      * @param lock Lock address.
      */
-    public void writeUnlock(long lock) {
+    public void writeUnlock(long lock, int tag) {
         long updated;
 
         while (true) {
@@ -242,7 +247,7 @@ public class OffheapReadWriteLock {
 
             assert lockCount(state) == -1;
 
-            updated = updateState(state, 1, 0, 0);
+            updated = releaseWithTag(state, tag);
 
             if (GridUnsafe.compareAndSwapLong(null, lock, state, updated))
                 break;
@@ -259,23 +264,43 @@ public class OffheapReadWriteLock {
             lockObj.lock();
 
             try {
-                if (writeWaitCnt == 0)
-                    readConditions[idx].signalAll();
-                else if (readWaitCnt == 0)
-                    writeConditions[idx].signalAll();
-                else {
-                    // We have both writers and readers.
-                    if (USE_RANDOM_RW_POLICY) {
-                        boolean write = (balancers[idx].incrementAndGet() & 0x1) == 0;
-
-                        (write ? writeConditions : readConditions)[idx].signalAll();
-                    }
-                    else
-                        writeConditions[idx].signalAll();
-                }
+                signalNextWaiter(writeWaitCnt, readWaitCnt, idx);
             }
             finally {
                 lockObj.unlock();
+            }
+        }
+    }
+
+    /**
+     * @param writeWaitCnt Writers wait count.
+     * @param readWaitCnt Readers wait count.
+     * @param idx Lock index.
+     */
+    private void signalNextWaiter(int writeWaitCnt, int readWaitCnt, int idx) {
+        if (writeWaitCnt == 0) {
+            Condition readCondition = readConditions[idx];
+
+            readCondition.signalAll();
+        }
+        else if (readWaitCnt == 0) {
+            Condition writeCond = writeConditions[idx];
+
+            writeCond.signalAll();
+        }
+        else {
+            // We have both writers and readers.
+            if (USE_RANDOM_RW_POLICY) {
+                boolean write = (balancers[idx].incrementAndGet() & 0x1) == 0;
+
+                Condition cond = (write ? writeConditions : readConditions)[idx];
+
+                cond.signalAll();
+            }
+            else {
+                Condition cond = writeConditions[idx];
+
+                cond.signalAll();
             }
         }
     }
@@ -291,12 +316,16 @@ public class OffheapReadWriteLock {
      * read lock will be released in any case.
      *
      * @param lock Lock to upgrade.
-     * @return {@code True} if successfully traded read lock to write lock without leaving a gap.
-     *      Returns {@code false} otherwise, in this case the resource state must be re-validated.
+     * @return {@code null} if tag validation failed, {@code true} if successfully traded the read lock to
+     *      the write lock without leaving a gap. Returns {@code false} otherwise, in this case the resource
+     *      state must be re-validated.
      */
-    public boolean upgradeToWriteLock(long lock) {
+    public Boolean upgradeToWriteLock(long lock, int tag) {
         for (int i = 0; i < SPIN_CNT; i++) {
             long state = GridUnsafe.getLongVolatile(null, lock);
+
+            if (!checkTag(state, tag))
+                return null;
 
             if (lockCount(state) == 1) {
                 if (GridUnsafe.compareAndSwapLong(null, lock, state, updateState(state, -2, 0, 0)))
@@ -318,9 +347,14 @@ public class OffheapReadWriteLock {
             while (true) {
                 long state = GridUnsafe.getLongVolatile(null, lock);
 
+                if (!checkTag(state, tag))
+                    return null;
+
                 if (lockCount(state) == 1) {
                     if (GridUnsafe.compareAndSwapLong(null, lock, state, updateState(state, -2, 0, 0)))
                         return true;
+                    else
+                        continue;
                 }
 
                 // Remove read lock and add write waiter simultaneously.
@@ -328,25 +362,25 @@ public class OffheapReadWriteLock {
                     break;
             }
 
-            while (true) {
-                long state = waitCanLock(lock, lockObj, writeConditions[idx], false);
-
-                // Update lock and write wait count simultaneously.
-                if (GridUnsafe.compareAndSwapLong(null, lock, state, updateState(state, -1, 0, -1)))
-                    break;
-            }
+            return waitAcquireWriteLock(lock, idx, tag);
         }
         finally {
             lockObj.unlock();
         }
-
-        return false;
     }
 
     /**
+     * Acquires read lock in waiting loop.
      *
+     * @param lock Lock address.
+     * @param lockIdx Lock index.
+     * @param tag Validation tag.
+     * @return {@code True} if lock was acquired, {@code false} if tag validation failed.
      */
-    private long waitCanLock(long lock, ReentrantLock lockObj, Condition waitCond, boolean read) {
+    private boolean waitAcquireReadLock(long lock, int lockIdx, int tag) {
+        ReentrantLock lockObj = locks[lockIdx];
+        Condition waitCond = readConditions[lockIdx];
+
         assert lockObj.isHeldByCurrentThread();
 
         boolean interrupted = false;
@@ -356,10 +390,81 @@ public class OffheapReadWriteLock {
                 try {
                     long state = GridUnsafe.getLongVolatile(null, lock);
 
-                    if (read && canReadLock(state) || !read && canWriteLock(state))
-                        return state;
+                    if (!checkTag(state, tag)) {
+                        // We cannot lock with this tag, release waiter.
+                        long updated = updateState(state, 0, -1, 0);
 
-                    waitCond.await();
+                        if (GridUnsafe.compareAndSwapLong(null, lock, state, updated)) {
+                            int writeWaitCnt = writersWaitCount(updated);
+                            int readWaitCnt = readersWaitCount(updated);
+
+                            signalNextWaiter(writeWaitCnt, readWaitCnt, lockIdx);
+
+                            return false;
+                        }
+                    }
+                    else if (canReadLock(state)) {
+                        long updated = updateState(state, 1, -1, 0);
+
+                        if (GridUnsafe.compareAndSwapLong(null, lock, state, updated))
+                            return true;
+                    }
+                    else
+                        waitCond.await();
+                }
+                catch (InterruptedException ignore) {
+                    interrupted = true;
+                }
+            }
+        }
+        finally {
+            if (interrupted)
+                Thread.currentThread().interrupt();
+        }
+    }
+
+    /**
+     * Acquires write lock in waiting loop.
+     *
+     * @param lock Lock address.
+     * @param lockIdx Lock index.
+     * @param tag Validation tag.
+     * @return {@code True} if lock was acquired, {@code false} if tag validation failed.
+     */
+    private boolean waitAcquireWriteLock(long lock, int lockIdx, int tag) {
+        ReentrantLock lockObj = locks[lockIdx];
+        Condition waitCond = writeConditions[lockIdx];
+
+        assert lockObj.isHeldByCurrentThread();
+
+        boolean interrupted = false;
+
+        try {
+            while (true) {
+                try {
+                    long state = GridUnsafe.getLongVolatile(null, lock);
+
+                    if (!checkTag(state, tag)) {
+                        // We cannot lock with this tag, release waiter.
+                        long updated = updateState(state, 0, 0, -1);
+
+                        if (GridUnsafe.compareAndSwapLong(null, lock, state, updated)) {
+                            int writeWaitCnt = writersWaitCount(updated);
+                            int readWaitCnt = readersWaitCount(updated);
+
+                            signalNextWaiter(writeWaitCnt, readWaitCnt, lockIdx);
+
+                            return false;
+                        }
+                    }
+                    else if (canWriteLock(state)) {
+                        long updated = updateState(state, -1, 0, -1);
+
+                        if (GridUnsafe.compareAndSwapLong(null, lock, state, updated))
+                            return true;
+                    }
+                    else
+                        waitCond.await();
                 }
                 catch (InterruptedException ignore) {
                     interrupted = true;
@@ -396,12 +501,25 @@ public class OffheapReadWriteLock {
         return lockCount(state) == 0;
     }
 
+    private boolean checkTag(long state, int tag) {
+        // If passed in tag is negative, lock regardless of the state.
+        return tag < 0 || tag(state) == tag;
+    }
+
     /**
      * @param state State.
      * @return Lock count.
      */
     private int lockCount(long state) {
-        return (int)state;
+        return (short)(state & 0xFFFF);
+    }
+
+    /**
+     * @param state Lock state.
+     * @return Lock tag.
+     */
+    private int tag(long state) {
+        return (int)((state >>> 16) & 0xFFFF);
     }
 
     /**
@@ -429,6 +547,7 @@ public class OffheapReadWriteLock {
      */
     private long updateState(long state, int lockDelta, int readersWaitDelta, int writersWaitDelta) {
         int lock = lockCount(state);
+        int tag = tag(state);
         int readersWait = readersWaitCount(state);
         int writersWait = writersWaitCount(state);
 
@@ -446,7 +565,39 @@ public class OffheapReadWriteLock {
         assert writersWait >= 0 : writersWait;
         assert lock >= -1;
 
-        return ((long)writersWait << 48) | ((long)readersWait << 32) | (lock & 0xFFFFFFFFL);
+        return buildState(writersWait, readersWait, tag, lock);
+    }
+
+    /**
+     * @param state State to update.
+     * @return Modified state.
+     */
+    private long releaseWithTag(long state, int newTag) {
+        int lock = lockCount(state);
+        int readersWait = readersWaitCount(state);
+        int writersWait = writersWaitCount(state);
+        int tag = newTag == TAG_LOCK_ALWAYS ? tag(state) : newTag & 0xFFFF;
+
+        lock += 1;
+
+        assert readersWait >= 0 : readersWait;
+        assert writersWait >= 0 : writersWait;
+        assert lock >= -1;
+
+        return buildState(writersWait, readersWait, tag, lock);
+    }
+
+    /**
+     * Creates state from counters.
+     *
+     * @param writersWait Writers wait count.
+     * @param readersWait Readers wait count.
+     * @param tag Tag.
+     * @param lock Lock count.
+     * @return State.
+     */
+    private long buildState(int writersWait, int readersWait, int tag, int lock) {
+        return ((long)writersWait << 48) | ((long)readersWait << 32) | ((long)tag << 16) | (lock & 0xFFFFL);
     }
 
     /**
