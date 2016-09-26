@@ -17,15 +17,6 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.InvalidObjectException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.io.ObjectStreamException;
-import java.util.concurrent.Callable;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -40,6 +31,11 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+
+import java.io.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static org.apache.ignite.internal.util.typedef.internal.CU.retryTopologySafe;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -303,7 +299,10 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
 
                             assert seq != null;
 
-                            long newUpBound = -1;
+                            // in some cases transaction can fail need restore previous state
+                            long oldReservedBottomBound = reservedBottomBound;
+                            long oldReservedUpBound = reservedUpBound;
+                            long oldReservationLine = newReservationLine;
 
                             lock.lock();
 
@@ -316,27 +315,34 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
 
                                 reservedBottomBound = curGlobalVal + off;
 
-                                newUpBound = reservedBottomBound + batchSize;
-
-                                reservedUpBound = newUpBound;
+                                reservedUpBound = reservedBottomBound + batchSize;
 
                                 newReservationLine = reservedBottomBound + (batchSize * reservePercentage / 100);
+
+                                seq.set(reservedUpBound);
+
+                                seqView.put(key, seq);
+
+                                tx.commit();
+                            }
+                            catch (Error | Exception e) {
+                                U.error(log, "Failed to get and add: " + this, e);
+
+                                reservedBottomBound = oldReservedBottomBound;
+
+                                reservedUpBound = oldReservedUpBound;
+
+                                newReservationLine = oldReservationLine;
+
+                                isReserveFutResultsProcessed = true;
+
+                                throw e;
                             }
                             finally {
                                 lock.unlock();
                             }
-
-                            seq.set(newUpBound);
-
-                            seqView.put(key, seq);
-
-                            tx.commit();
                         }
-                        catch (Error | Exception e) {
-                            U.error(log, "Failed to get and add: " + this, e);
 
-                            throw e;
-                        }
 
                         return null;
                     }
