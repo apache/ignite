@@ -146,6 +146,33 @@ namespace ignite
                 }
             }
 
+            void Configuration::SetTcpPort(uint16_t port)
+            {
+                arguments[Key::port] = common::LexicalCast<std::string>(port);
+
+                ArgumentMap::const_iterator it = arguments.find(Key::address);
+
+                if (it == arguments.end())
+                    endPoint.port = port;
+            }
+
+            void Configuration::SetHost(const std::string& server)
+            {
+                arguments[Key::server] = server;
+
+                ArgumentMap::const_iterator it = arguments.find(Key::address);
+
+                if (it == arguments.end())
+                    endPoint.host = server;
+            }
+
+            void Configuration::SetAddress(const std::string& address)
+            {
+                arguments[Key::address] = address;
+
+                ParseAddress(address, endPoint);
+            }
+
             ProtocolVersion Configuration::GetProtocolVersion() const
             {
                 ArgumentMap::const_iterator it = arguments.find(Key::protocolVersion);
