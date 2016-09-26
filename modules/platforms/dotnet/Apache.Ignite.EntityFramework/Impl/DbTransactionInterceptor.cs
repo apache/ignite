@@ -23,6 +23,7 @@ namespace Apache.Ignite.EntityFramework.Impl
     using System.Data.Common;
     using System.Data.Entity.Core.Metadata.Edm;
     using System.Data.Entity.Infrastructure.Interception;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// Intercepts transaction events.
@@ -76,12 +77,14 @@ namespace Apache.Ignite.EntityFramework.Impl
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public void IsolationLevelGetting(DbTransaction transaction, DbTransactionInterceptionContext<IsolationLevel> interceptionContext)
         {
             // No-op
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public void IsolationLevelGot(DbTransaction transaction, DbTransactionInterceptionContext<IsolationLevel> interceptionContext)
         {
             // No-op
@@ -115,12 +118,14 @@ namespace Apache.Ignite.EntityFramework.Impl
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public void RollingBack(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
         {
             // No-op
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public void RolledBack(DbTransaction transaction, DbTransactionInterceptionContext interceptionContext)
         {
             // No-op
