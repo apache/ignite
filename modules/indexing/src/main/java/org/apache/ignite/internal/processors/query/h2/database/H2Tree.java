@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.query.h2.database;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
@@ -53,11 +53,12 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         int cacheId,
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
+        AtomicLong globalRmvId,
         H2RowFactory rowStore,
         long metaPageId,
         boolean initNew
     ) throws IgniteCheckedException {
-        super(name, cacheId, pageMem, wal, metaPageId, reuseList, H2InnerIO.VERSIONS, H2LeafIO.VERSIONS);
+        super(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, H2InnerIO.VERSIONS, H2LeafIO.VERSIONS);
 
         assert rowStore != null;
 

@@ -115,7 +115,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
     private final IOVersions<? extends BPlusLeafIO<L>> leafIos;
 
     /** */
-    private final AtomicLong globalRmvId = new AtomicLong(U.currentTimeMillis() * 1000_000); // TODO init from WAL?
+    private final AtomicLong globalRmvId;
 
     /** */
     private final GridTreePrinter<Long> treePrinter = new GridTreePrinter<Long>() {
@@ -589,6 +589,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
         int cacheId,
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
+        AtomicLong globalRmvId,
         long metaPageId,
         ReuseList reuseList,
         IOVersions<? extends BPlusInnerIO<L>> innerIos,
@@ -612,6 +613,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
         this.metaPageId = metaPageId;
         this.name = name;
         this.reuseList = reuseList;
+        this.globalRmvId = globalRmvId;
     }
 
     /**

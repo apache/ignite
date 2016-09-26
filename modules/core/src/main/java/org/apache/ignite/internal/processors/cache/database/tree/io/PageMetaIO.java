@@ -25,10 +25,15 @@ import org.jetbrains.annotations.NotNull;
  */
 public class PageMetaIO extends PageIO {
     /** */
-    private static final int METASTORE_ROOT_OFF = PageIO.COMMON_HEADER_END;
+    protected static final int METASTORE_ROOT_OFF = PageIO.COMMON_HEADER_END;
 
     /** */
-    private static final int REUSE_LIST_ROOT_OFF = METASTORE_ROOT_OFF + 8;
+    protected static final int REUSE_LIST_ROOT_OFF = METASTORE_ROOT_OFF + 8;
+
+    /** */
+    public static final IOVersions<PageMetaIO> VERSIONS = new IOVersions<>(
+        new PageMetaIO(1)
+    );
 
     /**
      * @param ver Page format version.
@@ -37,11 +42,19 @@ public class PageMetaIO extends PageIO {
         super(PageIO.T_META, ver);
     }
 
+    /**
+     * @param type Type.
+     * @param ver Version.
+     */
+    protected PageMetaIO(int type, int ver) {
+       super(type, ver);
+    }
+
     /** {@inheritDoc} */
     @Override public void initNewPage(ByteBuffer buf, long pageId) {
         super.initNewPage(buf, pageId);
 
-        setMetastoreRoot(buf, 0);
+        setTreeRoot(buf, 0);
         setReuseListRoot(buf, 0);
     }
 
@@ -49,7 +62,7 @@ public class PageMetaIO extends PageIO {
      * @param buf Buffer.
      * @return Meta store root page.
      */
-    public long getMetastoreRoot(ByteBuffer buf) {
+    public long getTreeRoot(ByteBuffer buf) {
         return buf.getLong(METASTORE_ROOT_OFF);
     }
 
@@ -57,7 +70,7 @@ public class PageMetaIO extends PageIO {
      * @param buf Buffer.
      * @param metastoreRoot metastore root
      */
-    public void setMetastoreRoot(@NotNull ByteBuffer buf, long metastoreRoot) {
+    public void setTreeRoot(@NotNull ByteBuffer buf, long metastoreRoot) {
         buf.putLong(METASTORE_ROOT_OFF, metastoreRoot);
     }
 

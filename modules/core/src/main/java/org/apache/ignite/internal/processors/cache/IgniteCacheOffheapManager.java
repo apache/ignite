@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -26,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.database.RowStore;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
@@ -66,7 +68,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @return Data store.
      * @throws IgniteCheckedException If failed.
      */
-    public CacheDataStore createCacheDataStore(int p, CacheDataStore.Listener lsnr) throws IgniteCheckedException;
+    public CacheDataStore createCacheDataStore(int p, CacheDataStore.SizeTracker lsnr) throws IgniteCheckedException;
 
     /**
      * @param p Partition ID.
@@ -210,6 +212,11 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      */
     public long offHeapAllocatedSize();
 
+    /**
+     * @return Global remove ID counter.
+     */
+    public GridAtomicLong globalRemoveId();
+
     // TODO GG-10884: moved from GridCacheSwapManager.
     void writeAll(Iterable<GridCacheBatchSwapEntry> swapped) throws IgniteCheckedException;
 
@@ -229,6 +236,12 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      *
      */
     interface CacheDataStore {
+
+        /**
+         * @return Partition ID.
+         */
+        int partId();
+
         /**
          * @return Store name.
          */
@@ -281,9 +294,19 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
         public RowStore rowStore();
 
         /**
-         * Data store listener.
+         * @return Size.
          */
-        interface Listener {
+        public int size();
+
+        /**
+         * @return Update counter.
+         */
+        public long updateCounter();
+
+        /**
+         * Data store size tracker.
+         */
+        interface SizeTracker {
             /**
              * On new entry inserted.
              */
@@ -293,6 +316,16 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
              * On entry removed.
              */
             void onRemove();
+
+            /**
+             * @return Size.
+             */
+            int size();
+
+            /**
+             * @return Update counter.
+             */
+            long updateCounter();
         }
     }
 }

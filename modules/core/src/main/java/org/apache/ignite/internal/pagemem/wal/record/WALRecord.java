@@ -124,6 +124,12 @@ public abstract class WALRecord {
         PAGES_LIST_REMOVE_PAGE,
 
         /** */
+        META_PAGE_UPDATE_ROOTS,
+
+        /** */
+        PARTITION_META_PAGE_UPDATE_COUNTERS,
+
+        /** */
         MEMORY_RECOVERY
         ;
 

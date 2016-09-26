@@ -29,11 +29,16 @@ public interface PageIdAllocator {
     /** */
     public static final byte FLAG_IDX = 2;
 
+    /** Max partition ID that can be used by affinity. */
+    public static final int MAX_PARTITION_ID = 65500;
+
+    /** Special partition reserved for index space. */
+    public static final int INDEX_PARTITION = 0xFFFF;
+
     /**
      * Allocates a page from the space for the given partition ID and the given flags.
      *
      * @param partId Partition ID.
-     * @param flags Flags to separate page spaces.
      * @return Allocated page ID.
      */
     public long allocatePage(int cacheId, int partId, byte flags) throws IgniteCheckedException;

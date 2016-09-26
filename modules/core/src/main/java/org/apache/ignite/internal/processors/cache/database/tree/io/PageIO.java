@@ -139,6 +139,9 @@ public abstract class PageIO {
     public static final short T_PAGE_LIST_NODE = 13;
 
     /** */
+    public static final short T_PART_META = 14;
+
+    /** */
     private final int ver;
 
     /** */
@@ -318,7 +321,10 @@ public abstract class PageIO {
                 return (Q)PagesListMetaIO.VERSIONS.forVersion(ver);
 
             case T_META:
-                throw new IgniteCheckedException("Root meta page should be always accessed with a fixed version.");
+                return (Q)PageMetaIO.VERSIONS.forVersion(ver);
+
+            case T_PART_META:
+                return (Q)PagePartitionMetaIO.VERSIONS.forVersion(ver);
 
             default:
                 return (Q)getBPlusIO(type, ver);

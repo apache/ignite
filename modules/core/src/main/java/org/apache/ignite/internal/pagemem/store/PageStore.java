@@ -26,6 +26,13 @@ import java.nio.ByteBuffer;
  */
 public interface PageStore {
     /**
+     * Checks if page exists.
+     *
+     * @return {@code True} if page exists.
+     */
+    public boolean exists();
+
+    /**
      * Allocates next page index.
      *
      * @return Next page index.
