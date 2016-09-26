@@ -459,20 +459,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             ExchangeType exchange;
 
-            StartFullBackupAckDiscoveryMessage backupMsg = null;
-
             if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
                 DiscoveryCustomMessage customMessage = ((DiscoveryCustomEvent)discoEvt).customMessage();
 
                 if (!F.isEmpty(reqs))
                     exchange = onCacheChangeRequest(crdNode);
-                else if (customMessage instanceof StartFullBackupAckDiscoveryMessage) {
+                else if (customMessage instanceof StartFullBackupAckDiscoveryMessage)
                     exchange = CU.clientNode(discoEvt.eventNode()) ?
                         onClientNodeEvent(crdNode) :
                         onServerNodeEvent(crdNode);
-
-                    backupMsg = (StartFullBackupAckDiscoveryMessage)customMessage;
-                }
                 else {
                     assert affChangeMsg != null : this;
 
@@ -510,16 +505,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     cctx.cache().context().database().beforeCachesStop();
             }
 
-            IgniteInternalFuture backupInitFut = null;
-
-            if (backupMsg != null && !cctx.localNode().isClient() && !cctx.localNode().isDaemon()) {
-                ClusterNode node = cctx.discovery().node(backupMsg.initiatorNodeId());
-
-                assert node != null;
-
-                backupInitFut = cctx.database().startLocalBackup(backupMsg, node);
-            }
-
             switch (exchange) {
                 case ALL: {
                     distributedExchange();
@@ -546,9 +531,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 default:
                     assert false;
             }
-
-            if (backupInitFut != null)
-                backupInitFut.get();
         }
         catch (IgniteInterruptedCheckedException e) {
             onDone(e);
@@ -795,26 +777,43 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
 
             cctx.database().beforeExchange(this);
-
-            if (!F.isEmpty(reqs)) {
-                for (DynamicCacheChangeRequest req : reqs) {
-                    if (req.globalStateChange())
-                        cctx.cache().globalState(req.state());
-                }
-            }
-
-            if (crd.isLocal()) {
-                if (remaining.isEmpty())
-                    onAllReceived();
-            }
-            else
-                sendPartitions(crd);
-
-            initDone();
         }
         finally {
             cctx.database().checkpointReadUnlock();
         }
+
+        // If a backup request, synchronously wait for backup start.
+        if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
+            DiscoveryCustomMessage customMessage = ((DiscoveryCustomEvent)discoEvt).customMessage();
+
+            if (customMessage instanceof StartFullBackupAckDiscoveryMessage) {
+                StartFullBackupAckDiscoveryMessage backupMsg = (StartFullBackupAckDiscoveryMessage)customMessage;
+
+                if (!cctx.localNode().isClient() && !cctx.localNode().isDaemon()) {
+                    ClusterNode node = cctx.discovery().node(backupMsg.initiatorNodeId());
+
+                    assert node != null;
+
+                    cctx.database().startLocalBackup(backupMsg, node).get();
+                }
+            }
+        }
+
+        if (!F.isEmpty(reqs)) {
+            for (DynamicCacheChangeRequest req : reqs) {
+                if (req.globalStateChange())
+                    cctx.cache().globalState(req.state());
+            }
+        }
+
+        if (crd.isLocal()) {
+            if (remaining.isEmpty())
+                onAllReceived();
+        }
+        else
+            sendPartitions(crd);
+
+        initDone();
     }
 
     /**
