@@ -15,28 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.store.jdbc.dialect;
-
-import java.util.Collection;
-import org.apache.ignite.internal.util.typedef.F;
+package org.apache.ignite.internal.processors.igfs;
 
 /**
- * A dialect compatible with the H2 database.
+ * Tests for PROXY mode with local FS is configured as a secondary.
  */
-public class H2Dialect extends BasicJdbcDialect {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class IgfsLocalSecondaryFileSystemProxyClientSelfTest extends IgfsLocalSecondaryFileSystemProxySelfTest {
     /** {@inheritDoc} */
-    @Override public boolean hasMerge() {
+    @Override protected boolean client() {
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String mergeQuery(String fullTblName, Collection<String> keyCols, Collection<String> uniqCols) {
-        Collection<String> cols = F.concat(false, keyCols, uniqCols);
-
-        return String.format("MERGE INTO %s (%s) KEY (%s) VALUES(%s)", fullTblName, mkString(cols, ","),
-            mkString(keyCols, ","), repeat("?", cols.size(), "", ", ", ""));
     }
 }

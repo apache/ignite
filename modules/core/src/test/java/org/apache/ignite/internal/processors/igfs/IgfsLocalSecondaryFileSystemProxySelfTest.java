@@ -17,8 +17,14 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.util.Collection;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.igfs.IgfsFile;
-import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.local.LocalIgfsSecondaryFileSystem;
@@ -27,19 +33,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.util.Collection;
-import java.util.concurrent.atomic.AtomicLong;
-
 /**
- * Abstract test for Hadoop 1.0 file system stack.
+ * Tests for PROXY mode with local FS is configured as a secondary.
  */
-public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends IgfsDualAbstractSelfTest {
-    /** */
+public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest {
+    /** Fs work directory. */
     private static final String FS_WORK_DIR = U.getIgniteHome() + File.separatorChar + "work"
         + File.separatorChar + "fs";
 
@@ -60,14 +58,24 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
     /** */
     private final File fileLinkSrc = new File(FS_WORK_DIR + File.separatorChar + "file");
 
-
     /**
-     * Constructor.
-     *
-     * @param mode IGFS mode.
+     * Creates secondary filesystems.
+     * @return IgfsSecondaryFileSystem
+     * @throws Exception On failure.
      */
-    protected IgfsLocalSecondaryFileSystemDualAbstractSelfTest(IgfsMode mode) {
-        super(mode);
+    @Override protected IgfsSecondaryFileSystem createSecondaryFileSystemStack() throws Exception {
+        final File workDir = new File(FS_WORK_DIR);
+
+        if (!workDir.exists())
+            assert workDir.mkdirs();
+
+        LocalIgfsSecondaryFileSystem second = new LocalIgfsSecondaryFileSystem();
+
+        second.setWorkDirectory(workDir.getAbsolutePath());
+
+        igfsSecondary = new IgfsLocalSecondaryFileSystemTestAdapter(workDir);
+
+        return second;
     }
 
     /** {@inheritDoc} */
@@ -80,26 +88,6 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
             assert extDir.mkdirs();
         else
             cleanDirectory(extDir);
-    }
-
-    /**
-     * Creates secondary filesystems.
-     * @return IgfsSecondaryFileSystem
-     * @throws Exception On failure.
-     */
-    @Override protected IgfsSecondaryFileSystem createSecondaryFileSystemStack() throws Exception {
-       final File workDir = new File(FS_WORK_DIR);
-
-        if (!workDir.exists())
-            assert workDir.mkdirs();
-
-        LocalIgfsSecondaryFileSystem second = new LocalIgfsSecondaryFileSystem();
-
-        second.setWorkDirectory(workDir.getAbsolutePath());
-
-        igfsSecondary = new IgfsLocalSecondaryFileSystemTestAdapter(workDir);
-
-        return second;
     }
 
     /** {@inheritDoc} */
@@ -115,6 +103,11 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
     /** {@inheritDoc} */
     @Override protected boolean timesSupported() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testUpdatePathDoesNotExist() throws Exception {
+        fail("IGNITE-3645");
     }
 
     /**

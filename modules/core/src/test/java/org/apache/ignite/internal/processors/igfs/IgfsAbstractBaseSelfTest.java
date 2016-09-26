@@ -713,7 +713,7 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
         throws Exception {
         checkNotExist(igfs, paths);
 
-        if (dual)
+        if (mode != PRIMARY)
             checkNotExist(igfsSecondary, paths);
     }
 
@@ -904,7 +904,7 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
     protected void clear(IgniteFileSystem igfs, IgfsSecondaryFileSystemTestAdapter igfsSecondary) throws Exception {
         clear(igfs);
 
-        if (dual)
+        if (mode != PRIMARY)
             clear(igfsSecondary);
     }
 
