@@ -19,17 +19,13 @@
 #define _IGNITE_ODBC_COMMON_TYPES
 
 #include <stdint.h>
+#include "system/odbc_constants.h"
 
 namespace ignite
 {
     namespace odbc
     {
-
-#ifdef _WIN64
-        typedef long long SqlLen;
-#else
-        typedef long SqlLen;
-#endif
+        typedef SQLLEN SqlLen;
 
         /**
          * SQL result.
