@@ -127,8 +127,6 @@ public abstract class DataStructure implements PageLockListener {
         assert flag == FLAG_IDX && PageIdUtils.partId(pageId) == INDEX_PARTITION ||
             flag == FLAG_DATA && PageIdUtils.partId(pageId) <= MAX_PARTITION_ID : U.hexLong(pageId);
 
-        pageId = PageIdUtils.effectivePageId(pageId);
-
         return pageMem.page(cacheId, pageId);
     }
 
