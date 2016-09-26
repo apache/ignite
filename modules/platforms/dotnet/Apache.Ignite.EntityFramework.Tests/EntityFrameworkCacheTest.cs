@@ -743,8 +743,6 @@ namespace Apache.Ignite.EntityFramework.Tests
 
             var meta2 = getMeta();
 
-            Console.WriteLine("Blog created: {0} = {1} | {2}", blog.BlogId, meta2, threadId);
-
             using (var ctx = GetDbContext())
             {
                 // Use ToArray so that there is always the same DB query.
@@ -755,8 +753,6 @@ namespace Apache.Ignite.EntityFramework.Tests
 
             var meta3 = getMeta();
 
-            Console.WriteLine("Removing blog: {0} = {1} | {2}", blog.BlogId, meta3, threadId);
-
             using (var ctx = GetDbContext())
             {
                 ctx.Blogs.Attach(blog);
@@ -765,8 +761,6 @@ namespace Apache.Ignite.EntityFramework.Tests
             }
 
             var meta4 = getMeta();
-
-            Console.WriteLine("Blog removed: {0} = {1} | {2}", blog.BlogId, meta4, threadId);
 
             using (var ctx = GetDbContext())
             {
