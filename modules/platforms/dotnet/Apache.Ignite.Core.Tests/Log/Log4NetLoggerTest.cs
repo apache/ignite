@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Log
 {
+    using Apache.Ignite.Core.Log;
     using Apache.Ignite.log4net;
     using global::log4net;
     using global::log4net.Appender;
@@ -30,6 +31,31 @@ namespace Apache.Ignite.Core.Tests.Log
     /// </summary>
     public class Log4NetLoggerTest
     {
+        /// <summary>
+        /// Tests the log level conversion.
+        /// </summary>
+        [Test]
+        public void TestLogLevelConversion()
+        {
+            var levels = new[] { LogLevel.Trace, LogLevel.Info, LogLevel.Debug, LogLevel.Warn, LogLevel.Error };
+
+            foreach (var igniteLevel in levels)
+            {
+                var log4netLevel = IgniteLog4NetLogger.ConvertLogLevel(igniteLevel);
+
+                Assert.AreEqual(igniteLevel.ToString(), log4netLevel.ToString());
+            }
+        }
+
+        [Test]
+        public void Test()
+        {
+            var memoryLog = CreateMemoryLogger();
+            var logger = new IgniteLog4NetLogger();
+
+
+        }
+
         private static MemoryAppender CreateMemoryLogger()
         {
             var hierarchy = (Hierarchy)LogManager.GetRepository();
@@ -48,15 +74,6 @@ namespace Apache.Ignite.Core.Tests.Log
             hierarchy.Configured = true;
 
             return memory;
-        }
-
-        [Test]
-        public void Test()
-        {
-            var memoryLog = CreateMemoryLogger();
-            var logger = new IgniteLog4NetLogger();
-
-
         }
     }
 }
