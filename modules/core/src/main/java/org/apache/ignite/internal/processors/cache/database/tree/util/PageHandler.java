@@ -20,12 +20,10 @@ package org.apache.ignite.internal.processors.cache.database.tree.util;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
-import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import sun.nio.ch.DirectBuffer;
 
 import static java.lang.Boolean.FALSE;
@@ -36,15 +34,14 @@ import static java.lang.Boolean.TRUE;
  */
 public abstract class PageHandler<X, R> {
     /** */
-    private static final PageHandler<Void, Void> NOOP = new PageHandler<Void, Void>() {
-        @Override public Void run(long pageId, Page page, PageIO io, ByteBuffer buf, Void arg, int intArg)
+    private static final PageHandler<Void, Boolean> NOOP = new PageHandler<Void, Boolean>() {
+        @Override public Boolean run( Page page, PageIO io, ByteBuffer buf, Void arg, int intArg)
             throws IgniteCheckedException {
-            return null;
+            return TRUE;
         }
     };
 
     /**
-     * @param pageId Page ID.
      * @param page Page.
      * @param io IO.
      * @param buf Page buffer.
@@ -53,150 +50,193 @@ public abstract class PageHandler<X, R> {
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
-    public abstract R run(long pageId, Page page, PageIO io, ByteBuffer buf, X arg, int intArg)
+    public abstract R run(Page page, PageIO io, ByteBuffer buf, X arg, int intArg)
         throws IgniteCheckedException;
 
     /**
-     * @param pageId Page ID.
      * @param page Page.
      * @param arg Argument.
      * @param intArg Argument of type {@code int}.
      * @return {@code true} If release.
      */
-    public boolean releaseAfterWrite(long pageId, Page page, X arg, int intArg) {
+    public boolean releaseAfterWrite(Page page, X arg, int intArg) {
         return true;
     }
 
     /**
-     * @param pageId Page ID.
      * @param page Page.
      * @param h Handler.
      * @param arg Argument.
      * @param intArg Argument of type {@code int}.
+     * @param lockFailed  Result in case of lock failure due to page recycling.
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
     public static <X, R> R readPage(
-        long pageId,
         Page page,
         PageLockListener lockListener,
         PageHandler<X, R> h,
         X arg,
-        int intArg
+        int intArg,
+        R lockFailed
     ) throws IgniteCheckedException {
-        lockListener.onBeforeReadLock(pageId, page);
+        ByteBuffer buf = readLock(page, lockListener);
 
-        ByteBuffer buf = page.getForRead();
+        if (buf == null)
+            return lockFailed;
 
         try {
-            lockListener.onReadLock(page, buf);
-
             PageIO io = PageIO.getPageIO(buf);
 
-            return h.run(pageId, page, io, buf, arg, intArg);
+            return h.run(page, io, buf, arg, intArg);
         }
         finally {
-            lockListener.onReadUnlock(page, buf);
-
-            page.releaseRead();
+            readUnlock(page, buf, lockListener);
         }
     }
 
     /**
-     * @param pageId Page ID.
      * @param page Page.
      * @param h Handler.
      * @param arg Argument.
      * @param intArg Argument of type {@code int}.
+     * @param lockFailed Result in case of lock failure due to page recycling.
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
     public static <X, R> R writePage(
-        long pageId,
         Page page,
         PageLockListener lockListener,
         PageHandler<X, R> h,
         X arg,
-        int intArg
+        int intArg,
+        R lockFailed
     ) throws IgniteCheckedException {
-        return writePage(pageId, page, lockListener, h, null, null, arg, intArg);
+        return writePage(page, lockListener, h, null, null, arg, intArg, lockFailed);
     }
 
     /**
-     * @param pageId Page ID.
      * @param page Page.
      * @param lockListener Lock listener.
      * @param init IO for new page initialization or {@code null} if it is an existing page.
      * @throws IgniteCheckedException If failed.
      */
     public static void initPage(
-        long pageId,
         Page page,
         PageLockListener lockListener,
         PageIO init,
         IgniteWriteAheadLogManager wal
     ) throws IgniteCheckedException {
-        writePage(pageId, page, lockListener, NOOP, init, wal, null, 0);
+        Boolean res = writePage(page, lockListener, NOOP, init, wal, null, 0, FALSE);
+
+        assert res == TRUE: res; // It must be newly allocated page, can't be recycled.
     }
 
     /**
-     * @param pageId Page ID.
+     * @param page Page.
+     * @param lockListener Lock listener.
+     * @return Byte buffer or {@code null} if failed to lock due to recycling.
+     */
+    public static ByteBuffer readLock(Page page, PageLockListener lockListener) {
+        lockListener.onBeforeReadLock(page);
+
+        ByteBuffer buf = page.getForRead();
+
+        lockListener.onReadLock(page, buf);
+
+        return buf;
+    }
+
+    /**
+     * @param page Page.
+     * @param buf Page buffer.
+     * @param lockListener Lock listener.
+     */
+    public static void readUnlock(Page page, ByteBuffer buf, PageLockListener lockListener) {
+        lockListener.onReadUnlock(page, buf);
+
+        page.releaseRead();
+    }
+
+    /**
+     * @param page Page.
+     * @param lockListener Lock listener.
+     * @param tryLock Only try to lock without waiting.
+     * @return Byte buffer or {@code null} if failed to lock due to recycling.
+     */
+    public static ByteBuffer writeLock(Page page, PageLockListener lockListener, boolean tryLock) {
+        lockListener.onBeforeWriteLock(page);
+
+        ByteBuffer buf = tryLock ? page.tryGetForWrite() : page.getForWrite();
+
+        lockListener.onWriteLock(page, buf);
+
+        return buf;
+    }
+
+    /**
+     * @param page Page.
+     * @param buf Page buffer.
+     * @param lockListener Lock listener.
+     * @param dirty Page is dirty.
+     */
+    public static void writeUnlock(Page page, ByteBuffer buf, PageLockListener lockListener, boolean dirty) {
+        lockListener.onWriteUnlock(page, buf);
+
+        page.releaseWrite(dirty);
+    }
+
+    /**
      * @param page Page.
      * @param lockListener Lock listener.
      * @param h Handler.
      * @param init IO for new page initialization or {@code null} if it is an existing page.
      * @param arg Argument.
      * @param intArg Argument of type {@code int}.
+     * @param lockFailed Result in case of lock failure due to page recycling.
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
     public static <X, R> R writePage(
-        long pageId,
         Page page,
         PageLockListener lockListener,
         PageHandler<X, R> h,
         PageIO init,
         IgniteWriteAheadLogManager wal,
         X arg,
-        int intArg
+        int intArg,
+        R lockFailed
     ) throws IgniteCheckedException {
-        lockListener.onBeforeWriteLock(pageId, page);
+        ByteBuffer buf = writeLock(page, lockListener, false);
+
+        if (buf == null)
+            return lockFailed;
 
         R res;
 
         boolean ok = false;
 
-        ByteBuffer buf = page.getForWrite();
-
-        assert buf != null;
-
         try {
-            lockListener.onWriteLock(page, buf);
-
             if (init != null) // It is a new page and we have to initialize it.
-                doInitPage(pageId, page, buf, init, wal);
+                doInitPage(page, buf, init, wal);
             else
                 init = PageIO.getPageIO(buf);
 
-            res = h.run(pageId, page, init, buf, arg, intArg);
+            res = h.run(page, init, buf, arg, intArg);
 
             ok = true;
         }
         finally {
             assert PageIO.getCrc(buf) == 0; //TODO GG-11480
 
-            if (h.releaseAfterWrite(pageId, page, arg, intArg)) {
-                lockListener.onWriteUnlock(page, buf);
-
-                page.releaseWrite(ok);
-            }
+            if (h.releaseAfterWrite(page, arg, intArg))
+                writeUnlock(page, buf, lockListener, ok);
         }
 
         return res;
     }
 
     /**
-     * @param pageId Page ID.
      * @param page Page.
      * @param buf Buffer.
      * @param init Initial IO.
@@ -204,13 +244,14 @@ public abstract class PageHandler<X, R> {
      * @throws IgniteCheckedException If failed.
      */
     private static void doInitPage(
-        long pageId,
         Page page,
         ByteBuffer buf,
         PageIO init,
         IgniteWriteAheadLogManager wal
     ) throws IgniteCheckedException {
         assert PageIO.getCrc(buf) == 0; //TODO GG-11480
+
+        long pageId = page.id();
 
         init.initNewPage(buf, pageId);
 
@@ -220,18 +261,6 @@ public abstract class PageHandler<X, R> {
         if (isWalDeltaRecordNeeded(wal, page))
             wal.log(new InitNewPageRecord(page.fullId().cacheId(), page.id(),
                 init.getType(), init.getVersion(), pageId));
-    }
-
-    /**
-     * @param page Page.
-     * @param buf Buffer.
-     */
-    public static void checkPageId(Page page, ByteBuffer buf) {
-        long pageId = PageIO.getPageId(buf);
-
-        // Page ID must be 0L for newly allocated page, for reused page effective ID must remain the same.
-        if (pageId != 0L && page.id() != PageIdUtils.effectivePageId(pageId))
-            throw new IllegalStateException("Page ID: " + U.hexLong(pageId));
     }
 
     /**

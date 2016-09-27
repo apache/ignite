@@ -52,6 +52,12 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     private static final Integer COMPLETE = Integer.MAX_VALUE;
 
     /** */
+    private static final Integer FAIL_I = Integer.MIN_VALUE;
+
+    /** */
+    private static final Long FAIL_L = Long.MAX_VALUE;
+
+    /** */
     private static final int MIN_PAGE_FREE_SPACE = 8;
 
     /** */
@@ -66,7 +72,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     /** */
     private final PageHandler<CacheDataRow, Integer> writeRow =
         new PageHandler<CacheDataRow, Integer>() {
-            @Override public Integer run(long pageId, Page page, PageIO iox, ByteBuffer buf, CacheDataRow row, int written)
+            @Override public Integer run(Page page, PageIO iox, ByteBuffer buf, CacheDataRow row, int written)
                 throws IgniteCheckedException {
                 DataPageIO io = (DataPageIO)iox;
 
@@ -173,7 +179,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
     /** */
     private final PageHandler<Void, Long> rmvRow = new PageHandler<Void, Long>() {
-        @Override public Long run(long pageId, Page page, PageIO iox, ByteBuffer buf, Void arg, int itemId)
+        @Override public Long run(Page page, PageIO iox, ByteBuffer buf, Void arg, int itemId)
             throws IgniteCheckedException {
             DataPageIO io = (DataPageIO)iox;
 
@@ -318,7 +324,9 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
                 // If it is an existing page, we do not need to initialize it.
                 DataPageIO init = reuseBucket || pageId == 0L ? DataPageIO.VERSIONS.latest() : null;
 
-                written = writePage(page.id(), page, this, writeRow, init, wal, row, written);
+                written = writePage(page, this, writeRow, init, wal, row, written, FAIL_I);
+
+                assert written != FAIL_I; // We can't fail here.
             }
         }
         while (written != COMPLETE);
@@ -334,15 +342,19 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         long nextLink;
 
         try (Page page = pageMem.page(cacheId, pageId)) {
-            nextLink = writePage(pageId, page, this, rmvRow, null, itemId);
+            nextLink = writePage(page, this, rmvRow, null, itemId, FAIL_L);
+
+            assert nextLink != FAIL_L; // Can't fail here.
         }
 
-        while (nextLink != 0) {
+        while (nextLink != 0L) {
             itemId = PageIdUtils.itemId(nextLink);
             pageId = PageIdUtils.pageId(nextLink);
 
             try (Page page = pageMem.page(cacheId, pageId)) {
-                nextLink = writePage(pageId, page, this, rmvRow, null, itemId);
+                nextLink = writePage(page, this, rmvRow, null, itemId, FAIL_L);
+
+                assert nextLink != FAIL_L; // Can't fail here.
             }
         }
     }

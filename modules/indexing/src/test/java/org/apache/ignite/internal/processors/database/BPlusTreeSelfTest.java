@@ -61,7 +61,6 @@ import org.jsr166.ConcurrentLinkedHashMap;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.effectivePageId;
 import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.rnd;
-import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.checkPageId;
 
 /**
  */
@@ -782,7 +781,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         Map<Long,Long> map = new HashMap<>();
 
-        int loops = reuseList == null ? 300_000 : 1000_000;
+        int loops = reuseList == null ? 100_000 : 300_000;
 
         for (int i = 0 ; i < loops; i++) {
             Long x = (long)BPlusTree.randomInt(CNT);
@@ -992,7 +991,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         final Map<Long,Long> map = new ConcurrentHashMap8<>();
 
-        final int loops = reuseList == null ? 200_000 : 1000_000;
+        final int loops = reuseList == null ? 200_000 : 400_000;
 
         final GridStripedLock lock = new GridStripedLock(256);
 
@@ -1088,6 +1087,18 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             cnt++;
 
         return cnt;
+    }
+
+    /**
+     * @param page Page.
+     * @param buf Buffer.
+     */
+    public static void checkPageId(Page page, ByteBuffer buf) {
+        long pageId = PageIO.getPageId(buf);
+
+        // Page ID must be 0L for newly allocated page, for reused page effective ID must remain the same.
+        if (pageId != 0L && page.id() != pageId)
+            throw new IllegalStateException("Page ID: " + U.hexLong(pageId));
     }
 
     /**
@@ -1190,21 +1201,21 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onBeforeReadLock(long pageId, Page page) {
-            assertEquals(page.id(), effectivePageId(pageId));
-
-            assertNull(beforeReadLock.put(threadId(), pageId));
+        @Override public void onBeforeReadLock(Page page) {
+            assertNull(beforeReadLock.put(threadId(), page.id()));
         }
 
         /** {@inheritDoc} */
         @Override public void onReadLock(Page page, ByteBuffer buf) {
-            long pageId = PageIO.getPageId(buf);
+            if (buf != null) {
+                long pageId = PageIO.getPageId(buf);
 
-            checkPageId(page, buf);
+                checkPageId(page, buf);
 
-            assertNull(locks(true).put(page.id(), pageId));
+                assertNull(locks(true).put(page.id(), pageId));
+            }
 
-            assertEquals(page.id(), effectivePageId(beforeReadLock.remove(threadId())));
+            assertEquals(Long.valueOf(page.id()), beforeReadLock.remove(threadId()));
         }
 
         /** {@inheritDoc} */
@@ -1217,31 +1228,31 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onBeforeWriteLock(long pageId, Page page) {
-            assertEquals(page.id(), effectivePageId(pageId));
-
-            assertNull(beforeWriteLock.put(threadId(), pageId));
+        @Override public void onBeforeWriteLock(Page page) {
+            assertNull(beforeWriteLock.put(threadId(), page.id()));
         }
 
         /** {@inheritDoc} */
         @Override public void onWriteLock(Page page, ByteBuffer buf) {
-            checkPageId(page, buf);
+            if (buf != null) {
+                checkPageId(page, buf);
 
-            long pageId = PageIO.getPageId(buf);
+                long pageId = PageIO.getPageId(buf);
 
-            if (pageId == 0L)
-                pageId = page.id(); // It is a newly allocated page.
+                if (pageId == 0L)
+                    pageId = page.id(); // It is a newly allocated page.
 
-            assertNull(locks(false).put(page.id(), pageId));
+                assertNull(locks(false).put(page.id(), pageId));
+            }
 
-            assertEquals(page.id(), effectivePageId(beforeWriteLock.remove(threadId())));
+            assertEquals(Long.valueOf(page.id()), beforeWriteLock.remove(threadId()));
         }
 
         /** {@inheritDoc} */
         @Override public void onWriteUnlock(Page page, ByteBuffer buf) {
-            checkPageId(page, buf);
+            assertEquals(effectivePageId(page.id()), effectivePageId(PageIO.getPageId(buf)));
 
-            assertEquals(page.id(), effectivePageId(locks(false).remove(page.id())));
+            assertEquals(Long.valueOf(page.id()), locks(false).remove(page.id()));
         }
 
         /**
