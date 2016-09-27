@@ -59,8 +59,8 @@ public class GridInternalTasksLoadBalancingSelfTest extends GridCommonAbstractTe
     /** */
     private static Ignite ignite;
 
-    /** */
-    private static boolean defaultConfig = true;
+    /** If {@code true} then special custom load balancer SPI will be used. */
+    private static boolean customLoadBalancer = true;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -71,7 +71,7 @@ public class GridInternalTasksLoadBalancingSelfTest extends GridCommonAbstractTe
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        if (!defaultConfig)
+        if (customLoadBalancer)
             cfg.setLoadBalancingSpi(new CustomLoadBalancerSpi());
 
         return cfg;
@@ -83,7 +83,7 @@ public class GridInternalTasksLoadBalancingSelfTest extends GridCommonAbstractTe
      * @throws Exception In case of error.
      */
     public void testInternalTaskBalancing() throws Exception {
-        defaultConfig = false;
+        customLoadBalancer = true;
 
         ignite = startGrids(GRID_CNT);
 
@@ -113,7 +113,7 @@ public class GridInternalTasksLoadBalancingSelfTest extends GridCommonAbstractTe
      * @throws Exception In case of error.
      */
     public void testInternalTaskDefaultBalancing() throws Exception {
-        defaultConfig = true;
+        customLoadBalancer = false;
 
         ignite = startGrids(GRID_CNT);
 

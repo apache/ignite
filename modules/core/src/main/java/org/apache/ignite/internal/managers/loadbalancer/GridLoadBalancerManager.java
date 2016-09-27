@@ -19,8 +19,6 @@ package org.apache.ignite.internal.managers.loadbalancer;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -39,12 +37,6 @@ import org.jetbrains.annotations.Nullable;
  * Load balancing manager.
  */
 public class GridLoadBalancerManager extends GridManagerAdapter<LoadBalancingSpi> {
-    /** Load balancing SPI to use for internal tasks. */
-    private static final String GRID_INTERNAL_LOAD_BALANCING_SPI =  RoundRobinLoadBalancingSpi.class.getSimpleName();
-
-    /** Cache for internal task names. */
-    private final Map<String, Boolean> internalTasks = new ConcurrentHashMap<>();
-
     /**
      * @param ctx Grid kernal context.
      */
@@ -63,8 +55,6 @@ public class GridLoadBalancerManager extends GridManagerAdapter<LoadBalancingSpi
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         stopSpi();
-
-        internalTasks.clear();
 
         if (log.isDebugEnabled())
             log.debug(stopInfo());
@@ -85,25 +75,8 @@ public class GridLoadBalancerManager extends GridManagerAdapter<LoadBalancingSpi
 
         LoadBalancingSpi spi = getSpi(ses.getLoadBalancingSpi());
 
-        if (!spi.getName().equals(GRID_INTERNAL_LOAD_BALANCING_SPI)) {
-            String taskCls = ses.getTaskClassName();
-
-            Boolean internalTask = internalTasks.get(taskCls);
-
-            if (internalTask == null) {
-                try {
-                    internalTask = ses.internalTask(Class.forName(taskCls));
-                }
-                catch (ClassNotFoundException ignored) {
-                    internalTask = false;
-                }
-
-                internalTasks.put(taskCls, internalTask);
-            }
-
-            if (internalTask)
-                return getSpi(GRID_INTERNAL_LOAD_BALANCING_SPI).getBalancedNode(ses, top, job);
-        }
+        if (ses.internal() && !(spi instanceof RoundRobinLoadBalancingSpi))
+            return getSpi(RoundRobinLoadBalancingSpi.class.getSimpleName()).getBalancedNode(ses, top, job);
 
         return spi.getBalancedNode(ses, top, job);
     }

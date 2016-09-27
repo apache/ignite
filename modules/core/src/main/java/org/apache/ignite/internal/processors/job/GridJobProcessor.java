@@ -1057,6 +1057,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             siblings,
                             sesAttrs,
                             req.isSessionFullSupport(),
+                            internal(),
                             req.getSubjectId());
 
                         taskSes.setCheckpointSpi(req.getCheckpointSpi());

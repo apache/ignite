@@ -31,7 +31,6 @@ import org.apache.ignite.compute.ComputeJobSibling;
 import org.apache.ignite.compute.ComputeTaskSessionAttributeListener;
 import org.apache.ignite.compute.ComputeTaskSessionScope;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
-import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
@@ -104,6 +103,9 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     private final boolean fullSup;
 
     /** */
+    private final boolean internal;
+
+    /** */
     private final Collection<UUID> top;
 
     /** */
@@ -125,6 +127,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      * @param attrs Session attributes.
      * @param ctx Grid Kernal Context.
      * @param fullSup Session full support enabled flag.
+     * @param internal Internal task flag.
      * @param subjId Subject ID.
      */
     public GridTaskSessionImpl(
@@ -140,6 +143,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         @Nullable Map<Object, Object> attrs,
         GridKernalContext ctx,
         boolean fullSup,
+        boolean internal,
         UUID subjId) {
         assert taskNodeId != null;
         assert taskName != null;
@@ -167,6 +171,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         }
 
         this.fullSup = fullSup;
+        this.internal = internal;
         this.subjId = subjId;
 
         mapFut = new IgniteFutureImpl(new GridFutureAdapter());
@@ -862,13 +867,10 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     }
 
     /**
-     * Checks whether task class is annotated with {@link GridInternal}.
-     *
-     * @param taskCls Task class.
      * @return {@code True} if task is internal.
      */
-    public boolean internalTask(Class<?> taskCls) {
-        return dep.internalTask(null, taskCls);
+    public boolean internal() {
+        return internal;
     }
 
     /** {@inheritDoc} */
