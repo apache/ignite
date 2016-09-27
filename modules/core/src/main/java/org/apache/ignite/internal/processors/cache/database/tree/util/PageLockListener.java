@@ -25,10 +25,9 @@ import org.apache.ignite.internal.pagemem.Page;
  */
 public interface PageLockListener {
     /**
-     * @param pageId Virtual page ID.
      * @param page Page.
      */
-    public void onBeforeWriteLock(long pageId, Page page);
+    public void onBeforeWriteLock(Page page);
 
     /**
      * @param page Page.
@@ -43,10 +42,9 @@ public interface PageLockListener {
     public void onWriteUnlock(Page page, ByteBuffer buf);
 
     /**
-     * @param pageId Virtual page ID.
      * @param page Page.
      */
-    public void onBeforeReadLock(long pageId, Page page);
+    public void onBeforeReadLock(Page page);
 
     /**
      * @param page Page.

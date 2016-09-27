@@ -28,6 +28,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageLockListener;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -131,34 +132,20 @@ public abstract class DataStructure implements PageLockListener {
     }
 
     /**
-     * @param pageId Virtual page ID.
      * @param page Page.
      * @return Buffer.
      */
-    protected final ByteBuffer tryWriteLock(long pageId, Page page) {
-        onBeforeWriteLock(pageId, page);
-
-        ByteBuffer buf = page.tryGetForWrite();
-
-        onWriteLock(page, buf);
-
-        return buf;
+    protected final ByteBuffer tryWriteLock(Page page) {
+        return PageHandler.writeLock(page, this, true);
     }
 
 
     /**
-     * @param pageId Virtual page ID.
      * @param page Page.
      * @return Buffer.
      */
-    protected final ByteBuffer writeLock(long pageId, Page page) {
-        onBeforeWriteLock(pageId, page);
-
-        ByteBuffer buf = page.getForWrite();
-
-        onWriteLock(page, buf);
-
-        return buf;
+    protected final ByteBuffer writeLock(Page page) {
+        return PageHandler.writeLock(page, this, false);
     }
 
     /**
@@ -167,24 +154,15 @@ public abstract class DataStructure implements PageLockListener {
      * @param dirty Dirty page.
      */
     protected final void writeUnlock(Page page, ByteBuffer buf, boolean dirty) {
-        onWriteUnlock(page, buf);
-
-        page.releaseWrite(dirty);
+        PageHandler.writeUnlock(page, buf, this, dirty);
     }
 
     /**
-     * @param pageId Virtual page ID.
      * @param page Page.
      * @return Buffer.
      */
-    protected final ByteBuffer readLock(long pageId, Page page) {
-        onBeforeReadLock(pageId, page);
-
-        ByteBuffer buf = page.getForRead();
-
-        onReadLock(page, buf);
-
-        return buf;
+    protected final ByteBuffer readLock(Page page) {
+        return PageHandler.readLock(page, this);
     }
 
     /**
@@ -192,13 +170,11 @@ public abstract class DataStructure implements PageLockListener {
      * @param buf Buffer.
      */
     protected final void readUnlock(Page page, ByteBuffer buf) {
-        onReadUnlock(page, buf);
-
-        page.releaseRead();
+        PageHandler.readUnlock(page, buf, this);
     }
 
     /** {@inheritDoc} */
-    @Override public void onBeforeWriteLock(long pageId, Page page) {
+    @Override public void onBeforeWriteLock(Page page) {
         // No-op.
     }
 
@@ -213,7 +189,7 @@ public abstract class DataStructure implements PageLockListener {
     }
 
     /** {@inheritDoc} */
-    @Override public void onBeforeReadLock(long pageId, Page page) {
+    @Override public void onBeforeReadLock(Page page) {
         // No-op.
     }
 
