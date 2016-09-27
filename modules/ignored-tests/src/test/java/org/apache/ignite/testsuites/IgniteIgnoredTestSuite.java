@@ -19,17 +19,6 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.websession.IgniteWebSessionSelfTestSuite;
-import org.apache.ignite.internal.websession.WebSessionReplicatedSelfTest;
-import org.apache.ignite.internal.websession.WebSessionReplicatedV1SelfTest;
-import org.apache.ignite.internal.websession.WebSessionSelfTest;
-import org.apache.ignite.internal.websession.WebSessionTransactionalSelfTest;
-import org.apache.ignite.internal.websession.WebSessionTransactionalV1SelfTest;
-import org.apache.ignite.internal.websession.WebSessionV1SelfTest;
-import org.apache.ignite.spi.checkpoint.s3.S3CheckpointManagerSelfTest;
-import org.apache.ignite.spi.checkpoint.s3.S3CheckpointSpiSelfTest;
-import org.apache.ignite.spi.checkpoint.s3.S3CheckpointSpiStartStopSelfTest;
-import org.apache.ignite.spi.checkpoint.s3.S3SessionCheckpointSelfTest;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinderSelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
 
 /**
