@@ -265,20 +265,6 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
-     * @return {@code true} if this query should not yield an exception if there was a duplicate key during INSERT.
-     */
-    public boolean skipDuplicateKeys() {
-        return skipDuplicateKeys;
-    }
-
-    /**
-     * @param skipDuplicateKeys whether this query should not yield an exception on a duplicate key during INSERT.
-     */
-    public void skipDuplicateKeys(boolean skipDuplicateKeys) {
-        this.skipDuplicateKeys = skipDuplicateKeys;
-    }
-
-    /**
      * @param args New arguments to copy with.
      * @return Copy.
      */

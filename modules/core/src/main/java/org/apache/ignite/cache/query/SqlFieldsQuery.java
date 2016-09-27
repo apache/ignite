@@ -62,9 +62,6 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private boolean distributedJoins;
 
-    /** Flag for query processor - whether to avoid throwing an exceptions on duplicate key during INSERT */
-    private boolean skipDuplicateKeys;
-
     /**
      * Constructs SQL fields query.
      *
@@ -195,22 +192,6 @@ public class SqlFieldsQuery extends Query<List<?>> {
      */
     public boolean isDistributedJoins() {
         return distributedJoins;
-    }
-
-    /**
-     * @return {@code true} if this query should not yield an exception if there was a duplicate key during INSERT.
-     */
-    public boolean isSkipDuplicateKeys() {
-        return skipDuplicateKeys;
-    }
-
-    /**
-     * @param skipDuplicateKeys whether this query should not yield an exception on a duplicate key during INSERT.
-     */
-    public SqlFieldsQuery setSkipDuplicateKeys(boolean skipDuplicateKeys) {
-        this.skipDuplicateKeys = skipDuplicateKeys;
-
-        return this;
     }
 
     /** {@inheritDoc} */

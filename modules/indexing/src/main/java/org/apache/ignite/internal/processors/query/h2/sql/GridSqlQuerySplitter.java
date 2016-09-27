@@ -164,11 +164,10 @@ public class GridSqlQuerySplitter {
      * @param injectKeysFilter Whether only specific keys must be selected.
      * @param collocatedGrpBy Whether the query has collocated GROUP BY keys.
      * @param distributedJoins If distributed joins enabled.
-     * @param skipDuplicateKeys whether this query should not yield an exception on a duplicate key during INSERT.
      * @return Two step query.
      */
     public static GridCacheTwoStepQuery split(JdbcPreparedStatement stmt, Object[] params, Object[] injectKeysFilter,
-        boolean collocatedGrpBy, boolean distributedJoins, boolean skipDuplicateKeys) throws IgniteCheckedException {
+                                              boolean collocatedGrpBy, boolean distributedJoins) throws IgniteCheckedException {
         if (params == null)
             params = GridCacheSqlQuery.EMPTY_PARAMS;
 
@@ -180,8 +179,7 @@ public class GridSqlQuerySplitter {
 
         if (prepared instanceof Merge || prepared instanceof Update || prepared instanceof Insert ||
             prepared instanceof Delete)
-            return splitUpdateQuery(prepared, params, injectKeysFilter, collocatedGrpBy, distributedJoins,
-                skipDuplicateKeys);
+            return splitUpdateQuery(prepared, params, injectKeysFilter, collocatedGrpBy, distributedJoins);
 
         throw new UnsupportedOperationException("Query not supported [cls=" + prepared.getClass().getName() + "]");
     }
@@ -252,10 +250,9 @@ public class GridSqlQuerySplitter {
      * @param keysFilter Whether only specific keys must be selected.
      * @param collocatedGrpBy Collocated SELECT (for WHERE and subqueries).
      * @param distributedJoins If distributed joins enabled.    @return Two step query.
-     * @param skipDuplicateKeys whether this query should not yield an exception on a duplicate key during INSERT.
      */
     private static GridCacheTwoStepQuery splitUpdateQuery(Prepared prepared, Object[] params, Object[] keysFilter,
-        boolean collocatedGrpBy, final boolean distributedJoins, boolean skipDuplicateKeys) throws IgniteCheckedException {
+                                                          boolean collocatedGrpBy, final boolean distributedJoins) throws IgniteCheckedException {
         GridSqlStatement gridStmt = new GridSqlQueryParser().parse(prepared);
 
         X.ensureX(gridStmt instanceof GridSqlInsert || gridStmt instanceof GridSqlMerge ||
@@ -311,8 +308,6 @@ public class GridSqlQuerySplitter {
             //
             // Statement left for clarity - currently update operations don't really care much about joins.
             res.distributedJoins(distributedJoins && !isCollocated(query(prepared)));
-
-            res.skipDuplicateKeys(skipDuplicateKeys);
         }
 
         res.initialStatement(gridStmt);
