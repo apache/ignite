@@ -18,8 +18,13 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.websession.WebSessionReplicatedSelfTest;
+import org.apache.ignite.internal.websession.WebSessionReplicatedV1SelfTest;
+import org.apache.ignite.internal.websession.WebSessionSelfTest;
+import org.apache.ignite.internal.websession.WebSessionTransactionalSelfTest;
+import org.apache.ignite.internal.websession.WebSessionTransactionalV1SelfTest;
+import org.apache.ignite.internal.websession.WebSessionV1SelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Special test suite with ignored tests.
@@ -30,34 +35,16 @@ public class IgniteIgnoredTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        IgniteTestSuite suite = new IgniteTestSuite("Ignite Ignored Test Suite");
+        IgniteTestSuite suite = new IgniteTestSuite(null, "Ignite Ignored Test Suite", true);
 
-        suite.addTestSuite(SampleTestClass.class, true);
+        /* --- WEB SESSIONS --- */
+        suite.addTestSuite(WebSessionSelfTest.class);
+        suite.addTestSuite(WebSessionTransactionalSelfTest.class);
+        suite.addTestSuite(WebSessionReplicatedSelfTest.class);
+        suite.addTestSuite(WebSessionV1SelfTest.class);
+        suite.addTestSuite(WebSessionTransactionalV1SelfTest.class);
+        suite.addTestSuite(WebSessionReplicatedV1SelfTest.class);
 
         return suite;
-    }
-
-    /**
-     * Sample test class. To be removed once the very first really ignored test class is there.
-     */
-    public static class SampleTestClass extends GridCommonAbstractTest {
-        /**
-         * Test 1.
-         *
-         * @throws Exception If failed.
-         */
-        public void testMethod1() throws Exception {
-            System.out.println("Normal test method called.");
-        }
-
-        /**
-         * Test 2.
-         *
-         * @throws Exception If failed.
-         */
-        @IgniteIgnore
-        public void testMethod2() throws Exception {
-            System.out.println("Ignored method called.");
-        }
     }
 }
