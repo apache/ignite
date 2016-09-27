@@ -70,13 +70,14 @@ namespace Apache.Ignite.log4net
 
             var repo = _log.Logger.Repository;
 
-            // TODO: native error? Where does it go? Properties?
             var messageObject = args == null 
                 ? (object) message 
                 : new SystemStringFormat(formatProvider, message, args);
 
             var evt = new LoggingEvent(GetType(), repo, category, level, messageObject, ex);
-            _log.WarnFormatExt("");
+
+            if (nativeErrorInfo != null)
+                evt.Properties["nativeErrorInfo"] = nativeErrorInfo;
 
             _log.Logger.Log(evt);
         }
