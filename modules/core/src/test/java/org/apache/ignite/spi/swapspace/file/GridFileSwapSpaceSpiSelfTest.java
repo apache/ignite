@@ -25,11 +25,14 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -37,8 +40,10 @@ import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 import org.apache.ignite.spi.swapspace.GridSwapSpaceSpiAbstractSelfTest;
 import org.apache.ignite.spi.swapspace.SwapKey;
 import org.apache.ignite.spi.swapspace.SwapSpaceSpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
+import org.junit.Assert;
 
 /**
  * Test for {@link FileSwapSpaceSpi}.
@@ -363,5 +368,89 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
         }
 
         assertEquals(hash0, hash1);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testSaveValueLargeThenQueueSize() throws IgniteCheckedException {
+        final String spaceName = "mySpace";
+        final SwapKey key = new SwapKey("key");
+
+        final byte[] val = new byte[FileSwapSpaceSpi.DFLT_QUE_SIZE * 2];
+        Arrays.fill(val, (byte)1);
+
+        IgniteInternalFuture<byte[]> fut = GridTestUtils.runAsync(new Callable<byte[]>() {
+            @Override public byte[] call() throws Exception {
+                return saveAndGet(spaceName, key, val);
+            }
+        });
+
+        byte[] bytes = fut.get(10_000);
+
+        Assert.assertArrayEquals(val, bytes);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testSaveValueLargeThenQueueSizeMultiThreaded() throws Exception {
+        final String spaceName = "mySpace";
+
+        final int threads = 5;
+
+        long DURATION = 30_000;
+
+        final int maxSize = FileSwapSpaceSpi.DFLT_QUE_SIZE * 2;
+
+        final AtomicBoolean done = new AtomicBoolean();
+
+        try {
+            IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                    while (!done.get()) {
+                        SwapKey key = new SwapKey(rnd.nextInt(1000));
+
+                        spi.store(spaceName, key, new byte[rnd.nextInt(0, maxSize)], context());
+                    }
+
+                    return null;
+                }
+            }, threads, " async-put");
+
+            Thread.sleep(DURATION);
+
+            done.set(true);
+
+            fut.get();
+        }
+        finally {
+           done.set(true);
+        }
+    }
+
+    /**
+     * @param spaceName Space name.
+     * @param key Key.
+     * @param val Value.
+     * @throws Exception If failed.
+     * @return Read bytes.
+     */
+    private byte[] saveAndGet(final String spaceName, final SwapKey key, byte[] val) throws Exception {
+        spi.store(spaceName, key, val, context());
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return spi.read(spaceName, key, context()) != null;
+            }
+        }, 10_000);
+
+        byte[] res = spi.read(spaceName, key, context());
+
+        assertNotNull(res);
+
+        return res;
     }
 }

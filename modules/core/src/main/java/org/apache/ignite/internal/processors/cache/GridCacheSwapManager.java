@@ -138,6 +138,13 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             initOffHeap();
     }
 
+
+    /** {@inheritDoc} */
+    @Override protected void stop0(boolean cancel) {
+        if (offheapEnabled)
+            offheap.destruct(spaceName);
+    }
+
     /**
      *
      */

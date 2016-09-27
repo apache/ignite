@@ -27,6 +27,7 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -258,7 +259,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
 
     /**
      */
-    private static class ContinuousQueryListener implements CacheEntryUpdatedListener<Integer, String> {
+    public static class ContinuousQueryListener implements CacheEntryUpdatedListener<Integer, String> {
         /** */
         private final IgniteLogger log;
 
@@ -269,7 +270,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
          * @param log Logger.
          * @param workDir Work directory.
          */
-        private ContinuousQueryListener(IgniteLogger log, File workDir) {
+        public ContinuousQueryListener(IgniteLogger log, File workDir) {
             this.log = log;
             this.workDir = workDir;
         }
@@ -305,6 +306,10 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                         catch (IOException e) {
                             U.error(log, "Failed to write class name to file [id=" + evt.getKey() +
                                 ", clsName=" + evt.getValue() + ", file=" + file.getAbsolutePath() + ']', e);
+                        }
+                        catch(OverlappingFileLockException ignored) {
+                            if (log.isDebugEnabled())
+                                log.debug("File already locked (will ignore): " + file.getAbsolutePath());
                         }
                         catch (IgniteInterruptedCheckedException e) {
                             U.error(log, "Interrupted while waiting for acquiring file lock: " + file, e);

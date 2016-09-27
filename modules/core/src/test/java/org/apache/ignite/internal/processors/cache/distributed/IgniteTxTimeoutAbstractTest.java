@@ -20,10 +20,10 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -154,8 +154,8 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
 
             assert false : "Timeout never happened for transaction: " + tx;
         }
-        catch (CacheException e) {
-            if (!(e.getCause() instanceof TransactionTimeoutException))
+        catch (Exception e) {
+            if (!(X.hasCause(e, TransactionTimeoutException.class)))
                 throw e;
 
             info("Received expected timeout exception [msg=" + e.getMessage() + ", tx=" + tx + ']');

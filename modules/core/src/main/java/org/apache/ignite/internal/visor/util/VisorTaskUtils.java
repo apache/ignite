@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.ZipEntry;
@@ -54,18 +55,21 @@ import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicyMBean;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicyMBean;
 import org.apache.ignite.cache.eviction.random.RandomEvictionPolicyMBean;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.event.VisorGridDiscoveryEventV2;
 import org.apache.ignite.internal.visor.event.VisorGridEvent;
 import org.apache.ignite.internal.visor.event.VisorGridEventsLost;
 import org.apache.ignite.internal.visor.file.VisorFileBlock;
 import org.apache.ignite.internal.visor.log.VisorLogFile;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.System.getProperty;
@@ -382,6 +386,17 @@ public class VisorTaskUtils {
     /** Mapper from grid event to Visor data transfer object. */
     public static final VisorEventMapper EVT_MAPPER = new VisorEventMapper();
 
+    /** Mapper from grid event to Visor data transfer object. */
+    public static final VisorEventMapper EVT_MAPPER_V2 = new VisorEventMapper() {
+        @Override protected VisorGridEvent discoveryEvent(DiscoveryEvent de, int type, IgniteUuid id, String name,
+            UUID nid, long ts, String msg, String shortDisplay) {
+            ClusterNode node = de.eventNode();
+
+            return new VisorGridDiscoveryEventV2(type, id, name, nid, ts, msg, shortDisplay, node.id(),
+                F.first(node.addresses()), node.isDaemon(), de.topologyVersion());
+        }
+    };
+
     /**
      * Grabs local events and detects if events was lost since last poll.
      *
@@ -389,17 +404,18 @@ public class VisorTaskUtils {
      * @param evtOrderKey Unique key to take last order key from node local map.
      * @param evtThrottleCntrKey Unique key to take throttle count from node local map.
      * @param all If {@code true} then collect all events otherwise collect only non task events.
+     * @param evtMapper Closure to map grid events to Visor data transfer objects.
      * @return Collections of node events
      */
     public static Collection<VisorGridEvent> collectEvents(Ignite ignite, String evtOrderKey, String evtThrottleCntrKey,
-        final boolean all) {
+        boolean all, IgniteClosure<Event, VisorGridEvent> evtMapper) {
         int[] evtTypes = all ? VISOR_ALL_EVTS : VISOR_NON_TASK_EVTS;
 
         // Collect discovery events for Web Console.
         if (evtOrderKey.startsWith("CONSOLE_"))
             evtTypes = concat(evtTypes, EVTS_DISCOVERY);
 
-        return collectEvents(ignite, evtOrderKey, evtThrottleCntrKey, evtTypes, EVT_MAPPER);
+        return collectEvents(ignite, evtOrderKey, evtThrottleCntrKey, evtTypes, evtMapper);
     }
 
     /**
@@ -413,7 +429,7 @@ public class VisorTaskUtils {
      * @return Collections of node events
      */
     public static Collection<VisorGridEvent> collectEvents(Ignite ignite, String evtOrderKey, String evtThrottleCntrKey,
-        final int[] evtTypes, IgniteClosure<Event, VisorGridEvent> evtMapper) {
+        int[] evtTypes, IgniteClosure<Event, VisorGridEvent> evtMapper) {
         assert ignite != null;
         assert evtTypes != null && evtTypes.length > 0;
 

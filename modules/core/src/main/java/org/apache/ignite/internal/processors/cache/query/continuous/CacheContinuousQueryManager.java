@@ -1204,7 +1204,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
     /**
      *
      */
-    private static class CacheEntryEventImpl extends CacheQueryEntryEvent {
+    public static class CacheEntryEventImpl extends CacheQueryEntryEvent {
         /** */
         private static final long serialVersionUID = 0L;
 

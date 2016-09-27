@@ -113,12 +113,10 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// Initializes a new instance of the <see cref="CacheEntryProcessorHolder"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public CacheEntryProcessorHolder(IBinaryReader reader)
+        public CacheEntryProcessorHolder(IBinaryRawReader reader)
         {
-            var reader0 = (BinaryReader) reader.GetRawReader();
-
-            _proc = reader0.ReadObject<object>();
-            _arg = reader0.ReadObject<object>();
+            _proc = reader.ReadObject<object>();
+            _arg = reader.ReadObject<object>();
 
             _processFunc = GetProcessFunc(_proc);
 

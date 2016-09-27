@@ -124,9 +124,10 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /**
      * @param cctx Context.
      * @param id Partition ID.
+     * @param entryFactory Entry factory.
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor") GridDhtLocalPartition(GridCacheContext cctx, int id,
-        GridCacheMapEntryFactory entryFactory) {
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
+    GridDhtLocalPartition(GridCacheContext cctx, int id, GridCacheMapEntryFactory entryFactory) {
         assert cctx != null;
 
         this.id = id;
@@ -478,7 +479,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         shouldBeRenting = true;
 
         if ((reservations & 0xFFFF) == 0 && casState(reservations, RENTING)) {
-                shouldBeRenting = false;
+            shouldBeRenting = false;
 
             if (log.isDebugEnabled())
                 log.debug("Moved partition to RENTING state: " + this);

@@ -33,8 +33,14 @@ namespace ignite
     namespace odbc
     {
         Statement::Statement(Connection& parent) :
-            connection(parent), columnBindings(), currentQuery(),
-            rowsFetched(0), rowStatuses(0), paramBindOffset(0), columnBindOffset(0)
+            connection(parent),
+            columnBindings(),
+            currentQuery(),
+            rowsFetched(0),
+            rowStatuses(0),
+            paramBindOffset(0),
+            columnBindOffset(0),
+            currentParamIdx(0)
         {
             // No-op.
         }
@@ -67,12 +73,12 @@ namespace ignite
             columnBindings.clear();
         }
 
-        void Statement::SetColumnBindOffsetPtr(size_t * ptr)
+        void Statement::SetColumnBindOffsetPtr(int * ptr)
         {
             columnBindOffset = ptr;
         }
 
-        size_t * Statement::GetColumnBindOffsetPtr()
+        int* Statement::GetColumnBindOffsetPtr()
         {
             return columnBindOffset;
         }
@@ -104,11 +110,25 @@ namespace ignite
 
         void Statement::BindParameter(uint16_t paramIdx, const app::Parameter& param)
         {
-            IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
+            IGNITE_ODBC_API_CALL(InternalBindParameter(paramIdx, param));
+        }
+
+
+        SqlResult Statement::InternalBindParameter(uint16_t paramIdx, const app::Parameter& param)
+        {
+            if (paramIdx == 0)
+            {
+                AddStatusRecord(SQL_STATE_24000_INVALID_CURSOR_STATE,
+                    "The value specified for the argument ParameterNumber was less than 1.");
+
+                return SQL_RESULT_ERROR;
+            }
 
             paramBindings[paramIdx] = param;
 
             paramBindings[paramIdx].GetBuffer().SetPtrToOffsetPtr(&paramBindOffset);
+
+            return SQL_RESULT_SUCCESS;
         }
 
         void Statement::UnbindParameter(uint16_t paramIdx)
@@ -132,14 +152,14 @@ namespace ignite
             return static_cast<uint16_t>(paramBindings.size());
         }
 
-        void Statement::SetParamBindOffsetPtr(size_t* ptr)
+        void Statement::SetParamBindOffsetPtr(int* ptr)
         {
             IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
 
             paramBindOffset = ptr;
         }
 
-        size_t * Statement::GetParamBindOffsetPtr()
+        int* Statement::GetParamBindOffsetPtr()
         {
             return paramBindOffset;
         }
@@ -218,6 +238,21 @@ namespace ignite
 
                 return SQL_RESULT_ERROR;
             }
+
+            bool paramDataReady = true;
+
+            app::ParameterBindingMap::iterator it;
+            for (it = paramBindings.begin(); it != paramBindings.end(); ++it)
+            {
+                app::Parameter& param = it->second;
+
+                param.ResetStoredData();
+
+                paramDataReady &= param.IsDataReady();
+            }
+
+            if (!paramDataReady)
+                return SQL_RESULT_NEED_DATA;
 
             return currentQuery->Execute();
         }
@@ -463,7 +498,7 @@ namespace ignite
                 if (found && strbuf)
                     outSize = utility::CopyStringToBuffer(out, strbuf, buflen);
 
-                if (found && strbuf)
+                if (found && reslen)
                     *reslen = static_cast<int16_t>(outSize);
             }
 
@@ -518,6 +553,107 @@ namespace ignite
         uint16_t * Statement::GetRowStatusesPtr()
         {
             return rowStatuses;
+        }
+
+        void Statement::SelectParam(void** paramPtr)
+        {
+            IGNITE_ODBC_API_CALL(InternalSelectParam(paramPtr));
+        }
+
+        SqlResult Statement::InternalSelectParam(void** paramPtr)
+        {
+            if (!paramPtr)
+            {
+                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, "Invalid parameter: ValuePtrPtr is null.");
+
+                return SQL_RESULT_ERROR;
+            }
+
+            if (!currentQuery.get())
+            {
+                AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query is not prepared.");
+
+                return SQL_RESULT_ERROR;
+            }
+
+            app::ParameterBindingMap::iterator it;
+
+            if (currentParamIdx)
+            {
+                it = paramBindings.find(currentParamIdx);
+
+                if (it != paramBindings.end() && !it->second.IsDataReady())
+                {
+                    AddStatusRecord(SQL_STATE_22026_DATA_LENGTH_MISMATCH,
+                        "Less data was sent for a parameter than was specified with "
+                        "the StrLen_or_IndPtr argument in SQLBindParameter.");
+
+                    return SQL_RESULT_ERROR;
+                }
+            }
+
+            for (it = paramBindings.begin(); it != paramBindings.end(); ++it)
+            {
+                uint16_t paramIdx = it->first;
+                app::Parameter& param = it->second;
+
+                if (!param.IsDataReady())
+                {
+                    *paramPtr = param.GetBuffer().GetData();
+
+                    currentParamIdx = paramIdx;
+
+                    return SQL_RESULT_NEED_DATA;
+                }
+            }
+
+            SqlResult res = currentQuery->Execute();
+
+            if (res != SQL_RESULT_SUCCESS)
+                res = SQL_RESULT_SUCCESS_WITH_INFO;
+
+            return res;
+        }
+
+        void Statement::PutData(void* data, SqlLen len)
+        {
+            IGNITE_ODBC_API_CALL(InternalPutData(data, len));
+        }
+
+        SqlResult Statement::InternalPutData(void* data, SqlLen len)
+        {
+            if (!data && len != 0 && len != SQL_DEFAULT_PARAM && len != SQL_NULL_DATA)
+            {
+                AddStatusRecord(SQL_STATE_HY009_INVALID_USE_OF_NULL_POINTER,
+                    "Invalid parameter: DataPtr is null StrLen_or_Ind is not 0, "
+                    "SQL_DEFAULT_PARAM, or SQL_NULL_DATA.");
+
+                return SQL_RESULT_ERROR;
+            }
+
+            if (currentParamIdx == 0)
+            {
+                AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR,
+                    "Parameter is not selected with the SQLParamData.");
+
+                return SQL_RESULT_ERROR;
+            }
+
+            app::ParameterBindingMap::iterator it = paramBindings.find(currentParamIdx);
+
+            if (it == paramBindings.end())
+            {
+                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR,
+                    "Selected parameter has been unbound.");
+
+                return SQL_RESULT_ERROR;
+            }
+
+            app::Parameter& param = it->second;
+
+            param.PutData(data, len);
+
+            return SQL_RESULT_SUCCESS;
         }
     }
 }

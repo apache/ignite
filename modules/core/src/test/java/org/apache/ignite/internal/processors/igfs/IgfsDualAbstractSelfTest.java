@@ -23,6 +23,7 @@ import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -334,7 +335,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         create(igfsSecondary, paths(DIR, SUBDIR), paths(FILE));
         create(igfs, paths(DIR), null);
 
-        igfs.rename(FILE, new IgfsPath());
+        igfs.rename(FILE, IgfsPath.ROOT);
 
         checkExist(igfs, SUBDIR);
         checkExist(igfs, igfsSecondary, new IgfsPath("/" + FILE.name()));
@@ -350,7 +351,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         create(igfsSecondary, paths(DIR, SUBDIR), paths(FILE));
         create(igfs, null, null);
 
-        igfs.rename(FILE, new IgfsPath());
+        igfs.rename(FILE, IgfsPath.ROOT);
 
         checkExist(igfs, DIR, SUBDIR);
         checkExist(igfs, igfsSecondary, new IgfsPath("/" + FILE.name()));
@@ -701,7 +702,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         create(igfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR), null);
         create(igfs, paths(DIR), null);
 
-        igfs.rename(SUBSUBDIR, new IgfsPath());
+        igfs.rename(SUBSUBDIR, IgfsPath.ROOT);
 
         checkExist(igfs, SUBDIR);
         checkExist(igfs, igfsSecondary, new IgfsPath("/" + SUBSUBDIR.name()));
@@ -717,7 +718,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         create(igfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR), null);
         create(igfs, null, null);
 
-        igfs.rename(SUBSUBDIR, new IgfsPath());
+        igfs.rename(SUBSUBDIR, IgfsPath.ROOT);
 
         checkExist(igfs, DIR, SUBDIR);
         checkExist(igfs, igfsSecondary, new IgfsPath("/" + SUBSUBDIR.name()));
@@ -1510,8 +1511,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         T2<Long, Long> t0 = new T2<>(f0.accessTime(), f0.modificationTime());
 
         // Root cannot be seen through the parent listing:
-        if (!p.isSame(p.root())) {
-
+        if (!F.eq(IgfsPath.ROOT, p)) {
             assertNotNull(f0);
 
             Collection<IgfsFile> listing = fs.listFiles(p.parent());
@@ -1519,7 +1519,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
             IgfsFile f1 = null;
 
             for (IgfsFile fi : listing) {
-                if (fi.path().isSame(p)) {
+                if (F.eq(fi.path(), p)) {
                     f1 = fi;
 
                     break;
@@ -1598,5 +1598,19 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         } catch (Exception ignore) {
             // No-op.
         }
+    }
+
+    /**
+     *
+     * @throws Exception If failed.
+     */
+    public void testSecondarySize() throws Exception {
+        igfs.mkdirs(SUBDIR);
+
+        createFile(igfsSecondary, FILE, chunk);
+        createFile(igfsSecondary, new IgfsPath(SUBDIR, "file2"), chunk);
+
+        assertEquals(chunk.length, igfs.size(FILE));
+        assertEquals(chunk.length * 2, igfs.size(SUBDIR));
     }
 }
