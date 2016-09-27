@@ -21,7 +21,7 @@ namespace Apache.Ignite.Core.Tests.NuGet
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Log;
-    using Apache.Ignite.log4net;
+    using Apache.Ignite.Log4Net;
     using global::log4net;
     using global::log4net.Appender;
     using global::log4net.Core;
