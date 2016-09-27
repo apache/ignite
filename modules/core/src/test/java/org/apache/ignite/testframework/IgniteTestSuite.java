@@ -36,8 +36,15 @@ import java.util.List;
  * Test methods marked with @Ignored annotation won't be executed.
  */
 public class IgniteTestSuite extends TestSuite {
+    /** Ignore default flag thread local. */
+    private static final ThreadLocal<Boolean> IGNORE_DFLT = new ThreadLocal<Boolean>() {
+        @Override protected Boolean initialValue() {
+            return false;
+        }
+    };
+
     /** Whether to execute only ignored tests. */
-    private final boolean ignoredOnly;
+    private boolean ignoredOnly;
 
     /**
      * Constructor.
@@ -54,7 +61,7 @@ public class IgniteTestSuite extends TestSuite {
      * @param theClass TestCase class
      */
     public IgniteTestSuite(Class<? extends TestCase> theClass) {
-        this(theClass, false);
+        this(theClass, ignoreDefault());
     }
 
     /**
@@ -74,7 +81,7 @@ public class IgniteTestSuite extends TestSuite {
      * @param name Test suite name.
      */
     public IgniteTestSuite(Class<? extends TestCase> theClass, String name) {
-        this(theClass, name, false);
+        this(theClass, name, ignoreDefault());
     }
 
     /**
@@ -92,6 +99,13 @@ public class IgniteTestSuite extends TestSuite {
 
         if (name != null)
             setName(name);
+    }
+
+    /**
+     * Adds a test to the suite.
+     */
+    @Override public void addTest(Test test) {
+        super.addTest(test);
     }
 
     /** {@inheritDoc} */
@@ -122,6 +136,7 @@ public class IgniteTestSuite extends TestSuite {
             Class superCls = theClass;
 
             int testAdded = 0;
+            int testIgnored = 0;
 
             for(List<String> names = new ArrayList<>(); Test.class.isAssignableFrom(superCls);
                 superCls = superCls.getSuperclass()) {
@@ -131,10 +146,12 @@ public class IgniteTestSuite extends TestSuite {
                 for (Method each : methods) {
                     if (addTestMethod(each, names, theClass))
                         testAdded++;
+                    else
+                        testIgnored++;
                 }
             }
 
-            if(testAdded == 0)
+            if(testAdded == 0 && testIgnored == 0)
                 addTest(warning("No tests found in " + theClass.getName()));
         }
     }
@@ -219,6 +236,22 @@ public class IgniteTestSuite extends TestSuite {
      */
     private static boolean isPublicTestMethod(Method m) {
         return isTestMethod(m) && Modifier.isPublic(m.getModifiers());
+    }
+
+    /**
+     * @param val Default value of ignore flag.
+     */
+    public static void ignoreDefault(boolean val) {
+        IGNORE_DFLT.set(val);
+    }
+
+    /**
+     * @return Default value of ignore flag.
+     */
+    private static boolean ignoreDefault() {
+        Boolean res = IGNORE_DFLT.get();
+
+        return res != null && res;
     }
 
     /**
