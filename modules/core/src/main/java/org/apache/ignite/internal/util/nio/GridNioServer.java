@@ -464,10 +464,8 @@ public class GridNioServer<T> {
             if (ses.removeFuture(fut))
                 fut.connectionClosed();
         }
-        else {
-            if (!ses.processWrite.get() && ses.processWrite.compareAndSet(false, true))
+        else if (!ses.procWrite.get() && ses.procWrite.compareAndSet(false, true))
                 clientWorkers.get(ses.selectorIndex()).offer(fut);
-        }
 
         if (msgQueueLsnr != null)
             msgQueueLsnr.apply(ses, msgCnt);
@@ -700,17 +698,17 @@ public class GridNioServer<T> {
         assert req.operation() == NioOperation.REGISTER : req;
         assert req.socketChannel() != null : req;
 
-        int workes = clientWorkers.size();
+        int workers = clientWorkers.size();
 
         int balanceIdx;
 
-        if (workes > 1) {
+        if (workers > 1) {
             if (req.accepted()) {
                 balanceIdx = readBalanceIdx;
 
                 readBalanceIdx += 2;
 
-                if (readBalanceIdx >= workes)
+                if (readBalanceIdx >= workers)
                     readBalanceIdx = 0;
             }
             else {
@@ -718,7 +716,7 @@ public class GridNioServer<T> {
 
                 writeBalanceIdx += 2;
 
-                if (writeBalanceIdx >= workes)
+                if (writeBalanceIdx >= workers)
                     writeBalanceIdx = 1;
             }
         }
@@ -1209,17 +1207,15 @@ public class GridNioServer<T> {
                 req = (NioOperationFuture<?>)ses.pollFuture();
 
                 if (req == null && buf.position() == 0) {
-                    if (ses.processWrite.get()) {
-                        boolean set = ses.processWrite.compareAndSet(true, false);
+                    if (ses.procWrite.get()) {
+                        boolean set = ses.procWrite.compareAndSet(true, false);
 
                         assert set;
 
-                        if (ses.writeQueue().isEmpty()) {
+                        if (ses.writeQueue().isEmpty())
                             key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
-                        }
-                        else {
-                            ses.processWrite.set(true);
-                        }
+                        else
+                            ses.procWrite.set(true);
                     }
 
                     return;

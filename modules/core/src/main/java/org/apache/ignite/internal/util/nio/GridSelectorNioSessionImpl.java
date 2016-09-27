@@ -66,7 +66,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     private final IgniteLogger log;
 
     /** */
-    public final AtomicBoolean processWrite = new AtomicBoolean();
+    final AtomicBoolean procWrite = new AtomicBoolean();
 
     /**
      * Creates session instance.

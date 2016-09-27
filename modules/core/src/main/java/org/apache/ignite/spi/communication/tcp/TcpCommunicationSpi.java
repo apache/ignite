@@ -2644,6 +2644,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * Establish TCP connection to remote node and returns client.
      *
      * @param node Remote node.
+     * @param connIdx Connection index.
      * @return Client.
      * @throws IgniteCheckedException If failed.
      */
@@ -2918,6 +2919,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @param rmtNodeId Remote node.
      * @param timeout Timeout for handshake.
      * @param ssl SSL engine if used cryptography, otherwise {@code null}.
+     * @param handshakeConnIdx Non null connection index if need send it in handshake.
      * @throws IgniteCheckedException If handshake failed or wasn't completed withing timeout.
      * @return Handshake response.
      */
