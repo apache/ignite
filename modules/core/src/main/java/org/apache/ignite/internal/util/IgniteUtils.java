@@ -8814,6 +8814,9 @@ public abstract class IgniteUtils {
      */
     public static String workDirectory(@Nullable String userWorkDir, @Nullable String userIgniteHome)
         throws IgniteCheckedException {
+        if (userIgniteHome == null)
+            userIgniteHome = getIgniteHome();
+
         File workDir;
 
         if (!F.isEmpty(userWorkDir))
