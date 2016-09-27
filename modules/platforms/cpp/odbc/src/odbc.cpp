@@ -326,6 +326,8 @@ namespace ignite
 
         std::string dsn = SqlStringToString(serverName, serverNameLen);
 
+        LOG_MSG("DSN: %s\n", dsn.c_str());
+
         odbc::ReadDsnConfiguration(dsn.c_str(), config);
 
         connection->Establish(config);
@@ -621,7 +623,7 @@ namespace ignite
         using odbc::app::Parameter;
         using odbc::type_traits::IsSqlTypeSupported;
 
-        LOG_MSG("SQLBindParameter called\n");
+        LOG_MSG("SQLBindParameter called: %d, %d, %d\n", paramIdx, bufferType, paramSqlType);
 
         Statement *statement = reinterpret_cast<Statement*>(stmt);
 
@@ -629,9 +631,6 @@ namespace ignite
             return SQL_INVALID_HANDLE;
 
         if (ioType != SQL_PARAM_INPUT)
-            return SQL_ERROR;
-
-        if (resLen && (*resLen == SQL_DATA_AT_EXEC || *resLen <= SQL_LEN_DATA_AT_EXEC_OFFSET))
             return SQL_ERROR;
 
         if (!IsSqlTypeSupported(paramSqlType))
@@ -976,14 +975,14 @@ namespace ignite
 
             case SQL_ATTR_PARAM_BIND_OFFSET_PTR:
             {
-                statement->SetParamBindOffsetPtr(reinterpret_cast<size_t*>(value));
+                statement->SetParamBindOffsetPtr(reinterpret_cast<int*>(value));
 
                 break;
             }
 
             case SQL_ATTR_ROW_BIND_OFFSET_PTR:
             {
-                statement->SetColumnBindOffsetPtr(reinterpret_cast<size_t*>(value));
+                statement->SetColumnBindOffsetPtr(reinterpret_cast<int*>(value));
 
                 break;
             }
@@ -1330,6 +1329,38 @@ namespace ignite
         LOG_MSG("table: %s\n", table.c_str());
 
         statement->ExecuteSpecialColumnsQuery(idType, catalog, schema, table, scope, nullable);
+
+        return statement->GetDiagnosticRecords().GetReturnCode();
+    }
+
+    SQLRETURN SQLParamData(SQLHSTMT stmt, SQLPOINTER* value)
+    {
+        using namespace ignite::odbc;
+
+        LOG_MSG("SQLParamData called\n");
+
+        Statement *statement = reinterpret_cast<Statement*>(stmt);
+
+        if (!statement)
+            return SQL_INVALID_HANDLE;
+
+        statement->SelectParam(value);
+
+        return statement->GetDiagnosticRecords().GetReturnCode();
+    }
+
+    SQLRETURN SQLPutData(SQLHSTMT stmt, SQLPOINTER data, SQLLEN strLengthOrIndicator)
+    {
+        using namespace ignite::odbc;
+
+        LOG_MSG("SQLPutData called\n");
+
+        Statement *statement = reinterpret_cast<Statement*>(stmt);
+
+        if (!statement)
+            return SQL_INVALID_HANDLE;
+
+        statement->PutData(data, strLengthOrIndicator);
 
         return statement->GetDiagnosticRecords().GetReturnCode();
     }

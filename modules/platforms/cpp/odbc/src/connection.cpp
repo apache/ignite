@@ -52,7 +52,7 @@ namespace ignite
         {
             // No-op.
         }
-        
+
         const config::ConnectionInfo& Connection::GetInfo() const
         {
             // Connection info is constant and the same for all connections now.

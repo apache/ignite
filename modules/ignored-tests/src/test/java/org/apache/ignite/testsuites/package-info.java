@@ -15,26 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
 /**
- * Annotation which indicates that the test is ignored.
+ * <!-- Package description. -->
+ * Contains internal tests or test related classes and interfaces.
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD})
-public @interface IgniteIgnore {
-    /**
-     * Reason for ignore (usually link to JIRA ticket).
-     */
-    String value();
-
-    /**
-     * Whether test should be failed immediately. Useful when test hangs or consumes a lot of time.
-     */
-    boolean forceFailure() default false;
-}
+package org.apache.ignite.testsuites;
