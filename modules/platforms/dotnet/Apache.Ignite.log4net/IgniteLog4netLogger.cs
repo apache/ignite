@@ -18,8 +18,11 @@
 namespace Apache.Ignite.log4net
 {
     using System;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Log;
     using global::log4net;
+    using global::log4net.Core;
+    using ILogger = Apache.Ignite.Core.Log.ILogger;
 
     /// <summary>
     /// Ignite log4net integration.
@@ -43,6 +46,8 @@ namespace Apache.Ignite.log4net
         /// <param name="log">The log.</param>
         public IgniteLog4NetLogger(ILog log)
         {
+            IgniteArgumentCheck.NotNull(log, "log");
+
             _log = log;
         }
 
@@ -66,13 +71,37 @@ namespace Apache.Ignite.log4net
         /// <summary>
         /// Determines whether the specified log level is enabled.
         /// </summary>
-        /// <param name="level">The level.</param>
+        /// <param name="logLevel">The level.</param>
         /// <returns>
         /// Value indicating whether the specified log level is enabled
         /// </returns>
-        public bool IsEnabled(LogLevel level)
+        public bool IsEnabled(LogLevel logLevel)
         {
-            throw new NotImplementedException();
+            var level = ConvertLogLevel(logLevel);
+
+            return _log.Logger.IsEnabledFor(level);
+        }
+
+        /// <summary>
+        /// Converts the log level.
+        /// </summary>
+        private static Level ConvertLogLevel(LogLevel level)
+        {
+            switch (level)
+            {
+                case LogLevel.Trace:
+                    return Level.Trace;
+                case LogLevel.Debug:
+                    return Level.Debug;
+                case LogLevel.Info:
+                    return Level.Info;
+                case LogLevel.Warn:
+                    return Level.Warn;
+                case LogLevel.Error:
+                    return Level.Error;
+                default:
+                    throw new ArgumentOutOfRangeException("level", level, null);
+            }
         }
     }
 }
