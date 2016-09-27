@@ -37,7 +37,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -56,9 +55,6 @@ import java.util.Map;
  * Secondary file system which delegates to local file system.
  */
 public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystemV2, LifecycleAware {
-    /** Default buffer size. */
-    private static final int DFLT_BUF_SIZE = 8 * 1024;
-
     /** Path that will be added to each passed path. */
     private String workDir;
 
@@ -259,13 +255,13 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystemV2, 
 
     /** {@inheritDoc} */
     @Override public OutputStream create(IgfsPath path, boolean overwrite) {
-        return create0(path, overwrite, DFLT_BUF_SIZE);
+        return create0(path, overwrite);
     }
 
     /** {@inheritDoc} */
     @Override public OutputStream create(IgfsPath path, int bufSize, boolean overwrite, int replication,
         long blockSize, @Nullable Map<String, String> props) {
-        return create0(path, overwrite, bufSize);
+        return create0(path, overwrite);
     }
 
     /** {@inheritDoc} */
@@ -277,10 +273,10 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystemV2, 
             boolean exists = file.exists();
 
             if (exists)
-                return new BufferedOutputStream(new FileOutputStream(file, true), bufSize);
+                return new FileOutputStream(file, true);
             else {
                 if (create)
-                    return create0(path, false, bufSize);
+                    return create0(path, false);
                 else
                     throw new IgfsPathNotFoundException("Failed to append to file because it doesn't exist: " + path);
             }
@@ -408,11 +404,10 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystemV2, 
      * Internal create routine.
      *
      * @param path Path.
-     * @param overwrite Overwirte flag.
-     * @param bufSize Buffer size.
+     * @param overwrite Overwrite flag.
      * @return Output stream.
      */
-    private OutputStream create0(IgfsPath path, boolean overwrite, int bufSize) {
+    private OutputStream create0(IgfsPath path, boolean overwrite) {
         File file = fileForPath(path);
 
         boolean exists = file.exists();
@@ -430,7 +425,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystemV2, 
         }
 
         try {
-            return new BufferedOutputStream(new FileOutputStream(file), bufSize);
+            return new FileOutputStream(file);
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to create file [path=" + path + ", overwrite=" + overwrite + ']');
