@@ -154,7 +154,7 @@ namespace Apache.Ignite.Core.Tests.Log
             using (var ignite = Ignition.Start(cfg))
             {
                 Assert.IsTrue(getLogs().Contains(
-                    string.Format("|Debug|Starting Ignite.NET {0}||", typeof(Ignition).Assembly.GetName().Version)));
+                    string.Format("Starting Ignite.NET {0}", typeof(Ignition).Assembly.GetName().Version)));
 
                 Assert.IsTrue(getLogs().Any(x => x.Contains(">>> Topology snapshot.")));
 
@@ -162,10 +162,10 @@ namespace Apache.Ignite.Core.Tests.Log
 
                 ignite.Logger.Info("Log from user code.");
 
-                Assert.IsTrue(getLogs().Contains("|Info|Log from user code.||"));
+                Assert.IsTrue(getLogs().Contains("Log from user code."));
             }
 
-            Assert.IsTrue(getLogs().Contains("org.apache.ignite.internal.IgniteKernal|Debug|Grid is stopping.||"));
+            Assert.IsTrue(getLogs().Contains("Grid is stopping."));
         }
 
         /// <summary>
