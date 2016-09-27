@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.io.Serializable;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import javax.cache.Cache;
 import javax.cache.configuration.FactoryBuilder;
@@ -30,24 +33,28 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
  * Tests for cache data loading during simultaneous grids start.
  */
 public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractTest {
     /** Grids count */
-    protected static int GRIDS_CNT = 5;
+    private static int GRIDS_CNT = 5;
 
     /** Keys count */
-    protected static int KEYS_CNT = 1_000_000;
+    private static int KEYS_CNT = 1_000_000;
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -97,6 +104,78 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
                 grid.cache(null).loadCache(null);
             }
         });
+    }
+
+    /**
+     * @throws Exception if failed
+     */
+    public void testSequentialLoadCacheWithDataStreamer() throws Exception {
+        Ignite g0 = startGrid(0);
+
+        IgniteInternalFuture<Object> fut = runAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                for (int i = 1; i < GRIDS_CNT; i++)
+                    startGrid(i);
+
+                return null;
+            }
+        });
+
+        final HashSet<IgniteFuture> set = new HashSet<>();
+
+        IgniteInClosure<Ignite> f = new IgniteInClosure<Ignite>() {
+            @Override public void apply(Ignite grid) {
+                try (IgniteDataStreamer<Integer, String> dataStreamer = grid.dataStreamer(null)) {
+                    for (int i = 0; i < KEYS_CNT; i++) {
+                        set.add(dataStreamer.addData(i, "Data"));
+
+                        if (i % 100000 == 0)
+                            log.info("Streaming "+i+"'th entry.");
+                    }
+                }
+            }
+        };
+
+        f.apply(g0);
+
+        log.info("Data loaded.");
+
+        fut.get();
+
+        for (IgniteFuture res: set)
+            assert res.get() == null;
+
+        IgniteCache<Integer, String> cache = grid(0).cache(null);
+
+        if (cache.size(CachePeekMode.PRIMARY) != KEYS_CNT){
+            Set<Integer> failedKeys = new LinkedHashSet<>();
+
+            for (int i = 0; i < KEYS_CNT; i++)
+                if (!cache.containsKey(i)) {
+                    for (Ignite ignite : G.allGrids()) {
+                        IgniteEx igniteEx = (IgniteEx)ignite;
+
+                        log.info("Missed key info:" +
+                            igniteEx.localNode().id() +
+                            " primary=" +
+                            ignite.affinity(null).isPrimary(igniteEx.localNode(), i) +
+                            " backup=" +
+                            ignite.affinity(null).isBackup(igniteEx.localNode(), i) +
+                            " local peek=" +
+                            ignite.cache(null).localPeek(i, CachePeekMode.ONHEAP));
+                    }
+
+                    for (int j = i; j < i + 10000; j++)
+                        if (!cache.containsKey(j))
+                            failedKeys.add(j);
+
+                    break;
+                }
+
+            assert failedKeys.isEmpty() : "Some failed keys: " + failedKeys.toString();
+        }
+
+        assertCacheSize();
     }
 
     /**

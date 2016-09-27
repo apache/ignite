@@ -29,13 +29,17 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.thread.IgniteThread;
@@ -288,6 +292,56 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                 return;
             }
 
+            localUpdate(nodeId, req, updater, topic);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * @param nodeId Node id.
+     * @param req Request.
+     * @param updater Updater.
+     * @param topic Topic.
+     */
+    private void localUpdate(final UUID nodeId,
+        final DataStreamerRequest req,
+        final StreamReceiver<K, V> updater,
+        final Object topic) {
+        GridCacheContext cctx = ctx.cache().internalCache(req.cacheName()).context();
+
+        Exception err = null;
+
+        GridFutureAdapter waitFut = null;
+
+        cctx.topology().readLock();
+
+        try {
+            try {
+                GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
+
+                if (fut.isDone()) {
+                    AffinityTopologyVersion topVer = fut.topologyVersion();
+
+                    if (!topVer.equals(req.topologyVersion()))
+                        err = new IgniteCheckedException(
+                            "DataStreamer will retry data transfer at stable topology. " +
+                                "[reqTop=" + req.topologyVersion() + " ,topVer=" + topVer + "]");
+                    else
+                        waitFut = cctx.mvcc().addDataStreamerFuture();
+                }
+                else
+                    fut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                        @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> e) {
+                            localUpdate(nodeId, req, updater, topic);
+                        }
+                    });
+            }
+            finally {
+                cctx.topology().readUnlock();
+            }
+
             Collection<DataStreamerEntry> col = req.entries();
 
             DataStreamerUpdateJob job = new DataStreamerUpdateJob(ctx,
@@ -300,25 +354,25 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                 updater,
                 req.topologyVersion());
 
-            Exception err = null;
+            if (err == null)
+                try {
+                    job.call();
+                }
+                catch (IgniteCheckedException e) {
+                    err = e;
+                }
+                catch (Exception e) {
+                    U.error(log, "Failed to finish update job.", e);
 
-            try {
-                job.call();
-            }
-            catch (IgniteCheckedException e){
-                err = e;
-            }
-            catch (Exception e) {
-                U.error(log, "Failed to finish update job.", e);
-
-                err = e;
-            }
-
-            sendResponse(nodeId, topic, req.requestId(), err, req.forceLocalDeployment());
+                    err = e;
+                }
         }
         finally {
-            busyLock.leaveBusy();
+            if (waitFut != null)
+                waitFut.onDone();
         }
+
+        sendResponse(nodeId, topic, req.requestId(), err, req.forceLocalDeployment());
     }
 
     /**

@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -59,6 +60,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -107,6 +109,9 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     /** Pending atomic futures. */
     private final ConcurrentMap<GridCacheVersion, GridCacheAtomicFuture<?>> atomicFuts =
         new ConcurrentHashMap8<>();
+
+    /** Pending data streamer futures. */
+    private final GridConcurrentHashSet<IgniteInternalFuture<?>> dataStreamerFuts = new GridConcurrentHashSet<>();
 
     /** */
     private final ConcurrentMap<IgniteUuid, GridCacheFuture<?>> futs = new ConcurrentHashMap8<>();
@@ -474,6 +479,24 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
         onFutureAdded(fut);
     }
+
+    /**
+     */
+    public GridFutureAdapter addDataStreamerFuture() {
+        final GridFutureAdapter fut = new GridFutureAdapter();
+
+        fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
+            @Override public void apply(IgniteInternalFuture e) {
+                dataStreamerFuts.remove(fut);
+            }
+        });
+
+        dataStreamerFuts.add(fut);
+
+        return fut;
+    }
+
+    /**
 
     /**
      * Adds future.
@@ -1049,6 +1072,22 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
             if (complete != null)
                 res.add((IgniteInternalFuture)complete);
         }
+
+        res.markInitialized();
+
+        return res;
+    }
+
+    /**
+     *
+     * @return Finish update future.
+     */
+    @SuppressWarnings("unchecked")
+    public IgniteInternalFuture<?> finishDataStreamerUpdates() {
+        GridCompoundFuture<Object, Object> res = new GridCompoundFuture<>();
+
+        for (IgniteInternalFuture fut : dataStreamerFuts)
+            res.add(fut);
 
         res.markInitialized();
 

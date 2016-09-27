@@ -23,13 +23,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.DelayQueue;
@@ -138,7 +136,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private IgniteClosure<ClusterNode, Byte> ioPlcRslvr = DFLT_IO_PLC_RSLVR;
 
     /** Max remap count before issuing an error. */
-    private static final int DFLT_MAX_REMAP_CNT = 64;
+    private static final int DFLT_MAX_REMAP_CNT = 1024; //Todo decrease.
 
     /** Log reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
@@ -885,12 +883,16 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      * @throws IgniteCheckedException If failed.
      */
     private List<ClusterNode> nodes(KeyCacheObject key, AffinityTopologyVersion topVer) throws IgniteCheckedException {
+        GridCacheContext cctx = ctx.cache().internalCache(cacheName).context();
+
+        GridDhtPartitionTopology top = cctx.topology();
+
         GridAffinityProcessor aff = ctx.affinity();
 
         List<ClusterNode> res = null;
 
         if (!allowOverwrite())
-            res = aff.mapKeyToPrimaryAndBackups(cacheName, key, topVer);
+            res = top.nodes(cctx.affinity().partition(key), topVer);
         else {
             ClusterNode node = aff.mapKeyToNode(cacheName, key, topVer);
 
@@ -1391,6 +1393,80 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         }
 
         /**
+         * @param entries Entries.
+         * @param reqTopVer Request topology version.
+         * @param curFut Current future.
+         */
+        private void localUpdate(final Collection<DataStreamerEntry> entries,
+            final AffinityTopologyVersion reqTopVer,
+            final GridFutureAdapter<Object> curFut) {
+            GridCacheContext cctx = ctx.cache().internalCache(cacheName).context();
+
+            cctx.topology().readLock();
+
+            try {
+                GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
+
+                AffinityTopologyVersion topVer = fut.topologyVersion();
+
+                if (fut.isDone()) {
+                    if (!topVer.equals(reqTopVer)) {
+                        curFut.onDone(new IgniteCheckedException(
+                            "DataStreamer will retry data transfer at stable topology. " +
+                            "[reqTop=" + reqTopVer + " ,topVer=" + topVer + "]"));
+
+                        return;
+                    }
+
+                    IgniteInternalFuture<Object> callFut;
+
+                    callFut = ctx.closure().callLocalSafe(
+                        new DataStreamerUpdateJob(
+                            ctx,
+                            log,
+                            cacheName,
+                            entries,
+                            false,
+                            skipStore,
+                            keepBinary,
+                            rcvr,
+                            topVer),
+                        false);
+
+                    locFuts.add(callFut);
+
+                    final GridFutureAdapter waitFut = cctx.mvcc().addDataStreamerFuture();
+
+                    callFut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
+                        @Override public void apply(IgniteInternalFuture<Object> t) {
+                            try {
+                                waitFut.onDone();
+
+                                boolean rmv = locFuts.remove(t);
+
+                                assert rmv;
+
+                                curFut.onDone(t.get());
+                            }
+                            catch (IgniteCheckedException e) {
+                                curFut.onDone(e);
+                            }
+                        }
+                    });
+                }
+                else
+                    fut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                        @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> e) {
+                            localUpdate(entries, reqTopVer, curFut);
+                        }
+                    });
+            }
+            finally {
+                cctx.topology().readUnlock();
+            }
+        }
+
+        /**
          * @param entries Entries to submit.
          * @param topVer Topology version.
          * @param curFut Current future.
@@ -1422,37 +1498,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             if (plc == null)
                 plc = PUBLIC_POOL;
 
-            if (isLocNode && plc == GridIoPolicy.PUBLIC_POOL) {
-                fut = ctx.closure().callLocalSafe(
-                    new DataStreamerUpdateJob(
-                        ctx,
-                        log,
-                        cacheName,
-                        entries,
-                        false,
-                        skipStore,
-                        keepBinary,
-                        rcvr,
-                        topVer),
-                    false);
-
-                locFuts.add(fut);
-
-                fut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
-                    @Override public void apply(IgniteInternalFuture<Object> t) {
-                        try {
-                            boolean rmv = locFuts.remove(t);
-
-                            assert rmv;
-
-                            curFut.onDone(t.get());
-                        }
-                        catch (IgniteCheckedException e) {
-                            curFut.onDone(e);
-                        }
-                    }
-                });
-            }
+            if (isLocNode && plc == GridIoPolicy.PUBLIC_POOL)
+                localUpdate(entries, topVer, curFut);
             else {
                 try {
                     for (DataStreamerEntry e : entries) {
@@ -1733,9 +1780,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public void receive(IgniteCache<KeyCacheObject, CacheObject> cache,
-            Collection<Entry<KeyCacheObject, CacheObject>> entries,
-            AffinityTopologyVersion reqTopVer) throws IgniteCheckedException {
+        @Override public void receive(final IgniteCache<KeyCacheObject, CacheObject> cache,
+            final Collection<Entry<KeyCacheObject, CacheObject>> entries,
+            final AffinityTopologyVersion reqTopVer) throws IgniteCheckedException {
             IgniteCacheProxy<KeyCacheObject, CacheObject> proxy = (IgniteCacheProxy<KeyCacheObject, CacheObject>)cache;
 
             GridCacheAdapter<KeyCacheObject, CacheObject> internalCache = proxy.context().cache();
@@ -1745,84 +1792,50 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             GridCacheContext cctx = internalCache.context();
 
-            cctx.topology().readLock();
+            AffinityTopologyVersion topVer = cctx.topology().topologyVersion();
 
-            try {
-                GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
+            GridCacheVersion ver = cctx.versions().isolatedStreamerVersion();
 
-                AffinityTopologyVersion topVer = fut.topologyVersion();
+            long ttl = CU.TTL_ETERNAL;
+            long expiryTime = CU.EXPIRE_TIME_ETERNAL;
 
-                if (!fut.isDone() || !topVer.equals(reqTopVer))
-                    throw new IgniteCheckedException("DataStreamer will retry data transfer at stable topology. " +
-                        "[reqTop=" + reqTopVer + " ,topVer=" + topVer + "]");
+            ExpiryPolicy plc = cctx.expiry();
 
-                GridCacheVersion ver = cctx.versions().isolatedStreamerVersion();
+            for (Entry<KeyCacheObject, CacheObject> e : entries) {
+                try {
+                    e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
 
-                long ttl = CU.TTL_ETERNAL;
-                long expiryTime = CU.EXPIRE_TIME_ETERNAL;
+                    GridCacheEntryEx entry = internalCache.entryEx(e.getKey(), topVer);
 
-                ExpiryPolicy plc = cctx.expiry();
+                    if (plc != null) {
+                        ttl = CU.toTtl(plc.getExpiryForCreation());
 
-                GridDhtPartitionTopology top = cctx.dht().topology();
+                        if (ttl == CU.TTL_ZERO)
+                            continue;
+                        else if (ttl == CU.TTL_NOT_CHANGED)
+                            ttl = 0;
 
-                Set<Integer> parts = new HashSet<>();
-
-                for (Entry<KeyCacheObject, CacheObject> e : entries) {
-                    try {
-                        e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
-
-                        int p = cctx.affinity().partition(e.getKey());
-
-                        boolean check = parts.add(p);
-
-                        if (check) {
-                            Collection<ClusterNode> owners = top.nodes(p, topVer);
-
-                            Collection<ClusterNode> affNodes =
-                                cctx.affinity().assignment(topVer).idealAssignment().get(p);
-
-                            if (affNodes.size() != owners.size() || !affNodes.containsAll(owners))
-                                throw new IgniteCheckedException(
-                                    "DataStreamer will retry data transfer at stable topology. " +
-                                        "Partition owners not equals to expected. " +
-                                        "[node=" + cctx.localNodeId() + " ,part=" + p + "]");
-                        }
-
-                        GridCacheEntryEx entry = internalCache.entryEx(e.getKey(), topVer);
-
-                        if (plc != null) {
-                            ttl = CU.toTtl(plc.getExpiryForCreation());
-
-                            if (ttl == CU.TTL_ZERO)
-                                continue;
-                            else if (ttl == CU.TTL_NOT_CHANGED)
-                                ttl = 0;
-
-                            expiryTime = CU.toExpireTime(ttl);
-                        }
-
-                        entry.initialValue(e.getValue(),
-                            ver,
-                            ttl,
-                            expiryTime,
-                            false,
-                            topVer,
-                            GridDrType.DR_LOAD,
-                            false);
-
-                        cctx.evicts().touch(entry, topVer);
-
-                        CU.unwindEvicts(cctx);
-
-                        entry.onUnlock();
+                        expiryTime = CU.toExpireTime(ttl);
                     }
-                    catch (GridDhtInvalidPartitionException | GridCacheEntryRemovedException ignored) {
-                        // No-op.
-                    }
+
+                    entry.initialValue(e.getValue(),
+                        ver,
+                        ttl,
+                        expiryTime,
+                        false,
+                        topVer,
+                        GridDrType.DR_LOAD,
+                        false);
+
+                    cctx.evicts().touch(entry, topVer);
+
+                    CU.unwindEvicts(cctx);
+
+                    entry.onUnlock();
                 }
-            }
-            finally {
-                cctx.topology().readUnlock();
+                catch (GridDhtInvalidPartitionException | GridCacheEntryRemovedException ignored) {
+                    // No-op.
+                }
             }
         }
 
