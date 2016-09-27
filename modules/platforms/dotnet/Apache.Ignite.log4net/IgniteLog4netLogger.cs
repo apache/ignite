@@ -19,12 +19,33 @@ namespace Apache.Ignite.log4net
 {
     using System;
     using Apache.Ignite.Core.Log;
+    using global::log4net;
 
     /// <summary>
     /// Ignite log4net integration.
     /// </summary>
     public class IgniteLog4NetLogger : ILogger
     {
+        /** Wrapped log4net log. */
+        private readonly ILog _log;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IgniteLog4NetLogger"/> class.
+        /// </summary>
+        public IgniteLog4NetLogger() : this (LogManager.GetLogger(typeof(IgniteLog4NetLogger)))
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IgniteLog4NetLogger"/> class.
+        /// </summary>
+        /// <param name="log">The log.</param>
+        public IgniteLog4NetLogger(ILog log)
+        {
+            _log = log;
+        }
+
         /// <summary>
         /// Logs the specified message.
         /// </summary>
