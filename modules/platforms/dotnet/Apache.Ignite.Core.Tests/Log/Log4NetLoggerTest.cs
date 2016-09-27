@@ -66,9 +66,11 @@ namespace Apache.Ignite.Core.Tests.Log
 
             var log = getLastLog();
 
-            Assert.AreEqual("msg1", log.MessageObject);
+            Assert.AreEqual("msg1", log.MessageObject.ToString());
             Assert.AreEqual("category", log.LoggerName);
-            //Assert.AreEqual("category|Trace|msg1|myException|nativeErrorInfo=java-err", getLastLog());
+            Assert.AreEqual("java-err", log.Properties["nativeErrorInfo"]);
+            Assert.AreEqual("myException", log.ExceptionObject.Message);
+            Assert.AreEqual(Level.Trace, log.Level);
 
             // No Java error.
             logger.Log(LogLevel.Info, "msg{0}", new object[] { 1 }, CultureInfo.InvariantCulture, "category",
