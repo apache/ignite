@@ -17,10 +17,10 @@
 
 export default ['javaPackageName', ['JavaTypes', (JavaTypes) => {
     const link = (scope, el, attrs, [ngModel]) => {
-        if (_.isUndefined(attrs.javaPackageName) || !attrs.javaPackageName)
+        if (_.isNil(attrs.javaPackageName) || attrs.javaPackageName === 'false')
             return;
 
-        ngModel.$validators.javaPackageName = (value) => JavaTypes.validPackage(value);
+        ngModel.$validators.javaPackageName = (value) => _.isEmpty(value) || JavaTypes.validPackage(value);
     };
 
     return {
