@@ -333,12 +333,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
 
     /** {@inheritDoc} */
     @Override public void clear(@Nullable String spaceName) throws IgniteSpiException {
-        Space space = space(spaceName, false);
-
-        if (space == null)
-            return;
-
-        space.clear();
+        destruct(spaceName);
 
         notifyListener(EVT_SWAP_SPACE_CLEARED, spaceName);
     }
@@ -622,6 +617,16 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
     }
 
     /**
+     * Masks null space name with default space name.
+     *
+     * @param spaceName Space name.
+     * @return Space name or default space name if space name is null.
+     * */
+    private String maskNull(String spaceName) {
+        return spaceName != null ? spaceName : DFLT_SPACE_NAME;
+    }
+
+    /**
      * Gets space by name.
      *
      * @param name Space name.
@@ -630,7 +635,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
      * @throws org.apache.ignite.spi.IgniteSpiException In case of error.
      */
     @Nullable private Space space(@Nullable String name, boolean create) throws IgniteSpiException {
-        String masked = name != null ? name : DFLT_SPACE_NAME;
+        String masked = maskNull(name);
 
         assert masked != null;
 
@@ -649,6 +654,23 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
             space.initialize();
 
         return space;
+    }
+
+    /**
+     * Destructs space.
+     *
+     * @param spaceName space name.
+     * */
+    private void destruct(@Nullable String spaceName) {
+        String masked = maskNull(spaceName);
+        Space space = spaces.remove(masked);
+        if (space != null) {
+            try {
+                space.stop();
+            } catch (IgniteInterruptedCheckedException e) {
+                U.error(log, "Interrupted.", e);
+            }
+        }
     }
 
     /**
@@ -1620,18 +1642,6 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
             }
 
             return cnt;
-        }
-
-        /**
-         * Clears space.
-         *
-         * @throws org.apache.ignite.spi.IgniteSpiException If failed.
-         */
-        public void clear() throws IgniteSpiException {
-            Iterator<Map.Entry<SwapKey, byte[]>> iter = entriesIterator();
-
-            while (iter.hasNext())
-                remove(iter.next().getKey(), false);
         }
 
         /**
