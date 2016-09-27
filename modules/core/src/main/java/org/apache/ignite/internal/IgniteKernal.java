@@ -1781,6 +1781,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (log.isInfoEnabled()) {
             log.info("OS: " + U.osString());
             log.info("OS user: " + System.getProperty("user.name"));
+
+            int jvmPid = U.jvmPid();
+
+            log.info("PID: " + (jvmPid == -1 ? "N/A" : jvmPid));
         }
     }
 
