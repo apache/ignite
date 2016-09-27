@@ -136,6 +136,7 @@ public class IgniteTestSuite extends TestSuite {
             Class superCls = theClass;
 
             int testAdded = 0;
+            int testIgnored = 0;
 
             for(List<String> names = new ArrayList<>(); Test.class.isAssignableFrom(superCls);
                 superCls = superCls.getSuperclass()) {
@@ -145,10 +146,12 @@ public class IgniteTestSuite extends TestSuite {
                 for (Method each : methods) {
                     if (addTestMethod(each, names, theClass))
                         testAdded++;
+                    else
+                        testIgnored++;
                 }
             }
 
-            if(testAdded == 0)
+            if(testAdded == 0 && testIgnored == 0)
                 addTest(warning("No tests found in " + theClass.getName()));
         }
     }
