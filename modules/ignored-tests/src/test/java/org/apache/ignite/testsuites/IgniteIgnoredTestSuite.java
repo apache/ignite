@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.websession.IgniteWebSessionSelfTestSuite;
 import org.apache.ignite.internal.websession.WebSessionReplicatedSelfTest;
 import org.apache.ignite.internal.websession.WebSessionReplicatedV1SelfTest;
 import org.apache.ignite.internal.websession.WebSessionSelfTest;
@@ -40,22 +41,15 @@ public class IgniteIgnoredTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
+        IgniteTestSuite.ignoreDefault(true);
+
         IgniteTestSuite suite = new IgniteTestSuite(null, "Ignite Ignored Test Suite", true);
 
         /* --- AWS --- */
-        suite.addTestSuite(S3CheckpointManagerSelfTest.class);
-        suite.addTestSuite(S3CheckpointSpiSelfTest.class);
-        suite.addTestSuite(S3CheckpointSpiStartStopSelfTest.class);
-        suite.addTestSuite(S3SessionCheckpointSelfTest.class);
-        suite.addTestSuite(TcpDiscoveryS3IpFinderSelfTest.class);
+        suite.addTest(IgniteS3TestSuite.suite());
 
         /* --- WEB SESSIONS --- */
-        suite.addTestSuite(WebSessionSelfTest.class);
-        suite.addTestSuite(WebSessionTransactionalSelfTest.class);
-        suite.addTestSuite(WebSessionReplicatedSelfTest.class);
-        suite.addTestSuite(WebSessionV1SelfTest.class);
-        suite.addTestSuite(WebSessionTransactionalV1SelfTest.class);
-        suite.addTestSuite(WebSessionReplicatedV1SelfTest.class);
+        suite.addTest(IgniteWebSessionSelfTestSuite.suite());
 
         return suite;
     }
