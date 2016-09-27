@@ -55,6 +55,8 @@ namespace Apache.Ignite.Core.Tests.Log
         {
             var memoryLog = CreateMemoryLogger();
             var logger = new IgniteLog4NetLogger();
+
+
         }
     }
 }

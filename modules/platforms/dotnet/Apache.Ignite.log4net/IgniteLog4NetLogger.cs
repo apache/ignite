@@ -89,9 +89,11 @@ namespace Apache.Ignite.log4net
         }
 
         /// <summary>
-        /// Converts the log level.
+        /// Converts the Ignite LogLevel to the log4net log level.
         /// </summary>
-        private static Level ConvertLogLevel(LogLevel level)
+        /// <param name="level">The Ignite log level.</param>
+        /// <returns>Corresponding log4net log level.</returns>
+        public static Level ConvertLogLevel(LogLevel level)
         {
             switch (level)
             {
