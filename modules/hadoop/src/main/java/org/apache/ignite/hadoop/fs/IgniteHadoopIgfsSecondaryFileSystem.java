@@ -20,6 +20,8 @@ package org.apache.ignite.hadoop.fs;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsUserContext;
@@ -242,6 +244,12 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
     /** {@inheritDoc} */
     @Override public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException {
         target.setTimes(path, accessTime, modificationTime);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len,
+        long maxLen, Collection<ClusterNode> nodes) throws IgniteException {
+        return target.affinity(path, start, len, maxLen, nodes);
     }
 
     /** {@inheritDoc} */
