@@ -757,15 +757,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         waitPartitionRelease();
 
-        cctx.database().checkpointReadLock();
+        boolean topChanged = discoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT || affChangeMsg != null;
 
-        try {
-            boolean topChanged = discoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT || affChangeMsg != null;
+        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+            if (cacheCtx.isLocal() || stopping(cacheCtx.cacheId()))
+                continue;
 
-            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                if (cacheCtx.isLocal() || stopping(cacheCtx.cacheId()))
-                    continue;
+            cctx.database().checkpointReadLock();
 
+            try {
                 if (topChanged) {
                     cacheCtx.continuousQueries().beforeExchange(exchId.topologyVersion());
 
@@ -775,12 +775,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 cacheCtx.topology().beforeExchange(this, !centralizedAff);
             }
+            finally {
+                cctx.database().checkpointReadUnlock();
+            }
+        }
 
-            cctx.database().beforeExchange(this);
-        }
-        finally {
-            cctx.database().checkpointReadUnlock();
-        }
+        cctx.database().beforeExchange(this);
 
         // If a backup request, synchronously wait for backup start.
         if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
