@@ -62,13 +62,14 @@ namespace Apache.Ignite.log4net
         /// <param name="category">The logging category name.</param>
         /// <param name="nativeErrorInfo">The native error information.</param>
         /// <param name="ex">The exception. Can be null.</param>
-        public void Log(LogLevel logLevel, string message, object[] args, IFormatProvider formatProvider, string category,
-            string nativeErrorInfo, Exception ex)
+        public void Log(LogLevel logLevel, string message, object[] args, IFormatProvider formatProvider, 
+            string category, string nativeErrorInfo, Exception ex)
         {
             var level = ConvertLogLevel(logLevel);
 
-            var repo = _log.Logger.Repository;  // TODO: ??
+            var repo = _log.Logger.Repository;
 
+            // TODO: Args, provider, native error
             var evt = new LoggingEvent(GetType(), repo, category, level, message, ex);
 
             _log.Logger.Log(evt);
