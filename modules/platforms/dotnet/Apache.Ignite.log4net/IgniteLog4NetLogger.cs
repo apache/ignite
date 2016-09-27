@@ -22,6 +22,7 @@ namespace Apache.Ignite.log4net
     using Apache.Ignite.Core.Log;
     using global::log4net;
     using global::log4net.Core;
+    using global::log4net.Util;
     using ILogger = Apache.Ignite.Core.Log.ILogger;
 
     /// <summary>
@@ -69,8 +70,13 @@ namespace Apache.Ignite.log4net
 
             var repo = _log.Logger.Repository;
 
-            // TODO: Args, provider, native error
-            var evt = new LoggingEvent(GetType(), repo, category, level, message, ex);
+            // TODO: native error? Where does it go? Properties?
+            var messageObject = args == null 
+                ? (object) message 
+                : new SystemStringFormat(formatProvider, message, args);
+
+            var evt = new LoggingEvent(GetType(), repo, category, level, messageObject, ex);
+            _log.WarnFormatExt("");
 
             _log.Logger.Log(evt);
         }
