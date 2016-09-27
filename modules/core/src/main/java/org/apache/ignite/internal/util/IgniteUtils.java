@@ -8915,21 +8915,21 @@ public abstract class IgniteUtils {
     /**
      * Resolves work directory.
      *
+     * @param workDir Work directory.
      * @param path Path to resolve.
      * @param delIfExist Flag indicating whether to delete the specify directory or not.
      * @return Resolved work directory.
      * @throws IgniteCheckedException If failed.
      */
-    public static File resolveWorkDirectory(String path, boolean delIfExist) throws IgniteCheckedException {
+    public static File resolveWorkDirectory(String workDir, String path, boolean delIfExist)
+        throws IgniteCheckedException {
         File dir = new File(path);
 
         if (!dir.isAbsolute()) {
-            String ggWork0 = igniteWork;
-
-            if (F.isEmpty(ggWork0))
+            if (F.isEmpty(workDir))
                 throw new IgniteCheckedException("Failed to resolve path (work directory has not been set): " + path);
 
-            dir = new File(ggWork0, dir.getPath());
+            dir = new File(workDir, dir.getPath());
         }
 
         if (delIfExist && dir.exists()) {
@@ -8947,6 +8947,18 @@ public abstract class IgniteUtils {
             throw new IgniteCheckedException("Cannot write to directory: " + dir);
 
         return dir;
+    }
+
+    /**
+     * Resolves work directory.
+     *
+     * @param path Path to resolve.
+     * @param delIfExist Flag indicating whether to delete the specify directory or not.
+     * @return Resolved work directory.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static File resolveWorkDirectory(String path, boolean delIfExist) throws IgniteCheckedException {
+        return resolveWorkDirectory(igniteWork, path, delIfExist);
     }
 
     /**

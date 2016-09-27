@@ -40,6 +40,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.IpcEndpointBindException;
 import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
@@ -120,6 +121,9 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
     /** Grid name. */
     private String gridName;
 
+    /** Work directory. */
+    private String workDir;
+
     /** Flag allowing not to print out of resources warning. */
     private boolean omitOutOfResourcesWarn;
 
@@ -150,11 +154,13 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
      * @param log Log.
      * @param locNodeId Node id.
      * @param gridName Grid name.
+     * @param workDir Work directory.
      */
-    public IpcSharedMemoryServerEndpoint(IgniteLogger log, UUID locNodeId, String gridName) {
+    public IpcSharedMemoryServerEndpoint(IgniteLogger log, UUID locNodeId, String gridName, String workDir) {
         this.log = log;
         this.locNodeId = locNodeId;
         this.gridName = gridName;
+        this.workDir = workDir;
     }
 
     /** @param omitOutOfResourcesWarn If {@code true}, out of resources warning will not be printed by server. */
@@ -181,7 +187,7 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
 
         tokDirPath = tokDirPath + '/' + locNodeId.toString() + '-' + IpcSharedMemoryUtils.pid();
 
-        tokDir = U.resolveWorkDirectory(tokDirPath, false);
+        tokDir = U.resolveWorkDirectory(workDir, tokDirPath, false);
 
         if (port <= 0 || port >= 0xffff)
             throw new IpcEndpointBindException("Port value is illegal: " + port);
