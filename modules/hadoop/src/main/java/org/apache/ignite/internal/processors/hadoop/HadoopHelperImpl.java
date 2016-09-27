@@ -124,7 +124,7 @@ public class HadoopHelperImpl implements HadoopHelper {
     /** {@inheritDoc} */
     @Override public String workDirectory() {
         try {
-            return ctx != null ? ctx.config().getWorkDirectory() : U.workDirectory(null, null);
+            return ctx != null ? ctx.config().getWorkDirectory() : U.defaultWorkDirectory();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to resolve Ignite work directory.", e);

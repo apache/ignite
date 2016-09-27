@@ -39,7 +39,7 @@ public class JavaLoggerTest extends TestCase {
     public void testLogInitialize() throws Exception {
         log = new JavaLogger();
 
-        ((JavaLogger)log).setWorkDirectory(U.workDirectory(null, null));
+        ((JavaLogger)log).setWorkDirectory(U.defaultWorkDirectory());
         ((LoggerNodeIdAware)log).setNodeId(UUID.fromString("00000000-1111-2222-3333-444444444444"));
 
         if (log.isDebugEnabled())

@@ -82,8 +82,6 @@ public class HadoopExternalProcessStarter {
      * @throws Exception If failed.
      */
     public void run() throws Exception {
-        U.setWorkDirectory(args.workDir, U.getIgniteHome());
-
         File outputDir = outputDirectory();
 
         initializeStreams(outputDir);
