@@ -1822,7 +1822,10 @@ public class IgnitionEx {
                 // If user provided IGNITE_HOME - set it as a system property.
                 U.setIgniteHome(ggHome);
 
-            U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
+            // Correctly resolve work directory and set it back to configuration.
+            String workDir = U.workDirectory(cfg.getWorkDirectory(), ggHome);
+
+            myCfg.setWorkDirectory(workDir);
 
             // Ensure invariant.
             // It's a bit dirty - but this is a result of late refactoring
