@@ -35,7 +35,7 @@
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>Apache.Ignite.log4net.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>Apache.Ignite.Log4Net.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="log4net, Version=1.2.15.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
@@ -61,7 +61,8 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Apache.Ignite.log4net.snk" />
+    <None Include="Apache.Ignite.Log4Net.snk" />
+    <None Include="Apache.Ignite.Log4Net.nuspec" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
