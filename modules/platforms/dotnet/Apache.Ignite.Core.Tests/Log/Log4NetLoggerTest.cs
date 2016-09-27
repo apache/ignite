@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Tests.Log
             {
                 var log4NetLevel = IgniteLog4NetLogger.ConvertLogLevel(igniteLevel);
 
-                Assert.AreEqual(igniteLevel.ToString(), log4NetLevel.ToString());
+                Assert.AreEqual(igniteLevel.ToString().ToUpperInvariant(), log4NetLevel.ToString());
             }
         }
 
