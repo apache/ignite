@@ -869,7 +869,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     /**
      * @return {@code True} if task is internal.
      */
-    public boolean internal() {
+    public boolean isInternal() {
         return internal;
     }
 

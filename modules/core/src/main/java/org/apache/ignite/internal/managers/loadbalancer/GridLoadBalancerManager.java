@@ -75,7 +75,7 @@ public class GridLoadBalancerManager extends GridManagerAdapter<LoadBalancingSpi
 
         LoadBalancingSpi spi = getSpi(ses.getLoadBalancingSpi());
 
-        if (ses.internal() && !(spi instanceof RoundRobinLoadBalancingSpi))
+        if (ses.isInternal() && !(spi instanceof RoundRobinLoadBalancingSpi))
             return getSpi(RoundRobinLoadBalancingSpi.class.getSimpleName()).getBalancedNode(ses, top, job);
 
         return spi.getBalancedNode(ses, top, job);
