@@ -41,7 +41,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  *
  */
 @SuppressWarnings("unchecked")
-public class IgniteCacheInsertSqlQuerySelfTest extends GridCommonAbstractTest {
+public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsertSqlQuerySelfTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -60,74 +60,25 @@ public class IgniteCacheInsertSqlQuerySelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGridsMultiThreaded(1, false);
-
-        ignite(0).createCache(cacheConfig("S2P", true, false, String.class, Person.class, String.class, String.class));
-        ignite(0).createCache(cacheConfig("I2P", true, false, Integer.class, Person.class));
-        ignite(0).createCache(cacheConfig("K2P", true, false, Key.class, Person.class));
-        ignite(0).createCache(cacheConfig("K22P", true, true, Key2.class, Person.class));
-        ignite(0).createCache(cacheConfig("I2I", true, false, Integer.class, Integer.class));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        ignite(0).cache("S2P").clear();
-        ignite(0).cache("I2P").clear();
-        ignite(0).cache("K2P").clear();
-        ignite(0).cache("K22P").clear();
-        ignite(0).cache("I2I").clear();
-        super.afterTest();
-    }
-
-    /**
-     * @param name Cache name.
-     * @param partitioned Partition or replicated cache.
-     * @param escapeSql whether identifiers should be quoted - see {@link CacheConfiguration#setSqlEscapeAll}
-     * @param idxTypes Indexed types.
-     * @return Cache configuration.
-     */
-    private static CacheConfiguration cacheConfig(String name, boolean partitioned, boolean escapeSql, Class<?>... idxTypes) {
-        return new CacheConfiguration()
-            .setName(name)
-            .setCacheMode(partitioned ? CacheMode.PARTITIONED : CacheMode.REPLICATED)
-            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
-            .setBackups(1)
-            .setSqlEscapeAll(escapeSql)
-            .setIndexedTypes(idxTypes);
-    }
-
     /**
      *
      */
     public void testInsertWithExplicitKey() {
-        IgniteCache<String, Person> p = ignite(0).cache("S2P");
+        IgniteCache<String, Person> p = ignite(0).cache("S2P").withKeepBinary();
 
         p.query(new SqlFieldsQuery("insert into Person (_key, id, name) values ('s', ?, ?), " +
             "('a', 2, 'Alex')").setArgs(1, "Sergi"));
 
-        Person p1 = new Person(1);
-        p1.name = "Sergi";
+        assertEquals(createPerson(1, "Sergi"), p.get("s"));
 
-        assertEquals(p1, p.get("s"));
-
-        Person p2 = new Person(2);
-        p2.name = "Alex";
-
-        assertEquals(p2, p.get("a"));
+        assertEquals(createPerson(2, "Alex"), p.get("a"));
     }
 
     /**
      *
      */
     public void testInsertFromSubquery() {
-        IgniteCache p = ignite(0).cache("S2P");
+        IgniteCache p = ignite(0).cache("S2P").withKeepBinary();
 
         p.query(new SqlFieldsQuery("insert into String (_key, _val) values ('s', ?), " +
             "('a', ?)").setArgs("Sergi", "Alex"));
@@ -135,79 +86,55 @@ public class IgniteCacheInsertSqlQuerySelfTest extends GridCommonAbstractTest {
         assertEquals("Sergi", p.get("s"));
         assertEquals("Alex", p.get("a"));
 
-        p.query(new SqlFieldsQuery("insert into Person(_key, name) " +
-            "(select substring(lower(_val), 0, 2), _val from String)"));
+        p.query(new SqlFieldsQuery("insert into Person(_key, id, name) " +
+            "(select substring(lower(_val), 0, 2), cast(length(_val) as int), _val from String)"));
 
-        Person p1 = new Person(0);
-        p1.name = "Sergi";
+        assertEquals(createPerson(5, "Sergi"), p.get("se"));
 
-        assertEquals(p1, p.get("se"));
-
-        Person p2 = new Person(0);
-        p2.name = "Alex";
-
-        assertEquals(p2, p.get("al"));
+        assertEquals(createPerson(4, "Alex"), p.get("al"));
     }
 
     /**
      *
      */
     public void testInsertWithExplicitPrimitiveKey() {
-        IgniteCache<Integer, Person> p = ignite(0).cache("I2P");
+        IgniteCache<Integer, Person> p = ignite(0).cache("I2P").withKeepBinary();
 
         p.query(new SqlFieldsQuery(
             "insert into Person (_key, id, name) values (cast('1' as int), ?, ?), (2, (5 - 3), 'Alex')")
             .setArgs(1, "Sergi"));
 
-        Person p1 = new Person(1);
-        p1.name = "Sergi";
+        assertEquals(createPerson(1, "Sergi"), p.get(1));
 
-        assertEquals(p1, p.get(1));
-
-        Person p2 = new Person(2);
-        p2.name = "Alex";
-
-        assertEquals(p2, p.get(2));
+        assertEquals(createPerson(2, "Alex"), p.get(2));
     }
 
     /**
      *
      */
     public void testInsertWithDynamicKeyInstantiation() {
-        IgniteCache<Key, Person> p = ignite(0).cache("K2P");
+        IgniteCache<Key, Person> p = ignite(0).cache("K2P").withKeepBinary();
 
         p.query(new SqlFieldsQuery(
             "insert into Person (key, id, name) values (1, ?, ?), (2, 2, 'Alex')").setArgs(1, "Sergi"));
 
-        Person p1 = new Person(1);
-        p1.name = "Sergi";
+        assertEquals(createPerson(1, "Sergi"), p.get(new Key(1)));
 
-        assertEquals(p1, p.get(new Key(1)));
-
-        Person p2 = new Person(2);
-        p2.name = "Alex";
-
-        assertEquals(p2, p.get(new Key(2)));
+        assertEquals(createPerson(2, "Alex"), p.get(new Key(2)));
     }
 
     /**
      *
      */
     public void testFieldsCaseSensitivity() {
-        IgniteCache<Key2, Person> p = ignite(0).cache("K22P");
+        IgniteCache<Key2, Person> p = ignite(0).cache("K22P").withKeepBinary();
 
         p.query(new SqlFieldsQuery("insert into \"Person\" (\"Id\", \"id\", \"name\") values (1, ?, ?), " +
             "(2, 3, 'Alex')").setArgs(4, "Sergi"));
 
-        Person p1 = new Person(4);
-        p1.name = "Sergi";
+        assertEquals(createPerson(4, "Sergi"), p.get(new Key2(1)));
 
-        assertEquals(p1, p.get(new Key2(1)));
-
-        Person p2 = new Person(3);
-        p2.name = "Alex";
-
-        assertEquals(p2, p.get(new Key2(2)));
+        assertEquals(createPerson(3, "Alex"), p.get(new Key2(2)));
     }
 
     /**
@@ -247,117 +174,5 @@ public class IgniteCacheInsertSqlQuerySelfTest extends GridCommonAbstractTest {
         assertEquals(2, (int)p.get(1));
         assertEquals(5, (int)p.get(3));
         assertEquals(6, (int)p.get(5));
-    }
-
-    /**
-     *
-     */
-    protected final static class Key implements Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        public Key(int key) {
-            this.key = key;
-        }
-
-        /** */
-        @QuerySqlField
-        public final int key;
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            Key key1 = (Key) o;
-
-            return key == key1.key;
-
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return key;
-        }
-    }
-
-    /**
-     *
-     */
-    protected final static class Key2 implements Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        public Key2(int Id) {
-            this.Id = Id;
-        }
-
-        /** */
-        @QuerySqlField
-        public final int Id;
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            Key2 key1 = (Key2) o;
-
-            return Id == key1.Id;
-
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return Id;
-        }
-    }
-
-    /**
-     *
-     */
-    protected static class Person implements Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        @SuppressWarnings("unused")
-        private Person() {
-            // No-op.
-        }
-
-        /** */
-        public Person(int id) {
-            this.id = id;
-        }
-
-        /** */
-        @QuerySqlField
-        protected int id;
-
-        /** */
-        @QuerySqlField
-        protected String name;
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            Person person = (Person) o;
-
-            if (id != person.id) return false;
-            return name != null ? name.equals(person.name) : person.name == null;
-
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            int result = id;
-            result = 31 * result + (name != null ? name.hashCode() : 0);
-            return result;
-        }
     }
 }
