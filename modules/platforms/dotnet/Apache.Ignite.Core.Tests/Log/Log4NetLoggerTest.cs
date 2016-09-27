@@ -17,13 +17,14 @@
 
 namespace Apache.Ignite.Core.Tests.Log
 {
+    using System;
+    using System.Globalization;
     using System.Linq;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.log4net;
     using global::log4net;
     using global::log4net.Appender;
     using global::log4net.Core;
-    using global::log4net.Layout;
     using global::log4net.Repository.Hierarchy;
     using NUnit.Framework;
 
@@ -48,28 +49,63 @@ namespace Apache.Ignite.Core.Tests.Log
             }
         }
 
+        /// <summary>
+        /// Tests the logger in isolated environment.
+        /// </summary>
         [Test]
-        public void Test()
+        public void TestLogging()
         {
             var memoryLog = CreateMemoryLogger();
             var logger = new IgniteLog4NetLogger();
 
-            logger.Info("Testing 123");
+            Func<LoggingEvent> getLastLog = () => memoryLog.PopAllEvents().Single();
 
-            var logEvent = memoryLog.PopAllEvents().Single();
+            // All parameters.
+            logger.Log(LogLevel.Trace, "msg{0}", new object[] { 1 }, CultureInfo.InvariantCulture, "category",
+                "java-err", new Exception("myException"));
 
-            Assert.AreEqual("Testing 123", logEvent.MessageObject);
+            Assert.AreEqual("category|Trace|msg1|myException|nativeErrorInfo=java-err", getLastLog());
+
+            // No Java error.
+            logger.Log(LogLevel.Info, "msg{0}", new object[] { 1 }, CultureInfo.InvariantCulture, "category",
+                null, new Exception("myException"));
+
+            Assert.AreEqual("category|Info|msg1|myException|", getLastLog());
+
+            // No exception.
+            logger.Log(LogLevel.Debug, "msg{0}", new object[] { 1 }, CultureInfo.InvariantCulture, "category",
+                null, null);
+
+            Assert.AreEqual("category|Debug|msg1||", getLastLog());
+
+            // No params.
+            logger.Log(LogLevel.Warn, "msg{0}", null, CultureInfo.InvariantCulture, "category", null, null);
+
+            Assert.AreEqual("category|Warn|msg{0}||", getLastLog());
+
+            // No formatter.
+            logger.Log(LogLevel.Error, "msg{0}", null, null, "category", null, null);
+
+            Assert.AreEqual("category|Error|msg{0}||", getLastLog());
+
+            // No category.
+            logger.Log(LogLevel.Error, "msg{0}", null, null, null, null, null);
+
+            Assert.AreEqual("|Error|msg{0}||", getLastLog());
+
+            // No message.
+            logger.Log(LogLevel.Error, null, null, null, null, null, null);
+
+            Assert.AreEqual("|Error|||", getLastLog());
         }
 
+
+        /// <summary>
+        /// Creates the memory logger.
+        /// </summary>
         private static MemoryAppender CreateMemoryLogger()
         {
-            var hierarchy = (Hierarchy)LogManager.GetRepository();
-
-            var patternLayout = new PatternLayout
-            {
-                ConversionPattern = "%date [%thread] %-5level %logger - %message%newline"
-            };
-            patternLayout.ActivateOptions();
+            var hierarchy = (Hierarchy) LogManager.GetRepository();
 
             var memory = new MemoryAppender();
             memory.ActivateOptions();
