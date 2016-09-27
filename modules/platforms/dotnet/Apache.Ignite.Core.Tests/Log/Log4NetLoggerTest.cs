@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Log
 {
+    using System.Linq;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.log4net;
     using global::log4net;
@@ -53,7 +54,11 @@ namespace Apache.Ignite.Core.Tests.Log
             var memoryLog = CreateMemoryLogger();
             var logger = new IgniteLog4NetLogger();
 
+            logger.Info("Testing 123");
 
+            var logEvent = memoryLog.PopAllEvents().Single();
+
+            Assert.AreEqual("Testing 123", logEvent.MessageObject);
         }
 
         private static MemoryAppender CreateMemoryLogger()
