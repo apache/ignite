@@ -562,7 +562,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
             while (true) {
                 long pinCnt = GridUnsafe.getLong(absPtr + PIN_CNT_OFFSET);
 
-                assert pinCnt > 0 : "Pinned page cannot be deallocated: " + pinnedPage;
+                assert pinCnt > 0 : "Releasing a page that was not pinned [page=" + pinnedPage +
+                    ", pinCnt=" + pinCnt + ']';
 
                 if (GridUnsafe.compareAndSwapLong(null, absPtr + PIN_CNT_OFFSET, pinCnt, pinCnt - 1))
                     break;
