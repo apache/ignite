@@ -595,10 +595,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         assert objs != null;
         assert ctx != null;
 
-        final List<CacheContinuousQueryEntry> entries = (List<CacheContinuousQueryEntry>)objs;
-
-        if (entries.isEmpty())
+        if (objs.isEmpty())
             return;
+
+        final List<CacheContinuousQueryEntry> entries = objs instanceof List?(List)objs:new ArrayList(objs);
 
         if (asyncCallback) {
             IgniteStripedThreadPoolExecutor asyncPool = ctx.asyncCallbackPool();
