@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Tests.Log
     using System.Globalization;
     using System.Linq;
     using Apache.Ignite.Core.Log;
-    using Apache.Ignite.log4net;
+    using Apache.Ignite.Log4Net;
     using global::log4net;
     using global::log4net.Appender;
     using global::log4net.Core;

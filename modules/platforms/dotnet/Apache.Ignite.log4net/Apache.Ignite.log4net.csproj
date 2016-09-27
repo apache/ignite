@@ -7,8 +7,8 @@
     <ProjectGuid>{6F82D669-382E-4435-8092-68C4440146D8}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Apache.Ignite.log4net</RootNamespace>
-    <AssemblyName>Apache.Ignite.log4net</AssemblyName>
+    <RootNamespace>Apache.Ignite.Log4Net</RootNamespace>
+    <AssemblyName>Apache.Ignite.Log4Net</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>

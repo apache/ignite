@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.log4net
+namespace Apache.Ignite.Log4Net
 {
     using System;
     using Apache.Ignite.Core.Impl.Common;
