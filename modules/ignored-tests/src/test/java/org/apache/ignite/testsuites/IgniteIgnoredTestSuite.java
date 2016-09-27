@@ -24,6 +24,11 @@ import org.apache.ignite.internal.websession.WebSessionSelfTest;
 import org.apache.ignite.internal.websession.WebSessionTransactionalSelfTest;
 import org.apache.ignite.internal.websession.WebSessionTransactionalV1SelfTest;
 import org.apache.ignite.internal.websession.WebSessionV1SelfTest;
+import org.apache.ignite.spi.checkpoint.s3.S3CheckpointManagerSelfTest;
+import org.apache.ignite.spi.checkpoint.s3.S3CheckpointSpiSelfTest;
+import org.apache.ignite.spi.checkpoint.s3.S3CheckpointSpiStartStopSelfTest;
+import org.apache.ignite.spi.checkpoint.s3.S3SessionCheckpointSelfTest;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinderSelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
 
 /**
@@ -36,6 +41,13 @@ public class IgniteIgnoredTestSuite extends TestSuite {
      */
     public static TestSuite suite() throws Exception {
         IgniteTestSuite suite = new IgniteTestSuite(null, "Ignite Ignored Test Suite", true);
+
+        /* --- AWS --- */
+        suite.addTestSuite(S3CheckpointManagerSelfTest.class);
+        suite.addTestSuite(S3CheckpointSpiSelfTest.class);
+        suite.addTestSuite(S3CheckpointSpiStartStopSelfTest.class);
+        suite.addTestSuite(S3SessionCheckpointSelfTest.class);
+        suite.addTestSuite(TcpDiscoveryS3IpFinderSelfTest.class);
 
         /* --- WEB SESSIONS --- */
         suite.addTestSuite(WebSessionSelfTest.class);
