@@ -90,6 +90,11 @@
       <HintPath>packages\Apache.Ignite.NLog.1.8.0\lib\net40\Apache.Ignite.NLog.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Apache.Ignite.Log4Net">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>packages\Apache.Ignite.Log4Net.1.8.0\lib\net40\Apache.Ignite.Log4Net.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
       <HintPath>packages\NLog.4.3.7\lib\net40\NLog.dll</HintPath>
       <Private>True</Private>
