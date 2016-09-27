@@ -19,7 +19,7 @@ using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-[assembly: AssemblyTitle("Apache.Ignite.log4net")]
+[assembly: AssemblyTitle("Apache.Ignite.Log4Net")]
 [assembly: AssemblyDescription("Apache Ignite.NET log4net integration.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Apache Software Foundation")]
