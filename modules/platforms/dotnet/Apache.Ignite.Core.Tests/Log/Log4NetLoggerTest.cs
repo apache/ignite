@@ -65,7 +65,6 @@ namespace Apache.Ignite.Core.Tests.Log
                 "java-err", new Exception("myException"));
 
             var log = getLastLog();
-
             Assert.AreEqual("msg1", log.MessageObject.ToString());
             Assert.AreEqual("category", log.LoggerName);
             Assert.AreEqual("java-err", log.Properties["nativeErrorInfo"]);
@@ -76,13 +75,23 @@ namespace Apache.Ignite.Core.Tests.Log
             logger.Log(LogLevel.Info, "msg{0}", new object[] { 1 }, CultureInfo.InvariantCulture, "category",
                 null, new Exception("myException"));
 
-            Assert.AreEqual("category|Info|msg1|myException|", getLastLog());
+            log = getLastLog();
+            Assert.AreEqual("msg1", log.MessageObject.ToString());
+            Assert.AreEqual("category", log.LoggerName);
+            Assert.AreEqual(null, log.Properties["nativeErrorInfo"]);
+            Assert.AreEqual("myException", log.ExceptionObject.Message);
+            Assert.AreEqual(Level.Info, log.Level);
 
             // No exception.
             logger.Log(LogLevel.Debug, "msg{0}", new object[] { 1 }, CultureInfo.InvariantCulture, "category",
                 null, null);
 
-            Assert.AreEqual("category|Debug|msg1||", getLastLog());
+            log = getLastLog();
+            Assert.AreEqual("msg1", log.MessageObject.ToString());
+            Assert.AreEqual("category", log.LoggerName);
+            Assert.AreEqual(null, log.Properties["nativeErrorInfo"]);
+            Assert.AreEqual(null, log.ExceptionObject);
+            Assert.AreEqual(Level.Trace, log.Level);
 
             // No params.
             logger.Log(LogLevel.Warn, "msg{0}", null, CultureInfo.InvariantCulture, "category", null, null);
