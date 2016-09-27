@@ -52,10 +52,10 @@ class GeneratorPom {
         res.endBlock('</resource>');
     }
 
-    artifact(res, cluster, igniteVersion) {
+    artifact(res, cluster, version) {
         this.addProperty(res, 'groupId', 'org.apache.ignite');
         this.addProperty(res, 'artifactId', this.escapeId(cluster.name) + '-project');
-        this.addProperty(res, 'version', igniteVersion);
+        this.addProperty(res, 'version', version);
 
         res.needEmptyLine = true;
     }
@@ -143,11 +143,11 @@ class GeneratorPom {
      * Generate pom.xml.
      *
      * @param cluster Cluster  to take info about dependencies.
-     * @param igniteVersion Ignite version for Ignite dependencies.
+     * @param version Ignite version for Ignite dependencies.
      * @param res Resulting output with generated pom.
      * @returns {string} Generated content.
      */
-    generate(cluster, igniteVersion, res) {
+    generate(cluster, version, res) {
         const caches = cluster.caches;
         const deps = [];
         const storeDeps = [];
@@ -163,14 +163,14 @@ class GeneratorPom {
                 this.storeFactoryDependency(storeDeps, cache.cacheStoreFactory[cache.cacheStoreFactory.kind]);
 
             if (_.get(cache, 'nodeFilter.kind') === 'Exclude')
-                this.addDependency(deps, 'org.apache.ignite', 'ignite-extdata-p2p', igniteVersion);
+                this.addDependency(deps, 'org.apache.ignite', 'ignite-extdata-p2p', version);
         });
 
         res.line('<?xml version="1.0" encoding="UTF-8"?>');
 
         res.needEmptyLine = true;
 
-        res.line('<!-- ' + $generatorCommon.mainComment() + ' -->');
+        res.line('<!-- ' + $generatorCommon.mainComment('Maven project') + ' -->');
 
         res.needEmptyLine = true;
 
@@ -180,18 +180,18 @@ class GeneratorPom {
 
         res.needEmptyLine = true;
 
-        this.artifact(res, cluster, igniteVersion);
+        this.artifact(res, cluster, version);
 
-        this.addDependency(deps, 'org.apache.ignite', 'ignite-core', igniteVersion);
+        this.addDependency(deps, 'org.apache.ignite', 'ignite-core', version);
 
-        this.addDependency(deps, 'org.apache.ignite', 'ignite-spring', igniteVersion);
-        this.addDependency(deps, 'org.apache.ignite', 'ignite-indexing', igniteVersion);
-        this.addDependency(deps, 'org.apache.ignite', 'ignite-rest-http', igniteVersion);
+        this.addDependency(deps, 'org.apache.ignite', 'ignite-spring', version);
+        this.addDependency(deps, 'org.apache.ignite', 'ignite-indexing', version);
+        this.addDependency(deps, 'org.apache.ignite', 'ignite-rest-http', version);
 
         let dep = POM_DEPENDENCIES[cluster.discovery.kind];
 
         if (dep)
-            this.addDependency(deps, 'org.apache.ignite', dep.artifactId, igniteVersion);
+            this.addDependency(deps, 'org.apache.ignite', dep.artifactId, version);
 
         if (cluster.discovery.kind === 'Jdbc') {
             const store = cluster.discovery.Jdbc;
@@ -201,16 +201,16 @@ class GeneratorPom {
         }
 
         if (_.find(cluster.igfss, (igfs) => igfs.secondaryFileSystemEnabled))
-            this.addDependency(deps, 'org.apache.ignite', 'ignite-hadoop', igniteVersion);
+            this.addDependency(deps, 'org.apache.ignite', 'ignite-hadoop', version);
 
         if (_.find(caches, blobStoreFactory))
-            this.addDependency(deps, 'org.apache.ignite', 'ignite-hibernate', igniteVersion);
+            this.addDependency(deps, 'org.apache.ignite', 'ignite-hibernate', version);
 
         if (cluster.logger && cluster.logger.kind) {
             dep = POM_DEPENDENCIES[cluster.logger.kind];
 
             if (dep)
-                this.addDependency(deps, 'org.apache.ignite', dep.artifactId, igniteVersion);
+                this.addDependency(deps, 'org.apache.ignite', dep.artifactId, version);
         }
 
         this.dependencies(res, cluster, deps.concat(storeDeps));

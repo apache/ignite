@@ -28,15 +28,15 @@ mixin ignite-form-field-input(name, model, disabled, required, placeholder)
         data-ng-focus='tableReset()'
 
         data-ignite-form-panel-field=''
-    )&attributes(attributes ? attributes.attributes ? attributes.attributes : attributes : {})
+    )&attributes(attributes ? attributes.attributes ? attributes.attributes : attributes: {})
 
 mixin ignite-form-field-text(label, model, name, disabled, required, placeholder, tip)
     -var errLbl = label.substring(0, label.length - 1)
 
-    div
-        +ignite-form-field-label(label, name, required)
-        .col-xs-8.col-sm-8.col-md-8
-            i.tipField.fa.fa-question-circle(bs-tooltip data-title=tip)
+    .ignite-form-field
+        +ignite-form-field__label(label, name, required)
+        .ignite-form-field__control
+            i.tipField.fa.fa-question-circle(bs-tooltip='' data-title=tip)
             
             if block
                 block

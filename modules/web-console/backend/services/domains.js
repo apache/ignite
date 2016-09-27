@@ -117,6 +117,8 @@ module.exports.factory = (_, mongo, spacesService, cachesService, errors) => {
                     .then((cache) => {
                         domain.caches = [cache._id];
 
+                        generatedCaches.push(cache);
+
                         return _saveDomainModel(domain, savedDomains);
                     });
             }

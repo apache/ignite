@@ -27,6 +27,14 @@
 
 #include <string>
 
+#define ODBC_FAIL_ON_ERROR(ret, type, handle)           \
+    if (!SQL_SUCCEEDED(ret))                            \
+    {                                                   \
+        Ignition::StopAll(true);                        \
+        BOOST_FAIL(GetOdbcErrorMessage(type, handle));  \
+    }
+
+
 namespace ignite
 {
     /** Read buffer size. */

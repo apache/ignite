@@ -159,7 +159,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void ServiceCancelCallbackDelegate(void* target, long svcPtr, long memPtr);
         private delegate void ServiceInvokeMethodCallbackDelegate(void* target, long svcPtr, long inMemPtr, long outMemPtr);
 
-        private delegate int СlusterNodeFilterApplyCallbackDelegate(void* target, long memPtr);
+        private delegate int ClusterNodeFilterApplyCallbackDelegate(void* target, long memPtr);
 
         private delegate void NodeInfoCallbackDelegate(void* target, long memPtr);
 
@@ -254,7 +254,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 serviceCancel = CreateFunctionPointer((ServiceCancelCallbackDelegate)ServiceCancel),
                 serviceInvokeMethod = CreateFunctionPointer((ServiceInvokeMethodCallbackDelegate)ServiceInvokeMethod),
 
-                clusterNodeFilterApply = CreateFunctionPointer((СlusterNodeFilterApplyCallbackDelegate)СlusterNodeFilterApply),
+                clusterNodeFilterApply = CreateFunctionPointer((ClusterNodeFilterApplyCallbackDelegate)ClusterNodeFilterApply),
                 
                 onStart = CreateFunctionPointer((OnStartCallbackDelegate)OnStart),
                 onStop = CreateFunctionPointer((OnStopCallbackDelegate)OnStop),
@@ -1021,7 +1021,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private int СlusterNodeFilterApply(void* target, long memPtr)
+        private int ClusterNodeFilterApply(void* target, long memPtr)
         {
             return SafeCall(() =>
             {

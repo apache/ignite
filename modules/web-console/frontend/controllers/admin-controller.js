@@ -17,8 +17,8 @@
 
 // Controller for Admin screen.
 export default ['adminController', [
-    '$rootScope', '$scope', '$http', '$q', '$state', 'IgniteMessages', 'IgniteConfirm', 'User', 'IgniteCountries',
-    ($rootScope, $scope, $http, $q, $state, Messages, Confirm, User, Countries) => {
+    '$rootScope', '$scope', '$http', '$q', '$state', 'IgniteMessages', 'IgniteConfirm', 'User', 'IgniteNotebookData', 'IgniteCountries',
+    ($rootScope, $scope, $http, $q, $state, Messages, Confirm, User, Notebook, Countries) => {
         $scope.users = null;
 
         const _reloadUsers = () => {
@@ -41,12 +41,13 @@ export default ['adminController', [
         $scope.becomeUser = function(user) {
             $http.get('/api/v1/admin/become', { params: {viewedUserId: user._id}})
                 .catch(({data}) => Promise.reject(data))
-                .then(User.load)
+                .then(() => User.load())
                 .then((becomeUser) => {
                     $rootScope.$broadcast('user', becomeUser);
 
                     $state.go('base.configuration.clusters');
                 })
+                .then(() => Notebook.load())
                 .catch(Messages.showError);
         };
 

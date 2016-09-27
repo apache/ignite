@@ -34,7 +34,8 @@ AM_CXXFLAGS = \
     -std=c++0x
 
 libignite_odbc_la_LIBADD = \
-    @top_srcdir@/binary/libignite-binary.la
+    @top_srcdir@/binary/libignite-binary.la \
+    -lodbcinst
 
 libignite_odbc_la_LDFLAGS = \
     -no-undefined \
