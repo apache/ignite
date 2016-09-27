@@ -91,27 +91,47 @@ namespace Apache.Ignite.Core.Tests.Log
             Assert.AreEqual("category", log.LoggerName);
             Assert.AreEqual(null, log.Properties["nativeErrorInfo"]);
             Assert.AreEqual(null, log.ExceptionObject);
-            Assert.AreEqual(Level.Trace, log.Level);
+            Assert.AreEqual(Level.Debug, log.Level);
 
             // No params.
             logger.Log(LogLevel.Warn, "msg{0}", null, CultureInfo.InvariantCulture, "category", null, null);
 
-            Assert.AreEqual("category|Warn|msg{0}||", getLastLog());
+            log = getLastLog();
+            Assert.AreEqual("msg{0}", log.MessageObject.ToString());
+            Assert.AreEqual("category", log.LoggerName);
+            Assert.AreEqual(null, log.Properties["nativeErrorInfo"]);
+            Assert.AreEqual(null, log.ExceptionObject);
+            Assert.AreEqual(Level.Warn, log.Level);
 
             // No formatter.
             logger.Log(LogLevel.Error, "msg{0}", null, null, "category", null, null);
 
-            Assert.AreEqual("category|Error|msg{0}||", getLastLog());
+            log = getLastLog();
+            Assert.AreEqual("msg{0}", log.MessageObject.ToString());
+            Assert.AreEqual("category", log.LoggerName);
+            Assert.AreEqual(null, log.Properties["nativeErrorInfo"]);
+            Assert.AreEqual(null, log.ExceptionObject);
+            Assert.AreEqual(Level.Error, log.Level);
 
             // No category.
             logger.Log(LogLevel.Error, "msg{0}", null, null, null, null, null);
 
-            Assert.AreEqual("|Error|msg{0}||", getLastLog());
+            log = getLastLog();
+            Assert.AreEqual("msg{0}", log.MessageObject.ToString());
+            Assert.AreEqual(null, log.LoggerName);
+            Assert.AreEqual(null, log.Properties["nativeErrorInfo"]);
+            Assert.AreEqual(null, log.ExceptionObject);
+            Assert.AreEqual(Level.Error, log.Level);
 
             // No message.
             logger.Log(LogLevel.Error, null, null, null, null, null, null);
 
-            Assert.AreEqual("|Error|||", getLastLog());
+            log = getLastLog();
+            Assert.AreEqual(null, log.MessageObject);
+            Assert.AreEqual(null, log.LoggerName);
+            Assert.AreEqual(null, log.Properties["nativeErrorInfo"]);
+            Assert.AreEqual(null, log.ExceptionObject);
+            Assert.AreEqual(Level.Error, log.Level);
         }
 
 
