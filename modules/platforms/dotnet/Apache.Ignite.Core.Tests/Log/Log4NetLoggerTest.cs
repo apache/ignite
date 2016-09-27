@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Log
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
     using Apache.Ignite.Core.Log;
@@ -134,6 +135,38 @@ namespace Apache.Ignite.Core.Tests.Log
             Assert.AreEqual(Level.Error, log.Level);
         }
 
+        /// <summary>
+        /// Tests the logger with Ignite.
+        /// </summary>
+        [Test]
+        public void TestIgniteStartup()
+        {
+            var memoryLog = CreateMemoryLogger();
+            var logger = new IgniteLog4NetLogger();
+
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                Logger = logger
+            };
+
+            Func<IEnumerable<string>> getLogs = () => memoryLog.GetEvents().Select(x => x.MessageObject.ToString());
+
+            using (var ignite = Ignition.Start(cfg))
+            {
+                Assert.IsTrue(getLogs().Contains(
+                    string.Format("|Debug|Starting Ignite.NET {0}||", typeof(Ignition).Assembly.GetName().Version)));
+
+                Assert.IsTrue(getLogs().Any(x => x.Contains(">>> Topology snapshot.")));
+
+                Assert.IsInstanceOf<IgniteLog4NetLogger>(ignite.Logger);
+
+                ignite.Logger.Info("Log from user code.");
+
+                Assert.IsTrue(getLogs().Contains("|Info|Log from user code.||"));
+            }
+
+            Assert.IsTrue(getLogs().Contains("org.apache.ignite.internal.IgniteKernal|Debug|Grid is stopping.||"));
+        }
 
         /// <summary>
         /// Creates the memory logger.
