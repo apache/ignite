@@ -18,6 +18,11 @@
 namespace Apache.Ignite.Core.Tests.Log
 {
     using Apache.Ignite.log4net;
+    using global::log4net;
+    using global::log4net.Appender;
+    using global::log4net.Core;
+    using global::log4net.Layout;
+    using global::log4net.Repository.Hierarchy;
     using NUnit.Framework;
 
     /// <summary>
@@ -25,9 +30,30 @@ namespace Apache.Ignite.Core.Tests.Log
     /// </summary>
     public class Log4NetLoggerTest
     {
+        private static MemoryAppender CreateMemoryLogger()
+        {
+            var hierarchy = (Hierarchy)LogManager.GetRepository();
+
+            var patternLayout = new PatternLayout
+            {
+                ConversionPattern = "%date [%thread] %-5level %logger - %message%newline"
+            };
+            patternLayout.ActivateOptions();
+
+            var memory = new MemoryAppender();
+            memory.ActivateOptions();
+            hierarchy.Root.AddAppender(memory);
+
+            hierarchy.Root.Level = Level.All;
+            hierarchy.Configured = true;
+
+            return memory;
+        }
+
         [Test]
         public void Test()
         {
+            var memoryLog = CreateMemoryLogger();
             var logger = new IgniteLog4NetLogger();
         }
     }
