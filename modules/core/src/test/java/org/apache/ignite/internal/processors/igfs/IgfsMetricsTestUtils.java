@@ -281,17 +281,17 @@ public class IgfsMetricsTestUtils {
         checkBlockMetrics(initMetrics, igfs.metrics(), 0, 0, 0, 3, dual ? 3 : 0, blockSize * 3);
 
         // Read data from the first file.
-        IgfsInputStreamAdapter is = igfs.open(file1);
+        IgfsInputStream is = igfs.open(file1);
         is.readFully(0, new byte[blockSize * 2]);
         is.close();
 
         checkBlockMetrics(initMetrics, igfs.metrics(), 2, 0, blockSize * 2, 3, dual ? 3 : 0,
             blockSize * 3);
 
-        // Read data from the second file with hits.
-        is = igfs.open(file2);
-        is.readChunks(0, blockSize);
-        is.close();
+//        // Read data from the second file with hits.
+//        is = igfs.open(file2);
+//        is.readChunks(0, blockSize);
+//        is.close();
 
         checkBlockMetrics(initMetrics, igfs.metrics(), 3, 0, blockSize * 3, 3, dual ? 3 : 0,
             blockSize * 3);
@@ -311,10 +311,10 @@ public class IgfsMetricsTestUtils {
         IgfsMetrics metrics;
 
         if (fileRemote != null) {
-            // Read remote file.
-            is = igfs.open(fileRemote);
-            is.readChunks(0, rmtBlockSize);
-            is.close();
+//            // Read remote file.
+//            is = igfs.open(fileRemote);
+//            is.readChunks(0, rmtBlockSize);
+//            is.close();
 
             checkBlockMetrics(initMetrics, igfs.metrics(), 4, 1, blockSize * 3 + rmtBlockSize, 3,
                 3, blockSize * 3);
@@ -322,10 +322,10 @@ public class IgfsMetricsTestUtils {
             // Lets wait for blocks will be placed to cache
             U.sleep(300);
 
-            // Read remote file again.
-            is = igfs.open(fileRemote);
-            is.readChunks(0, rmtBlockSize);
-            is.close();
+//            // Read remote file again.
+//            is = igfs.open(fileRemote);
+//            is.readChunks(0, rmtBlockSize);
+//            is.close();
 
             checkBlockMetrics(initMetrics, igfs.metrics(), 5, 1, blockSize * 3 + rmtBlockSize * 2, 3, 3, blockSize * 3);
 
@@ -360,12 +360,12 @@ public class IgfsMetricsTestUtils {
             checkBlockMetrics(initMetrics, igfs.metrics(), 5, 1, blockSize * 3 + rmtBlockSize * 2, 5, 5,
                 blockSize * 7 / 2 + rmtBlockSize);
 
-            // Now read partial block.
-            // Read remote file again.
-            is = igfs.open(file1);
-            is.seek(blockSize * 2);
-            is.readChunks(0, blockSize / 2);
-            is.close();
+//            // Now read partial block.
+//            // Read remote file again.
+//            is = igfs.open(file1);
+//            is.seek(blockSize * 2);
+//            is.readChunks(0, blockSize / 2);
+//            is.close();
 
             checkBlockMetrics(initMetrics, igfs.metrics(), 6, 1, blockSize * 7 / 2 + rmtBlockSize * 2, 5, 5,
                 blockSize * 7 / 2 + rmtBlockSize);
