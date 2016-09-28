@@ -34,13 +34,13 @@ namespace Apache.Ignite.AspNet.Impl
     internal static class ConfigUtil
     {
         /** */
-        public const string GridName = "gridName";
+        private const string GridName = "gridName";
 
         /** */
-        public const string CacheName = "cacheName";
+        private const string CacheName = "cacheName";
 
         /** */
-        public const string IgniteConfigurationSectionName = "igniteConfigurationSectionName";
+        private const string IgniteConfigurationSectionName = "igniteConfigurationSectionName";
 
         /// <summary>
         /// Initializes the cache from configuration.
@@ -68,7 +68,6 @@ namespace Apache.Ignite.AspNet.Impl
                 throw new IgniteException(string.Format(CultureInfo.InvariantCulture,
                     "Failed to initialize {0}: {1}", callerType, ex), ex);
             }
-
         }
 
         /// <summary>
