@@ -101,16 +101,12 @@ public class IgniteTestSuite extends TestSuite {
             setName(name);
     }
 
-    /**
-     * Adds a test to the suite.
-     */
-    @Override public void addTest(Test test) {
-        super.addTest(test);
-    }
-
     /** {@inheritDoc} */
     @Override public void addTestSuite(Class<? extends TestCase> testClass) {
-        addTest(new IgniteTestSuite(testClass, ignoredOnly));
+        IgniteTestSuite suite = new IgniteTestSuite(testClass, ignoredOnly);
+
+        if (suite.testCount() > 0)
+            addTest(suite);
     }
 
     /**
