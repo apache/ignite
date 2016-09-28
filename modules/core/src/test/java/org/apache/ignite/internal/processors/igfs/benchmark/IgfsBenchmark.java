@@ -21,10 +21,10 @@ import org.apache.ignite.igfs.IgfsPathNotFoundException;
  */
 abstract class FileOperation {
     /** Buff size. */
-    int buffSize = 8192;
+    public static final int BUFF_SIZE = 8192;
 
     /** Data bufer. */
-    ByteBuffer dataBufer = ByteBuffer.allocate(buffSize);
+    ByteBuffer dataBufer = ByteBuffer.allocate(BUFF_SIZE);
 
     /** Filesystem. */
     protected final IgniteFileSystem fs;
@@ -91,7 +91,7 @@ class WriteFileOperation extends FileOperation {
         }
 
         try {
-            for (int i = 0; i < this.size / 8; i++)
+            for (int i = 0; i < size / dataBufer.capacity(); i++)
                 out.write(dataBufer.array());
         }
         catch (IOException ex) {
@@ -157,7 +157,7 @@ class ReadFileOperation extends FileOperation {
         }
 
         try {
-            for (int i = 0; i < this.size / 8; i++)
+            for (int i = 0; i < size / dataBufer.capacity(); i++)
                 in.read(dataBufer.array());
         }
         catch (IOException ex) {
@@ -313,7 +313,7 @@ public class IgfsBenchmark {
         this.depth = depth;
         this.subDirsCount = subDirsCount;
         this.filesCount = filesCount;
-        this.size = size;
+        this.size = (size > FileOperation.BUFF_SIZE) ? size : FileOperation.BUFF_SIZE;
     }
 
     /**
@@ -353,22 +353,23 @@ public class IgfsBenchmark {
     public static void main(String[] args) {
         Ignition.setClientMode(Boolean.getBoolean("clientMode"));
 
-        Ignite ignite = Ignition.start(args[0]);
+        Ignite ignite = Ignition.start(System.getProperty("cfg", "default-config.xml"));
 
         int wormUpCount = Integer.getInteger("wormup", 2);
         int cycles = Integer.getInteger("cycles", 10);
 
-        final IgfsBenchmark fsTest = new IgfsBenchmark(args[1],
-            Integer.parseInt(args[2]),
-            Integer.parseInt(args[3]),
-            Integer.parseInt(args[4]),
-            Integer.parseInt(args[5]));
+        final IgfsBenchmark fsTest = new IgfsBenchmark(
+            System.getProperty("testDir", "test"),
+            Integer.getInteger("depth", 3),
+            Integer.getInteger("subDirs", 10),
+            Integer.getInteger("files", 10),
+            Integer.getInteger("fileSize", 8) * 1024);
 
         final IgniteFileSystem fs = ignite.fileSystem("igfs");
 
         try {
-            System.out.println("Wormup...");
             for (int i = 0; i < wormUpCount; ++i) {
+                System.out.println("Wormup #" + i + " from " + wormUpCount);
                 fsTest.testWriteFile(fs);
                 fsTest.testReadFile(fs);
                 fsTest.testDeleteFile(fs);
@@ -388,8 +389,9 @@ public class IgfsBenchmark {
         List<Long> delRes = new ArrayList<>(cycles);
 
         try {
-            System.out.println("Benchmark starts...");
             for (int i = 0; i < cycles; ++i) {
+                System.out.println("Benchmark cycle #" + i + " from " + cycles);
+
                 writeRes.add(bench(new Runnable() {
                     @Override public void run() {
                         fsTest.testWriteFile(fs);
@@ -424,8 +426,8 @@ public class IgfsBenchmark {
             System.out.println("\n");
             System.out.println("Write " + avg(writeRes) + " +/- " + stdDev(writeRes, avg(writeRes)));
             System.out.println("Read " + avg(readRes) + " +/- " + stdDev(readRes, avg(readRes)));
-            System.out.println("Info" + avg(infoRes) + " +/- " + stdDev(infoRes, avg(infoRes)));
-            System.out.println("List" + avg(listRes) + " +/- " + stdDev(listRes, avg(listRes)));
+            System.out.println("Info " + avg(infoRes) + " +/- " + stdDev(infoRes, avg(infoRes)));
+            System.out.println("List " + avg(listRes) + " +/- " + stdDev(listRes, avg(listRes)));
             System.out.println("Delete " + avg(delRes) + " +/- " + stdDev(delRes, avg(delRes)));
         }
         catch (Exception ex) {
