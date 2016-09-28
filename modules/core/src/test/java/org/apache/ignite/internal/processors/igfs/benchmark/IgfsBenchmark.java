@@ -29,6 +29,9 @@ abstract class FileOperation {
     /** Filesystem. */
     protected final IgniteFileSystem fs;
 
+    /**
+     * @param fs Ignite filesystem to benchmark.
+     */
     public FileOperation(IgniteFileSystem fs) {
         this.fs = fs;
     }
@@ -498,7 +501,6 @@ public class IgfsBenchmark {
      * Do write file operations.
      *
      * @param fs Filesystem.
-     * @throws Exception If failed.
      */
     public void testWriteFile(IgniteFileSystem fs) {
         try {
