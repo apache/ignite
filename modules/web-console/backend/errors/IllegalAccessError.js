@@ -17,12 +17,12 @@
 
 'use strict';
 
-import AppErrorException from './AppErrorException';
+const AppErrorException = require('./AppErrorException');
 
 class IllegalAccessError extends AppErrorException {
     constructor(message) {
         super(message);
-        this.httpCode = 401;
+        this.httpCode = 403;
     }
 }
 

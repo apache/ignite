@@ -62,14 +62,14 @@ public class LoadTestsCassandraArtifactsCreator {
             System.out.println("[INFO] Creating test table: " + perSettings.getTable());
 
             try {
-                CassandraHelper.executeWithAdminCredentials(perSettings.getTableDDLStatement());
+                CassandraHelper.executeWithAdminCredentials(perSettings.getTableDDLStatement(perSettings.getTable()));
             } catch (Throwable e) {
                 throw new RuntimeException("Failed to create test table: " + perSettings.getTable(), e);
             }
 
             System.out.println("[INFO] Test table '" + perSettings.getTable() + "' was successfully created");
 
-            List<String> statements = perSettings.getIndexDDLStatements();
+            List<String> statements = perSettings.getIndexDDLStatements(perSettings.getTable());
             if (statements == null)
                 statements = new LinkedList<>();
 

@@ -26,10 +26,15 @@ import java.lang.annotation.Target;
  * Annotation which indicates that the test is ignored.
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD, ElementType.TYPE})
+@Target({ElementType.METHOD})
 public @interface IgniteIgnore {
     /**
-     * The optional reason why the test is ignored.
+     * Reason for ignore (usually link to JIRA ticket).
      */
-    String value() default "";
+    String value();
+
+    /**
+     * Whether test should be failed immediately. Useful when test hangs or consumes a lot of time.
+     */
+    boolean forceFailure() default false;
 }

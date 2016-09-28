@@ -21,6 +21,8 @@ import java.beans.PropertyDescriptor;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -43,8 +45,11 @@ public class ValuePersistenceSettings extends PersistenceSettings {
     public ValuePersistenceSettings(Element el) {
         super(el);
 
-        if (!PersistenceStrategy.POJO.equals(getStrategy()))
+        if (PersistenceStrategy.POJO != getStrategy()) {
+            init();
+
             return;
+        }
 
         NodeList nodes = el.getElementsByTagName(FIELD_ELEMENT);
 
@@ -54,12 +59,14 @@ public class ValuePersistenceSettings extends PersistenceSettings {
             throw new IllegalStateException("Failed to initialize value fields for class '" + getJavaClass().getName() + "'");
 
         checkDuplicates(fields);
+
+        init();
     }
 
     /**
      * @return List of value fields.
      */
-    public List<PojoField> getFields() {
+    @Override public List<PojoField> getFields() {
         return fields == null ? null : Collections.unmodifiableList(fields);
     }
 
@@ -79,8 +86,14 @@ public class ValuePersistenceSettings extends PersistenceSettings {
 
         if (fieldNodes == null || fieldNodes.getLength() == 0) {
             List<PropertyDescriptor> primitivePropDescriptors = PropertyMappingHelper.getPojoPropertyDescriptors(getJavaClass(), true);
-            for (PropertyDescriptor descriptor : primitivePropDescriptors)
-                list.add(new PojoValueField(descriptor));
+            for (PropertyDescriptor desc : primitivePropDescriptors) {
+                boolean valid = desc.getWriteMethod() != null ||
+                        desc.getReadMethod().getAnnotation(QuerySqlField.class) != null;
+
+                // Skip POJO field if it's read-only and is not annotated with @QuerySqlField.
+                if (valid)
+                    list.add(new PojoValueField(desc));
+            }
 
             return list;
         }

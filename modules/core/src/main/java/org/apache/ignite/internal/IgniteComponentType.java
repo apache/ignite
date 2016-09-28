@@ -41,6 +41,13 @@ public enum IgniteComponentType {
         "ignite-hadoop"
     ),
 
+    /** Hadoop Helper component. */
+    HADOOP_HELPER(
+        "org.apache.ignite.internal.processors.hadoop.HadoopNoopHelper",
+        "org.apache.ignite.internal.processors.hadoop.HadoopHelperImpl",
+        "ignite-hadoop"
+    ),
+
     /** IGFS helper component. */
     IGFS_HELPER(
         "org.apache.ignite.internal.processors.igfs.IgfsNoopHelper",
@@ -160,7 +167,7 @@ public enum IgniteComponentType {
      * @return Created component.
      * @throws IgniteCheckedException If failed.
      */
-    public <T extends GridComponent> T create(GridKernalContext ctx, boolean noOp) throws IgniteCheckedException {
+    public <T> T create(GridKernalContext ctx, boolean noOp) throws IgniteCheckedException {
         return create0(ctx, noOp ? noOpClsName : clsName);
     }
 
@@ -172,7 +179,7 @@ public enum IgniteComponentType {
      * @return Created component.
      * @throws IgniteCheckedException If failed.
      */
-    public <T extends GridComponent> T createIfInClassPath(GridKernalContext ctx, boolean mandatory)
+    public <T> T createIfInClassPath(GridKernalContext ctx, boolean mandatory)
         throws IgniteCheckedException {
         String cls = clsName;
 
