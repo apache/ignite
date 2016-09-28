@@ -155,6 +155,12 @@ public abstract class GridAbstractTest extends TestCase {
     /** Starting grid name. */
     protected static final ThreadLocal<String> startingGrid = new ThreadLocal<>();
 
+    /** Force failure flag. */
+    private boolean forceFailure;
+
+    /** Force failure message. */
+    private String forceFailureMsg;
+
     /**
      *
      */
@@ -1753,11 +1759,25 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * Force test failure.
+     *
+     * @param msg Message.
+     */
+    public void forceFailure(@Nullable String msg) {
+        forceFailure = true;
+
+        forceFailureMsg = msg;
+    }
+
+    /**
      * @throws Throwable If failed.
      */
     @SuppressWarnings({"ProhibitedExceptionDeclared"})
     private void runTestInternal() throws Throwable {
-        super.runTest();
+        if (forceFailure)
+            fail("Forced failure: " + forceFailureMsg);
+        else
+            super.runTest();
     }
 
     /**

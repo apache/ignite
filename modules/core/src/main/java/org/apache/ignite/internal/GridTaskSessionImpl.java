@@ -103,6 +103,9 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     private final boolean fullSup;
 
     /** */
+    private final boolean internal;
+
+    /** */
     private final Collection<UUID> top;
 
     /** */
@@ -124,6 +127,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      * @param attrs Session attributes.
      * @param ctx Grid Kernal Context.
      * @param fullSup Session full support enabled flag.
+     * @param internal Internal task flag.
      * @param subjId Subject ID.
      */
     public GridTaskSessionImpl(
@@ -139,6 +143,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         @Nullable Map<Object, Object> attrs,
         GridKernalContext ctx,
         boolean fullSup,
+        boolean internal,
         UUID subjId) {
         assert taskNodeId != null;
         assert taskName != null;
@@ -166,6 +171,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         }
 
         this.fullSup = fullSup;
+        this.internal = internal;
         this.subjId = subjId;
 
         mapFut = new IgniteFutureImpl(new GridFutureAdapter());
@@ -858,6 +864,13 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> mapFuture() {
         return mapFut;
+    }
+
+    /**
+     * @return {@code True} if task is internal.
+     */
+    public boolean isInternal() {
+        return internal;
     }
 
     /** {@inheritDoc} */
