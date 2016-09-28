@@ -245,8 +245,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param userType User type flag.
      * @param registered Whether type is registered.
      * @param hashCode Hash code.
+     * @param isHashCodeSet Hash code presence flag.
      */
-    public void postWrite(boolean userType, boolean registered, int hashCode) {
+    public void postWrite(boolean userType, boolean registered, int hashCode, boolean isHashCodeSet) {
         short flags;
         boolean useCompactFooter;
 
@@ -302,6 +303,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
                 offset = 0;
             }
         }
+
+        if (!isHashCodeSet)
+            flags |= BinaryUtils.FLAG_EMPTY_HASH_CODE;
 
         // Actual write.
         int retPos = out.position();
