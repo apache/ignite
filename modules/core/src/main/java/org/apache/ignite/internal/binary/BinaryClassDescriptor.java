@@ -41,6 +41,7 @@ import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -114,6 +115,9 @@ public class BinaryClassDescriptor {
     private final boolean excluded;
 
     /** */
+    private final boolean overridesHashCode;
+
+    /** */
     private final Class<?>[] intfs;
 
     /**
@@ -163,6 +167,8 @@ public class BinaryClassDescriptor {
         this.serializer = serializer;
         this.mapper = mapper;
         this.registered = registered;
+
+        overridesHashCode = IgniteUtils.overridesEqualsAndHashCode(cls);
 
         schemaReg = ctx.schemaRegistry(typeId);
 
@@ -845,7 +851,15 @@ public class BinaryClassDescriptor {
      * @param obj Object.
      */
     private void postWrite(BinaryWriterExImpl writer, Object obj) {
-        writer.postWrite(userType, registered, obj instanceof CacheObjectImpl ? 0 : obj.hashCode());
+        if (obj instanceof CacheObjectImpl)
+            writer.postWrite(userType, registered, 0, false);
+        else if (obj instanceof BinaryObjectEx) {
+            boolean flagSet = ((BinaryObjectEx)obj).isFlagSet(BinaryUtils.FLAG_EMPTY_HASH_CODE);
+
+            writer.postWrite(userType, registered, obj.hashCode(), !flagSet);
+        }
+        else
+            writer.postWrite(userType, registered, obj.hashCode(), overridesHashCode);
     }
 
     /**
