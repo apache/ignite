@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import fireUp from 'fire-up';
+const fireUp = require('fire-up');
 
 module.exports = fireUp.newInjector({
     basePath: __dirname,
