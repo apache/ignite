@@ -146,7 +146,6 @@ namespace Apache.Ignite.AspNet.Tests
 
             Assert.IsFalse(cacheNames.Contains(null));
             Assert.IsTrue(cacheNames.Contains(IgniteSessionStateStoreProvider.DefaultCacheName));
-
         }
 
         /// <summary>
