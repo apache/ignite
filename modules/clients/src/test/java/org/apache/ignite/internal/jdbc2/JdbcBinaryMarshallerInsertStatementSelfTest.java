@@ -22,9 +22,9 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
- * JDBC test of MERGE statement w/binary marshaller - no nodes know about classes.
+ * JDBC test of INSERT statement w/binary marshaller - no nodes know about classes.
  */
-public class JdbcBinaryMarshallerMergeStatementSelfTest extends JdbcMergeStatementSelfTest {
+public class JdbcBinaryMarshallerInsertStatementSelfTest extends JdbcInsertStatementSelfTest {
     static {
         GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
     }

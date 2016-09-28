@@ -17,25 +17,21 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.testframework.config.GridTestProperties;
+import java.sql.Statement;
 
-/**
- * JDBC test of MERGE statement w/binary marshaller - no nodes know about classes.
- */
-public class JdbcBinaryMarshallerMergeStatementSelfTest extends JdbcMergeStatementSelfTest {
-    static {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
-    }
+public abstract class JdbcAbstractUpdateStatementSelfTest extends JdbcAbstractDmlStatementSelfTest {
+    /** SQL query to populate cache. */
+    private static final String ITEMS_SQL = "insert into Person(_key, id, firstName, lastName, age) values " +
+        "('p1', 1, 'John', 'White', 25), " +
+        "('p2', 2, 'Joe', 'Black', 35), " +
+        "('p3', 3, 'Mike', 'Green', 40)";
 
     /** {@inheritDoc} */
-    @Override protected String getCfgUrl() {
-        return BASE_URL_BIN;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        return getBinaryConfiguration(gridName);
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+        jcache(0).clear();
+        try (Statement s = conn.createStatement()) {
+            s.executeUpdate(ITEMS_SQL);
+        }
     }
 }
