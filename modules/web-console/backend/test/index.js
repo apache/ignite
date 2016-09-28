@@ -15,18 +15,21 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+const Mocha = require('mocha');
+const glob = require('glob');
+const path = require('path');
 
-angular
-    .module('ignite-console.version', [])
-    .provider('IgniteVersion', function() {
-        const version = {
-            version: '1.7.0'
-        };
+const mocha = new Mocha({ui: 'tdd', reporter: process.env.MOCHA_REPORTER || 'spec'});
+const testPath = ['./test/unit/**/*.js', './test/routes/**/*.js'];
 
-        this.update = (newVersion) => {
-            version.version = newVersion;
-        };
+if (process.env.IGNITE_MODULES)
+    testPath.push(path.join(process.env.IGNITE_MODULES, 'backend', 'test', 'unit', '**', '*.js'));
 
-        this.$get = [() => version];
-    });
+testPath
+    .map((mask) => glob.sync(mask))
+    .reduce((acc, items) => acc.concat(items), [])
+    .map(mocha.addFile.bind(mocha));
+
+const runner = mocha.run();
+
+runner.on('end', (failures) => process.exit(failures));

@@ -535,7 +535,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
                 {
-                    SpringConfigUrl = "config\\compute\\compute-grid1.xml",
+                    SpringConfigUrl = GetConfigs().Item1,
                     GridName = "daemonGrid",
                     IsDaemon = true
                 })

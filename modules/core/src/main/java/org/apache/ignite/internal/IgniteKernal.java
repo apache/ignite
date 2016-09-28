@@ -1126,7 +1126,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ackStart(rtBean);
 
         if (!isDaemon())
-            ctx.discovery().ackTopology();
+            ctx.discovery().ackTopology(localNode().order());
     }
 
     /**
