@@ -18,7 +18,6 @@
 package org.apache.ignite.tests;
 
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.cache.store.CacheStore;
@@ -28,7 +27,11 @@ import org.apache.ignite.tests.pojos.Person;
 import org.apache.ignite.tests.pojos.PersonId;
 import org.apache.ignite.tests.pojos.Product;
 import org.apache.ignite.tests.pojos.ProductOrder;
-import org.apache.ignite.tests.utils.*;
+import org.apache.ignite.tests.utils.CacheStoreHelper;
+import org.apache.ignite.tests.utils.CassandraHelper;
+import org.apache.ignite.tests.utils.TestCacheSession;
+import org.apache.ignite.tests.utils.TestTransaction;
+import org.apache.ignite.tests.utils.TestsHelper;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.log4j.Logger;
 import org.junit.AfterClass;

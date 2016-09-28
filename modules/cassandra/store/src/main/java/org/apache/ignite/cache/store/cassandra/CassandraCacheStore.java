@@ -20,8 +20,12 @@ package org.apache.ignite.cache.store.cassandra;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Row;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -59,10 +63,12 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
     private static final String TRANSACTION_BUFFER = "CASSANDRA_TRANSACTION_BUFFER";
 
     /** Auto-injected store session. */
+    @SuppressWarnings("unused")
     @CacheStoreSessionResource
     private CacheStoreSession storeSes;
 
     /** Auto-injected logger instance. */
+    @SuppressWarnings("unused")
     @LoggerResource
     private IgniteLogger log;
 
