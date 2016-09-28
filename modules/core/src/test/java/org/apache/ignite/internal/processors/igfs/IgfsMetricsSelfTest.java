@@ -115,6 +115,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
      * @return Configuration.
      * @throws Exception If failed.
      */
+    @SuppressWarnings("unchecked")
     private IgniteConfiguration primaryConfiguration(int idx) throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
@@ -174,6 +175,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @SuppressWarnings("unchecked")
     private void startSecondary() throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
@@ -236,6 +238,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @SuppressWarnings({"ResultOfMethodCallIgnored", "ConstantConditions"})
     public void testBlockMetrics() throws Exception {
         IgfsMetricsTestUtils.testBlockMetrics0((IgfsEx)igfsPrimary[0], secFileSys, igfsSecondary,
             igfsSecondary != null);

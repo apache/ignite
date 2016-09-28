@@ -62,7 +62,8 @@ namespace ignite
                     DBG_STR_CASE(SQL_CATALOG_TERM);
                     DBG_STR_CASE(SQL_TABLE_TERM);
                     DBG_STR_CASE(SQL_SCHEMA_TERM);
-                    DBG_STR_CASE(SQL_ASYNC_DBC_FUNCTIONS);
+                    DBG_STR_CASE(SQL_NEED_LONG_DATA_LEN);
+//                    DBG_STR_CASE(SQL_ASYNC_DBC_FUNCTIONS);
                     DBG_STR_CASE(SQL_ASYNC_NOTIFICATION);
                     DBG_STR_CASE(SQL_GETDATA_EXTENSIONS);
                     DBG_STR_CASE(SQL_ODBC_INTERFACE_CONFORMANCE);
@@ -92,6 +93,8 @@ namespace ignite
                     DBG_STR_CASE(SQL_SQL92_PREDICATES);
                     DBG_STR_CASE(SQL_SQL92_RELATIONAL_JOIN_OPERATORS);
                     DBG_STR_CASE(SQL_SQL92_VALUE_EXPRESSIONS);
+                    DBG_STR_CASE(SQL_STATIC_CURSOR_ATTRIBUTES1);
+                    DBG_STR_CASE(SQL_STATIC_CURSOR_ATTRIBUTES2);
                 default: 
                     break;
                 }
@@ -104,7 +107,7 @@ namespace ignite
             ConnectionInfo::ConnectionInfo() : strParams(), intParams(),
                 shortParams()
             {
-                //========================= String Params =========================
+                //======================= String Params =======================
                 // Driver name.
                 strParams[SQL_DRIVER_NAME] = "Apache Ignite";
                 strParams[SQL_DBMS_NAME]   = "Apache Ignite";
@@ -170,8 +173,16 @@ namespace ignite
                 strParams[SQL_SCHEMA_TERM] = "schema";
 #endif // SQL_SCHEMA_TERM
 
+#ifdef SQL_NEED_LONG_DATA_LEN
+                // A character string: "Y" if the data source needs the length
+                // of a long data value (the data type is SQL_LONGVARCHAR,
+                // SQL_LONGVARBINARY) before that value is sent to the data
+                // source, "N" if it does not.
+                strParams[SQL_NEED_LONG_DATA_LEN ] = "Y";
+#endif // SQL_NEED_LONG_DATA_LEN
+
 #ifdef SQL_ASYNC_DBC_FUNCTIONS
-                //======================== Integer Params =========================
+                //====================== Integer Params =======================
                 // Indicates if the driver can execute functions asynchronously
                 // on the connection handle.
                 // SQL_ASYNC_DBC_CAPABLE = The driver can execute connection
@@ -342,7 +353,23 @@ namespace ignite
                     SQL_SRJO_NATURAL_JOIN | SQL_SRJO_INTERSECT_JOIN | SQL_SRJO_UNION_JOIN;
 #endif // SQL_SQL92_RELATIONAL_JOIN_OPERATORS
 
-                //========================= Short Params ==========================
+#ifdef SQL_STATIC_CURSOR_ATTRIBUTES1
+                // Bitmask that describes the attributes of a static cursor that
+                // are supported by the driver. This bitmask contains the first
+                // subset of attributes; for the second subset, see
+                // SQL_STATIC_CURSOR_ATTRIBUTES2.
+                intParams[SQL_STATIC_CURSOR_ATTRIBUTES1] = SQL_CA1_NEXT;
+#endif //SQL_STATIC_CURSOR_ATTRIBUTES1
+
+#ifdef SQL_STATIC_CURSOR_ATTRIBUTES2
+                // Bitmask that describes the attributes of a static cursor that
+                // are supported by the driver. This bitmask contains the second
+                // subset of attributes; for the first subset, see
+                // SQL_STATIC_CURSOR_ATTRIBUTES1.
+                intParams[SQL_STATIC_CURSOR_ATTRIBUTES2] = 0;
+#endif //SQL_STATIC_CURSOR_ATTRIBUTES2
+
+                //======================= Short Params ========================
 #ifdef SQL_MAX_CONCURRENT_ACTIVITIES
                 // The maximum number of active statements that the driver can
                 // support for a connection. Zero mean no limit.

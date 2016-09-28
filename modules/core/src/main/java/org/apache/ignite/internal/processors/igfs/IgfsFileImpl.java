@@ -231,10 +231,7 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable, Binarylizab
      * @param in Data input.
      */
     @Override public void readExternal(ObjectInput in) throws IOException {
-        path = new IgfsPath();
-
-        path.readExternal(in);
-
+        path = IgfsUtils.readPath(in);
         blockSize = in.readInt();
         grpBlockSize = in.readLong();
         len = in.readLong();
