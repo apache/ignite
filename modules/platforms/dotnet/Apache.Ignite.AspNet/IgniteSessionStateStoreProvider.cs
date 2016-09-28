@@ -99,7 +99,8 @@ namespace Apache.Ignite.AspNet
         {
             base.Initialize(name, config);
 
-            var cache = ConfigUtil.InitializeCache<string, IgniteSessionStateStoreData>(config, GetType());
+            var cache = ConfigUtil.InitializeCache<string, IgniteSessionStateStoreData>(config, GetType(), 
+                DefaultCacheName);
 
             _expiryCacheHolder = new ExpiryCacheHolder<string, IgniteSessionStateStoreData>(cache);
 

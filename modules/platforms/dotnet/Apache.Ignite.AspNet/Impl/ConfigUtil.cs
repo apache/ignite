@@ -22,6 +22,7 @@ namespace Apache.Ignite.AspNet.Impl
     using System.Configuration;
     using System.Diagnostics;
     using System.Globalization;
+    using System.Linq;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -44,13 +45,14 @@ namespace Apache.Ignite.AspNet.Impl
         /// <summary>
         /// Initializes the cache from configuration.
         /// </summary>
-        public static ICache<TK, TV> InitializeCache<TK, TV>(NameValueCollection config, Type callerType)
+        public static ICache<TK, TV> InitializeCache<TK, TV>(NameValueCollection config, Type callerType, 
+            string defaultCacheName)
         {
             Debug.Assert(config != null);
             Debug.Assert(callerType != null);
 
             var gridName = config[GridName];
-            var cacheName = config[CacheName];
+            var cacheName = config.AllKeys.Contains(CacheName) ? config[CacheName] : defaultCacheName;
             var cfgSection = config[IgniteConfigurationSectionName];
 
             try
