@@ -246,6 +246,13 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isFlagSet(short flag) {
+        short flags = BinaryPrimitives.readShort(arr, start + GridBinaryMarshaller.FLAGS_POS);
+
+        return BinaryUtils.isFlagSet(flags, flag);
+    }
+
+    /** {@inheritDoc} */
     @Override public int typeId() {
         int off = start + GridBinaryMarshaller.TYPE_ID_POS;
 
