@@ -41,7 +41,7 @@ public class IgfsSharedMemoryTestServer {
         InputStream is = null;
 
         try {
-            IpcServerEndpoint srv = new IpcSharedMemoryServerEndpoint();
+            IpcServerEndpoint srv = new IpcSharedMemoryServerEndpoint(U.defaultWorkDirectory());
 
             new IgniteTestResources().inject(srv);
 

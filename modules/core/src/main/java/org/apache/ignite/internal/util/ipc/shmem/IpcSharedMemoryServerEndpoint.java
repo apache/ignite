@@ -40,7 +40,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.IpcEndpointBindException;
 import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
@@ -122,7 +121,7 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
     private String gridName;
 
     /** Work directory. */
-    private String workDir;
+    private final String workDir;
 
     /** Flag allowing not to print out of resources warning. */
     private boolean omitOutOfResourcesWarn;
@@ -143,9 +142,11 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
     /**
      * Use this constructor when dependencies could be injected
      * with {@link GridResourceProcessor#injectGeneric(Object)}.
+     *
+     * @param workDir Work directory.
      */
-    public IpcSharedMemoryServerEndpoint() {
-        // No-op.
+    public IpcSharedMemoryServerEndpoint(String workDir) {
+        this.workDir = workDir;
     }
 
     /**

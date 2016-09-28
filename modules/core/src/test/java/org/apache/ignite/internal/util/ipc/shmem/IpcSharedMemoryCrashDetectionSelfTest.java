@@ -55,7 +55,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
     @Override protected void afterTestsStopped() throws Exception {
         // Start and stop server endpoint to let GC worker
         // make a run and cleanup resources.
-        IpcSharedMemoryServerEndpoint srv = new IpcSharedMemoryServerEndpoint();
+        IpcSharedMemoryServerEndpoint srv = new IpcSharedMemoryServerEndpoint(U.defaultWorkDirectory());
 
         new IgniteTestResources().inject(srv);
 
@@ -72,7 +72,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
      */
     public void testIgfsServerClientInteractionsUponClientKilling() throws Exception {
         // Run server endpoint.
-        IpcSharedMemoryServerEndpoint srv = new IpcSharedMemoryServerEndpoint();
+        IpcSharedMemoryServerEndpoint srv = new IpcSharedMemoryServerEndpoint(U.defaultWorkDirectory());
 
         new IgniteTestResources().inject(srv);
 
