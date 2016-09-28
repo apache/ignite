@@ -40,6 +40,9 @@ public class IgniteIgnoredTestSuite extends TestSuite {
         /* --- CLOUDS --- */
         suite.addTest(IgniteCloudTestSuite.suite());
 
+        /* --- JTA --- */
+        suite.addTest(IgniteJtaTestSuite.suite());
+
         /* --- WEB SESSIONS --- */
         suite.addTest(IgniteWebSessionSelfTestSuite.suite());
 
