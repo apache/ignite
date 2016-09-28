@@ -101,16 +101,12 @@ public class IgniteTestSuite extends TestSuite {
             setName(name);
     }
 
-    /**
-     * Adds a test to the suite.
-     */
-    @Override public void addTest(Test test) {
-        super.addTest(test);
-    }
-
     /** {@inheritDoc} */
     @Override public void addTestSuite(Class<? extends TestCase> testClass) {
-        addTest(new IgniteTestSuite(testClass, ignoredOnly));
+        IgniteTestSuite suite = new IgniteTestSuite(testClass, ignoredOnly);
+
+        if (suite.testCount() > 0)
+            addTest(suite);
     }
 
     /**
@@ -133,6 +129,8 @@ public class IgniteTestSuite extends TestSuite {
         if(!Modifier.isPublic(theClass.getModifiers()))
             addTest(warning("Class " + theClass.getName() + " is not public"));
         else {
+            IgnoreDescriptor clsIgnore = IgnoreDescriptor.forClass(theClass);
+
             Class superCls = theClass;
 
             int testAdded = 0;
@@ -144,7 +142,7 @@ public class IgniteTestSuite extends TestSuite {
                 Method[] methods = MethodSorter.getDeclaredMethods(superCls);
 
                 for (Method each : methods) {
-                    if (addTestMethod(each, names, theClass))
+                    if (addTestMethod(each, names, theClass, clsIgnore))
                         testAdded++;
                     else
                         testIgnored++;
@@ -162,9 +160,11 @@ public class IgniteTestSuite extends TestSuite {
      * @param m Test method.
      * @param names Test name list.
      * @param theClass Test class.
+     * @param clsIgnore Class ignore descriptor (if any).
      * @return Whether test method was added.
      */
-    private boolean addTestMethod(Method m, List<String> names, Class<?> theClass) {
+    private boolean addTestMethod(Method m, List<String> names, Class<?> theClass,
+        @Nullable IgnoreDescriptor clsIgnore) {
         String name = m.getName();
 
         if (names.contains(name))
@@ -179,25 +179,20 @@ public class IgniteTestSuite extends TestSuite {
 
         names.add(name);
 
-        boolean hasIgnore = m.isAnnotationPresent(IgniteIgnore.class);
+        IgnoreDescriptor ignore = IgnoreDescriptor.forMethod(theClass, m);
+
+        if (ignore == null)
+            ignore = clsIgnore;
 
         if (ignoredOnly) {
-            if (hasIgnore) {
-                IgniteIgnore ignore = m.getAnnotation(IgniteIgnore.class);
-
-                String reason = ignore.value();
-
-                if (F.isEmpty(reason))
-                    throw new IllegalArgumentException("Reason is not set for ignored test [class=" +
-                        theClass.getName() + ", method=" + name + ']');
-
+            if (ignore != null) {
                 Test test = createTest(theClass, name);
 
                 if (ignore.forceFailure()) {
                     if (test instanceof GridAbstractTest)
-                        ((GridAbstractTest)test).forceFailure(ignore.value());
+                        ((GridAbstractTest)test).forceFailure(ignore.reason());
                     else
-                        test = new ForcedFailure(name, ignore.value());
+                        test = new ForcedFailure(name, ignore.reason());
                 }
 
                 addTest(test);
@@ -206,7 +201,7 @@ public class IgniteTestSuite extends TestSuite {
             }
         }
         else {
-            if (!hasIgnore) {
+            if (ignore == null) {
                 addTest(createTest(theClass, name));
 
                 return true;
@@ -252,6 +247,93 @@ public class IgniteTestSuite extends TestSuite {
         Boolean res = IGNORE_DFLT.get();
 
         return res != null && res;
+    }
+
+    /**
+     * Ignore descriptor.
+     */
+    private static class IgnoreDescriptor {
+        /** Reason. */
+        private final String reason;
+
+        /** Force failure. */
+        private final boolean forceFailure;
+
+        /**
+         * Get descriptor for class (if any).
+         *
+         * @param cls Class.
+         * @return Descriptor or {@code null}.
+         */
+        @Nullable public static IgnoreDescriptor forClass(Class cls) {
+            Class cls0 = cls;
+
+            while (Test.class.isAssignableFrom(cls0)) {
+                if (cls0.isAnnotationPresent(IgniteIgnore.class)) {
+                    IgniteIgnore ignore = (IgniteIgnore)cls0.getAnnotation(IgniteIgnore.class);
+
+                    String reason = ignore.value();
+
+                    if (F.isEmpty(reason))
+                        throw new IllegalArgumentException("Reason is not set for ignored test [class=" +
+                            cls0.getName() + ']');
+
+                    return new IgnoreDescriptor(reason, ignore.forceFailure());
+                }
+
+                cls0 = cls0.getSuperclass();
+            }
+
+            return null;
+        }
+
+        /**
+         * Get descriptor for method (if any).
+         *
+         * @param cls Class.
+         * @param mthd Method.
+         * @return Descriptor or {@code null}.
+         */
+        @Nullable public static IgnoreDescriptor forMethod(Class cls, Method mthd) {
+            if (mthd.isAnnotationPresent(IgniteIgnore.class)) {
+                IgniteIgnore ignore = mthd.getAnnotation(IgniteIgnore.class);
+
+                String reason = ignore.value();
+
+                if (F.isEmpty(reason))
+                    throw new IllegalArgumentException("Reason is not set for ignored test [class=" +
+                        cls.getName() + ", method=" + mthd.getName() + ']');
+
+                return new IgnoreDescriptor(reason, ignore.forceFailure());
+            }
+            else
+                return null;
+        }
+
+        /**
+         * Constructor.
+         *
+         * @param reason Reason.
+         * @param forceFailure Force failure.
+         */
+        private IgnoreDescriptor(String reason, boolean forceFailure) {
+            this.reason = reason;
+            this.forceFailure = forceFailure;
+        }
+
+        /**
+         * @return Reason.
+         */
+        public String reason() {
+            return reason;
+        }
+
+        /**
+         * @return Force failure.
+         */
+        public boolean forceFailure() {
+            return forceFailure;
+        }
     }
 
     /**
