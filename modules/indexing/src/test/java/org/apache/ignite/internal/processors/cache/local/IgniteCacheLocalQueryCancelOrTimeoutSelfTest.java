@@ -104,6 +104,13 @@ public class IgniteCacheLocalQueryCancelOrTimeoutSelfTest extends GridCommonAbst
     }
 
     /**
+     * Tests cancellation with zero timeout.
+     */
+    public void testQueryCancelZeroTimeout() {
+        testQuery(false, 1, TimeUnit.MILLISECONDS);
+    }
+
+    /**
      * Tests timeout.
      */
     public void testQueryTimeout() {
@@ -143,7 +150,7 @@ public class IgniteCacheLocalQueryCancelOrTimeoutSelfTest extends GridCommonAbst
             fail("Expecting timeout");
         }
         catch (Exception e) {
-            assertTrue("Must throw correct exception", e instanceof QueryCancelledException);
+            assertTrue("Must throw correct exception", e.getCause() instanceof QueryCancelledException);
         }
 
         // Test must exit gracefully.

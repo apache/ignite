@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
+import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Utils;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
@@ -455,7 +456,7 @@ public class GridMapQueryExecutor {
             int i = 0;
 
             for (GridCacheSqlQuery qry : qrys) {
-                AtomicReference<GridAbsClosure> cancel = new AtomicReference<>();
+                GridQueryCancel cancel = new GridQueryCancel();
 
                 if (!qr.cancels.compareAndSet(i, null, cancel))
                     throw new IllegalStateException();
@@ -648,7 +649,7 @@ public class GridMapQueryExecutor {
         private final AtomicReferenceArray<QueryResult> results;
 
         /** */
-        private final AtomicReferenceArray<AtomicReference<GridAbsClosure>> cancels;
+        private final AtomicReferenceArray<GridQueryCancel> cancels;
 
         /** */
         private final GridCacheContext<?,?> cctx;
@@ -717,10 +718,10 @@ public class GridMapQueryExecutor {
                 if (res != null)
                     res.close();
 
-                AtomicReference<GridAbsClosure> ref = cancels.get(i);
+                GridQueryCancel ref = cancels.get(i);
 
                 if (ref != null)
-                    GridH2Utils.tryCancel(ref);
+                    ref.cancel();
             }
         }
     }

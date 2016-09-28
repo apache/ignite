@@ -20,31 +20,28 @@ package org.apache.ignite.internal.processors.query;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.QueryCancelledException;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Contains cancellation closure.
  */
 public class GridQueryCancel {
     /**
-     * No op. static closure. Used for representing cancelled state.
-     */
-    private static final Runnable NO_OP = new Runnable() {
-        @Override
-        public void run() {
-            // No-op.
-        }
-    };
-
-    /**
-     * Cancel requested.
+     * Cancel requested state.
      */
     private volatile boolean cancelled;
 
     /**
-     * Future.
+     * Query completed state.
      */
-    private final GridFutureAdapter<Runnable> fut = new GridFutureAdapter<>();
+    private volatile boolean completed;
+
+    /**
+     * Cancel closure.
+     */
+    private volatile Runnable clo;
 
     /**
      * @param clo Clo.
@@ -52,24 +49,32 @@ public class GridQueryCancel {
     public void set(Runnable clo) throws QueryCancelledException{
         checkCancelled();
 
-        fut.onDone(clo);
+        this.clo = clo;
     }
 
     /**
-     * Tries to cancel a query. Only one thread can call this method. This is enforced by QueryCursorImpl.
+     * Spins until query is completed by cancel or normal termination.
+     * Only one thread can enter this method.
+     * This is guaranteed by {@link org.apache.ignite.internal.processors.cache.QueryCursorImpl}
      */
     public void cancel() {
         cancelled = true;
 
-        try {
-            Runnable clo0 = fut.get();
+        int attempt = 0;
+        do {
+            int sleep = attempt++ * 10;
 
-            clo0.run();
-        } catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+            if (sleep != 0)
+                try {
+                    U.sleep(sleep);
+                } catch (IgniteInterruptedCheckedException ignored) {
+
+                    return;
+                }
+
+            if (clo != null) clo.run();
+        } while(!completed);
     }
-
 
     /**
      * Check cancel state.
@@ -80,9 +85,9 @@ public class GridQueryCancel {
     }
 
     /**
-     * @return Cancel future. Used by queries to notify about entering cancellable state.
+     * Signals the spinner to stop because two things are happen: query was completed or query was cancelled.
      */
-    public GridFutureAdapter<Runnable> future() {
-        return fut;
+    public void done() {
+        completed = true;
     }
 }

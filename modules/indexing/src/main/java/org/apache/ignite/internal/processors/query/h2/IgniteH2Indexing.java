@@ -872,22 +872,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             cancel.set(new Runnable() {
                 @Override public void run() {
                     try {
-                        int attempt = 0;
-
-                        do {
-                            int sleep = attempt++ * 10;
-
-                            if (sleep != 0)
-                                try {
-                                    U.sleep(sleep);
-                                } catch (IgniteInterruptedCheckedException ignored) {
-                                    U.warn(log, "Statement wasn't cancelled because thread is interrupted.");
-
-                                    return;
-                                }
-
-                            stmt.cancel();
-                        } while(!((JdbcStatement)stmt).wasCancelled());
+                        stmt.cancel();
                     } catch (SQLException e) {
                         throw new IgniteException("Failed to cancel the statement.", e);
                     }
@@ -905,6 +890,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             throw new IgniteCheckedException("Failed to execute SQL query.", e);
         } finally {
+            if(cancel != null)
+                cancel.done();
+
             if (timeoutMillis > 0)
                 ((Session)((JdbcConnection)conn).getSession()).setQueryTimeout(0);
         }

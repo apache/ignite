@@ -582,13 +582,13 @@ public class GridReduceQueryExecutor {
                         mapQry.marshallParams(m);
                 }
 
-                boolean retry = false;
-
                 cancel.set(new Runnable() {
                     @Override public void run() {
                         send(finalNodes, new GridQueryCancelRequest(qryReqId), null);
                     }
                 });
+
+                boolean retry = false;
 
                 if (send(nodes,
                     new GridQueryRequest(qryReqId, r.pageSize, space, mapQrys, topVer, extraSpaces, null, timeoutMillis), partsMap)) {
