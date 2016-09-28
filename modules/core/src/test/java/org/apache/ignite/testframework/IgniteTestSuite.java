@@ -29,6 +29,7 @@ import org.junit.internal.MethodSorter;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -134,7 +135,9 @@ public class IgniteTestSuite extends TestSuite {
             Class superCls = theClass;
 
             int testAdded = 0;
-            int testIgnored = 0;
+            int testSkipped = 0;
+
+            LinkedList<Test> addedTests = new LinkedList<>();
 
             for(List<String> names = new ArrayList<>(); Test.class.isAssignableFrom(superCls);
                 superCls = superCls.getSuperclass()) {
@@ -142,15 +145,29 @@ public class IgniteTestSuite extends TestSuite {
                 Method[] methods = MethodSorter.getDeclaredMethods(superCls);
 
                 for (Method each : methods) {
-                    if (addTestMethod(each, names, theClass, clsIgnore))
+                    AddResult res = addTestMethod(each, names, theClass, clsIgnore);
+
+                    if (res.added()) {
                         testAdded++;
+
+                        addedTests.add(res.test());
+                    }
                     else
-                        testIgnored++;
+                        testSkipped++;
                 }
             }
 
-            if(testAdded == 0 && testIgnored == 0)
+            if(testAdded == 0 && testSkipped == 0)
                 addTest(warning("No tests found in " + theClass.getName()));
+
+            // Populate tests count.
+            for (Test test : addedTests) {
+                if (test instanceof GridAbstractTest) {
+                    GridAbstractTest test0 = (GridAbstractTest)test;
+
+                    test0.forceTestCount(addedTests.size());
+                }
+            }
         }
     }
 
@@ -161,20 +178,20 @@ public class IgniteTestSuite extends TestSuite {
      * @param names Test name list.
      * @param theClass Test class.
      * @param clsIgnore Class ignore descriptor (if any).
-     * @return Whether test method was added.
+     * @return Result.
      */
-    private boolean addTestMethod(Method m, List<String> names, Class<?> theClass,
+    private AddResult addTestMethod(Method m, List<String> names, Class<?> theClass,
         @Nullable IgnoreDescriptor clsIgnore) {
         String name = m.getName();
 
         if (names.contains(name))
-            return false;
+            return new AddResult(false, null);
 
         if (!isPublicTestMethod(m)) {
             if (isTestMethod(m))
                 addTest(warning("Test method isn't public: " + m.getName() + "(" + theClass.getCanonicalName() + ")"));
 
-            return false;
+            return new AddResult(false, null);
         }
 
         names.add(name);
@@ -197,18 +214,20 @@ public class IgniteTestSuite extends TestSuite {
 
                 addTest(test);
 
-                return true;
+                return new AddResult(true, test);
             }
         }
         else {
             if (ignore == null) {
-                addTest(createTest(theClass, name));
+                Test test = createTest(theClass, name);
 
-                return true;
+                addTest(test);
+
+                return new AddResult(true, test);
             }
         }
 
-        return false;
+        return new AddResult(false, null);
     }
 
     /**
@@ -333,6 +352,42 @@ public class IgniteTestSuite extends TestSuite {
          */
         public boolean forceFailure() {
             return forceFailure;
+        }
+    }
+
+    /**
+     * Test add result.
+     */
+    private static class AddResult {
+        /** Result. */
+        private final boolean added;
+
+        /** Test */
+        private final Test test;
+
+        /**
+         * Constructor.
+         *
+         * @param added Result.
+         * @param test Test.
+         */
+        public AddResult(boolean added, Test test) {
+            this.added = added;
+            this.test = test;
+        }
+
+        /**
+         * @return Result.
+         */
+        public boolean added() {
+            return added;
+        }
+
+        /**
+         * @return Test.
+         */
+        public Test test() {
+            return test;
         }
     }
 
