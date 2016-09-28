@@ -21,6 +21,7 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
 import java.nio.ByteBuffer;
@@ -92,6 +93,15 @@ public class PageNoStoreImpl implements Page {
             return reset(buf);
 
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ByteBuffer getForWriteNoTagCheck() {
+        boolean locked = pageMem.writeLockPage(absPtr, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
+
+        assert locked;
+
+        return reset(buf);
     }
 
     /** {@inheritDoc} */

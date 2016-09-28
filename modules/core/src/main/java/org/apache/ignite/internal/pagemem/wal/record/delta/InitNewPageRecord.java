@@ -93,7 +93,7 @@ public class InitNewPageRecord extends PageDeltaRecord {
         return S.toString(InitNewPageRecord.class, this,
             "ioType", ioType,
             "ioVer", ioVer,
-            "newPageId", U.hexLong(PageIdUtils.effectivePageId(newPageId)),
+            "newPageId", U.hexLong(newPageId),
             "super", super.toString());
     }
 }

@@ -21,12 +21,16 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesListNodeIO;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
  */
 public class PagesListRemovePageRecord extends PageDeltaRecord {
     /** */
+    @GridToStringExclude
     private final long rmvdPageId;
 
     /**
@@ -59,5 +63,13 @@ public class PagesListRemovePageRecord extends PageDeltaRecord {
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.PAGES_LIST_REMOVE_PAGE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PagesListRemovePageRecord.class, this,
+            "rmvdPageId", U.hexLong(rmvdPageId),
+            "pageId", U.hexLong(pageId()),
+            "cacheId", cacheId());
     }
 }

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -74,7 +73,7 @@ public abstract class PageDeltaRecord extends WALRecord {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(PageDeltaRecord.class, this,
-            "pageId", U.hexLong(PageIdUtils.effectivePageId(pageId)),
+            "pageId", U.hexLong(pageId),
             "super", super.toString());
     }
 }
