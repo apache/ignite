@@ -19,44 +19,48 @@ import org.apache.ignite.igfs.IgfsPathNotFoundException;
 /**
  *
  */
-interface FileOperation {
+abstract class FileOperation {
     /** Buff size. */
     int buffSize = 8192;
 
     /** Data bufer. */
     ByteBuffer dataBufer = ByteBuffer.allocate(buffSize);
 
-    /**
-     * @param path Path to do operation.
-     * @throws Exception If failed.
-     */
-    void handleFile(String path) throws Exception;
+    /** Filesystem. */
+    protected final IgniteFileSystem fs;
+
+    public FileOperation(IgniteFileSystem fs) {
+        this.fs = fs;
+    }
 
     /**
      * @param path Path to do operation.
      * @throws Exception If failed.
      */
-    void preHandleDir(String path) throws Exception;
+    public abstract void handleFile(String path) throws Exception;
 
     /**
      * @param path Path to do operation.
      * @throws Exception If failed.
      */
-    void postHandleDir(String path) throws Exception;
+    public abstract void preHandleDir(String path) throws Exception;
+
+    /**
+     * @param path Path to do operation.
+     * @throws Exception If failed.
+     */
+    public abstract void postHandleDir(String path) throws Exception;
 }
 
 /**
  *
  */
-class WriteFileOperation implements FileOperation {
+class WriteFileOperation extends FileOperation {
     /** Mkdirs. */
     public final AtomicLong mkdirs = new AtomicLong();
 
     /** Creates. */
     public final AtomicLong creates = new AtomicLong();
-
-    /** Filesystem. */
-    private IgniteFileSystem fs;
 
     /** Size. */
     private int size;
@@ -66,7 +70,7 @@ class WriteFileOperation implements FileOperation {
      * @param size Size to write.
      */
     public WriteFileOperation(IgniteFileSystem fs, int size) {
-        this.fs = fs;
+        super(fs);
         this.size = size;
     }
 
@@ -76,7 +80,7 @@ class WriteFileOperation implements FileOperation {
         IgfsOutputStream out = null;
 
         try {
-            out = this.fs.create(path, false);
+            out = fs.create(path, false);
         }
         catch (IgniteException ex) {
             System.out.println("create file " + path.toString() + " failed: " + ex);
@@ -100,11 +104,11 @@ class WriteFileOperation implements FileOperation {
     @Override public void preHandleDir(String strPath) throws Exception {
         IgfsPath path = new IgfsPath(strPath);
 
-        if (this.fs.exists(path))
+        if (fs.exists(path))
             throw new IgniteException("path " + path.toString() + " already exists");
 
         try {
-            this.fs.mkdirs(path);
+            fs.mkdirs(path);
         }
         catch (IgniteException ex) {
             throw ex;
@@ -119,10 +123,7 @@ class WriteFileOperation implements FileOperation {
 /**
  *
  */
-class ReadFileOperation implements FileOperation {
-    /** Filesystem. */
-    private IgniteFileSystem fs;
-
+class ReadFileOperation extends FileOperation {
     /** Size. */
     private int size;
 
@@ -131,7 +132,7 @@ class ReadFileOperation implements FileOperation {
      * @param size Size to read.
      */
     public ReadFileOperation(IgniteFileSystem fs, int size) {
-        this.fs = fs;
+        super(fs);
         this.size = size;
     }
 
@@ -141,7 +142,7 @@ class ReadFileOperation implements FileOperation {
         IgfsInputStream in = null;
 
         try {
-            in = this.fs.open(path);
+            in = fs.open(path);
         }
         catch (IgfsPathNotFoundException ex) {
             System.out.println("file " + path.toString() + " not exist: " + ex);
@@ -169,7 +170,7 @@ class ReadFileOperation implements FileOperation {
     @Override public void preHandleDir(String strPath) throws Exception {
         IgfsPath path = new IgfsPath(strPath);
 
-        if (!this.fs.exists(path)) {
+        if (!fs.exists(path)) {
             System.out.println("path " + path.toString() + " not exist");
             throw new IgniteException("path " + path.toString() + " not exist");
         }
@@ -183,10 +184,7 @@ class ReadFileOperation implements FileOperation {
 /**
  *
  */
-class DeleteFileOperation implements FileOperation {
-    /** Filesystem. */
-    private IgniteFileSystem fs;
-
+class DeleteFileOperation extends FileOperation {
     /** Size. */
     private int size;
 
@@ -195,7 +193,7 @@ class DeleteFileOperation implements FileOperation {
      * @param size Size.
      */
     public DeleteFileOperation(IgniteFileSystem fs, int size) {
-        this.fs = fs;
+        super(fs);
         this.size = size;
     }
 
@@ -219,15 +217,12 @@ class DeleteFileOperation implements FileOperation {
 /**
  *
  */
-class InfoFileOperation implements FileOperation {
-    /** Filesystem. */
-    private IgniteFileSystem fs;
-
+class InfoFileOperation extends FileOperation {
     /**
      * @param fs Filesystem.
      */
     public InfoFileOperation(IgniteFileSystem fs) {
-        this.fs = fs;
+        super(fs);
     }
 
     /** {@inheritDoc} */
@@ -254,15 +249,12 @@ class InfoFileOperation implements FileOperation {
 /**
  *
  */
-class ListPathFileOperation implements FileOperation {
-    /** Filesystem. */
-    private IgniteFileSystem fs;
-
+class ListPathFileOperation extends FileOperation {
     /**
      * @param fs Filesystem.
      */
     public ListPathFileOperation(IgniteFileSystem fs) {
-        this.fs = fs;
+        super(fs);
     }
 
     /** {@inheritDoc} */
