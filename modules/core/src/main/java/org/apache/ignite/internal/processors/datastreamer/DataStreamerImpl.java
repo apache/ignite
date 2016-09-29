@@ -195,7 +195,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             }
             catch (IgniteCheckedException e) {
                 if (exceptionsHist.sizex() < eHistSize)
-                    exceptionsHist.push(e);
+                    exceptionsHist.push(new IgniteCheckedException(e));
                 else
                     log.warning("Queue of exceptions is overflowed. You should to invoke flush()," +
                         " for to clean of the history and see exceptions in log.", e);
