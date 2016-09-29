@@ -4059,7 +4059,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         // Peek will actually remove entry from cache.
         assertNull(cache.localPeek(key));
 
-        assert cache.localSize() == 0;
+        assertEquals(0, cache.localSize());
 
         // Clear readers, if any.
         cache.remove(key);

@@ -37,10 +37,10 @@ mixin form-field-datalist(label, model, name, disabled, required, placeholder, o
             data-ignite-form-panel-field=''
         )&attributes(attributes.attributes)
 
-    div
-        +ignite-form-field-label(label, name, required)
-        .col-xs-8.col-sm-8.col-md-8
-            i.tipField.fa.fa-question-circle(bs-tooltip data-title=tip)
+    .ignite-form-field
+        +ignite-form-field__label(label, name, required)
+        .ignite-form-field__control
+            i.tipField.fa.fa-question-circle(bs-tooltip='' data-title=tip)
 
             +form-field-feedback(name, 'required', errLbl + ' could not be empty!')
 
