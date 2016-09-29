@@ -174,12 +174,12 @@ public class IgniteConfiguration {
     @Deprecated
     public static final long DFLT_UTILITY_KEEP_ALIVE_TIME = 10_000;
 
-    /** Default Ignite thread keep alive time. */
-    public static final long DFLT_THREAD_KEEP_ALIVE_TIME = 60_000L;
-
     /** Default max queue capacity of system thread pool. */
     @Deprecated
     public static final int DFLT_SYSTEM_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
+
+    /** Default Ignite thread keep alive time. */
+    public static final long DFLT_THREAD_KEEP_ALIVE_TIME = 60_000L;
 
     /** Default size of peer class loading thread pool. */
     public static final int DFLT_P2P_THREAD_CNT = 2;
