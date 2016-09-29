@@ -29,7 +29,7 @@ import java.nio.ByteBuffer;
  */
 public class IgniteIoTestMessage implements Message {
     /** */
-    private static byte FLAG_PROCESS_FROM_NIO = 1;
+    private static byte FLAG_PROC_FROM_NIO = 1;
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -54,9 +54,9 @@ public class IgniteIoTestMessage implements Message {
     }
 
     /**
-     * @param id
-     * @param req
-     * @param payload
+     * @param id ID.
+     * @param req {@code True} for request.
+     * @param payload Payload.
      */
     public IgniteIoTestMessage(long id, boolean req, byte[] payload) {
         this.id = id;
@@ -64,18 +64,30 @@ public class IgniteIoTestMessage implements Message {
         this.payload = payload;
     }
 
+    /**
+     * @return Process from NIO thread flag.
+     */
     public boolean processFromNioThread() {
-        return isFlag(FLAG_PROCESS_FROM_NIO);
+        return isFlag(FLAG_PROC_FROM_NIO);
     }
 
-    public void processFromNioThread(boolean processFromNioThread) {
-        setFlag(processFromNioThread, FLAG_PROCESS_FROM_NIO);
+    /**
+     * @param procFromNioThread Process from NIO thread flag.
+     */
+    public void processFromNioThread(boolean procFromNioThread) {
+        setFlag(procFromNioThread, FLAG_PROC_FROM_NIO);
     }
 
+    /**
+     * @param flags Flags.
+     */
     public void flags(byte flags) {
         this.flags = flags;
     }
 
+    /**
+     * @return Flags.
+     */
     public byte flags() {
         return flags;
     }
@@ -100,10 +112,16 @@ public class IgniteIoTestMessage implements Message {
         return (flags & mask) != 0;
     }
 
+    /**
+     * @return {@code True} for request.
+     */
     public boolean request() {
         return req;
     }
 
+    /**
+     * @return ID.
+     */
     public long id() {
         return id;
     }

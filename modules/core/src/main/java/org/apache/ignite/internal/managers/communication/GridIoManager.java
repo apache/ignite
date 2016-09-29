@@ -401,10 +401,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /**
      * @param node Node.
      * @param payload Payload.
-     * @param processFromNioThread If {@code true} message is processed from NIO thread.
+     * @param procFromNioThread If {@code true} message is processed from NIO thread.
      * @return Response future.
      */
-    public IgniteInternalFuture sendIoTest(ClusterNode node, byte[] payload, boolean processFromNioThread) {
+    public IgniteInternalFuture sendIoTest(ClusterNode node, byte[] payload, boolean procFromNioThread) {
         if (ctx.localNodeId().equals(node.id()))
             throw new IllegalArgumentException();
 
@@ -417,7 +417,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         try {
             IgniteIoTestMessage msg = new IgniteIoTestMessage(id, true, payload);
 
-            msg.processFromNioThread(processFromNioThread);
+            msg.processFromNioThread(procFromNioThread);
 
             send(node, GridTopic.TOPIC_IO_TEST, msg, GridIoPolicy.SYSTEM_POOL);
         }
