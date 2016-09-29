@@ -30,6 +30,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Collection;
+import java.util.Properties;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.xml.parsers.DocumentBuilder;
@@ -112,7 +113,7 @@ class GridUpdateNotifier {
     private final Thread workerThread;
 
     /** Url for request version. */
-    private String  url = "http://ignite.run/update_status_ignite.php";
+    private String  url = "https://ignite.run/update_status_ignite.php";
 
     /**
      * Creates new notifier with default values.
@@ -345,13 +346,10 @@ class GridUpdateNotifier {
                             BufferedReader reader = new BufferedReader(new InputStreamReader(in, CHARSET));
 
                             for (String line; (line = reader.readLine()) != null; ) {
-                                if (line.contains("content=")){
-                                    if (line.contains("<meta name=\"version\""))
-                                        latestVer = obtainVersionFrom(line);
-
-                                    if (line.contains("<meta name=\"downloadUrl\""))
-                                        downloadUrl = obtainDownloadUrlFrom(line);
-                                }
+                                if (line.contains("version"))
+                                    latestVer = obtainVersionFrom(line);
+                                else if (line.contains("downloadUrl"))
+                                    downloadUrl = obtainDownloadUrlFrom(line);
                             }
 
                         }
@@ -378,13 +376,7 @@ class GridUpdateNotifier {
         @Nullable private String obtainMeta(String metaName, String line) {
             assert line.contains(metaName);
 
-            String content = "content=";
-
-            String sub = line.substring(line.indexOf(metaName) + metaName.length()).trim();
-
-            String sub2 = sub.replace(">", "").replace("\"", "").trim();
-
-            return sub2.substring(sub2.indexOf(content) + content.length()).trim();
+            return line.substring(line.indexOf(metaName) + metaName.length()).trim();
 
         }
 
@@ -395,7 +387,7 @@ class GridUpdateNotifier {
          * @return Version or {@code null} if one's not found.
          */
         @Nullable private String obtainVersionFrom(String line) {
-            return obtainMeta("version", line);
+            return obtainMeta("version=", line);
         }
 
         /**
@@ -405,7 +397,7 @@ class GridUpdateNotifier {
          * @return download url or {@code null} if one's not found.
          */
         @Nullable private String obtainDownloadUrlFrom(String line) {
-            return obtainMeta("downloadUrl", line);
+            return obtainMeta("downloadUrl=", line);
         }
     }
 }
