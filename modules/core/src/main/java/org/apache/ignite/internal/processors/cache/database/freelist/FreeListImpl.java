@@ -187,7 +187,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
             assert oldFreeSpace >= 0: oldFreeSpace;
 
-            long nextLink = io.removeRow(buf, (byte)itemId);
+            long nextLink = io.removeRow(buf, itemId);
 
             if (isWalDeltaRecordNeeded(wal, page))
                 wal.log(new DataPageRemoveRecord(cacheId, page.id(), itemId));

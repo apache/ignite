@@ -763,21 +763,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (cacheCtx.isLocal() || stopping(cacheCtx.cacheId()))
                 continue;
 
-            cctx.database().checkpointReadLock();
+            if (topChanged) {
+                cacheCtx.continuousQueries().beforeExchange(exchId.topologyVersion());
 
-            try {
-                if (topChanged) {
-                    cacheCtx.continuousQueries().beforeExchange(exchId.topologyVersion());
-
-                    // Partition release future is done so we can flush the write-behind store.
-                    cacheCtx.store().forceFlush();
-                }
-
-                cacheCtx.topology().beforeExchange(this, !centralizedAff);
+                // Partition release future is done so we can flush the write-behind store.
+                cacheCtx.store().forceFlush();
             }
-            finally {
-                cctx.database().checkpointReadUnlock();
-            }
+
+            cacheCtx.topology().beforeExchange(this, !centralizedAff);
         }
 
         cctx.database().beforeExchange(this);

@@ -756,7 +756,18 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            // [-3..119] [124] - this
+            case 125:
+                msg = new TcpCommunicationSpi.HandshakeMessage2();
+
+                break;
+
+            // [-3..119] [124-125] - this
+            case 126:
+                msg = new IgniteIoTestMessage();
+
+                break;
+
+            // [-3..119] [124-126] - this
             // [120..123] - DR
             // [-4..-22, -30..-35] - SQL
             default:

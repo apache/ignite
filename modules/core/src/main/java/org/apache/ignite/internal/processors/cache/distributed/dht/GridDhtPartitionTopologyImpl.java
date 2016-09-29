@@ -479,11 +479,21 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     /** {@inheritDoc} */
     @Override public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut, boolean affReady)
         throws IgniteCheckedException {
+        // Wait for rent outside of checkpoint lock.
         waitForRent();
 
         ClusterNode loc = cctx.localNode();
 
-        U.writeLock(lock);
+        cctx.shared().database().checkpointReadLock();
+
+        try {
+            U.writeLock(lock);
+        }
+        catch (IgniteInterruptedCheckedException e) {
+            cctx.shared().database().checkpointReadUnlock();
+
+            throw e;
+        }
 
         try {
             GridDhtPartitionExchangeId exchId = exchFut.exchangeId();
@@ -555,6 +565,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         }
         finally {
             lock.writeLock().unlock();
+
+            cctx.shared().database().checkpointReadUnlock();
         }
 
         // Wait for evictions.
