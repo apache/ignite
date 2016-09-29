@@ -86,6 +86,7 @@ import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
+import static org.apache.ignite.internal.processors.cache.GridCacheIoManager.registerUnhandledException;
 
 /**
  * Continuous query handler.
@@ -649,7 +650,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             return;
         }
 
-        GridCacheQueryManager queryManager = cctx.queries();
+        GridCacheQueryManager qryMgr = cctx.queries();
 
         final Collection<CacheEntryEvent<? extends K, ? extends V>> entries0 = new ArrayList<>(entries.size());
 
@@ -683,9 +684,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
                     U.error(ctx.log(getClass()), shortMsg, ex);
 
-                    queryManager.onUnhandledException();
+                    qryMgr.onUnhandledException();
 
-                    GridCacheIoManager.registerUnhandledException(cctx, shortMsg, ex);
+                    registerUnhandledException(cctx, shortMsg, ex);
                 }
             }
         }

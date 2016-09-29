@@ -210,20 +210,20 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
         private String field;
 
         /** Field. */
-        private static AtomicInteger instanceCounter = new AtomicInteger();
+        private static AtomicInteger instanceCntr = new AtomicInteger();
 
         /**
          * Required by {@link Externalizable}.
          */
         public TestKey() {
-            instanceCounter.incrementAndGet();
+            instanceCntr.incrementAndGet();
         }
 
         /**
          * @param field Test key 1.
          */
         public TestKey(String field) {
-            instanceCounter.incrementAndGet();
+            instanceCntr.incrementAndGet();
 
             this.field = field;
         }
@@ -254,9 +254,8 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             field = (String)in.readObject();
 
-            if (readCnt.decrementAndGet() <= 0) {
-                throw new IOException("Class can not be unmarshalled. InstanceId=" + instanceCounter.get());
-            }
+            if (readCnt.decrementAndGet() <= 0)
+                throw new IOException("Class can not be unmarshalled. InstanceId=" + instanceCntr.get());
         }
     }
 
