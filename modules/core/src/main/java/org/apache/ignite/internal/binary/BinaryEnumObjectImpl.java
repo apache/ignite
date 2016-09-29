@@ -139,6 +139,11 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isFlagSet(short flag) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public <F> F field(String fieldName) throws BinaryObjectException {
         return null;
     }

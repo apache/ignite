@@ -4891,6 +4891,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
+     * For tests only.
+     */
+    public void forceKeyCheck() {
+        keyCheck = true;
+    }
+
+    /**
      * Validates that given cache key has overridden equals and hashCode methods and
      * implements {@link Externalizable}.
      *
