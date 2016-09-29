@@ -47,6 +47,11 @@ namespace Apache.Ignite.AspNet
     /// </summary>
     public class IgniteSessionStateStoreProvider : SessionStateStoreProviderBase
     {
+        /// <summary>
+        /// The default cache name to be used when <c>cacheName</c> attribute is not specified.
+        /// </summary>
+        public const string DefaultCacheName = "ASPNET_SESSION_STATE";
+
         /** Extension id  */
         private const int ExtensionId = 0;
 
@@ -94,7 +99,8 @@ namespace Apache.Ignite.AspNet
         {
             base.Initialize(name, config);
 
-            var cache = ConfigUtil.InitializeCache<string, IgniteSessionStateStoreData>(config, GetType());
+            var cache = ConfigUtil.InitializeCache<string, IgniteSessionStateStoreData>(config, GetType(), 
+                DefaultCacheName);
 
             _expiryCacheHolder = new ExpiryCacheHolder<string, IgniteSessionStateStoreData>(cache);
 

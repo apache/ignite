@@ -20,6 +20,8 @@ package org.apache.ignite.testframework;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testsuites.IgniteIgnore;
 import org.jetbrains.annotations.Nullable;
 import org.junit.internal.MethodSorter;
@@ -34,8 +36,15 @@ import java.util.List;
  * Test methods marked with @Ignored annotation won't be executed.
  */
 public class IgniteTestSuite extends TestSuite {
+    /** Ignore default flag thread local. */
+    private static final ThreadLocal<Boolean> IGNORE_DFLT = new ThreadLocal<Boolean>() {
+        @Override protected Boolean initialValue() {
+            return false;
+        }
+    };
+
     /** Whether to execute only ignored tests. */
-    private final boolean ignoredOnly;
+    private boolean ignoredOnly;
 
     /**
      * Constructor.
@@ -52,7 +61,7 @@ public class IgniteTestSuite extends TestSuite {
      * @param theClass TestCase class
      */
     public IgniteTestSuite(Class<? extends TestCase> theClass) {
-        this(theClass, false);
+        this(theClass, ignoreDefault());
     }
 
     /**
@@ -72,7 +81,7 @@ public class IgniteTestSuite extends TestSuite {
      * @param name Test suite name.
      */
     public IgniteTestSuite(Class<? extends TestCase> theClass, String name) {
-        this(theClass, name, false);
+        this(theClass, name, ignoreDefault());
     }
 
     /**
@@ -92,18 +101,15 @@ public class IgniteTestSuite extends TestSuite {
             setName(name);
     }
 
-    /** {@inheritDoc} */
-    @Override public void addTestSuite(Class<? extends TestCase> testClass) {
-        addTestSuite(testClass, false);
+    /**
+     * Adds a test to the suite.
+     */
+    @Override public void addTest(Test test) {
+        super.addTest(test);
     }
 
-    /**
-     * Add test class to the suite.
-     *
-     * @param testClass Test class.
-     * @param ignoredOnly Ignore only flag.
-     */
-    public void addTestSuite(Class<? extends TestCase> testClass, boolean ignoredOnly) {
+    /** {@inheritDoc} */
+    @Override public void addTestSuite(Class<? extends TestCase> testClass) {
         addTest(new IgniteTestSuite(testClass, ignoredOnly));
     }
 
@@ -130,62 +136,147 @@ public class IgniteTestSuite extends TestSuite {
             Class superCls = theClass;
 
             int testAdded = 0;
+            int testIgnored = 0;
 
             for(List<String> names = new ArrayList<>(); Test.class.isAssignableFrom(superCls);
                 superCls = superCls.getSuperclass()) {
+
                 Method[] methods = MethodSorter.getDeclaredMethods(superCls);
 
                 for (Method each : methods) {
                     if (addTestMethod(each, names, theClass))
                         testAdded++;
+                    else
+                        testIgnored++;
                 }
             }
 
-            if(testAdded == 0)
+            if(testAdded == 0 && testIgnored == 0)
                 addTest(warning("No tests found in " + theClass.getName()));
         }
     }
 
     /**
-     * @param method test method
-     * @param names test name list
-     * @param theClass test class
+     * Add test method.
+     *
+     * @param m Test method.
+     * @param names Test name list.
+     * @param theClass Test class.
+     * @return Whether test method was added.
      */
-    private boolean addTestMethod(Method method, List<String> names, Class<?> theClass) {
-        String name = method.getName();
+    private boolean addTestMethod(Method m, List<String> names, Class<?> theClass) {
+        String name = m.getName();
 
-        if(!names.contains(name) && canAddMethod(method)) {
-            if(!Modifier.isPublic(method.getModifiers()))
-                addTest(warning("Test method isn\'t public: " + method.getName() + "(" +
-                    theClass.getCanonicalName() + ")"));
-            else {
-                names.add(name);
+        if (names.contains(name))
+            return false;
 
+        if (!isPublicTestMethod(m)) {
+            if (isTestMethod(m))
+                addTest(warning("Test method isn't public: " + m.getName() + "(" + theClass.getCanonicalName() + ")"));
+
+            return false;
+        }
+
+        names.add(name);
+
+        boolean hasIgnore = m.isAnnotationPresent(IgniteIgnore.class);
+
+        if (ignoredOnly) {
+            if (hasIgnore) {
+                IgniteIgnore ignore = m.getAnnotation(IgniteIgnore.class);
+
+                String reason = ignore.value();
+
+                if (F.isEmpty(reason))
+                    throw new IllegalArgumentException("Reason is not set for ignored test [class=" +
+                        theClass.getName() + ", method=" + name + ']');
+
+                Test test = createTest(theClass, name);
+
+                if (ignore.forceFailure()) {
+                    if (test instanceof GridAbstractTest)
+                        ((GridAbstractTest)test).forceFailure(ignore.value());
+                    else
+                        test = new ForcedFailure(name, ignore.value());
+                }
+
+                addTest(test);
+
+                return true;
+            }
+        }
+        else {
+            if (!hasIgnore) {
                 addTest(createTest(theClass, name));
 
                 return true;
             }
         }
+
         return false;
     }
 
     /**
-     * Check whether method should be ignored.
+     * Check whether this is a test method.
      *
-     * @param method Method.
-     * @return {@code True} if it should be ignored.
+     * @param m Method.
+     * @return {@code True} if this is a test method.
      */
-    protected boolean canAddMethod(Method method) {
-        boolean res = method.getParameterTypes().length == 0 && method.getName().startsWith("test")
-            && method.getReturnType().equals(Void.TYPE);
+    private static boolean isTestMethod(Method m) {
+        return m.getParameterTypes().length == 0 &&
+            m.getName().startsWith("test") &&
+            m.getReturnType().equals(Void.TYPE);
+    }
 
-        if (res) {
-            // If method signature and name matches check if it is ignored or not.
-            boolean hasIgnore = method.isAnnotationPresent(IgniteIgnore.class);
+    /**
+     * Check whether this is a public test method.
+     *
+     * @param m Method.
+     * @return {@code True} if this is a public test method.
+     */
+    private static boolean isPublicTestMethod(Method m) {
+        return isTestMethod(m) && Modifier.isPublic(m.getModifiers());
+    }
 
-            res = hasIgnore == ignoredOnly;
+    /**
+     * @param val Default value of ignore flag.
+     */
+    public static void ignoreDefault(boolean val) {
+        IGNORE_DFLT.set(val);
+    }
+
+    /**
+     * @return Default value of ignore flag.
+     */
+    private static boolean ignoreDefault() {
+        Boolean res = IGNORE_DFLT.get();
+
+        return res != null && res;
+    }
+
+    /**
+     * Test case simulating failure.
+     */
+    private static class ForcedFailure extends TestCase {
+        /** Message. */
+        private final String msg;
+
+        /**
+         * Constructor.
+         *
+         * @param name Name.
+         * @param msg  Message.
+         */
+        private ForcedFailure(String name, String msg) {
+            super(name);
+
+            this.msg = msg;
         }
 
-        return res;
+        /** {@inheritDoc} */
+        @Override protected void runTest() {
+            fail("Forced failure: " + msg + " (extend " + GridAbstractTest.class.getSimpleName() +
+                " for better output).");
+        }
     }
 }
