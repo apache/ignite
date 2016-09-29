@@ -181,7 +181,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         else if (gridName.contains("MulticastIpFinder")) {
             TcpDiscoveryMulticastIpFinder finder = new TcpDiscoveryMulticastIpFinder();
 
-            finder.setAddressRequestAttempts(10);
+            finder.setAddressRequestAttempts(5);
             finder.setMulticastGroup(GridTestUtils.getNextMulticastGroup(getClass()));
             finder.setMulticastPort(GridTestUtils.getNextMulticastPort(getClass()));
 

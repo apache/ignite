@@ -56,6 +56,8 @@ module.exports.factory = function(Express, configure, routes) {
             });
 
             srv.addListener('request', app);
+
+            return app;
         }
     };
 };

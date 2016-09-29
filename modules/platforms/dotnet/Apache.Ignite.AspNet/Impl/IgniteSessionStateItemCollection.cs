@@ -80,8 +80,6 @@ namespace Apache.Ignite.AspNet.Impl
                 else
                     AddRemovedKey(key);
             }
-
-            _isNew = false;
         }
 
         /// <summary>
@@ -319,6 +317,7 @@ namespace Apache.Ignite.AspNet.Impl
         /// <summary>
         /// Applies the changes.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         public void ApplyChanges(IgniteSessionStateItemCollection changes)
         {
             var removed = changes._removedKeys;
@@ -489,6 +488,7 @@ namespace Apache.Ignite.AspNet.Impl
             /// <summary>
             /// Copies contents to another entry.
             /// </summary>
+            [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
             public void CopyTo(Entry entry)
             {
                 Debug.Assert(entry != null);

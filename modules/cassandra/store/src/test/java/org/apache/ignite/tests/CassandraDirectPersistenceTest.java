@@ -299,6 +299,10 @@ public class CassandraDirectPersistenceTest {
             new ClassPathResource("org/apache/ignite/tests/persistence/pojo/persistence-settings-3.xml"),
             CassandraHelper.getAdminDataSrc());
 
+        CacheStore store4 = CacheStoreHelper.createCacheStore("persons",
+            new ClassPathResource("org/apache/ignite/tests/persistence/pojo/persistence-settings-4.xml"),
+            CassandraHelper.getAdminDataSrc());
+
         Collection<CacheEntryImpl<Long, Person>> entries1 = TestsHelper.generateLongsPersonsEntries();
         Collection<CacheEntryImpl<PersonId, Person>> entries2 = TestsHelper.generatePersonIdsPersonsEntries();
         Collection<CacheEntryImpl<PersonId, Person>> entries3 = TestsHelper.generatePersonIdsPersonsEntries();
@@ -309,12 +313,14 @@ public class CassandraDirectPersistenceTest {
         store1.write(entries1.iterator().next());
         store2.write(entries2.iterator().next());
         store3.write(entries3.iterator().next());
+        store4.write(entries3.iterator().next());
         LOGGER.info("Single operation write tests passed");
 
         LOGGER.info("Running bulk operation write tests");
         store1.writeAll(entries1);
         store2.writeAll(entries2);
         store3.writeAll(entries3);
+        store4.writeAll(entries3);
         LOGGER.info("Bulk operation write tests passed");
 
         LOGGER.info("POJO strategy write tests passed");
@@ -335,6 +341,10 @@ public class CassandraDirectPersistenceTest {
         if (!entries3.iterator().next().getValue().equals(person))
             throw new RuntimeException("Person values was incorrectly deserialized from Cassandra");
 
+        person = (Person)store4.load(entries3.iterator().next().getKey());
+        if (!entries3.iterator().next().getValue().equals(person))
+            throw new RuntimeException("Person values was incorrectly deserialized from Cassandra");
+
         LOGGER.info("Single operation read tests passed");
 
         LOGGER.info("Running bulk operation read tests");
@@ -348,6 +358,10 @@ public class CassandraDirectPersistenceTest {
             throw new RuntimeException("Person values was incorrectly deserialized from Cassandra");
 
         persons = store3.loadAll(TestsHelper.getKeys(entries3));
+        if (!TestsHelper.checkPersonCollectionsEqual(persons, entries3, false))
+            throw new RuntimeException("Person values was incorrectly deserialized from Cassandra");
+
+        persons = store4.loadAll(TestsHelper.getKeys(entries3));
         if (!TestsHelper.checkPersonCollectionsEqual(persons, entries3, false))
             throw new RuntimeException("Person values was incorrectly deserialized from Cassandra");
 
@@ -365,6 +379,9 @@ public class CassandraDirectPersistenceTest {
 
         store3.delete(entries3.iterator().next().getKey());
         store3.deleteAll(TestsHelper.getKeys(entries3));
+
+        store4.delete(entries3.iterator().next().getKey());
+        store4.deleteAll(TestsHelper.getKeys(entries3));
 
         LOGGER.info("POJO strategy delete tests passed");
     }

@@ -149,6 +149,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
@@ -170,6 +171,8 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
@@ -8514,15 +8517,31 @@ public abstract class IgniteUtils {
      * @return {@code True} if given object has overridden equals and hashCode method.
      */
     public static boolean overridesEqualsAndHashCode(Object obj) {
-        try {
-            Class<?> cls = obj.getClass();
+        return overridesEqualsAndHashCode(obj.getClass());
+    }
 
+    /**
+     * @param cls Class.
+     * @return {@code True} if given class has overridden equals and hashCode method.
+     */
+    public static boolean overridesEqualsAndHashCode(Class<?> cls) {
+        try {
             return !Object.class.equals(cls.getMethod("equals", Object.class).getDeclaringClass()) &&
                 !Object.class.equals(cls.getMethod("hashCode").getDeclaringClass());
         }
         catch (NoSuchMethodException | SecurityException ignore) {
             return true; // Ignore.
         }
+    }
+
+    /**
+     * @param obj Object.
+     * @return {@code True} if given object is a {@link BinaryObjectEx} and
+     * has {@link BinaryUtils#FLAG_EMPTY_HASH_CODE} set
+     */
+    public static boolean isHashCodeEmpty(Object obj) {
+        return obj != null && obj instanceof BinaryObjectEx &&
+            ((BinaryObjectEx)obj).isFlagSet(BinaryUtils.FLAG_EMPTY_HASH_CODE);
     }
 
     /**

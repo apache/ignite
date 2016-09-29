@@ -19,10 +19,10 @@
 
 // Fire me up!
 
-import clusters from './demo/clusters.json';
-import caches from './demo/caches.json';
-import domains from './demo/domains.json';
-import igfss from './demo/igfss.json';
+const clusters = require('./demo/clusters.json');
+const caches = require('./demo/caches.json');
+const domains = require('./demo/domains.json');
+const igfss = require('./demo/igfss.json');
 
 module.exports = {
     implements: 'routes/demo',

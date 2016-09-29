@@ -25,11 +25,15 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Serializable;
 import java.io.StringReader;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
+import java.util.Collections;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.store.cassandra.common.CassandraHelper;
 import org.apache.ignite.cache.store.cassandra.common.SystemHelper;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.springframework.core.io.Resource;
@@ -100,6 +104,9 @@ public class KeyValuePersistenceSettings implements Serializable {
 
     /** Persistence settings for Ignite cache values. */
     private ValuePersistenceSettings valPersistenceSettings;
+
+    /** List of Cassandra table columns */
+    private List<String> tableColumns;
 
     /**
      * Constructs Ignite cache key/value persistence settings.
@@ -174,16 +181,6 @@ public class KeyValuePersistenceSettings implements Serializable {
      */
     public String getTable() {
         return tbl;
-    }
-
-    /**
-     * Returns full name of Cassandra table to use (including keyspace).
-     *
-     * @return full table name in format "keyspace.table".
-     */
-    public String getTableFullName()
-    {
-        return keyspace + "." + tbl;
     }
 
     /**
@@ -264,12 +261,31 @@ public class KeyValuePersistenceSettings implements Serializable {
     }
 
     /**
+     * Returns column names for Cassandra table.
+     *
+     * @return Column names.
+     */
+    public List<String> getTableColumns() {
+        return tableColumns;
+    }
+
+    /**
      * Returns DDL statement to create Cassandra table.
      *
+     * @param table Table name.
      * @return Table DDL statement.
      */
-    public String getTableDDLStatement() {
-        String colsDDL = keyPersistenceSettings.getTableColumnsDDL() + ",\n" + valPersistenceSettings.getTableColumnsDDL();
+    public String getTableDDLStatement(String table) {
+        if (table == null || table.trim().isEmpty())
+            throw new IllegalArgumentException("Table name should be specified");
+
+        String keyColumnsDDL = keyPersistenceSettings.getTableColumnsDDL();
+        String valColumnsDDL = valPersistenceSettings.getTableColumnsDDL(new HashSet<>(keyPersistenceSettings.getTableColumns()));
+
+        String colsDDL = keyColumnsDDL;
+
+        if (valColumnsDDL != null && !valColumnsDDL.trim().isEmpty())
+            colsDDL += ",\n" + valColumnsDDL;
 
         String primaryKeyDDL = keyPersistenceSettings.getPrimaryKeyDDL();
 
@@ -285,7 +301,7 @@ public class KeyValuePersistenceSettings implements Serializable {
 
         StringBuilder builder = new StringBuilder();
 
-        builder.append("create table if not exists \"").append(keyspace).append("\".\"").append(tbl).append("\"");
+        builder.append("create table if not exists \"").append(keyspace).append("\".\"").append(table).append("\"");
         builder.append("\n(\n").append(colsDDL).append(",\n").append(primaryKeyDDL).append("\n)");
 
         if (!optionsDDL.isEmpty())
@@ -299,16 +315,18 @@ public class KeyValuePersistenceSettings implements Serializable {
     /**
      * Returns DDL statements to create Cassandra table secondary indexes.
      *
+     * @param table Table name.
      * @return DDL statements to create secondary indexes.
      */
-    public List<String> getIndexDDLStatements() {
+    public List<String> getIndexDDLStatements(String table) {
         List<String> idxDDLs = new LinkedList<>();
 
+        Set<String> keyColumns = new HashSet<>(keyPersistenceSettings.getTableColumns());
         List<PojoField> fields = valPersistenceSettings.getFields();
 
         for (PojoField field : fields) {
-            if (((PojoValueField)field).isIndexed())
-                idxDDLs.add(((PojoValueField)field).getIndexDDL(keyspace, tbl));
+            if (!keyColumns.contains(field.getColumn()) && ((PojoValueField)field).isIndexed())
+                idxDDLs.add(((PojoValueField)field).getIndexDDL(keyspace, table));
         }
 
         return idxDDLs;
@@ -360,7 +378,7 @@ public class KeyValuePersistenceSettings implements Serializable {
         try {
             return Integer.parseInt(val);
         }
-        catch (NumberFormatException e) {
+        catch (NumberFormatException ignored) {
             throw new IllegalArgumentException("Incorrect value '" + val + "' specified for '" + attr + "' attribute");
         }
     }
@@ -396,13 +414,8 @@ public class KeyValuePersistenceSettings implements Serializable {
                 "' attribute should be specified");
         }
 
-        if (!root.hasAttribute(TABLE_ATTR)) {
-            throw new IllegalArgumentException("Incorrect persistence settings '" + TABLE_ATTR +
-                "' attribute should be specified");
-        }
-
         keyspace = root.getAttribute(KEYSPACE_ATTR).trim();
-        tbl = root.getAttribute(TABLE_ATTR).trim();
+        tbl = root.hasAttribute(TABLE_ATTR) ? root.getAttribute(TABLE_ATTR).trim() : null;
 
         if (root.hasAttribute(TTL_ATTR))
             ttl = extractIntAttribute(root, TTL_ATTR);
@@ -451,28 +464,63 @@ public class KeyValuePersistenceSettings implements Serializable {
         List<PojoField> keyFields = keyPersistenceSettings.getFields();
         List<PojoField> valFields = valPersistenceSettings.getFields();
 
-        if (PersistenceStrategy.POJO.equals(keyPersistenceSettings.getStrategy()) &&
+        if (PersistenceStrategy.POJO == keyPersistenceSettings.getStrategy() &&
             (keyFields == null || keyFields.isEmpty())) {
             throw new IllegalArgumentException("Incorrect Cassandra persistence settings specification, " +
                 "there are no key fields found");
         }
 
-        if (PersistenceStrategy.POJO.equals(valPersistenceSettings.getStrategy()) &&
+        if (PersistenceStrategy.POJO == valPersistenceSettings.getStrategy() &&
             (valFields == null || valFields.isEmpty())) {
             throw new IllegalArgumentException("Incorrect Cassandra persistence settings specification, " +
                 "there are no value fields found");
         }
 
-        if (keyFields == null || keyFields.isEmpty() || valFields == null || valFields.isEmpty())
-            return;
+        // Validating aliases compatibility - fields having different names, but mapped to the same Cassandra table column.
+        if (valFields != null && !valFields.isEmpty()) {
+            String keyColumn = keyPersistenceSettings.getColumn();
+            Class keyClass = keyPersistenceSettings.getJavaClass();
 
-        for (PojoField keyField : keyFields) {
-            for (PojoField valField : valFields) {
-                if (keyField.getColumn().equals(valField.getColumn())) {
-                    throw new IllegalArgumentException("Incorrect Cassandra persistence settings specification, " +
-                        "key column '" + keyField.getColumn() + "' also specified as a value column");
+            if (keyColumn != null && !keyColumn.isEmpty()) {
+                for (PojoField valField : valFields) {
+                    if (keyColumn.equals(valField.getColumn()) &&
+                            !CassandraHelper.isCassandraCompatibleTypes(keyClass, valField.getJavaClass())) {
+                        throw new IllegalArgumentException("Value field '" + valField.getName() + "' shares the same " +
+                                "Cassandra table column '" + keyColumn + "' with key, but their Java classes are " +
+                                "different. Fields sharing the same column should have the same Java class as their " +
+                                "type or should be mapped to the same Cassandra primitive type.");
+                    }
+                }
+            }
+
+            if (keyFields != null && !keyFields.isEmpty()) {
+                for (PojoField keyField : keyFields) {
+                    for (PojoField valField : valFields) {
+                        if (keyField.getColumn().equals(valField.getColumn()) &&
+                                !CassandraHelper.isCassandraCompatibleTypes(keyField.getJavaClass(), valField.getJavaClass())) {
+                            throw new IllegalArgumentException("Value field '" + valField.getName() + "' shares the same " +
+                                    "Cassandra table column '" + keyColumn + "' with key field '" + keyField.getName() + "', " +
+                                    "but their Java classes are different. Fields sharing the same column should have " +
+                                    "the same Java class as their type or should be mapped to the same Cassandra " +
+                                    "primitive type.");
+                        }
+                    }
                 }
             }
         }
+
+        tableColumns = new LinkedList<>();
+
+        for (String column : keyPersistenceSettings.getTableColumns()) {
+            if (!tableColumns.contains(column))
+                tableColumns.add(column);
+        }
+
+        for (String column : valPersistenceSettings.getTableColumns()) {
+            if (!tableColumns.contains(column))
+                tableColumns.add(column);
+        }
+
+        tableColumns = Collections.unmodifiableList(tableColumns);
     }
 }
