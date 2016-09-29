@@ -115,6 +115,18 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     public abstract GridDhtCacheAdapter<K, V> dht();
 
     /** {@inheritDoc} */
+    @Override public void forceKeyCheck() {
+        if (!keyCheck) {
+            super.forceKeyCheck();
+
+            GridDhtCacheAdapter dht = dht();
+
+            if (dht != null)
+                dht.forceKeyCheck();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void onReconnected() {
         map = new GridCacheConcurrentMapImpl(
             ctx,
