@@ -618,9 +618,6 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                     U.close(sock);
                 }
 
-                if (rmtAddrs.size() > locNodeAddrs.size())
-                    break;
-
                 if (i < addrReqAttempts - 1) // Wait some time before re-sending address request.
                     U.sleep(200);
             }
