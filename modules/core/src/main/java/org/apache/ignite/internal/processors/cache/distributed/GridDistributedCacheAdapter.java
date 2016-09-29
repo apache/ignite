@@ -445,11 +445,11 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         }
     }
 
-    @Override
-    public void stop() {
+    /** {@inheritDoc} */
+    @Override public void stop() {
         super.stop();
 
-        if (context().config().getMemoryMode().equals(CacheMemoryMode.OFFHEAP_VALUES)) {
+        if (context().config().getMemoryMode() == CacheMemoryMode.OFFHEAP_VALUES) {
             for (GridCacheEntryEx entry : entries())
                 entry.clearOffHeap();
         }

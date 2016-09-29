@@ -16,6 +16,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMemoryMode;
@@ -30,11 +34,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
@@ -175,12 +174,16 @@ public class GridCacheOffHeapCleanupTest extends GridCommonAbstractTest {
     private void checkCacheDestroyUnderLoad() throws Exception {
         try (Ignite g = startGrid(0)) {
             final AtomicBoolean fail = new AtomicBoolean(false);
+
             final IgniteCache<Integer, String> cache = g.getOrCreateCache(createCacheConfiguration());
 
             final int totalCnt = 100_000;
+
             final String[] values = new String[totalCnt];
+
             for (int i = 0; i < totalCnt; i++) {
                 values[i] = "value-" + i;
+
                 cache.put(i, values[i]);
             }
 
@@ -190,35 +193,40 @@ public class GridCacheOffHeapCleanupTest extends GridCommonAbstractTest {
             final AtomicInteger threadNum = new AtomicInteger(0);
 
             GridTestUtils.runMultiThreadedAsync(new Runnable() {
-                    @Override
-                    public void run() {
+                    @Override public void run() {
                         final int num = threadNum.getAndIncrement();
                         final int start = num * totalCnt / threadCnt;
                         final int stop = (num + 1) * totalCnt / threadCnt;
+
                         try {
                             GridTestUtils.assertThrows(log, new Callable<Object>() {
-                                @Override
-                                public Object call() throws Exception {
+                                @Override public Object call() throws Exception {
                                     startLatch.countDown();
+
                                     int i = start;
+
                                     while (true) {
                                         if (i == stop)
                                             i = start;
-                                        String value = cache.get(i);
-                                        assertEquals("Unexpected cache value", values[i], value);
+
+                                        String val = cache.get(i);
+
+                                        assertEquals("Unexpected cache value", values[i], val);
+
                                         i++;
                                     }
                                 }
                             }, IllegalStateException.class, "Cache has been stopped");
-                        } catch (Exception e) {
+                        }
+                        catch (Exception e) {
                             error("Unexpected exception in in reader thread", e);
                             fail.set(true);
-                        } finally {
+                        }
+                        finally {
                             stoppedLatch.countDown();
                         }
                     }
-                },
-                threadCnt, "reader");
+                }, threadCnt, "reader");
 
             startLatch.await();
 

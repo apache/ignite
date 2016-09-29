@@ -912,8 +912,8 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         // No-op.
     }
 
-    @Override
-    public void clearOffHeap() {
+    /** {@inheritDoc} */
+    @Override public void clearOffHeap() {
         // No-op
     }
 }
