@@ -17,16 +17,12 @@
 
 package org.apache.ignite.internal.processors.igfs.secondary.local;
 
-import java.io.File;
-import java.nio.file.attribute.PosixFileAttributes;
+import java.util.Collections;
+import java.util.Map;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
-import org.apache.ignite.internal.util.typedef.T1;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collections;
-import java.util.Map;
 
 /**
  * Implementation of the IgfsFile interface for the local filesystem.
@@ -48,10 +44,7 @@ public class LocalFileSystemIgfsFile implements IgfsFile {
     private final long len;
 
     /** Properties. */
-    private T1<Map<String, String>> props;
-
-    /** Properties. */
-    private final File file;
+    private Map<String, String> props;
 
     /**
      * @param path IGFS path.
@@ -60,21 +53,20 @@ public class LocalFileSystemIgfsFile implements IgfsFile {
      * @param blockSize Block size in bytes.
      * @param modTime Modification time in millis.
      * @param len File length in bytes.
-     * @param file File object to lazy initialization of the properties.
+     * @param props Properties.
      */
     public LocalFileSystemIgfsFile(IgfsPath path, boolean isFile, boolean isDir, int blockSize,
-        long modTime, long len, File file) {
+        long modTime, long len, Map<String, String> props) {
 
         assert !isDir || blockSize == 0 : "blockSize must be 0 for dirs. [blockSize=" + blockSize + ']';
         assert !isDir || len == 0 : "length must be 0 for dirs. [length=" + len + ']';
-        assert file != null;
 
         this.path = path;
         flags = IgfsUtils.flags(isDir, isFile);
         this.blockSize = blockSize;
         this.modTime = modTime;
         this.len = len;
-        this.file = file;
+        this.props = props;
     }
 
     /** {@inheritDoc} */
@@ -119,10 +111,8 @@ public class LocalFileSystemIgfsFile implements IgfsFile {
 
     /** {@inheritDoc} */
     @Nullable @Override public String property(String name, @Nullable String dfltVal) {
-        initProps();
-
-        if (props.get() != null) {
-            String res = props.get().get(name);
+        if (props != null) {
+            String res = props.get(name);
 
             if (res != null)
                 return res;
@@ -133,29 +123,11 @@ public class LocalFileSystemIgfsFile implements IgfsFile {
 
     /** {@inheritDoc} */
     @Override public Map<String, String> properties() {
-        initProps();
-
-        return props.get() != null ? props.get() : Collections.<String, String>emptyMap();
+        return props != null ? props : Collections.<String, String>emptyMap();
     }
 
     /** {@inheritDoc} */
     @Override public long length() {
         return len;
-    }
-
-    /**
-     * Lazy initialization of the properties.
-     */
-    private void initProps() {
-        if (props != null)
-            return;
-
-        synchronized (file) {
-            if (props == null) {
-                PosixFileAttributes attrs = LocalFileSystemUtils.posixAttributes(file);
-
-                props = new T1<>(LocalFileSystemUtils.posixAttributesToMap(attrs));
-            }
-        }
     }
 }

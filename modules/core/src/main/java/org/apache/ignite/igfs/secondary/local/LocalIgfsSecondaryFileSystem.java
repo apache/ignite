@@ -339,10 +339,14 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
         boolean isDir = file.isDirectory();
 
+        PosixFileAttributes attrs = LocalFileSystemUtils.posixAttributes(file);
+
+        Map<String, String> props = LocalFileSystemUtils.posixAttributesToMap(attrs);
+
         if (isDir)
-            return new LocalFileSystemIgfsFile(path, false, true, 0, file.lastModified(), 0, file);
+            return new LocalFileSystemIgfsFile(path, false, true, 0, file.lastModified(), 0, props);
         else
-            return new LocalFileSystemIgfsFile(path, file.isFile(), false, 0, file.lastModified(), file.length(), file);
+            return new LocalFileSystemIgfsFile(path, file.isFile(), false, 0, file.lastModified(), file.length(), props);
     }
 
     /** {@inheritDoc} */

@@ -19,7 +19,7 @@ import org.apache.ignite.igfs.IgfsPathNotFoundException;
 /**
  *
  */
-abstract class FileOperation {
+class FileOperation {
     /** Buff size. */
     public static final int BUFF_SIZE = 8192;
 
@@ -40,31 +40,31 @@ abstract class FileOperation {
      * @param path Path to do operation.
      * @throws Exception If failed.
      */
-    public abstract void handleFile(String path) throws Exception;
+    public void handleFile(String path) throws Exception {
+        // No-op.
+    }
 
     /**
      * @param path Path to do operation.
      * @throws Exception If failed.
      */
-    public abstract void preHandleDir(String path) throws Exception;
+    public void preHandleDir(String path) throws Exception {
+        // No-op.
+    }
 
     /**
      * @param path Path to do operation.
      * @throws Exception If failed.
      */
-    public abstract void postHandleDir(String path) throws Exception;
+    public void postHandleDir(String path) throws Exception {
+        // No-op.
+    }
 }
 
 /**
  *
  */
 class WriteFileOperation extends FileOperation {
-    /** Mkdirs. */
-    public final AtomicLong mkdirs = new AtomicLong();
-
-    /** Creates. */
-    public final AtomicLong creates = new AtomicLong();
-
     /** Size. */
     private int size;
 
@@ -116,10 +116,6 @@ class WriteFileOperation extends FileOperation {
         catch (IgniteException ex) {
             throw ex;
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void postHandleDir(String strPath) throws Exception {
     }
 }
 
@@ -178,10 +174,6 @@ class ReadFileOperation extends FileOperation {
             throw new IgniteException("path " + path.toString() + " not exist");
         }
     }
-
-    /** {@inheritDoc} */
-    @Override public void postHandleDir(String strPath) throws Exception {
-    }
 }
 
 /**
@@ -204,10 +196,6 @@ class DeleteFileOperation extends FileOperation {
     @Override public void handleFile(String strPath) throws Exception {
         IgfsPath path = new IgfsPath(strPath);
         fs.delete(path, false);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void preHandleDir(String strPath) throws Exception {
     }
 
     /** {@inheritDoc} */
@@ -237,10 +225,6 @@ class InfoFileOperation extends FileOperation {
     }
 
     /** {@inheritDoc} */
-    @Override public void preHandleDir(String strPath) throws Exception {
-    }
-
-    /** {@inheritDoc} */
     @Override public void postHandleDir(String strPath) throws Exception {
         IgfsPath path = new IgfsPath(strPath);
         IgfsFile info = fs.info(path);
@@ -258,14 +242,6 @@ class ListPathFileOperation extends FileOperation {
      */
     public ListPathFileOperation(IgniteFileSystem fs) {
         super(fs);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void handleFile(String strPath) throws Exception {
-    }
-
-    /** {@inheritDoc} */
-    @Override public void preHandleDir(String strPath) throws Exception {
     }
 
     /** {@inheritDoc} */
@@ -359,7 +335,7 @@ public class IgfsBenchmark {
         int cycles = Integer.getInteger("cycles", 10);
 
         final IgfsBenchmark fsTest = new IgfsBenchmark(
-            System.getProperty("testDir", "test"),
+            System.getProperty("testDir", "/test"),
             Integer.getInteger("depth", 3),
             Integer.getInteger("subDirs", 10),
             Integer.getInteger("files", 10),
@@ -369,7 +345,7 @@ public class IgfsBenchmark {
 
         try {
             for (int i = 0; i < wormUpCount; ++i) {
-                System.out.println("Wormup #" + i + " from " + wormUpCount);
+                System.out.println("Wormup #" + i + " / " + wormUpCount);
                 fsTest.testWriteFile(fs);
                 fsTest.testReadFile(fs);
                 fsTest.testDeleteFile(fs);
@@ -390,7 +366,7 @@ public class IgfsBenchmark {
 
         try {
             for (int i = 0; i < cycles; ++i) {
-                System.out.println("Benchmark cycle #" + i + " from " + cycles);
+                System.out.println("Benchmark cycle #" + i + " / " + cycles);
 
                 writeRes.add(bench(new Runnable() {
                     @Override public void run() {
