@@ -617,16 +617,6 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
     }
 
     /**
-     * Masks null space name with default space name.
-     *
-     * @param spaceName Space name.
-     * @return Space name or default space name if space name is null.
-     * */
-    private String maskNull(String spaceName) {
-        return spaceName != null ? spaceName : DFLT_SPACE_NAME;
-    }
-
-    /**
      * Gets space by name.
      *
      * @param name Space name.
@@ -663,14 +653,27 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
      * */
     private void destruct(@Nullable String spaceName) {
         String masked = maskNull(spaceName);
+
         Space space = spaces.remove(masked);
+
         if (space != null) {
             try {
                 space.stop();
-            } catch (IgniteInterruptedCheckedException e) {
+            }
+            catch (IgniteInterruptedCheckedException e) {
                 U.error(log, "Interrupted.", e);
             }
         }
+    }
+
+    /**
+     * Masks null space name with default space name.
+     *
+     * @param spaceName Space name.
+     * @return Space name or default space name if space name is null.
+     * */
+    private static String maskNull(String spaceName) {
+        return spaceName != null ? spaceName : DFLT_SPACE_NAME;
     }
 
     /**

@@ -146,7 +146,8 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
         try {
             clearSwap();
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to clear cache swap space", e);
         }
     }

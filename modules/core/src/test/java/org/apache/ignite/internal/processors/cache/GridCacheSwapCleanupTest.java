@@ -72,20 +72,26 @@ public class GridCacheSwapCleanupTest extends GridCommonAbstractTest {
      * */
     public void testSwapCleanupAfterCacheDestroy() throws Exception {
         try (Ignite g = startGrid()) {
-            IgniteCache cache = g.getOrCreateCache(createCacheConfiguration());
+            for (int iter = 0; iter < 3; iter++) {
+                IgniteCache cache = g.getOrCreateCache(createCacheConfiguration());
 
-            for (int i = 0; i < 20; i++)
-                cache.put(i, i);
+                for (int i = 0; i < 20; i++) {
+                    assertNull(cache.get(i));
 
-            String spaceName = CU.swapSpaceName(internalCache(cache).context());
-            GridSwapSpaceManager swapSpaceManager = ((IgniteEx)g).context().swap();
+                    cache.put(i, i);
+                }
 
-            assertEquals(10, swapSpaceManager.swapKeys(spaceName));
+                String spaceName = CU.swapSpaceName(internalCache(cache).context());
 
-            g.destroyCache(cache.getName());
+                GridSwapSpaceManager swapSpaceMgr = ((IgniteEx)g).context().swap();
 
-            assertEquals(0, swapSpaceManager.swapKeys(spaceName));
-            assertEquals(0, swapSpaceManager.swapSize(spaceName));
+                assertEquals(10, swapSpaceMgr.swapKeys(spaceName));
+
+                g.destroyCache(cache.getName());
+
+                assertEquals(0, swapSpaceMgr.swapKeys(spaceName));
+                assertEquals(0, swapSpaceMgr.swapSize(spaceName));
+            }
         }
     }
 }
