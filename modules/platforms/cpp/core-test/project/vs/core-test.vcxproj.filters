@@ -46,7 +46,7 @@
     <ClCompile Include="..\..\src\continuous_query_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\smart_pointer_test.cpp">
+    <ClCompile Include="..\..\src\any_reference_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
   </ItemGroup>

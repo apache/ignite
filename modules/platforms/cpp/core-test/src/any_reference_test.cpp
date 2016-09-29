@@ -25,7 +25,7 @@
 #include <boost/smart_ptr.hpp>
 #include <boost/interprocess/smart_ptr/unique_ptr.hpp>
 
-#include "ignite/common/smart_pointer.h"
+#include "ignite/common/any_reference.h"
 
 using namespace ignite;
 using namespace boost::unit_test;
@@ -39,6 +39,17 @@ public:
         flag = true;
     }
 
+    LivenessMarker(const LivenessMarker& other) :
+        flag(other.flag)
+    {
+        // No-op.
+    }
+
+    LivenessMarker& operator=(const LivenessMarker& other)
+    {
+        flag = other.flag;
+    }
+
     ~LivenessMarker()
     {
         flag = false;
@@ -48,15 +59,46 @@ private:
     bool& flag;
 };
 
-
-void TestFunction(SmartPointer<LivenessMarker> ptr)
+class InstanceCounter
 {
-    SmartPointer<LivenessMarker> copy(ptr);
-    SmartPointer<LivenessMarker> copy2(ptr);
+public:
+    InstanceCounter(int& counter) :
+        counter(&counter)
+    {
+        ++(*this->counter);
+    }
+
+    InstanceCounter(const InstanceCounter& other) :
+        counter(other.counter)
+    {
+        ++(*counter);
+    }
+
+    InstanceCounter& operator=(const InstanceCounter& other)
+    {
+        counter = other.counter;
+
+        ++(*counter);
+    }
+
+    ~InstanceCounter()
+    {
+        --(*counter);
+    }
+
+private:
+    int* counter;
+};
+
+
+void TestFunction(AnyReference<LivenessMarker> ptr)
+{
+    AnyReference<LivenessMarker> copy(ptr);
+    AnyReference<LivenessMarker> copy2(ptr);
 }
 
 
-BOOST_AUTO_TEST_SUITE(SmartPointerTestSuite)
+BOOST_AUTO_TEST_SUITE(AnyReferenceTestSuite)
 
 BOOST_AUTO_TEST_CASE(StdSharedPointerTestBefore)
 {
@@ -67,7 +109,7 @@ BOOST_AUTO_TEST_CASE(StdSharedPointerTestBefore)
     BOOST_CHECK(objAlive);
 
     {
-        SmartPointer<LivenessMarker> smart = PassSmartPointer(shared);
+        AnyReference<LivenessMarker> smart = PassSmartPointer(shared);
 
         BOOST_CHECK(objAlive);
 
@@ -88,7 +130,7 @@ BOOST_AUTO_TEST_CASE(StdSharedPointerTestAfter)
     BOOST_CHECK(objAlive);
 
     {
-        SmartPointer<LivenessMarker> smart = PassSmartPointer(shared);
+        AnyReference<LivenessMarker> smart = PassSmartPointer(shared);
 
         BOOST_CHECK(objAlive);
     }
@@ -109,7 +151,7 @@ BOOST_AUTO_TEST_CASE(StdAutoPointerTest)
     BOOST_CHECK(objAlive);
 
     {
-        SmartPointer<LivenessMarker> smart = PassSmartPointer(autop);
+        AnyReference<LivenessMarker> smart = PassSmartPointer(autop);
 
         BOOST_CHECK(objAlive);
     }
@@ -126,7 +168,7 @@ BOOST_AUTO_TEST_CASE(StdUniquePointerTest)
     BOOST_CHECK(objAlive);
 
     {
-        SmartPointer<LivenessMarker> smart = PassSmartPointer(std::move(unique));
+        AnyReference<LivenessMarker> smart = PassSmartPointer(std::move(unique));
 
         BOOST_CHECK(objAlive);
     }
@@ -143,7 +185,7 @@ BOOST_AUTO_TEST_CASE(BoostSharedPointerTestBefore)
     BOOST_CHECK(objAlive);
 
     {
-        SmartPointer<LivenessMarker> smart = PassSmartPointer(shared);
+        AnyReference<LivenessMarker> smart = PassSmartPointer(shared);
 
         BOOST_CHECK(objAlive);
 
@@ -164,7 +206,7 @@ BOOST_AUTO_TEST_CASE(BoostSharedPointerTestAfter)
     BOOST_CHECK(objAlive);
 
     {
-        SmartPointer<LivenessMarker> smart = PassSmartPointer(shared);
+        AnyReference<LivenessMarker> smart = PassSmartPointer(shared);
 
         BOOST_CHECK(objAlive);
     }
@@ -185,7 +227,7 @@ BOOST_AUTO_TEST_CASE(BoostUniquePointerTest)
     BOOST_CHECK(objAlive);
 
     {
-        SmartPointer<LivenessMarker> smart = PassSmartPointer(boost::move(unique));
+        AnyReference<LivenessMarker> smart = PassSmartPointer(boost::move(unique));
 
         BOOST_CHECK(objAlive);
     }
@@ -210,6 +252,69 @@ BOOST_AUTO_TEST_CASE(PassingToFunction)
 
     TestFunction(PassSmartPointer(boost::move(boostUnique)));
     TestFunction(PassSmartPointer(boostShared));
+}
+
+BOOST_AUTO_TEST_CASE(OwningPointerTest)
+{
+    int instances = 0;
+
+    {
+        InstanceCounter counter(instances);
+
+        BOOST_CHECK_EQUAL(instances, 1);
+
+        {
+            AnyReference<InstanceCounter> copy = PassCopy(counter);
+
+            BOOST_CHECK_EQUAL(instances, 2);
+        }
+
+        BOOST_CHECK_EQUAL(instances, 1);
+    }
+
+    BOOST_CHECK_EQUAL(instances, 0);
+}
+
+BOOST_AUTO_TEST_CASE(NonOwningPointerTest1)
+{
+    int instances = 0;
+
+    {
+        InstanceCounter counter(instances);
+
+        BOOST_CHECK_EQUAL(instances, 1);
+
+        {
+            AnyReference<InstanceCounter> copy = PassReference(counter);
+
+            BOOST_CHECK_EQUAL(instances, 1);
+        }
+
+        BOOST_CHECK_EQUAL(instances, 1);
+    }
+
+    BOOST_CHECK_EQUAL(instances, 0);
+}
+
+BOOST_AUTO_TEST_CASE(NonOwningPointerTest2)
+{
+    int instances = 0;
+
+    InstanceCounter* counter = new InstanceCounter(instances);
+
+    BOOST_CHECK_EQUAL(instances, 1);
+
+    {
+        AnyReference<InstanceCounter> copy = PassReference(*counter);
+
+        BOOST_CHECK_EQUAL(instances, 1);
+
+        delete counter;
+
+        BOOST_CHECK_EQUAL(instances, 0);
+    }
+
+    BOOST_CHECK_EQUAL(instances, 0);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

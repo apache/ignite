@@ -40,7 +40,7 @@
     <ClInclude Include="..\..\include\ignite\ignite_error.h">
       <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\common\smart_pointer.h">
+    <ClInclude Include="..\..\include\ignite\common\any_reference.h">
       <Filter>Code\common</Filter>
     </ClInclude>
   </ItemGroup>

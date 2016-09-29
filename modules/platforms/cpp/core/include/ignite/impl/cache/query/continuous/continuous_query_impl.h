@@ -25,6 +25,8 @@
 
 #include <stdint.h>
 
+#include <ignite/common/any_reference.h>
+
 #include <ignite/cache/event/cache_entry_event_listener.h>
 #include <ignite/binary/binary_raw_reader.h>
 
@@ -244,8 +246,7 @@ namespace ignite
                          */
                         virtual ~ContinuousQueryImpl()
                         {
-                            if (owned)
-                                delete lsnr;
+                            // No-op.
                         }
 
                         /**
@@ -254,10 +255,9 @@ namespace ignite
                          * @param lsnr Event listener. Invoked on the node where
                          *     continuous query execution has been started.
                          */
-                        ContinuousQueryImpl(ignite::cache::event::CacheEntryEventListener<K, V>& lsnr) :
+                        ContinuousQueryImpl(AnyReference<ignite::cache::event::CacheEntryEventListener<K, V>>& lsnr) :
                             ContinuousQueryImplBase(false),
-                            lsnr(&lsnr),
-                            owned(false)
+                            lsnr(lsnr)
                         {
                             // No-op.
                         }
@@ -269,10 +269,9 @@ namespace ignite
                          *     continuous query execution has been started.
                          * @param loc Whether query should be executed locally.
                          */
-                        ContinuousQueryImpl(ignite::cache::event::CacheEntryEventListener<K, V>& lsnr, bool loc) :
+                        ContinuousQueryImpl(AnyReference<ignite::cache::event::CacheEntryEventListener<K, V>>& lsnr, bool loc) :
                             ContinuousQueryImplBase(loc),
-                            lsnr(&lsnr),
-                            owned(false)
+                            lsnr(lsnr)
                         {
                             // No-op.
                         }
@@ -284,9 +283,9 @@ namespace ignite
                          *     node where continuous query execution has been
                          *     started.
                          */
-                        void SetListener(ignite::cache::event::CacheEntryEventListener<K, V>& val)
+                        void SetListener(AnyReference<ignite::cache::event::CacheEntryEventListener<K, V>>& val)
                         {
-                            lsnr = &lsnr;
+                            lsnr = val;
                         }
 
                         /**
@@ -296,7 +295,7 @@ namespace ignite
                          */
                         const ignite::cache::event::CacheEntryEventListener<K, V>& GetListener() const
                         {
-                            return *lsnr;
+                            return lsnr.Get();
                         }
 
                         /**
@@ -306,7 +305,7 @@ namespace ignite
                          */
                         ignite::cache::event::CacheEntryEventListener<K, V>& GetListener()
                         {
-                            return *lsnr;
+                            return lsnr.Get();
                         }
 
                         /**
@@ -326,15 +325,12 @@ namespace ignite
                             for (int32_t i = 0; i < cnt; ++i)
                                 events[i].Read(reader);
 
-                            lsnr->OnEvent(events.data(), cnt);
+                            lsnr.Get().OnEvent(events.data(), cnt);
                         }
 
                     private:
                         /** Cache entry event listener. */
-                        ignite::cache::event::CacheEntryEventListener<K, V>* lsnr;
-
-                        /** Flag showing whether listener is owned or not. */
-                        bool owned;
+                        AnyReference<ignite::cache::event::CacheEntryEventListener<K, V>> lsnr;
                     };
                 }
             }

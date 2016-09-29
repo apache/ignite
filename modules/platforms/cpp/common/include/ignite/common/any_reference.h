@@ -17,7 +17,7 @@
 
 /**
  * @file
- * Declares ignite::SmartPointer class.
+ * Declares ignite::AnyReference class.
  */
 
 #ifndef _IGNITE_COMMON_SMART_POINTER
@@ -34,13 +34,13 @@ namespace ignite
          * Smart pointer interface.
          */
         template<typename T>
-        class SmartPointerImplBase
+        class AnyReferenceImplBase
         {
         public:
             /**
              * Destructor.
              */
-            virtual ~SmartPointerImplBase()
+            virtual ~AnyReferenceImplBase()
             {
                 // No-op.
             }
@@ -48,7 +48,7 @@ namespace ignite
             /**
              * Dereference the pointer.
              *
-             * If the pointer is null then this operation causes undefined
+             * If the pointer is null then this operation results in undefined
              * behaviour.
              *
              * @return Constant reference to underlying value.
@@ -57,6 +57,9 @@ namespace ignite
 
             /**
              * Dereference the pointer.
+             *
+             * If the pointer is null then this operation results in undefined
+             * behaviour.
              *
              * @return Reference to underlying value.
              */
@@ -78,7 +81,7 @@ namespace ignite
          * pointer implementations and provides unified interface for them.
          */
         template<typename P>
-        class SmartPointerImpl : public SmartPointerImplBase<typename P::element_type>
+        class AnyReferenceSmartPointer : public AnyReferenceImplBase<typename P::element_type>
         {
         public:
             typedef typename P::element_type ElementType;
@@ -86,7 +89,7 @@ namespace ignite
             /**
              * Destructor.
              */
-            virtual ~SmartPointerImpl()
+            virtual ~AnyReferenceSmartPointer()
             {
                 // No-op.
             }
@@ -94,7 +97,7 @@ namespace ignite
             /**
              * Default constructor.
              */
-            SmartPointerImpl() :
+            AnyReferenceSmartPointer() :
                 ptr()
             {
                 // No-op.
@@ -103,7 +106,7 @@ namespace ignite
             /**
              * Dereference the pointer.
              *
-             * If the pointer is null then this operation causes undefined
+             * If the pointer is null then this operation results in undefined
              * behaviour.
              *
              * @return Constant reference to underlying value.
@@ -116,7 +119,7 @@ namespace ignite
             /**
              * Dereference the pointer.
              *
-             * If the pointer is null then this operation causes undefined
+             * If the pointer is null then this operation results in undefined
              * behaviour.
              *
              * @return Reference to underlying value.
@@ -154,10 +157,10 @@ namespace ignite
         };
 
         /**
-         * Smart pointer implementation specialization for the raw pointer.
+         * Any reference implementation for the raw pointer.
          */
         template<typename T>
-        class SmartPointerImpl<T*> : public SmartPointerImplBase<T>
+        class AnyReferenceOwningRawPointer : public AnyReferenceImplBase<T>
         {
         public:
             typedef T ElementType;
@@ -165,7 +168,7 @@ namespace ignite
             /**
              * Destructor.
              */
-            virtual ~SmartPointerImpl()
+            virtual ~AnyReferenceOwningRawPointer()
             {
                 delete ptr;
             }
@@ -173,8 +176,19 @@ namespace ignite
             /**
              * Default constructor.
              */
-            SmartPointerImpl() :
+            AnyReferenceOwningRawPointer() :
                 ptr(0)
+            {
+                // No-op.
+            }
+
+            /**
+             * Pointer constructor.
+             *
+             * @param ptr Pointer to take ownership over.
+             */
+            AnyReferenceOwningRawPointer(T* ptr) :
+                ptr(ptr)
             {
                 // No-op.
             }
@@ -182,7 +196,7 @@ namespace ignite
             /**
              * Dereference the pointer.
              *
-             * If the pointer is null then this operation causes undefined
+             * If the pointer is null then this operation results in undefined
              * behaviour.
              *
              * @return Constant reference to underlying value.
@@ -195,7 +209,7 @@ namespace ignite
             /**
              * Dereference the pointer.
              *
-             * If the pointer is null then this operation causes undefined
+             * If the pointer is null then this operation results in undefined
              * behaviour.
              *
              * @return Reference to underlying value.
@@ -215,16 +229,82 @@ namespace ignite
                 return 0 == ptr;
             }
 
-            /**
-             * Swap contents with another instance.
-             *
-             * @param other Another instance.
-             */
-            void Swap(T*& other)
-            {
-                using std::swap;
+        private:
+            /** Underlying pointer. */
+            T* ptr;
+        };
 
-                swap(ptr, other);
+        /**
+         * Any reference implementation for the raw pointer.
+         */
+        template<typename T>
+        class AnyReferenceNonOwningRawPointer : public AnyReferenceImplBase<T>
+        {
+        public:
+            typedef T ElementType;
+
+            /**
+             * Destructor.
+             */
+            virtual ~AnyReferenceNonOwningRawPointer()
+            {
+                // No-op.
+            }
+
+            /**
+             * Default constructor.
+             */
+            AnyReferenceNonOwningRawPointer() :
+                ptr(0)
+            {
+                // No-op.
+            }
+
+            /**
+             * Pointer constructor.
+             *
+             * @param ptr Pointer.
+             */
+            AnyReferenceNonOwningRawPointer(T* ptr) :
+                ptr(ptr)
+            {
+                // No-op.
+            }
+
+            /**
+             * Dereference the pointer.
+             *
+             * If the pointer is null then this operation results in undefined
+             * behaviour.
+             *
+             * @return Constant reference to underlying value.
+             */
+            const ElementType& Get() const
+            {
+                return *ptr;
+            }
+
+            /**
+             * Dereference the pointer.
+             *
+             * If the pointer is null then this operation results in undefined
+             * behaviour.
+             *
+             * @return Reference to underlying value.
+             */
+            ElementType& Get()
+            {
+                return *ptr;
+            }
+
+            /**
+             * Check if the pointer is null.
+             *
+             * @return True if the value is null.
+             */
+            bool IsNull() const
+            {
+                return 0 == ptr;
             }
 
         private:
@@ -240,13 +320,13 @@ namespace ignite
      * wide-spread smart pointer implementations.
      */
     template<typename T>
-    class SmartPointer
+    class AnyReference
     {
     public:
         /**
          * Default constructor.
          */
-        SmartPointer() :
+        AnyReference() :
             ptr()
         {
             // No-op.
@@ -257,7 +337,7 @@ namespace ignite
          *
          * @param ptr Smart pointer implementation.
          */
-        explicit SmartPointer(common::SmartPointerImplBase<T>* ptr) :
+        explicit AnyReference(common::AnyReferenceImplBase<T>* ptr) :
             ptr(ptr)
         {
             // No-op.
@@ -268,8 +348,20 @@ namespace ignite
          *
          * @param other Another instance.
          */
-        SmartPointer(const SmartPointer& other) :
+        AnyReference(const AnyReference& other) :
             ptr(other.ptr)
+        {
+            // No-op.
+        }
+
+        /**
+         * Copy constructor.
+         *
+         * @param other Another instance.
+         */
+        template<typename T2>
+        AnyReference(const AnyReference<T2>& other) :
+            ptr(other.GetPointer())
         {
             // No-op.
         }
@@ -277,7 +369,7 @@ namespace ignite
         /**
          * Assignment operator.
          */
-        SmartPointer& operator=(const SmartPointer& other)
+        AnyReference& operator=(const AnyReference& other)
         {
             ptr = other.ptr;
 
@@ -287,7 +379,7 @@ namespace ignite
         /**
          * Destructor.
          */
-        ~SmartPointer()
+        ~AnyReference()
         {
             // No-op.
         }
@@ -325,13 +417,24 @@ namespace ignite
          */
         bool IsNull() const
         {
-            common::SmartPointerImplBase<T>* raw = ptr.Get();
-            return raw && raw->IsNull();
+            common::AnyReferenceImplBase<T>* raw = ptr.Get();
+
+            return !raw || raw->IsNull();
+        }
+
+        /**
+         * Get internal pointer.
+         *
+         * @return Internal pointer.
+         */
+        const common::concurrent::SharedPointer<common::AnyReferenceImplBase<T>>& GetPointer() const
+        {
+            return ptr;
         }
 
     private:
         /** Implementation. */
-        common::concurrent::SharedPointer<common::SmartPointerImplBase<T>> ptr;
+        common::concurrent::SharedPointer<common::AnyReferenceImplBase<T>> ptr;
     };
 
     /**
@@ -342,37 +445,49 @@ namespace ignite
      *     returned value.
      */
     template<typename T>
-    SmartPointer<typename T::element_type> PassSmartPointer(T ptr)
+    AnyReference<typename T::element_type> PassSmartPointer(T ptr)
     {
-        common::SmartPointerImpl<T>* impl = new common::SmartPointerImpl<T>();
+        common::AnyReferenceSmartPointer<T>* impl = new common::AnyReferenceSmartPointer<T>();
 
-        SmartPointer<typename T::element_type> res(impl);
+        AnyReference<typename T::element_type> res(impl);
 
         impl->Swap(ptr);
 
         return res;
     }
 
-    namespace common
+    /**
+     * Used to copy instance and store it as a AnyReference.
+     *
+     * @param val Instance.
+     * @return Implementation defined value. User should not explicitly use the
+     *     returned value.
+     */
+    template<typename T>
+    AnyReference<T> PassCopy(const T& val)
     {
-        /**
-         * Used to copy instance and store it as a SmartPointer.
-         *
-         * @param val Instance.
-         * @return Implementation defined value. User should not explicitly use the
-         *     returned value.
-         */
-        template<typename T>
-        SmartPointer<typename T::element_type> PassCopy(const T& val)
-        {
-            common::SmartPointerImpl<T*>* impl = new common::SmartPointerImpl<T*>();
+        common::AnyReferenceOwningRawPointer<T>* impl = new common::AnyReferenceOwningRawPointer<T>(new T(val));
 
-            SmartPointer<T> res(impl);
+        AnyReference<T> res(impl);
 
-            impl->Swap(new T(val));
+        return res;
+    }
 
-            return res;
-        }
+    /**
+     * Used to pass reference and store it as a AnyReference.
+     *
+     * @param val Reference.
+     * @return Implementation defined value. User should not explicitly use the
+     *     returned value.
+     */
+    template<typename T>
+    AnyReference<T> PassReference(T& val)
+    {
+        common::AnyReferenceNonOwningRawPointer<T>* impl = new common::AnyReferenceNonOwningRawPointer<T>(&val);
+
+        AnyReference<T> res(impl);
+
+        return res;
     }
 }
 

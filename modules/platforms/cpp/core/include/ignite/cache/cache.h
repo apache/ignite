@@ -1443,7 +1443,7 @@ namespace ignite
 
         private:
             /** Implementation delegate. */
-            ignite::common::concurrent::SharedPointer<impl::cache::CacheImpl> impl;
+            common::concurrent::SharedPointer<impl::cache::CacheImpl> impl;
         };
     }
 }
