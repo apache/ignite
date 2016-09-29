@@ -633,6 +633,7 @@ public class HadoopExternalCommunication {
                         .logger(log.getLogger(GridNioServer.class))
                         .selectorCount(selectorsCnt)
                         .gridName(gridName)
+                        .serverName("hadoop")
                         .tcpNoDelay(tcpNoDelay)
                         .directBuffer(directBuf)
                         .byteOrder(ByteOrder.nativeOrder())

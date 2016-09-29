@@ -45,7 +45,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -106,10 +105,6 @@ public class GridNioServer<T> {
     /** SSL write buf limit. */
     private static final int WRITE_BUF_LIMIT = GridNioSessionMetaKey.nextUniqueKey();
 
-    // TODO
-    private static final int WRITE_BUF_SIZE = IgniteSystemProperties.getInteger("IGNITE_WRITE_BUF_SIZE", 65536);
-    private static final int READ_BUF_SIZE = IgniteSystemProperties.getInteger("IGNITE_READ_BUF_SIZE", 65536);
-
     /** */
     private static final boolean DISABLE_KEYSET_OPTIMIZATION =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_NO_SELECTOR_OPTS);
@@ -151,13 +146,13 @@ public class GridNioServer<T> {
     /** Flag indicating if this server should use direct buffers. */
     private final boolean directBuf;
 
-    /** Index to select which thread will serve next socket channel. Using round-robin balancing. */
+    /** Index to select which thread will serve next incoming socket channel. Using round-robin balancing. */
     @GridToStringExclude
-    private final AtomicInteger readBalanceIdx = new AtomicInteger();
+    private int readBalanceIdx;
 
-    // TODO
+    /** Index to select which thread will serve next out socket channel. Using round-robin balancing. */
     @GridToStringExclude
-    private final AtomicInteger writeBalanceIdx = new AtomicInteger(1);
+    private int writeBalanceIdx = 1;
 
     /** Tcp no delay flag. */
     private final boolean tcpNoDelay;
@@ -220,6 +215,7 @@ public class GridNioServer<T> {
      * @param log Log.
      * @param selectorCnt Count of selectors and selecting threads.
      * @param gridName Grid name.
+     * @param srvName Logical server name for threads identification.
      * @param tcpNoDelay If TCP_NODELAY option should be set to accepted sockets.
      * @param directBuf Direct buffer flag.
      * @param order Byte order.
@@ -242,6 +238,7 @@ public class GridNioServer<T> {
         IgniteLogger log,
         int selectorCnt,
         @Nullable String gridName,
+        @Nullable String srvName,
         boolean tcpNoDelay,
         boolean directBuf,
         ByteOrder order,
@@ -309,9 +306,16 @@ public class GridNioServer<T> {
         clientThreads = new IgniteThread[selectorCnt];
 
         for (int i = 0; i < selectorCnt; i++) {
+            String threadName;
+
+            if (srvName == null)
+                threadName = "grid-nio-worker-" + i;
+            else
+                threadName = "grid-nio-worker-" + srvName + "-" + i;
+
             AbstractNioClientWorker worker = directMode ?
-                new DirectNioClientWorker(i, gridName, "grid-nio-worker-" + i, log) :
-                new ByteBufferNioClientWorker(i, gridName, "grid-nio-worker-" + i, log);
+                new DirectNioClientWorker(i, gridName, threadName, log) :
+                new ByteBufferNioClientWorker(i, gridName, threadName, log);
 
             clientWorkers.add(worker);
 
@@ -460,9 +464,8 @@ public class GridNioServer<T> {
             if (ses.removeFuture(fut))
                 fut.connectionClosed();
         }
-        else if (msgCnt == 1)
-            // Change from 0 to 1 means that worker thread should be waken up.
-            clientWorkers.get(ses.selectorIndex()).offer(fut);
+        else if (!ses.procWrite.get() && ses.procWrite.compareAndSet(false, true))
+                clientWorkers.get(ses.selectorIndex()).offer(fut);
 
         if (msgQueueLsnr != null)
             msgQueueLsnr.apply(ses, msgCnt);
@@ -692,12 +695,35 @@ public class GridNioServer<T> {
      * @param req Request to balance.
      */
     private synchronized void offerBalanced(NioOperationFuture req) {
-        assert req.operation() == NioOperation.REGISTER;
-        assert req.socketChannel() != null;
+        assert req.operation() == NioOperation.REGISTER : req;
+        assert req.socketChannel() != null : req;
 
-        int balanceIdx = req.accepted() ? readBalanceIdx.getAndAdd(2) : writeBalanceIdx.getAndAdd(2);
+        int workers = clientWorkers.size();
 
-        clientWorkers.get(balanceIdx & (clientWorkers.size() - 1)).offer(req);
+        int balanceIdx;
+
+        if (workers > 1) {
+            if (req.accepted()) {
+                balanceIdx = readBalanceIdx;
+
+                readBalanceIdx += 2;
+
+                if (readBalanceIdx >= workers)
+                    readBalanceIdx = 0;
+            }
+            else {
+                balanceIdx = writeBalanceIdx;
+
+                writeBalanceIdx += 2;
+
+                if (writeBalanceIdx >= workers)
+                    writeBalanceIdx = 1;
+            }
+        }
+        else
+            balanceIdx = 0;
+
+        clientWorkers.get(balanceIdx).offer(req);
     }
 
     /** {@inheritDoc} */
@@ -1181,7 +1207,16 @@ public class GridNioServer<T> {
                 req = (NioOperationFuture<?>)ses.pollFuture();
 
                 if (req == null && buf.position() == 0) {
-                    key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+                    if (ses.procWrite.get()) {
+                        boolean set = ses.procWrite.compareAndSet(true, false);
+
+                        assert set;
+
+                        if (ses.writeQueue().isEmpty())
+                            key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+                        else
+                            ses.procWrite.set(true);
+                    }
 
                     return;
                 }
@@ -1477,7 +1512,8 @@ public class GridNioServer<T> {
                                     MessageReader reader = ses.meta(GridDirectParser.READER_META_KEY);
 
                                     sb.append("    Connection info [")
-                                        .append("rmtAddr=").append(ses.remoteAddress())
+                                        .append("in=").append(ses.accepted())
+                                        .append(", rmtAddr=").append(ses.remoteAddress())
                                         .append(", locAddr=").append(ses.localAddress());
 
                                     GridNioRecoveryDescriptor outDesc = ses.outRecoveryDescriptor();
@@ -1494,6 +1530,7 @@ public class GridNioServer<T> {
 
                                     if (inDesc != null) {
                                         sb.append(", msgsRcvd=").append(inDesc.received())
+                                            .append(", lastAcked=").append(inDesc.lastAcknowledged())
                                             .append(", descIdHash=").append(System.identityHashCode(inDesc));
                                     }
                                     else
@@ -1729,10 +1766,10 @@ public class GridNioServer<T> {
                 ByteBuffer readBuf = null;
 
                 if (directMode) {
-                    writeBuf = directBuf ? ByteBuffer.allocateDirect(WRITE_BUF_SIZE) :
-                        ByteBuffer.allocate(WRITE_BUF_SIZE);
-                    readBuf = directBuf ? ByteBuffer.allocateDirect(READ_BUF_SIZE) :
-                        ByteBuffer.allocate(READ_BUF_SIZE);
+                    writeBuf = directBuf ? ByteBuffer.allocateDirect(sock.getSendBufferSize()) :
+                        ByteBuffer.allocate(sock.getSendBufferSize());
+                    readBuf = directBuf ? ByteBuffer.allocateDirect(sock.getReceiveBufferSize()) :
+                        ByteBuffer.allocate(sock.getReceiveBufferSize());
 
                     writeBuf.order(order);
                     readBuf.order(order);
@@ -2459,6 +2496,9 @@ public class GridNioServer<T> {
         /** Message queue size listener. */
         private IgniteBiInClosure<GridNioSession, Integer> msgQueueLsnr;
 
+        /** Name for threads identification. */
+        private String srvName;
+
         /**
          * Finishes building the instance.
          *
@@ -2472,6 +2512,7 @@ public class GridNioServer<T> {
                 log,
                 selectorCnt,
                 gridName,
+                srvName,
                 tcpNoDelay,
                 directBuf,
                 byteOrder,
@@ -2544,6 +2585,16 @@ public class GridNioServer<T> {
          */
         public Builder<T> gridName(@Nullable String gridName) {
             this.gridName = gridName;
+
+            return this;
+        }
+
+        /**
+         * @param srvName Logical server name for threads identification.
+         * @return This for chaining.
+         */
+        public Builder<T> serverName(@Nullable String srvName) {
+            this.srvName = srvName;
 
             return this;
         }

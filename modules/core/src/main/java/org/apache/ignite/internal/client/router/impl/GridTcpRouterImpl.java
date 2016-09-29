@@ -258,6 +258,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
                 .logger(log)
                 .selectorCount(Runtime.getRuntime().availableProcessors())
                 .gridName(gridName)
+                .serverName("router")
                 .tcpNoDelay(tcpNoDelay)
                 .directBuffer(false)
                 .byteOrder(ByteOrder.nativeOrder())
