@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.hadoop.taskexecutor;
 
 import org.apache.ignite.configuration.HadoopConfiguration;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.HadoopExternalTaskExecutionSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.external.HadoopExternalTaskExecutionSelfTest;
 
 /**
  * Job tracker self test.

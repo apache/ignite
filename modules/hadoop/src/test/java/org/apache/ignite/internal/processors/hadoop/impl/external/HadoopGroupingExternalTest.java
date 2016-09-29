@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.external;
+package org.apache.ignite.internal.processors.hadoop.impl.external;
 
 import org.apache.ignite.configuration.HadoopConfiguration;
-import org.apache.ignite.internal.processors.hadoop.HadoopMapReduceEmbeddedSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopGroupingTest;
 
 /**
- * Tests map-reduce execution with embedded mode.
+ * Grouping test.
  */
-public class HadoopMapReduceExternalSelfTest extends HadoopMapReduceEmbeddedSelfTest {
+public class HadoopGroupingExternalTest extends HadoopGroupingTest {
     /** {@inheritDoc} */
     @Override public HadoopConfiguration hadoopConfiguration(String gridName) {
         HadoopConfiguration cfg = super.hadoopConfiguration(gridName);
@@ -31,5 +31,12 @@ public class HadoopMapReduceExternalSelfTest extends HadoopMapReduceEmbeddedSelf
         cfg.setExternalExecution(true);
 
         return cfg;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Override public void testGroupingReducer() throws Exception {
+        // Skip test in external execution mode.
     }
 }
