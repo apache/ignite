@@ -175,8 +175,13 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     UUID routineId = e.getKey();
                     RemoteRoutineInfo info = e.getValue();
 
-                    if (info.autoUnsubscribe && nodeId.equals(info.nodeId))
-                        unregisterRemote(routineId);
+                    if (nodeId.equals(info.nodeId)) {
+                        if (info.autoUnsubscribe)
+                            unregisterRemote(routineId);
+
+                        if (info.hnd.isQuery())
+                            info.hnd.onNodeLeft();
+                    }
                 }
 
                 for (Map.Entry<IgniteUuid, SyncMessageAckFuture> e : syncMsgFuts.entrySet()) {
@@ -473,11 +478,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                     // Register handler only if local node passes projection predicate.
                     if ((item.prjPred == null || item.prjPred.apply(ctx.discovery().localNode())) &&
-                        !locInfos.containsKey(item.routineId)) {
-                        if (registerHandler(data.nodeId, item.routineId, item.hnd, item.bufSize, item.interval,
-                            item.autoUnsubscribe, false))
-                            item.hnd.onListenerRegistered(item.routineId, ctx);
-                    }
+                        !locInfos.containsKey(item.routineId))
+                        registerHandler(data.nodeId, item.routineId, item.hnd, item.bufSize, item.interval,
+                            item.autoUnsubscribe, false);
 
                     if (!item.autoUnsubscribe)
                         // Register routine locally.
@@ -504,14 +507,13 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                                 ctx.resource().injectGeneric(info.prjPred);
 
                             if (info.prjPred == null || info.prjPred.apply(ctx.discovery().localNode())) {
-                                if (registerHandler(clientNodeId,
+                                registerHandler(clientNodeId,
                                     routineId,
                                     info.hnd,
                                     info.bufSize,
                                     info.interval,
                                     info.autoUnsubscribe,
-                                    false))
-                                    info.hnd.onListenerRegistered(routineId, ctx);
+                                    false);
                             }
                         }
                         catch (IgniteCheckedException err) {
@@ -550,9 +552,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 GridContinuousHandler.RegisterStatus status = hnd.register(rmtInfo.nodeId, routineId, this.ctx);
 
                 assert status != GridContinuousHandler.RegisterStatus.DELAYED;
-
-                if (status == GridContinuousHandler.RegisterStatus.REGISTERED)
-                    hnd.onListenerRegistered(routineId, this.ctx);
             }
         }
     }
@@ -644,8 +643,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             try {
                 registerHandler(ctx.localNodeId(), routineId, hnd, bufSize, interval, autoUnsubscribe, true);
 
-                hnd.onListenerRegistered(routineId, ctx);
-
                 return new GridFinishedFuture<>(routineId);
             }
             catch (IgniteCheckedException e) {
@@ -695,9 +692,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         startFuts.put(routineId, fut);
 
         try {
-            if (locIncluded
-                && registerHandler(ctx.localNodeId(), routineId, hnd, bufSize, interval, autoUnsubscribe, true))
-                hnd.onListenerRegistered(routineId, ctx);
+            if (locIncluded || hnd.isQuery())
+                registerHandler(ctx.localNodeId(), routineId, hnd, bufSize, interval, autoUnsubscribe, true);
 
             ctx.discovery().sendCustomEvent(new StartRoutineDiscoveryMessage(routineId, reqData,
                 reqData.handler().keepBinary()));
@@ -865,6 +861,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                 try {
                     sendNotification(nodeId, routineId, futId, F.asList(obj), null, msg, null);
+
+                    info.hnd.onBatchAcknowledged(routineId, info.add(obj), ctx);
                 }
                 catch (IgniteCheckedException e) {
                     syncMsgFuts.remove(futId);
@@ -1013,8 +1011,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 data.autoUnsubscribe()));
         }
 
-        boolean registered = false;
-
         if (err == null) {
             try {
                 IgnitePredicate<ClusterNode> prjPred = data.projectionPredicate();
@@ -1023,10 +1019,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     ctx.resource().injectGeneric(prjPred);
 
                 if ((prjPred == null || prjPred.apply(ctx.discovery().node(ctx.localNodeId()))) &&
-                    !locInfos.containsKey(routineId)) {
-                    registered = registerHandler(node.id(), routineId, hnd0, data.bufferSize(), data.interval(),
+                    !locInfos.containsKey(routineId))
+                    registerHandler(node.id(), routineId, hnd0, data.bufferSize(), data.interval(),
                         data.autoUnsubscribe(), false);
-                }
 
                 if (!data.autoUnsubscribe())
                     // Register routine locally.
@@ -1054,9 +1049,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         if (err != null)
             req.addError(ctx.localNodeId(), err);
-
-        if (registered)
-            hnd0.onListenerRegistered(routineId, ctx);
     }
 
     /**

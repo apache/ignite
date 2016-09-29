@@ -61,6 +61,7 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -110,7 +111,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     private Map<String, List<SqlCacheDescriptor>> cacheSqlDescriptors;
 
     /** List of SQL queries. */
-    private List<String> queries;
+    private List<TestQuery> queries;
 
     /** List of allowed cache operations which will be executed. */
     private List<Operation> allowedLoadTestOps;
@@ -141,7 +142,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
     /** {@inheritDoc} */
     @Override public void onException(Throwable e) {
-        BenchmarkUtils.errorHelp(cfg, "The benchmark of random operation failed.");
+        BenchmarkUtils.error("The benchmark of random operation failed.", e);
         super.onException(e);
     }
 
@@ -217,26 +218,34 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                     Collection<QueryEntity> entries = configuration.getQueryEntities();
 
                     for (QueryEntity queryEntity : entries) {
-                        if (queryEntity.getKeyType() != null) {
-                            Class keyCls = Class.forName(queryEntity.getKeyType());
+                        try {
+                            if (queryEntity.getKeyType() != null) {
+                                Class keyCls = Class.forName(queryEntity.getKeyType());
 
-                            if (ModelUtil.canCreateInstance(keyCls))
-                                keys.add(keyCls);
-                            else
-                                throw new IgniteException("Class is unknown for the load test. Make sure you " +
-                                    "specified its full name [clsName=" + queryEntity.getKeyType() + ']');
-                        }
+                                if (ModelUtil.canCreateInstance(keyCls))
+                                    keys.add(keyCls);
+                                else
+                                    throw new IgniteException("Class is unknown for the load test. Make sure you " +
+                                        "specified its full name [clsName=" + queryEntity.getKeyType() + ']');
+                            }
 
-                        if (queryEntity.getValueType() != null) {
-                            Class valCls = Class.forName(queryEntity.getValueType());
+                            if (queryEntity.getValueType() != null) {
+                                Class valCls = Class.forName(queryEntity.getValueType());
 
-                            if (ModelUtil.canCreateInstance(valCls))
-                                values.add(valCls);
-                            else
-                                throw new IgniteException("Class is unknown for the load test. Make sure you " +
-                                    "specified its full name [clsName=" + queryEntity.getKeyType() + ']');
+                                if (ModelUtil.canCreateInstance(valCls))
+                                    values.add(valCls);
+                                else
+                                    throw new IgniteException("Class is unknown for the load test. Make sure you " +
+                                        "specified its full name [clsName=" + queryEntity.getKeyType() + ']');
 
-                            cofigureCacheSqlDescriptor(cacheName, queryEntity, valCls);
+                                configureCacheSqlDescriptor(cacheName, queryEntity, valCls);
+                            }
+                        } catch (ClassNotFoundException e) {
+                            BenchmarkUtils.println(e.getMessage());
+                            BenchmarkUtils.println("This can be a BinaryObject. Ignoring exception.");
+
+                            if (!cacheSqlDescriptors.containsKey(cacheName))
+                                cacheSqlDescriptors.put(cacheName, new ArrayList<SqlCacheDescriptor>());
                         }
                     }
                 }
@@ -245,30 +254,35 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                     Collection<CacheTypeMetadata> entries = configuration.getTypeMetadata();
 
                     for (CacheTypeMetadata cacheTypeMetadata : entries) {
-                        if (cacheTypeMetadata.getKeyType() != null) {
-                            Class keyCls = Class.forName(cacheTypeMetadata.getKeyType());
+                        try {
+                            if (cacheTypeMetadata.getKeyType() != null) {
+                                Class keyCls = Class.forName(cacheTypeMetadata.getKeyType());
 
-                            if (ModelUtil.canCreateInstance(keyCls))
-                                keys.add(keyCls);
-                            else
-                                throw new IgniteException("Class is unknown for the load test. Make sure you " +
-                                    "specified its full name [clsName=" + cacheTypeMetadata.getKeyType() + ']');
-                        }
+                                if (ModelUtil.canCreateInstance(keyCls))
+                                    keys.add(keyCls);
+                                else
+                                    throw new IgniteException("Class is unknown for the load test. Make sure you " +
+                                        "specified its full name [clsName=" + cacheTypeMetadata.getKeyType() + ']');
+                            }
 
-                        if (cacheTypeMetadata.getValueType() != null) {
-                            Class valCls = Class.forName(cacheTypeMetadata.getValueType());
+                            if (cacheTypeMetadata.getValueType() != null) {
+                                Class valCls = Class.forName(cacheTypeMetadata.getValueType());
 
-                            if (ModelUtil.canCreateInstance(valCls))
-                                values.add(valCls);
-                            else
-                                throw new IgniteException("Class is unknown for the load test. Make sure you " +
-                                    "specified its full name [clsName=" + cacheTypeMetadata.getKeyType() + ']');
+                                if (ModelUtil.canCreateInstance(valCls))
+                                    values.add(valCls);
+                                else
+                                    throw new IgniteException("Class is unknown for the load test. Make sure you " +
+                                        "specified its full name [clsName=" + cacheTypeMetadata.getKeyType() + ']');
+                            }
+                        } catch (ClassNotFoundException e) {
+                            BenchmarkUtils.println(e.getMessage());
+                            BenchmarkUtils.println("This can be a BinaryObject. Ignoring exception.");
+
+                            if (!cacheSqlDescriptors.containsKey(cacheName))
+                                cacheSqlDescriptors.put(cacheName, new ArrayList<SqlCacheDescriptor>());
                         }
                     }
                 }
-
-                if (keys.isEmpty() || values.isEmpty())
-                    continue;
 
                 keysCacheClasses.put(cacheName, keys.toArray(new Class[] {}));
 
@@ -294,11 +308,13 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      */
     private void loadAllowedOperations() {
         allowedLoadTestOps = new ArrayList<>();
+
         if (args.allowedLoadTestOps().isEmpty())
             Collections.addAll(allowedLoadTestOps, Operation.values());
-        else
+        else {
             for (String opName : args.allowedLoadTestOps())
                 allowedLoadTestOps.add(Operation.valueOf(opName.toUpperCase()));
+        }
     }
 
     /**
@@ -317,7 +333,24 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                         if (line.trim().isEmpty())
                             continue;
 
-                        queries.add(line.trim());
+                        boolean distributedJoins = false;
+
+                        int commentIdx = line.lastIndexOf('#');
+
+                        if (commentIdx >= 0) {
+                            if (line.toUpperCase().indexOf("DISTRIBUTEDJOINS", commentIdx) > 0)
+                                distributedJoins = true;
+
+                            line = line.substring(0, commentIdx);
+                        }
+
+                        line = line.trim();
+
+                        TestQuery qry = new TestQuery(line, distributedJoins);
+
+                        queries.add(qry);
+
+                        BenchmarkUtils.println("Loaded query: " + qry);
                     }
                 }
             }
@@ -330,7 +363,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      * @param valCls Class of value.
      * @throws ClassNotFoundException If fail.
      */
-    private void cofigureCacheSqlDescriptor(String cacheName, QueryEntity qryEntity, Class valCls)
+    private void configureCacheSqlDescriptor(String cacheName, QueryEntity qryEntity, Class valCls)
         throws ClassNotFoundException {
         List<SqlCacheDescriptor> descs = cacheSqlDescriptors.get(cacheName);
 
@@ -857,23 +890,51 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     private void doSqlQuery(IgniteCache<Object, Object> cache) throws Exception {
         List<SqlCacheDescriptor> descriptors = cacheSqlDescriptors.get(cache.getName());
 
-        if (descriptors != null && !descriptors.isEmpty()) {
-            SqlCacheDescriptor randomDesc = descriptors.get(nextRandom(descriptors.size()));
+        if (descriptors != null) {
+            Query sq = null;
 
-            int id = nextRandom(args.range());
+            if (queries.isEmpty()) {
+                if (!descriptors.isEmpty()) {
+                    SqlCacheDescriptor randomDesc = descriptors.get(nextRandom(descriptors.size()));
 
-            Query sq;
-            if (queries.isEmpty())
-                sq = nextBoolean() ? randomDesc.getSqlQuery(id) : randomDesc.getSqlFieldsQuery(id);
-            else
-                sq = new SqlFieldsQuery(queries.get(nextRandom(queries.size())));
+                    int id = nextRandom(args.range());
 
-            try (QueryCursor cursor = cache.query(sq)) {
-                for (Object obj : cursor) {
-                    // No-op.
+                    sq = nextBoolean() ? randomDesc.getSqlQuery(id) : randomDesc.getSqlFieldsQuery(id);
                 }
             }
+            else {
+                TestQuery qry = queries.get(nextRandom(queries.size()));
+
+                String sql = randomizeSql(qry.sql);
+
+                sq = new SqlFieldsQuery(sql);
+
+                ((SqlFieldsQuery)sq).setDistributedJoins(qry.distributedJoin);
+            }
+
+            if (sq != null)
+                try (QueryCursor cursor = cache.query(sq)) {
+                    for (Object obj : cursor) {
+                        // No-op.
+                    }
+                }
         }
+    }
+
+    /**
+     * @return SQL string.
+     */
+    private String randomizeSql(String sql) {
+        int cnt = StringUtils.countOccurrencesOf(sql, "%s");
+
+        Integer[] sub = new Integer[cnt];
+
+        for (int i = 0; i< cnt; i++)
+            sub[i] = nextRandom(args.range());
+
+        sql = String.format(sql, sub);
+
+        return sql;
     }
 
     /**
@@ -1155,6 +1216,31 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
          */
         public static Operation valueOf(int num) {
             return values()[num];
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestQuery {
+        /** */
+        private final String sql;
+
+        /** */
+        private final boolean distributedJoin;
+
+        /**
+          * @param sql SQL.
+         * @param distributedJoin Distributed join flag.
+         */
+        public TestQuery(String sql, boolean distributedJoin) {
+            this.sql = sql;
+            this.distributedJoin = distributedJoin;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(TestQuery.class, this);
         }
     }
 }

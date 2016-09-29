@@ -34,8 +34,7 @@ public class OracleDialect extends BasicJdbcDialect {
     }
 
     /** {@inheritDoc} */
-    @Override public String mergeQuery(String fullTblName, Collection<String> keyCols,
-        Collection<String> uniqCols) {
+    @Override public String mergeQuery(String fullTblName, Collection<String> keyCols, Collection<String> uniqCols) {
         Collection<String> cols = F.concat(false, keyCols, uniqCols);
 
         String colsLst = mkString(cols, ", ");

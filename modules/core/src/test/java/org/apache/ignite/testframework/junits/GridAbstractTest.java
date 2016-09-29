@@ -155,6 +155,12 @@ public abstract class GridAbstractTest extends TestCase {
     /** Starting grid name. */
     protected static final ThreadLocal<String> startingGrid = new ThreadLocal<>();
 
+    /** Force failure flag. */
+    private boolean forceFailure;
+
+    /** Force failure message. */
+    private String forceFailureMsg;
+
     /**
      *
      */
@@ -1525,10 +1531,18 @@ public abstract class GridAbstractTest extends TestCase {
 
     /**
      * @param gridName Grid name.
+     * @return {@code True} if the name of the grid indicates that it was the first started (on this JVM).
+     */
+    protected boolean isFirstGrid(String gridName) {
+        return "0".equals(gridName.substring(getTestGridName().length()));
+    }
+
+    /**
+     * @param gridName Grid name.
      * @return <code>True</code> if test was run in multi-JVM mode and grid with this name was started at another JVM.
      */
     protected boolean isRemoteJvm(String gridName) {
-        return isMultiJvm() && !"0".equals(gridName.substring(getTestGridName().length()));
+        return isMultiJvm() && !isFirstGrid(gridName);
     }
 
     /**
@@ -1753,11 +1767,25 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * Force test failure.
+     *
+     * @param msg Message.
+     */
+    public void forceFailure(@Nullable String msg) {
+        forceFailure = true;
+
+        forceFailureMsg = msg;
+    }
+
+    /**
      * @throws Throwable If failed.
      */
     @SuppressWarnings({"ProhibitedExceptionDeclared"})
     private void runTestInternal() throws Throwable {
-        super.runTest();
+        if (forceFailure)
+            fail("Forced failure: " + forceFailureMsg);
+        else
+            super.runTest();
     }
 
     /**

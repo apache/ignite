@@ -20,9 +20,9 @@ namespace Apache.Ignite.Core.Events
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Globalization;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Grid discovery event.
@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Events
         /// Constructor.
         /// </summary>
         /// <param name="r">The reader to read data from.</param>
-        internal DiscoveryEvent(IBinaryRawReader r) : base(r)
+        internal DiscoveryEvent(BinaryReader r) : base(r)
         {
             _eventNode = ReadNode(r);
             _topologyVersion = r.ReadLong();

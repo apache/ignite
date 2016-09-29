@@ -43,6 +43,9 @@
     <ClCompile Include="..\..\src\impl\interop\interop_target.cpp">
       <Filter>Code\impl\interop</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\impl\cache\query\query_batch.cpp">
+      <Filter>Code\impl\cache\query</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\impl\cache\query\continuous\continuous_query_handle_impl.cpp">
       <Filter>Code\impl\cache\query\continuous</Filter>
     </ClCompile>
@@ -140,6 +143,9 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\impl\interop\interop_target.h">
       <Filter>Code\impl\interop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\cache\query\query_batch.h">
+      <Filter>Code\impl\cache\query</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\cache\query\continuous\continuous_query_handle.h">
       <Filter>Code\cache\query\continuous</Filter>

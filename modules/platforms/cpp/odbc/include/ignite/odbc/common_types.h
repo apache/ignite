@@ -19,17 +19,15 @@
 #define _IGNITE_ODBC_COMMON_TYPES
 
 #include <stdint.h>
+#include "system/odbc_constants.h"
+
+#include <ignite/odbc/system/odbc_constants.h>
 
 namespace ignite
 {
     namespace odbc
     {
-
-#ifdef _WIN64
-        typedef long long SqlLen;
-#else
-        typedef long SqlLen;
-#endif
+        typedef SQLLEN SqlLen;
 
         /**
          * SQL result.
@@ -46,7 +44,10 @@ namespace ignite
             SQL_RESULT_ERROR,
 
             /** No more data. */
-            SQL_RESULT_NO_DATA
+            SQL_RESULT_NO_DATA,
+
+            /** No more data. */
+            SQL_RESULT_NEED_DATA
         };
 
         /**
@@ -60,6 +61,9 @@ namespace ignite
             /** Output data has been truncated. */
             SQL_STATE_01004_DATA_TRUNCATED,
 
+            /** Invalid connection string attribute. */
+            SQL_STATE_01S00_INVALID_CONNECTION_STRING_ATTRIBUTE,
+
             /** Error in row. */
             SQL_STATE_01S01_ERROR_IN_ROW,
 
@@ -69,8 +73,14 @@ namespace ignite
              */
             SQL_STATE_01S02_OPTION_VALUE_CHANGED,
 
+            /** String data, length mismatch. */
+            SQL_STATE_22026_DATA_LENGTH_MISMATCH,
+
             /** Invalid cursor state. */
             SQL_STATE_24000_INVALID_CURSOR_STATE,
+
+            /** Invalid descriptor index. */
+            SQL_STATE_07009_INVALID_DESCRIPTOR_INDEX,
 
             /**
              * The driver was unable to establish a connection with the data
@@ -99,6 +109,9 @@ namespace ignite
              * handle.
              */
             SQL_STATE_HY001_MEMORY_ALLOCATION,
+
+            /** Invalid use of null pointer. */
+            SQL_STATE_HY009_INVALID_USE_OF_NULL_POINTER,
 
             /** Function sequence error. */
             SQL_STATE_HY010_SEQUENCE_ERROR,

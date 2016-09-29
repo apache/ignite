@@ -130,7 +130,17 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
     /** {@inheritDoc} */
     @Override public BinaryType type() throws BinaryObjectException {
-        return ctx.metadata(typeId());
+        return BinaryUtils.typeProxy(ctx, this);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public BinaryType rawType() throws BinaryObjectException {
+        return BinaryUtils.type(ctx, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isFlagSet(short flag) {
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -198,7 +208,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
         BinaryType type;
 
         try {
-            type = type();
+            type = rawType();
         }
         catch (Exception e) {
             type = null;

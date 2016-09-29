@@ -436,6 +436,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var ex = Assert.Throws<IgniteException>(() => Services.DeployMultiple(SvcName, svc, Grids.Length, 1));
             Assert.AreEqual("Expected exception", ex.Message);
+            Assert.IsTrue(ex.InnerException.Message.Contains("PlatformCallbackUtils.serviceInit(Native Method)"));
 
             var svc0 = Services.GetService<TestIgniteServiceSerializable>(SvcName);
 
@@ -684,6 +685,7 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             foreach (var grid in Grids)
                 Assert.IsTrue(
+                    // ReSharper disable once AccessToForEachVariableInClosure
                     TestUtils.WaitForCondition(() => grid.GetServices()
                         .GetService<ITestIgniteService>(name) == null, 5000));
         }

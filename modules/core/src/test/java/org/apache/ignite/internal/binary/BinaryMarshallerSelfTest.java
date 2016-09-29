@@ -26,7 +26,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -90,12 +89,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.INSTANCE;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotEquals;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Binary marshaller tests.
@@ -1791,6 +1788,47 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testCustomTypeRegistration() throws Exception {
+        BinaryTypeConfiguration customType = new BinaryTypeConfiguration(Value.class.getName());
+
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(customType));
+
+        BinaryContext ctx = binaryContext(marsh);
+
+        int typeId = ctx.typeId(Value.class.getName());
+
+        BinaryClassDescriptor descriptor = ctx.descriptorForTypeId(true, typeId, null, false);
+
+        assertEquals(Value.class, descriptor.describedClass());
+        assertEquals(true, descriptor.registered());
+        assertEquals(true, descriptor.userType());
+
+        // Custom explicit types must be registered in 'predefinedTypes' in order not to break the interoperability.
+        Field field = ctx.getClass().getDeclaredField("predefinedTypes");
+
+        field.setAccessible(true);
+
+        Map<Integer, BinaryClassDescriptor> map = (Map<Integer, BinaryClassDescriptor>)field.get(ctx);
+
+        assertTrue(map.size() > 0);
+
+        assertNotNull(map.get(typeId));
+
+        // Custom explicit types must NOT be registered in 'predefinedTypeNames'.
+        field = ctx.getClass().getDeclaredField("predefinedTypeNames");
+
+        field.setAccessible(true);
+
+        Map<String, Integer> map2 = (Map<String, Integer>)field.get(ctx);
+
+        assertTrue(map2.size() > 0);
+
+        assertNull(map2.get(ctx.userTypeName(Value.class.getName())));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testFieldIdMapping() throws Exception {
         BinaryTypeConfiguration customType1 = new BinaryTypeConfiguration(Value.class.getName());
 
@@ -2360,7 +2398,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObjectImpl po = marshal(simpleObject(), marsh);
 
-        CacheObjectContext coCtx = new CacheObjectContext(newContext(), null, false, true, false);
+        CacheObjectContext coCtx = new CacheObjectContext(newContext(), null, null, false, true, false);
 
         assert po.value(coCtx, false) == po.value(coCtx, false);
 
@@ -2610,7 +2648,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     public void testDuplicateNameSimpleNameMapper() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller(new BinaryBasicNameMapper(true),
-            new BinaryBasicIdMapper(true), null, null);
+            new BinaryBasicIdMapper(true), null, null, null);
 
         Test1.Job job1 = new Test1().new Job();
         Test2.Job job2 = new Test2().new Job();
@@ -2634,7 +2672,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     public void testDuplicateNameFullNameMapper() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller(new BinaryBasicNameMapper(false),
-            new BinaryBasicIdMapper(false), null, null);
+            new BinaryBasicIdMapper(false), null, null, null);
 
         Test1.Job job1 = new Test1().new Job();
         Test2.Job job2 = new Test2().new Job();
@@ -2855,6 +2893,32 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         assertEquals(obj.xA(), deserialized.xA());
         assertEquals(obj.xB(), deserialized.xB());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSingleHandle() throws Exception {
+        SingleHandleA a = new SingleHandleA(new SingleHandleB());
+
+        BinaryObjectImpl bo = marshal(a, binaryMarshaller());
+
+        Map<String, BinaryObject> map = bo.field("map");
+
+        BinaryObject innerBo = map.get("key");
+
+        assertEquals(SingleHandleB.class, innerBo.deserialize().getClass());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testUnregisteredClass() throws Exception {
+        BinaryMarshaller m = binaryMarshaller(null, Collections.singletonList(Value.class.getName()));
+
+        ClassFieldObject res = m.unmarshal(m.marshal(new ClassFieldObject(Value.class)), null);
+
+        assertEquals(Value.class, res.cls);
     }
 
     /**
@@ -3174,9 +3238,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    protected BinaryMarshaller binaryMarshaller()
-        throws IgniteCheckedException {
-        return binaryMarshaller(null, null, null, null);
+    protected BinaryMarshaller binaryMarshaller() throws IgniteCheckedException {
+        return binaryMarshaller(null, null, null, null, null);
     }
 
     /**
@@ -3184,7 +3247,15 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     protected BinaryMarshaller binaryMarshaller(Collection<BinaryTypeConfiguration> cfgs)
         throws IgniteCheckedException {
-        return binaryMarshaller(null, null, null, cfgs);
+        return binaryMarshaller(null, null, null, cfgs, null);
+    }
+
+    /**
+     *
+     */
+    protected BinaryMarshaller binaryMarshaller(Collection<BinaryTypeConfiguration> cfgs,
+        Collection<String> excludedClasses) throws IgniteCheckedException {
+        return binaryMarshaller(null, null, null, cfgs, excludedClasses);
     }
 
     /**
@@ -3193,7 +3264,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     protected BinaryMarshaller binaryMarshaller(BinaryNameMapper nameMapper, BinaryIdMapper mapper,
         Collection<BinaryTypeConfiguration> cfgs)
         throws IgniteCheckedException {
-        return binaryMarshaller(nameMapper, mapper, null, cfgs);
+        return binaryMarshaller(nameMapper, mapper, null, cfgs, null);
     }
 
     /**
@@ -3201,7 +3272,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     protected BinaryMarshaller binaryMarshaller(BinarySerializer serializer, Collection<BinaryTypeConfiguration> cfgs)
         throws IgniteCheckedException {
-        return binaryMarshaller(null, null, serializer, cfgs);
+        return binaryMarshaller(null, null, serializer, cfgs, null);
     }
 
     /**
@@ -3211,7 +3282,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         BinaryNameMapper nameMapper,
         BinaryIdMapper mapper,
         BinarySerializer serializer,
-        Collection<BinaryTypeConfiguration> cfgs
+        Collection<BinaryTypeConfiguration> cfgs,
+        Collection<String> excludedClasses
     ) throws IgniteCheckedException {
         IgniteConfiguration iCfg = new IgniteConfiguration();
 
@@ -3230,7 +3302,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 
-        marsh.setContext(new MarshallerContextTestImpl(null));
+        marsh.setContext(new MarshallerContextTestImpl(null, excludedClasses));
 
         IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, iCfg);
 
@@ -4807,6 +4879,43 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
          */
         public Object getValue() {
             return value;
+        }
+    }
+
+    /**
+     */
+    private static class SingleHandleA {
+        /** */
+        private SingleHandleB b;
+
+        /** */
+        private Map<Object, SingleHandleB> map = new HashMap<>();
+
+        /**
+         * @param b B.
+         */
+        SingleHandleA(SingleHandleB b) {
+            this.b = b;
+
+            map.put("key", b);
+        }
+    }
+
+    /**
+     */
+    private static class SingleHandleB {}
+
+    /**
+     */
+    private static class ClassFieldObject {
+        /** */
+        private Class<?> cls;
+
+        /**
+         * @param cls Class field.
+         */
+        public ClassFieldObject(Class<?> cls) {
+            this.cls = cls;
         }
     }
 }

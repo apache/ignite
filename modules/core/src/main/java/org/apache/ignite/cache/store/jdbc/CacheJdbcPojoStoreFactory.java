@@ -111,7 +111,7 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
     public static final int DFLT_PARALLEL_LOAD_CACHE_MINIMUM_THRESHOLD = 512;
 
     /** Maximum batch size for writeAll and deleteAll operations. */
-    private int batchSizw = DFLT_BATCH_SIZE;
+    private int batchSize = DFLT_BATCH_SIZE;
 
     /** Name of data source bean. */
     private String dataSrcBean;
@@ -123,13 +123,16 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
     private int maxPoolSize = Runtime.getRuntime().availableProcessors();
 
     /** Maximum write attempts in case of database error. */
-    private int maxWriteAttempts = DFLT_WRITE_ATTEMPTS;
+    private int maxWrtAttempts = DFLT_WRITE_ATTEMPTS;
 
     /** Parallel load cache minimum threshold. If {@code 0} then load sequentially. */
     private int parallelLoadCacheMinThreshold = DFLT_PARALLEL_LOAD_CACHE_MINIMUM_THRESHOLD;
 
     /** Hash calculator.  */
     private JdbcTypeHasher hasher = JdbcTypeDefaultHasher.INSTANCE;
+
+    /** Types transformer.  */
+    private JdbcTypesTransformer transformer = JdbcTypesDefaultTransformer.INSTANCE;
 
     /** Types that store could process. */
     private JdbcType[] types;
@@ -140,6 +143,9 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
     /** Data source factory. */
     private Factory<DataSource> dataSrcFactory;
 
+    /** Flag indicating that table and field names should be escaped in all SQL queries created by JDBC POJO store. */
+    private boolean sqlEscapeAll;
+
     /** Application context. */
     @SpringApplicationContextResource
     private transient Object appCtx;
@@ -148,12 +154,15 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
     @Override public CacheJdbcPojoStore<K, V> create() {
         CacheJdbcPojoStore<K, V> store = new CacheJdbcPojoStore<>();
 
-        store.setBatchSize(batchSizw);
+        store.setBatchSize(batchSize);
         store.setDialect(dialect);
         store.setMaximumPoolSize(maxPoolSize);
-        store.setMaximumWriteAttempts(maxWriteAttempts);
+        store.setMaximumWriteAttempts(maxWrtAttempts);
         store.setParallelLoadCacheMinimumThreshold(parallelLoadCacheMinThreshold);
         store.setTypes(types);
+        store.setHasher(hasher);
+        store.setTransformer(transformer);
+        store.setSqlEscapeAll(sqlEscapeAll);
 
         if (dataSrc != null)
             store.setDataSource(dataSrc);
@@ -201,7 +210,7 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
      * @return Maximum batch size.
      */
     public int getBatchSize() {
-        return batchSizw;
+        return batchSize;
     }
 
     /**
@@ -211,7 +220,7 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
      * @return {@code This} for chaining.
      */
     public CacheJdbcPojoStoreFactory setBatchSize(int batchSize) {
-        this.batchSizw = batchSize;
+        this.batchSize = batchSize;
 
         return this;
     }
@@ -285,7 +294,7 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
      * @return Maximum number of write attempts.
      */
     public int getMaximumWriteAttempts() {
-        return maxWriteAttempts;
+        return maxWrtAttempts;
     }
 
     /**
@@ -295,7 +304,7 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
      * @return {@code This} for chaining.
      */
     public CacheJdbcPojoStoreFactory setMaximumWriteAttempts(int maxWrtAttempts) {
-        this.maxWriteAttempts = maxWrtAttempts;
+        this.maxWrtAttempts = maxWrtAttempts;
 
         return this;
     }
@@ -364,6 +373,27 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
     }
 
     /**
+     * Gets types transformer.
+     *
+     * @return Types transformer.
+     */
+    public JdbcTypesTransformer getTransformer() {
+        return transformer;
+    }
+
+    /**
+     * Sets types transformer.
+     *
+     * @param transformer Types transformer.
+     * @return {@code This} for chaining.
+     */
+    public CacheJdbcPojoStoreFactory setTransformer(JdbcTypesTransformer transformer) {
+        this.transformer = transformer;
+
+        return this;
+    }
+
+    /**
      * Gets factory for underlying datasource.
      *
      * @return Cache store factory.
@@ -382,6 +412,31 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
     @SuppressWarnings("unchecked")
     public CacheJdbcPojoStoreFactory<K, V> setDataSourceFactory(Factory<DataSource> dataSrcFactory) {
         this.dataSrcFactory = dataSrcFactory;
+
+        return this;
+    }
+
+    /**
+     * If {@code true} all the SQL table and field names will be escaped with double quotes like
+     * ({@code "tableName"."fieldsName"}). This enforces case sensitivity for field names and
+     * also allows having special characters in table and field names.
+     *
+     * @return Flag value.
+     */
+    public boolean isSqlEscapeAll() {
+        return sqlEscapeAll;
+    }
+
+    /**
+     * If {@code true} all the SQL table and field names will be escaped with double quotes like
+     * ({@code "tableName"."fieldsName"}). This enforces case sensitivity for field names and
+     * also allows having special characters in table and field names.
+     *
+     * @param sqlEscapeAll Flag value.
+     * @return {@code this} for chaining.
+     */
+    public CacheJdbcPojoStoreFactory<K, V> setSqlEscapeAll(boolean sqlEscapeAll) {
+        this.sqlEscapeAll = sqlEscapeAll;
 
         return this;
     }

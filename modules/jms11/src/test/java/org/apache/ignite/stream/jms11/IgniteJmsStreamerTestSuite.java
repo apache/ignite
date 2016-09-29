@@ -30,5 +30,5 @@ import org.junit.runners.*;
     IgniteJmsStreamerTest.class
 })
 public class IgniteJmsStreamerTestSuite {
-
+    // No-op.
 }

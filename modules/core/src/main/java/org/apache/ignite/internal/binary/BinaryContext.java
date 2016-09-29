@@ -17,30 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -70,9 +46,26 @@ import org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange;
 import org.apache.ignite.internal.processors.igfs.IgfsFileInfo;
 import org.apache.ignite.internal.processors.igfs.IgfsFileMap;
 import org.apache.ignite.internal.processors.igfs.IgfsListingEntry;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientAffinityCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientDeleteCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientExistsCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientInfoCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientListFilesCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientListPathsCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientMkdirsCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientRenameCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientSetTimesCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientSizeCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientSummaryCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientUpdateCallable;
+import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaIdsForPathCallable;
+import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaInfoForPathCallable;
+import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaUnlockCallable;
+import org.apache.ignite.internal.processors.igfs.data.IgfsDataPutProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryCreateProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingAddProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingRemoveProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingRenameProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingReplaceProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileCreateProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileLockProcessor;
@@ -83,16 +76,45 @@ import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileUnlockProcess
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdatePropertiesProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdateTimesProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformJavaObjectFactoryProxy;
-import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionData;
+import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionLockResult;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
+
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 /**
  * Binary context.
@@ -126,9 +148,12 @@ public class BinaryContext {
         sysClss.add(IgfsFileMap.class.getName());
         sysClss.add(IgfsListingEntry.class.getName());
 
+        sysClss.add(IgfsDataPutProcessor.class.getName());
+
         sysClss.add(IgfsMetaDirectoryCreateProcessor.class.getName());
         sysClss.add(IgfsMetaDirectoryListingAddProcessor.class.getName());
         sysClss.add(IgfsMetaDirectoryListingRemoveProcessor.class.getName());
+        sysClss.add(IgfsMetaDirectoryListingRenameProcessor.class.getName());
         sysClss.add(IgfsMetaDirectoryListingReplaceProcessor.class.getName());
         sysClss.add(IgfsMetaFileCreateProcessor.class.getName());
         sysClss.add(IgfsMetaFileLockProcessor.class.getName());
@@ -139,6 +164,23 @@ public class BinaryContext {
         sysClss.add(IgfsMetaUpdatePropertiesProcessor.class.getName());
         sysClss.add(IgfsMetaUpdateTimesProcessor.class.getName());
 
+        sysClss.add(IgfsClientMetaIdsForPathCallable.class.getName());
+        sysClss.add(IgfsClientMetaInfoForPathCallable.class.getName());
+        sysClss.add(IgfsClientMetaUnlockCallable.class.getName());
+
+        sysClss.add(IgfsClientAffinityCallable.class.getName());
+        sysClss.add(IgfsClientDeleteCallable.class.getName());
+        sysClss.add(IgfsClientExistsCallable.class.getName());
+        sysClss.add(IgfsClientInfoCallable.class.getName());
+        sysClss.add(IgfsClientListFilesCallable.class.getName());
+        sysClss.add(IgfsClientListPathsCallable.class.getName());
+        sysClss.add(IgfsClientMkdirsCallable.class.getName());
+        sysClss.add(IgfsClientRenameCallable.class.getName());
+        sysClss.add(IgfsClientSetTimesCallable.class.getName());
+        sysClss.add(IgfsClientSizeCallable.class.getName());
+        sysClss.add(IgfsClientSummaryCallable.class.getName());
+        sysClss.add(IgfsClientUpdateCallable.class.getName());
+
         // Closure processor classes.
         sysClss.add(GridClosureProcessor.C1V2.class.getName());
         sysClss.add(GridClosureProcessor.C1MLAV2.class.getName());
@@ -146,6 +188,11 @@ public class BinaryContext {
         sysClss.add(GridClosureProcessor.C2MLAV2.class.getName());
         sysClss.add(GridClosureProcessor.C4V2.class.getName());
         sysClss.add(GridClosureProcessor.C4MLAV2.class.getName());
+
+        if (BinaryUtils.wrapTrees()) {
+            sysClss.add(TreeMap.class.getName());
+            sysClss.add(TreeSet.class.getName());
+        }
 
         BINARYLIZABLE_SYS_CLSS = Collections.unmodifiableSet(sysClss);
     }
@@ -206,6 +253,8 @@ public class BinaryContext {
     public BinaryContext(BinaryMetadataHandler metaHnd, IgniteConfiguration igniteCfg, IgniteLogger log) {
         assert metaHnd != null;
         assert igniteCfg != null;
+
+        MarshallerUtils.setNodeName(optmMarsh, igniteCfg.getGridName());
 
         this.metaHnd = metaHnd;
         this.igniteCfg = igniteCfg;
@@ -274,6 +323,9 @@ public class BinaryContext {
         registerPredefinedType(BinaryMetadata.class, 0);
         registerPredefinedType(BinaryEnumObjectImpl.class, 0);
 
+        registerPredefinedType(PlatformDotNetSessionData.class, 0);
+        registerPredefinedType(PlatformDotNetSessionLockResult.class, 0);
+
         // IDs range [200..1000] is used by Ignite internal APIs.
     }
 
@@ -297,11 +349,16 @@ public class BinaryContext {
      * @param cls Class.
      * @return {@code True} if must be deserialized.
      */
+    @SuppressWarnings("SimplifiableIfStatement")
     public boolean mustDeserialize(Class cls) {
         BinaryClassDescriptor desc = descByCls.get(cls);
 
-        if (desc == null)
+        if (desc == null) {
+            if (BinaryUtils.wrapTrees() && (cls == TreeMap.class || cls == TreeSet.class))
+                return false;
+
             return marshCtx.isSystemType(cls.getName()) || serializerForClass(cls) == null;
+        }
         else
             return desc.useOptimizedMarshaller();
     }
@@ -1092,13 +1149,17 @@ public class BinaryContext {
                 mapper,
                 serializer,
                 true,
-                false
+                true
             );
 
             fieldsMeta = desc.fieldsMeta();
             schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
 
             descByCls.put(cls, desc);
+
+            // Registering in order to support the interoperability between Java, C++ and .Net.
+            // https://issues.apache.org/jira/browse/IGNITE-3455
+            predefinedTypes.put(id, desc);
         }
 
         metaHnd.addMeta(id, new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, schemas, isEnum).wrap(this));
@@ -1210,6 +1271,13 @@ public class BinaryContext {
         }
 
         return reg;
+    }
+
+    /**
+     * Unregister all binary schemas.
+     */
+    public void unregisterBinarySchemas() {
+        schemas = null;
     }
 
     /**

@@ -464,6 +464,10 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
     /** {@inheritDoc} */
     @Override public int partition(Object key) {
+        if (key == null)
+            throw new IllegalArgumentException("Null key is passed for a partition calculation. " +
+                "Make sure that an affinity key that is used is initialized properly.");
+
         return U.safeAbs(key.hashCode() % parts);
     }
 

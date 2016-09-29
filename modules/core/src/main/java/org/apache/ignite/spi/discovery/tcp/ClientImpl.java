@@ -64,6 +64,7 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
@@ -430,7 +431,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         try {
             sockWriter.sendMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt,
-                spi.marsh.marshal(evt)));
+                spi.marshaller().marshal(evt)));
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to marshal custom event: " + evt, e);
@@ -496,6 +497,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             Iterator<InetSocketAddress> it = addrs.iterator();
 
+            boolean wait = false;
+
             while (it.hasNext()) {
                 if (Thread.currentThread().isInterrupted())
                     throw new InterruptedException();
@@ -514,12 +517,17 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 Socket sock = sockAndRes.get1().socket();
 
+                if (log.isDebugEnabled())
+                    log.debug("Received response to join request [addr=" + addr + ", res=" + sockAndRes.get2() + ']');
+
                 switch (sockAndRes.get2()) {
                     case RES_OK:
                         return new T2<>(sockAndRes.get1(), sockAndRes.get3());
 
                     case RES_CONTINUE_JOIN:
                     case RES_WAIT:
+                        wait = true;
+
                         U.closeQuiet(sock);
 
                         break;
@@ -532,7 +540,16 @@ class ClientImpl extends TcpDiscoveryImpl {
                 }
             }
 
-            if (addrs.isEmpty()) {
+            if (wait) {
+                if (timeout > 0 && (U.currentTimeMillis() - startTime) > timeout)
+                    return null;
+
+                if (log.isDebugEnabled())
+                    log.debug("Will wait before retry join.");
+
+                Thread.sleep(2000);
+            }
+            else if (addrs.isEmpty()) {
                 if (timeout > 0 && (U.currentTimeMillis() - startTime) > timeout)
                     return null;
 
@@ -616,7 +633,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 spi.writeToSocket(sock, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
-                spi.stats.onMessageSent(msg, U.currentTimeMillis() - tstamp);
+                spi.stats.onMessageSent(msg, U.currentTimeMillis() - tstamp, 0);
 
                 if (log.isDebugEnabled())
                     log.debug("Message has been sent to address [msg=" + msg + ", addr=" + addr +
@@ -684,7 +701,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             Map<String, Object> attrs = new HashMap<>(node.getAttributes());
 
             attrs.put(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS,
-                spi.marsh.marshal(attrs.get(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS)));
+                spi.marshaller().marshal(attrs.get(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS)));
 
             node.setAttributes(attrs);
         }
@@ -885,7 +902,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         TcpDiscoveryAbstractMessage msg;
 
                         try {
-                            msg = spi.marsh.unmarshal(in, U.resolveClassLoader(spi.ignite().configuration()));
+                            msg = spi.marshaller().unmarshal(in, U.resolveClassLoader(spi.ignite().configuration()));
                         }
                         catch (IgniteCheckedException e) {
                             if (log.isDebugEnabled())
@@ -1115,7 +1132,12 @@ class ClientImpl extends TcpDiscoveryImpl {
                     }
                 }
                 catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to send message: " + msg, e);
+                    if (spi.getSpiContext().isStopping()) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to send message, node is stopping [msg=" + msg + ", err=" + e + ']');
+                    }
+                    else
+                        U.error(log, "Failed to send message: " + msg, e);
 
                     msg = null;
                 }
@@ -1210,7 +1232,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         List<TcpDiscoveryAbstractMessage> msgs = null;
 
                         while (!isInterrupted()) {
-                            TcpDiscoveryAbstractMessage msg = spi.marsh.unmarshal(in,
+                            TcpDiscoveryAbstractMessage msg = spi.marshaller().unmarshal(in,
                                 U.resolveClassLoader(spi.ignite().configuration()));
 
                             if (msg instanceof TcpDiscoveryClientReconnectMessage) {
@@ -1971,7 +1993,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     if (node != null && node.visible()) {
                         try {
-                            DiscoverySpiCustomMessage msgObj = msg.message(spi.marsh,
+                            DiscoverySpiCustomMessage msgObj = msg.message(spi.marshaller(),
                                 U.resolveClassLoader(spi.ignite().configuration()));
 
                             notifyDiscovery(EVT_DISCOVERY_CUSTOM_EVT, topVer, node, allVisibleNodes(), msgObj);
@@ -2018,15 +2040,19 @@ class ClientImpl extends TcpDiscoveryImpl {
             Map<Integer, CacheMetrics> cacheMetrics,
             long tstamp)
         {
+            boolean isLocDaemon = spi.locNode.isDaemon();
+
             assert nodeId != null;
             assert metrics != null;
-            assert cacheMetrics != null;
+            assert isLocDaemon || cacheMetrics != null;
 
             TcpDiscoveryNode node = nodeId.equals(getLocalNodeId()) ? locNode : rmtNodes.get(nodeId);
 
             if (node != null && node.visible()) {
                 node.setMetrics(metrics);
-                node.setCacheMetrics(cacheMetrics);
+
+                if (!isLocDaemon)
+                    node.setCacheMetrics(cacheMetrics);
 
                 node.lastUpdateTime(tstamp);
 

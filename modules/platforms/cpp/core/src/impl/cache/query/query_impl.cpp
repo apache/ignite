@@ -35,30 +35,41 @@ namespace ignite
                 /** Operation: get all entries. */
                 const int32_t OP_GET_ALL = 1;
 
+                /** Operation: get multiple entries. */
+                const int32_t OP_GET_BATCH = 2;
+
                 /** Operation: get single entry. */
                 const int32_t OP_GET_SINGLE = 3;
 
                 QueryCursorImpl::QueryCursorImpl(SharedPointer<IgniteEnvironment> env, jobject javaRef) :
-                    env(env), javaRef(javaRef), iterCalled(false), getAllCalled(false), hasNext(false)
+                    env(env),
+                    javaRef(javaRef),
+                    batch(0),
+                    endReached(false),
+                    iterCalled(false),
+                    getAllCalled(false)
                 {
                     // No-op.
                 }
 
                 QueryCursorImpl::~QueryCursorImpl()
                 {
-                    // 1. Close the cursor.
+                    // 1. Releasing memory.
+                    delete batch;
+
+                    // 2. Close the cursor.
                     env.Get()->Context()->QueryCursorClose(javaRef);
 
-                    // 2. Release Java reference.
+                    // 3. Release Java reference.
                     JniContext::Release(javaRef);
                 }
 
-                bool QueryCursorImpl::HasNext(IgniteError* err)
+                bool QueryCursorImpl::HasNext(IgniteError& err)
                 {
                     // Check whether GetAll() was called earlier.
                     if (getAllCalled) 
                     {
-                        *err = IgniteError(IgniteError::IGNITE_ERR_GENERIC, 
+                        err = IgniteError(IgniteError::IGNITE_ERR_GENERIC, 
                             "Cannot use HasNext() method because GetAll() was called.");
 
                         return false;
@@ -67,16 +78,21 @@ namespace ignite
                     // Create iterator in Java if needed.
                     if (!CreateIteratorIfNeeded(err))
                         return false;
-                    
-                    return hasNext;
+
+                    // Get next results batch if the end in the current batch
+                    // has been reached.
+                    if (!GetNextBatchIfNeeded(err))
+                        return false;
+
+                    return !endReached;
                 }
 
-                void QueryCursorImpl::GetNext(OutputOperation& op, IgniteError* err)
+                void QueryCursorImpl::GetNext(OutputOperation& op, IgniteError& err)
                 {
                     // Check whether GetAll() was called earlier.
                     if (getAllCalled) 
                     {
-                        *err = IgniteError(IgniteError::IGNITE_ERR_GENERIC, 
+                        err = IgniteError(IgniteError::IGNITE_ERR_GENERIC, 
                             "Cannot use GetNext() method because GetAll() was called.");
 
                         return;
@@ -86,75 +102,52 @@ namespace ignite
                     if (!CreateIteratorIfNeeded(err))
                         return;
 
-                    if (hasNext)
-                    {
-                        JniErrorInfo jniErr;
+                    // Get next results batch if the end in the current batch
+                    // has been reached.
+                    if (!GetNextBatchIfNeeded(err))
+                        return;
 
-                        SharedPointer<InteropMemory> inMem = env.Get()->AllocateMemory();
-                        
-                        env.Get()->Context()->TargetOutStream(
-                            javaRef, OP_GET_SINGLE, inMem.Get()->PointerLong(), &jniErr);
-
-                        IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
-
-                        if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
-                        {
-                            InteropInputStream in(inMem.Get());
-
-                            binary::BinaryReaderImpl reader(&in);
-
-                            op.ProcessOutput(reader);
-
-                            hasNext = IteratorHasNext(err);
-                        }
-                    }
-                    else
+                    if (endReached)
                     {
                         // Ensure we do not overwrite possible previous error.
-                        if (err->GetCode() == IgniteError::IGNITE_SUCCESS)
-                            *err = IgniteError(IgniteError::IGNITE_ERR_GENERIC, "No more elements available.");
+                        if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
+                            err = IgniteError(IgniteError::IGNITE_ERR_GENERIC, "No more elements available.");
+
+                        return;
                     }
+
+                    batch->GetNext(op);
                 }
 
-                QueryFieldsRowImpl* QueryCursorImpl::GetNextRow(IgniteError* err)
+                QueryFieldsRowImpl* QueryCursorImpl::GetNextRow(IgniteError& err)
                 {
                     // Create iterator in Java if needed.
                     if (!CreateIteratorIfNeeded(err))
-                        return NULL;
+                        return 0;
 
-                    if (hasNext)
-                    {
-                        JniErrorInfo jniErr;
+                    // Get next results batch if the end in the current batch
+                    // has been reached.
+                    if (!GetNextBatchIfNeeded(err))
+                        return 0;
 
-                        SharedPointer<InteropMemory> inMem = env.Get()->AllocateMemory();
-
-                        env.Get()->Context()->TargetOutStream(javaRef, OP_GET_SINGLE, inMem.Get()->PointerLong(), &jniErr);
-
-                        IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
-
-                        if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
-                        {
-                            hasNext = IteratorHasNext(err);
-
-                            return new QueryFieldsRowImpl(inMem);
-                        }
-                    }
-                    else
+                    if (endReached)
                     {
                         // Ensure we do not overwrite possible previous error.
-                        if (err->GetCode() == IgniteError::IGNITE_SUCCESS)
-                            *err = IgniteError(IgniteError::IGNITE_ERR_GENERIC, "No more elements available.");
+                        if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
+                            err = IgniteError(IgniteError::IGNITE_ERR_GENERIC, "No more elements available.");
+
+                        return 0;
                     }
 
-                    return NULL;
+                    return batch->GetNextRow();
                 }
 
-                void QueryCursorImpl::GetAll(OutputOperation& op, IgniteError* err)
+                void QueryCursorImpl::GetAll(OutputOperation& op, IgniteError& err)
                 {
                     // Check whether any of iterator methods were called.
                     if (iterCalled)
                     {
-                        *err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                        err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                             "Cannot use GetAll() method because an iteration method was called.");
 
                         return;
@@ -163,7 +156,7 @@ namespace ignite
                     // Check whether GetAll was called before.
                     if (getAllCalled)
                     {
-                        *err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                        err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                             "Cannot use GetNext() method because GetAll() was called.");
 
                         return;
@@ -176,7 +169,7 @@ namespace ignite
 
                     env.Get()->Context()->TargetOutStream(javaRef, OP_GET_ALL, inMem.Get()->PointerLong(), &jniErr);
 
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
 
                     if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
                     {
@@ -190,38 +183,71 @@ namespace ignite
                     }
                 }
 
-                bool QueryCursorImpl::CreateIteratorIfNeeded(IgniteError* err)
+                bool QueryCursorImpl::CreateIteratorIfNeeded(IgniteError& err)
                 {
-                    if (!iterCalled)
-                    {
-                        JniErrorInfo jniErr;
+                    if (iterCalled)
+                        return true;
 
-                        env.Get()->Context()->QueryCursorIterator(javaRef, &jniErr);
+                    JniErrorInfo jniErr;
 
-                        IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+                    env.Get()->Context()->QueryCursorIterator(javaRef, &jniErr);
 
-                        if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
-                        {
-                            iterCalled = true;
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
 
-                            hasNext = IteratorHasNext(err);
-                        }
-                        else
-                            return false;
-                    }
-                    
+                    if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
+                        iterCalled = true;
+
+                    return iterCalled;
+                }
+
+                bool QueryCursorImpl::GetNextBatchIfNeeded(IgniteError& err)
+                {
+                    assert(iterCalled);
+
+                    if (endReached || (batch && batch->Left() > 0))
+                        return true;
+
+                    endReached = !IteratorHasNext(err);
+
+                    if (endReached)
+                        return true;
+
+                    JniErrorInfo jniErr;
+
+                    SharedPointer<InteropMemory> inMem = env.Get()->AllocateMemory();
+
+                    env.Get()->Context()->TargetOutStream(
+                        javaRef, OP_GET_BATCH, inMem.Get()->PointerLong(), &jniErr);
+
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+
+                    if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
+                        return false;
+
+                    delete batch;
+
+                    // Needed for exception safety.
+                    batch = 0;
+
+                    batch = new QueryBatch(*env.Get(), inMem);
+
+                    endReached = batch->IsEmpty();
+
                     return true;
                 }
 
-                bool QueryCursorImpl::IteratorHasNext(IgniteError* err)
+                bool QueryCursorImpl::IteratorHasNext(IgniteError& err)
                 {
                     JniErrorInfo jniErr;
 
                     bool res = env.Get()->Context()->QueryCursorIteratorHasNext(javaRef, &jniErr);
 
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
 
-                    return jniErr.code == IGNITE_JNI_ERR_SUCCESS && res;
+                    if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
+                        return res;
+
+                    return false;
                 }
             }
         }

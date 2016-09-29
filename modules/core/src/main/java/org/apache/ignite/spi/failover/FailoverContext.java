@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.failover;
 
+import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
@@ -58,12 +59,22 @@ public interface FailoverContext {
     public ClusterNode getBalancedNode(List<ClusterNode> top) throws IgniteException;
 
     /**
-     * Gets affinity key for {@link IgniteCompute#affinityRun(String, Object, IgniteRunnable)}
-     * and {@link IgniteCompute#affinityCall(String, Object, IgniteCallable)}.
+     * Gets affinity key for {@link IgniteCompute#affinityRun(String, Object, IgniteRunnable)},
+     * {@link IgniteCompute#affinityRun(Collection, Object, IgniteRunnable)},
+     * {@link IgniteCompute#affinityCall(String, Object, IgniteCallable)}
+     * and {@link IgniteCompute#affinityCall(Collection, Object, IgniteCallable)}.
      *
      * @return Affinity key.
      */
     @Nullable public Object affinityKey();
+
+    /**
+     * Gets partition for {@link IgniteCompute#affinityRun(Collection, int, IgniteRunnable)}
+     * and {@link IgniteCompute#affinityCall(Collection, int, IgniteCallable)}.
+     *
+     * @return Partition number.
+     */
+    public int partition();
 
     /**
      * Returns affinity cache name {@link IgniteCompute#affinityRun(String, Object, IgniteRunnable)}

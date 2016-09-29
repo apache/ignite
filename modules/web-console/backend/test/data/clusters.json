@@ -1,0 +1,54 @@
+[
+  {
+    "_id" : "000000000000000000000001",
+    "space": "000000000000000000000001",
+    "name": "cluster-igfs",
+    "connector": {
+      "noDelay": true
+    },
+    "communication": {
+      "tcpNoDelay": true
+    },
+    "igfss": ["000000000000000000000001"],
+    "caches": ["000000000000000000000001", "000000000000000000000002"],
+    "binaryConfiguration": {
+      "compactFooter": true,
+      "typeConfigurations": []
+    },
+    "discovery": {
+      "kind": "Multicast",
+      "Multicast": {
+        "addresses": ["127.0.0.1:47500..47510"]
+      },
+      "Vm": {
+        "addresses": ["127.0.0.1:47500..47510"]
+      }
+    }
+  },
+  {
+    "_id" : "000000000000000000000002",
+    "space": "000000000000000000000001",
+    "name": "cluster-caches",
+    "connector": {
+      "noDelay": true
+    },
+    "communication": {
+      "tcpNoDelay": true
+    },
+    "igfss": [],
+    "caches": ["000000000000000000000001", "000000000000000000000002", "000000000000000000000003", "000000000000000000000004", "000000000000000000000005"],
+    "binaryConfiguration": {
+      "compactFooter": true,
+      "typeConfigurations": []
+    },
+    "discovery": {
+      "kind": "Multicast",
+      "Multicast": {
+        "addresses": ["127.0.0.1:47500..47510"]
+      },
+      "Vm": {
+        "addresses": ["127.0.0.1:47500..47510"]
+      }
+    }
+  }
+]

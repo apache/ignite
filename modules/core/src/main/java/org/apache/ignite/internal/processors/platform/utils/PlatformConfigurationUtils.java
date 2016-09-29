@@ -42,10 +42,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.*;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
-import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
-import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
-import org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactoryNative;
-import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
+import org.apache.ignite.platform.dotnet.*;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiMBean;
@@ -238,32 +235,39 @@ public class PlatformConfigurationUtils {
      * @param in Stream.
      * @return Affinity function.
      */
-    private static AffinityFunction readAffinityFunction(BinaryRawReaderEx in) {
+    public static PlatformAffinityFunction readAffinityFunction(BinaryRawReaderEx in) {
         byte plcTyp = in.readByte();
 
+        if (plcTyp == 0)
+            return null;
+
+        int partitions = in.readInt();
+        boolean exclNeighbours = in.readBoolean();
+        byte overrideFlags = in.readByte();
+        Object userFunc = in.readObjectDetached();
+
+        AffinityFunction baseFunc = null;
+
         switch (plcTyp) {
-            case 0:
-                break;
             case 1: {
                 FairAffinityFunction f = new FairAffinityFunction();
-                f.setPartitions(in.readInt());
-                f.setExcludeNeighbors(in.readBoolean());
-                return f;
+                f.setPartitions(partitions);
+                f.setExcludeNeighbors(exclNeighbours);
+                baseFunc = f;
+                break;
             }
             case 2: {
                 RendezvousAffinityFunction f = new RendezvousAffinityFunction();
-                f.setPartitions(in.readInt());
-                f.setExcludeNeighbors(in.readBoolean());
-                return f;
-            }
-            case 3: {
-                return new PlatformAffinityFunction(in.readObjectDetached(), in.readInt());
+                f.setPartitions(partitions);
+                f.setExcludeNeighbors(exclNeighbours);
+                baseFunc = f;
+                break;
             }
             default:
-                assert false;
+                assert plcTyp == 3;
         }
 
-        return null;
+        return new PlatformAffinityFunction(userFunc, partitions, overrideFlags, baseFunc);
     }
 
     /**
@@ -281,34 +285,56 @@ public class PlatformConfigurationUtils {
     }
 
     /**
-     * Writes the eviction policy.
+     * Writes the affinity functions.
+     *
      * @param out Stream.
      * @param f Affinity.
      */
     private static void writeAffinityFunction(BinaryRawWriter out, AffinityFunction f) {
+        if (f instanceof PlatformDotNetAffinityFunction)
+            f = ((PlatformDotNetAffinityFunction)f).getFunc();
+
         if (f instanceof FairAffinityFunction) {
-            out.writeByte((byte)1);
+            out.writeByte((byte) 1);
 
-            FairAffinityFunction f0 = (FairAffinityFunction)f;
+            FairAffinityFunction f0 = (FairAffinityFunction) f;
             out.writeInt(f0.getPartitions());
             out.writeBoolean(f0.isExcludeNeighbors());
-        }
-        else if (f instanceof RendezvousAffinityFunction) {
-            out.writeByte((byte)2);
+            out.writeByte((byte) 0);  // override flags
+            out.writeObject(null);  // user func
+        } else if (f instanceof RendezvousAffinityFunction) {
+            out.writeByte((byte) 2);
 
-            RendezvousAffinityFunction f0 = (RendezvousAffinityFunction)f;
+            RendezvousAffinityFunction f0 = (RendezvousAffinityFunction) f;
             out.writeInt(f0.getPartitions());
             out.writeBoolean(f0.isExcludeNeighbors());
-        }
-        else if (f instanceof PlatformAffinityFunction) {
-            out.writeByte((byte)3);
+            out.writeByte((byte) 0);  // override flags
+            out.writeObject(null);  // user func
+        } else if (f instanceof PlatformAffinityFunction) {
+            PlatformAffinityFunction f0 = (PlatformAffinityFunction) f;
+            AffinityFunction baseFunc = f0.getBaseFunc();
 
-            PlatformAffinityFunction f0 = (PlatformAffinityFunction)f;
-            out.writeObject(f0.getUserFunc());
-            out.writeInt(f.partitions());
-        }
-        else {
-            out.writeByte((byte)0);
+            if (baseFunc instanceof FairAffinityFunction) {
+                out.writeByte((byte) 1);
+                out.writeInt(f0.partitions());
+                out.writeBoolean(((FairAffinityFunction) baseFunc).isExcludeNeighbors());
+                out.writeByte(f0.getOverrideFlags());
+                out.writeObject(f0.getUserFunc());
+            } else if (baseFunc instanceof RendezvousAffinityFunction) {
+                out.writeByte((byte) 2);
+                out.writeInt(f0.partitions());
+                out.writeBoolean(((RendezvousAffinityFunction) baseFunc).isExcludeNeighbors());
+                out.writeByte(f0.getOverrideFlags());
+                out.writeObject(f0.getUserFunc());
+            } else {
+                out.writeByte((byte) 3);
+                out.writeInt(f0.partitions());
+                out.writeBoolean(false);  // exclude neighbors
+                out.writeByte(f0.getOverrideFlags());
+                out.writeObject(f0.getUserFunc());
+            }
+        } else {
+            out.writeByte((byte) 0);
         }
     }
 
@@ -317,6 +343,7 @@ public class PlatformConfigurationUtils {
      * @param out Stream.
      * @param p Policy.
      */
+    @SuppressWarnings("TypeMayBeWeakened")
     private static void writeEvictionPolicy(BinaryRawWriter out, EvictionPolicy p) {
         if (p instanceof FifoEvictionPolicy) {
             out.writeByte((byte)1);
@@ -628,12 +655,10 @@ public class PlatformConfigurationUtils {
         assert writer != null;
         assert ccfg != null;
 
-        writer.writeInt(ccfg.getAtomicityMode() == null ?
-            CacheConfiguration.DFLT_CACHE_ATOMICITY_MODE.ordinal() : ccfg.getAtomicityMode().ordinal());
-        writer.writeInt(ccfg.getAtomicWriteOrderMode() == null ? 0 : ccfg.getAtomicWriteOrderMode().ordinal());
+        writeEnumInt(writer, ccfg.getAtomicityMode(), CacheConfiguration.DFLT_CACHE_ATOMICITY_MODE);
+        writeEnumInt(writer, ccfg.getAtomicWriteOrderMode());
         writer.writeInt(ccfg.getBackups());
-        writer.writeInt(ccfg.getCacheMode() == null ?
-            CacheConfiguration.DFLT_CACHE_MODE.ordinal() : ccfg.getCacheMode().ordinal());
+        writeEnumInt(writer, ccfg.getCacheMode(), CacheConfiguration.DFLT_CACHE_MODE);
         writer.writeBoolean(ccfg.isCopyOnRead());
         writer.writeBoolean(ccfg.isEagerTtl());
         writer.writeBoolean(ccfg.isSwapEnabled());
@@ -648,15 +673,13 @@ public class PlatformConfigurationUtils {
         writer.writeLong(ccfg.getLongQueryWarningTimeout());
         writer.writeInt(ccfg.getMaxConcurrentAsyncOperations());
         writer.writeFloat(ccfg.getEvictMaxOverflowRatio());
-        writer.writeInt(ccfg.getMemoryMode() == null ?
-            CacheConfiguration.DFLT_MEMORY_MODE.ordinal() : ccfg.getMemoryMode().ordinal());
+        writeEnumInt(writer, ccfg.getMemoryMode(), CacheConfiguration.DFLT_MEMORY_MODE);
         writer.writeString(ccfg.getName());
         writer.writeLong(ccfg.getOffHeapMaxMemory());
         writer.writeBoolean(ccfg.isReadFromBackup());
         writer.writeInt(ccfg.getRebalanceBatchSize());
         writer.writeLong(ccfg.getRebalanceDelay());
-        writer.writeInt(ccfg.getRebalanceMode() == null ?
-            CacheConfiguration.DFLT_REBALANCE_MODE.ordinal() : ccfg.getRebalanceMode().ordinal());
+        writeEnumInt(writer, ccfg.getRebalanceMode(), CacheConfiguration.DFLT_REBALANCE_MODE);
         writer.writeLong(ccfg.getRebalanceThrottle());
         writer.writeLong(ccfg.getRebalanceTimeout());
         writer.writeBoolean(ccfg.isSqlEscapeAll());
@@ -667,7 +690,7 @@ public class PlatformConfigurationUtils {
         writer.writeLong(ccfg.getWriteBehindFlushFrequency());
         writer.writeInt(ccfg.getWriteBehindFlushSize());
         writer.writeInt(ccfg.getWriteBehindFlushThreadCount());
-        writer.writeInt(ccfg.getWriteSynchronizationMode() == null ? 0 : ccfg.getWriteSynchronizationMode().ordinal());
+        writeEnumInt(writer, ccfg.getWriteSynchronizationMode());
         writer.writeBoolean(ccfg.isReadThrough());
         writer.writeBoolean(ccfg.isWriteThrough());
 
@@ -764,7 +787,7 @@ public class PlatformConfigurationUtils {
         assert index != null;
 
         writer.writeString(index.getName());
-        writer.writeByte((byte)index.getIndexType().ordinal());
+        writeEnumByte(writer, index.getIndexType());
 
         LinkedHashMap<String, Boolean> fields = index.getFields();
 
@@ -870,7 +893,7 @@ public class PlatformConfigurationUtils {
 
             w.writeInt(atomic.getAtomicSequenceReserveSize());
             w.writeInt(atomic.getBackups());
-            w.writeInt(atomic.getCacheMode().ordinal());
+            writeEnumInt(w, atomic.getCacheMode(), AtomicConfiguration.DFLT_CACHE_MODE);
         }
         else
             w.writeBoolean(false);
@@ -881,8 +904,8 @@ public class PlatformConfigurationUtils {
             w.writeBoolean(true);
 
             w.writeInt(tx.getPessimisticTxLogSize());
-            w.writeInt(tx.getDefaultTxConcurrency().ordinal());
-            w.writeInt(tx.getDefaultTxIsolation().ordinal());
+            writeEnumInt(w, tx.getDefaultTxConcurrency(), TransactionConfiguration.DFLT_TX_CONCURRENCY);
+            writeEnumInt(w, tx.getDefaultTxIsolation(), TransactionConfiguration.DFLT_TX_ISOLATION);
             w.writeLong(tx.getDefaultTxTimeout());
             w.writeInt(tx.getPessimisticTxLogLinger());
         }
@@ -969,6 +992,38 @@ public class PlatformConfigurationUtils {
         w.writeInt(tcp.getThreadPriority());
         w.writeLong(tcp.getHeartbeatFrequency());
         w.writeInt((int)tcp.getTopHistorySize());
+    }
+
+    /**
+     * Writes enum as byte.
+     *
+     * @param w Writer.
+     * @param e Enum.
+     */
+    private static void writeEnumByte(BinaryRawWriter w, Enum e) {
+        w.writeByte(e == null ? 0 : (byte)e.ordinal());
+    }
+
+    /**
+     * Writes enum as int.
+     *
+     * @param w Writer.
+     * @param e Enum.
+     */
+    private static void writeEnumInt(BinaryRawWriter w, Enum e) {
+        w.writeInt(e == null ? 0 : e.ordinal());
+    }
+
+    /**
+     * Writes enum as int.
+     *
+     * @param w Writer.
+     * @param e Enum.
+     */
+    private static void writeEnumInt(BinaryRawWriter w, Enum e, Enum def) {
+        assert def != null;
+
+        w.writeInt(e == null ? def.ordinal() : e.ordinal());
     }
 
     /**
