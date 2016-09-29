@@ -118,7 +118,7 @@ class IgfsOutputStreamProxyImpl extends IgfsAbstractOutputStream {
     }
 
     /** {@inheritDoc} */
-    @Override protected void send(Object data, int writeLen) throws IOException {
+    @Override protected void send(final Object data, final int writeLen) throws IOException {
         assert Thread.holdsLock(mux);
         assert data instanceof ByteBuffer || data instanceof DataInput;
 
@@ -126,7 +126,7 @@ class IgfsOutputStreamProxyImpl extends IgfsAbstractOutputStream {
             // Increment metrics.
             bytes += writeLen;
 
-            byte [] dataBuf = new byte[writeLen];
+            byte[] dataBuf = new byte[writeLen];
 
             if (data instanceof ByteBuffer) {
                 ByteBuffer byteBuf = (ByteBuffer)data;
@@ -147,8 +147,11 @@ class IgfsOutputStreamProxyImpl extends IgfsAbstractOutputStream {
             if (!batch.write(dataBuf))
                 throw new IgniteCheckedException("Cannot write more data to the secondary file system output " +
                     "stream because it was marked as closed: " + batch.path());
-            else
-                igfsCtx.metrics().addWriteBlocks(1, 1);
+            else {
+                int blocks = writeLen / info.blockSize();
+
+                igfsCtx.metrics().addWriteBlocks(blocks, blocks);
+            }
 
         }
         catch (IgniteCheckedException e) {

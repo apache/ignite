@@ -156,14 +156,15 @@ public abstract class Hadoop1DualAbstractTest extends IgfsDualAbstractSelfTest {
         }
     }
 
-    /**
-     * Checks block metrics.
-     *
-     * @throws Exception
-     */
-    public final void testMetricsBlock() throws Exception {
-        assert dual;
-
-        IgfsMetricsTestUtils.testBlockMetrics0(igfs, igfsSecondaryFileSystem, null, true);
-    }
+    // Try to use super method (?).
+//    /**
+//     * Checks block metrics.
+//     *
+//     * @throws Exception
+//     */
+//    public final void testMetricsBlock() throws Exception {
+//        assert dual;
+//
+//        IgfsMetricsTestUtils.testBlockMetrics0(igfs, igfsSecondaryFileSystem, null, true);
+//    }
 }

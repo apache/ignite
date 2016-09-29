@@ -2549,6 +2549,15 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
     }
 
     /**
+     * If it is PROXY mode.
+     *
+     * @return {@code true} if it is PROXY mode.
+     */
+    protected final boolean isProxy() {
+        return mode == PROXY;
+    }
+
+    /**
      * Checks #localSpaceSize() and #secondarySpaceSize() Metrics methods.
      *
      * @throws Exception If failed.
@@ -2567,21 +2576,16 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
         IgfsMetrics m = fs.metrics();
 
-        // TODO: NB: This assertion fails for OFFHEAP_TIRED mode,
-        // TODO: see https://issues.apache.org/jira/browse/IGNITE-304.
-        long locSize = m.localSpaceSize();
+        assertTrue(m.localSpaceSize() >= 0);
 
-        assertTrue("https://issues.apache.org/jira/browse/IGNITE-304: " + locSize, locSize >= 0);
-
-        if (dual)
-            //assertTrue(m.secondarySpaceSize() > 0);
+        if (dual || isProxy())
             assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
                     return fs.metrics().secondarySpaceSize() > 0;
                 }
             }, 1000L));
         else
-            assertEquals(0, m.secondarySpaceSize());
+            assertEquals(0, m.secondarySpaceSize()); // *****
 
         try (IgfsOutputStream os = fs.create(new IgfsPath("/file2"), 128, true/*overwrite*/, null, 0, 256, null)) {
             os.write(chunk);
@@ -2599,7 +2603,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
         assertTrue(m.localSpaceSize() >= 0);
 
-        if (dual)
+        if (dual || isProxy())
             assertTrue(m.secondarySpaceSize() > 0);
         else
             assertEquals(0, m.secondarySpaceSize());
@@ -2655,7 +2659,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         assertEquals(0, m.filesOpenedForRead());
         assertEquals(0, m.filesOpenedForWrite());
 
-        assertTrue(m.maxSpaceSize() > 0);
+        assertTrue(m.maxSpaceSize() >= 0);
 
         // Sizes are updated asynchronously, so we need to wait
         // this to change:
@@ -2677,10 +2681,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception
      */
-    public void testMetricsBlock() throws Exception {
-        IgfsEx secIgfsEx = dual ? igfsSecondary.igfs() : null;
+    public final void testMetricsBlock() throws Exception {
+        IgfsEx secIgfsEx = (dual || isProxy()) ? igfsSecondary.igfs() : null;
 
-        IgfsMetricsTestUtils.testBlockMetrics0(igfs, igfsSecondaryFileSystem, (IgfsImpl)secIgfsEx, dual);
+        IgfsMetricsTestUtils.testBlockMetrics0(igfs, igfsSecondaryFileSystem, (IgfsImpl)secIgfsEx, dual, isProxy());
     }
 
     /**
@@ -2689,7 +2693,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception
      */
     public void testMetricsBasic() throws Exception {
-        IgfsMetricsTestUtils.testMetrics0(igfs);
+        IgfsMetricsTestUtils.testMetrics0(igfs, igfsSecondary);
     }
 
     /**

@@ -40,6 +40,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
 import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
+import static org.apache.ignite.igfs.IgfsMode.PROXY;
 
 /**
  * Test for IGFS metrics.
@@ -225,7 +226,8 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testMetrics() throws Exception {
-        IgfsMetricsTestUtils.testMetrics0(igfsPrimary[0]);
+        IgfsMetricsTestUtils.testMetrics0(igfsPrimary[0],
+            new DefaultIgfsSecondaryFileSystemTestAdapter(igfsSecondary));
     }
 
     /** @throws Exception If failed. */
@@ -240,7 +242,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
      */
     @SuppressWarnings({"ResultOfMethodCallIgnored", "ConstantConditions"})
     public void testBlockMetrics() throws Exception {
-        IgfsMetricsTestUtils.testBlockMetrics0((IgfsEx)igfsPrimary[0], secFileSys, igfsSecondary,
-            igfsSecondary != null);
+        IgfsMetricsTestUtils.testBlockMetrics0((IgfsEx)igfsPrimary[0], secFileSys, igfsSecondary, igfsSecondary !=
+            null, false);
     }
 }

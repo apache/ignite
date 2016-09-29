@@ -93,10 +93,10 @@ public class IgfsInputStreamImpl extends IgfsInputStream implements IgfsSecondar
     private boolean closed;
 
     /** Number of blocks to prefetch asynchronously. */
-    private int prefetchBlocks;
+    private final int prefetchBlocks;
 
     /** Numbed of blocks that must be read sequentially before prefetch is triggered. */
-    private int seqReadsBeforePrefetch;
+    private final int seqReadsBeforePrefetch;
 
     /** Bytes read. */
     private long bytes;
@@ -572,7 +572,10 @@ public class IgfsInputStreamImpl extends IgfsInputStream implements IgfsSecondar
      */
     @Nullable protected IgniteInternalFuture<byte[]> dataBlock(final long blockIdx)
         throws IgniteCheckedException {
+
         if (proxy) {
+            System.out.println("###### In Stream impl: proxy blk idx: " + blockIdx);
+
             assert secReader != null;
 
             final GridFutureAdapter<byte[]> fut = new GridFutureAdapter<>();
