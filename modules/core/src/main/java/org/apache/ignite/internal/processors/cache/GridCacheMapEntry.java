@@ -157,8 +157,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /**
      * Flags:
      * <ul>
-     * <li>Deleted flag - mask {@link #IS_DELETED_MASK}</li>
-     * <li>Unswapped flag - mask {@link #IS_UNSWAPPED_MASK}</li>
+     *     <li>Deleted flag - mask {@link #IS_DELETED_MASK}</li>
+     *     <li>Unswapped flag - mask {@link #IS_UNSWAPPED_MASK}</li>
      * </ul>
      */
     @GridToStringInclude
@@ -742,8 +742,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      */
     @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable protected Object readThrough(@Nullable IgniteInternalTx tx, KeyCacheObject key, boolean reload,
-        UUID subjId,
-        String taskName) throws IgniteCheckedException {
+        UUID subjId, String taskName) throws IgniteCheckedException {
         return cctx.store().load(tx, key);
     }
 
@@ -3091,7 +3090,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         long oldExpireTime = expireTimeExtras();
 
-        if (addTracked && oldExpireTime != 0 && (expireTime != oldExpireTime || isStartVersion()) && cctx.config().isEagerTtl())
+        if (addTracked && oldExpireTime != 0 && (expireTime != oldExpireTime || isStartVersion())
+            && cctx.config().isEagerTtl())
             cctx.ttl().removeTrackedEntry(this);
 
         value(val);
@@ -3100,7 +3100,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         this.ver = ver;
 
-        if (addTracked && expireTime != 0 && (expireTime != oldExpireTime || isStartVersion()) && cctx.config().isEagerTtl())
+        if (addTracked && expireTime != 0 && (expireTime != oldExpireTime || isStartVersion())
+            && cctx.config().isEagerTtl())
             cctx.ttl().addTrackedEntry(this);
     }
 
@@ -4201,10 +4202,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             }
                         }
                         else {
-                            synchronized (this) {
-                                if (this.expireTimeUnlocked() > 0)
-                                    cctx.ttl().removeTrackedEntry(this);
-                            }
+                            if (this.expireTimeUnlocked() > 0)
+                                cctx.ttl().removeTrackedEntry(this);
 
                             clearIndex(prev);
                         }
@@ -4261,10 +4260,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                                 }
                             }
                             else {
-                                synchronized (this) {
-                                    if (this.expireTimeUnlocked() > 0)
-                                        cctx.ttl().removeTrackedEntry(this);
-                                }
+                                if (this.expireTimeUnlocked() > 0)
+                                    cctx.ttl().removeTrackedEntry(this);
 
                                 clearIndex(prevVal);
                             }
@@ -4285,18 +4282,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
             }
         }
-        catch (
-            GridCacheEntryRemovedException ignore)
-
-        {
+        catch (GridCacheEntryRemovedException ignore) {
             if (log.isDebugEnabled())
                 log.debug("Got removed entry when evicting (will simply return): " + this);
 
             return true;
         }
-        finally
-
-        {
+        finally {
             if (marked)
                 onMarkedObsolete();
         }
