@@ -48,6 +48,8 @@ public:
     LivenessMarker& operator=(const LivenessMarker& other)
     {
         flag = other.flag;
+
+        return *this;
     }
 
     ~LivenessMarker()
@@ -79,6 +81,8 @@ public:
         counter = other.counter;
 
         ++(*counter);
+
+        return *this;
     }
 
     ~InstanceCounter()
@@ -218,23 +222,6 @@ BOOST_AUTO_TEST_CASE(BoostSharedPointerTestAfter)
     BOOST_CHECK(!objAlive);
 }
 
-BOOST_AUTO_TEST_CASE(BoostUniquePointerTest)
-{
-    bool objAlive = false;
-
-    boost::interprocess::unique_ptr<LivenessMarker> unique(new LivenessMarker(objAlive));
-
-    BOOST_CHECK(objAlive);
-
-    {
-        AnyReference<LivenessMarker> smart = PassSmartPointer(boost::move(unique));
-
-        BOOST_CHECK(objAlive);
-    }
-
-    BOOST_CHECK(!objAlive);
-}
-
 BOOST_AUTO_TEST_CASE(PassingToFunction)
 {
     bool objAlive = false;
@@ -243,14 +230,12 @@ BOOST_AUTO_TEST_CASE(PassingToFunction)
     std::unique_ptr<LivenessMarker> stdUnique(new LivenessMarker(objAlive));
     std::auto_ptr<LivenessMarker> stdAuto(new LivenessMarker(objAlive));
 
-    boost::interprocess::unique_ptr<LivenessMarker> boostUnique(new LivenessMarker(objAlive));
     boost::shared_ptr<LivenessMarker> boostShared = boost::make_shared<LivenessMarker>(objAlive);
 
     TestFunction(PassSmartPointer(stdShared));
     TestFunction(PassSmartPointer(std::move(stdUnique)));
     TestFunction(PassSmartPointer(stdAuto));
 
-    TestFunction(PassSmartPointer(boost::move(boostUnique)));
     TestFunction(PassSmartPointer(boostShared));
 }
 
