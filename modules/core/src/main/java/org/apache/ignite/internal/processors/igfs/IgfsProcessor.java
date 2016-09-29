@@ -311,8 +311,9 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             if (GridQueryProcessor.isEnabled(dataCacheCfg))
                 throw new IgniteCheckedException("IGFS data cache cannot start with enabled query indexing.");
 
-            if (dataCacheCfg.getAtomicityMode() != TRANSACTIONAL)
-                throw new IgniteCheckedException("Data cache should be transactional: " + cfg.getDataCacheName());
+            if (dataCacheCfg.getAtomicityMode() != TRANSACTIONAL && cfg.isFragmentizerEnabled())
+                throw new IgniteCheckedException("Data cache should be transactional: " + cfg.getDataCacheName() +
+                    " when fragmentizer is enabled");
 
             if (metaCacheCfg == null)
                 throw new IgniteCheckedException("Metadata cache is not configured locally for IGFS: " + cfg);
@@ -442,6 +443,18 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             }
     }
 
+    /**
+     * Check IGFS property equality on local and remote nodes.
+     *
+     * @param name Property human readable name.
+     * @param propName Property name/
+     * @param rmtNodeId Remote node ID.
+     * @param rmtVal Remote value.
+     * @param locVal Local value.
+     * @param igfsName IGFS name.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
     private void checkSame(String name, String propName, UUID rmtNodeId, Object rmtVal, Object locVal, String igfsName)
         throws IgniteCheckedException {
         if (!F.eq(rmtVal, locVal))

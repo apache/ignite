@@ -17,19 +17,12 @@
 
 package org.apache.ignite.hadoop.fs;
 
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.security.PrivilegedExceptionAction;
 
 /**
  * Secure Hadoop file system factory that can work with underlying file system protected with Kerberos.
@@ -57,33 +50,11 @@ public class KerberosHadoopFileSystemFactory extends BasicHadoopFileSystemFactor
     /** The re-login interval. See {@link #getReloginInterval()} for more information. */
     private long reloginInterval = DFLT_RELOGIN_INTERVAL;
 
-    /** Time of last re-login attempt, in system milliseconds. */
-    private transient volatile long lastReloginTime;
-
     /**
      * Constructor.
      */
     public KerberosHadoopFileSystemFactory() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public FileSystem getWithMappedName(String name) throws IOException {
-        reloginIfNeeded();
-
-        return super.getWithMappedName(name);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected FileSystem create(String usrName) throws IOException, InterruptedException {
-        UserGroupInformation proxyUgi = UserGroupInformation.createProxyUser(usrName,
-            UserGroupInformation.getLoginUser());
-
-        return proxyUgi.doAs(new PrivilegedExceptionAction<FileSystem>() {
-            @Override public FileSystem run() throws Exception {
-                return FileSystem.get(fullUri, cfg);
-            }
-        });
     }
 
     /**
@@ -106,9 +77,6 @@ public class KerberosHadoopFileSystemFactory extends BasicHadoopFileSystemFactor
 
     /**
      * Gets the key tab full file name (e.g. "/etc/security/keytabs/hdfs.headless.keytab" or "/etc/krb5.keytab").
-     * <p>
-     * <b>NOTE!</b> Factory can be serialized and transferred to other machines where instance of
-     * {@link IgniteHadoopFileSystem} resides. Corresponding path must exist on these machines as well.
      *
      * @return The key tab file name.
      */
@@ -136,10 +104,8 @@ public class KerberosHadoopFileSystemFactory extends BasicHadoopFileSystemFactor
      * Negative values are not allowed.
      *
      * <p>Note, however, that it does not make sense to make this value small, because Hadoop does not allow to
-     * login if less than {@link org.apache.hadoop.security.UserGroupInformation#MIN_TIME_BEFORE_RELOGIN} milliseconds
+     * login if less than {@code org.apache.hadoop.security.UserGroupInformation.MIN_TIME_BEFORE_RELOGIN} milliseconds
      * have passed since the time of the previous login.
-     * See {@link org.apache.hadoop.security.UserGroupInformation#hasSufficientTimeElapsed(long)} and its usages for
-     * more detail.
      *
      * @return The re-login interval, in milliseconds.
      */
@@ -154,47 +120,6 @@ public class KerberosHadoopFileSystemFactory extends BasicHadoopFileSystemFactor
      */
     public void setReloginInterval(long reloginInterval) {
         this.reloginInterval = reloginInterval;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void start() throws IgniteException {
-        A.ensure(!F.isEmpty(keyTab), "keyTab cannot not be empty.");
-        A.ensure(!F.isEmpty(keyTabPrincipal), "keyTabPrincipal cannot not be empty.");
-        A.ensure(reloginInterval >= 0, "reloginInterval cannot not be negative.");
-
-        super.start();
-
-        try {
-            UserGroupInformation.setConfiguration(cfg);
-            UserGroupInformation.loginUserFromKeytab(keyTabPrincipal, keyTab);
-        }
-        catch (IOException ioe) {
-            throw new IgniteException("Failed login from keytab [keyTab=" + keyTab +
-                ", keyTabPrincipal=" + keyTabPrincipal + ']', ioe);
-        }
-    }
-
-    /**
-     * Re-logins the user if needed.
-     * First, the re-login interval defined in factory is checked. The re-login attempts will be not more
-     * frequent than one attempt per {@code reloginInterval}.
-     * Second, {@link UserGroupInformation#checkTGTAndReloginFromKeytab()} method invoked that gets existing
-     * TGT and checks its validity. If the TGT is expired or is close to expiry, it performs re-login.
-     *
-     * <p>This operation expected to be called upon each operation with the file system created with the factory.
-     * As long as {@link #get(String)} operation is invoked upon each file {@link IgniteHadoopFileSystem}, there
-     * is no need to invoke it otherwise specially.
-     *
-     * @throws IOException If login fails.
-     */
-    private void reloginIfNeeded() throws IOException {
-        long now = System.currentTimeMillis();
-
-        if (now >= lastReloginTime + reloginInterval) {
-            UserGroupInformation.getLoginUser().checkTGTAndReloginFromKeytab();
-
-            lastReloginTime = now;
-        }
     }
 
     /** {@inheritDoc} */
