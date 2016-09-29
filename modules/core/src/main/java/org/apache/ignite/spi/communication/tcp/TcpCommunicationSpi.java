@@ -3941,7 +3941,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /**
-     *
+     * Updated handshake message.
      */
     @SuppressWarnings("PublicInnerClass")
     public static class HandshakeMessage2 extends HandshakeMessage {
