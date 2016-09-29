@@ -463,7 +463,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     {
         checkIgnite();
 
-        return g.reentrantLock(name, failoverSafe, create, fair);
+        return g.reentrantLock(name, failoverSafe, fair, create);
     }
 
     /** {@inheritDoc} */

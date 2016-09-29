@@ -1009,6 +1009,19 @@ $generatorXml.clusterTime = function(cluster, res) {
     return res;
 };
 
+// Generate OBC configuration group.
+$generatorXml.clusterODBC = function(odbc, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    if (odbc && odbc.odbcEnabled)
+        $generatorXml.beanProperty(res, odbc, 'odbcConfiguration', $generatorCommon.ODBC_CONFIGURATION, true);
+
+    res.needEmptyLine = true;
+
+    return res;
+};
+
 // Generate thread pools group.
 $generatorXml.clusterPools = function(cluster, res) {
     if (!res)
@@ -2003,6 +2016,8 @@ $generatorXml.clusterConfiguration = function(cluster, clientNearCfg, res) {
 
     $generatorXml.clusterLogger(cluster.logger, res);
 
+    $generatorXml.clusterODBC(cluster.odbc, res);
+
     $generatorXml.clusterMarshaller(cluster, res);
 
     $generatorXml.clusterMetrics(cluster, res);
@@ -2058,7 +2073,7 @@ $generatorXml.cluster = function(cluster, clientNearCfg) {
         // 1. Add header.
         let xml = '<?xml version="1.0" encoding="UTF-8"?>\n\n';
 
-        xml += '<!-- ' + $generatorCommon.mainComment() + ' -->\n\n';
+        xml += '<!-- ' + $generatorCommon.mainComment('configuration') + ' -->\n\n';
         xml += '<beans xmlns="http://www.springframework.org/schema/beans"\n';
         xml += '       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"\n';
         xml += '       xmlns:util="http://www.springframework.org/schema/util"\n';
