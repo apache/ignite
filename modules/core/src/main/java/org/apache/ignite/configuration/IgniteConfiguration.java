@@ -148,6 +148,9 @@ public class IgniteConfiguration {
     /** Default core size of public thread pool. */
     public static final int DFLT_PUBLIC_THREAD_CNT = Math.max(8, AVAILABLE_PROC_CNT) * 2;
 
+    /** Default size of data streamer thread pool. */
+    public static final int DFLT_DATA_STREAMER_POOL_SIZE = DFLT_PUBLIC_THREAD_CNT;
+
     /** Default keep alive time for public thread pool. */
     public static final long DFLT_PUBLIC_KEEP_ALIVE_TIME = 0;
 
@@ -168,6 +171,9 @@ public class IgniteConfiguration {
 
     /** Default keep alive time for utility thread pool. */
     public static final long DFLT_UTILITY_KEEP_ALIVE_TIME = 10_000;
+
+    /** Default keep alive time for data streamer thread pool. */
+    public static final long DFLT_DATA_STREAMER_KEEP_ALIVE_TIME = 5 * 60 * 1_000;
 
     /** Default max queue capacity of system thread pool. */
     public static final int DFLT_SYSTEM_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
@@ -237,7 +243,7 @@ public class IgniteConfiguration {
     private int igfsPoolSize = AVAILABLE_PROC_CNT;
 
     /** Data stream pool size. */
-    private int dataStreamPoolSize = DFLT_PUBLIC_THREAD_CNT;
+    private int dataStreamerPoolSize = DFLT_DATA_STREAMER_POOL_SIZE;
 
     /** Utility cache pool size. */
     private int utilityCachePoolSize = DFLT_SYSTEM_CORE_THREAD_CNT;
@@ -788,8 +794,8 @@ public class IgniteConfiguration {
      *
      * @return Thread pool size to be used for data stream messages.
      */
-    public int getDataStreamThreadPoolSize() {
-        return dataStreamPoolSize;
+    public int getDataStreamerThreadPoolSize() {
+        return dataStreamerPoolSize;
     }
 
 

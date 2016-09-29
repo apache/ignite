@@ -159,7 +159,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private ExecutorService igfsPool;
 
     /** DataStream pool. */
-    private ExecutorService dataStreamPool;
+    private ExecutorService dataStreamerPool;
 
     /** Discovery listener. */
     private GridLocalEventListener discoLsnr;
@@ -264,7 +264,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         utilityCachePool = ctx.utilityCachePool();
         marshCachePool = ctx.marshallerCachePool();
         igfsPool = ctx.getIgfsExecutorService();
-        dataStreamPool = ctx.getDataStreamExecutorService();
+        dataStreamerPool = ctx.getDataStreamerExecutorService();
         affPool = new IgniteThreadPoolExecutor(
             "aff",
             ctx.gridName(),
@@ -724,9 +724,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 return igfsPool;
 
             case DATA_STREAM_POOL:
-                assert dataStreamPool != null : "DataStream pool is not configured.";
+                assert dataStreamerPool != null : "Data streamer pool is not configured.";
 
-                return dataStreamPool;
+                return dataStreamerPool;
 
             default: {
                 assert plc >= 0 : "Negative policy: " + plc;

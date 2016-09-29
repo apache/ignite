@@ -20,14 +20,12 @@ package org.apache.ignite.internal.processors.datastreamer;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.DelayQueue;
-import java.util.concurrent.ExecutorService;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -38,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.stream.StreamReceiver;
@@ -45,13 +44,17 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.DATA_STREAM_POOL;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 
 /**
  *
  */
 public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
+    /** Default policy reoslver. */
+    private static final DefaultIoPolicyResolver DFLT_IO_PLC_RSLVR = new DefaultIoPolicyResolver();
+
+    /** IO policy resovler for data load response. */
+    private IgniteClosure<ClusterNode, Byte> ioPlcRslvr = DFLT_IO_PLC_RSLVR;
+
     /** Loaders map (access is not supposed to be highly concurrent). */
     private Collection<DataStreamerImpl> ldrs = new GridConcurrentHashSet<>();
 
@@ -60,9 +63,6 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
     /** Flushing thread. */
     private Thread flusher;
-
-    /** Data stream executor service. */
-    private final ExecutorService execSvc;
 
     /** */
     private final DelayQueue<DataStreamerImpl<K, V>> flushQ = new DelayQueue<>();
@@ -79,24 +79,20 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
     public DataStreamProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        execSvc = ctx.getDataStreamExecutorService();
-
         marsh = ctx.config().getMarshaller();
+    }
 
-        if (!ctx.clientNode()) {
-            ctx.io().addMessageListener(TOPIC_DATASTREAM, new GridMessageListener() {
-                @Override public void onMessage(final UUID nodeId, final Object msg) {
-                    assert msg instanceof DataStreamerRequest;
+    @Override public void onKernalStart() throws IgniteCheckedException {
+        if (ctx.config().isDaemon() || ctx.clientNode())
+            return;
 
-                    execSvc.submit(new Runnable() {
-                        @Override public void run() {
-                            processRequest(nodeId, (DataStreamerRequest)msg);
-                        }
-                    }, false);
+        ctx.io().addMessageListener(TOPIC_DATASTREAM, new GridMessageListener() {
+            @Override public void onMessage(final UUID nodeId, final Object msg) {
+                assert msg instanceof DataStreamerRequest;
 
-                }
-            });
-        }
+                processRequest(nodeId, (DataStreamerRequest)msg);
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -234,11 +230,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                 if (fut != null && !fut.isDone()) {
                     fut.listen(new CI1<IgniteInternalFuture<?>>() {
                         @Override public void apply(IgniteInternalFuture<?> t) {
-                            execSvc.submit(new Runnable() {
-                                @Override public void run() {
-                                    processRequest(nodeId, req);
-                                }
-                            }, false);
+                            processRequest(nodeId, req);
                         }
                     });
 
@@ -354,10 +346,16 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         DataStreamerResponse res = new DataStreamerResponse(reqId, errBytes, forceLocDep);
 
         try {
-            Byte plc = GridIoManager.currentPolicy();
+            ClusterNode node = ctx.cluster().get().node(nodeId);
 
-            if (plc == null)
-                plc = DATA_STREAM_POOL;
+            if (node == null) {
+                if (log.isDebugEnabled())
+                    log.debug("Node not found: " + nodeId);
+
+                return;
+            }
+
+            Byte plc = ioPlcRslvr.apply(node);
 
             ctx.io().send(nodeId, resTopic, res, plc);
         }

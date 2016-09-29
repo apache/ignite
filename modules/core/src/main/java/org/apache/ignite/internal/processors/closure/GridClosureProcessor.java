@@ -97,6 +97,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /** */
     private final Executor igfsPool;
 
+    /** */
+    private final Executor dataStreamerPool;
+
     /** Lock to control execution after stop. */
     private final GridSpinReadWriteLock busyLock = new GridSpinReadWriteLock();
 
@@ -112,6 +115,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         sysPool = ctx.getSystemExecutorService();
         pubPool = ctx.getExecutorService();
         igfsPool = ctx.getIgfsExecutorService();
+        dataStreamerPool = ctx.getDataStreamerExecutorService();
     }
 
     /** {@inheritDoc} */
@@ -746,6 +750,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             case IGFS_POOL:
                 return igfsPool;
+
+            case DATA_STREAMER_POOL:
+                return dataStreamerPool;
 
             default:
                 throw new IllegalArgumentException("Invalid closure execution policy: " + plc);

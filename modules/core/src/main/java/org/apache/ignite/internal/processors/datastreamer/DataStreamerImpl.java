@@ -79,6 +79,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.processors.closure.GridClosurePolicy;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -106,7 +107,6 @@ import org.jsr166.ConcurrentHashMap8;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 
 /**
  * Data streamer implementation.
@@ -1315,12 +1315,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             Byte plc = ioPlcRslvr.apply(node);
 
-            if (plc == null)
-                plc = PUBLIC_POOL;
+            assert plc != null;
 
-            if (isLocNode && plc == GridIoPolicy.PUBLIC_POOL) {
+            if (isLocNode && plc == GridIoPolicy.DATA_STREAM_POOL) {
                 fut = ctx.closure().callLocalSafe(
-                    new DataStreamerUpdateJob(ctx, log, cacheName, entries, false, skipStore, keepBinary, rcvr), false);
+                    new DataStreamerUpdateJob(ctx, log, cacheName, entries, false, skipStore, keepBinary, rcvr),
+                    GridClosurePolicy.DATA_STREAMER_POOL);
 
                 locFuts.add(fut);
 
@@ -1680,19 +1680,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     U.error(log, "Failed to set initial value for cache entry: " + e, ex);
                 }
             }
-        }
-    }
-
-    /**
-     * Default IO policy resolver.
-     */
-    private static class DefaultIoPolicyResolver implements IgniteClosure<ClusterNode, Byte> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** {@inheritDoc} */
-        @Override public Byte apply(ClusterNode gridNode) {
-            return PUBLIC_POOL;
         }
     }
 

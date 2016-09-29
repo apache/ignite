@@ -118,6 +118,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_DATA_STREAMER_KEEP_ALIVE_TIME;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_PUBLIC_KEEP_ALIVE_TIME;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_PUBLIC_THREADPOOL_QUEUE_CAP;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SYSTEM_KEEP_ALIVE_TIME;
@@ -1474,7 +1475,7 @@ public class IgnitionEx {
         private ExecutorService igfsExecSvc;
 
         /** Data sream executor service. */
-        private ExecutorService dataStreamExecSvc;
+        private ExecutorService dataStreamerExecSvc;
 
         /** REST requests executor service. */
         private ExecutorService restExecSvc;
@@ -1692,12 +1693,12 @@ public class IgnitionEx {
                 new LinkedBlockingQueue<Runnable>());
 
             // Note that we do not pre-start threads here as this pool may not be needed.
-            dataStreamExecSvc = new IgniteThreadPoolExecutor(
-                "data-stream",
+            dataStreamerExecSvc = new IgniteThreadPoolExecutor(
+                "data-streamer",
                 cfg.getGridName(),
-                cfg.getDataStreamThreadPoolSize(),
-                cfg.getDataStreamThreadPoolSize(),
                 0,
+                cfg.getDataStreamerThreadPoolSize(),
+                DFLT_DATA_STREAMER_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<Runnable>());
 
             // Note that we do not pre-start threads here as igfs pool may not be needed.
@@ -1757,7 +1758,7 @@ public class IgnitionEx {
                 grid = grid0;
 
                 grid0.start(myCfg, utilityCacheExecSvc, marshCacheExecSvc, execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc,
-                    igfsExecSvc, dataStreamExecSvc, restExecSvc, callbackExecSvc,
+                    igfsExecSvc, dataStreamerExecSvc, restExecSvc, callbackExecSvc,
                     new CA() {
                         @Override public void apply() {
                             startLatch.countDown();
@@ -2348,9 +2349,9 @@ public class IgnitionEx {
 
             p2pExecSvc = null;
 
-            U.shutdownNow(getClass(), dataStreamExecSvc, log);
+            U.shutdownNow(getClass(), dataStreamerExecSvc, log);
 
-            dataStreamExecSvc = null;
+            dataStreamerExecSvc = null;
 
             U.shutdownNow(getClass(), igfsExecSvc, log);
 

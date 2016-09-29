@@ -930,7 +930,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutorService getDataStreamExecutorService() {
+    @Override public ExecutorService getDataStreamerExecutorService() {
         return dataStreamExecSvc;
     }
 

@@ -34,7 +34,10 @@ public enum GridClosurePolicy {
     SYSTEM_POOL,
 
     /** IGFS pool. */
-    IGFS_POOL;
+    IGFS_POOL,
+
+    /** Data streamer pool. */
+    DATA_STREAMER_POOL;
 
     /** Enum values. */
     private static final GridClosurePolicy[] VALS = values();
