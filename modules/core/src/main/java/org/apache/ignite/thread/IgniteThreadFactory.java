@@ -60,6 +60,31 @@ public class IgniteThreadFactory implements ThreadFactory {
 
     /** {@inheritDoc} */
     @Override public Thread newThread(@NotNull Runnable r) {
-        return new IgniteThread(gridName, threadName, r, idxGen.incrementAndGet());
+        Runnable r0 = new TrackingRunnable(r);
+
+        return new IgniteThread(gridName, threadName, r0, idxGen.incrementAndGet());
+    }
+
+    private static final class TrackingRunnable implements Runnable {
+        private final Runnable r;
+
+        public TrackingRunnable(Runnable r) {
+            this.r = r;
+        }
+
+        @Override public void run() {
+            long start = System.currentTimeMillis();
+
+            System.out.println(">>> THREAD STARTED: " + Thread.currentThread().getName());
+
+            try {
+                r.run();
+            }
+            finally {
+                long dur = System.currentTimeMillis() - start;
+
+                System.out.println(">>> THREAD STOPPED: " + Thread.currentThread().getName() + " " + dur);
+            }
+        }
     }
 }
