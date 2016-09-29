@@ -181,7 +181,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         else if (gridName.contains("MulticastIpFinder")) {
             TcpDiscoveryMulticastIpFinder finder = new TcpDiscoveryMulticastIpFinder();
 
-            finder.setAddressRequestAttempts(10);
+            finder.setAddressRequestAttempts(5);
             finder.setMulticastGroup(GridTestUtils.getNextMulticastGroup(getClass()));
             finder.setMulticastPort(GridTestUtils.getNextMulticastPort(getClass()));
 
@@ -2061,7 +2061,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 if (msg instanceof TcpDiscoveryCustomEventMessage) {
                     try {
                         DiscoveryCustomMessage custMsg = GridTestUtils.getFieldValue(
-                            ((TcpDiscoveryCustomEventMessage)msg).message(marsh, U.gridClassLoader()), "delegate");
+                            ((TcpDiscoveryCustomEventMessage)msg).message(marshaller(), U.gridClassLoader()), "delegate");
 
                         if (custMsg instanceof StartRoutineAckDiscoveryMessage) {
                             log.info("Skip message send and stop node: " + msg);

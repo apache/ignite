@@ -77,6 +77,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.LoggerNodeIdAware;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.mxbean.IgnitionMXBean;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
@@ -92,6 +93,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMultic
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.indexing.noop.NoopIndexingSpi;
+import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
 import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.spi.swapspace.noop.NoopSwapSpaceSpi;
@@ -1278,17 +1280,21 @@ public class IgnitionEx {
     }
 
     /**
-     * Gets the grid, which is owner of current thread. An Exception is thrown if
-     * current thread is not an {@link IgniteThread}.
+     * Gets a name of the grid from thread local config, which is owner of current thread.
      *
      * @return Grid instance related to current thread
      * @throws IllegalArgumentException Thrown to indicate, that current thread is not an {@link IgniteThread}.
      */
     public static IgniteKernal localIgnite() throws IllegalArgumentException {
-        if (Thread.currentThread() instanceof IgniteThread)
+        String name = U.getCurrentIgniteName();
+
+        if (U.isCurrentIgniteNameSet(name))
+            return gridx(name);
+        else if (Thread.currentThread() instanceof IgniteThread)
             return gridx(((IgniteThread)Thread.currentThread()).getGridName());
         else
-            throw new IllegalArgumentException("This method should be accessed under " + IgniteThread.class.getName());
+            throw new IllegalArgumentException("Ignite grid name thread local must be set or" +
+                " this method should be accessed under " + IgniteThread.class.getName());
     }
 
     /**
@@ -1297,7 +1303,7 @@ public class IgnitionEx {
      * @param name Grid name.
      * @return Grid instance.
      */
-    public static IgniteKernal gridx(@Nullable String name) {
+    private static IgniteKernal gridx(@Nullable String name) {
         IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
 
         IgniteKernal res;
@@ -1929,6 +1935,8 @@ public class IgnitionEx {
                     marsh = new BinaryMarshaller();
             }
 
+            MarshallerUtils.setNodeName(marsh, cfg.getGridName());
+
             myCfg.setMarshaller(marsh);
 
             if (myCfg.getPeerClassLoadingLocalClassPathExclude() == null)
@@ -2045,6 +2053,24 @@ public class IgnitionEx {
 
             if (cfg.getLoadBalancingSpi() == null)
                 cfg.setLoadBalancingSpi(new RoundRobinLoadBalancingSpi());
+            else {
+                Collection<LoadBalancingSpi> spis = new ArrayList<>();
+
+                boolean dfltLoadBalancingSpi = false;
+
+                for (LoadBalancingSpi spi : cfg.getLoadBalancingSpi()) {
+                    spis.add(spi);
+
+                    if (!dfltLoadBalancingSpi && spi instanceof RoundRobinLoadBalancingSpi)
+                        dfltLoadBalancingSpi = true;
+                }
+
+                // Add default load balancing SPI for internal tasks.
+                if (!dfltLoadBalancingSpi)
+                    spis.add(new RoundRobinLoadBalancingSpi());
+
+                cfg.setLoadBalancingSpi(spis.toArray(new LoadBalancingSpi[spis.size()]));
+            }
 
             if (cfg.getIndexingSpi() == null)
                 cfg.setIndexingSpi(new NoopIndexingSpi());

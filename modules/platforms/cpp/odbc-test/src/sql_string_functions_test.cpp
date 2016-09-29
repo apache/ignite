@@ -37,7 +37,7 @@
 
 #include "test_type.h"
 #include "test_utils.h"
-#include "sql_function_test_suite_fixture.h"
+#include "sql_test_suite_fixture.h"
 
 using namespace ignite;
 using namespace ignite::cache;
@@ -48,7 +48,7 @@ using namespace boost::unit_test;
 
 using ignite::impl::binary::BinaryUtils;
 
-BOOST_FIXTURE_TEST_SUITE(SqlStringFunctionTestSuite, ignite::SqlFunctionTestSuiteFixture)
+BOOST_FIXTURE_TEST_SUITE(SqlStringFunctionTestSuite, ignite::SqlTestSuiteFixture)
 
 BOOST_AUTO_TEST_CASE(TestStringFunctionAscii)
 {
@@ -286,6 +286,69 @@ BOOST_AUTO_TEST_CASE(TestStringFunctionUcase)
     testCache.Put(1, in);
 
     CheckSingleResult<std::string>("SELECT {fn UCASE(strField)} FROM TestType", "HELLO WORLD!");
+}
+
+BOOST_AUTO_TEST_CASE(Test92StringFunctionLower)
+{
+    TestType in;
+    in.strField = "Hello World!";
+
+    testCache.Put(1, in);
+
+    CheckSingleResult<std::string>("SELECT LOWER(strField) FROM TestType", "hello world!");
+}
+
+BOOST_AUTO_TEST_CASE(Test92StringFunctionUpper)
+{
+    TestType in;
+    in.strField = "Hello World!";
+
+    testCache.Put(1, in);
+
+    CheckSingleResult<std::string>("SELECT UPPER(strField) FROM TestType", "HELLO WORLD!");
+}
+
+BOOST_AUTO_TEST_CASE(Test92StringFunctionSubstring)
+{
+    TestType in;
+    in.strField = "Hello Ignite!";
+
+    testCache.Put(1, in);
+
+    CheckSingleResult<std::string>("SELECT SUBSTRING(strField, 7) FROM TestType", "Ignite!");
+    CheckSingleResult<std::string>("SELECT SUBSTRING(strField, 7, 6) FROM TestType", "Ignite");
+    CheckSingleResult<std::string>("SELECT SUBSTRING(strField FROM 7) FROM TestType", "Ignite!");
+    CheckSingleResult<std::string>("SELECT SUBSTRING(strField FROM 7 FOR 6) FROM TestType", "Ignite");
+}
+
+BOOST_AUTO_TEST_CASE(Test92StringFunctionTrimBoth)
+{
+    TestType in;
+    in.strField = "    Lorem ipsum  ";
+
+    testCache.Put(1, in);
+
+    CheckSingleResult<std::string>("SELECT TRIM(BOTH FROM strField) FROM TestType", "Lorem ipsum");
+}
+
+BOOST_AUTO_TEST_CASE(Test92StringFunctionTrimLeading)
+{
+    TestType in;
+    in.strField = "    Lorem ipsum  ";
+
+    testCache.Put(1, in);
+
+    CheckSingleResult<std::string>("SELECT TRIM(LEADING FROM strField) FROM TestType", "Lorem ipsum  ");
+}
+
+BOOST_AUTO_TEST_CASE(Test92StringFunctionTrimTrailing)
+{
+    TestType in;
+    in.strField = "    Lorem ipsum  ";
+
+    testCache.Put(1, in);
+
+    CheckSingleResult<std::string>("SELECT TRIM(TRAILING FROM strField) FROM TestType", "    Lorem ipsum");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
