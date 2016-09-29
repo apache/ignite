@@ -850,6 +850,17 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         assertNoLocks();
     }
 
+    private void doTestCursor(boolean canGetRow) throws IgniteCheckedException {
+        TestTree tree = createTestTree(canGetRow);
+
+        for (long i = 15; i >= 0; i--)
+            tree.put(i);
+
+
+
+
+    }
+
     /**
      * @throws IgniteCheckedException If failed.
      */
@@ -1034,7 +1045,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, 16);
+        }, 16, "put-remove");
 
         final AtomicBoolean stop = new AtomicBoolean();
 
@@ -1048,13 +1059,43 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, 1);
+        }, 1, "printLocks");
 
-        fut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
+        IgniteInternalFuture<?> fut3 = multithreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                while (!stop.get()) {
+                    int low = DataStructure.randomInt(CNT);
+                    int high = low + DataStructure.randomInt(CNT - low);
 
-        stop.set(true);
+                    GridCursor<Long> c = tree.find((long)low, (long)high);
 
-        fut2.get();
+                    Long last = null;
+
+                    while (c.next()) {
+                        // Correct bounds.
+                        assertTrue(low + " <= " + c.get() + " <= " + high, c.get() >= low);
+                        assertTrue(low + " <= " + c.get() + " <= " + high, c.get() <= high);
+
+                        if (last != null) // No duplicates.
+                            assertTrue(low + " <= " + last + " < " + c.get() + " <= " + high, c.get() > last);
+
+                        last = c.get();
+                    }
+                }
+
+                return null;
+            }
+        }, 4, "find");
+
+        try {
+            fut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
+        }
+        finally {
+            stop.set(true);
+
+            fut2.get();
+            fut3.get();
+        }
 
         GridCursor<Long> cursor = tree.find(null, null);
 

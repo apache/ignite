@@ -43,8 +43,12 @@ import org.apache.ignite.internal.processors.cache.OffHeapTieredTransactionSelfT
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorSelfTest;
 import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
 import org.apache.ignite.internal.processors.continuous.GridMessageListenSelfTest;
-import org.apache.ignite.internal.processors.odbc.OdbcProcessorValidationSelfTest;
+import org.apache.ignite.internal.processors.database.BPlusTreeFakeReuseSelfTest;
+import org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest;
+import org.apache.ignite.internal.processors.database.BPlusTreeSelfTest;
+import org.apache.ignite.internal.processors.database.MetadataStorageSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
+import org.apache.ignite.internal.processors.odbc.OdbcProcessorValidationSelfTest;
 import org.apache.ignite.internal.processors.service.ClosureServiceClientsNodesTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
 import org.apache.ignite.internal.util.nio.IgniteExceptionInNioWorkerSelfTest;
@@ -141,6 +145,12 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(NotStringSystemPropertyTest.class);
 
         suite.addTestSuite(MarshallerContextLockingSelfTest.class);
+
+        // Basic DB data structures.
+        suite.addTestSuite(BPlusTreeSelfTest.class);
+        suite.addTestSuite(BPlusTreeFakeReuseSelfTest.class);
+        suite.addTestSuite(BPlusTreeReuseSelfTest.class);
+        suite.addTestSuite(MetadataStorageSelfTest.class);
 
         return suite;
     }

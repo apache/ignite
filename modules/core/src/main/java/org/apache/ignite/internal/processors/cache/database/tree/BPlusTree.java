@@ -88,6 +88,9 @@ import static org.apache.ignite.internal.processors.cache.database.tree.util.Pag
 @SuppressWarnings({"RedundantThrowsDeclaration", "ConstantValueVariableUse"})
 public abstract class BPlusTree<L, T extends L> extends DataStructure {
     /** */
+    private static final Object[] EMPTY = {};
+
+    /** */
     private static volatile boolean interrupted;
 
     /** */
@@ -231,7 +234,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
             g.backId = 0; // Usually we'll go left down and don't need it.
 
             int cnt = io.getCount(buf);
-            int idx = findInsertionPoint(io, buf, cnt, g.row, g.shift);
+            int idx = findInsertionPoint(io, buf, 0, cnt, g.row, g.shift);
 
             boolean found = idx >= 0;
 
@@ -241,8 +244,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                 if (g.found(io, buf, idx, lvl))
                     return FOUND;
 
-                assert !io.isLeaf();
-
                 // Else we need to reach leaf page, go left down.
             }
             else {
@@ -250,10 +251,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
 
                 if (g.notFound(io, buf, idx, lvl)) // No way down, stop here.
                     return NOT_FOUND;
-
-                assert !io.isLeaf();
-                assert lvl > 0 : lvl;
             }
+
+            assert !io.isLeaf();
 
             // If idx == cnt then we go right down, else left down: getLeft(cnt) == getRight(cnt - 1).
             g.pageId = inner(io).getLeft(buf, idx);
@@ -304,7 +304,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
             assert p.btmLvl == 0 : "split is impossible with replace";
 
             final int cnt = io.getCount(buf);
-            final int idx = findInsertionPoint(io, buf, cnt, p.row, 0);
+            final int idx = findInsertionPoint(io, buf, 0, cnt, p.row, 0);
 
             if (idx < 0) // Not found, split or merge happened.
                 return RETRY;
@@ -346,7 +346,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                 return RETRY;
 
             int cnt = io.getCount(buf);
-            int idx = findInsertionPoint(io, buf, cnt, p.row, 0);
+            int idx = findInsertionPoint(io, buf, 0, cnt, p.row, 0);
 
             if (idx >= 0) // We do not support concurrent put of the same key.
                 throw new IllegalStateException("Duplicate row in index.");
@@ -385,7 +385,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
 
             assert cnt <= Short.MAX_VALUE: cnt;
 
-            int idx = findInsertionPoint(io, buf, cnt, r.row, 0);
+            int idx = findInsertionPoint(io, buf, 0, cnt, r.row, 0);
 
             if (idx < 0) {
                 if (!r.ceil) // We've found exact match on search but now it's gone.
@@ -695,7 +695,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
      * @return Cursor.
      */
     private GridCursor<T> findLowerUnbounded(L upper) throws IgniteCheckedException {
-        ForwardCursor cursor = new ForwardCursor(upper);
+        ForwardCursor cursor = new ForwardCursor(null, upper);
 
         long firstPageId;
 
@@ -707,7 +707,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
             ByteBuffer buf = readLock(first); // We always merge pages backwards, the first page is never removed.
 
             try {
-                cursor.fillFromBuffer(buf, io(buf), 0);
+                cursor.init(buf, io(buf), 0);
             }
             finally {
                 readUnlock(first, buf);
@@ -738,12 +738,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
             if (lower == null)
                 return findLowerUnbounded(upper);
 
-            // Lower bound must be shifted to -1 for case when multiple rows are equal to this bound.
-            GetCursor g = new GetCursor(lower, -1, new ForwardCursor(upper));
+            ForwardCursor cursor = new ForwardCursor(lower, upper);
 
-            doFind(g);
+            cursor.find();
 
-            return g.cursor;
+            return cursor;
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Runtime failure on bounds: [lower=" + lower + ", upper=" + upper + "]", e);
@@ -2038,23 +2037,25 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
         GetCursor(L lower, int shift, ForwardCursor cursor) {
             super(lower);
 
+            assert shift != 0; // Either handle range of equal rows or find a greater row after concurrent merge.
+
             this.shift = shift;
             this.cursor = cursor;
         }
 
         /** {@inheritDoc} */
         @Override boolean found(BPlusIO<L> io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
-            if (lvl != 0)
-                return false;
-
-            cursor.fillFromBuffer(buf, io, idx);
-
-            return true;
+            throw new IllegalStateException(); // Must never be called because we always have a shift.
         }
 
         /** {@inheritDoc} */
         @Override boolean notFound(BPlusIO<L> io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
-            return found(io, buf, idx, lvl);
+            if (lvl != 0)
+                return false;
+
+            cursor.init(buf, io, idx);
+
+            return true;
         }
     }
 
@@ -2797,7 +2798,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
             assert tail.type == Tail.EXACT: tail.type;
 
             if (tail.idx == Short.MIN_VALUE) {
-                int idx = findInsertionPoint(tail.io, tail.buf, tail.getCount(), row, 0);
+                int idx = findInsertionPoint(tail.io, tail.buf, 0, tail.getCount(), row, 0);
 
                 assert checkIndex(idx): idx;
 
@@ -3332,15 +3333,16 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
     /**
      * @param io IO.
      * @param buf Buffer.
+     * @param low Start index.
      * @param cnt Row count.
      * @param row Lookup row.
+     * @param shift Shift if equal.
      * @return Insertion point as in {@link Arrays#binarySearch(Object[], Object, Comparator)}.
      */
-    private int findInsertionPoint(BPlusIO<L> io, ByteBuffer buf, int cnt, L row, int shift)
+    private int findInsertionPoint(BPlusIO<L> io, ByteBuffer buf, int low, int cnt, L row, int shift)
         throws IgniteCheckedException {
         assert row != null;
 
-        int low = 0;
         int high = cnt - 1;
 
         while (low <= high) {
@@ -3429,9 +3431,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
     /**
      * Forward cursor.
      */
+    @SuppressWarnings("unchecked")
     private final class ForwardCursor implements GridCursor<T> {
         /** */
-        private T[] rows;
+        private T[] rows = (T[])EMPTY;
 
         /** */
         private int row = -1;
@@ -3440,28 +3443,87 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
         private long nextPageId;
 
         /** */
+        private L lowerBound;
+
+        /** */
+        private int lowerShift = -1; // Initially it is -1 to handle multiple equal rows.
+
+        /** */
         private final L upperBound;
 
         /**
+         * @param lowerBound Lower bound.
          * @param upperBound Upper bound.
          */
-        ForwardCursor(L upperBound) {
+        ForwardCursor(L lowerBound, L upperBound) {
+            this.lowerBound = lowerBound;
             this.upperBound = upperBound;
         }
 
         /**
          * @param buf Buffer.
          * @param io IO.
+         * @param startIdx Start index.
+         * @throws IgniteCheckedException If failed.
+         */
+        private void init(ByteBuffer buf, BPlusIO<L> io, int startIdx) throws IgniteCheckedException {
+            nextPageId = 0;
+            row = -1;
+
+            int cnt = io.getCount(buf);
+
+            // If we see an empty page here, it means that it is an empty tree.
+            if (cnt == 0) {
+                assert io.getForward(buf) == 0L;
+
+                rows = null;
+            }
+            else if (!fillFromBuffer(buf, io, startIdx, cnt)) {
+                if (rows != EMPTY) {
+                    assert rows.length > 0; // Otherwise it makes no sense to create an array.
+
+                    // Fake clear.
+                    rows[0] = null;
+                }
+            }
+        }
+
+        /**
+         * @param buf Buffer.
+         * @param io IO.
+         * @param cnt Count.
+         * @return Adjusted to lower bound start index.
+         * @throws IgniteCheckedException If failed.
+         */
+        private int findLowerBound(ByteBuffer buf, BPlusIO<L> io, int cnt) throws IgniteCheckedException {
+            // Compare with the first row on the page.
+            int cmp = compare(io, buf, 0, lowerBound);
+
+            if (cmp < 0 || (cmp == 0 && lowerShift == 1)) {
+                int idx = findInsertionPoint(io, buf, 0, cnt, lowerBound, lowerShift);
+
+                assert idx < 0;
+
+                return fix(idx);
+            }
+
+            return 0;
+        }
+
+        /**
+         * @param buf Buffer.
+         * @param io IO.
+         * @param low Start index.
          * @param cnt Number of rows in the buffer.
          * @return Corrected number of rows with respect to upper bound.
          * @throws IgniteCheckedException If failed.
          */
-        private int findUpperBound(ByteBuffer buf, BPlusIO<L> io, int cnt) throws IgniteCheckedException {
+        private int findUpperBound(ByteBuffer buf, BPlusIO<L> io, int low, int cnt) throws IgniteCheckedException {
             // Compare with the last row on the page.
             int cmp = compare(io, buf, cnt - 1, upperBound);
 
             if (cmp > 0) {
-                int idx = findInsertionPoint(io, buf, cnt, upperBound, 1);
+                int idx = findInsertionPoint(io, buf, low, cnt, upperBound, 1);
 
                 assert idx < 0;
 
@@ -3477,43 +3539,45 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
          * @param buf Buffer.
          * @param io IO.
          * @param startIdx Start index.
+         * @param cnt Number of rows in the buffer.
+         * @return {@code true} If we were able to fetch rows from this page.
          * @throws IgniteCheckedException If failed.
          */
         @SuppressWarnings("unchecked")
-        private void fillFromBuffer(ByteBuffer buf, BPlusIO<L> io, int startIdx) throws IgniteCheckedException {
-            assert buf != null;
+        private boolean fillFromBuffer(ByteBuffer buf, BPlusIO<L> io, int startIdx, int cnt)
+            throws IgniteCheckedException {
             assert io.isLeaf();
+            assert cnt != 0: cnt; // We can not see empty pages (empty tree handled in init).
             assert startIdx >= 0 : startIdx;
+            assert cnt >= startIdx;
 
             checkDestroyed();
 
             nextPageId = io.getForward(buf);
-            int cnt = io.getCount(buf);
 
-            assert cnt >= startIdx;
+            if (lowerBound != null && startIdx == 0)
+                startIdx = findLowerBound(buf, io, cnt);
 
-            if (upperBound != null && startIdx != cnt)
-                cnt = findUpperBound(buf, io, cnt);
+            if (upperBound != null && cnt != startIdx)
+                cnt = findUpperBound(buf, io, startIdx, cnt);
 
             cnt -= startIdx;
 
-            if (cnt > 0) {
-                if (rows == null)
-                    rows = (T[])new Object[cnt];
+            if (cnt == 0)
+                return false;
 
-                for (int i = 0; i < cnt; i++) {
-                    T r = getRow(io, buf, startIdx + i);
+            if (rows == EMPTY)
+                rows = (T[])new Object[cnt];
 
-                    rows = GridArrays.set(rows, i, r);
-                }
+            for (int i = 0; i < cnt; i++) {
+                T r = getRow(io, buf, startIdx + i);
 
-                GridArrays.clearTail(rows, cnt);
+                rows = GridArrays.set(rows, i, r);
             }
-            else {
-                assert nextPageId == 0;
 
-                rows = null;
-            }
+            GridArrays.clearTail(rows, cnt);
+
+            return true;
         }
 
         /** {@inheritDoc} */
@@ -3523,7 +3587,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                 return false;
 
             if (++row < rows.length && rows[row] != null) {
-                clearLastRow();
+                clearLastRow(); // Allow to GC the last returned row.
 
                 return true;
             }
@@ -3550,14 +3614,24 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
         }
 
         /**
-         * @param lastRow Last row.
          * @throws IgniteCheckedException If failed.
          */
-        private void reinitialize(T lastRow) throws IgniteCheckedException {
-            assert lastRow != null;
+        private void find() throws IgniteCheckedException {
+            assert lowerBound != null;
 
-            // Here we have shift 1 because otherwise we can return the same row twice.
-            doFind(new GetCursor(lastRow, 1, this));
+            doFind(new GetCursor(lowerBound, lowerShift, this));
+        }
+
+        /**
+         * @throws IgniteCheckedException If failed.
+         */
+        private boolean reinitialize() throws IgniteCheckedException {
+            // If initially we had no lower bound, then we have to have non-null lastRow argument here
+            // (if the tree is empty we never call this method), otherwise we always fallback
+            // to the previous lower bound.
+            find();
+
+            return next();
         }
 
         /**
@@ -3565,25 +3639,31 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
          * @throws IgniteCheckedException If failed.
          */
         private boolean nextPage() throws IgniteCheckedException {
-            if (nextPageId == 0) {
-                rows = null;
+            updateLowerBound(clearLastRow());
 
-                return false;
-            }
+            row = 0;
 
-            T lastRow = clearLastRow();
+            for (;;) {
+                if (nextPageId == 0) {
+                    rows = null;
 
-            boolean reinitialize = false;
+                    return false; // Done.
+                }
 
-            try (Page next = page(nextPageId)) {
-                ByteBuffer buf = readLock(next); // Doing explicit null check.
+                try (Page next = page(nextPageId)) {
+                    ByteBuffer buf = readLock(next); // Doing explicit null check.
 
-                // If concurrent merge occurred we have to reinitialize cursor from the last returned row.
-                if (buf == null)
-                    reinitialize = true;
-                else {
+                    // If concurrent merge occurred we have to reinitialize cursor from the last returned row.
+                    if (buf == null)
+                        break;
+
                     try {
-                        fillFromBuffer(buf, io(buf), 0);
+                        BPlusIO<L> io = io(buf);
+
+                        if (fillFromBuffer(buf, io, 0, io.getCount(buf)))
+                            return true;
+
+                        // Continue fetching forward.
                     }
                     finally {
                         readUnlock(next, buf);
@@ -3591,12 +3671,18 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                 }
             }
 
-            if (reinitialize) // Reinitialize when `next` page is released.
-                reinitialize(lastRow);
+            // Reinitialize when `next` is released.
+            return reinitialize();
+        }
 
-            row = 0;
-
-            return rows != null;
+        /**
+         * @param lower New exact lower bound.
+         */
+        private void updateLowerBound(T lower) {
+            if (lower != null) {
+                lowerShift = 1; // Now we have the full row an need to avoid duplicates.
+                lowerBound = lower; // Move the lower bound forward for further concurrent merge retries.
+            }
         }
 
         /** {@inheritDoc} */
