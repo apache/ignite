@@ -36,7 +36,6 @@ import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -120,11 +119,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_PUBLIC_KEEP_ALIVE_TIME;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_PUBLIC_THREADPOOL_QUEUE_CAP;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SYSTEM_KEEP_ALIVE_TIME;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SYSTEM_THREADPOOL_QUEUE_CAP;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_UTILITY_KEEP_ALIVE_TIME;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_JVM;
 
@@ -1644,7 +1639,7 @@ public class IgnitionEx {
                 cfg.getGridName(),
                 cfg.getPublicThreadPoolSize(),
                 cfg.getPublicThreadPoolSize(),
-                DFLT_UTILITY_KEEP_ALIVE_TIME,
+                DFLT_THREAD_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<Runnable>());
 
             execSvc.allowCoreThreadTimeOut(true);
@@ -1656,7 +1651,7 @@ public class IgnitionEx {
                 cfg.getGridName(),
                 cfg.getSystemThreadPoolSize(),
                 cfg.getSystemThreadPoolSize(),
-                DFLT_UTILITY_KEEP_ALIVE_TIME,
+                DFLT_THREAD_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<Runnable>());
 
             sysExecSvc.allowCoreThreadTimeOut(true);
@@ -1670,7 +1665,7 @@ public class IgnitionEx {
                 cfg.getGridName(),
                 cfg.getManagementThreadPoolSize(),
                 cfg.getManagementThreadPoolSize(),
-                DFLT_UTILITY_KEEP_ALIVE_TIME,
+                DFLT_THREAD_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<Runnable>());
 
             mgmtExecSvc.allowCoreThreadTimeOut(true);
@@ -1684,7 +1679,7 @@ public class IgnitionEx {
                 cfg.getGridName(),
                 cfg.getPeerClassLoadingThreadPoolSize(),
                 cfg.getPeerClassLoadingThreadPoolSize(),
-                DFLT_UTILITY_KEEP_ALIVE_TIME,
+                DFLT_THREAD_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<Runnable>());
 
             p2pExecSvc.allowCoreThreadTimeOut(true);
@@ -1693,7 +1688,7 @@ public class IgnitionEx {
             igfsExecSvc = new IgniteThreadPoolExecutor(
                 cfg.getIgfsThreadPoolSize(),
                 cfg.getIgfsThreadPoolSize(),
-                DFLT_UTILITY_KEEP_ALIVE_TIME,
+                DFLT_THREAD_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<Runnable>(),
                 new IgfsThreadFactory(cfg.getGridName(), "igfs"),
                 null /* Abort policy will be used. */);
@@ -1712,7 +1707,7 @@ public class IgnitionEx {
                     myCfg.getGridName(),
                     myCfg.getConnectorConfiguration().getThreadPoolSize(),
                     myCfg.getConnectorConfiguration().getThreadPoolSize(),
-                    DFLT_UTILITY_KEEP_ALIVE_TIME,
+                    DFLT_THREAD_KEEP_ALIVE_TIME,
                     new LinkedBlockingQueue<Runnable>()
                 );
 
@@ -1724,7 +1719,7 @@ public class IgnitionEx {
                 cfg.getGridName(),
                 myCfg.getUtilityCacheThreadPoolSize(),
                 myCfg.getUtilityCacheThreadPoolSize(),
-                DFLT_UTILITY_KEEP_ALIVE_TIME,
+                myCfg.getUtilityCacheKeepAliveTime(),
                 new LinkedBlockingQueue<Runnable>());
 
             utilityCacheExecSvc.allowCoreThreadTimeOut(true);
@@ -1734,7 +1729,7 @@ public class IgnitionEx {
                 cfg.getGridName(),
                 myCfg.getMarshallerCacheThreadPoolSize(),
                 myCfg.getMarshallerCacheThreadPoolSize(),
-                DFLT_UTILITY_KEEP_ALIVE_TIME,
+                myCfg.getMarshallerCacheKeepAliveTime(),
                 new LinkedBlockingQueue<Runnable>());
 
             marshCacheExecSvc.allowCoreThreadTimeOut(true);
