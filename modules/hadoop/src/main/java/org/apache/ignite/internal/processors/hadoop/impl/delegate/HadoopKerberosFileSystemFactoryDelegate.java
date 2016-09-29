@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.hadoop.impl.delegate;
 
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.fs.KerberosHadoopFileSystemFactory;
@@ -61,7 +62,9 @@ public class HadoopKerberosFileSystemFactoryDelegate extends HadoopBasicFileSyst
 
         return proxyUgi.doAs(new PrivilegedExceptionAction<FileSystem>() {
             @Override public FileSystem run() throws Exception {
-                return FileSystem.get(fullUri, cfg);
+                FileSystem fs = FileSystem.get(fullUri, cfg);
+                fs.setWorkingDirectory(new Path(workDir));
+                return fs;
             }
         });
     }

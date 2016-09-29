@@ -58,6 +58,9 @@ public abstract class Hadoop1DualAbstractTest extends IgfsDualAbstractSelfTest {
     /** Secondary file system authority. */
     private static final String SECONDARY_AUTHORITY = IGFS_NAME + ":" + GRID_NAME + "@127.0.0.1:" + PORT;
 
+    /** Secondary file system authority. */
+    private static final String SECONDARY_WORKDIR = "workdir/test";
+
     /** Secondary Fs configuration full path. */
     protected String secondaryConfFullPath;
 
@@ -123,7 +126,7 @@ public abstract class Hadoop1DualAbstractTest extends IgfsDualAbstractSelfTest {
 
         secondaryConfFullPath = HadoopSecondaryFileSystemConfigurationTest.writeConfiguration(secondaryConf, HadoopSecondaryFileSystemConfigurationTest.SECONDARY_CFG_PATH);
 
-        secondaryUri = HadoopSecondaryFileSystemConfigurationTest.mkUri(IGFS_SCHEME, SECONDARY_AUTHORITY);
+        secondaryUri = HadoopSecondaryFileSystemConfigurationTest.mkUri(IGFS_SCHEME, SECONDARY_AUTHORITY, SECONDARY_WORKDIR);
     }
 
     /**
