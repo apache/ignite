@@ -47,7 +47,7 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
     }
 
     @Override public <T extends IgnitePlugin> T plugin() {
-        return null;
+        return (T)new PlatformTestPlugin();
     }
 
     @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
@@ -83,6 +83,10 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
     }
 
     @Override public void validateNewNode(ClusterNode node) throws PluginValidationException {
+
+    }
+
+    public static class PlatformTestPlugin implements IgnitePlugin {
 
     }
 }
