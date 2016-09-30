@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.igfs;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.igfs.IgfsInputStream;
 import org.apache.ignite.igfs.IgfsMetrics;
-import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
@@ -245,12 +244,27 @@ public class IgfsMetricsTestUtils {
         int prefetch = igfs.configuration().getPrefetchBlocks();
         int seqBeforePrefetch = igfs.configuration().getSequentialReadsBeforePrefetch();
 
-        IgfsPath file00 = new IgfsPath("/file00");
+        final IgfsPath file00 = new IgfsPath("/file00");
 
+        // ###############################################################
         // Create empty file.
-        igfs.create(file00, 256, true, null, 1, 256, null).close();
+        igfs.create(file00, false).close();
 
         final int blockSize = igfs.info(file00).blockSize();
+
+        igfs.await(file00);
+
+        IgfsEntryInfo info;
+        if (proxy)
+            info = igfsSecondary.meta.infoForPath(file00);
+        else
+            info = ((IgfsImpl)igfs).meta.infoForPath(file00);
+
+        final int blockSize2 = info.blockSize();
+
+        assert blockSize2 == blockSize : "IgfsFile blk size = " + blockSize + ", Meta size = " + blockSize2;
+        // **** this fails: see https://issues.apache.org/jira/browse/IGNITE-3877
+        // ###############################################################
 
         final MetricExpectations e = new MetricExpectations(dual, proxy, blockSize);
 
@@ -269,9 +283,8 @@ public class IgfsMetricsTestUtils {
         IgfsPath file1 = new IgfsPath("/file1");
         IgfsPath file2 = new IgfsPath("/file2");
 
-        // TODO:
-        assert dual == IgfsUtils.isDualMode(igfs.mode(file1)) || igfs.mode(file1) == IgfsMode.PROXY;
-        assert dual == IgfsUtils.isDualMode(igfs.mode(file2)) || igfs.mode(file2) == IgfsMode.PROXY;
+        assert dual == IgfsUtils.isDualMode(igfs.mode(file1));
+        assert dual == IgfsUtils.isDualMode(igfs.mode(file2));
 
         int rmtBlockSize = -1;
 

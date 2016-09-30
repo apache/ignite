@@ -63,7 +63,6 @@ import org.apache.ignite.internal.processors.igfs.IgfsServerManagerIpcEndpointRe
 import org.apache.ignite.internal.processors.igfs.IgfsSizeSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsStartCacheTest;
 import org.apache.ignite.internal.processors.igfs.IgfsStreamsSelfTest;
-import org.apache.ignite.internal.processors.igfs.IgfsTaskSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsLocalSecondaryFileSystemDualAsyncClientSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsLocalSecondaryFileSystemDualAsyncSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsLocalSecondaryFileSystemDualSyncClientSelfTest;

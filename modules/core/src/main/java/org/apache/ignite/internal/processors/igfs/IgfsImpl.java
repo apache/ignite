@@ -123,7 +123,7 @@ public final class IgfsImpl implements IgfsEx {
     private final IgfsPaths secondaryPaths;
 
     /** Cache based structure (meta data) manager. */
-    private IgfsMetaManager meta;
+    IgfsMetaManager meta;
 
     /** Cache based file's data container. */
     private IgfsDataManager data;
