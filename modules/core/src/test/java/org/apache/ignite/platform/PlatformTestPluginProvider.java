@@ -18,13 +18,12 @@
 package org.apache.ignite.platform;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
-import org.apache.ignite.internal.processors.platform.PlatformContext;
-import org.apache.ignite.internal.processors.platform.PlatformTarget;
-import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.IgnitePlatformPlugin;
+import org.apache.ignite.plugin.IgnitePlatformPluginTarget;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.PluginContext;
@@ -74,7 +73,7 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
 
     /** {@inheritDoc} */
     @Override public void start(PluginContext ctx) throws IgniteCheckedException {
-        plugin.setContext(PlatformUtils.platformContext(ctx.grid()));
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -111,35 +110,22 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
      * Test plugin.
      */
     public static class PlatformTestPlugin implements IgnitePlatformPlugin {
-        /** */
-        private PlatformContext platformContext;
-
-        /**
-         * Sets the context.
-         */
-        public void setContext(PlatformContext platformContext) {
-            this.platformContext = platformContext;
-        }
+        /** Plugin target. */
+        private final PlatformTestPluginTarget target = new PlatformTestPluginTarget();
 
         /** {@inheritDoc} */
-        @Override public PlatformTarget platformTarget() {
-            assert platformContext != null;
-
-            return new PlatformTestPluginTarget(platformContext);
+        @Override public IgnitePlatformPluginTarget platformTarget() {
+            return target;
         }
     }
 
     /**
      * Test target.
      */
-    public static class PlatformTestPluginTarget extends PlatformAbstractTarget {
-        /**
-         * Constructor.
-         *
-         * @param platformCtx Context.
-         */
-        protected PlatformTestPluginTarget(PlatformContext platformCtx) {
-            super(platformCtx);
+    public static class PlatformTestPluginTarget implements IgnitePlatformPluginTarget {
+        /** {@inheritDoc} */
+        @Override public void invokeOperation(int opCode, BinaryRawReader reader, BinaryRawWriter writer) {
+            // TODO: test read, write, and exceptions
         }
     }
 }

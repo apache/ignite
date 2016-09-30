@@ -17,16 +17,13 @@
 
 package org.apache.ignite.plugin;
 
-import org.apache.ignite.internal.processors.platform.PlatformTarget;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
 
 /**
- * Interface for plugins that interact with platforms.
+ * Platform plugin target: interface that is invoked from platform code to perform operations.
  */
-public interface IgnitePlatformPlugin extends IgnitePlugin {
-    /**
-     * Gets the platform target.
-     *
-     * @return Platform target.
-     */
-    IgnitePlatformPluginTarget platformTarget();
+public interface IgnitePlatformPluginTarget {
+    void invokeOperation(int opCode, BinaryRawReader reader, BinaryRawWriter writer) throws IgniteException;
 }
