@@ -844,7 +844,16 @@ public class GridNioServer<T> {
                     req = (NioOperationFuture<?>)ses.pollFuture();
 
                     if (req == null) {
-                        key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+                        if (ses.procWrite.get()) {
+                            boolean set = ses.procWrite.compareAndSet(true, false);
+
+                            assert set;
+
+                            if (ses.writeQueue().isEmpty())
+                                key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+                            else
+                                ses.procWrite.set(true);
+                        }
 
                         break;
                     }
@@ -1043,7 +1052,16 @@ public class GridNioServer<T> {
                         req = (NioOperationFuture<?>)ses.pollFuture();
 
                         if (req == null && buf.position() == 0) {
-                            key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+                            if (ses.procWrite.get()) {
+                                boolean set = ses.procWrite.compareAndSet(true, false);
+
+                                assert set;
+
+                                if (ses.writeQueue().isEmpty())
+                                    key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+                                else
+                                    ses.procWrite.set(true);
+                            }
 
                             break;
                         }
