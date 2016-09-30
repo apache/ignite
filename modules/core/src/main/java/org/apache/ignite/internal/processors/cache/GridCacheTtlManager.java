@@ -17,33 +17,28 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSmartPointer;
-import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSmartPointerFactory;
-import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSnapTreeSet;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
+import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
-import org.jetbrains.annotations.NotNull;
-
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.LongAdder8;
 
 /**
  * Eagerly removes expired entries from cache when
  * {@link CacheConfiguration#isEagerTtl()} flag is set.
  */
-@SuppressWarnings("NakedNotify, TooBroadScope")
+@SuppressWarnings("NakedNotify")
 public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
     /** Pending entries pointer factory */
@@ -53,19 +48,6 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     /** Entries pending removal. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private GridOffHeapSnapTreeSet<EntryGridOffHeapSmartPointer> pendingPointers;
-
-    /** Cleanup worker. */
-    private CleanupWorker cleanupWorker;
-
-    /** Mutex. */
-    private final Object mux = new Object();
-
-    /** Next expire time. */
-    private volatile long nextExpireTime;
-
-    /** Next expire time updater. */
-    private static final AtomicLongFieldUpdater<GridCacheTtlManager> nextExpireTimeUpdater =
-        AtomicLongFieldUpdater.newUpdater(GridCacheTtlManager.class, "nextExpireTime");
 
     /** Unsafe memory object for direct memory allocation. */
     private GridUnsafeMemory unsafeMemory;
@@ -94,19 +76,14 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         if (cleanupDisabled)
             return;
 
-        cleanupWorker = new CleanupWorker();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void onKernalStart0() throws IgniteCheckedException {
-        if (cleanupWorker != null)
-            new IgniteThread(cleanupWorker).start();
+        cctx.shared().ttl().register(this);
     }
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
-        U.cancel(cleanupWorker);
-        U.join(cleanupWorker, log);
+        pendingEntries.clear();
+//TODO: release memeory
+        cctx.shared().ttl().unregister(this);
     }
 
     /**
@@ -116,7 +93,6 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
      */
     public void addTrackedEntry(GridCacheMapEntry entry) {
         assert Thread.holdsLock(entry);
-        assert cleanupWorker != null;
 
         PendingEntry e = new PendingEntry(entry);
 
@@ -128,22 +104,6 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         finally {
             guard.end();
         }
-
-        while (true) {
-            long nextExpireTime = this.nextExpireTime;
-
-            if (e.expireTime < nextExpireTime) {
-                if (nextExpireTimeUpdater.compareAndSet(this, nextExpireTime, e.expireTime)) {
-                    synchronized (mux) {
-                        mux.notifyAll();
-                    }
-
-                    break;
-                }
-            }
-            else
-                break;
-        }
     }
 
     /**
@@ -151,7 +111,6 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
      */
     public void removeTrackedEntry(GridCacheMapEntry entry) {
         assert Thread.holdsLock(entry);
-        assert cleanupWorker != null;
 
         PendingEntry e = new PendingEntry(entry);
 
@@ -184,6 +143,16 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
      * Expires entries by TTL.
      */
     public void expire() {
+        expire(-1);
+    }
+
+    /**
+     * Processes specified amount of expired entries.
+     *
+     * @param amount Limit of processed entries by single call, {@code -1} for no limit.
+     * @return {@code True} if unprocessed expired entries remains.
+     */
+    public boolean expire(int amount) {
         if (pendingPointers == null)
             return;
 
@@ -191,7 +160,9 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
         GridCacheVersion obsoleteVer = null;
 
-        for (int size = pendingPointers.size(); size > 0; size--) {
+        int limit = (-1 != amount) ? amount : pendingEntries.size();
+
+        for (int cnt = limit; cnt > 0; cnt--) {
             PendingEntry pendingEntry;
             boolean entryRemoved;
 
@@ -224,26 +195,38 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                 if (log.isTraceEnabled())
                     log.trace("Trying to remove expired entry from cache: " + entry);
 
-                boolean touch = false;
+                boolean touch = e.ctx.isSwapOrOffheapEnabled();
 
-                while (true) {
-                    try {
-                        if (entry.onTtlExpired(obsoleteVer))
-                            touch = false;
+                GridCacheEntryEx entry = touch ? e.ctx.cache().entryEx(e.key) : e.ctx.cache().peekEx(e.key);
 
-                        break;
+                if (entry != null) {
+                    while (true) {
+                        try {
+                            if (entry.onTtlExpired(obsoleteVer))
+                                touch = false;
+
+                            break;
+                        }
+                        catch (GridCacheEntryRemovedException e0) {
+                            entry = entry.context().cache().entryEx(entry.key());
+
+                            touch = true;
+                        }
                     }
-                    catch (GridCacheEntryRemovedException ignore) {
-                        entry = entry.context().cache().entryEx(entry.key());
 
-                        touch = true;
-                    }
+                    if (touch)
+                        entry.context().evicts().touch(entry, null);
                 }
-
-                if (touch)
-                    entry.context().evicts().touch(entry, null);
             }
         }
+
+        if (amount != -1) {
+            EntryWrapper e = pendingEntries.firstx();
+
+            return e != null && e.expireTime <= now;
+        }
+
+        return false;
     }
 
     /**
@@ -262,54 +245,31 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             while (!isCancelled()) {
                 expire();
 
+                long waitTime;
+
                 while (true) {
                     long curTime = U.currentTimeMillis();
 
-                    EntryGridOffHeapSmartPointer key0;
-                    PendingEntry pendingEntry;
+                    GridCacheTtlManager.EntryWrapper first = pendingEntries.firstx();
 
-                    guard.begin();
-                    try {
-                        key0 = pendingPointers.firstx();
-
-                        pendingEntry = (key0 == null) ? null : key0.entry();
-                    }
-                    finally {
-                        guard.end();
-                    }
-
-                    long waitTime;
-                    if (key0 == null) {
+                    if (first == null) {
                         waitTime = 500;
                         nextExpireTime = curTime + 500;
                     }
-                    else if (pendingEntry == null)
-                        break;
                     else {
-                        long expireTime = pendingEntry.expireTime;
+                        long expireTime = first.expireTime;
+
                         waitTime = expireTime - curTime;
                         nextExpireTime = expireTime;
                     }
 
                     synchronized (mux) {
-                        guard.begin();
-                        try {
-                            EntryGridOffHeapSmartPointer key1 = pendingPointers.firstx();
+                        if (pendingEntries.firstx() == first) {
+                            if (waitTime > 0)
+                                mux.wait(waitTime);
 
-                            boolean firstEntryChanged = (key0 != key1) &&
-                                (key0 == null || key1 == null || key0.pointer() != key1.pointer());
-
-                            if (firstEntryChanged)
-                                continue;
+                            break;
                         }
-                        finally {
-                            guard.end();
-                        }
-
-                        if (waitTime > 0)
-                            mux.wait(waitTime);
-
-                        break;
                     }
                 }
             }
