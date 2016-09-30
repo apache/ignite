@@ -18,6 +18,7 @@
 package org.apache.ignite.platform;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cluster.ClusterNode;
@@ -111,7 +112,7 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
      */
     public static class PlatformTestPlugin implements IgnitePlatformPlugin {
         /** Plugin target. */
-        private final PlatformTestPluginTarget target = new PlatformTestPluginTarget();
+        private final IgnitePlatformPluginTarget target = new PlatformTestPluginTarget();
 
         /** {@inheritDoc} */
         @Override public IgnitePlatformPluginTarget platformTarget() {
@@ -123,9 +124,27 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
      * Test target.
      */
     public static class PlatformTestPluginTarget implements IgnitePlatformPluginTarget {
+        /** */
+        private static final int OP_READ_WRITE = 1;
+
+        /** */
+        private static final int OP_ERROR = 2;
+
         /** {@inheritDoc} */
         @Override public void invokeOperation(int opCode, BinaryRawReader reader, BinaryRawWriter writer) {
-            // TODO: test read, write, and exceptions
+            switch (opCode) {
+                case OP_READ_WRITE: {
+                    Object data = reader.readObject();
+
+                    writer.writeObject(data);
+                }
+
+                case OP_ERROR: {
+                    String text = reader.readString();
+
+                    throw new IgniteException(text);
+                }
+            }
         }
     }
 }
