@@ -45,6 +45,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Messaging;
+    using Apache.Ignite.Core.Plugin;
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Transactions;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
@@ -695,7 +696,7 @@ namespace Apache.Ignite.Core.Impl
         public event EventHandler<ClientReconnectEventArgs> ClientReconnected;
 
         /** <inheritdoc /> */
-        public IUnmanagedTarget GetPluginTarget(string name)
+        public IPluginTarget GetPluginTarget(string name)
         {
             // TODO: JNI call
             // TODO: Cache result by name

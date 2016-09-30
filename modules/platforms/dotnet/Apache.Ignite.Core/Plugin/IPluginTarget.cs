@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,28 +15,15 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Unmanaged
+namespace Apache.Ignite.Core.Plugin
 {
-    using System;
-
     /// <summary>
-    /// Unmanaged target.
+    /// Unmanaged plugin target.
     /// </summary>
-    internal unsafe interface IUnmanagedTarget : IDisposable
+    public interface IPluginTarget
     {
-        /// <summary>
-        /// Context.
-        /// </summary>
-        void* Context { get; }
-
-        /// <summary>
-        /// Target.
-        /// </summary>
-        void* Target { get; }
-
-        /// <summary>
-        /// Creates new instance with same context and different target.
-        /// </summary>
-        IUnmanagedTarget ChangeTarget(void* target);
+        // TODO: DoOutInOp, etc
+        // Hide all unmanaged stuff behind this interface
+        // Implementors should not deal with pointers and contexts.
     }
 }
