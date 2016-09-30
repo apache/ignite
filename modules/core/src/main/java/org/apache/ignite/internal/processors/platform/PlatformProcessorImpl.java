@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.platform.events.PlatformEvents;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.messaging.PlatformMessaging;
+import org.apache.ignite.internal.processors.platform.plugin.PlatformPluginTargetAdapter;
 import org.apache.ignite.internal.processors.platform.services.PlatformServices;
 import org.apache.ignite.internal.processors.platform.transactions.PlatformTransactions;
 import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
@@ -497,8 +498,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         IgnitePlatformPluginTarget pluginTarget = plugin.platformTarget();
 
-        // TODO: Return a wrapper
-        return null;
+        return new PlatformPluginTargetAdapter(platformCtx, pluginTarget);
     }
 
     /**
