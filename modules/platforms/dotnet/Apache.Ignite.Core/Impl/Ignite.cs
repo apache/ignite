@@ -845,6 +845,9 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="outStream">The out stream.</param>
         internal void PluginCallback(PlatformMemoryStream inStream, PlatformMemoryStream outStream)
         {
+            Debug.Assert(inStream != null);
+            Debug.Assert(outStream != null);
+
             var reader = Marshaller.StartUnmarshal(inStream);
             var writer = Marshaller.StartMarshal(outStream);
 
