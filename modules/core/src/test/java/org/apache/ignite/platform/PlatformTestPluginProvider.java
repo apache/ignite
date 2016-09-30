@@ -152,7 +152,7 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
 
                 case OP_INVOKE_CALLBACK: {
                     // TODO: ???
-                    // Something should be injected, like IgnitePlatformPluginContext
+                    // Something should be injected VIA THIS METHOD ARG, like IgnitePlatformPluginContext
                     // Where there is a way to invoke callbacks (route by plugin name internally)
 
                     break;
