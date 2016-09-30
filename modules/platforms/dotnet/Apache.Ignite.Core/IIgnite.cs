@@ -317,6 +317,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="name">The unmanaged plugin name.</param>
         /// <returns>Unmanaged target for a plugin with specified name.</returns>
+        [CLSCompliant(false)]
         IUnmanagedTarget GetPluginTarget(string name);
     }
 }
