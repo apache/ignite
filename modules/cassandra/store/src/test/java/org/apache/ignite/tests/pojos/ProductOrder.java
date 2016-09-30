@@ -67,7 +67,7 @@ public class ProductOrder {
 
         // if user ordered more than 10 items provide 5% discount
         if (amount > 10)
-            this.price = this.price * 0.95F;
+            price *= 0.95F;
     }
 
     /** {@inheritDoc} */

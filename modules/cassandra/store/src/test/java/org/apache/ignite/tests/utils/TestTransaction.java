@@ -36,8 +36,7 @@ public class TestTransaction implements Transaction {
     private final IgniteUuid xid = IgniteUuid.randomUuid();
 
     /** {@inheritDoc} */
-    @Nullable
-    @Override public IgniteUuid xid() {
+    @Nullable @Override public IgniteUuid xid() {
         return xid;
     }
 

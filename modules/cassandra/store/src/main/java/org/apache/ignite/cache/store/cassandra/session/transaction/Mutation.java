@@ -57,7 +57,6 @@ public interface Mutation {
      * Binds prepared statement to current Cassandra session.
      *
      * @param statement Statement.
-     * @param obj Parameters for statement binding.
      * @return Bounded statement.
      */
     public BoundStatement bindStatement(PreparedStatement statement);

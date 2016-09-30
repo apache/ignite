@@ -69,7 +69,7 @@ public class CassandraSessionImpl implements CassandraSession {
     private volatile Session ses;
 
     /** Number of references to Cassandra driver session (for multithreaded environment). */
-    private volatile int refCnt = 0;
+    private volatile int refCnt;
 
     /** Storage for the session prepared statements */
     private static final Map<String, PreparedStatement> sesStatements = new HashMap<>();
@@ -748,7 +748,7 @@ public class CassandraSessionImpl implements CassandraSession {
                     catch (AlreadyExistsException ignored) {
                     }
                     catch (Throwable e) {
-                        if (!(e instanceof InvalidQueryException) || !e.getMessage().equals("Index already exists"))
+                        if (!(e instanceof InvalidQueryException) || !"Index already exists".equals(e.getMessage()))
                             throw new IgniteException(errorMsg, e);
                     }
                 }

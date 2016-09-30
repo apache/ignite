@@ -48,6 +48,7 @@ public class CassandraLocalServer {
         while (true) {
             try {
                 System.out.println("Cassandra server running");
+
                 Thread.sleep(10000);
             }
             catch (Throwable e) {

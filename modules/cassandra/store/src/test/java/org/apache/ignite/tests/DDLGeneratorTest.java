@@ -25,6 +25,7 @@ import org.junit.Test;
  * DDLGenerator test.
  */
 public class DDLGeneratorTest {
+    /** */
     private static final String[] RESOURCES = new String[] {
         "org/apache/ignite/tests/persistence/primitive/persistence-settings-1.xml",
         "org/apache/ignite/tests/persistence/pojo/persistence-settings-3.xml",
@@ -33,9 +34,11 @@ public class DDLGeneratorTest {
         "org/apache/ignite/tests/persistence/pojo/order.xml"
     };
 
+    /**
+     * Test DDL generator.
+     */
     @Test
     @SuppressWarnings("unchecked")
-    /** */
     public void generatorTest() {
         String[] files = new String[RESOURCES.length];
 

@@ -41,19 +41,19 @@ public class CacheStoreHelper {
 
     /** */
     public static CacheStore createCacheStore(String cacheName, Resource persistenceSettings, DataSource conn,
-                                              CacheStoreSession session) {
+        CacheStoreSession session) {
         return createCacheStore(cacheName, persistenceSettings, conn, session, LOGGER);
     }
 
     /** */
     public static CacheStore createCacheStore(String cacheName, Resource persistenceSettings, DataSource conn,
-                                              Logger log) {
+        Logger log) {
         return createCacheStore(cacheName, persistenceSettings, conn, null, log);
     }
 
     /** */
     public static CacheStore createCacheStore(String cacheName, Resource persistenceSettings, DataSource conn,
-                                              CacheStoreSession session, Logger log) {
+        CacheStoreSession session, Logger log) {
         CassandraCacheStore<Integer, Integer> cacheStore =
             new CassandraCacheStore<>(conn, new KeyValuePersistenceSettings(persistenceSettings),
                 Runtime.getRuntime().availableProcessors());
