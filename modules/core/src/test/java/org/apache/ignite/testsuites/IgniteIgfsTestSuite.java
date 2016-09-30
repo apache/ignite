@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.igfs.IgfsFileInfoSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsFileMapSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsGroupDataBlockKeyMapperHashSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsMetaManagerSelfTest;
-import org.apache.ignite.internal.processors.igfs.IgfsMetricsSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsModeResolverSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsModesSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsPrimaryMultiNodeSelfTest;
@@ -120,7 +119,6 @@ public class IgniteIgfsTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(IgfsStreamsSelfTest.class));
         suite.addTest(new TestSuite(IgfsModesSelfTest.class));
-        suite.addTest(new TestSuite(IgfsMetricsSelfTest.class));
 
         suite.addTest(new TestSuite(IgfsPrimaryClientSelfTest.class));
         suite.addTest(new TestSuite(IgfsPrimaryRelaxedConsistencyClientSelfTest.class));

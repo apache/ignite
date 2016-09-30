@@ -32,6 +32,7 @@ import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.IgfsParentNotDirectoryException;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
+import org.apache.ignite.igfs.secondary.local.LocalIgfsSecondaryFileSystem;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -62,6 +63,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import org.junit.Assert;
 
 import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 import static org.apache.ignite.igfs.IgfsMode.PROXY;
@@ -2656,17 +2658,17 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
         // Sizes are updated asynchronously, so we need to wait
         // this to change:
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return fs.metrics().localSpaceSize() == 0;
             }
-        }, 2000L);
+        }, 2000L));
 
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return fs.metrics().secondarySpaceSize() == 0;
             }
-        }, 2000L);
+        }, 2000L));
     }
 
     /**
@@ -2675,9 +2677,226 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception
      */
     public final void testMetricsBlock() throws Exception {
-        IgfsEx secIgfsEx = (dual || isProxy()) ? igfsSecondary.igfs() : null;
+        final boolean proxy = isProxy();
 
-        IgfsMetricsTestUtils.testBlockMetrics0(igfs, igfsSecondaryFileSystem, (IgfsImpl)secIgfsEx, dual, isProxy());
+        final IgfsImpl secIgfsEx = (dual || proxy) ? (IgfsImpl)igfsSecondary.igfs() : null;
+
+        assert !dual || (igfsSecondaryFileSystem != null);
+        assert !proxy || (igfsSecondaryFileSystem != null);
+        assert !(dual && proxy);
+
+        final IgfsPath file00 = new IgfsPath("/file00");
+
+        igfs.create(file00, false).close();
+
+        final int blockSize = igfs.info(file00).blockSize();
+
+        igfs.await(file00);
+
+        IgfsEntryInfo info = null;
+
+        if (proxy) {
+            if (secIgfsEx != null)
+                info = secIgfsEx.meta.infoForPath(file00);
+        }
+        else
+            info = ((IgfsImpl)igfs).meta.infoForPath(file00);
+
+        if (info != null) {
+            final int blockSize2 = info.blockSize();
+
+            assert blockSize2 == blockSize : "IgfsFile blk size = " + blockSize + ", Meta size = " + blockSize2;
+        }
+        // **** this fails: see https://issues.apache.org/jira/browse/IGNITE-3877
+        // ###############################################################
+
+        final MetricExpectations e = new MetricExpectations(dual, proxy, blockSize);
+
+        // TODO: not disable prefetch, but consider it in assertions.
+        igfs.configuration().setPrefetchBlocks(0);
+
+        Assert.assertTrue("https://issues.apache.org/jira/browse/IGNITE-3664", !(igfsSecondaryFileSystem instanceof LocalIgfsSecondaryFileSystem));
+
+        igfs.format();
+
+        igfs.resetMetrics();
+
+        IgfsPath fileRemote = null;
+
+        IgfsPath file1 = new IgfsPath("/file1");
+        IgfsPath file2 = new IgfsPath("/file2");
+
+        assert dual == IgfsUtils.isDualMode(igfs.mode(file1));
+        assert dual == IgfsUtils.isDualMode(igfs.mode(file2));
+
+        int rmtBlockSize = -1;
+
+        if (secIgfsEx != null) {
+            secIgfsEx.format();
+
+            secIgfsEx.resetMetrics();
+
+            fileRemote = new IgfsPath("/fileRemote");
+
+            // Create remote file and write some data to it.
+            try (IgfsOutputStream out = secIgfsEx.create(fileRemote, 256, true, null, 1, 256, null)) {
+                rmtBlockSize = secIgfsEx.info(fileRemote).blockSize();
+
+                out.write(new byte[rmtBlockSize * 5]);
+            }
+
+            assert rmtBlockSize == blockSize;
+        }
+
+        // Start metrics measuring.
+        final IgfsMetrics initMetrics = igfs.metrics();
+        //
+        //        assert e.blockSize == blockSize;
+
+        assert blockSize > 0 : "Unexpected block size: " + blockSize;
+
+        checkBlockMetrics(initMetrics, igfs.metrics(), 0, 0, 0, 0, 0, 0);
+
+        e.primBlocksWritten = 7;
+
+        // Write two blocks to the file.
+        try (IgfsOutputStream os = igfs.append(file1, true)) {
+            os.write(new byte[blockSize * (int)e.primBlocksWritten]);
+        }
+
+        checkMetricExpectations(initMetrics, igfs.metrics(), e);
+
+        // Write one more file (one block).
+        try (IgfsOutputStream os = igfs.create(file2, 256, true, null, 1, 256, null)) {
+            os.write(new byte[blockSize]);
+        }
+
+        e.primBlocksWritten++;
+
+        checkMetricExpectations(initMetrics, igfs.metrics(), e);
+
+        e.primBlocksRead = 2;
+
+        // Read data from the first file.
+        try (IgfsInputStream is = igfs.open(file1)) {
+            is.readFully(0, new byte[blockSize * (int)e.primBlocksRead]);
+        }
+
+        checkMetricExpectations(initMetrics, igfs.metrics(), e);
+
+        // Read data from the second file with hits.
+        try (IgfsInputStream is = igfs.open(file2)) {
+            ((IgfsInputStreamImpl)is).readChunks(0, blockSize);
+        }
+
+        e.primBlocksRead++;
+
+        //        checkBlockMetrics(initMetrics, igfs.metrics(),
+        //            (int)m.blocksRead, m.totalBlocksRead(), m.rmtBlocksRead(),
+        //            blocksWritten, (dual || proxy) ? blocksWritten : 0, blockSize * blocksWritten);
+        checkMetricExpectations(initMetrics, igfs.metrics(), e);
+
+        // Clear the first file.
+        igfs.create(file1, true).close();
+
+        //        checkBlockMetrics(initMetrics, igfs.metrics(),
+        //            blocksRead, proxy ? blocksRead : 0, blockSize * blocksRead,
+        //            blocksWritten, (dual || proxy) ? blocksWritten : 0, blockSize * blocksWritten);
+        checkMetricExpectations(initMetrics, igfs.metrics(), e);
+
+        // Delete the second file.
+        igfs.delete(file2, false);
+
+        //        checkBlockMetrics(initMetrics, igfs.metrics(),
+        //            blocksRead, proxy ? blocksRead : 0, blockSize * blocksRead,
+        //            blocksWritten, (dual || proxy) ? blocksWritten : 0, blockSize * blocksWritten);
+        checkMetricExpectations(initMetrics, igfs.metrics(), e);
+
+        IgfsMetrics metrics;
+
+        //int rmtBlocksRead = 0;
+
+        if (fileRemote != null) {
+            // Read remote file.
+            try (IgfsInputStream is = igfs.open(fileRemote)) {
+                ((IgfsInputStreamImpl)is).readChunks(0, rmtBlockSize);
+            }
+
+            e.rmtBlocksRead++;
+
+            //            checkBlockMetrics(initMetrics, igfs.metrics(),
+            //                blocksRead + rmtBlocksRead, proxy ? (blocksRead + rmtBlocksRead) : 0, blockSize * blocksRead + rmtBlockSize * rmtBlocksRead,
+            //                blocksWritten, (dual || proxy) ? blocksWritten : 0, blockSize * blocksWritten);
+            checkMetricExpectations(initMetrics, igfs.metrics(), e);
+
+            // Lets wait for blocks will be placed to cache
+            //U.sleep(300); // ?
+            igfs.await(fileRemote);
+
+            // Read remote file again.
+            try (IgfsInputStream is = igfs.open(fileRemote)) {
+                ((IgfsInputStreamImpl)is).readChunks(0, rmtBlockSize);
+            }
+
+            if (dual)
+                e.primBlocksRead++;
+            else
+                e.rmtBlocksRead++;
+
+            checkMetricExpectations(initMetrics, igfs.metrics(), e);
+
+            // Write some data to the file working in DUAL mode.
+            try (IgfsOutputStream os = igfs.append(fileRemote, false)) {
+                os.write(new byte[rmtBlockSize]);
+            }
+
+            e.primBlocksWritten++;
+
+            checkMetricExpectations(initMetrics, igfs.metrics(), e);
+
+            igfs.delete(fileRemote, false);
+
+            U.sleep(300);
+
+            assert igfs.metrics().secondarySpaceSize() == 0;
+
+            // Write partial block to the first file.
+            try (IgfsOutputStream os = igfs.append(file1, false)) {
+                os.write(new byte[blockSize / 2]);
+            }
+
+            e.primBlocksWritten += 0.5;
+
+            checkMetricExpectations(initMetrics, igfs.metrics(), e);
+
+            // Now read partial block.
+            // Read remote file again.
+            try (IgfsInputStream is = igfs.open(file1)) {
+                is.seek(blockSize * (int)e.primBlocksWritten);
+
+                ((IgfsInputStreamImpl)is).readChunks(0, blockSize / 2);
+            }
+
+            e.primBlocksRead += 0.5;
+
+            checkMetricExpectations(initMetrics, igfs.metrics(), e);
+        }
+
+        igfs.resetMetrics();
+
+        metrics = igfs.metrics();
+
+        assert metrics.blocksReadTotal() == 0;
+        assert metrics.blocksReadRemote() == 0;
+        assert metrics.blocksWrittenTotal() == 0;
+        assert metrics.blocksWrittenRemote() == 0;
+        assert metrics.bytesRead() == 0;
+        assert metrics.bytesReadTime() == 0;
+        assert metrics.bytesWritten() == 0;
+        assert metrics.bytesWriteTime() == 0;
+
+        assert metrics.bytesReadTime() >= 0;
+        assert metrics.bytesWriteTime() >= 0;
     }
 
     /**
@@ -2686,7 +2905,148 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception
      */
     public void testMetricsBasic() throws Exception {
-        IgfsMetricsTestUtils.testMetrics0(igfs, igfsSecondary);
+        Assert.assertNotNull(igfs);
+
+        igfs.format();
+
+        igfs.resetMetrics();
+
+        IgfsMetrics m = igfs.metrics();
+
+        Assert.assertNotNull(m);
+        Assert.assertEquals(0, m.directoriesCount());
+        Assert.assertEquals(0, m.filesCount());
+        Assert.assertEquals(0, m.filesOpenedForRead());
+        Assert.assertEquals(0, m.filesOpenedForWrite());
+
+        igfs.mkdirs(new IgfsPath("/primary/dir1"));
+
+        m = igfs.metrics();
+
+        Assert.assertNotNull(m);
+        Assert.assertEquals(2, m.directoriesCount());
+        Assert.assertEquals(0, m.filesCount());
+        Assert.assertEquals(0, m.filesOpenedForRead());
+        Assert.assertEquals(0, m.filesOpenedForWrite());
+
+        igfs.mkdirs(new IgfsPath("/primary/dir1/dir2/dir3"));
+        igfs.mkdirs(new IgfsPath("/primary/dir4"));
+
+        m = igfs.metrics();
+
+        Assert.assertNotNull(m);
+        Assert.assertEquals(5, m.directoriesCount());
+        Assert.assertEquals(0, m.filesCount());
+        Assert.assertEquals(0, m.filesOpenedForRead());
+        Assert.assertEquals(0, m.filesOpenedForWrite());
+
+        IgfsOutputStream out1 = igfs.create(new IgfsPath("/primary/dir1/file1"), false);
+        IgfsOutputStream out2 = igfs.create(new IgfsPath("/primary/dir1/file2"), false);
+        IgfsOutputStream out3 = igfs.create(new IgfsPath("/primary/dir1/dir2/file"), false);
+
+        m = igfs.metrics();
+
+        Assert.assertNotNull(m);
+        Assert.assertEquals(5, m.directoriesCount());
+        Assert.assertEquals(3, m.filesCount());
+        Assert.assertEquals(0, m.filesOpenedForRead());
+        Assert.assertEquals(3, m.filesOpenedForWrite());
+
+        out1.write(new byte[10]);
+        out2.write(new byte[20]);
+        out3.write(new byte[30]);
+
+        out1.close();
+
+        m = igfs.metrics();
+
+        Assert.assertNotNull(m);
+        Assert.assertEquals(5, m.directoriesCount());
+        Assert.assertEquals(3, m.filesCount());
+        Assert.assertEquals(0, m.filesOpenedForRead());
+        Assert.assertEquals(2, m.filesOpenedForWrite());
+
+        out2.close();
+        out3.close();
+
+        m = igfs.metrics();
+
+        Assert.assertNotNull(m);
+        Assert.assertEquals(5, m.directoriesCount());
+        Assert.assertEquals(3, m.filesCount());
+        Assert.assertEquals(0, m.filesOpenedForRead());
+        Assert.assertEquals(0, m.filesOpenedForWrite());
+
+        IgfsOutputStream out = igfs.append(new IgfsPath("/primary/dir1/file1"), false);
+
+        out.write(new byte[20]);
+
+        m = igfs.metrics();
+
+        Assert.assertNotNull(m);
+        Assert.assertEquals(5, m.directoriesCount());
+        Assert.assertEquals(3, m.filesCount());
+        Assert.assertEquals(0, m.filesOpenedForRead());
+        Assert.assertEquals(1, m.filesOpenedForWrite());
+
+        out.write(new byte[20]);
+
+        out.close();
+
+        m = igfs.metrics();
+
+        Assert.assertNotNull(m);
+        Assert.assertEquals(5, m.directoriesCount());
+        Assert.assertEquals(3, m.filesCount());
+        Assert.assertEquals(0, m.filesOpenedForRead());
+        Assert.assertEquals(0, m.filesOpenedForWrite());
+
+        IgfsInputStream in1 = igfs.open(new IgfsPath("/primary/dir1/file1"));
+        IgfsInputStream in2 = igfs.open(new IgfsPath("/primary/dir1/file2"));
+
+        m = igfs.metrics();
+
+        Assert.assertNotNull(m);
+        Assert.assertEquals(5, m.directoriesCount());
+        Assert.assertEquals(3, m.filesCount());
+        Assert.assertEquals(2, m.filesOpenedForRead());
+        Assert.assertEquals(0, m.filesOpenedForWrite());
+
+        in1.close();
+        in2.close();
+
+        m = igfs.metrics();
+
+        Assert.assertNotNull(m);
+        Assert.assertEquals(5, m.directoriesCount());
+        Assert.assertEquals(3, m.filesCount());
+        Assert.assertEquals(0, m.filesOpenedForRead());
+        Assert.assertEquals(0, m.filesOpenedForWrite());
+
+        igfs.delete(new IgfsPath("/primary/dir1/file1"), false);
+        igfs.delete(new IgfsPath("/primary/dir1/dir2"), true);
+
+        m = igfs.metrics();
+
+        Assert.assertNotNull(m);
+        Assert.assertEquals(3, m.directoriesCount());
+        Assert.assertEquals(1, m.filesCount());
+        Assert.assertEquals(0, m.filesOpenedForRead());
+        Assert.assertEquals(0, m.filesOpenedForWrite());
+
+        igfs.format();
+
+        // NB: format does not clear secondary file system.
+        if (igfsSecondary != null)
+            igfsSecondary.format();
+
+        m = igfs.metrics();
+
+        Assert.assertNotNull(m);
+        Assert.assertEquals(0, m.directoriesCount());
+        Assert.assertEquals(0, m.filesCount());
+        Assert.assertEquals(0, m.filesOpenedForRead());
+        Assert.assertEquals(0, m.filesOpenedForWrite());
     }
 
     /**
@@ -2695,6 +3055,139 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception
      */
     public void testMetricsMultipleFsClose() throws Exception {
-        IgfsMetricsTestUtils.testMultipleClose0(igfs);
+        igfs.format();
+
+        igfs.resetMetrics();
+
+        IgfsOutputStream out = igfs.create(new IgfsPath("/primary/file"), false);
+
+        out.close();
+        out.close();
+
+        IgfsInputStream in = igfs.open(new IgfsPath("/primary/file"));
+
+        in.close();
+        in.close();
+
+        IgfsMetrics m = igfs.metrics();
+
+        Assert.assertEquals(0, m.filesOpenedForWrite());
+        Assert.assertEquals(0, m.filesOpenedForRead());
     }
+
+//    /**
+//     * Test for multiple closings. (Static delegate).
+//     *
+//     * @throws Exception If failed.
+//     */
+//    public static void testMultipleClose0(IgniteFileSystem fs) throws Exception {
+//    }
+
+    /**
+     *
+     * @param initMetrics
+     * @param metrics
+     * @param e
+     * @throws Exception
+     */
+    private static void checkMetricExpectations(IgfsMetrics initMetrics, IgfsMetrics metrics, MetricExpectations e)
+        throws Exception {
+        checkBlockMetrics(initMetrics, metrics,
+            e.totalBlocksRead(), e.rmtBlocksRead(), e.bytesRead(),
+            e.totalBlocksWritten(), e.rmtBlocksWritten(), e.bytesWritten());
+    }
+
+    private static class MetricExpectations {
+        private final boolean proxy;
+        private final boolean dual;
+
+        private final int blockSize;
+        private final int rmtBlockSize;
+
+        /** How many blocks read from the primary file system after primary write. */
+        double primBlocksRead;
+
+        /** How many blocks read read from primary if the
+         * file existed in secondary but did not exist in primary (fetched up). */
+        double rmtBlocksRead;
+
+        /** How many blocks written to the primary file system. */
+        double primBlocksWritten;
+
+        MetricExpectations(boolean dual, boolean proxy, int blockSize) {
+            this.dual = dual;
+            this.proxy = proxy;
+
+            this.blockSize = blockSize;
+            this.rmtBlockSize = blockSize; // NB: currently same value
+        }
+
+        double totalBlocksRead0() {
+            if (proxy || dual)
+                return primBlocksRead + rmtBlocksRead;
+
+            return primBlocksRead;
+        }
+
+        int totalBlocksRead() {
+            return (int)Math.ceil(totalBlocksRead0());
+        }
+
+        double rmtBlocksRead0() {
+            return rmtBlocksRead;
+        }
+
+        int rmtBlocksRead() {
+            if (proxy)
+                return totalBlocksRead();
+
+            return (int)Math.ceil(rmtBlocksRead0());
+        }
+
+        long bytesRead() {
+            return (long)(blockSize * primBlocksRead + rmtBlockSize * rmtBlocksRead);
+        }
+
+        int totalBlocksWritten() {
+            System.out.println("primBlocksWritten = " + primBlocksWritten);
+
+            return (int)primBlocksWritten;
+        }
+
+        int rmtBlocksWritten() {
+            return (dual || proxy) ? (int)primBlocksWritten : 0;
+        }
+
+        long bytesWritten() {
+            return (long)(blockSize * primBlocksWritten);
+        }
+    }
+
+    /**
+     * Ensure overall block-related metrics correctness.
+     *
+     * @param initMetrics Initial metrics.
+     * @param metrics Metrics to check.
+     * @param blocksRead Blocks read remote.
+     * @param blocksReadRemote Blocks read remote.
+     * @param bytesRead Bytes read.
+     * @param blocksWrite Blocks write.
+     * @param blocksWriteRemote Blocks write remote.
+     * @param bytesWrite Bytes write.
+     * @throws Exception If failed.
+     */
+    private static void checkBlockMetrics(IgfsMetrics initMetrics, IgfsMetrics metrics, long blocksRead,
+        long blocksReadRemote, long bytesRead, long blocksWrite, long blocksWriteRemote, long bytesWrite)
+        throws Exception {
+        assert metrics != null;
+
+        Assert.assertEquals(blocksRead, metrics.blocksReadTotal() - initMetrics.blocksReadTotal());
+        Assert.assertEquals(blocksReadRemote, metrics.blocksReadRemote() - initMetrics.blocksReadRemote());
+        Assert.assertEquals(bytesRead, metrics.bytesRead() - initMetrics.bytesRead());
+
+        Assert.assertEquals(blocksWrite, metrics.blocksWrittenTotal() - initMetrics.blocksWrittenTotal());
+        Assert.assertEquals(blocksWriteRemote, metrics.blocksWrittenRemote() - initMetrics.blocksWrittenRemote());
+        Assert.assertEquals(bytesWrite, metrics.bytesWritten() - initMetrics.bytesWritten());
+    }
+
 }
