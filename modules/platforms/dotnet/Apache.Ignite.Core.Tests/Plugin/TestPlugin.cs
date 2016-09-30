@@ -25,13 +25,26 @@ namespace Apache.Ignite.Core.Tests.Plugin
     /// </summary>
     public class TestPlugin
     {
+        /** Target. */
         private readonly IPluginTarget _target;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TestPlugin"/> class.
+        /// </summary>
+        /// <param name="target">The target.</param>
         public TestPlugin(IPluginTarget target)
         {
             IgniteArgumentCheck.NotNull(target, "target");
 
             _target = target;
+        }
+
+        /// <summary>
+        /// Gets the target.
+        /// </summary>
+        public IPluginTarget Target
+        {
+            get { return _target; }
         }
     }
 
