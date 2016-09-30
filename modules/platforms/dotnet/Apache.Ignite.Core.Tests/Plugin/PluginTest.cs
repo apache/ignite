@@ -17,11 +17,22 @@
 
 namespace Apache.Ignite.Core.Tests.Plugin
 {
+    using NUnit.Framework;
+
     /// <summary>
     /// Tests the plugin system.
     /// </summary>
     public class PluginTest
     {
+        [Test]
+        public void Test()
+        {
+            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+            {
+                var plugin = ignite.GetTestPlugin();
 
+                Assert.IsNotNull(plugin);
+            }
+        }
     }
 }

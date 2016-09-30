@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Plugin
 {
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Plugin;
 
     /// <summary>
@@ -28,6 +29,8 @@ namespace Apache.Ignite.Core.Tests.Plugin
 
         public TestPlugin(IPluginTarget target)
         {
+            IgniteArgumentCheck.NotNull(target, "target");
+
             _target = target;
         }
     }
