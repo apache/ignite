@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Plugin
 {
+    using Apache.Ignite.Core.Common;
     using NUnit.Framework;
 
     /// <summary>
@@ -72,16 +73,20 @@ namespace Apache.Ignite.Core.Tests.Plugin
         [Test]
         public void TestInvokeOperation()
         {
-            var plugin = _ignite.GetTestPlugin();
+            var target = _ignite.GetTestPlugin().Target;
 
             // Test round trip.
-            Assert.AreEqual(1, plugin.Target.InvokeOperation(OpReadWrite,
+            Assert.AreEqual(1, target.InvokeOperation(OpReadWrite,
                 w => w.WriteObject(1), r => r.ReadObject<int>()));
 
-            Assert.AreEqual("hello", plugin.Target.InvokeOperation(OpReadWrite,
+            Assert.AreEqual("hello", target.InvokeOperation(OpReadWrite,
                 w => w.WriteObject("hello"), r => r.ReadObject<string>()));
 
             // Test exception.
+            var ex = Assert.Throws<IgniteException>(() => target.InvokeOperation(OpError,
+                w => w.WriteObject("error text"), r => (object) null));
+
+            Assert.AreEqual("error text", ex.Message);
         }
 
         /// <summary>
