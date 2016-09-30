@@ -3156,14 +3156,14 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
          * @return Blocks written.
          */
         int totalBlocksWritten() {
-            return (int)primBlocksWritten;
+            return (int)Math.ceil(primBlocksWritten);
         }
 
         /**
          * @return Blocks written.
          */
         int rmtBlocksWritten() {
-            return (dual || proxy) ? (int)primBlocksWritten : 0;
+            return (dual || proxy) ? (int)Math.ceil(primBlocksWritten) : 0;
         }
 
         /**

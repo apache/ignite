@@ -153,8 +153,11 @@ class IgfsOutputStreamProxyImpl extends IgfsAbstractOutputStream {
             else {
                 int blkSize = info.blockSize();
 
-                if (blkSize > 0) { // prevent division by zero
+                if (blkSize > 0) { // anyway, prevent division by zero
                     int blocks = writeLen / blkSize;
+
+                    if (blocks == 0 && writeLen > 0)
+                        blocks = 1; // by convention, do ceil rounding.
 
                     igfsCtx.metrics().addWriteBlocks(blocks, blocks);
                 }

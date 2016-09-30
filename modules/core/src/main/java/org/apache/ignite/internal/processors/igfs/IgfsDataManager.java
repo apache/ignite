@@ -360,16 +360,11 @@ public class IgfsDataManager extends IgfsManager {
                             // Wait for existing future to finish and get it's result.
                             res = oldRmtReadFut.get();
 
-                            System.out.println("addRB A");
-
                             igfsCtx.metrics().addReadBlocks(1, 0);
                         }
                     }
-                    else {
-                        System.out.println("addRB B");
-
+                    else
                         igfsCtx.metrics().addReadBlocks(1, 0);
-                    }
 
                     return res;
                 }
@@ -422,8 +417,6 @@ public class IgfsDataManager extends IgfsManager {
         // If we did not read full block at the end of the file - trim it.
         if (read != blockSize)
             res = Arrays.copyOf(res, read);
-
-        System.out.println("read blk: idx = " + blockIdx + ", read = " + read + " t=" + Thread.currentThread());
 
         igfsCtx.metrics().addReadBlocks(1, 1);
 
@@ -1294,7 +1287,7 @@ public class IgfsDataManager extends IgfsManager {
                         if (!nodeBlocks.isEmpty()) {
                             processBatch(id, node, nodeBlocks);
 
-                            igfsCtx.metrics().addWriteBlocks(1, 0); // ****
+                            igfsCtx.metrics().addWriteBlocks(1, 0);
                         }
 
                         return portion;
@@ -1307,7 +1300,7 @@ public class IgfsDataManager extends IgfsManager {
                     if (!batch.write(portion))
                         throw new IgniteCheckedException("Cannot write more data to the secondary file system output " +
                             "stream because it was marked as closed: " + batch.path());
-                    else if (portion.length == blockSize)
+                    else
                         writtenSecondary = 1;
                 }
 
@@ -1331,12 +1324,12 @@ public class IgfsDataManager extends IgfsManager {
                     // Partial writes must be always synchronous.
                     processPartialBlockWrite(id, key, block == first ? off : 0, portion, blockSize);
 
-                    //writtenTotal++; // NB: trying to fix partial blocks metric problem.
+                    writtenTotal++;
                 }
                 else
                     nodeBlocks.put(key, portion);
 
-                igfsCtx.metrics().addWriteBlocks(writtenTotal, writtenSecondary); // ***
+                igfsCtx.metrics().addWriteBlocks(writtenTotal, writtenSecondary);
 
                 written += portion.length;
             }
@@ -1345,7 +1338,7 @@ public class IgfsDataManager extends IgfsManager {
             if (!nodeBlocks.isEmpty()) {
                 processBatch(id, node, nodeBlocks);
 
-                igfsCtx.metrics().addWriteBlocks(nodeBlocks.size(), 0); // ***
+                igfsCtx.metrics().addWriteBlocks(nodeBlocks.size(), 0);
             }
 
             assert written == len;
