@@ -144,7 +144,7 @@ public class IgniteCacheLocalQueryCancelOrTimeoutSelfTest extends GridCommonAbst
             }, timeoutUnits, timeUnit);
         }
 
-        try {
+        try(QueryCursor<List<?>> ignored = cursor) {
             cursor.iterator();
 
             fail("Expecting timeout");

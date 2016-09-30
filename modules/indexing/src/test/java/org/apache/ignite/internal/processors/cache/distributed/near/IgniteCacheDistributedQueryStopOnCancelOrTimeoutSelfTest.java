@@ -106,6 +106,11 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
     }
 
     /** */
+    public void testRemoteQueryExecutionCancel0() throws Exception {
+        testQuery(CACHE_SIZE, VAL_SIZE, QUERY_1, 1, TimeUnit.MILLISECONDS, false);
+    }
+
+    /** */
     public void testRemoteQueryExecutionCancel1() throws Exception {
         testQuery(CACHE_SIZE, VAL_SIZE, QUERY_1, 500, TimeUnit.MILLISECONDS, false);
     }
@@ -121,6 +126,11 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
     }
 
     /** */
+    public void testRemoteQueryWithMergeTableCancel0() throws Exception {
+        testQuery(CACHE_SIZE, VAL_SIZE, QUERY_2, 1, TimeUnit.MILLISECONDS, false);
+    }
+
+    /** */
     public void testRemoteQueryWithMergeTableCancel1() throws Exception {
         testQuery(CACHE_SIZE, VAL_SIZE, QUERY_2, 500, TimeUnit.MILLISECONDS, false);
     }
@@ -133,6 +143,11 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
     /** */
     public void testRemoteQueryWithMergeTableCancel3() throws Exception {
         testQuery(CACHE_SIZE, VAL_SIZE, QUERY_2, 3, TimeUnit.SECONDS, false);
+    }
+
+    /** */
+    public void testRemoteQueryWithoutMergeTableCancel0() throws Exception {
+        testQuery(CACHE_SIZE, VAL_SIZE, QUERY_3, 1, TimeUnit.MILLISECONDS, false);
     }
 
     /** */
@@ -196,7 +211,7 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
                 }, timeoutUnits, timeUnit);
             }
 
-            try {
+            try(QueryCursor<List<?>> ignored = cursor) {
                 cursor.iterator();
             }
             catch (CacheException ex) {
