@@ -17,14 +17,25 @@
 
 namespace Apache.Ignite.Core.Plugin
 {
+    using System;
+    using Apache.Ignite.Core.Binary;
+
     /// <summary>
     /// Unmanaged plugin target.
     /// </summary>
     public interface IPluginTarget
     {
-        // TODO: DoOutInOp, etc
-        // Hide all unmanaged stuff behind this interface
-        // Implementors should not deal with pointers and contexts.
-        // Among other things, this allows for CLS compliant interface.
+        /// <summary>
+        /// Invokes a cache extension.
+        /// </summary>
+        /// <typeparam name="T">The type of the result.</typeparam>
+        /// <param name="opCode">The operation code.</param>
+        /// <param name="writeAction">The write action.</param>
+        /// <param name="readFunc">The read action.</param>
+        /// <returns>
+        /// Result of the processing.
+        /// </returns>
+        T InvokeOperation<T>(int opCode, Action<IBinaryRawWriter> writeAction,
+            Func<IBinaryRawReader, T> readFunc);
     }
 }

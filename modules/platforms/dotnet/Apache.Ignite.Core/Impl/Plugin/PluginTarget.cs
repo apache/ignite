@@ -17,7 +17,10 @@
 
 namespace Apache.Ignite.Core.Impl.Plugin
 {
+    using System;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Plugin;
 
@@ -34,6 +37,33 @@ namespace Apache.Ignite.Core.Impl.Plugin
         public PluginTarget(IUnmanagedTarget target, Marshaller marsh) : base(target, marsh)
         {
             // No-op.
+        }
+
+        /** <inheritdoc /> */
+        public T InvokeOperation<T>(int opCode, Action<IBinaryRawWriter> writeAction, Func<IBinaryRawReader, T> readFunc)
+        {
+            // TODO: DoOutInOpX is not suitable because user code can mix read and write calls.
+
+            return DoOutInOpX(opCode, writeAction, (stream, res) => readFunc(Marshaller.StartUnmarshal(stream)), 
+                ReadException);
+        }
+
+        /// <summary>
+        /// Reads the exception, either in binary wrapper form, or as a pair of strings.
+        /// </summary>
+        /// <param name="inStream">The stream.</param>
+        /// <returns>Exception.</returns>
+        private Exception ReadException(IBinaryStream inStream)
+        {
+            var reader = Marshaller.StartUnmarshal(inStream);
+
+            // TODO: ???
+            var clsName = Unmarshal<string>(inStream);
+            var msg = Unmarshal<string>(inStream);
+            var trace = Unmarshal<string>(inStream);
+            var inner = reader.ReadBoolean() ? reader.ReadObject<Exception>() : null;
+
+            return ExceptionUtils.GetException(Marshaller.Ignite, clsName, msg, trace, reader, inner);
         }
     }
 }
