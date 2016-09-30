@@ -62,8 +62,7 @@ public class GridCacheRebalancingTransactionTest extends GridRollingRestartAbstr
             .setNearEvictionPolicy(new LruEvictionPolicy<Integer, Integer>(Integer.MAX_VALUE));
 
     /** The {@link CacheConfiguration} used by this test. */
-    @Override
-    protected CacheConfiguration<?, ?> getCacheConfiguration() {
+    @Override protected CacheConfiguration<?, ?> getCacheConfiguration() {
         return new CacheConfiguration<Integer, Integer>(CACHE_NAME)
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setBackups(1)
@@ -96,8 +95,7 @@ public class GridCacheRebalancingTransactionTest extends GridRollingRestartAbstr
     }
 
     /** {@inheritDoc} */
-    @Override
-    public int getMaxRestarts() {
+    @Override public int getMaxRestarts() {
         return 5;
     }
 
@@ -178,8 +176,7 @@ public class GridCacheRebalancingTransactionTest extends GridRollingRestartAbstr
     private void updateCache(final Cache<Integer, Integer> cache, final int newValue, final boolean invoke, final boolean rollback) {
         final TransactionConfiguration txConfig = new TransactionConfiguration();
         transact(new TransactionalTask<Object>() {
-            @Override
-            public Object run(Transaction tx) {
+            @Override public Object run(Transaction tx) {
                 if (invoke) {
                     for (EntryProcessorResult<Boolean> result : cache.invokeAll(KEYS, new IntegerSetValue(newValue)).values()) {
                         if (!Boolean.TRUE.equals(result.get())) {
@@ -220,8 +217,7 @@ public class GridCacheRebalancingTransactionTest extends GridRollingRestartAbstr
                                                 final Map<Integer, Integer> lastChecksum) {
         TransactionConfiguration txConfig = new TransactionConfiguration();
         return transact(new TransactionalTask<Map<Integer, Integer>>() {
-            @Override
-            public Map<Integer, Integer> run(Transaction tx) {
+            @Override public Map<Integer, Integer> run(Transaction tx) {
                 Map<Integer, Integer> map = cache.getAll(KEYS);
                 for (int value : map.values()) {
                     if (value != currentValue) {
@@ -330,8 +326,7 @@ public class GridCacheRebalancingTransactionTest extends GridRollingRestartAbstr
         }
 
         /** {@inheritDoc} */
-        @Override
-        public Boolean process(MutableEntry<Integer, Integer> entry, Object... args) {
+        @Override public Boolean process(MutableEntry<Integer, Integer> entry, Object... args) {
             entry.setValue(this.newValue);
             return Boolean.TRUE;
         }
