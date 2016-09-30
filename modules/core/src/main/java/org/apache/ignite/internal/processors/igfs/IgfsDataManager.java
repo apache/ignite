@@ -322,9 +322,6 @@ public class IgfsDataManager extends IgfsManager {
                 ", blockIdx=" + blockIdx + ']');
         }
 
-        System.out.println("Reading non-local data block [path=" + path + ", fileInfo=" + fileInfo +
-            ", blockIdx=" + blockIdx + ']');
-
         IgniteInternalFuture<byte[]> fut = dataCachePrj.getAsync(key);
 
         if (secReader != null) {

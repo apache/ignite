@@ -121,7 +121,7 @@ class IgfsOutputStreamProxyImpl extends IgfsAbstractOutputStream {
     }
 
     /** {@inheritDoc} */
-    @Override protected void send(final Object data, final int writeLen) throws IOException {
+    @Override protected void send(Object data, int writeLen) throws IOException {
         assert Thread.holdsLock(mux);
         assert data instanceof ByteBuffer || data instanceof DataInput;
 

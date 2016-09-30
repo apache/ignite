@@ -30,9 +30,9 @@ import org.apache.ignite.igfs.IgfsIpcEndpointType;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.processors.igfs.IgfsDualAbstractSelfTest;
-
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.IgniteFileSystem.IGFS_SCHEME;
 import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 
@@ -154,16 +154,4 @@ public abstract class Hadoop1DualAbstractTest extends IgfsDualAbstractSelfTest {
             // No-op.
         }
     }
-
-    // Try to use super method (?).
-//    /**
-//     * Checks block metrics.
-//     *
-//     * @throws Exception
-//     */
-//    public final void testMetricsBlock() throws Exception {
-//        assert dual;
-//
-//        IgfsMetricsTestUtils.testBlockMetrics0(igfs, igfsSecondaryFileSystem, null, true);
-//    }
 }
