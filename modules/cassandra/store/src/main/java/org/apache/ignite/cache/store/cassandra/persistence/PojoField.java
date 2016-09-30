@@ -85,11 +85,10 @@ public abstract class PojoField implements Serializable {
     public PojoField(PropertyDescriptor desc) {
         this.name = desc.getName();
 
-        QuerySqlField sqlField = desc.getReadMethod() != null ?
-            desc.getReadMethod().getAnnotation(QuerySqlField.class) :
-            desc.getWriteMethod() == null ?
-                null :
-                desc.getWriteMethod().getAnnotation(QuerySqlField.class);
+        QuerySqlField sqlField = desc.getReadMethod() != null &&
+                desc.getReadMethod().getAnnotation(QuerySqlField.class) != null ?
+                desc.getReadMethod().getAnnotation(QuerySqlField.class) :
+                    desc.getWriteMethod() == null ? null : desc.getWriteMethod().getAnnotation(QuerySqlField.class);
 
         col = sqlField != null && sqlField.name() != null &&
             !sqlField.name().trim().isEmpty() ? sqlField.name() : name.toLowerCase();

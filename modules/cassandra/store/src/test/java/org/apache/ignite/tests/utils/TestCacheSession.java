@@ -34,7 +34,7 @@ public class TestCacheSession implements CacheStoreSession {
     private Transaction tx;
 
     /** */
-    private Map<Object, Object> props;
+    private Map<Object, Object> props = U.newHashMap(1);
 
     /** */
     private Object attach;
@@ -42,6 +42,13 @@ public class TestCacheSession implements CacheStoreSession {
     /** */
     public TestCacheSession(String cacheName) {
         this.cacheName = cacheName;
+    }
+
+    /** */
+    public TestCacheSession(String cacheName, Transaction tx, Map<Object, Object> props) {
+        this.cacheName = cacheName;
+        this.tx = tx;
+        this.props = props;
     }
 
     /** */
@@ -78,9 +85,6 @@ public class TestCacheSession implements CacheStoreSession {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <K, V> Map<K, V> properties() {
-        if (props == null)
-            props = U.newHashMap(1);
-
         return (Map<K, V>)props;
     }
 
