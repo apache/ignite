@@ -2506,15 +2506,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
                         U.awaitQuiet(barrier);
 
-                        IgfsOutputStream os = null;
-
-                        try {
-                            os = igfs.create(path, true);
-
-                            os.write(chunk);
-                        }
-                        finally {
-                            U.closeQuiet(os);
+                        try (IgfsOutputStream os = igfs.create(path, true)) {
+                             os.write(chunk);
                         }
                     }
                     catch (IOException | IgniteException ignore) {

@@ -79,41 +79,44 @@ class IgfsOutputStreamProxyImpl extends IgfsAbstractOutputStream {
             if (closed)
                 return;
 
-            // Set closed flag immediately.
-            closed = true;
-
-            // Flush data.
-            IOException err = null;
-
             try {
-                sendBufferIfNotEmpty();
-            }
-            catch (Exception e) {
-                err = new IOException("Failed to flush data during stream close [path=" + path +
-                    ", fileInfo=" + info + ']', e);
-            }
+                // Set closed flag immediately.
+                closed = true;
 
-            // Finish batch before file unlocking to support the assertion that unlocked file batch,
-            // if any, must be in finishing state (e.g. append see more IgfsImpl.newBatch)
-            batch.finish();
+                // Flush data.
+                IOException err = null;
 
-            // Finally, await secondary file system flush.
-            try {
-                batch.await();
-            }
-            catch (IgniteCheckedException e) {
-                if (err == null)
-                    err = new IOException("Failed to close secondary file system stream [path=" + path +
+                try {
+                    sendBufferIfNotEmpty();
+                }
+                catch (Exception e) {
+                    err = new IOException("Failed to flush data during stream close [path=" + path +
                         ", fileInfo=" + info + ']', e);
-                else
-                    err.addSuppressed(e);
+                }
+
+                // Finish batch before file unlocking to support the assertion that unlocked file batch,
+                // if any, must be in finishing state (e.g. append see more IgfsImpl.newBatch)
+                batch.finish();
+
+                // Finally, await secondary file system flush.
+                try {
+                    batch.await();
+                }
+                catch (IgniteCheckedException e) {
+                    if (err == null)
+                        err = new IOException("Failed to close secondary file system stream [path=" + path +
+                            ", fileInfo=" + info + ']', e);
+                    else
+                        err.addSuppressed(e);
+                }
+
+                // Throw error, if any.
+                if (err != null)
+                    throw err;
             }
-
-            // Throw error, if any.
-            if (err != null)
-                throw err;
-
-            updateMetricsOnClose();
+            finally {
+                updateMetricsOnClose();
+            }
         }
     }
 
@@ -148,9 +151,13 @@ class IgfsOutputStreamProxyImpl extends IgfsAbstractOutputStream {
                 throw new IgniteCheckedException("Cannot write more data to the secondary file system output " +
                     "stream because it was marked as closed: " + batch.path());
             else {
-                int blocks = writeLen / info.blockSize();
+                int blkSize = info.blockSize();
 
-                igfsCtx.metrics().addWriteBlocks(blocks, blocks);
+                if (blkSize > 0) { // prevent division by zero
+                    int blocks = writeLen / blkSize;
+
+                    igfsCtx.metrics().addWriteBlocks(blocks, blocks);
+                }
             }
 
         }

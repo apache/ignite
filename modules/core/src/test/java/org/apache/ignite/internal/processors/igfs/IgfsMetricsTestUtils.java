@@ -257,7 +257,7 @@ public class IgfsMetricsTestUtils {
         // TODO: not disable prefetch, but consider it in assertions.
         igfs.configuration().setPrefetchBlocks(0);
 
-        Assert.assertTrue("https://issues.apache.org/jira/browse/IGNITE-3872", !(secFileSys instanceof
+        Assert.assertTrue("https://issues.apache.org/jira/browse/IGNITE-3664", !(secFileSys instanceof
             LocalIgfsSecondaryFileSystem));
 
         igfs.format();

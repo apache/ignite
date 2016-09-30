@@ -174,71 +174,74 @@ class IgfsOutputStreamImpl extends IgfsAbstractOutputStream {
             if (closed)
                 return;
 
-            // Set closed flag immediately.
-            closed = true;
-
-            // Flush data.
-            IOException err = null;
-
-            boolean flushSuccess = false;
-
             try {
-                sendBufferIfNotEmpty();
+                // Set closed flag immediately.
+                closed = true;
 
-                flushRemainder();
+                // Flush data.
+                IOException err = null;
 
-                igfsCtx.data().writeClose(fileInfo.id());
+                boolean flushSuccess = false;
 
-                writeFut.get();
+                try {
+                    sendBufferIfNotEmpty();
 
-                flushSuccess = true;
-            }
-            catch (Exception e) {
-                err = new IOException("Failed to flush data during stream close [path=" + path +
-                    ", fileInfo=" + fileInfo + ']', e);
-            }
+                    flushRemainder();
 
-            // Finish batch before file unlocking to support the assertion that unlocked file batch,
-            // if any, must be in finishing state (e.g. append see more IgfsImpl.newBatch)
-            if (batch != null)
-                batch.finish();
+                    igfsCtx.data().writeClose(fileInfo.id());
 
-            // Unlock the file after data is flushed.
-            try {
-                if (flushSuccess && space > 0)
-                    igfsCtx.meta().unlock(fileInfo.id(), fileInfo.lockId(), System.currentTimeMillis(), true,
-                        space, streamRange);
-                else
-                    igfsCtx.meta().unlock(fileInfo.id(), fileInfo.lockId(), System.currentTimeMillis());
-            }
-            catch (Exception e) {
-                if (err == null)
-                    err = new IOException("File to release file lock: " + path, e);
-                else
-                    err.addSuppressed(e);
-            }
+                    writeFut.get();
 
-            // Finally, await secondary file system flush.
-            if (batch != null) {
-                if (mode == DUAL_SYNC) {
-                    try {
-                        batch.await();
-                    }
-                    catch (IgniteCheckedException e) {
-                        if (err == null)
-                            err = new IOException("Failed to close secondary file system stream [path=" + path +
-                                ", fileInfo=" + fileInfo + ']', e);
-                        else
-                            err.addSuppressed(e);
+                    flushSuccess = true;
+                }
+                catch (Exception e) {
+                    err = new IOException("Failed to flush data during stream close [path=" + path +
+                        ", fileInfo=" + fileInfo + ']', e);
+                }
+
+                // Finish batch before file unlocking to support the assertion that unlocked file batch,
+                // if any, must be in finishing state (e.g. append see more IgfsImpl.newBatch)
+                if (batch != null)
+                    batch.finish();
+
+                // Unlock the file after data is flushed.
+                try {
+                    if (flushSuccess && space > 0)
+                        igfsCtx.meta().unlock(fileInfo.id(), fileInfo.lockId(), System.currentTimeMillis(), true,
+                            space, streamRange);
+                    else
+                        igfsCtx.meta().unlock(fileInfo.id(), fileInfo.lockId(), System.currentTimeMillis());
+                }
+                catch (Exception e) {
+                    if (err == null)
+                        err = new IOException("File to release file lock: " + path, e);
+                    else
+                        err.addSuppressed(e);
+                }
+
+                // Finally, await secondary file system flush.
+                if (batch != null) {
+                    if (mode == DUAL_SYNC) {
+                        try {
+                            batch.await();
+                        }
+                        catch (IgniteCheckedException e) {
+                            if (err == null)
+                                err = new IOException("Failed to close secondary file system stream [path=" + path +
+                                    ", fileInfo=" + fileInfo + ']', e);
+                            else
+                                err.addSuppressed(e);
+                        }
                     }
                 }
+
+                // Throw error, if any.
+                if (err != null)
+                    throw err;
             }
-
-            // Throw error, if any.
-            if (err != null)
-                throw err;
-
-            updateMetricsOnClose();
+            finally {
+                updateMetricsOnClose();
+            }
         }
     }
 

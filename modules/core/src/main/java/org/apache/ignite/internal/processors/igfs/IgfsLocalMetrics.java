@@ -162,8 +162,8 @@ public class IgfsLocalMetrics {
         blocksWritten0.get1().add(total);
         blocksWritten0.get2().add(secondary);
 
-        System.out.println(this + " addWriteBlocks: total +=" + total + " = " + blocksWritten0.get1().longValue() + ", " +
-            "secondary +=" + secondary + " = " + blocksWritten0.get2().longValue());
+        System.out.println(this + " addWriteBlocks: total +=" + total + " = " + blocksWritten0.get1().longValue() +
+            ", secondary +=" + secondary + " = " + blocksWritten0.get2().longValue());
     }
 
     /**
