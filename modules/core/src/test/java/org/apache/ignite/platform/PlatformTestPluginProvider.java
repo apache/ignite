@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.IgnitePlatformPlugin;
 import org.apache.ignite.plugin.IgnitePlugin;
@@ -38,6 +39,9 @@ import java.util.UUID;
  * Test plugin provider.
  */
 public class PlatformTestPluginProvider implements PluginProvider<PluginConfiguration> {
+    /** */
+    private PlatformContext platformContext;
+
     /** {@inheritDoc} */
     @Override public String name() {
         return "PlatformTestPlugin";
@@ -55,8 +59,7 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
 
     /** {@inheritDoc} */
     @Override public <T extends IgnitePlugin> T plugin() {
-        // TODO: Where to get platform context?
-        return (T)new PlatformTestPlugin(null);
+        return (T)new PlatformTestPlugin(platformContext);
     }
 
     /** {@inheritDoc} */
@@ -71,7 +74,7 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
 
     /** {@inheritDoc} */
     @Override public void start(PluginContext ctx) throws IgniteCheckedException {
-        // No-op.
+        platformContext = PlatformUtils.platformContext(ctx.grid());
     }
 
     /** {@inheritDoc} */
@@ -119,8 +122,7 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
 
         /** {@inheritDoc} */
         @Override public PlatformTarget platformTarget() {
-            // TODO
-            return null;
+            return this;
         }
     }
 }
