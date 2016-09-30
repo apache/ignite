@@ -38,5 +38,11 @@ namespace Apache.Ignite.Core.Tests.Plugin
                 Assert.AreSame(plugin, plugin2);
             }
         }
+
+        [Test]
+        public void TestCallback()
+        {
+            // TODO: Test custom callbacks from Java.
+        }
     }
 }

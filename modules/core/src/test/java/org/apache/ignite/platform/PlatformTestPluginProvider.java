@@ -19,6 +19,8 @@ package org.apache.ignite.platform;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
+import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.IgnitePlatformPlugin;
@@ -36,59 +38,86 @@ import java.util.UUID;
  * Test plugin provider.
  */
 public class PlatformTestPluginProvider implements PluginProvider<PluginConfiguration> {
+    /** {@inheritDoc} */
     @Override public String name() {
         return "PlatformTestPlugin";
     }
 
+    /** {@inheritDoc} */
     @Override public String version() {
         return "1.2.3";
     }
 
+    /** {@inheritDoc} */
     @Override public String copyright() {
         return "copyleft";
     }
 
+    /** {@inheritDoc} */
     @Override public <T extends IgnitePlugin> T plugin() {
-        return (T)new PlatformTestPlugin();
+        // TODO: Where to get platform context?
+        return (T)new PlatformTestPlugin(null);
     }
 
+    /** {@inheritDoc} */
     @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
-
+        // No-op.
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public void start(PluginContext ctx) throws IgniteCheckedException {
-
+        // No-op.
     }
 
+    /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
-
+        // No-op.
     }
 
+    /** {@inheritDoc} */
     @Override public void onIgniteStart() throws IgniteCheckedException {
-
+        // No-op.
     }
 
+    /** {@inheritDoc} */
     @Override public void onIgniteStop(boolean cancel) {
-
+        // No-op.
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public Serializable provideDiscoveryData(UUID nodeId) {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public void receiveDiscoveryData(UUID nodeId, Serializable data) {
-
+        // No-op.
     }
 
+    /** {@inheritDoc} */
     @Override public void validateNewNode(ClusterNode node) throws PluginValidationException {
-
+        // No-op.
     }
 
-    public static class PlatformTestPlugin implements IgnitePlatformPlugin {
+    /**
+     * Test plugin.
+     */
+    public static class PlatformTestPlugin extends PlatformAbstractTarget implements IgnitePlatformPlugin {
+        /**
+         * Constructor.
+         *
+         * @param platformCtx Context.
+         */
+        protected PlatformTestPlugin(PlatformContext platformCtx) {
+            super(platformCtx);
+        }
+
+        /** {@inheritDoc} */
         @Override public PlatformTarget platformTarget() {
             // TODO
             return null;
