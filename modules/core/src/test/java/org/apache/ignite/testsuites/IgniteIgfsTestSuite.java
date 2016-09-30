@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsServerManagerIpcEndpointRe
 import org.apache.ignite.internal.processors.igfs.IgfsSizeSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsStartCacheTest;
 import org.apache.ignite.internal.processors.igfs.IgfsStreamsSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsTaskSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsLocalSecondaryFileSystemDualAsyncClientSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsLocalSecondaryFileSystemDualAsyncSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsLocalSecondaryFileSystemDualSyncClientSelfTest;
@@ -138,7 +139,7 @@ public class IgniteIgfsTestSuite extends TestSuite {
         suite.addTestSuite(IgfsFixedLengthRecordResolverSelfTest.class);
         suite.addTestSuite(IgfsNewLineDelimiterRecordResolverSelfTest.class);
 
-        //suite.addTestSuite(IgfsTaskSelfTest.class); // TODO: tremporary disabled to avoid hangups (seee IG-3922).
+        suite.addTestSuite(IgfsTaskSelfTest.class);
 
         suite.addTestSuite(IgfsGroupDataBlockKeyMapperHashSelfTest.class);
 
