@@ -32,6 +32,9 @@ namespace Apache.Ignite.Core.Tests.Plugin
         private const int OpError = 2;
 
         /** */
+        private const int OpInvokeCallback = 3;
+
+        /** */
         private IIgnite _ignite;
 
         /// <summary>
@@ -96,6 +99,9 @@ namespace Apache.Ignite.Core.Tests.Plugin
         public void TestCallback()
         {
             // TODO: Test custom callbacks from Java.
+            var target = _ignite.GetTestPlugin().Target;
+
+            target.InvokeOperation(OpInvokeCallback, w => { }, r => (object) null);
         }
     }
 }

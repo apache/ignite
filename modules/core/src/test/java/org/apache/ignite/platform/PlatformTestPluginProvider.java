@@ -130,6 +130,9 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
         /** */
         private static final int OP_ERROR = 2;
 
+        /** */
+        private static final int OP_INVOKE_CALLBACK = 3;
+
         /** {@inheritDoc} */
         @Override public void invokeOperation(int opCode, BinaryRawReader reader, BinaryRawWriter writer) {
             switch (opCode) {
@@ -145,6 +148,14 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
                     String text = reader.readString();
 
                     throw new IgniteException(text);
+                }
+
+                case OP_INVOKE_CALLBACK: {
+                    // TODO: ???
+                    // Something should be injected, like IgnitePlatformPluginContext
+                    // Where there is a way to invoke callbacks (route by plugin name internally)
+
+                    break;
                 }
             }
         }
