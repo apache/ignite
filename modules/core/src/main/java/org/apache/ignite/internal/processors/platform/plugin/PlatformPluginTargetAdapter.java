@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.platform.plugin;
 
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.plugin.IgnitePlatformPluginTarget;
@@ -27,7 +27,7 @@ import org.apache.ignite.plugin.IgnitePlatformPluginTarget;
 /**
  * Adapts user-defined IgnitePlatformPluginTarget to internal PlatformAbstractTarget.
  */
-public class PlatformPluginTargetAdapter extends PlatformAbstractTarget implements IgnitePlatformPluginTarget {
+public class PlatformPluginTargetAdapter extends PlatformAbstractTarget {
     /** */
     private final IgnitePlatformPluginTarget target;
 
@@ -35,21 +35,20 @@ public class PlatformPluginTargetAdapter extends PlatformAbstractTarget implemen
      * Constructor.
      *
      * @param platformCtx Context.
-     * @param pluginTarget
+     * @param target User-defined target.
      */
-    public PlatformPluginTargetAdapter(PlatformContext platformCtx, IgnitePlatformPluginTarget pluginTarget) {
+    public PlatformPluginTargetAdapter(PlatformContext platformCtx, IgnitePlatformPluginTarget target) {
         super(platformCtx);
 
-        assert pluginTarget != null;
+        assert target != null;
 
-        this.target = pluginTarget;
+        this.target = target;
     }
 
     /** {@inheritDoc} */
-    @Override public void invokeOperation(int opCode, BinaryRawReader reader, BinaryRawWriter writer)
-        throws IgniteException {
+    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader,
+        BinaryRawWriterEx writer) throws IgniteCheckedException {
 
-        // TODO: Delegate to super
-
+        target.invokeOperation(type, reader, writer);
     }
 }
