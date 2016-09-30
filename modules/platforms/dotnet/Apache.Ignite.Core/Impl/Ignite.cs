@@ -703,7 +703,8 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IPluginTarget GetPluginTarget(string name)
         {
-            return _pluginTargets.GetOrAdd(name, n => new PluginTarget(UU.ProcessorPluginTarget(_proc, n)));
+            return _pluginTargets.GetOrAdd(name, 
+                n => new PluginTarget(UU.ProcessorPluginTarget(_proc, n), Marshaller));
         }
 
         /// <summary>

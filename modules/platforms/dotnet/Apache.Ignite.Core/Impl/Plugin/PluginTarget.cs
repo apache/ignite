@@ -17,27 +17,23 @@
 
 namespace Apache.Ignite.Core.Impl.Plugin
 {
-    using System.Diagnostics;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Plugin;
 
     /// <summary>
     /// Plugin target.
     /// </summary>
-    internal class PluginTarget : IPluginTarget
+    internal class PluginTarget : PlatformTarget, IPluginTarget
     {
-        /** Unmanaged target. */
-        private readonly IUnmanagedTarget _target;
-
         /// <summary>
-        /// Initializes a new instance of the <see cref="PluginTarget"/> class.
+        /// Initializes a new instance of the <see cref="PluginTarget" /> class.
         /// </summary>
         /// <param name="target">The target.</param>
-        public PluginTarget(IUnmanagedTarget target)
+        /// <param name="marsh">Marshaller.</param>
+        public PluginTarget(IUnmanagedTarget target, Marshaller marsh) : base(target, marsh)
         {
-            Debug.Assert(target != null);
-
-            _target = target;
+            // No-op.
         }
     }
 }
