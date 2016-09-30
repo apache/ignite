@@ -163,7 +163,7 @@ public class IgfsPathIds {
      * @return Path of the last existing element.
      */
     public IgfsPath lastExistingPath() {
-        IgfsPath path = new IgfsPath();
+        IgfsPath path = IgfsPath.ROOT;
 
         for (int i = 1; i <= lastExistingIdx; i++)
             path = new IgfsPath(path, parts[i]);
@@ -253,6 +253,16 @@ public class IgfsPathIds {
 
         for (int i = lastExistingIdx + 1; i < surrogateIds.length; i++)
             col.add(surrogateIds[i]);
+    }
+
+    /**
+     * Get ID at the give index.
+     *
+     * @param idx Index.
+     * @return ID.
+     */
+    public IgniteUuid id(int idx) {
+        return idx <= lastExistingIdx ? ids[idx] : surrogateId(idx);
     }
 
     /**

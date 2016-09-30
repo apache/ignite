@@ -18,8 +18,6 @@
 package org.apache.ignite.mesos;
 
 import com.google.protobuf.ByteString;
-import java.net.InetSocketAddress;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.ignite.mesos.resource.IgniteProvider;
@@ -35,10 +33,10 @@ import org.apache.mesos.Scheduler;
  */
 public class IgniteFramework {
     /** */
-    public static final Logger log = Logger.getLogger(IgniteFramework.class.getSimpleName());
+    private static final Logger log = Logger.getLogger(IgniteFramework.class.getSimpleName());
 
     /** Framework name. */
-    public static final String IGNITE_FRAMEWORK_NAME = "Ignite";
+    private static final String IGNITE_FRAMEWORK_NAME = "Ignite";
 
     /**
      * Main methods has only one optional parameter - path to properties files.
@@ -68,8 +66,8 @@ public class IgniteFramework {
         JettyServer httpSrv = new JettyServer();
 
         httpSrv.start(
-            new InetSocketAddress(clusterProps.httpServerHost(), clusterProps.httpServerPort()),
-            new ResourceHandler(clusterProps.userLibs(), clusterProps.igniteCfg(), clusterProps.igniteWorkDir())
+            new ResourceHandler(clusterProps.userLibs(), clusterProps.igniteCfg(), clusterProps.igniteWorkDir()),
+            clusterProps
         );
 
         ResourceProvider provider = new ResourceProvider();

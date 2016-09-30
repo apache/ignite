@@ -146,10 +146,11 @@ public interface GridCacheEntryEx {
 
     /**
      * Wraps entry to an entry with lazy value get.
+     * @param keepBinary Keep binary flag.
      *
      * @return Entry.
      */
-    public <K, V> Cache.Entry<K, V> wrapLazyValue();
+    public <K, V> Cache.Entry<K, V> wrapLazyValue(boolean keepBinary);
 
     /**
      * Peeks value provided to public API entries and to entry filters.
@@ -278,9 +279,6 @@ public interface GridCacheEntryEx {
      * @param tx Ongoing transaction (possibly null).
      * @param readSwap Flag indicating whether to check swap memory.
      * @param readThrough Flag indicating whether to read through.
-     * @param failFast If {@code true}, then throw {@link GridCacheFilterFailedException} if
-     *      filter didn't pass.
-     * @param unmarshal Unmarshal flag.
      * @param updateMetrics If {@code true} then metrics should be updated.
      * @param evt Flag to signal event notification.
      * @param tmp If {@code true} can return temporary instance which is valid while entry lock is held,
@@ -299,8 +297,6 @@ public interface GridCacheEntryEx {
         @Nullable IgniteInternalTx tx,
         boolean readSwap,
         boolean readThrough,
-        boolean failFast,
-        boolean unmarshal,
         boolean updateMetrics,
         boolean evt,
         boolean tmp,
@@ -362,6 +358,8 @@ public interface GridCacheEntryEx {
      * @param evt Flag to signal event notification.
      * @param metrics Flag to signal metrics update.
      * @param keepBinary Keep binary flag.
+     * @param oldValPresent {@code True} if oldValue present.
+     * @param oldVal Old value.
      * @param topVer Topology version.
      * @param filter Filter.
      * @param drType DR type.
@@ -387,6 +385,8 @@ public interface GridCacheEntryEx {
         boolean evt,
         boolean metrics,
         boolean keepBinary,
+        boolean oldValPresent,
+        @Nullable CacheObject oldVal,
         AffinityTopologyVersion topVer,
         CacheEntryPredicate[] filter,
         GridDrType drType,
@@ -406,6 +406,8 @@ public interface GridCacheEntryEx {
      * @param evt Flag to signal event notification.
      * @param metrics Flag to signal metrics notification.
      * @param keepBinary Keep binary flag.
+     * @param oldValPresent {@code True} if oldValue present.
+     * @param oldVal Old value.
      * @param topVer Topology version.
      * @param filter Filter.
      * @param drType DR type.
@@ -426,6 +428,8 @@ public interface GridCacheEntryEx {
         boolean evt,
         boolean metrics,
         boolean keepBinary,
+        boolean oldValPresent,
+        @Nullable CacheObject oldVal,
         AffinityTopologyVersion topVer,
         CacheEntryPredicate[] filter,
         GridDrType drType,
@@ -675,6 +679,7 @@ public interface GridCacheEntryEx {
      * @param preload Flag indicating whether entry is being preloaded.
      * @param topVer Topology version.
      * @param drType DR type.
+     * @param fromStore {@code True} if value was loaded from store.
      * @return {@code True} if initial value was set.
      * @throws IgniteCheckedException In case of error.
      * @throws GridCacheEntryRemovedException If entry was removed.
@@ -685,7 +690,8 @@ public interface GridCacheEntryEx {
         long expireTime,
         boolean preload,
         AffinityTopologyVersion topVer,
-        GridDrType drType) throws IgniteCheckedException, GridCacheEntryRemovedException;
+        GridDrType drType,
+        boolean fromStore) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * Sets new value if current version is <tt>0</tt> using swap entry data.
@@ -910,9 +916,10 @@ public interface GridCacheEntryEx {
      * Callback from ttl processor to cache entry indicating that entry is expired.
      *
      * @param obsoleteVer Version to set obsolete if entry is expired.
-     * @return {@code True} if this entry was obsolete or became obsolete as a result of this call.
+     * @throws GridCacheEntryRemovedException If entry was removed.
+     * @return {@code True} if this entry was expired as a result of this call.
      */
-    public boolean onTtlExpired(GridCacheVersion obsoleteVer);
+    public boolean onTtlExpired(GridCacheVersion obsoleteVer) throws GridCacheEntryRemovedException;
 
     /**
      * @return Time to live, without accounting for transactions or removals.

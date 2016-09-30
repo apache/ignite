@@ -43,7 +43,7 @@ mixin feedback(isCheckPristine, error, errorMessage)
         bs-options='item for item in options'
         container='body'
         data-min-length='1'
-        retain-selection
+        ignite-retain-selection
     )
 
     +feedback(true, 'required', '{{ label.name }} could not be empty!')

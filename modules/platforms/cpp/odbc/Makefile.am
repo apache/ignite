@@ -34,7 +34,8 @@ AM_CXXFLAGS = \
     -std=c++0x
 
 libignite_odbc_la_LIBADD = \
-    @top_srcdir@/binary/libignite-binary.la
+    @top_srcdir@/binary/libignite-binary.la \
+    -lodbcinst
 
 libignite_odbc_la_LDFLAGS = \
     -no-undefined \
@@ -54,7 +55,6 @@ libignite_odbc_la_SOURCES = \
     src/config/connection_info.cpp \
     src/connection.cpp \
     src/cursor.cpp \
-    src/decimal.cpp \
     src/diagnostic/diagnosable_adapter.cpp \
     src/diagnostic/diagnostic_record.cpp \
     src/diagnostic/diagnostic_record_storage.cpp \
@@ -63,6 +63,7 @@ libignite_odbc_la_SOURCES = \
     src/meta/table_meta.cpp \
     src/odbc.cpp \
     src/entry_points.cpp \
+    src/dsn_config.cpp \
     src/query/column_metadata_query.cpp \
     src/query/data_query.cpp \
     src/query/foreign_keys_query.cpp \
@@ -70,6 +71,7 @@ libignite_odbc_la_SOURCES = \
     src/query/table_metadata_query.cpp \
     src/query/type_info_query.cpp \
     src/query/special_columns_query.cpp \
+    src/protocol_version.cpp \
     src/result_page.cpp \
     src/row.cpp \
     src/column.cpp \

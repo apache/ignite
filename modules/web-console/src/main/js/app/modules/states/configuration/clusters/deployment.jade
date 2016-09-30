@@ -77,18 +77,25 @@ form.panel.panel-default(name='deployment' novalidate)
                             -var javaKeywords = 'form[ngModelName].$error.javaKeywords'
                             -var save = exclude + '[$index] = ' + field
 
-                            ignite-form-field(ng-repeat='model in #{exclude} track by $index' type='internal' name='Package name')
-                                .indexField
-                                    | {{ $index+1 }})
-                                +table-remove-button(exclude, 'Remove package name')
-                                span(ng-hide='field.edit')
-                                    a.labelFormField(ng-click='#{enabled} && (field.edit = true)') {{ model }}
-                                span(ng-if='field.edit' ng-init='#{field} = model')
-                                    +table-java-package-field(field, exclude, valid, save, false)
-                                        +table-save-button(valid, save, false)
-                                        +unique-feedback(unique, uniqueTip)
-                                        +error-feedback(javaPackageName, 'javaPackageName', tipJavaPackageName)
-                                        +error-feedback(javaKeywords, 'javaKeywords', tipJavaKeyWord)
+                            div(ng-show=enabled)
+                                ignite-form-field(ng-repeat='model in #{exclude} track by $index' type='internal' name='Package name')
+                                    .indexField
+                                        | {{ $index+1 }})
+                                    +table-remove-button(exclude, 'Remove package name')
+                                    span(ng-hide='field.edit')
+                                        a.labelFormField(ng-click='#{enabled} && (field.edit = true)') {{ model }}
+                                    span(ng-if='field.edit' ng-init='#{field} = model')
+                                        +table-java-package-field(field, exclude, valid, save, false)
+                                            +table-save-button(valid, save, false)
+                                            +unique-feedback(unique, uniqueTip)
+                                            +error-feedback(javaPackageName, 'javaPackageName', tipJavaPackageName)
+                                            +error-feedback(javaKeywords, 'javaKeywords', tipJavaKeyWord)
+                            div(ng-hide=enabled)
+                                ignite-form-field(ng-repeat='model in #{exclude} track by $index' type='internal' name='Package name')
+                                    .labelFormField.labelField
+                                        | {{ $index+1 }})
+                                    span.labelFormField
+                                        | {{ model }}
 
                         .group-content(ng-repeat='field in group.add')
                             -var field = 'new'

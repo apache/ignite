@@ -67,6 +67,9 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     /** Logger. */
     private static IgniteLogger log;
 
+    /** Logger. */
+    private static IgniteLogger msgLog;
+
     /** Context. */
     private GridCacheSharedContext<K, V> cctx;
 
@@ -111,8 +114,17 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
         futId = IgniteUuid.randomUuid();
 
-        if (log == null)
+        if (log == null) {
+            msgLog = cctx.txFinishMessageLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridDhtTxFinishFuture.class);
+        }
+    }
+
+    /**
+     * @return Transaction.
+     */
+    public GridDhtTxLocalAdapter tx() {
+        return tx;
     }
 
     /** {@inheritDoc} */
@@ -121,6 +133,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public boolean onNodeLeft(UUID nodeId) {
         for (IgniteInternalFuture<?> fut : futures())
             if (isMini(fut)) {
@@ -187,16 +200,39 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      */
     public void onResult(UUID nodeId, GridDhtTxFinishResponse res) {
         if (!isDone()) {
+            boolean found = false;
+
             for (IgniteInternalFuture<IgniteInternalTx> fut : futures()) {
                 if (isMini(fut)) {
                     MiniFuture f = (MiniFuture)fut;
 
                     if (f.futureId().equals(res.miniId())) {
+                        found = true;
+
                         assert f.node().id().equals(nodeId);
 
                         f.onResult(res);
                     }
                 }
+            }
+
+            if (!found) {
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("DHT finish fut, failed to find mini future [txId=" + tx.nearXidVersion() +
+                        ", dhtTxId=" + tx.xidVersion() +
+                        ", node=" + nodeId +
+                        ", res=" + res +
+                        ", fut=" + this + ']');
+                }
+            }
+        }
+        else {
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("DHT finish fut, failed to find mini future [txId=" + tx.nearXidVersion() +
+                    ", dhtTxId=" + tx.xidVersion() +
+                    ", node=" + nodeId +
+                    ", res=" + res +
+                    ", fut=" + this + ']');
             }
         }
     }
@@ -315,10 +351,18 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 tx.size(),
                 tx.subjectId(),
                 tx.taskNameHash(),
-                tx.activeCachesDeploymentEnabled());
+                tx.activeCachesDeploymentEnabled(),
+                false,
+                false);
 
             try {
                 cctx.io().send(n, req, tx.ioPolicy());
+
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("DHT finish fut, sent request lock tx [txId=" + tx.nearXidVersion() +
+                        ", dhtTxId=" + tx.xidVersion() +
+                        ", node=" + n.id() + ']');
+                }
 
                 if (sync)
                     res = true;
@@ -329,8 +373,16 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 // Fail the whole thing.
                 if (e instanceof ClusterTopologyCheckedException)
                     fut.onNodeLeft((ClusterTopologyCheckedException)e);
-                else
+                else {
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("DHT finish fut, failed to send request lock tx [txId=" + tx.nearXidVersion() +
+                            ", dhtTxId=" + tx.xidVersion() +
+                            ", node=" + n.id() +
+                            ", err=" + e + ']');
+                    }
+
                     fut.onResult(e);
+                }
             }
         }
 
@@ -342,8 +394,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      * @param nearMap Near map.
      * @return {@code True} in case there is at least one synchronous {@code MiniFuture} to wait for.
      */
-    private boolean finish(Map<UUID, GridDistributedTxMapping> dhtMap,
-        Map<UUID, GridDistributedTxMapping> nearMap) {
+    private boolean finish(Map<UUID, GridDistributedTxMapping> dhtMap, Map<UUID, GridDistributedTxMapping> nearMap) {
         if (tx.onePhaseCommit())
             return false;
 
@@ -399,12 +450,20 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 tx.subjectId(),
                 tx.taskNameHash(),
                 tx.activeCachesDeploymentEnabled(),
-                updCntrs);
+                updCntrs,
+                false,
+                false);
 
             req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
 
             try {
                 cctx.io().send(n, req, tx.ioPolicy());
+
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("DHT finish fut, sent request dht [txId=" + tx.nearXidVersion() +
+                        ", dhtTxId=" + tx.xidVersion() +
+                        ", node=" + n.id() + ']');
+                }
 
                 if (sync)
                     res = true;
@@ -415,8 +474,16 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 // Fail the whole thing.
                 if (e instanceof ClusterTopologyCheckedException)
                     fut.onNodeLeft((ClusterTopologyCheckedException)e);
-                else
+                else {
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("DHT finish fut, failed to send request dht [txId=" + tx.nearXidVersion() +
+                            ", dhtTxId=" + tx.xidVersion() +
+                            ", node=" + n.id() +
+                            ", err=" + e + ']');
+                    }
+
                     fut.onResult(e);
+                }
             }
         }
 
@@ -453,12 +520,20 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     tx.size(),
                     tx.subjectId(),
                     tx.taskNameHash(),
-                    tx.activeCachesDeploymentEnabled());
+                    tx.activeCachesDeploymentEnabled(),
+                    false,
+                    false);
 
                 req.writeVersion(tx.writeVersion());
 
                 try {
                     cctx.io().send(nearMapping.node(), req, tx.ioPolicy());
+
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("DHT finish fut, sent request near [txId=" + tx.nearXidVersion() +
+                            ", dhtTxId=" + tx.xidVersion() +
+                            ", node=" + nearMapping.node().id() + ']');
+                    }
 
                     if (sync)
                         res = true;
@@ -469,8 +544,16 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     // Fail the whole thing.
                     if (e instanceof ClusterTopologyCheckedException)
                         fut.onNodeLeft((ClusterTopologyCheckedException)e);
-                    else
+                    else {
+                        if (msgLog.isDebugEnabled()) {
+                            msgLog.debug("DHT finish fut, failed to send request near [txId=" + tx.nearXidVersion() +
+                                ", dhtTxId=" + tx.xidVersion() +
+                                ", node=" + nearMapping.node().id() +
+                                ", err=" + e + ']');
+                        }
+
                         fut.onResult(e);
+                    }
                 }
             }
         }
@@ -573,8 +656,11 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
          * @param discoThread {@code True} if executed from discovery thread.
          */
         void onNodeLeft(ClusterTopologyCheckedException e, boolean discoThread) {
-            if (log.isDebugEnabled())
-                log.debug("Remote node left grid while sending or waiting for reply (will ignore): " + this);
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("DHT finish fut, mini future node left [txId=" + tx.nearXidVersion() +
+                    ", dhtTxId=" + tx.xidVersion() +
+                    ", node=" + node().id() + ']');
+            }
 
             // If node left, then there is nothing to commit on it.
             onDone(tx);
