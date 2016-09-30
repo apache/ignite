@@ -25,19 +25,33 @@ import org.junit.Test;
  * DDLGenerator test.
  */
 public class DDLGeneratorTest {
+    /** */
+    private static final String[] RESOURCES = new String[] {
+        "org/apache/ignite/tests/persistence/primitive/persistence-settings-1.xml",
+        "org/apache/ignite/tests/persistence/pojo/persistence-settings-3.xml",
+        "org/apache/ignite/tests/persistence/pojo/persistence-settings-4.xml",
+        "org/apache/ignite/tests/persistence/pojo/product.xml",
+        "org/apache/ignite/tests/persistence/pojo/order.xml"
+    };
+
+    /**
+     * Test DDL generator.
+     */
     @Test
     @SuppressWarnings("unchecked")
-    /** */
     public void generatorTest() {
+        String[] files = new String[RESOURCES.length];
+
         ClassLoader clsLdr = DDLGeneratorTest.class.getClassLoader();
 
-        URL url1 = clsLdr.getResource("org/apache/ignite/tests/persistence/primitive/persistence-settings-1.xml");
-        String file1 = url1.getFile(); // TODO IGNITE-1371 Possible NPE
+        for (int i = 0; i < RESOURCES.length; i++) {
+            URL url = clsLdr.getResource(RESOURCES[i]);
+            if (url == null)
+                throw new IllegalStateException("Failed to find resource: " + RESOURCES[i]);
 
-        URL url2 = clsLdr.getResource("org/apache/ignite/tests/persistence/pojo/persistence-settings-3.xml");
-        String file2 = url2.getFile();  // TODO IGNITE-1371 Possible NPE
+            files[i] = url.getFile();
+        }
 
-        DDLGenerator.main(new String[]{file1, file2});
+        DDLGenerator.main(files);
     }
-
 }

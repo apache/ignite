@@ -17,10 +17,10 @@
 
 export default ['javaIdentifier', ['JavaTypes', (JavaTypes) => {
     const link = (scope, el, attrs, [ngModel]) => {
-        if (_.isUndefined(attrs.javaIdentifier) || !attrs.javaIdentifier)
+        if (_.isNil(attrs.javaIdentifier) || attrs.javaIdentifier !== 'true')
             return;
 
-        ngModel.$validators.javaIdentifier = (value) => JavaTypes.validIdentifier(value);
+        ngModel.$validators.javaIdentifier = (value) => _.isEmpty(value) || JavaTypes.validClassName(value);
     };
 
     return {

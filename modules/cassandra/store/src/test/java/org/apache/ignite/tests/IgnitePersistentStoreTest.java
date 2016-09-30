@@ -18,19 +18,27 @@
 package org.apache.ignite.tests;
 
 import java.util.Collection;
+import java.util.Date;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.tests.pojos.Person;
 import org.apache.ignite.tests.pojos.PersonId;
+import org.apache.ignite.tests.pojos.Product;
+import org.apache.ignite.tests.pojos.ProductOrder;
 import org.apache.ignite.tests.utils.CacheStoreHelper;
 import org.apache.ignite.tests.utils.CassandraHelper;
 import org.apache.ignite.tests.utils.TestsHelper;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.log4j.Logger;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -178,7 +186,7 @@ public class IgnitePersistentStoreTest {
 
             LOGGER.info("Running single operation write tests");
             longCache.put(1L, 1L);
-            personCache.put(1L, TestsHelper.generateRandomPerson());
+            personCache.put(1L, TestsHelper.generateRandomPerson(1L));
             LOGGER.info("Single operation write tests passed");
 
             LOGGER.info("Running bulk operation write tests");
@@ -244,22 +252,43 @@ public class IgnitePersistentStoreTest {
 
         Map<Long, Person> personMap1 = TestsHelper.generateLongsPersonsMap();
         Map<PersonId, Person> personMap2 = TestsHelper.generatePersonIdsPersonsMap();
+        Map<Long, Product> productsMap = TestsHelper.generateProductsMap();
+        Map<Long, ProductOrder> ordersMap = TestsHelper.generateOrdersMap();
+
+        Product product = TestsHelper.generateRandomProduct(-1L);
+        ProductOrder order = TestsHelper.generateRandomOrder(-1L);
 
         try (Ignite ignite = Ignition.start("org/apache/ignite/tests/persistence/pojo/ignite-config.xml")) {
             IgniteCache<Long, Person> personCache1 = ignite.getOrCreateCache(new CacheConfiguration<Long, Person>("cache1"));
             IgniteCache<PersonId, Person> personCache2 = ignite.getOrCreateCache(new CacheConfiguration<PersonId, Person>("cache2"));
             IgniteCache<PersonId, Person> personCache3 = ignite.getOrCreateCache(new CacheConfiguration<PersonId, Person>("cache3"));
+            IgniteCache<PersonId, Person> personCache4 = ignite.getOrCreateCache(new CacheConfiguration<PersonId, Person>("cache4"));
+            IgniteCache<Long, Product> productCache = ignite.getOrCreateCache(new CacheConfiguration<Long, Product>("product"));
+            IgniteCache<Long, ProductOrder> orderCache = ignite.getOrCreateCache(new CacheConfiguration<Long, ProductOrder>("order"));
 
             LOGGER.info("Running single operation write tests");
-            personCache1.put(1L, TestsHelper.generateRandomPerson());
-            personCache2.put(TestsHelper.generateRandomPersonId(), TestsHelper.generateRandomPerson());
-            personCache3.put(TestsHelper.generateRandomPersonId(), TestsHelper.generateRandomPerson());
+
+            personCache1.put(1L, TestsHelper.generateRandomPerson(1L));
+
+            PersonId id = TestsHelper.generateRandomPersonId();
+            personCache2.put(id, TestsHelper.generateRandomPerson(id.getPersonNumber()));
+
+            id = TestsHelper.generateRandomPersonId();
+            personCache3.put(id, TestsHelper.generateRandomPerson(id.getPersonNumber()));
+            personCache4.put(id, TestsHelper.generateRandomPerson(id.getPersonNumber()));
+
+            productCache.put(product.getId(), product);
+            orderCache.put(order.getId(), order);
+
             LOGGER.info("Single operation write tests passed");
 
             LOGGER.info("Running bulk operation write tests");
             personCache1.putAll(personMap1);
             personCache2.putAll(personMap2);
             personCache3.putAll(personMap2);
+            personCache4.putAll(personMap2);
+            productCache.putAll(productsMap);
+            orderCache.putAll(ordersMap);
             LOGGER.info("Bulk operation write tests passed");
         }
 
@@ -273,6 +302,9 @@ public class IgnitePersistentStoreTest {
             IgniteCache<Long, Person> personCache1 = ignite.getOrCreateCache(new CacheConfiguration<Long, Person>("cache1"));
             IgniteCache<PersonId, Person> personCache2 = ignite.getOrCreateCache(new CacheConfiguration<PersonId, Person>("cache2"));
             IgniteCache<PersonId, Person> personCache3 = ignite.getOrCreateCache(new CacheConfiguration<PersonId, Person>("cache3"));
+            IgniteCache<PersonId, Person> personCache4 = ignite.getOrCreateCache(new CacheConfiguration<PersonId, Person>("cache4"));
+            IgniteCache<Long, Product> productCache = ignite.getOrCreateCache(new CacheConfiguration<Long, Product>("product"));
+            IgniteCache<Long, ProductOrder> orderCache = ignite.getOrCreateCache(new CacheConfiguration<Long, ProductOrder>("order"));
 
             LOGGER.info("Running single operation read tests");
             Person person = personCache1.get(1L);
@@ -288,6 +320,18 @@ public class IgnitePersistentStoreTest {
             person = personCache3.get(id);
             if (!person.equals(personMap2.get(id)))
                 throw new RuntimeException("Person value was incorrectly deserialized from Cassandra");
+
+            person = personCache4.get(id);
+            if (!person.equals(personMap2.get(id)))
+                throw new RuntimeException("Person value was incorrectly deserialized from Cassandra");
+
+            Product product1 = productCache.get(product.getId());
+            if (!product.equals(product1))
+                throw new RuntimeException("Product value was incorrectly deserialized from Cassandra");
+
+            ProductOrder order1 = orderCache.get(order.getId());
+            if (!order.equals(order1))
+                throw new RuntimeException("Order value was incorrectly deserialized from Cassandra");
 
             LOGGER.info("Single operation read tests passed");
 
@@ -305,6 +349,18 @@ public class IgnitePersistentStoreTest {
             if (!TestsHelper.checkPersonMapsEqual(persons3, personMap2, false))
                 throw new RuntimeException("Person values batch was incorrectly deserialized from Cassandra");
 
+            Map<PersonId, Person> persons4 = personCache4.getAll(personMap2.keySet());
+            if (!TestsHelper.checkPersonMapsEqual(persons4, personMap2, false))
+                throw new RuntimeException("Person values batch was incorrectly deserialized from Cassandra");
+
+            Map<Long, Product> productsMap1 = productCache.getAll(productsMap.keySet());
+            if (!TestsHelper.checkProductMapsEqual(productsMap, productsMap1))
+                throw new RuntimeException("Product values batch was incorrectly deserialized from Cassandra");
+
+            Map<Long, ProductOrder> ordersMap1 = orderCache.getAll(ordersMap.keySet());
+            if (!TestsHelper.checkOrderMapsEqual(ordersMap, ordersMap1))
+                throw new RuntimeException("Order values batch was incorrectly deserialized from Cassandra");
+
             LOGGER.info("Bulk operation read tests passed");
 
             LOGGER.info("POJO strategy read tests passed");
@@ -320,7 +376,33 @@ public class IgnitePersistentStoreTest {
             personCache3.remove(id);
             personCache3.removeAll(personMap2.keySet());
 
+            personCache4.remove(id);
+            personCache4.removeAll(personMap2.keySet());
+
+            productCache.remove(product.getId());
+            productCache.removeAll(productsMap.keySet());
+
+            orderCache.remove(order.getId());
+            orderCache.removeAll(ordersMap.keySet());
+
             LOGGER.info("POJO strategy delete tests passed");
+        }
+    }
+
+    /** */
+    @Test
+    public void pojoStrategyTransactionTest() {
+        CassandraHelper.dropTestKeyspaces();
+
+        Ignition.stopAll(true);
+
+        try (Ignite ignite = Ignition.start("org/apache/ignite/tests/persistence/pojo/ignite-config.xml")) {
+            pojoStrategyTransactionTest(ignite, TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED);
+            pojoStrategyTransactionTest(ignite, TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ);
+            pojoStrategyTransactionTest(ignite, TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE);
+            pojoStrategyTransactionTest(ignite, TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED);
+            pojoStrategyTransactionTest(ignite, TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
+            pojoStrategyTransactionTest(ignite, TransactionConcurrency.PESSIMISTIC, TransactionIsolation.SERIALIZABLE);
         }
     }
 
@@ -339,6 +421,7 @@ public class IgnitePersistentStoreTest {
 
         Collection<CacheEntryImpl<PersonId, Person>> entries = TestsHelper.generatePersonIdsPersonsEntries();
 
+        //noinspection unchecked
         store.writeAll(entries);
 
         LOGGER.info("Cassandra table filled with test data");
@@ -365,5 +448,208 @@ public class IgnitePersistentStoreTest {
         }
 
         LOGGER.info("loadCache test passed");
+    }
+
+    /** */
+    @SuppressWarnings("unchecked")
+    private void pojoStrategyTransactionTest(Ignite ignite, TransactionConcurrency concurrency,
+                                             TransactionIsolation isolation) {
+        LOGGER.info("-----------------------------------------------------------------------------------");
+        LOGGER.info("Running POJO transaction tests using " + concurrency +
+                " concurrency and " + isolation + " isolation level");
+        LOGGER.info("-----------------------------------------------------------------------------------");
+
+        CacheStore productStore = CacheStoreHelper.createCacheStore("product",
+            new ClassPathResource("org/apache/ignite/tests/persistence/pojo/product.xml"),
+            CassandraHelper.getAdminDataSrc());
+
+        CacheStore orderStore = CacheStoreHelper.createCacheStore("order",
+            new ClassPathResource("org/apache/ignite/tests/persistence/pojo/order.xml"),
+            CassandraHelper.getAdminDataSrc());
+
+        Map<Long, Product> productsMap = TestsHelper.generateProductsMap(5);
+        Map<Long, Product> productsMap1;
+        Map<Long, ProductOrder> ordersMap = TestsHelper.generateOrdersMap(5);
+        Map<Long, ProductOrder> ordersMap1;
+        Product product = TestsHelper.generateRandomProduct(-1L);
+        ProductOrder order = TestsHelper.generateRandomOrder(-1L, -1L, new Date());
+
+        IgniteTransactions txs = ignite.transactions();
+
+        IgniteCache<Long, Product> productCache = ignite.getOrCreateCache(new CacheConfiguration<Long, Product>("product"));
+        IgniteCache<Long, ProductOrder> orderCache = ignite.getOrCreateCache(new CacheConfiguration<Long, ProductOrder>("order"));
+
+        LOGGER.info("Running POJO strategy write tests");
+
+        LOGGER.info("Running single operation write tests");
+
+        Transaction tx = txs.txStart(concurrency, isolation);
+
+        try {
+            productCache.put(product.getId(), product);
+            orderCache.put(order.getId(), order);
+
+            if (productStore.load(product.getId()) != null || orderStore.load(order.getId()) != null) {
+                throw new RuntimeException("Single write operation test failed. Transaction wasn't committed yet, but " +
+                        "objects were already persisted into Cassandra");
+            }
+
+            Map<Long, Product> products = (Map<Long, Product>)productStore.loadAll(productsMap.keySet());
+            Map<Long, ProductOrder> orders = (Map<Long, ProductOrder>)orderStore.loadAll(ordersMap.keySet());
+
+            if ((products != null && !products.isEmpty()) || (orders != null && !orders.isEmpty())) {
+                throw new RuntimeException("Single write operation test failed. Transaction wasn't committed yet, but " +
+                        "objects were already persisted into Cassandra");
+            }
+
+            tx.commit();
+        }
+        finally {
+            U.closeQuiet(tx);
+        }
+
+        Product product1 = (Product)productStore.load(product.getId());
+        ProductOrder order1 = (ProductOrder)orderStore.load(order.getId());
+
+        if (product1 == null || order1 == null) {
+            throw new RuntimeException("Single write operation test failed. Transaction was committed, but " +
+                    "no objects were persisted into Cassandra");
+        }
+
+        if (!product.equals(product1) || !order.equals(order1)) {
+            throw new RuntimeException("Single write operation test failed. Transaction was committed, but " +
+                    "objects were incorrectly persisted/loaded to/from Cassandra");
+        }
+
+        LOGGER.info("Single operation write tests passed");
+
+        LOGGER.info("Running bulk operation write tests");
+
+        tx = txs.txStart(concurrency, isolation);
+
+        try {
+            productCache.putAll(productsMap);
+            orderCache.putAll(ordersMap);
+
+            productsMap1 = (Map<Long, Product>)productStore.loadAll(productsMap.keySet());
+            ordersMap1 = (Map<Long, ProductOrder>)orderStore.loadAll(ordersMap.keySet());
+
+            if ((productsMap1 != null && !productsMap1.isEmpty()) || (ordersMap1 != null && !ordersMap1.isEmpty())) {
+                throw new RuntimeException("Bulk write operation test failed. Transaction wasn't committed yet, but " +
+                        "objects were already persisted into Cassandra");
+            }
+
+            tx.commit();
+        }
+        finally {
+            U.closeQuiet(tx);
+        }
+
+        productsMap1 = (Map<Long, Product>)productStore.loadAll(productsMap.keySet());
+        ordersMap1 = (Map<Long, ProductOrder>)orderStore.loadAll(ordersMap.keySet());
+
+        if (productsMap1 == null || productsMap1.isEmpty() || ordersMap1 == null || ordersMap1.isEmpty()) {
+            throw new RuntimeException("Bulk write operation test failed. Transaction was committed, but " +
+                    "no objects were persisted into Cassandra");
+        }
+
+        if (productsMap1.size() < productsMap.size() || ordersMap1.size() < ordersMap.size()) {
+            throw new RuntimeException("Bulk write operation test failed. There were committed less objects " +
+                    "into Cassandra than expected");
+        }
+
+        if (productsMap1.size() > productsMap.size() || ordersMap1.size() > ordersMap.size()) {
+            throw new RuntimeException("Bulk write operation test failed. There were committed more objects " +
+                    "into Cassandra than expected");
+        }
+
+        for (Map.Entry<Long, Product> entry : productsMap.entrySet()) {
+            product = productsMap1.get(entry.getKey());
+
+            if (!entry.getValue().equals(product)) {
+                throw new RuntimeException("Bulk write operation test failed. Transaction was committed, but " +
+                        "some objects were incorrectly persisted/loaded to/from Cassandra");
+            }
+        }
+
+        for (Map.Entry<Long, ProductOrder> entry : ordersMap.entrySet()) {
+            order = ordersMap1.get(entry.getKey());
+
+            if (!entry.getValue().equals(order)) {
+                throw new RuntimeException("Bulk write operation test failed. Transaction was committed, but " +
+                        "some objects were incorrectly persisted/loaded to/from Cassandra");
+            }
+        }
+
+        LOGGER.info("Bulk operation write tests passed");
+
+        LOGGER.info("POJO strategy write tests passed");
+
+        LOGGER.info("Running POJO strategy delete tests");
+
+        LOGGER.info("Running single delete tests");
+
+        tx = txs.txStart(concurrency, isolation);
+
+        try {
+            productCache.remove(-1L);
+            orderCache.remove(-1L);
+
+            if (productStore.load(-1L) == null || orderStore.load(-1L) == null) {
+                throw new RuntimeException("Single delete operation test failed. Transaction wasn't committed yet, but " +
+                        "objects were already deleted from Cassandra");
+            }
+
+            tx.commit();
+        }
+        finally {
+            U.closeQuiet(tx);
+        }
+
+        if (productStore.load(-1L) != null || orderStore.load(-1L) != null) {
+            throw new RuntimeException("Single delete operation test failed. Transaction was committed, but " +
+                    "objects were not deleted from Cassandra");
+        }
+
+        LOGGER.info("Single delete tests passed");
+
+        LOGGER.info("Running bulk delete tests");
+
+        tx = txs.txStart(concurrency, isolation);
+
+        try {
+            productCache.removeAll(productsMap.keySet());
+            orderCache.removeAll(ordersMap.keySet());
+
+            productsMap1 = (Map<Long, Product>)productStore.loadAll(productsMap.keySet());
+            ordersMap1 = (Map<Long, ProductOrder>)orderStore.loadAll(ordersMap.keySet());
+
+            if (productsMap1.size() != productsMap.size() || ordersMap1.size() != ordersMap.size()) {
+                throw new RuntimeException("Bulk delete operation test failed. Transaction wasn't committed yet, but " +
+                        "objects were already deleted from Cassandra");
+            }
+
+            tx.commit();
+        }
+        finally {
+            U.closeQuiet(tx);
+        }
+
+        productsMap1 = (Map<Long, Product>)productStore.loadAll(productsMap.keySet());
+        ordersMap1 = (Map<Long, ProductOrder>)orderStore.loadAll(ordersMap.keySet());
+
+        if ((productsMap1 != null && !productsMap1.isEmpty()) || (ordersMap1 != null && !ordersMap1.isEmpty())) {
+            throw new RuntimeException("Bulk delete operation test failed. Transaction was committed, but " +
+                    "objects were not deleted from Cassandra");
+        }
+
+        LOGGER.info("Bulk delete tests passed");
+
+        LOGGER.info("POJO strategy delete tests passed");
+
+        LOGGER.info("-----------------------------------------------------------------------------------");
+        LOGGER.info("Passed POJO transaction tests for " + concurrency +
+                " concurrency and " + isolation + " isolation level");
+        LOGGER.info("-----------------------------------------------------------------------------------");
     }
 }

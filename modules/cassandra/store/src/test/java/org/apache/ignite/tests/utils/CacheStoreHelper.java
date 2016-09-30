@@ -19,6 +19,7 @@ package org.apache.ignite.tests.utils;
 
 import java.lang.reflect.Field;
 import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.cache.store.cassandra.CassandraCacheStore;
 import org.apache.ignite.cache.store.cassandra.datasource.DataSource;
 import org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSettings;
@@ -35,12 +36,24 @@ public class CacheStoreHelper {
 
     /** */
     public static CacheStore createCacheStore(String cacheName, Resource persistenceSettings, DataSource conn) {
-        return createCacheStore(cacheName, persistenceSettings, conn, LOGGER);
+        return createCacheStore(cacheName, persistenceSettings, conn, null, LOGGER);
+    }
+
+    /** */
+    public static CacheStore createCacheStore(String cacheName, Resource persistenceSettings, DataSource conn,
+        CacheStoreSession session) {
+        return createCacheStore(cacheName, persistenceSettings, conn, session, LOGGER);
     }
 
     /** */
     public static CacheStore createCacheStore(String cacheName, Resource persistenceSettings, DataSource conn,
         Logger log) {
+        return createCacheStore(cacheName, persistenceSettings, conn, null, log);
+    }
+
+    /** */
+    public static CacheStore createCacheStore(String cacheName, Resource persistenceSettings, DataSource conn,
+        CacheStoreSession session, Logger log) {
         CassandraCacheStore<Integer, Integer> cacheStore =
             new CassandraCacheStore<>(conn, new KeyValuePersistenceSettings(persistenceSettings),
                 Runtime.getRuntime().availableProcessors());
@@ -52,7 +65,7 @@ public class CacheStoreHelper {
             sesField.setAccessible(true);
             logField.setAccessible(true);
 
-            sesField.set(cacheStore, new TestCacheSession(cacheName));
+            sesField.set(cacheStore, session != null ? session : new TestCacheSession(cacheName));
             logField.set(cacheStore, new Log4JLogger(log));
         }
         catch (Throwable e) {

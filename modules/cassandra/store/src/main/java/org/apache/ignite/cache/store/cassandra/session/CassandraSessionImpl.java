@@ -43,6 +43,7 @@ import org.apache.ignite.cache.store.cassandra.common.CassandraHelper;
 import org.apache.ignite.cache.store.cassandra.common.RandomSleeper;
 import org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSettings;
 import org.apache.ignite.cache.store.cassandra.session.pool.SessionPool;
+import org.apache.ignite.cache.store.cassandra.session.transaction.Mutation;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 
 /**
@@ -68,7 +69,7 @@ public class CassandraSessionImpl implements CassandraSession {
     private volatile Session ses;
 
     /** Number of references to Cassandra driver session (for multithreaded environment). */
-    private volatile int refCnt = 0;
+    private volatile int refCnt;
 
     /** Storage for the session prepared statements */
     private static final Map<String, PreparedStatement> sesStatements = new HashMap<>();
@@ -129,7 +130,7 @@ public class CassandraSessionImpl implements CassandraSession {
                 }
 
                 try {
-                    PreparedStatement preparedSt = prepareStatement(assistant.getStatement(),
+                    PreparedStatement preparedSt = prepareStatement(assistant.getTable(), assistant.getStatement(),
                         assistant.getPersistenceSettings(), assistant.tableExistenceRequired());
 
                     if (preparedSt == null)
@@ -151,7 +152,7 @@ public class CassandraSessionImpl implements CassandraSession {
                             return null;
                         }
 
-                        handleTableAbsenceError(assistant.getPersistenceSettings());
+                        handleTableAbsenceError(assistant.getTable(), assistant.getPersistenceSettings());
                     }
                     else if (CassandraHelper.isHostsAvailabilityError(e))
                         handleHostsAvailabilityError(e, attempt, errorMsg);
@@ -162,7 +163,8 @@ public class CassandraSessionImpl implements CassandraSession {
                         throw new IgniteException(errorMsg, e);
                 }
 
-                sleeper.sleep();
+                if (!CassandraHelper.isTableAbsenceError(error))
+                    sleeper.sleep();
 
                 attempt++;
             }
@@ -210,7 +212,7 @@ public class CassandraSessionImpl implements CassandraSession {
 
                 List<Cache.Entry<Integer, ResultSetFuture>> futResults = new LinkedList<>();
 
-                PreparedStatement preparedSt = prepareStatement(assistant.getStatement(),
+                PreparedStatement preparedSt = prepareStatement(assistant.getTable(), assistant.getStatement(),
                     assistant.getPersistenceSettings(), assistant.tableExistenceRequired());
 
                 if (preparedSt == null)
@@ -232,7 +234,7 @@ public class CassandraSessionImpl implements CassandraSession {
                                     return assistant.processedData();
 
                                 tblAbsenceEx = e;
-                                handleTableAbsenceError(assistant.getPersistenceSettings());
+                                handleTableAbsenceError(assistant.getTable(), assistant.getPersistenceSettings());
                             }
                             else if (CassandraHelper.isHostsAvailabilityError(e)) {
                                 hostsAvailEx = e;
@@ -307,7 +309,7 @@ public class CassandraSessionImpl implements CassandraSession {
                         return assistant.processedData();
 
                     error = tblAbsenceEx;
-                    handleTableAbsenceError(assistant.getPersistenceSettings());
+                    handleTableAbsenceError(assistant.getTable(), assistant.getPersistenceSettings());
                 }
 
                 if (hostsAvailEx != null) {
@@ -320,7 +322,8 @@ public class CassandraSessionImpl implements CassandraSession {
                     handlePreparedStatementClusterError(prepStatEx);
                 }
 
-                sleeper.sleep();
+                if (!CassandraHelper.isTableAbsenceError(error))
+                    sleeper.sleep();
 
                 attempt++;
             }
@@ -402,6 +405,103 @@ public class CassandraSessionImpl implements CassandraSession {
     }
 
     /** {@inheritDoc} */
+    @Override public void execute(List<Mutation> mutations) {
+        if (mutations == null || mutations.isEmpty())
+            return;
+
+        Throwable error = null;
+        String errorMsg = "Failed to apply " + mutations.size() + " mutations performed withing Ignite " +
+                "transaction into Cassandra";
+
+        int attempt = 0;
+        boolean tableExistenceRequired = false;
+        Map<String, PreparedStatement> statements = new HashMap<>();
+        Map<String, KeyValuePersistenceSettings> tableSettings = new HashMap<>();
+        RandomSleeper sleeper = newSleeper();
+
+        incrementSessionRefs();
+
+        try {
+            while (attempt < CQL_EXECUTION_ATTEMPTS_COUNT) {
+                error = null;
+
+                if (attempt != 0) {
+                    log.warning("Trying " + (attempt + 1) + " attempt to apply " + mutations.size() + " mutations " +
+                            "performed withing Ignite transaction into Cassandra");
+                }
+
+                try {
+                    BatchStatement batch = new BatchStatement();
+
+                    // accumulating all the mutations into one Cassandra logged batch
+                    for (Mutation mutation : mutations) {
+                        String key = mutation.getTable() + mutation.getClass().getName();
+                        PreparedStatement st = statements.get(key);
+
+                        if (st == null) {
+                            st = prepareStatement(mutation.getTable(), mutation.getStatement(),
+                                    mutation.getPersistenceSettings(), mutation.tableExistenceRequired());
+
+                            if (st != null)
+                                statements.put(key, st);
+                        }
+
+                        if (st != null)
+                            batch.add(mutation.bindStatement(st));
+
+                        if (attempt == 0) {
+                            if (mutation.tableExistenceRequired()) {
+                                tableExistenceRequired = true;
+
+                                if (!tableSettings.containsKey(mutation.getTable()))
+                                    tableSettings.put(mutation.getTable(), mutation.getPersistenceSettings());
+                            }
+                        }
+                    }
+
+                    // committing logged batch into Cassandra
+                    if (batch.size() > 0)
+                        session().execute(tuneStatementExecutionOptions(batch));
+
+                    return;
+                } catch (Throwable e) {
+                    error = e;
+
+                    if (CassandraHelper.isTableAbsenceError(e)) {
+                        if (tableExistenceRequired) {
+                            for (Map.Entry<String, KeyValuePersistenceSettings> entry : tableSettings.entrySet())
+                                handleTableAbsenceError(entry.getKey(), entry.getValue());
+                        }
+                        else
+                            return;
+                    } else if (CassandraHelper.isHostsAvailabilityError(e)) {
+                        if (handleHostsAvailabilityError(e, attempt, errorMsg))
+                            statements.clear();
+                    } else if (CassandraHelper.isPreparedStatementClusterError(e)) {
+                        handlePreparedStatementClusterError(e);
+                        statements.clear();
+                    } else {
+                        // For an error which we don't know how to handle, we will not try next attempts and terminate.
+                        throw new IgniteException(errorMsg, e);
+                    }
+                }
+
+                if (!CassandraHelper.isTableAbsenceError(error))
+                    sleeper.sleep();
+
+                attempt++;
+            }
+        } catch (Throwable e) {
+            error = e;
+        } finally {
+            decrementSessionRefs();
+        }
+
+        log.error(errorMsg, error);
+        throw new IgniteException(errorMsg, error);
+    }
+
+    /** {@inheritDoc} */
     @Override public synchronized void close() throws IOException {
         if (decrementSessionRefs() == 0 && ses != null) {
             SessionPool.put(this, ses);
@@ -475,7 +575,7 @@ public class CassandraSessionImpl implements CassandraSession {
      * @param tblExistenceRequired Flag indicating if table existence is required for the statement.
      * @return Prepared statement.
      */
-    private PreparedStatement prepareStatement(String statement, KeyValuePersistenceSettings settings,
+    private PreparedStatement prepareStatement(String table, String statement, KeyValuePersistenceSettings settings,
         boolean tblExistenceRequired) {
 
         int attempt = 0;
@@ -507,7 +607,7 @@ public class CassandraSessionImpl implements CassandraSession {
                         if (!tblExistenceRequired)
                             return null;
 
-                        handleTableAbsenceError(settings);
+                        handleTableAbsenceError(table, settings);
                     }
                     else if (CassandraHelper.isHostsAvailabilityError(e))
                         handleHostsAvailabilityError(e, attempt, errorMsg);
@@ -517,7 +617,8 @@ public class CassandraSessionImpl implements CassandraSession {
                     error = e;
                 }
 
-                sleeper.sleep();
+                if (!CassandraHelper.isTableAbsenceError(error))
+                    sleeper.sleep();
 
                 attempt++;
             }
@@ -574,24 +675,25 @@ public class CassandraSessionImpl implements CassandraSession {
      *
      * @param settings Persistence settings.
      */
-    private void createTable(KeyValuePersistenceSettings settings) {
+    private void createTable(String table, KeyValuePersistenceSettings settings) {
         int attempt = 0;
         Throwable error = null;
-        String errorMsg = "Failed to create Cassandra table '" + settings.getTableFullName() + "'";
+        String tableFullName = settings.getKeyspace() + "." + table;
+        String errorMsg = "Failed to create Cassandra table '" + tableFullName + "'";
 
         while (attempt < CQL_EXECUTION_ATTEMPTS_COUNT) {
             try {
                 log.info("-----------------------------------------------------------------------");
-                log.info("Creating Cassandra table '" + settings.getTableFullName() + "'");
+                log.info("Creating Cassandra table '" + tableFullName + "'");
                 log.info("-----------------------------------------------------------------------\n\n" +
-                    settings.getTableDDLStatement() + "\n");
+                        settings.getTableDDLStatement(table) + "\n");
                 log.info("-----------------------------------------------------------------------");
-                session().execute(settings.getTableDDLStatement());
-                log.info("Cassandra table '" + settings.getTableFullName() + "' was successfully created");
+                session().execute(settings.getTableDDLStatement(table));
+                log.info("Cassandra table '" + tableFullName + "' was successfully created");
                 return;
             }
             catch (AlreadyExistsException ignored) {
-                log.info("Cassandra table '" + settings.getTableFullName() + "' already exist");
+                log.info("Cassandra table '" + tableFullName + "' already exist");
                 return;
             }
             catch (Throwable e) {
@@ -599,7 +701,7 @@ public class CassandraSessionImpl implements CassandraSession {
                     throw new IgniteException(errorMsg, e);
 
                 if (CassandraHelper.isKeyspaceAbsenceError(e)) {
-                    log.warning("Failed to create Cassandra table '" + settings.getTableFullName() +
+                    log.warning("Failed to create Cassandra table '" + tableFullName +
                         "' cause appropriate keyspace doesn't exist", e);
                     createKeyspace(settings);
                 }
@@ -620,31 +722,38 @@ public class CassandraSessionImpl implements CassandraSession {
      *
      * @param settings Persistence settings.
      */
-    private void createTableIndexes(KeyValuePersistenceSettings settings) {
-        if (settings.getIndexDDLStatements() == null || settings.getIndexDDLStatements().isEmpty())
+    private void createTableIndexes(String table, KeyValuePersistenceSettings settings) {
+        List<String> indexDDLStatements = settings.getIndexDDLStatements(table);
+
+        if (indexDDLStatements == null || indexDDLStatements.isEmpty())
             return;
 
         int attempt = 0;
         Throwable error = null;
-        String errorMsg = "Failed to create indexes for Cassandra table " + settings.getTableFullName();
+        String tableFullName = settings.getKeyspace() + "." + table;
+        String errorMsg = "Failed to create indexes for Cassandra table " + tableFullName;
 
         while (attempt < CQL_EXECUTION_ATTEMPTS_COUNT) {
             try {
-                log.info("Creating indexes for Cassandra table '" + settings.getTableFullName() + "'");
+                log.info("-----------------------------------------------------------------------");
+                log.info("Creating indexes for Cassandra table '" + tableFullName + "'");
+                log.info("-----------------------------------------------------------------------");
 
-                for (String statement : settings.getIndexDDLStatements()) {
+                for (String statement : indexDDLStatements) {
                     try {
+                        log.info(statement);
+                        log.info("-----------------------------------------------------------------------");
                         session().execute(statement);
                     }
                     catch (AlreadyExistsException ignored) {
                     }
                     catch (Throwable e) {
-                        if (!(e instanceof InvalidQueryException) || !e.getMessage().equals("Index already exists"))
+                        if (!(e instanceof InvalidQueryException) || !"Index already exists".equals(e.getMessage()))
                             throw new IgniteException(errorMsg, e);
                     }
                 }
 
-                log.info("Indexes for Cassandra table '" + settings.getTableFullName() + "' were successfully created");
+                log.info("Indexes for Cassandra table '" + tableFullName + "' were successfully created");
 
                 return;
             }
@@ -652,7 +761,7 @@ public class CassandraSessionImpl implements CassandraSession {
                 if (CassandraHelper.isHostsAvailabilityError(e))
                     handleHostsAvailabilityError(e, attempt, errorMsg);
                 else if (CassandraHelper.isTableAbsenceError(e))
-                    createTable(settings);
+                    createTable(table, settings);
                 else
                     throw new IgniteException(errorMsg, e);
 
@@ -700,22 +809,24 @@ public class CassandraSessionImpl implements CassandraSession {
      *
      * @param settings Persistence settings.
      */
-    private void handleTableAbsenceError(KeyValuePersistenceSettings settings) {
+    private void handleTableAbsenceError(String table, KeyValuePersistenceSettings settings) {
         int hndNum = tblAbsenceHandlersCnt.incrementAndGet();
+
+        String tableFullName = settings.getKeyspace() + "." + table;
 
         try {
             synchronized (tblAbsenceHandlersCnt) {
                 // Oooops... I am not the first thread who tried to handle table absence problem.
                 if (hndNum != 0) {
-                    log.warning("Table " + settings.getTableFullName() + " absence problem detected. " +
+                    log.warning("Table " + tableFullName + " absence problem detected. " +
                             "Another thread already fixed it.");
                     return;
                 }
 
-                log.warning("Table " + settings.getTableFullName() + " absence problem detected. " +
+                log.warning("Table " + tableFullName + " absence problem detected. " +
                         "Trying to create table.");
 
-                IgniteException error = new IgniteException("Failed to create Cassandra table " + settings.getTableFullName());
+                IgniteException error = new IgniteException("Failed to create Cassandra table " + tableFullName);
 
                 int attempt = 0;
 
@@ -724,14 +835,14 @@ public class CassandraSessionImpl implements CassandraSession {
 
                     try {
                         createKeyspace(settings);
-                        createTable(settings);
-                        createTableIndexes(settings);
+                        createTable(table, settings);
+                        createTableIndexes(table, settings);
                     }
                     catch (Throwable e) {
                         if (CassandraHelper.isHostsAvailabilityError(e))
                             handleHostsAvailabilityError(e, attempt, null);
                         else
-                            throw new IgniteException("Failed to create Cassandra table " + settings.getTableFullName(), e);
+                            throw new IgniteException("Failed to create Cassandra table " + tableFullName, e);
 
                         error = (e instanceof IgniteException) ? (IgniteException)e : new IgniteException(e);
                     }

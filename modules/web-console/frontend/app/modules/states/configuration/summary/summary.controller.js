@@ -21,7 +21,7 @@ import saver from 'file-saver';
 
 export default [
     '$rootScope', '$scope', '$http', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteLoading', '$filter', 'igniteConfigurationResource', 'JavaTypes', 'IgniteVersion', 'GeneratorDocker', 'GeneratorPom', 'IgniteFormUtils',
-    function($root, $scope, $http, LegacyUtils, Messages, Loading, $filter, Resource, JavaTypes, IgniteVersion, docker, pom, FormUtils) {
+    function($root, $scope, $http, LegacyUtils, Messages, Loading, $filter, Resource, JavaTypes, Version, docker, pom, FormUtils) {
         const ctrl = this;
 
         $scope.ui = { ready: false };
@@ -78,6 +78,14 @@ export default [
             children: [
                 { type: 'file', name: 'ClientConfigurationFactory.java' },
                 { type: 'file', name: 'ServerConfigurationFactory.java' }
+            ]
+        };
+
+        const loadFolder = {
+            type: 'folder',
+            name: 'load',
+            children: [
+                { type: 'file', name: 'LoadCaches.java' }
             ]
         };
 
@@ -224,7 +232,11 @@ export default [
             sessionStorage.summarySelectedId = $scope.clusters.indexOf(cluster);
 
             mainFolder.children = [javaFolder];
-            javaFolder.children = [javaConfigFolder, javaStartupFolder];
+
+            if (_.find(cluster.caches, (cache) => !_.isNil(cache.cacheStoreFactory)))
+                javaFolder.children = [javaConfigFolder, loadFolder, javaStartupFolder];
+            else
+                javaFolder.children = [javaConfigFolder, javaStartupFolder];
 
             if ($generatorCommon.secretPropertiesNeeded(cluster))
                 mainFolder.children.push(resourcesFolder);
@@ -308,6 +320,12 @@ export default [
                     'ServerConfigurationFactory.createConfiguration()', 'config.ServerConfigurationFactory'));
             }
 
+            // Generate loader for caches with configured store.
+            const cachesToLoad = _.filter(cluster.caches, (cache) => !_.isNil(cache.cacheStoreFactory));
+
+            if (!_.isEmpty(cachesToLoad))
+                zip.file(srcPath + 'load/LoadCaches.java', $generatorJava.loadCaches(cachesToLoad, 'load', 'LoadCaches', '"' + clientXml + '"'));
+
             zip.file(srcPath + 'startup/ServerNodeSpringStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ServerNodeSpringStartup', '"' + serverXml + '"'));
             zip.file(srcPath + 'startup/ClientNodeSpringStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ClientNodeSpringStartup', '"' + clientXml + '"'));
 
@@ -316,7 +334,7 @@ export default [
             zip.file(srcPath + 'startup/ClientNodeCodeStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ClientNodeCodeStartup',
                 'ClientConfigurationFactory.createConfiguration()', 'config.ClientConfigurationFactory', clientNearCfg));
 
-            zip.file('pom.xml', pom.generate(cluster, IgniteVersion.version).asString());
+            zip.file('pom.xml', pom.generate(cluster, Version.ignite).asString());
 
             zip.file('README.txt', $generatorReadme.readme().asString());
             zip.file('jdbc-drivers/README.txt', $generatorReadme.readmeJdbc().asString());

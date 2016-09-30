@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 
+/**
+ * Service to show/hide error popover.
+ */
 export default class ErrorPopover {
     static $inject = ['$popover', '$anchorScroll', '$location', '$timeout', 'IgniteFormUtils'];
 
