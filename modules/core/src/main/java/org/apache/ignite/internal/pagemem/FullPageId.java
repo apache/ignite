@@ -88,7 +88,7 @@ public class FullPageId {
      * @param cacheId Cache ID.
      */
     public FullPageId(long pageId, int cacheId) {
-        this.pageId = PageIdUtils.pageId(pageId);
+        this.pageId = pageId;
         this.cacheId = cacheId;
 
         effectivePageId = PageIdUtils.effectivePageId(pageId);
@@ -99,13 +99,6 @@ public class FullPageId {
      */
     public long pageId() {
         return pageId;
-    }
-
-    /**
-     * @return Effective page ID.
-     */
-    public long effectivePageId() {
-        return effectivePageId;
     }
 
     /**

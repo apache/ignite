@@ -19,12 +19,15 @@ package org.apache.ignite.internal.pagemem.wal.record;
 
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
  */
 public class PageSnapshot extends WALRecord {
     /** */
+    @GridToStringExclude
     private byte[] pageData;
 
     /** */
@@ -69,5 +72,10 @@ public class PageSnapshot extends WALRecord {
      */
     public FullPageId fullPageId() {
         return fullPageId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PageSnapshot.class, this, super.toString());
     }
 }

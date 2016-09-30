@@ -25,14 +25,21 @@ import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
+import java.util.concurrent.locks.Lock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
+import org.apache.ignite.internal.processors.cache.database.DataStructure;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
@@ -42,12 +49,17 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridRandom;
+import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jsr166.ConcurrentHashMap8;
+import org.jsr166.ConcurrentLinkedHashMap;
 
+import static org.apache.ignite.internal.pagemem.PageIdUtils.effectivePageId;
 import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.rnd;
 
 /**
@@ -98,6 +110,13 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 //        return 25 * 60 * 1000;
 //    }
 
+    /**
+     * Check that we do not keep any locks at the moment.
+     */
+    protected void assertNoLocks() {
+        assertTrue(TestTree.checkNoLocks());
+    }
+    
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         long seed = System.nanoTime();
@@ -131,7 +150,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         if (reuseList != null) {
             long size = reuseList.recycledPagesCount();
 
-            assertTrue("Reuse size: " + size, size < 6000);
+            assertTrue("Reuse size: " + size, size < 7000);
         }
 
         for (int i = 0; i < 10; i++) {
@@ -455,31 +474,55 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
             tree.put(x);
 
+            assertNoLocks();
+
             assertEquals(x, tree.findOne(x).longValue());
+
+            assertNoLocks();
+
+            tree.validateTree();
+
+            assertNoLocks();
         }
 
         X.println(tree.printTree());
+
+        assertNoLocks();
 
         assertNull(tree.findOne(-1L));
 
         for (long x = 0; x < cnt; x++)
             assertEquals(x, tree.findOne(x).longValue());
 
+        assertNoLocks();
+
         assertNull(tree.findOne(cnt));
 
         for (long x = RMV_INC > 0 ? 0 : cnt - 1; x >= 0 && x < cnt; x += RMV_INC) {
             X.println(" -- " + x);
 
-            assertEquals(x, tree.remove(x).longValue());
+            assertEquals(Long.valueOf(x), tree.remove(x));
+
+            assertNoLocks();
 
             X.println(tree.printTree());
 
+            assertNoLocks();
+
             assertNull(tree.findOne(x));
+
+            assertNoLocks();
+
+            tree.validateTree();
+
+            assertNoLocks();
         }
 
         assertFalse(tree.find(null, null).next());
         assertEquals(0, tree.size());
         assertEquals(0, tree.rootLevel());
+
+        assertNoLocks();
     }
 
     /**
@@ -681,18 +724,35 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         info("Put...");
 
-        final AtomicLong k = new AtomicLong();
+        final AtomicLongArray k = new AtomicLongArray(keys);
 
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
+                Random rnd = new GridRandom();
+
                 for (;;) {
-                    long key = k.getAndIncrement();
+                    int idx = 0;
+                    boolean found = false;
 
-                    if (key >= keys)
-                        return null;
+                    for (int i = 0, shift = rnd.nextInt(keys); i < keys; i++) {
+                        idx = (i + shift) % keys;
 
-                    assertNull(tree.put(key));
+                        if (k.get(idx) == 0 && k.compareAndSet(idx, 0, 1)) {
+                            found = true;
+
+                            break;
+                        }
+                    }
+
+                    if (!found)
+                        break;
+
+                    assertNull(tree.put((long)idx));
+
+                    assertNoLocks();
                 }
+
+                return null;
             }
         }, threads, "put");
 
@@ -708,6 +768,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             assertEquals(Long.valueOf(x++), c.get());
 
         assertEquals(keys, x);
+
+        assertNoLocks();
     }
 
     /**
@@ -719,14 +781,14 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         Map<Long,Long> map = new HashMap<>();
 
-        int loops = reuseList == null ? 300_000 : 1000_000;
+        int loops = reuseList == null ? 100_000 : 300_000;
 
         for (int i = 0 ; i < loops; i++) {
             Long x = (long)BPlusTree.randomInt(CNT);
 
             boolean put = BPlusTree.randomInt(2) == 0;
 
-            if (i % 1000 == 0) {
+            if (i % 10_000 == 0) {
 //                X.println(tree.printTree());
                 X.println(" --> " + (put ? "put " : "rmv ") + i + "  " + x);
             }
@@ -740,6 +802,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                 assertNull(tree.remove(x));
             }
 
+            assertNoLocks();
+
 //            X.println(tree.printTree());
             tree.validateTree();
 
@@ -752,9 +816,13 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                     assert x != null;
 
                     assertEquals(map.get(x), x);
+
+                    assertNoLocks();
                 }
 
                 assertEquals(map.size(), tree.size());
+
+                assertNoLocks();
             }
         }
     }
@@ -778,6 +846,19 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         assertFalse(tree.find(4L, null).next());
         assertFalse(tree.find(null, 0L).next());
+
+        assertNoLocks();
+    }
+
+    private void doTestCursor(boolean canGetRow) throws IgniteCheckedException {
+        TestTree tree = createTestTree(canGetRow);
+
+        for (long i = 15; i >= 0; i--)
+            tree.put(i);
+
+
+
+
     }
 
     /**
@@ -799,6 +880,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
             assertEquals(map.put(row, row), tree.put(row));
             assertEquals(row, tree.findOne(row));
+
+            assertNoLocks();
         }
 
         final int off = rnd.nextInt(5 * MAX_PER_PAGE);
@@ -818,6 +901,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             assertEquals(i.next(), c.get());
 
             last = c.get();
+
+            assertNoLocks();
         }
 
         if (last != null) {
@@ -827,6 +912,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
             assertTrue(c.next());
             assertEquals(last, c.get());
+
+            assertNoLocks();
         }
 
         while (c.next()) {
@@ -837,9 +924,196 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             assertEquals(c.get(), tree.remove(c.get()));
 
             i.remove();
+
+            assertNoLocks();
         }
 
         assertEquals(map.size(), size(tree.find(null, null)));
+
+        assertNoLocks();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTestRandomPutRemoveMultithreaded_1_30_0() throws Exception {
+        MAX_PER_PAGE = 1;
+        CNT = 30;
+
+        doTestRandomPutRemoveMultithreaded(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTestRandomPutRemoveMultithreaded_1_30_1() throws Exception {
+        MAX_PER_PAGE = 1;
+        CNT = 30;
+
+        doTestRandomPutRemoveMultithreaded(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTestRandomPutRemoveMultithreaded_2_50_0() throws Exception {
+        MAX_PER_PAGE = 2;
+        CNT = 50;
+
+        doTestRandomPutRemoveMultithreaded(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTestRandomPutRemoveMultithreaded_2_50_1() throws Exception {
+        MAX_PER_PAGE = 2;
+        CNT = 50;
+
+        doTestRandomPutRemoveMultithreaded(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTestRandomPutRemoveMultithreaded_3_70_0() throws Exception {
+        MAX_PER_PAGE = 3;
+        CNT = 70;
+
+        doTestRandomPutRemoveMultithreaded(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTestRandomPutRemoveMultithreaded_3_70_1() throws Exception {
+        MAX_PER_PAGE = 3;
+        CNT = 70;
+
+        doTestRandomPutRemoveMultithreaded(true);
+    }
+
+    /**
+     * @param canGetRow Can get row from inner page.
+     * @throws Exception If failed.
+     */
+    private void doTestRandomPutRemoveMultithreaded(boolean canGetRow) throws Exception {
+        final TestTree tree = createTestTree(canGetRow);
+
+        final Map<Long,Long> map = new ConcurrentHashMap8<>();
+
+        final int loops = reuseList == null ? 200_000 : 400_000;
+
+        final GridStripedLock lock = new GridStripedLock(256);
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                for (int i = 0; i < loops; i++) {
+                    Long x = (long)DataStructure.randomInt(CNT);
+
+                    boolean put = DataStructure.randomInt(2) == 0;
+
+                    if (i % 10000 == 0)
+                        X.println(" --> " + (put ? "put " : "rmv ") + i + "  " + x);
+
+                    Lock l = lock.getLock(x.longValue());
+
+                    l.lock();
+
+                    try {
+                        if (put) {
+                            assertEquals(map.put(x, x), tree.put(x));
+
+                            assertNoLocks();
+                        }
+                        else {
+                            if (map.remove(x) != null) {
+                                assertEquals(x, tree.remove(x));
+
+                                assertNoLocks();
+                            }
+
+                            assertNull(tree.remove(x));
+
+                            assertNoLocks();
+                        }
+                    }
+                    finally {
+                        l.unlock();
+                    }
+                }
+
+                return null;
+            }
+        }, 16, "put-remove");
+
+        final AtomicBoolean stop = new AtomicBoolean();
+
+        IgniteInternalFuture<?> fut2 = multithreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                while (!stop.get()) {
+                    Thread.sleep(5000);
+
+                    X.println(TestTree.printLocks());
+                }
+
+                return null;
+            }
+        }, 1, "printLocks");
+
+        IgniteInternalFuture<?> fut3 = multithreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                while (!stop.get()) {
+                    int low = DataStructure.randomInt(CNT);
+                    int high = low + DataStructure.randomInt(CNT - low);
+
+                    GridCursor<Long> c = tree.find((long)low, (long)high);
+
+                    Long last = null;
+
+                    while (c.next()) {
+                        // Correct bounds.
+                        assertTrue(low + " <= " + c.get() + " <= " + high, c.get() >= low);
+                        assertTrue(low + " <= " + c.get() + " <= " + high, c.get() <= high);
+
+                        if (last != null) // No duplicates.
+                            assertTrue(low + " <= " + last + " < " + c.get() + " <= " + high, c.get() > last);
+
+                        last = c.get();
+                    }
+                }
+
+                return null;
+            }
+        }, 4, "find");
+
+        try {
+            fut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
+        }
+        finally {
+            stop.set(true);
+
+            fut2.get();
+            fut3.get();
+        }
+
+        GridCursor<Long> cursor = tree.find(null, null);
+
+        while (cursor.next()) {
+            Long x = cursor.get();
+
+            assert x != null;
+
+            assertEquals(map.get(x), x);
+        }
+
+        info("size: " + map.size());
+
+        assertEquals(map.size(), tree.size());
+
+        tree.validateTree();
+
+        assertNoLocks();
     }
 
     /**
@@ -854,6 +1128,18 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             cnt++;
 
         return cnt;
+    }
+
+    /**
+     * @param page Page.
+     * @param buf Buffer.
+     */
+    public static void checkPageId(Page page, ByteBuffer buf) {
+        long pageId = PageIO.getPageId(buf);
+
+        // Page ID must be 0L for newly allocated page, for reused page effective ID must remain the same.
+        if (pageId != 0L && page.id() != pageId)
+            throw new IllegalStateException("Page ID: " + U.hexLong(pageId));
     }
 
     /**
@@ -875,13 +1161,25 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     private FullPageId allocateMetaPage() throws IgniteCheckedException {
-        return new FullPageId(pageMem.allocatePage(CACHE_ID, 0, PageIdAllocator.FLAG_IDX), CACHE_ID);
+        return new FullPageId(pageMem.allocatePage(CACHE_ID, PageIdAllocator.INDEX_PARTITION, PageIdAllocator.FLAG_IDX), CACHE_ID);
     }
 
     /**
      * Test tree.
      */
     protected static class TestTree extends BPlusTree<Long, Long> {
+        /** */
+        private static ConcurrentMap<Object, Long> beforeReadLock = new ConcurrentHashMap8<>();
+
+        /** */
+        private static ConcurrentMap<Object, Long> beforeWriteLock = new ConcurrentHashMap8<>();
+
+        /** */
+        private static ConcurrentMap<Object, Map<Long, Long>> readLocks = new ConcurrentHashMap8<>();
+
+        /** */
+        private static ConcurrentMap<Object, Map<Long, Long>> writeLocks = new ConcurrentHashMap8<>();
+
         /**
          * @param reuseList Reuse list.
          * @param canGetRow Can get row from inner page.
@@ -892,7 +1190,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
          */
         public TestTree(ReuseList reuseList, boolean canGetRow, int cacheId, PageMemory pageMem, long metaPageId)
             throws IgniteCheckedException {
-            super("test", cacheId, pageMem, null, metaPageId, reuseList,
+            super("test", cacheId, pageMem, null, new AtomicLong(), metaPageId, reuseList,
                 new IOVersions<>(new LongInnerIO(canGetRow)), new IOVersions<>(new LongLeafIO()));
 
             PageIO.registerTest(latestInnerIO(), latestLeafIO());
@@ -913,6 +1211,138 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             assert io.canGetRow() : io;
 
             return io.getLookupRow(this, buf, idx);
+        }
+
+        /**
+         * @return Thread ID.
+         */
+        private static Object threadId() {
+            return Thread.currentThread().getId(); //.getName();
+        }
+
+        /**
+         * @param read Read or write locks.
+         * @return Locks map.
+         */
+        private static Map<Long, Long> locks(boolean read) {
+            ConcurrentMap<Object, Map<Long, Long>> m = read ? readLocks : writeLocks;
+
+            Object thId = threadId();
+
+            Map<Long, Long> locks = m.get(thId);
+
+            if (locks == null) {
+                locks = new ConcurrentLinkedHashMap<>();
+
+                if (m.putIfAbsent(thId, locks) != null)
+                    locks = m.get(thId);
+            }
+
+            return locks;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onBeforeReadLock(Page page) {
+            assertNull(beforeReadLock.put(threadId(), page.id()));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onReadLock(Page page, ByteBuffer buf) {
+            if (buf != null) {
+                long pageId = PageIO.getPageId(buf);
+
+                checkPageId(page, buf);
+
+                assertNull(locks(true).put(page.id(), pageId));
+            }
+
+            assertEquals(Long.valueOf(page.id()), beforeReadLock.remove(threadId()));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onReadUnlock(Page page, ByteBuffer buf) {
+            checkPageId(page, buf);
+
+            long pageId = PageIO.getPageId(buf);
+
+            assertEquals(Long.valueOf(pageId), locks(true).remove(page.id()));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onBeforeWriteLock(Page page) {
+            assertNull(beforeWriteLock.put(threadId(), page.id()));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onWriteLock(Page page, ByteBuffer buf) {
+            if (buf != null) {
+                checkPageId(page, buf);
+
+                long pageId = PageIO.getPageId(buf);
+
+                if (pageId == 0L)
+                    pageId = page.id(); // It is a newly allocated page.
+
+                assertNull(locks(false).put(page.id(), pageId));
+            }
+
+            assertEquals(Long.valueOf(page.id()), beforeWriteLock.remove(threadId()));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onWriteUnlock(Page page, ByteBuffer buf) {
+            assertEquals(effectivePageId(page.id()), effectivePageId(PageIO.getPageId(buf)));
+
+            assertEquals(Long.valueOf(page.id()), locks(false).remove(page.id()));
+        }
+
+        /**
+         * @return {@code true} If current thread does not keep any locks.
+         */
+        static boolean checkNoLocks() {
+            return locks(true).isEmpty() && locks(false).isEmpty();
+        }
+
+        /**
+         * @param b String builder.
+         * @param locks Locks.
+         * @param beforeLock Before lock.
+         */
+        private static void printLocks(SB b, ConcurrentMap<Object, Map<Long, Long>> locks, Map<Object, Long> beforeLock) {
+            for (Map.Entry<Object,Map<Long,Long>> entry : locks.entrySet()) {
+                Object thId = entry.getKey();
+
+                b.a(" ## " + thId);
+
+                Long z = beforeLock.get(thId);
+
+                if (z != null)
+                    b.a("   --> ").appendHex(z).a("  (").appendHex(effectivePageId(z)).a(')');
+
+                b.a('\n');
+
+                for (Map.Entry<Long,Long> x : entry.getValue().entrySet())
+                    b.a(" -  ").appendHex(x.getValue()).a("  (").appendHex(x.getKey()).a(")\n");
+
+                b.a('\n');
+            }
+        }
+
+        /**
+         * @return List of locks as a String.
+         */
+        static String printLocks() {
+            SB b = new SB();
+
+            b.a("\n--------read---------\n");
+
+            printLocks(b, readLocks, beforeReadLock);
+
+            b.a("\n-+------write---------\n");
+
+            printLocks(b, writeLocks, beforeWriteLock);
+
+            return b.toString();
         }
     }
 

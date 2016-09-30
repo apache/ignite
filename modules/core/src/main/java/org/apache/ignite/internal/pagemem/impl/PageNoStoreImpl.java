@@ -19,6 +19,9 @@ package org.apache.ignite.internal.pagemem.impl;
 
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
 import java.nio.ByteBuffer;
@@ -73,9 +76,10 @@ public class PageNoStoreImpl implements Page {
 
     /** {@inheritDoc} */
     @Override public ByteBuffer getForRead() {
-        pageMem.readLockPage(absPtr);
+        if (pageMem.readLockPage(absPtr, PageIdUtils.itemId(pageId)))
+            return reset(buf.asReadOnlyBuffer());
 
-        return reset(buf.asReadOnlyBuffer());
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -85,14 +89,24 @@ public class PageNoStoreImpl implements Page {
 
     /** {@inheritDoc} */
     @Override public ByteBuffer getForWrite() {
-        pageMem.writeLockPage(absPtr);
+        if (pageMem.writeLockPage(absPtr, PageIdUtils.itemId(pageId)))
+            return reset(buf);
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ByteBuffer getForWriteNoTagCheck() {
+        boolean locked = pageMem.writeLockPage(absPtr, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
+
+        assert locked;
 
         return reset(buf);
     }
 
     /** {@inheritDoc} */
     @Override public ByteBuffer tryGetForWrite() {
-        if (pageMem.tryWriteLockPage(absPtr))
+        if (pageMem.tryWriteLockPage(absPtr, PageIdUtils.itemId(pageId)))
             return reset(buf);
 
         return null;
@@ -100,7 +114,9 @@ public class PageNoStoreImpl implements Page {
 
     /** {@inheritDoc} */
     @Override public void releaseWrite(boolean markDirty) {
-        pageMem.writeUnlockPage(absPtr);
+        long updatedPageId = PageIO.getPageId(buf);
+
+        pageMem.writeUnlockPage(absPtr, PageIdUtils.itemId(updatedPageId));
     }
 
     /** {@inheritDoc} */

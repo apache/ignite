@@ -50,7 +50,10 @@ public final class PageIdUtils {
     public static final long FLAG_MASK = ~(-1L << FLAG_SIZE);
 
     /** */
-    private static final long PAGE_ID_MASK = ~(OFFSET_MASK << (PAGE_IDX_SIZE + PART_ID_SIZE + FLAG_SIZE));
+    private static final long EFFECTIVE_PAGE_ID_MASK = ~(-1L << (PAGE_IDX_SIZE + PART_ID_SIZE));
+
+    /** */
+    private static final long PAGE_ID_MASK = ~(-1L << (PAGE_IDX_SIZE + PART_ID_SIZE + FLAG_SIZE));
 
     /** Max itemid number. */
     public static final int MAX_ITEMID_NUM = 0xFE;
@@ -107,7 +110,7 @@ public final class PageIdUtils {
      * @return Effective page id.
      */
     public static long effectivePageId(long link) {
-        return link & PAGE_ID_MASK;
+        return link & EFFECTIVE_PAGE_ID_MASK;
     }
 
 
@@ -155,22 +158,10 @@ public final class PageIdUtils {
      * @return New page ID.
      */
     public static long rotatePageId(long pageId) {
-        assert flag(pageId) == PageIdAllocator.FLAG_IDX : flag(pageId); // Possible only for index pages.
-
         long updatedRotationId = (pageId >> PAGE_IDX_SIZE + PART_ID_SIZE + FLAG_SIZE) + 1;
 
         return (pageId & PAGE_ID_MASK) |
             (updatedRotationId << (PAGE_IDX_SIZE + PART_ID_SIZE + FLAG_SIZE));
-    }
-
-    /**
-     * @param pageId Page ID.
-     * @return Page ID with masked partition ID.
-     */
-    public static long maskPartId(long pageId) {
-        assert flag(pageId) == PageIdAllocator.FLAG_IDX; // Possible only for index pages.
-
-        return pageId & ~(PART_ID_MASK << PAGE_IDX_SIZE);
     }
 
     /**

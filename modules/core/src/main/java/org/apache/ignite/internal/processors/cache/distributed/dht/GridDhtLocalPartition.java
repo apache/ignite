@@ -73,7 +73,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
  * Key partition.
  */
 public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>, GridReservable, GridCacheConcurrentMap,
-    CacheDataStore.Listener {
+    CacheDataStore.SizeTracker {
     /** Maximum size for delete queue. */
     public static final int MAX_DELETE_QUEUE_SIZE = Integer.getInteger(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE,
         200_000);
@@ -730,8 +730,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         assert state() == EVICTED : this;
         assert evictGuard.get() == -1;
 
-        clearPageStore();
-
         if (cctx.isDrEnabled())
             cctx.dr().partitionEvicted(id);
 
@@ -744,6 +742,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         rent.onDone();
 
         ((GridDhtPreloader)cctx.preloader()).onPartitionEvicted(this, updateSeq);
+
+        clearPageStore();
 
         clearDeferredDeletes();
     }

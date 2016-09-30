@@ -1185,9 +1185,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (log.isInfoEnabled())
             log.info("Stopped cache: " + cache.name());
 
-        if (destroy && sharedCtx.pageStore() != null) {
+        if (sharedCtx.pageStore() != null) {
             try {
-                sharedCtx.pageStore().shutdownForCache(ctx);
+                sharedCtx.pageStore().shutdownForCache(ctx, destroy);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to gracefully clean page store resources for destroyed cache " +

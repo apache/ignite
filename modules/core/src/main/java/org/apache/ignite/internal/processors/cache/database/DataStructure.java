@@ -17,22 +17,30 @@
 
 package org.apache.ignite.internal.processors.cache.database;
 
+import java.nio.ByteBuffer;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
+import org.apache.ignite.internal.processors.cache.database.tree.util.PageLockListener;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 
 /**
  * Base class for all the data structures based on {@link PageMemory}.
  */
-public abstract class DataStructure {
+public abstract class DataStructure implements PageLockListener {
     /** For tests. */
     public static Random rnd;
 
@@ -105,8 +113,8 @@ public abstract class DataStructure {
      * @return Page ID of newly allocated page.
      * @throws IgniteCheckedException If failed.
      */
-    protected final long allocatePageNoReuse() throws IgniteCheckedException {
-        return pageMem.allocatePage(cacheId, 0, FLAG_IDX);
+    protected long allocatePageNoReuse() throws IgniteCheckedException {
+        return pageMem.allocatePage(cacheId, PageIdAllocator.INDEX_PARTITION, FLAG_IDX);
     }
 
     /**
@@ -115,9 +123,83 @@ public abstract class DataStructure {
      * @throws IgniteCheckedException If failed.
      */
     protected final Page page(long pageId) throws IgniteCheckedException {
-        if (PageIdUtils.flag(pageId) == FLAG_IDX)
-            pageId = PageIdUtils.maskPartId(pageId);
+        byte flag = PageIdUtils.flag(pageId);
+
+        assert flag == FLAG_IDX && PageIdUtils.partId(pageId) == INDEX_PARTITION ||
+            flag == FLAG_DATA && PageIdUtils.partId(pageId) <= MAX_PARTITION_ID : U.hexLong(pageId);
 
         return pageMem.page(cacheId, pageId);
+    }
+
+    /**
+     * @param page Page.
+     * @return Buffer.
+     */
+    protected final ByteBuffer tryWriteLock(Page page) {
+        return PageHandler.writeLock(page, this, true);
+    }
+
+
+    /**
+     * @param page Page.
+     * @return Buffer.
+     */
+    protected final ByteBuffer writeLock(Page page) {
+        return PageHandler.writeLock(page, this, false);
+    }
+
+    /**
+     * @param page Page.
+     * @param buf Buffer.
+     * @param dirty Dirty page.
+     */
+    protected final void writeUnlock(Page page, ByteBuffer buf, boolean dirty) {
+        PageHandler.writeUnlock(page, buf, this, dirty);
+    }
+
+    /**
+     * @param page Page.
+     * @return Buffer.
+     */
+    protected final ByteBuffer readLock(Page page) {
+        return PageHandler.readLock(page, this);
+    }
+
+    /**
+     * @param page Page.
+     * @param buf Buffer.
+     */
+    protected final void readUnlock(Page page, ByteBuffer buf) {
+        PageHandler.readUnlock(page, buf, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onBeforeWriteLock(Page page) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onWriteLock(Page page, ByteBuffer buf) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onWriteUnlock(Page page, ByteBuffer buf) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onBeforeReadLock(Page page) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onReadLock(Page page, ByteBuffer buf) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onReadUnlock(Page page, ByteBuffer buf) {
+        // No-op.
     }
 }

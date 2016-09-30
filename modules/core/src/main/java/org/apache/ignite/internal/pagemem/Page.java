@@ -54,6 +54,13 @@ public interface Page extends AutoCloseable {
     public ByteBuffer getForWrite();
 
     /**
+     * Gets page for write without conditional RWLock tag check.
+     *
+     * @return ByteBuffer for modifying the page.
+     */
+    public ByteBuffer getForWriteNoTagCheck();
+
+    /**
      * @return ByteBuffer for modifying the page of {@code null} if failed to get write lock.
      */
     @Nullable public ByteBuffer tryGetForWrite();

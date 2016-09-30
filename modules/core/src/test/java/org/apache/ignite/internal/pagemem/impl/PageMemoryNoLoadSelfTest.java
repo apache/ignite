@@ -30,6 +30,7 @@ import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -170,6 +171,96 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testPageIdRotation() throws Exception {
+        PageMemory mem = memory();
+
+        mem.start();
+
+        try {
+            int pages = 5;
+
+            Collection<FullPageId> old = new ArrayList<>();
+            Collection<FullPageId> updated = new ArrayList<>();
+
+            for (int i = 0; i < pages; i++)
+                old.add(allocatePage(mem));
+
+            // Check that initial pages are accessible.
+            for (FullPageId id : old) {
+                try (Page page = mem.page(id.cacheId(), id.pageId())) {
+                    ByteBuffer buf = page.getForWrite();
+
+                    assertNotNull(buf);
+
+                    try {
+                        long updId = PageIdUtils.rotatePageId(id.pageId());
+
+                        PageIO.setPageId(buf, updId);
+
+                        updated.add(new FullPageId(updId, id.cacheId()));
+                    }
+                    finally {
+                        page.releaseWrite(true);
+                    }
+                }
+            }
+
+            // Check that updated pages are inaccessible using old IDs.
+            for (FullPageId id : old) {
+                try (Page page = mem.page(id.cacheId(), id.pageId())) {
+                    ByteBuffer buf = page.getForWrite();
+
+                    if (buf != null) {
+                        page.releaseWrite(false);
+
+                        fail("Was able to acquire page write lock.");
+                    }
+
+                    buf = page.getForRead();
+
+                    if (buf != null) {
+                        page.releaseRead();
+
+                        fail("Was able to acquire page read lock.");
+                    }
+                }
+            }
+
+            // Check that updated pages are accessible using new IDs.
+            for (FullPageId id : updated) {
+                try (Page page = mem.page(id.cacheId(), id.pageId())) {
+                    ByteBuffer buf = page.getForWrite();
+
+                    assertNotNull(buf);
+
+                    try {
+                        assertEquals(id.pageId(), PageIO.getPageId(buf));
+                    }
+                    finally {
+                        page.releaseWrite(false);
+                    }
+
+                    buf = page.getForRead();
+
+                    assertNotNull(buf);
+
+                    try {
+                        assertEquals(id.pageId(), PageIO.getPageId(buf));
+                    }
+                    finally {
+                        page.releaseRead();
+                    }
+                }
+            }
+        }
+        finally {
+            mem.stop();
+        }
+    }
+
+    /**
      * @return Page memory implementation.
      */
     protected PageMemory memory() throws Exception {
@@ -228,6 +319,6 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
      * @return Page.
      */
     public static FullPageId allocatePage(PageIdAllocator mem) throws IgniteCheckedException {
-        return new FullPageId(mem.allocatePage(0, -1, PageIdAllocator.FLAG_DATA), 0);
+        return new FullPageId(mem.allocatePage(0, 1, PageIdAllocator.FLAG_DATA), 0);
     }
 }

@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.database.tree.io;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
-import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -344,7 +344,7 @@ public class DataPageIO extends PageIO {
 
         b.a("][");
 
-        Set<Integer> set = new HashSet<>();
+        Collection<Integer> set = new HashSet<>();
 
         for (int i = directCnt; i < directCnt + indirectCnt; i++) {
             if (i != directCnt)
@@ -517,7 +517,7 @@ public class DataPageIO extends PageIO {
      * @return Fixed item ID (the index used for referencing an entry from the outside).
      */
     private int itemId(short indirectItem) {
-        return indirectItem >>> 8;
+        return (indirectItem & 0xFFFF) >>> 8;
     }
 
     /**

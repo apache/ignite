@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.database;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -56,8 +57,11 @@ public class MetadataStorage implements MetaStore {
     /** Cache ID. */
     private final int cacheId;
 
-    /** Allocation space. */
-    private static final byte ALLOC_SPACE = FLAG_IDX;
+    /** */
+    private final int allocPartId;
+
+    /** */
+    private final byte allocSpace;
 
     /**
      * @param pageMem Page memory.
@@ -66,7 +70,10 @@ public class MetadataStorage implements MetaStore {
     public MetadataStorage(
         final PageMemory pageMem,
         final IgniteWriteAheadLogManager wal,
+        final AtomicLong globalRmvId,
         final int cacheId,
+        final int allocPartId,
+        final byte allocSpace,
         final ReuseList reuseList,
         final long rootPageId,
         final boolean initNew
@@ -74,9 +81,11 @@ public class MetadataStorage implements MetaStore {
         try {
             this.pageMem = pageMem;
             this.cacheId = cacheId;
+            this.allocPartId = allocPartId;
+            this.allocSpace = allocSpace;
             this.reuseList = reuseList;
 
-            metaTree = new MetaTree(cacheId, pageMem, wal, rootPageId,
+            metaTree = new MetaTree(cacheId, allocPartId, allocSpace, pageMem, wal, globalRmvId, rootPageId,
                 reuseList, MetaStoreInnerIO.VERSIONS, MetaStoreLeafIO.VERSIONS, initNew);
         }
         catch (IgniteCheckedException e) {
@@ -103,7 +112,7 @@ public class MetadataStorage implements MetaStore {
                 if (reuseList != null)
                     pageId = reuseList.takeRecycledPage();
 
-                pageId = pageId == 0 ? pageMem.allocatePage(cacheId, 0, ALLOC_SPACE) : pageId;
+                pageId = pageId == 0 ? pageMem.allocatePage(cacheId, allocPartId, allocSpace) : pageId;
 
                 tree.put(new IndexItem(idxNameBytes, pageId));
 
@@ -141,6 +150,12 @@ public class MetadataStorage implements MetaStore {
      *
      */
     private static class MetaTree extends BPlusTree<IndexItem, IndexItem> {
+        /** */
+        private final int allocPartId;
+
+        /** */
+        private final byte allocSpace;
+
         /**
          * @param pageMem Page memory.
          * @param metaPageId Meta page ID.
@@ -151,18 +166,29 @@ public class MetadataStorage implements MetaStore {
          */
         private MetaTree(
             final int cacheId,
+            final int allocPartId,
+            final byte allocSpace,
             final PageMemory pageMem,
             final IgniteWriteAheadLogManager wal,
+            final AtomicLong globalRmvId,
             final long metaPageId,
             final ReuseList reuseList,
             final IOVersions<? extends BPlusInnerIO<IndexItem>> innerIos,
             final IOVersions<? extends BPlusLeafIO<IndexItem>> leafIos,
             final boolean initNew
         ) throws IgniteCheckedException {
-            super(treeName("meta", "Meta"), cacheId, pageMem, wal, metaPageId, reuseList, innerIos, leafIos);
+            super(treeName("meta", "Meta"), cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, innerIos, leafIos);
+
+            this.allocPartId = allocPartId;
+            this.allocSpace = allocSpace;
 
             if (initNew)
                 initNew();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
+            return pageMem.allocatePage(getCacheId(), allocPartId, allocSpace);
         }
 
         /** {@inheritDoc} */

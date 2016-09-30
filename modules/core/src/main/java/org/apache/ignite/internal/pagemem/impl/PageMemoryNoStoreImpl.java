@@ -39,7 +39,6 @@ import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
-import org.jsr166.ConcurrentHashMap8;
 import sun.misc.JavaNioAccess;
 import sun.misc.SharedSecrets;
 
@@ -131,9 +130,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** */
     private AtomicInteger selector = new AtomicInteger();
-
-    /** */
-    private ConcurrentHashMap8<Integer, Long> cacheMetaPages = new ConcurrentHashMap8<>();
 
     /** */
     private OffheapReadWriteLock rwLock;
@@ -258,28 +254,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public boolean freePage(int cacheId, long pageId) {
-        cacheMetaPages.remove(cacheId, PageIdUtils.effectivePageId(pageId));
-
         Segment seg = segment(pageId);
 
         seg.releaseFreePage(pageId);
 
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Page metaPage(int cacheId) throws IgniteCheckedException {
-        Long pageId = cacheMetaPages.get(cacheId);
-
-        if (pageId == null) {
-            pageId = cacheMetaPages.computeIfAbsent(cacheId, new ConcurrentHashMap8.Fun<Integer, Long>() {
-                @Override public Long apply(Integer cacheId) {
-                    return allocatePage(cacheId, 0, FLAG_IDX);
-                }
-            });
-        }
-
-        return page(cacheId, pageId);
     }
 
     /** {@inheritDoc} */
@@ -306,14 +285,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /** {@inheritDoc} */
     @Override public int systemPageSize() {
         return sysPageSize;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void clear(int cacheId) {
-        Long metaPageId = cacheMetaPages.remove(cacheId);
-
-        if (metaPageId != null)
-            freePage(cacheId, metaPageId);
     }
 
     /** */
@@ -374,8 +345,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /**
      * @param absPtr Page absolute address.
      */
-    void readLockPage(long absPtr) {
-        rwLock.readLock(absPtr + LOCK_OFFSET);
+    boolean readLockPage(long absPtr, int tag) {
+        return rwLock.readLock(absPtr + LOCK_OFFSET, tag);
     }
 
     /**
@@ -388,23 +359,23 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /**
      * @param absPtr Page absolute address.
      */
-    void writeLockPage(long absPtr) {
-        rwLock.writeLock(absPtr + LOCK_OFFSET);
+    boolean writeLockPage(long absPtr, int tag) {
+        return rwLock.writeLock(absPtr + LOCK_OFFSET, tag);
     }
 
     /**
      * @param absPtr Page absolute address.
      * @return {@code True} if locked page.
      */
-    boolean tryWriteLockPage(long absPtr) {
-        return rwLock.tryWriteLock(absPtr + LOCK_OFFSET);
+    boolean tryWriteLockPage(long absPtr, int tag) {
+        return rwLock.tryWriteLock(absPtr + LOCK_OFFSET, tag);
     }
 
     /**
      * @param absPtr Page absolute address.
      */
-    void writeUnlockPage(long absPtr) {
-        rwLock.writeUnlock(absPtr + LOCK_OFFSET);
+    void writeUnlockPage(long absPtr, int newTag) {
+        rwLock.writeUnlock(absPtr + LOCK_OFFSET, newTag);
     }
 
     /**
@@ -591,7 +562,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
             while (true) {
                 long pinCnt = GridUnsafe.getLong(absPtr + PIN_CNT_OFFSET);
 
-                assert pinCnt > 0 : "Pinned page cannot be deallocated: " + pinnedPage;
+                assert pinCnt > 0 : "Releasing a page that was not pinned [page=" + pinnedPage +
+                    ", pinCnt=" + pinCnt + ']';
 
                 if (GridUnsafe.compareAndSwapLong(null, absPtr + PIN_CNT_OFFSET, pinCnt, pinCnt - 1))
                     break;
@@ -725,7 +697,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
                     GridUnsafe.putLong(absPtr, PAGE_MARKER);
 
-                    rwLock.init(absPtr + LOCK_OFFSET);
+                    rwLock.init(absPtr + LOCK_OFFSET, 0);
 
                     allocatedPages.incrementAndGet();
 

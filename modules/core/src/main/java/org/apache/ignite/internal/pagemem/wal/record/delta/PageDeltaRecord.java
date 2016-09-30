@@ -21,6 +21,9 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Abstract page delta record.
@@ -30,13 +33,14 @@ public abstract class PageDeltaRecord extends WALRecord {
     private int cacheId;
 
     /** */
+    @GridToStringExclude
     private long pageId;
 
     /**
      * @param cacheId Cache ID.
      * @param pageId Page ID.
      */
-    public PageDeltaRecord(int cacheId, long pageId) {
+    protected PageDeltaRecord(int cacheId, long pageId) {
         this.cacheId = cacheId;
         this.pageId = pageId;
     }
@@ -65,4 +69,11 @@ public abstract class PageDeltaRecord extends WALRecord {
      * @throws IgniteCheckedException If failed.
      */
     public abstract void applyDelta(PageMemory pageMem, ByteBuffer buf) throws IgniteCheckedException;
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PageDeltaRecord.class, this,
+            "pageId", U.hexLong(pageId),
+            "super", super.toString());
+    }
 }

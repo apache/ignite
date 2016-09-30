@@ -21,15 +21,21 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesListNodeIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
  */
-public class PagesListInitNewPageRecord extends PageDeltaRecord {
+public class PagesListInitNewPageRecord extends InitNewPageRecord {
     /** */
+    @GridToStringExclude
     private final long prevPageId;
 
     /** */
+    @GridToStringExclude
     private final long addDataPageId;
 
     /**
@@ -38,8 +44,16 @@ public class PagesListInitNewPageRecord extends PageDeltaRecord {
      * @param prevPageId Previous page ID.
      * @param addDataPageId Optional page ID to add.
      */
-    public PagesListInitNewPageRecord(int cacheId, long pageId, long prevPageId, long addDataPageId) {
-        super(cacheId, pageId);
+    public PagesListInitNewPageRecord(
+        int cacheId,
+        long pageId,
+        int ioType,
+        int ioVer,
+        long newPageId,
+        long prevPageId,
+        long addDataPageId
+    ) {
+        super(cacheId, pageId, ioType, ioVer, newPageId);
 
         this.prevPageId = prevPageId;
         this.addDataPageId = addDataPageId;
@@ -61,7 +75,7 @@ public class PagesListInitNewPageRecord extends PageDeltaRecord {
 
     /** {@inheritDoc} */
     @Override public void applyDelta(PageMemory mem, ByteBuffer buf) throws IgniteCheckedException {
-        PagesListNodeIO io = PagesListNodeIO.VERSIONS.forPage(buf);
+        PagesListNodeIO io = PageIO.getPageIO(PageIO.T_PAGE_LIST_NODE, ioVer);
 
         io.initNewPage(buf, pageId());
         io.setPreviousId(buf, prevPageId);
@@ -76,5 +90,12 @@ public class PagesListInitNewPageRecord extends PageDeltaRecord {
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.PAGES_LIST_INIT_NEW_PAGE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PagesListInitNewPageRecord.class, this,
+            "prevPageId", U.hexLong(prevPageId),
+            "addDataPageId", U.hexLong(addDataPageId));
     }
 }

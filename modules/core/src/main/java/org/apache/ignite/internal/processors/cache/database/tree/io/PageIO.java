@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.database.MetadataStorage;
 import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesListNodeIO;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
+import org.apache.ignite.internal.processors.cache.database.tree.util.PageLockListener;
 
 /**
  * Base format for all the page types.
@@ -57,7 +58,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandle
  *
  * 7. It is almost always preferable to read or write (especially write) page contents using
  *    static methods on {@link PageHandler}. To just initialize new page use
- *    {@link PageHandler#initPage(long, Page, PageIO, IgniteWriteAheadLogManager)}
+ *    {@link PageHandler#initPage(Page, PageLockListener, PageIO, IgniteWriteAheadLogManager)}
  *    method with needed IO instance.
  */
 public abstract class PageIO {
@@ -74,16 +75,16 @@ public abstract class PageIO {
     private static IOVersions<? extends BPlusLeafIO<?>> h2LeafIOs;
 
     /** */
-    private static final int TYPE_OFF = 0;
+    public static final int TYPE_OFF = 0;
 
     /** */
-    private static final int VER_OFF = TYPE_OFF + 2;
+    public static final int VER_OFF = TYPE_OFF + 2;
 
     /** */
-    private static final int CRC_OFF = VER_OFF + 2;
+    public static final int CRC_OFF = VER_OFF + 2;
 
     /** */
-    private static final int PAGE_ID_OFF = CRC_OFF + 4;
+    public static final int PAGE_ID_OFF = CRC_OFF + 4;
 
     /** */
     private static final int RESERVED_1_OFF = PAGE_ID_OFF + 8;
@@ -137,6 +138,9 @@ public abstract class PageIO {
 
     /** */
     public static final short T_PAGE_LIST_NODE = 13;
+
+    /** */
+    public static final short T_PART_META = 14;
 
     /** */
     private final int ver;
@@ -318,7 +322,10 @@ public abstract class PageIO {
                 return (Q)PagesListMetaIO.VERSIONS.forVersion(ver);
 
             case T_META:
-                throw new IgniteCheckedException("Root meta page should be always accessed with a fixed version.");
+                return (Q)PageMetaIO.VERSIONS.forVersion(ver);
+
+            case T_PART_META:
+                return (Q)PagePartitionMetaIO.VERSIONS.forVersion(ver);
 
             default:
                 return (Q)getBPlusIO(type, ver);

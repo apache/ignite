@@ -20,55 +20,65 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesListNodeIO;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.processors.cache.database.tree.io.PagePartitionMetaIO;
 
 /**
  *
  */
-public class PagesListAddPageRecord extends PageDeltaRecord {
+public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
     /** */
-    @GridToStringExclude
-    private final long dataPageId;
+    private long updateCntr;
+
+    /** */
+    private long globalRmvId;
+
+    /** */
+    private int partSize;
 
     /**
      * @param cacheId Cache ID.
      * @param pageId Page ID.
-     * @param dataPageId Data page ID to add.
      */
-    public PagesListAddPageRecord(int cacheId, long pageId, long dataPageId) {
+    public MetaPageUpdatePartitionDataRecord(int cacheId, long pageId, long updateCntr, long globalRmvId, int partSize) {
         super(cacheId, pageId);
 
-        this.dataPageId = dataPageId;
+        this.updateCntr = updateCntr;
+        this.globalRmvId = globalRmvId;
+        this.partSize = partSize;
     }
 
     /**
-     * @return Data page ID.
+     * @return Update counter.
      */
-    public long dataPageId() {
-        return dataPageId;
+    public long updateCounter() {
+        return updateCntr;
+    }
+
+    /**
+     * @return Global remove ID.
+     */
+    public long globalRemoveId() {
+        return globalRmvId;
+    }
+
+    /**
+     * @return Partition size.
+     */
+    public int partitionSize() {
+        return partSize;
     }
 
     /** {@inheritDoc} */
-    @Override public void applyDelta(PageMemory mem, ByteBuffer buf) throws IgniteCheckedException {
-        PagesListNodeIO io = PagesListNodeIO.VERSIONS.forPage(buf);
+    @Override public void applyDelta(PageMemory pageMem, ByteBuffer buf) throws IgniteCheckedException {
+        PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.forPage(buf);
 
-        int cnt = io.addPage(buf, dataPageId);
-
-        assert cnt >= 0 : cnt;
+        io.setUpdateCounter(buf, updateCntr);
+        io.setGlobalRemoveId(buf, globalRmvId);
+        io.setSize(buf, partSize);
     }
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return RecordType.PAGES_LIST_ADD_PAGE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(PagesListAddPageRecord.class, this,
-            "dataPageId", U.hexLong(dataPageId),
-            "super", super.toString());
+        return RecordType.PARTITION_META_PAGE_UPDATE_COUNTERS;
     }
 }

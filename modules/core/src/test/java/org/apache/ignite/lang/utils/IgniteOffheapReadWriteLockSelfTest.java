@@ -23,7 +23,9 @@ import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,6 +35,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @SuppressWarnings("BusyWait")
 public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static final int TAG_0 = 0;
+
     /**
      * @throws Exception if failed.
      */
@@ -47,7 +52,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
 
         final long ptr = GridUnsafe.allocateMemory(OffheapReadWriteLock.LOCK_SIZE);
 
-        lock.init(ptr);
+        lock.init(ptr, TAG_0);
 
         final AtomicInteger reads = new AtomicInteger();
         final AtomicInteger writes = new AtomicInteger();
@@ -63,9 +68,12 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
                         boolean write = rnd.nextInt(10) < 2;
 
                         if (write) {
-                            lock.writeLock(ptr);
+                            boolean locked = lock.writeLock(ptr, TAG_0);
 
                             try {
+                                // No tag change in this test.
+                                assert locked;
+
                                 assertTrue(lock.isWriteLocked(ptr));
                                 assertFalse(lock.isReadLocked(ptr));
 
@@ -76,15 +84,17 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
                                 data[idx].b -= delta;
                             }
                             finally {
-                                lock.writeUnlock(ptr);
+                                lock.writeUnlock(ptr, TAG_0);
                             }
 
                             writes.incrementAndGet();
                         }
                         else {
-                            lock.readLock(ptr);
+                            boolean locked = lock.readLock(ptr, TAG_0);
 
                             try {
+                                assert locked;
+
                                 assertFalse(lock.isWriteLocked(ptr));
                                 assertTrue(lock.isReadLocked(ptr));
 
@@ -137,7 +147,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < numPairs; i++) {
             data[i] = new Pair();
 
-            lock.init(ptr + i * OffheapReadWriteLock.LOCK_SIZE);
+            lock.init(ptr + i * OffheapReadWriteLock.LOCK_SIZE, TAG_0);
         }
 
         final AtomicInteger reads = new AtomicInteger();
@@ -156,7 +166,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
                     long lPtr = ptr + idx * OffheapReadWriteLock.LOCK_SIZE;
 
                     if (write) {
-                        lock.writeLock(lPtr);
+                        lock.writeLock(lPtr, TAG_0);
 
                         try {
                             assertTrue(lock.isWriteLocked(lPtr));
@@ -168,13 +178,13 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
                             data[idx].b -= delta;
                         }
                         finally {
-                            lock.writeUnlock(lPtr);
+                            lock.writeUnlock(lPtr, TAG_0);
                         }
 
                         writes.incrementAndGet();
                     }
                     else {
-                        lock.readLock(lPtr);
+                        lock.readLock(lPtr, TAG_0);
 
                         try {
                             assertFalse(lock.isWriteLocked(lPtr));
@@ -223,7 +233,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < numPairs; i++) {
             data[i] = new Pair();
 
-            lock.init(ptr + i * OffheapReadWriteLock.LOCK_SIZE);
+            lock.init(ptr + i * OffheapReadWriteLock.LOCK_SIZE, TAG_0);
         }
 
         final AtomicInteger reads = new AtomicInteger();
@@ -241,11 +251,13 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
 
                     long lPtr = ptr + idx * OffheapReadWriteLock.LOCK_SIZE;
 
-                    lock.readLock(lPtr);
+                    boolean locked = lock.readLock(lPtr, TAG_0);
 
                     boolean write = false;
 
                     try {
+                        assert locked;
+
                         Pair pair = data[idx];
 
                         assertEquals("Failed check for index: " + idx, pair.a, -pair.b);
@@ -253,7 +265,8 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
                         write = rnd.nextInt(10) < 2;
 
                         if (write) {
-                            boolean upg = lock.upgradeToWriteLock(lPtr);
+                            // TAG fail will cause NPE.
+                            boolean upg = lock.upgradeToWriteLock(lPtr, TAG_0);
 
                             writes.incrementAndGet();
 
@@ -268,7 +281,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
                     }
                     finally {
                         if (write)
-                            lock.writeUnlock(lPtr);
+                            lock.writeUnlock(lPtr, TAG_0);
                         else
                             lock.readUnlock(lPtr);
                     }
@@ -284,6 +297,156 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
             Thread.sleep(1_000);
 
             info("Reads=" + reads.getAndSet(0) + ", writes=" + writes.getAndSet(0) + ", upgrades=" + successfulUpgrades.getAndSet(0));
+        }
+
+        done.set(true);
+
+        fut.get();
+
+        validate(data);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testTagIdUpdateWait() throws Exception {
+        checkTagIdUpdate(true);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testTagIdUpdateContinuous() throws Exception {
+        checkTagIdUpdate(false);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    private void checkTagIdUpdate(final boolean waitBeforeSwitch) throws Exception {
+        final int numPairs = 100;
+        final Pair[] data = new Pair[numPairs];
+
+        for (int i = 0; i < numPairs; i++)
+            data[i] = new Pair();
+
+        final OffheapReadWriteLock lock = new OffheapReadWriteLock(16);
+
+        final long ptr = GridUnsafe.allocateMemory(OffheapReadWriteLock.LOCK_SIZE);
+
+        lock.init(ptr, 0);
+
+        final AtomicInteger reads = new AtomicInteger();
+        final AtomicInteger writes = new AtomicInteger();
+        final AtomicBoolean done = new AtomicBoolean(false);
+
+        final int threadCnt = 32;
+
+        final CyclicBarrier barr = new CyclicBarrier(threadCnt);
+
+        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+            /** {@inheritDoc} */
+            @Override public Object call() throws Exception {
+                try {
+                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                    int tag = 0;
+
+                    long lastSwitch = System.currentTimeMillis();
+
+                    while (true) {
+                        boolean write = rnd.nextInt(10) < 2;
+
+                        boolean locked;
+
+                        boolean switched = false;
+
+                        if (write) {
+                            locked = lock.writeLock(ptr, tag);
+
+                            if (locked) {
+                                try {
+                                    assertTrue(lock.isWriteLocked(ptr));
+                                    assertFalse(lock.isReadLocked(ptr));
+
+                                    int idx = rnd.nextInt(numPairs);
+                                    int delta = rnd.nextInt(100_000);
+
+                                    data[idx].a += delta;
+                                    data[idx].b -= delta;
+                                }
+                                finally {
+                                    switched = System.currentTimeMillis() - lastSwitch > 1_000 || !waitBeforeSwitch;
+
+                                    if (switched && waitBeforeSwitch)
+                                        info("Switching...");
+
+                                    lock.writeUnlock(ptr, (tag + (switched ? 1 : 0)) & 0xFFFF);
+                                }
+
+                                writes.incrementAndGet();
+                            }
+                        }
+                        else {
+                            locked = lock.readLock(ptr, tag);
+
+                            if (locked) {
+                                try {
+                                    assert locked;
+
+                                    assertFalse(lock.isWriteLocked(ptr));
+                                    assertTrue(lock.isReadLocked(ptr));
+
+                                    for (int i1 = 0; i1 < data.length; i1++) {
+                                        Pair pair = data[i1];
+
+                                        assertEquals("Failed check for index: " + i1, pair.a, -pair.b);
+                                    }
+                                }
+                                finally {
+                                    lock.readUnlock(ptr);
+                                }
+
+                                reads.incrementAndGet();
+                            }
+                        }
+
+                        if (!locked || switched) {
+                            try {
+                                barr.await();
+                            }
+                            catch (BrokenBarrierException ignore) {
+                                // Done.
+                                return null;
+                            }
+
+                            tag = (tag + 1) & 0xFFFF;
+
+                            if (waitBeforeSwitch || (!waitBeforeSwitch && tag == 0))
+                                info("Switch to a new tag: " + tag);
+
+                            if (done.get()) {
+                                barr.reset();
+
+                                return null;
+                            }
+
+                            lastSwitch = System.currentTimeMillis();
+                        }
+                    }
+                }
+                catch (Throwable e) {
+                    e.printStackTrace();
+                }
+
+                return null;
+            }
+        }, threadCnt, "tester");
+
+        for (int i = 0; i < 30; i++) {
+            Thread.sleep(1_000);
+
+            info("Reads: " + reads.getAndSet(0) + ", writes=" + writes.getAndSet(0));
         }
 
         done.set(true);
