@@ -97,6 +97,10 @@ namespace Apache.Ignite.Core.Impl
         private volatile TaskCompletionSource<bool> _clientReconnectTaskCompletionSource = 
             new TaskCompletionSource<bool>();
 
+        /** Plugin target cache. */
+        private readonly ConcurrentDictionary<string, IPluginTarget> _pluginTargets = 
+            new ConcurrentDictionary<string, IPluginTarget>();
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -699,10 +703,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IPluginTarget GetPluginTarget(string name)
         {
-            // TODO: Cache result by name
-            var target = UU.ProcessorPluginTarget(_proc, name);
-
-            return new PluginTarget(target);
+            return _pluginTargets.GetOrAdd(name, n => new PluginTarget(UU.ProcessorPluginTarget(_proc, n)));
         }
 
         /// <summary>

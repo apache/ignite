@@ -32,6 +32,10 @@ namespace Apache.Ignite.Core.Tests.Plugin
                 var plugin = ignite.GetTestPlugin();
 
                 Assert.IsNotNull(plugin);
+
+                var plugin2 = ignite.GetTestPlugin();
+
+                Assert.AreSame(plugin, plugin2);
             }
         }
     }
