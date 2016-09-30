@@ -40,6 +40,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Datastream;
     using Apache.Ignite.Core.Impl.DataStructures;
     using Apache.Ignite.Core.Impl.Handle;
+    using Apache.Ignite.Core.Impl.Plugin;
     using Apache.Ignite.Core.Impl.Transactions;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Lifecycle;
@@ -698,9 +699,10 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IPluginTarget GetPluginTarget(string name)
         {
-            // TODO: JNI call
             // TODO: Cache result by name
-            return null;
+            var target = UU.ProcessorPluginTarget(_proc, name);
+
+            return new PluginTarget(target);
         }
 
         /// <summary>
