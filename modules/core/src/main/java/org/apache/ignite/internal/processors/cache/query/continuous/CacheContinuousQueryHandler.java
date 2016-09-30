@@ -59,8 +59,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeploymentManager;
+import org.apache.ignite.internal.processors.cache.GridCacheIoManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager.JCacheQueryLocalListener;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager.JCacheQueryRemoteFilter;
 import org.apache.ignite.internal.processors.continuous.GridContinuousBatch;
@@ -84,6 +86,7 @@ import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
+import static org.apache.ignite.internal.processors.cache.GridCacheIoManager.registerUnhandledException;
 
 /**
  * Continuous query handler.
@@ -661,6 +664,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             return;
         }
 
+        GridCacheQueryManager qryMgr = cctx.queries();
+
         final Collection<CacheEntryEvent<? extends K, ? extends V>> entries0 = new ArrayList<>(entries.size());
 
         for (CacheContinuousQueryEntry e : entries) {
@@ -688,8 +693,15 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             catch (IgniteCheckedException ex) {
                 if (ignoreClsNotFound)
                     assert internal;
-                else
-                    U.error(ctx.log(getClass()), "Failed to unmarshal entry.", ex);
+                else {
+                    String shortMsg = "Failed to unmarshal entry.";
+
+                    U.error(ctx.log(getClass()), shortMsg, ex);
+
+                    qryMgr.onUnhandledException();
+
+                    registerUnhandledException(cctx, shortMsg, ex);
+                }
             }
         }
 

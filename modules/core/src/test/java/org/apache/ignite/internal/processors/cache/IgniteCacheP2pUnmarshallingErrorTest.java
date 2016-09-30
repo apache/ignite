@@ -209,17 +209,22 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
         @QuerySqlField(index = true)
         private String field;
 
+        /** Field. */
+        private static AtomicInteger instanceCntr = new AtomicInteger();
+
         /**
          * Required by {@link Externalizable}.
          */
         public TestKey() {
-            // No-op.
+            instanceCntr.incrementAndGet();
         }
 
         /**
          * @param field Test key 1.
          */
         public TestKey(String field) {
+            instanceCntr.incrementAndGet();
+
             this.field = field;
         }
 
@@ -250,7 +255,7 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
             field = (String)in.readObject();
 
             if (readCnt.decrementAndGet() <= 0)
-                throw new IOException("Class can not be unmarshalled.");
+                throw new IOException("Class can not be unmarshalled. InstanceId=" + instanceCntr.get());
         }
     }
 
