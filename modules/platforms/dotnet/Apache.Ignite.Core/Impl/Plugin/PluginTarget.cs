@@ -43,5 +43,20 @@ namespace Apache.Ignite.Core.Impl.Plugin
         {
             return DoOutInOp(opCode, writeAction, stream => readFunc(Marshaller.StartUnmarshal(stream)));
         }
+
+        /** <inheritdoc /> */
+        public event EventHandler<PluginCallbackEventArgs> Callback;
+
+        /// <summary>
+        /// Called when callback occurs from the Java side.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        public void OnCallback(IBinaryRawReader reader)
+        {
+            var handler = Callback;
+
+            if (handler != null)
+                handler(this, new PluginCallbackEventArgs(reader));
+        }
     }
 }

@@ -18,29 +18,34 @@
 namespace Apache.Ignite.Core.Plugin
 {
     using System;
+    using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
 
     /// <summary>
-    /// Unmanaged plugin target.
+    /// Event arguments for plugin callback.
     /// </summary>
-    public interface IPluginTarget
+    public class PluginCallbackEventArgs : EventArgs
     {
-        /// <summary>
-        /// Invokes a cache extension.
-        /// </summary>
-        /// <typeparam name="T">The type of the result.</typeparam>
-        /// <param name="opCode">The operation code.</param>
-        /// <param name="writeAction">The write action.</param>
-        /// <param name="readFunc">The read action.</param>
-        /// <returns>
-        /// Result of the processing.
-        /// </returns>
-        T InvokeOperation<T>(int opCode, Action<IBinaryRawWriter> writeAction,
-            Func<IBinaryRawReader, T> readFunc);
+        /** */
+        private readonly IBinaryRawReader _reader;
 
         /// <summary>
-        /// Occurs when Java part of the plugin invokes a callback.
+        /// Initializes a new instance of the <see cref="PluginCallbackEventArgs"/> class.
         /// </summary>
-        event EventHandler<PluginCallbackEventArgs> Callback;
+        /// <param name="reader">The reader.</param>
+        internal PluginCallbackEventArgs(IBinaryRawReader reader)
+        {
+            Debug.Assert(reader != null);
+
+            _reader = reader;
+        }
+
+        /// <summary>
+        /// Gets the reader for the stream with event data.
+        /// </summary>
+        public IBinaryRawReader Reader
+        {
+            get { return _reader; }
+        }
     }
 }
