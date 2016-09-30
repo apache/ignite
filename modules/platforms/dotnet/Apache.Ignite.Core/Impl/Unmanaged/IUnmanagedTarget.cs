@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     /// <summary>
     /// Unmanaged target.
     /// </summary>
-    internal unsafe interface IUnmanagedTarget : IDisposable
+    public unsafe interface IUnmanagedTarget : IDisposable  // TODO: Change namespace!
     {
         /// <summary>
         /// Context.

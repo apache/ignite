@@ -694,6 +694,14 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public event EventHandler<ClientReconnectEventArgs> ClientReconnected;
 
+        /** <inheritdoc /> */
+        public IUnmanagedTarget GetPluginTarget(string name)
+        {
+            // TODO: JNI call
+            // TODO: Cache result by name
+            return null;
+        }
+
         /// <summary>
         /// Gets or creates near cache.
         /// </summary>
