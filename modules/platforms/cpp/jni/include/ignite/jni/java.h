@@ -343,6 +343,7 @@ namespace ignite
                 jmethodID m_PlatformProcessor_atomicReference;
                 jmethodID m_PlatformProcessor_loggerIsLevelEnabled;
                 jmethodID m_PlatformProcessor_loggerLog;
+                jmethodID m_PlatformProcessor_pluginTarget;
 
                 jclass c_PlatformTarget;
                 jmethodID m_PlatformTarget_inStreamOutLong;
@@ -564,6 +565,7 @@ namespace ignite
 				void ProcessorGetCacheNames(jobject obj, long long memPtr);
 				bool ProcessorLoggerIsLevelEnabled(jobject obj, int level);
 				void ProcessorLoggerLog(jobject obj, int level, char* message, char* category, char* errorInfo);
+                jobject ProcessorPluginTarget(jobject obj, char* name);
 
                 long long TargetInStreamOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 void TargetInStreamOutStream(jobject obj, int opType, long long inMemPtr, long long outMemPtr, JniErrorInfo* errInfo = NULL);
