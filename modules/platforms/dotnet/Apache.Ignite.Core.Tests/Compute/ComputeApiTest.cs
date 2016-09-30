@@ -30,7 +30,6 @@ namespace Apache.Ignite.Core.Tests.Compute
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
@@ -187,7 +186,10 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.NotNull(prj);
 
-            Assert.IsTrue(prj == prj.Ignite);
+            Assert.AreEqual(prj, prj.Ignite);
+
+            // Check that default Compute projection excludes client nodes.
+            CollectionAssert.AreEquivalent(prj.ForServers().GetNodes(), prj.GetCompute().ClusterGroup.GetNodes());
         }
 
         /// <summary>
@@ -965,9 +967,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             compute.WithKeepBinary();
 
-            PlatformComputeNetBinarizable arg = new PlatformComputeNetBinarizable();
-
-            arg.Field = 100;
+            PlatformComputeNetBinarizable arg = new PlatformComputeNetBinarizable {Field = 100};
 
             int res = compute.ExecuteJavaTask<int>(BinaryArgTask, arg);
 
@@ -1010,9 +1010,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         public void TestBroadcastAction()
         {
             var id = Guid.NewGuid();
-            
             _grid1.GetCompute().Broadcast(new ComputeAction(id));
+            Assert.AreEqual(2, ComputeAction.InvokeCount(id));
 
+            id = Guid.NewGuid();
+            _grid1.GetCompute().BroadcastAsync(new ComputeAction(id)).Wait();
             Assert.AreEqual(2, ComputeAction.InvokeCount(id));
         }
 
@@ -1023,9 +1025,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         public void TestRunAction()
         {
             var id = Guid.NewGuid();
-
             _grid1.GetCompute().Run(new ComputeAction(id));
+            Assert.AreEqual(1, ComputeAction.InvokeCount(id));
 
+            id = Guid.NewGuid();
+            _grid1.GetCompute().RunAsync(new ComputeAction(id)).Wait();
             Assert.AreEqual(1, ComputeAction.InvokeCount(id));
         }
 
@@ -1055,12 +1059,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         public void TestRunActions()
         {
             var id = Guid.NewGuid();
-
-            var actions = Enumerable.Range(0, 10).Select(x => new ComputeAction(id));
-            
-            _grid1.GetCompute().Run(actions);
-
+            _grid1.GetCompute().Run(Enumerable.Range(0, 10).Select(x => new ComputeAction(id)));
             Assert.AreEqual(10, ComputeAction.InvokeCount(id));
+
+            var id2 = Guid.NewGuid();
+            _grid1.GetCompute().RunAsync(Enumerable.Range(0, 10).Select(x => new ComputeAction(id2))).Wait();
+            Assert.AreEqual(10, ComputeAction.InvokeCount(id2));
         }
 
         /// <summary>
@@ -1083,7 +1087,9 @@ namespace Apache.Ignite.Core.Tests.Compute
                 var affinityKey = _grid1.GetAffinity(cacheName).GetAffinityKey<int, int>(primaryKey);
 
                 _grid1.GetCompute().AffinityRun(cacheName, affinityKey, new ComputeAction());
+                Assert.AreEqual(node.Id, ComputeAction.LastNodeId);
 
+                _grid1.GetCompute().AffinityRunAsync(cacheName, affinityKey, new ComputeAction()).Wait();
                 Assert.AreEqual(node.Id, ComputeAction.LastNodeId);
             }
         }
@@ -1108,6 +1114,15 @@ namespace Apache.Ignite.Core.Tests.Compute
                 var affinityKey = _grid1.GetAffinity(cacheName).GetAffinityKey<int, int>(primaryKey);
 
                 var result = _grid1.GetCompute().AffinityCall(cacheName, affinityKey, new ComputeFunc());
+
+                Assert.AreEqual(result, ComputeFunc.InvokeCount);
+
+                Assert.AreEqual(node.Id, ComputeFunc.LastNodeId);
+
+                // Async.
+                ComputeFunc.InvokeCount = 0;
+
+                result = _grid1.GetCompute().AffinityCallAsync(cacheName, affinityKey, new ComputeFunc()).Result;
 
                 Assert.AreEqual(result, ComputeFunc.InvokeCount);
 
@@ -1149,10 +1164,18 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestNetTaskSimple()
         {
-            int res = _grid1.GetCompute().Execute<NetSimpleJobArgument, NetSimpleJobResult, NetSimpleTaskResult>(
-                    typeof(NetSimpleTask), new NetSimpleJobArgument(1)).Res;
+            Assert.AreEqual(2, _grid1.GetCompute()
+                .Execute<NetSimpleJobArgument, NetSimpleJobResult, NetSimpleTaskResult>(
+                typeof(NetSimpleTask), new NetSimpleJobArgument(1)).Res);
 
-            Assert.AreEqual(2, res);
+            Assert.AreEqual(2, _grid1.GetCompute()
+                .ExecuteAsync<NetSimpleJobArgument, NetSimpleJobResult, NetSimpleTaskResult>(
+                typeof(NetSimpleTask), new NetSimpleJobArgument(1)).Result.Res);
+
+            Assert.AreEqual(4, _grid1.GetCompute().Execute(new NetSimpleTask(), new NetSimpleJobArgument(2)).Res);
+
+            Assert.AreEqual(6, _grid1.GetCompute().ExecuteAsync(new NetSimpleTask(), new NetSimpleJobArgument(3))
+                .Result.Res);
         }
 
         /// <summary>
@@ -1184,33 +1207,23 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// Create configuration.
         /// </summary>
         /// <param name="path">XML config path.</param>
-        private IgniteConfiguration Configuration(string path)
+        private static IgniteConfiguration Configuration(string path)
         {
-            IgniteConfiguration cfg = new IgniteConfiguration();
-
-            BinaryConfiguration portCfg = new BinaryConfiguration();
-
-            var portTypeCfgs = new List<BinaryTypeConfiguration>
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                new BinaryTypeConfiguration(typeof (PlatformComputeBinarizable)),
-                new BinaryTypeConfiguration(typeof (PlatformComputeNetBinarizable)),
-                new BinaryTypeConfiguration(JavaBinaryCls),
-                new BinaryTypeConfiguration(typeof(PlatformComputeEnum)),
-                new BinaryTypeConfiguration(typeof(InteropComputeEnumFieldTest))
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    TypeConfigurations = new List<BinaryTypeConfiguration>
+                    {
+                        new BinaryTypeConfiguration(typeof(PlatformComputeBinarizable)),
+                        new BinaryTypeConfiguration(typeof(PlatformComputeNetBinarizable)),
+                        new BinaryTypeConfiguration(JavaBinaryCls),
+                        new BinaryTypeConfiguration(typeof(PlatformComputeEnum)),
+                        new BinaryTypeConfiguration(typeof(InteropComputeEnumFieldTest))
+                    }
+                },
+                SpringConfigUrl = path
             };
-
-
-            portCfg.TypeConfigurations = portTypeCfgs;
-
-            cfg.BinaryConfiguration = portCfg;
-
-            cfg.JvmClasspath = Classpath.CreateClasspath(cfg, true);
-
-            cfg.JvmOptions = TestUtils.TestJavaOptions();
-
-            cfg.SpringConfigUrl = path;
-
-            return cfg;
         }
     }
 
@@ -1381,6 +1394,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
         int IComputeFunc<int>.Invoke()
         {
+            Thread.Sleep(10);
             InvokeCount++;
             LastNodeId = _grid.GetCluster().GetLocalNode().Id;
             return InvokeCount;

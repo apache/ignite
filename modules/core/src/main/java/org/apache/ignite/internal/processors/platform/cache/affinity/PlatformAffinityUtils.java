@@ -47,9 +47,11 @@ public class PlatformAffinityUtils {
         assert ctx != null;
 
         ctx.writeNodes(writer, affCtx.currentTopologySnapshot());
+
         writer.writeInt(affCtx.backups());
         writer.writeLong(affCtx.currentTopologyVersion().topologyVersion());
         writer.writeInt(affCtx.currentTopologyVersion().minorTopologyVersion());
+
         ctx.writeEvent(writer, affCtx.discoveryEvent());
 
         // Write previous assignment
@@ -95,11 +97,14 @@ public class PlatformAffinityUtils {
         assert ctx != null;
 
         int partCnt = reader.readInt();
+
         List<List<ClusterNode>> res = new ArrayList<>(partCnt);
+
         IgniteClusterEx cluster = ctx.kernalContext().grid().cluster();
 
         for (int i = 0; i < partCnt; i++) {
             int partSize = reader.readInt();
+
             List<ClusterNode> part = new ArrayList<>(partSize);
 
             for (int j = 0; j < partSize; j++)

@@ -65,11 +65,12 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
             writer0.WithDetach(w => w.WriteObject(_clo));
         }
 
-        public ComputeOutFuncJob(IBinaryReader reader)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ComputeOutFuncJob" /> class.
+        /// </summary>
+        public ComputeOutFuncJob(IBinaryRawReader reader)
         {
-            var reader0 = (BinaryReader) reader.GetRawReader();
-
-            _clo = reader0.ReadObject<IComputeOutFunc>();
+            _clo = reader.ReadObject<IComputeOutFunc>();
         }
     }
 }

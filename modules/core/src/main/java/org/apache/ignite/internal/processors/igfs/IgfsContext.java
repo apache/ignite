@@ -54,6 +54,12 @@ public class IgfsContext {
     /** IGFS instance. */
     private final IgfsEx igfs;
 
+    /** Local metrics holder. */
+    private final IgfsLocalMetrics metrics = new IgfsLocalMetrics();
+
+    /** Local cluster node. */
+    private volatile ClusterNode locNode;
+
     /**
      * @param ctx Kernal context.
      * @param cfg IGFS configuration.
@@ -176,6 +182,27 @@ public class IgfsContext {
      */
     public boolean igfsNode(ClusterNode node) {
         return IgfsUtils.isIgfsNode(node, cfg.getName());
+    }
+
+    /**
+     * Get local metrics.
+     *
+     * @return Local metrics.
+     */
+    public IgfsLocalMetrics metrics() {
+        return metrics;
+    }
+
+    /**
+     * Get local node.
+     *
+     * @return Local node.
+     */
+    public ClusterNode localNode() {
+        if (locNode == null)
+            locNode = ctx.discovery().localNode();
+
+        return locNode;
     }
 
     /**

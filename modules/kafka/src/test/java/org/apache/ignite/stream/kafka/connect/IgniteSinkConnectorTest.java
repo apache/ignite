@@ -32,6 +32,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.stream.kafka.TestKafkaBroker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.utils.SystemTime;
 import org.apache.kafka.common.utils.Utils;
 import org.apache.kafka.connect.runtime.ConnectorConfig;
 import org.apache.kafka.connect.runtime.Herder;
@@ -40,12 +41,12 @@ import org.apache.kafka.connect.runtime.WorkerConfig;
 import org.apache.kafka.connect.runtime.rest.entities.ConnectorInfo;
 import org.apache.kafka.connect.runtime.standalone.StandaloneConfig;
 import org.apache.kafka.connect.runtime.standalone.StandaloneHerder;
+import org.apache.kafka.connect.sink.SinkConnector;
 import org.apache.kafka.connect.storage.OffsetBackingStore;
 import org.apache.kafka.connect.util.Callback;
 import org.apache.kafka.connect.util.FutureCallback;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
-import static org.easymock.EasyMock.anyObject;
 import static org.easymock.EasyMock.mock;
 
 /**
@@ -59,13 +60,16 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "testCache";
 
     /** Test topics. */
-    private static final String[] TOPICS = {"test1", "test2"};
+    private static final String[] TOPICS = {"sink-test1", "sink-test2"};
 
     /** Kafka partition. */
     private static final int PARTITIONS = 3;
 
     /** Kafka replication factor. */
     private static final int REPLICATION_FACTOR = 1;
+
+    /** Worker id. */
+    private static final String WORKER_ID = "workerId";
 
     /** Test Kafka broker. */
     private TestKafkaBroker kafkaBroker;
@@ -96,9 +100,9 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
         WorkerConfig workerCfg = new StandaloneConfig(makeWorkerProps());
 
         OffsetBackingStore offBackingStore = mock(OffsetBackingStore.class);
-        offBackingStore.configure(anyObject(Map.class));
+        offBackingStore.configure(workerCfg);
 
-        worker = new Worker(workerCfg, offBackingStore);
+        worker = new Worker(WORKER_ID, new SystemTime(), workerCfg, offBackingStore);
         worker.start();
 
         herder = new StandaloneHerder(worker);
@@ -211,7 +215,7 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
     private Map<String, String> makeSinkProps(String topics) {
         Map<String, String> props = new HashMap<>();
 
-        props.put(ConnectorConfig.TOPICS_CONFIG, topics);
+        props.put(SinkConnector.TOPICS_CONFIG, topics);
         props.put(ConnectorConfig.TASKS_MAX_CONFIG, "2");
         props.put(ConnectorConfig.NAME_CONFIG, "test-sink-connector");
         props.put(ConnectorConfig.CONNECTOR_CLASS_CONFIG, IgniteSinkConnector.class.getName());
@@ -239,6 +243,7 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
         props.put("key.converter.schemas.enable", "false");
         props.put("value.converter.schemas.enable", "false");
         props.put(WorkerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBroker.getBrokerAddress());
+        props.put("offset.storage.file.filename", "/tmp/connect.offsets");
         // fast flushing for testing.
         props.put(WorkerConfig.OFFSET_COMMIT_INTERVAL_MS_CONFIG, "10");
 

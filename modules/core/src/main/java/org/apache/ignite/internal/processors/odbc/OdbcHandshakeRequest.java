@@ -24,22 +24,56 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class OdbcHandshakeRequest extends OdbcRequest {
     /** Protocol version. */
-    private final long ver;
+    private final OdbcProtocolVersion ver;
+
+    /** Distributed joins flag. */
+    private boolean distributedJoins = false;
+
+    /** Enforce join order flag. */
+    private boolean enforceJoinOrder = false;
 
     /**
-     * @param ver Protocol version.
+     * @param ver Long value for protocol version.
      */
     public OdbcHandshakeRequest(long ver) {
         super(HANDSHAKE);
 
-        this.ver = ver;
+        this.ver = OdbcProtocolVersion.fromLong(ver);
     }
 
     /**
      * @return Protocol version.
      */
-    public long version() {
+    public OdbcProtocolVersion version() {
         return ver;
+    }
+
+    /**
+     * @return Distributed joins flag.
+     */
+    public boolean distributedJoins() {
+        return distributedJoins;
+    }
+
+    /**
+     * @param distributedJoins Distributed joins flag.
+     */
+    public void distributedJoins(boolean distributedJoins) {
+        this.distributedJoins = distributedJoins;
+    }
+
+    /**
+     * @return Enforce join order flag.
+     */
+    public boolean enforceJoinOrder() {
+        return enforceJoinOrder;
+    }
+
+    /**
+     * @param enforceJoinOrder Enforce join order flag.
+     */
+    public void enforceJoinOrder(boolean enforceJoinOrder) {
+        this.enforceJoinOrder = enforceJoinOrder;
     }
 
     /** {@inheritDoc} */

@@ -333,8 +333,36 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Waits until method {@link org.apache.ignite.scheduler.SchedulerFuture#last()} returns not a null value. Tries to call specified number
-     * of attempts with 100ms interval between them.
+     * @throws Exception If failed.
+     */
+    public void testNoNextExecutionTime() throws Exception {
+        Callable<Integer> run = new Callable<Integer>() {
+            @Override public Integer call() {
+                return 1;
+            }
+        };
+
+        SchedulerFuture<Integer> future = grid(0).scheduler().scheduleLocal(run, "{55} 53 3/5 * * *");
+
+        try {
+            future.get();
+
+            fail("Accepted wrong cron expression");
+        }
+        catch (IgniteException e) {
+            assertTrue(e.getMessage().startsWith("Invalid cron expression in schedule pattern"));
+        }
+
+        assertTrue(future.isDone());
+
+        assertEquals(0, future.nextExecutionTime());
+
+        assertEquals(0, future.nextExecutionTimes(2, System.currentTimeMillis()).length);
+    }
+
+    /**
+     * Waits until method {@link org.apache.ignite.scheduler.SchedulerFuture#last()} returns not a null value. Tries to
+     * call specified number of attempts with 100ms interval between them.
      *
      * @param fut Schedule future to call method on.
      * @param attempts Max number of attempts to try.
@@ -383,6 +411,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             execCntr.incrementAndGet();
         }
     }
+
     /**
      * Test callable job.
      */

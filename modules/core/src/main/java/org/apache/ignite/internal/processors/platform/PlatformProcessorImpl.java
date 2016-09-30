@@ -30,11 +30,13 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicLongImpl;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
+import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtension;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinity;
 import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStore;
 import org.apache.ignite.internal.processors.platform.cluster.PlatformClusterGroup;
@@ -59,6 +61,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -79,6 +83,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     private final ReadWriteLock storeLock = new ReentrantReadWriteLock();
 
     /** Logger. */
+    @SuppressWarnings("FieldCanBeLocal")
     private final IgniteLogger log;
 
     /** Context. */
@@ -92,6 +97,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** Whether processor if stopped (or stopping). */
     private volatile boolean stopped;
+
+    /** Cache extensions. */
+    private final PlatformCacheExtension[] cacheExts;
 
     /**
      * Constructor.
@@ -118,6 +126,12 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         }
 
         platformCtx = new PlatformContextImpl(ctx, interopCfg.gate(), interopCfg.memory(), interopCfg.platform());
+
+        // Initialize cache extensions (if any).
+        cacheExts = prepareCacheExtensions(interopCfg.cacheExtensions());
+
+        if (interopCfg.logger() != null)
+            interopCfg.logger().setContext(platformCtx);
     }
 
     /** {@inheritDoc} */
@@ -207,7 +221,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         if (cache == null)
             throw new IllegalArgumentException("Cache doesn't exist: " + name);
 
-        return new PlatformCache(platformCtx, cache.keepBinary(), false);
+        return createPlatformCache(cache);
     }
 
     /** {@inheritDoc} */
@@ -216,7 +230,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         assert cache != null;
 
-        return new PlatformCache(platformCtx, cache.keepBinary(), false);
+        return createPlatformCache(cache);
     }
 
     /** {@inheritDoc} */
@@ -225,7 +239,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         assert cache != null;
 
-        return new PlatformCache(platformCtx, cache.keepBinary(), false);
+        return createPlatformCache(cache);
     }
 
     /** {@inheritDoc} */
@@ -237,7 +251,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
             ? (IgniteCacheProxy)ctx.grid().createCache(cfg, PlatformConfigurationUtils.readNearConfiguration(reader))
             : (IgniteCacheProxy)ctx.grid().createCache(cfg);
 
-        return new PlatformCache(platformCtx, cache.keepBinary(), false);
+        return createPlatformCache(cache);
     }
 
     /** {@inheritDoc} */
@@ -250,7 +264,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
                     PlatformConfigurationUtils.readNearConfiguration(reader))
             : (IgniteCacheProxy)ctx.grid().getOrCreateCache(cfg);
 
-        return new PlatformCache(platformCtx, cache.keepBinary(), false);
+        return createPlatformCache(cache);
     }
 
     /** {@inheritDoc} */
@@ -404,7 +418,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().createNearCache(cacheName, cfg);
 
-        return new PlatformCache(platformCtx, cache.keepBinary(), false);
+        return createPlatformCache(cache);
     }
 
     /** {@inheritDoc} */
@@ -413,7 +427,66 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().getOrCreateNearCache(cacheName, cfg);
 
-        return new PlatformCache(platformCtx, cache.keepBinary(), false);
+        return createPlatformCache(cache);
+    }
+
+    /**
+     * Creates new platform cache.
+     */
+    private PlatformTarget createPlatformCache(IgniteCacheProxy cache) {
+        return new PlatformCache(platformCtx, cache, false, cacheExts);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean loggerIsLevelEnabled(int level) {
+        IgniteLogger log = ctx.grid().log();
+
+        switch (level) {
+            case PlatformLogger.LVL_TRACE:
+                return log.isTraceEnabled();
+            case PlatformLogger.LVL_DEBUG:
+                return log.isDebugEnabled();
+            case PlatformLogger.LVL_INFO:
+                return log.isInfoEnabled();
+            case PlatformLogger.LVL_WARN:
+                return true;
+            case PlatformLogger.LVL_ERROR:
+                return true;
+            default:
+                assert false;
+        }
+
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void loggerLog(int level, String message, String category, String errorInfo) {
+        IgniteLogger log = ctx.grid().log();
+
+        if (category != null)
+            log = log.getLogger(category);
+
+        Throwable err = errorInfo == null ? null : new IgniteException("Platform error:" + errorInfo);
+
+        switch (level) {
+            case PlatformLogger.LVL_TRACE:
+                log.trace(message);
+                break;
+            case PlatformLogger.LVL_DEBUG:
+                log.debug(message);
+                break;
+            case PlatformLogger.LVL_INFO:
+                log.info(message);
+                break;
+            case PlatformLogger.LVL_WARN:
+                log.warning(message, err);
+                break;
+            case PlatformLogger.LVL_ERROR:
+                log.error(message, err);
+                break;
+            default:
+                assert false;
+        }
     }
 
     /**
@@ -444,6 +517,47 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         }
         else
             throw new IgniteCheckedException("Unsupported interop store: " + store);
+    }
+
+    /**
+     * Prepare cache extensions.
+     *
+     * @param cacheExts Original extensions.
+     * @return Prepared extensions.
+     */
+    private static PlatformCacheExtension[] prepareCacheExtensions(Collection<PlatformCacheExtension> cacheExts) {
+        if (!F.isEmpty(cacheExts)) {
+            int maxExtId = 0;
+
+            Map<Integer, PlatformCacheExtension> idToExt = new HashMap<>();
+
+            for (PlatformCacheExtension cacheExt : cacheExts) {
+                if (cacheExt == null)
+                    throw new IgniteException("Platform cache extension cannot be null.");
+
+                if (cacheExt.id() < 0)
+                    throw new IgniteException("Platform cache extension ID cannot be negative: " + cacheExt);
+
+                PlatformCacheExtension oldCacheExt = idToExt.put(cacheExt.id(), cacheExt);
+
+                if (oldCacheExt != null)
+                    throw new IgniteException("Platform cache extensions cannot have the same ID [" +
+                        "id=" + cacheExt.id() + ", first=" + oldCacheExt + ", second=" + cacheExt + ']');
+
+                if (cacheExt.id() > maxExtId)
+                    maxExtId = cacheExt.id();
+            }
+
+            PlatformCacheExtension[] res = new PlatformCacheExtension[maxExtId + 1];
+
+            for (PlatformCacheExtension cacheExt : cacheExts)
+                res[cacheExt.id()]= cacheExt;
+
+            return res;
+        }
+        else
+            //noinspection ZeroLengthArrayAllocation
+            return new PlatformCacheExtension[0];
     }
 
     /**

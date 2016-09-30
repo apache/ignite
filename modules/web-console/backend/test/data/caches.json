@@ -1,0 +1,87 @@
+[
+  {
+    "name": "CarCache",
+    "cacheMode": "PARTITIONED",
+    "atomicityMode": "ATOMIC",
+    "readThrough": true,
+    "writeThrough": true,
+    "sqlFunctionClasses": [],
+    "cacheStoreFactory": {
+      "kind": "CacheJdbcPojoStoreFactory",
+      "CacheJdbcPojoStoreFactory": {
+        "dataSourceBean": "dsH2",
+        "dialect": "H2"
+      }
+    },
+    "domains": [],
+    "clusters": []
+  },
+  {
+    "name": "ParkingCache",
+    "cacheMode": "PARTITIONED",
+    "atomicityMode": "ATOMIC",
+    "readThrough": true,
+    "writeThrough": true,
+    "sqlFunctionClasses": [],
+    "cacheStoreFactory": {
+      "kind": "CacheJdbcPojoStoreFactory",
+      "CacheJdbcPojoStoreFactory": {
+        "dataSourceBean": "dsH2",
+        "dialect": "H2"
+      }
+    },
+    "domains": [],
+    "clusters": []
+  },
+  {
+    "name": "CountryCache",
+    "cacheMode": "PARTITIONED",
+    "atomicityMode": "ATOMIC",
+    "readThrough": true,
+    "writeThrough": true,
+    "sqlFunctionClasses": [],
+    "cacheStoreFactory": {
+      "kind": "CacheJdbcPojoStoreFactory",
+      "CacheJdbcPojoStoreFactory": {
+        "dataSourceBean": "dsH2",
+        "dialect": "H2"
+      }
+    },
+    "domains": [],
+    "clusters": []
+  },
+  {
+    "name": "DepartmentCache",
+    "cacheMode": "PARTITIONED",
+    "atomicityMode": "ATOMIC",
+    "readThrough": true,
+    "writeThrough": true,
+    "sqlFunctionClasses": [],
+    "cacheStoreFactory": {
+      "kind": "CacheJdbcPojoStoreFactory",
+      "CacheJdbcPojoStoreFactory": {
+        "dataSourceBean": "dsH2",
+        "dialect": "H2"
+      }
+    },
+    "domains": [],
+    "clusters": []
+  },
+  {
+    "name": "EmployeeCache",
+    "cacheMode": "PARTITIONED",
+    "atomicityMode": "ATOMIC",
+    "readThrough": true,
+    "writeThrough": true,
+    "sqlFunctionClasses": [],
+    "cacheStoreFactory": {
+      "kind": "CacheJdbcPojoStoreFactory",
+      "CacheJdbcPojoStoreFactory": {
+        "dataSourceBean": "dsH2",
+        "dialect": "H2"
+      }
+    },
+    "domains": [],
+    "clusters": []
+  }
+]
