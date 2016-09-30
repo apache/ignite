@@ -24,22 +24,40 @@ namespace Apache.Ignite.Core.Tests.Plugin
     /// </summary>
     public class PluginTest
     {
+        /** */
+        private IIgnite _ignite;
+
+        /// <summary>
+        /// Fixture set up.
+        /// </summary>
+        [TestFixtureSetUp]
+        public void FixtureSetUp()
+        {
+            _ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+        }
+
+        /// <summary>
+        /// Fixture tear down.
+        /// </summary>
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            Ignition.StopAll(true);
+        }
+
         /// <summary>
         /// Tests the initialization.
         /// </summary>
         [Test]
         public void TestInitialization()
         {
-            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
-            {
-                var plugin = ignite.GetTestPlugin();
+            var plugin = _ignite.GetTestPlugin();
 
-                Assert.IsNotNull(plugin);
+            Assert.IsNotNull(plugin);
 
-                var plugin2 = ignite.GetTestPlugin();
+            var plugin2 = _ignite.GetTestPlugin();
 
-                Assert.AreSame(plugin.Target, plugin2.Target);
-            }
+            Assert.AreSame(plugin.Target, plugin2.Target);
         }
 
         /// <summary>
