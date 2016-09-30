@@ -29,15 +29,21 @@ namespace Apache.Ignite.Core.Plugin
         /** */
         private readonly IBinaryRawReader _reader;
 
+        /** */
+        private readonly IBinaryRawWriter _writer;
+
         /// <summary>
-        /// Initializes a new instance of the <see cref="PluginCallbackEventArgs"/> class.
+        /// Initializes a new instance of the <see cref="PluginCallbackEventArgs" /> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        internal PluginCallbackEventArgs(IBinaryRawReader reader)
+        /// <param name="writer">The writer.</param>
+        internal PluginCallbackEventArgs(IBinaryRawReader reader, IBinaryRawWriter writer)
         {
             Debug.Assert(reader != null);
+            Debug.Assert(writer != null);
 
             _reader = reader;
+            _writer = writer;
         }
 
         /// <summary>
@@ -46,6 +52,14 @@ namespace Apache.Ignite.Core.Plugin
         public IBinaryRawReader Reader
         {
             get { return _reader; }
+        }
+
+        /// <summary>
+        /// Gets the writer for event handing results.
+        /// </summary>
+        public IBinaryRawWriter Writer
+        {
+            get { return _writer; }
         }
     }
 }
