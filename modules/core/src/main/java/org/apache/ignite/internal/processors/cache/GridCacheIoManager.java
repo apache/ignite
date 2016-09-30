@@ -737,6 +737,23 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @param ctx Grid cache context.
+     * @param shortMsg Short message.
+     * @param ex Original Exception.
+     */
+    public static void registerUnhandledException(GridCacheContext ctx, String shortMsg, IgniteCheckedException ex) {
+        ClusterNode node = ctx.discovery().localNode();
+
+        UnhandledExceptionEvent evt = new UnhandledExceptionEvent(node, shortMsg, ex, EVT_UNHANDLED_EXCEPTION);
+
+        GridKernalContext cont = ctx.kernalContext();
+
+        cont.exceptionRegistry().onException(shortMsg, ex);
+
+        cont.event().record(evt);
+    }
+
+    /**
      * @param nodeId Node ID.
      * @param msg Message.
      * @param c Closure.
