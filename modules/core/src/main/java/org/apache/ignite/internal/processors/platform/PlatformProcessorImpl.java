@@ -133,9 +133,6 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         if (interopCfg.logger() != null)
             interopCfg.logger().setContext(platformCtx);
-
-        final IgnitePlugin plugin = platformCtx.kernalContext().grid().plugin("PlatformTestPlugin");
-        assert plugin != null;
     }
 
     /** {@inheritDoc} */
@@ -491,6 +488,15 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
             default:
                 assert false;
         }
+    }
+
+    public PlatformTarget pluginTarget(String name) {
+        final IgnitePlugin plugin = platformCtx.kernalContext().grid().plugin("PlatformTestPlugin");
+        assert plugin != null;
+
+        // TODO: plugin should implement a certain interface, like IgnitePlatformPlugin
+        // With a method that returns a PlatformTarget
+        return null;
     }
 
     /**
