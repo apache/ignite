@@ -19,7 +19,9 @@ package org.apache.ignite.platform;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.platform.PlatformTarget;
 import org.apache.ignite.plugin.ExtensionRegistry;
+import org.apache.ignite.plugin.IgnitePlatformPlugin;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.PluginContext;
@@ -86,7 +88,10 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
 
     }
 
-    public static class PlatformTestPlugin implements IgnitePlugin {
-
+    public static class PlatformTestPlugin implements IgnitePlatformPlugin {
+        @Override public PlatformTarget platformTarget() {
+            // TODO
+            return null;
+        }
     }
 }
