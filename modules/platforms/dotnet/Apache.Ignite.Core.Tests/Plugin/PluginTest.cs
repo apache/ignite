@@ -24,8 +24,11 @@ namespace Apache.Ignite.Core.Tests.Plugin
     /// </summary>
     public class PluginTest
     {
+        /// <summary>
+        /// Tests the initialization.
+        /// </summary>
         [Test]
-        public void Test()
+        public void TestInitialization()
         {
             using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
@@ -39,6 +42,9 @@ namespace Apache.Ignite.Core.Tests.Plugin
             }
         }
 
+        /// <summary>
+        /// Tests the callback.
+        /// </summary>
         [Test]
         public void TestCallback()
         {
