@@ -107,6 +107,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Operation: prepare .Net. */
         private const int OpPrepareDotNet = 1;
 
+        /** Operation: plugin callback. */
+        private const int OpPluginCallback = 2;
+
         private delegate long CacheStoreCreateCallbackDelegate(void* target, long memPtr);
         private delegate int CacheStoreInvokeCallbackDelegate(void* target, long objPtr, long memPtr, void* cb);
         private delegate void CacheStoreDestroyCallbackDelegate(void* target, long objPtr);
@@ -900,6 +903,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                         using (var outStream = IgniteManager.Memory.Get(arg2).GetStream())
                         {
                             Ignition.OnPrepare(inStream, outStream, _handleRegistry, _log);
+
+                            return 0;
+                        }
+
+                    case OpPluginCallback:
+                        using (var inStream = IgniteManager.Memory.Get(arg1).GetStream())
+                        using (var outStream = IgniteManager.Memory.Get(arg2).GetStream())
+                        {
+                            _ignite.PluginCallback(inStream, outStream);
 
                             return 0;
                         }

@@ -51,12 +51,13 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /// Called when callback occurs from the Java side.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public void OnCallback(IBinaryRawReader reader)
+        /// <param name="writer">The writer.</param>
+        public void OnCallback(IBinaryRawReader reader, IBinaryRawWriter writer)
         {
             var handler = Callback;
 
             if (handler != null)
-                handler(this, new PluginCallbackEventArgs(reader));
+                handler(this, new PluginCallbackEventArgs(reader, writer));
         }
     }
 }
