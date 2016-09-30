@@ -1307,7 +1307,7 @@ public class IgfsDataManager extends IgfsManager {
                     if (!batch.write(portion))
                         throw new IgniteCheckedException("Cannot write more data to the secondary file system output " +
                             "stream because it was marked as closed: " + batch.path());
-                    else
+                    else if (portion.length == blockSize)
                         writtenSecondary = 1;
                 }
 
@@ -1331,7 +1331,7 @@ public class IgfsDataManager extends IgfsManager {
                     // Partial writes must be always synchronous.
                     processPartialBlockWrite(id, key, block == first ? off : 0, portion, blockSize);
 
-                    writtenTotal++;
+                    //writtenTotal++; // NB: trying to fix partial blocks metric problem.
                 }
                 else
                     nodeBlocks.put(key, portion);

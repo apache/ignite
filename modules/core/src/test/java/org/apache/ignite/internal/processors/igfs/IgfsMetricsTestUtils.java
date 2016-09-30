@@ -254,15 +254,20 @@ public class IgfsMetricsTestUtils {
 
         igfs.await(file00);
 
-        IgfsEntryInfo info;
-        if (proxy)
-            info = igfsSecondary.meta.infoForPath(file00);
+        IgfsEntryInfo info = null;
+
+        if (proxy) {
+            if (igfsSecondary != null)
+                info = igfsSecondary.meta.infoForPath(file00);
+        }
         else
             info = ((IgfsImpl)igfs).meta.infoForPath(file00);
 
-        final int blockSize2 = info.blockSize();
+        if (info != null) {
+            final int blockSize2 = info.blockSize();
 
-        assert blockSize2 == blockSize : "IgfsFile blk size = " + blockSize + ", Meta size = " + blockSize2;
+            assert blockSize2 == blockSize : "IgfsFile blk size = " + blockSize + ", Meta size = " + blockSize2;
+        }
         // **** this fails: see https://issues.apache.org/jira/browse/IGNITE-3877
         // ###############################################################
 
@@ -387,7 +392,8 @@ public class IgfsMetricsTestUtils {
             checkMetricExpectations(initMetrics, igfs.metrics(), e);
 
             // Lets wait for blocks will be placed to cache
-            U.sleep(300);
+            //U.sleep(300); // ?
+            igfs.await(fileRemote);
 
             // Read remote file again.
             try (IgfsInputStream is = igfs.open(fileRemote)) {
@@ -428,29 +434,32 @@ public class IgfsMetricsTestUtils {
             igfs.delete(fileRemote, false);
 
             U.sleep(300);
+            //igfs.await(fileRemote); // ?
 
             assert igfs.metrics().secondarySpaceSize() == 0;
 
-//            // Write partial block to the first file.
-//            try (IgfsOutputStream os = igfs.append(file1, false)) {
-//                os.write(new byte[blockSize / 2]);
-//            }
-//
-//            e.primBlocksWritten += 0.5;
-//
-//            checkMetricExpectations(initMetrics, igfs.metrics(), e);
-//
-//            // Now read partial block.
-//            // Read remote file again.
-//            try (IgfsInputStream is = igfs.open(file1)) {
-//                is.seek(blockSize * (int)e.primBlocksWritten);
-//
-//                ((IgfsInputStreamImpl)is).readChunks(0, blockSize / 2);
-//            }
-//
-//            e.primBlocksRead += 0.5;
-//
-//            checkMetricExpectations(initMetrics, igfs.metrics(), e);
+            System.out.println("======================================================");
+
+            // Write partial block to the first file.
+            try (IgfsOutputStream os = igfs.append(file1, false)) {
+                os.write(new byte[blockSize / 2]);
+            }
+
+            e.primBlocksWritten += 0.5;
+
+            checkMetricExpectations(initMetrics, igfs.metrics(), e);
+
+            // Now read partial block.
+            // Read remote file again.
+            try (IgfsInputStream is = igfs.open(file1)) {
+                is.seek(blockSize * (int)e.primBlocksWritten);
+
+                ((IgfsInputStreamImpl)is).readChunks(0, blockSize / 2);
+            }
+
+            e.primBlocksRead += 0.5;
+
+            checkMetricExpectations(initMetrics, igfs.metrics(), e);
         }
 
         igfs.resetMetrics();
