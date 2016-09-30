@@ -25,6 +25,12 @@ namespace Apache.Ignite.Core.Tests.Plugin
     public class PluginTest
     {
         /** */
+        private const int OpReadWrite = 1;
+
+        /** */
+        private const int OpError = 2;
+
+        /** */
         private IIgnite _ignite;
 
         /// <summary>
@@ -58,6 +64,24 @@ namespace Apache.Ignite.Core.Tests.Plugin
             var plugin2 = _ignite.GetTestPlugin();
 
             Assert.AreSame(plugin.Target, plugin2.Target);
+        }
+
+        /// <summary>
+        /// Tests the invoke operation.
+        /// </summary>
+        [Test]
+        public void TestInvokeOperation()
+        {
+            var plugin = _ignite.GetTestPlugin();
+
+            // Test round trip.
+            Assert.AreEqual(1, plugin.Target.InvokeOperation(OpReadWrite,
+                w => w.WriteObject(1), r => r.ReadObject<int>()));
+
+            Assert.AreEqual("hello", plugin.Target.InvokeOperation(OpReadWrite,
+                w => w.WriteObject("hello"), r => r.ReadObject<string>()));
+
+            // Test exception.
         }
 
         /// <summary>

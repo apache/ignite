@@ -137,6 +137,8 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
                     Object data = reader.readObject();
 
                     writer.writeObject(data);
+
+                    break;
                 }
 
                 case OP_ERROR: {
