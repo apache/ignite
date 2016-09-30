@@ -985,12 +985,12 @@ public class GridNioServer<T> {
 
                     if (req == null) {
                         if (ses.procWrite.get()) {
-                            ses.procWrite.set(false);
+                            boolean set = ses.procWrite.compareAndSet(true, false);
 
-                            if (ses.writeQueue().isEmpty()) {
-                                if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
-                                    key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
-                            }
+                            assert set;
+
+                            if (ses.writeQueue().isEmpty())
+                                key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
                             else
                                 ses.procWrite.set(true);
                         }
@@ -1206,17 +1206,17 @@ public class GridNioServer<T> {
                         if (req == null) {
                             req = ses.pollFuture();
 
-                            if (req == null && buf.position() == 0) {
-                                if (ses.procWrite.get()) {
-                                    ses.procWrite.set(false);
+                        if (req == null && buf.position() == 0) {
+                            if (ses.procWrite.get()) {
+                                boolean set = ses.procWrite.compareAndSet(true, false);
 
-                                    if (ses.writeQueue().isEmpty()) {
-                                        if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
-                                            key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
-                                    }
-                                    else
-                                        ses.procWrite.set(true);
-                                }
+                                assert set;
+
+                                if (ses.writeQueue().isEmpty())
+                                    key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+                                else
+                                    ses.procWrite.set(true);
+                            }
 
                                 break;
                             }
