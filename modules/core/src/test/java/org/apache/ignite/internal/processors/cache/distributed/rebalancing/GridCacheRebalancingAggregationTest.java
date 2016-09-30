@@ -53,11 +53,16 @@ public class GridCacheRebalancingAggregationTest extends GridRollingRestartAbstr
 
     /** Keys of entries under test. */
     private static final Set<Integer> KEYS;
+
+    /*
+     *
+     */
     static {
         final Set<Integer> keys = new LinkedHashSet<>();
-        for (int i = 0; i < ENTRY_COUNT; i++) {
+
+        for (int i = 0; i < ENTRY_COUNT; i++)
             keys.add(i);
-        }
+
         KEYS = Collections.unmodifiableSet(keys);
     }
 
@@ -71,29 +76,26 @@ public class GridCacheRebalancingAggregationTest extends GridRollingRestartAbstr
     private volatile int totalUpdateCount;
 
     /** {@inheritDoc} */
-    @Override
-    public int serverCount() {
+    @Override public int serverCount() {
         return 3;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public int getMaxRestarts() {
+    @Override public int getMaxRestarts() {
         return MAX_RESTARTS;
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected long getTestTimeout() {
+    @Override protected long getTestTimeout() {
         return 1000 * 60 * 5;
     }
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration<?, ?> getCacheConfiguration() {
         return new CacheConfiguration<Integer, Integer>(CACHE_NAME)
-                        .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-                        .setCacheMode(CacheMode.PARTITIONED)
-                        .setBackups(1);
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setBackups(1);
     }
 
     /** {@inheritDoc} */
@@ -120,18 +122,21 @@ public class GridCacheRebalancingAggregationTest extends GridRollingRestartAbstr
         throws InterruptedException {
 
         startUpdateThread();
+
         RollingRestartThread restartThread = super.rollingRestartThread;
 
         int totalAggregationCount = 0;
         int checksumFailures = 0;
+
         do {
-            if (!checksumCache()) {
+            if (!checksumCache())
                 checksumFailures++;
-            }
 
             totalAggregationCount++;
+
             this.aggregationCount++;
-        } while (restartThread.isAlive());
+        }
+        while (restartThread.isAlive());
 
         grid(0).log().info("Total successful aggregations during the test were: " + totalAggregationCount);
         grid(0).log().info("Total successful updates during the test were: " + this.totalUpdateCount);
@@ -148,8 +153,10 @@ public class GridCacheRebalancingAggregationTest extends GridRollingRestartAbstr
      */
     private void startUpdateThread() {
         UpdateCacheThread updateThread = new UpdateCacheThread();
-        updateThread.start();
+
         this.updateThread = updateThread;
+
+        updateThread.start();
     }
 
     /**
@@ -160,36 +167,43 @@ public class GridCacheRebalancingAggregationTest extends GridRollingRestartAbstr
      */
     private boolean checksumCache() {
         final Ignite ignite = grid(0);
+
         Cache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
+
         Throwable e = null;
+
         for (int i = 0, c = 20; i <= c; ++i) {
             try (Transaction tx = ignite.transactions().txStart()) {
-                tx.timeout(2*60*1000l);
+                tx.timeout(2 * 60 * 1000L);
 
                 Integer ceiling = cache.get(CEILING_KEY);
-                if (ceiling == null) {
+
+                if (ceiling == null)
                     return Boolean.TRUE;
-                }
+
                 int floor = ceiling - ENTRY_COUNT + 1;
+
                 Map<Integer, Integer> results = cache.getAll(KEYS);
+
                 tx.commit();
 
                 int sum = 0;
-                for (Integer j : results.values()) {
-                    sum += j;
-                }
 
-                if (sum == calculateSum(floor, ceiling)) {
+                for (Integer j : results.values())
+                    sum += j;
+
+                if (sum == calculateSum(floor, ceiling))
                     return Boolean.TRUE;
-                }
 
                 grid(0).log().info("Failed testing that sum of " + sum + " equals sum(" + floor + "," + ceiling + ")");
+
                 return Boolean.FALSE;
             }
             catch (Throwable ee) {
                 e = ee;
             }
         }
+
         throw new RuntimeException("Failed to commit transaction after " + 20 + " retries", e);
     }
 
@@ -198,32 +212,40 @@ public class GridCacheRebalancingAggregationTest extends GridRollingRestartAbstr
      */
     private void updateCache() {
         final Ignite ignite = grid(0);
+
         Cache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
+
         Throwable e = null;
+
         for (int i = 0, c = 20; i <= c; ++i) {
             try (Transaction tx = ignite.transactions().txStart()) {
-                tx.timeout(2*60*1000l);
+                tx.timeout(2 * 60 * 1000L);
 
-                Integer currentCeiling = cache.get(CEILING_KEY);
-                int newCeiling = currentCeiling == null ? ENTRY_COUNT - 1 : currentCeiling + ENTRY_COUNT;
-                int value = currentCeiling == null ? 0 : currentCeiling + 1;
+                Integer curCeiling = cache.get(CEILING_KEY);
+
+                int newCeiling = curCeiling == null ? ENTRY_COUNT - 1 : curCeiling + ENTRY_COUNT;
+                int value = curCeiling == null ? 0 : curCeiling + 1;
+
                 Map<Integer, Integer> entries = new TreeMap<>();
-                for (Integer key : KEYS) {
+
+                for (Integer key : KEYS)
                     entries.put(key, value++);
-                }
+
                 cache.putAll(entries);
                 cache.put(CEILING_KEY, newCeiling);
 
                 GridCacheRebalancingAggregationTest.this.totalUpdateCount++;
-                 if (!tx.isRollbackOnly()) {
-                     tx.commit();
-                 }
+
+                if (!tx.isRollbackOnly())
+                    tx.commit();
+
                 return;
             }
             catch (Throwable ee) {
                 e = ee;
             }
         }
+
         throw new RuntimeException("Failed to commit transaction after " + 20 + " retries", e);
     }
 
@@ -246,7 +268,7 @@ public class GridCacheRebalancingAggregationTest extends GridRollingRestartAbstr
         /**
          * Default Constructor sets this thread to run as a daemon.
          */
-        public UpdateCacheThread() {
+        UpdateCacheThread() {
             setDaemon(true);
             setName(UpdateCacheThread.class.getSimpleName());
         }
@@ -254,6 +276,7 @@ public class GridCacheRebalancingAggregationTest extends GridRollingRestartAbstr
         /** {@inheritDoc} */
         @Override public void run() {
             RollingRestartThread restartThread =  GridCacheRebalancingAggregationTest.this.rollingRestartThread;
+
             do {
                 GridCacheRebalancingAggregationTest.this.updateCache();
             }
