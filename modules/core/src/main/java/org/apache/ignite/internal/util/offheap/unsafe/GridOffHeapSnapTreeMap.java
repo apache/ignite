@@ -55,60 +55,59 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 /**
- * A concurrent AVL tree with fast cloning, based on the algorithm of Bronson,
- * Casper, Chafi, and Olukotun, "A Practical Concurrent Binary Search Tree"
- * published in PPoPP'10.  To simplify the locking protocols rebalancing work
- * is performed in pieces, and some removed keys are be retained as routing
- * nodes in the tree.
+ *  A concurrent AVL tree with fast cloning, based on the algorithm of Bronson,
+ *  Casper, Chafi, and Olukotun, "A Practical Concurrent Binary Search Tree"
+ *  published in PPoPP'10.  To simplify the locking protocols rebalancing work
+ *  is performed in pieces, and some removed keys are be retained as routing
+ *  nodes in the tree.
  *
- * <p>This data structure honors all of the contracts of {@link
- * java.util.concurrent.ConcurrentSkipListMap}, with the additional contract
- * that clone, size, toArray, and iteration are linearizable (atomic).
+ *  <p>This data structure honors all of the contracts of {@link
+ *  java.util.concurrent.ConcurrentSkipListMap}, with the additional contract
+ *  that clone, size, toArray, and iteration are linearizable (atomic).
  *
- * <p>The tree uses optimistic concurrency control.  No locks are usually
- * required for get, containsKey, firstKey, firstEntry, lastKey, or lastEntry.
- * Reads are not lock free (or even obstruction free), but obstructing threads
- * perform no memory allocation, system calls, or loops, which seems to work
- * okay in practice.  All of the updates to the tree are performed in fixed-
- * size blocks, so restoration of the AVL balance criteria may occur after a
- * change to the tree has linearized (but before the mutating operation has
- * returned).  The tree is always properly balanced when quiescent.
+ *  <p>The tree uses optimistic concurrency control.  No locks are usually
+ *  required for get, containsKey, firstKey, firstEntry, lastKey, or lastEntry.
+ *  Reads are not lock free (or even obstruction free), but obstructing threads
+ *  perform no memory allocation, system calls, or loops, which seems to work
+ *  okay in practice.  All of the updates to the tree are performed in fixed-
+ *  size blocks, so restoration of the AVL balance criteria may occur after a
+ *  change to the tree has linearized (but before the mutating operation has
+ *  returned).  The tree is always properly balanced when quiescent.
  *
- * <p>To clone the tree (or produce a snapshot for consistent iteration) the
- * root node is marked as shared, which must be (*) done while there are no
- * pending mutations.  New mutating operations are blocked if a mark is
- * pending, and when existing mutating operations are completed the mark is
- * made.
- * <em>* - It would be less disruptive if we immediately marked the root as
- * shared, and then waited for pending operations that might not have seen the
- * mark without blocking new mutations.  This could result in imbalance being
- * frozen into the shared portion of the tree, though.  To minimize the
- * problem we perform the mark and reenable mutation on whichever thread
- * notices that the entry count has become zero, to reduce context switches on
- * the critical path.</em>
+ *  <p>To clone the tree (or produce a snapshot for consistent iteration) the
+ *  root node is marked as shared, which must be (*) done while there are no
+ *  pending mutations.  New mutating operations are blocked if a mark is
+ *  pending, and when existing mutating operations are completed the mark is
+ *  made.
+ *  <em>* - It would be less disruptive if we immediately marked the root as
+ *  shared, and then waited for pending operations that might not have seen the
+ *  mark without blocking new mutations.  This could result in imbalance being
+ *  frozen into the shared portion of the tree, though.  To minimize the
+ *  problem we perform the mark and reenable mutation on whichever thread
+ *  notices that the entry count has become zero, to reduce context switches on
+ *  the critical path.</em>
  *
- * <p>The same multi-cache line data structure required for efficiently
- * tracking the entry and exit for mutating operations is used to maintain the
- * current size of the tree.  This means that the size can be computed by
- * quiescing as for a clone, but without doing any marking.
+ *  <p>The same multi-cache line data structure required for efficiently
+ *  tracking the entry and exit for mutating operations is used to maintain the
+ *  current size of the tree.  This means that the size can be computed by
+ *  quiescing as for a clone, but without doing any marking.
  *
- * <p>Range queries such as higherKey are not amenable to the optimistic
- * hand-over-hand locking scheme used for exact searches, so they are
- * implemented with pessimistic concurrency control.  Mutation can be
- * considered to acquire a lock on the map in Intention-eXclusive mode, range
- * queries, size(), and root marking acquire the lock in Shared mode.
+ *  <p>Range queries such as higherKey are not amenable to the optimistic
+ *  hand-over-hand locking scheme used for exact searches, so they are
+ *  implemented with pessimistic concurrency control.  Mutation can be
+ *  considered to acquire a lock on the map in Intention-eXclusive mode, range
+ *  queries, size(), and root marking acquire the lock in Shared mode.
  *
- * @author Nathan Bronson
+ *  @author Nathan Bronson
  */
 @SuppressWarnings("ALL")
-public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends GridOffHeapSmartPointer>
-    extends AbstractMap<K, V> implements ConcurrentNavigableMap<K, V>, Cloneable, Closeable {
+public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer,V extends GridOffHeapSmartPointer>
+    extends AbstractMap<K,V> implements ConcurrentNavigableMap<K, V>, Cloneable, Closeable {
     /** This is a special value that indicates that an optimistic read failed. */
     private static final GridOffHeapSmartPointer SpecialRetry = new GridOffHeapSmartPointer() {
         @Override public long pointer() {
@@ -137,16 +136,16 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
     private static final char Right = 'R';
 
     /**
-     * An <tt>OVL</tt> is a version number and lock used for optimistic
-     * concurrent control of some program invariant.  If  {@link #isShrinking}
-     * then the protected invariant is changing.  If two reads of an OVL are
-     * performed that both see the same non-changing value, the reader may
-     * conclude that no changes to the protected invariant occurred between
-     * the two reads.  The special value UnlinkedOVL is not changing, and is
-     * guaranteed to not result from a normal sequence of beginChange and
-     * endChange operations.
-     * <p>
-     * For convenience <tt>endChange(ovl) == endChange(beginChange(ovl))</tt>.
+     *  An <tt>OVL</tt> is a version number and lock used for optimistic
+     *  concurrent control of some program invariant.  If  {@link #isShrinking}
+     *  then the protected invariant is changing.  If two reads of an OVL are
+     *  performed that both see the same non-changing value, the reader may
+     *  conclude that no changes to the protected invariant occurred between
+     *  the two reads.  The special value UnlinkedOVL is not changing, and is
+     *  guaranteed to not result from a normal sequence of beginChange and
+     *  endChange operations.
+     *  <p>
+     *  For convenience <tt>endChange(ovl) == endChange(beginChange(ovl))</tt>.
      */
     private static long beginChange(long ovl) {
         return ovl | 1;
@@ -229,7 +228,6 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
 
         /**
          * Add element to this array.
-         *
          * @param x Value.
          */
         public void add(long x) {
@@ -691,7 +689,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
         if (l != null)
             l.unlock();
 
-        assert (shrinkOVL(ptr) != ovl) : ptr + " " + ovl;
+        assert(shrinkOVL(ptr) != ovl) : ptr + " " + ovl;
     }
 
     /**
@@ -702,12 +700,12 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
         final int hL = left(ptr) == 0 ? 0 : validatedHeight(left(ptr));
         final int hR = right(ptr) == 0 ? 0 : validatedHeight(right(ptr));
 
-        assert (Math.abs(hL - hR) <= 1);
+        assert(Math.abs(hL - hR) <= 1);
         final int h = 1 + Math.max(hL, hR);
 
         int resH = height(ptr);
 
-        assert (h == resH);
+        assert(h == resH);
 
         return resH;
     }
@@ -768,7 +766,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
     /**
      * Entry of tree.
      */
-    private class Entree implements Map.Entry<K, V> {
+    private class Entree implements Map.Entry<K,V> {
         /** */
         private final long ptr;
 
@@ -879,7 +877,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
          * @return {@code true} If succeeded.
          */
         protected boolean add(long node, long tail, long size) {
-            for (; ; ) {
+            for (;;) {
                 final long h = head.get();
 
                 assert h > 0 : h;
@@ -943,7 +941,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
 
         /** {@inheritDoc} */
         @Override public boolean add(long node) {
-            ReentrantReadWriteLock.ReadLock l = lock.readLock();
+            ReentrantReadWriteLock.ReadLock l =  lock.readLock();
 
             if (!l.tryLock())
                 return false;
@@ -958,7 +956,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
 
         /** {@inheritDoc} */
         @Override public boolean add(RecycleQueue que) {
-            ReentrantReadWriteLock.ReadLock l = lock.readLock();
+            ReentrantReadWriteLock.ReadLock l =  lock.readLock();
 
             if (!l.tryLock())
                 return false;
@@ -1132,15 +1130,14 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
      * @return Clones this map and takes data snapshot.
      */
     @SuppressWarnings("unchecked")
-    @Override public GridOffHeapSnapTreeMap<K, V> clone() {
+    @Override public GridOffHeapSnapTreeMap<K,V> clone() {
         final GridOffHeapSnapTreeMap copy;
         try {
-            copy = (GridOffHeapSnapTreeMap)super.clone();
-        }
-        catch (final CloneNotSupportedException xx) {
+            copy = (GridOffHeapSnapTreeMap) super.clone();
+        } catch (final CloneNotSupportedException xx) {
             throw new InternalError();
         }
-        assert (copy.comparator == comparator);
+        assert(copy.comparator == comparator);
 
         copy.holderRef = rootHolder(holderRef);
         markShared(root());
@@ -1230,7 +1227,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
 
         String v = print0(node);
 
-        while (sb.length() < o)
+        while(sb.length() < o)
             sb.a(' ');
 
         sb.a(v);
@@ -1350,9 +1347,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
             final Comparator<? super K> _cmp = comparator;
 
             @SuppressWarnings("unchecked")
-            public int compareTo(final K rhs) {
-                return _cmp.compare((K)key, rhs);
-            }
+            public int compareTo(final K rhs) { return _cmp.compare((K)key, rhs); }
         };
     }
 
@@ -1489,8 +1484,8 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
     }
 
     /** {@inheritDoc} */
-    @Override public Map.Entry<K, V> firstEntry() {
-        return (SimpleImmutableEntry<K, V>)extreme(false, Left);
+    @Override public Map.Entry<K,V> firstEntry() {
+        return (SimpleImmutableEntry<K,V>)extreme(false, Left);
     }
 
     /** {@inheritDoc} */
@@ -1499,8 +1494,8 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
     }
 
     /** {@inheritDoc} */
-    @Override public Map.Entry<K, V> lastEntry() {
-        return (SimpleImmutableEntry<K, V>)extreme(false, Right);
+    @Override public Map.Entry<K,V> lastEntry() {
+        return (SimpleImmutableEntry<K,V>) extreme(false, Right);
     }
 
     /**
@@ -1508,7 +1503,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
      * @return Extreme key.
      */
     private K extremeKeyOrThrow(final char dir) {
-        final K k = (K)extreme(true, dir);
+        final K k = (K) extreme(true, dir);
 
         if (k == null) {
             throw new NoSuchElementException();
@@ -1518,8 +1513,8 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
     }
 
     /**
-     * Returns a key if returnKey is true, a SimpleImmutableEntry otherwise.
-     * Returns null if none exists.
+     *  Returns a key if returnKey is true, a SimpleImmutableEntry otherwise.
+     *  Returns null if none exists.
      */
     private Object extreme(final boolean returnKey, final char dir) {
         while (true) {
@@ -1536,7 +1531,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
                 }
                 else if (right == right(holderRef)) {
                     // the reread of .right is the one protected by our read of ovl
-                    final Object vo = attemptExtreme(returnKey, dir, holderRef, right, ovl);
+                    final Object vo = attemptExtreme(returnKey, dir, right, ovl);
 
                     if (vo != SpecialRetry) {
                         return vo;
@@ -1555,10 +1550,9 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
      * @return Some argument dependant result.
      */
     private Object attemptExtreme(final boolean returnKey,
-        final char dir,
-        final long parent,
-        final long node,
-        final long nodeOVL) {
+                                  final char dir,
+                                  final long node,
+                                  final long nodeOVL) {
         while (true) {
             final long child = child(node, dir);
 
@@ -1588,7 +1582,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
                     return SpecialRetry;
                 }
 
-                return returnKey ? key(node) : new SimpleImmutableEntry<K, V>(key(node), vo);
+                return returnKey ? key(node) : new SimpleImmutableEntry<K,V>(key(node), vo);
             }
             else {
                 // child is non-null
@@ -1614,7 +1608,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
                         return SpecialRetry;
                     }
 
-                    final Object vo = attemptExtreme(returnKey, dir, node, child, childOVL);
+                    final Object vo = attemptExtreme(returnKey, dir, child, childOVL);
 
                     if (vo != SpecialRetry) {
                         return vo;
@@ -1646,23 +1640,23 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
     }
 
     /** {@inheritDoc} */
-    @Override public Entry<K, V> lowerEntry(final K key) {
-        return (Entry<K, V>)boundedExtreme(null, false, comparable(key), false, false, Right);
+    @Override public Entry<K,V> lowerEntry(final K key) {
+        return (Entry<K,V>) boundedExtreme(null, false, comparable(key), false, false, Right);
     }
 
     /** {@inheritDoc} */
-    @Override public Entry<K, V> floorEntry(final K key) {
-        return (Entry<K, V>)boundedExtreme(null, false, comparable(key), true, false, Right);
+    @Override public Entry<K,V> floorEntry(final K key) {
+        return (Entry<K,V>) boundedExtreme(null, false, comparable(key), true, false, Right);
     }
 
     /** {@inheritDoc} */
-    @Override public Entry<K, V> ceilingEntry(final K key) {
-        return (Entry<K, V>)boundedExtreme(comparable(key), true, null, false, false, Left);
+    @Override public Entry<K,V> ceilingEntry(final K key) {
+        return (Entry<K,V>) boundedExtreme(comparable(key), true, null, false, false, Left);
     }
 
     /** {@inheritDoc} */
-    @Override public Entry<K, V> higherEntry(final K key) {
-        return (Entry<K, V>)boundedExtreme(comparable(key), false, null, false, false, Left);
+    @Override public Entry<K,V> higherEntry(final K key) {
+        return (Entry<K,V>) boundedExtreme(comparable(key), false, null, false, false, Left);
     }
 
     /** Returns null if none exists. */
@@ -1692,13 +1686,13 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
                 return null;
             }
 
-            resultKey = returnKey ? (K)result : ((SimpleImmutableEntry<K, V>)result).getKey();
+            resultKey = returnKey ? (K)result : ((SimpleImmutableEntry<K,V>) result).getKey();
         }
         else {
             long holder = holderRef;
 
             final long node = (dir == Left) ? boundedMin(right(holder), minCmp, minIncl) :
-                boundedMax(right(holder), maxCmp, maxIncl);
+                    boundedMax(right(holder), maxCmp, maxIncl);
 
             if (node == 0) {
                 return null;
@@ -1711,7 +1705,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
             }
             else {
                 // we must copy the node
-                result = new SimpleImmutableEntry<K, V>(key(node), vOpt(node));
+                result = new SimpleImmutableEntry<K,V>(key(node), vOpt(node));
             }
         }
 
@@ -1868,14 +1862,14 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
                 return (result != null ? -1 : 0) + (newValue != null ? 1 : 0);
 
             case UpdateIfAbsent:
-                assert (newValue != null);
+                assert(newValue != null);
                 return result != null ? 0 : 1;
 
             case UpdateIfPresent:
                 return result == null ? 0 : (newValue != null ? 0 : -1);
 
             default:  // UpdateIfEq
-                return !((Boolean)result) ? 0 : (newValue != null ? 0 : -1);
+                return !((Boolean) result) ? 0 : (newValue != null ? 0 : -1);
         }
     }
 
@@ -1896,7 +1890,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
 
     /** {@inheritDoc} */
     @Override public boolean replace(final K key, final V oldValue, final V newValue) {
-        return (Boolean)update(key, UpdateIfEq, oldValue, newValue);
+        return (Boolean) update(key, UpdateIfEq, oldValue, newValue);
     }
 
     /** {@inheritDoc} */
@@ -1914,7 +1908,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
             return false;
         }
 
-        return (Boolean)update((K)key, UpdateIfEq, (V)value, null);
+        return (Boolean) update((K)key, UpdateIfEq, (V)value, null);
     }
 
     /**
@@ -2100,10 +2094,9 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
         return shrinkOVL(node) != nodeOVL;
     }
 
-    /**
-     * If successful returns the non-null previous value, SpecialNull for a
-     * null previous value, or null if not previously in the map.
-     * The caller should retry if this method returns SpecialRetry.
+    /** If successful returns the non-null previous value, SpecialNull for a
+     *  null previous value, or null if not previously in the map.
+     *  The caller should retry if this method returns SpecialRetry.
      */
     @SuppressWarnings("unchecked")
     private Object attemptUpdate(final Object key, final Comparable<? super K> k, final int func, final V expected,
@@ -2348,7 +2341,6 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
 
     /**
      * Special protected method to be overridden by extending classes.
-     *
      * @param node Node pointer.
      * @param val Value.
      */
@@ -2365,7 +2357,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
         assert (!isUnlinked(shrinkOVL(parent)));
 
         final long parentL = left(parent);
-        final long parentR = right(parent);
+        final long  parentR = right(parent);
 
         if (parentL != node && parentR != node) {
             // node is no longer a child of parent
@@ -2407,7 +2399,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
     }
 
     /** {@inheritDoc} */
-    @Override public Map.Entry<K, V> pollFirstEntry() {
+    @Override public Map.Entry<K,V> pollFirstEntry() {
         LongArray unlinked = new LongArray();
 
         try {
@@ -2419,7 +2411,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
     }
 
     /** {@inheritDoc} */
-    @Override public Map.Entry<K, V> pollLastEntry() {
+    @Override public Map.Entry<K,V> pollLastEntry() {
         LongArray unlinked = new LongArray();
 
         try {
@@ -2435,10 +2427,10 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
      * @param unlinked Array for unlinked.
      * @return Entry.
      */
-    private Map.Entry<K, V> pollExtremeEntry(final char dir, LongArray unlinked) {
+    private Map.Entry<K,V> pollExtremeEntry(final char dir, LongArray unlinked) {
         int sizeDelta = 0;
 
-        final Map.Entry<K, V> prev = pollExtremeEntryUnderRoot(dir, holderRef, unlinked);
+        final Map.Entry<K,V> prev = pollExtremeEntryUnderRoot(dir, holderRef, unlinked);
 
         if (prev != null) {
             sizeDelta = -1;
@@ -2453,7 +2445,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
      * @param unlinked Array for unlinked nodes.
      * @return Entry.
      */
-    private Map.Entry<K, V> pollExtremeEntryUnderRoot(final char dir, final long holder, LongArray unlinked) {
+    private Map.Entry<K,V> pollExtremeEntryUnderRoot(final char dir, final long holder, LongArray unlinked) {
         while (true) {
             final long right = unsharedRight(holder, unlinked);
 
@@ -2470,7 +2462,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
                 }
                 else if (right == right(holder)) {
                     // this is the protected .right
-                    final Map.Entry<K, V> result = attemptRemoveExtreme(dir, holder, right, ovl, unlinked);
+                    final Map.Entry<K,V> result = attemptRemoveExtreme(dir, holder, right, ovl, unlinked);
 
                     if (result != SpecialRetry) {
                         return result;
@@ -2489,7 +2481,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
      * @param unlinked Array for unlinked nodes.
      * @return Entry.
      */
-    private Map.Entry<K, V> attemptRemoveExtreme(final char dir, final long parent, final long node, final long nodeOVL,
+    private Map.Entry<K,V> attemptRemoveExtreme(final char dir, final long parent, final long node, final long nodeOVL,
         LongArray unlinked) {
         assert !isUnlinked(nodeOVL);
 
@@ -2537,7 +2529,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
 
                 fixHeightAndRebalance(damaged, unlinked);
 
-                return new SimpleImmutableEntry<K, V>(key(node), (V)vo);
+                return new SimpleImmutableEntry<K,V>(key(node), (V)vo);
             }
             else {
                 // keep going down
@@ -2558,7 +2550,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
                         return null;
                     }
 
-                    final Map.Entry<K, V> result = attemptRemoveExtreme(dir, node, child, childOVL, unlinked);
+                    final Map.Entry<K,V> result = attemptRemoveExtreme(dir, node, child, childOVL, unlinked);
 
                     if (result != null) {
                         return result;
@@ -2675,9 +2667,9 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
     }
 
     /**
-     * Attempts to fix the height of a (locked) damaged node, returning the
-     * lowest damaged node for which this thread is responsible.  Returns null
-     * if no more repairs are needed.
+     *  Attempts to fix the height of a (locked) damaged node, returning the
+     *  lowest damaged node for which this thread is responsible.  Returns null
+     *  if no more repairs are needed.
      */
     private long fixHeight_nl(final long node) {
         final int c = nodeCondition(node);
@@ -2700,8 +2692,8 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
     }
 
     /**
-     * nParent and n must be locked on entry.  Returns a damaged node, or null
-     * if no more rebalancing is necessary.
+     *  nParent and n must be locked on entry.  Returns a damaged node, or null
+     *  if no more rebalancing is necessary.
      */
     private long rebalance_nl(final long nParent, final long n, LongArray unlinked) {
         final long nL = unsharedLeft(n, unlinked);
@@ -3005,7 +2997,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
         parent(nR, nParent);
 
         // fix up heights
-        final int hNRepl = 1 + Math.max(hL, hRL);
+        final int  hNRepl = 1 + Math.max(hL, hRL);
 
         height(n, hNRepl);
         height(nR, 1 + Math.max(hNRepl, hRR));
@@ -3103,8 +3095,8 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
 
         // caller should have performed only a single rotation if nL was going
         // to end up damaged
-        assert (Math.abs(hLL - hLRL) <= 1);
-        assert (!((hLL == 0 || nLRL == 0) && vOptIsNull(nL)));
+        assert(Math.abs(hLL - hLRL) <= 1);
+        assert(!((hLL == 0 || nLRL == 0) && vOptIsNull(nL)));
 
         // We have damaged nParent, nLR (now parent.child), and n (now
         // parent.child.right).  n is the deepest.  Perform as many fixes as we
@@ -3204,7 +3196,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
         shrinkOVL(n, endChange(nodeOVL));
         shrinkOVL(nR, endChange(rightOVL));
 
-        assert (Math.abs(hRR - hRLR) <= 1);
+        assert(Math.abs(hRR - hRLR) <= 1);
 
         final int balN = hRLL - hL;
 
@@ -3231,14 +3223,14 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
     }
 
     /** {@inheritDoc} */
-    @Override public Set<Map.Entry<K, V>> entrySet() {
+    @Override public Set<Map.Entry<K,V>> entrySet() {
         return new EntrySet();
     }
 
     /**
      * Entry set.
      */
-    private class EntrySet extends AbstractSet<Map.Entry<K, V>> {
+    private class EntrySet extends AbstractSet<Map.Entry<K,V>> {
         /** {@inheritDoc} */
         @Override public int size() {
             return GridOffHeapSnapTreeMap.this.size();
@@ -3256,12 +3248,12 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
 
         /** {@inheritDoc} */
         @Override public boolean contains(final Object o) {
-            if (!(o instanceof Map.Entry<?, ?>)) {
+            if (!(o instanceof Map.Entry<?,?>)) {
                 return false;
             }
 
-            final Object k = ((Map.Entry<?, ?>)o).getKey();
-            final Object v = ((Map.Entry<?, ?>)o).getValue();
+            final Object k = ((Map.Entry<?,?>)o).getKey();
+            final Object v = ((Map.Entry<?,?>)o).getValue();
 
             final GridOffHeapSmartPointer actual = GridOffHeapSnapTreeMap.this.getImpl((K)k);
 
@@ -3274,7 +3266,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
         }
 
         /** {@inheritDoc} */
-        @Override public boolean add(final Entry<K, V> e) {
+        @Override public boolean add(final Entry<K,V> e) {
             final V v = e.getValue();
 
             if (v == null)
@@ -3285,18 +3277,18 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
 
         /** {@inheritDoc} */
         @Override public boolean remove(final Object o) {
-            if (!(o instanceof Map.Entry<?, ?>)) {
+            if (!(o instanceof Map.Entry<?,?>)) {
                 return false;
             }
 
-            final Object k = ((Map.Entry<?, ?>)o).getKey();
-            final Object v = ((Map.Entry<?, ?>)o).getValue();
+            final Object k = ((Map.Entry<?,?>)o).getKey();
+            final Object v = ((Map.Entry<?,?>)o).getValue();
 
             return GridOffHeapSnapTreeMap.this.remove(k, v);
         }
 
         /** {@inheritDoc} */
-        @Override public Iterator<Entry<K, V>> iterator() {
+        @Override public Iterator<Entry<K,V>> iterator() {
             return new EntryIter(GridOffHeapSnapTreeMap.this);
         }
     }
@@ -3304,7 +3296,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
     /**
      * Entry iterator.
      */
-    private class EntryIter extends AbstractIter implements Iterator<Entry<K, V>> {
+    private class EntryIter extends AbstractIter implements Iterator<Entry<K,V>> {
         /**
          * @param m Map.
          */
@@ -3395,7 +3387,8 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
         /**
          * @param m Map.
          */
-        @SuppressWarnings("unchecked") AbstractIter(final GridOffHeapSnapTreeMap m) {
+        @SuppressWarnings("unchecked")
+        AbstractIter(final GridOffHeapSnapTreeMap m) {
             this.m = m;
             this.descending = false;
             this.forward = Right;
@@ -3415,8 +3408,8 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
          * @param maxIncl Include upper bound.
          * @param descending Iterator in descending order.
          */
-        @SuppressWarnings("unchecked") AbstractIter(final GridOffHeapSnapTreeMap m, final Comparable<? super K> minCmp,
-            final boolean minIncl,
+        @SuppressWarnings("unchecked")
+        AbstractIter(final GridOffHeapSnapTreeMap m, final Comparable<? super K> minCmp, final boolean minIncl,
             final Comparable<? super K> maxCmp, final boolean maxIncl, final boolean descending) {
             this.m = m;
             this.descending = descending;
@@ -3440,7 +3433,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
             final long root = right(rootHolderSnapshot);
 
             if (toCmp != null) {
-                this.endKey = (GridOffHeapSmartPointer)m.boundedExtreme(minCmp, minIncl, maxCmp, maxIncl, true, forward);
+                this.endKey = (GridOffHeapSmartPointer) m.boundedExtreme(minCmp, minIncl, maxCmp, maxIncl, true, forward);
 
                 if (this.endKey == null) {
                     // no node satisfies the bound, nothing to iterate
@@ -3633,12 +3626,12 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
      */
     private abstract static class KeySet<K> extends AbstractSet<K> implements NavigableSet<K> {
         /** */
-        private final ConcurrentNavigableMap<K, ?> map;
+        private final ConcurrentNavigableMap<K,?> map;
 
         /**
          * @param map Map.
          */
-        protected KeySet(final ConcurrentNavigableMap<K, ?> map) {
+        protected KeySet(final ConcurrentNavigableMap<K,?> map) {
             this.map = map;
         }
 
@@ -3750,7 +3743,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
     }
 
     /** {@inheritDoc} */
-    @Override public ConcurrentNavigableMap<K, V> subMap(final K fromKey, final boolean fromInclusive, final K toKey,
+    @Override public ConcurrentNavigableMap<K,V> subMap(final K fromKey, final boolean fromInclusive, final K toKey,
         final boolean toInclusive) {
         final Comparable<? super K> fromCmp = comparable(fromKey);
         if (fromCmp.compareTo(toKey) > 0) {
@@ -3761,41 +3754,41 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
     }
 
     /** {@inheritDoc} */
-    @Override public ConcurrentNavigableMap<K, V> headMap(final K toKey, final boolean inclusive) {
+    @Override public ConcurrentNavigableMap<K,V> headMap(final K toKey, final boolean inclusive) {
         return new SubMap(this, null, null, false, toKey, comparable(toKey), inclusive, false);
     }
 
     /** {@inheritDoc} */
-    @Override public ConcurrentNavigableMap<K, V> tailMap(final K fromKey, final boolean inclusive) {
+    @Override public ConcurrentNavigableMap<K,V> tailMap(final K fromKey, final boolean inclusive) {
         return new SubMap(this, fromKey, comparable(fromKey), inclusive, null, null, false, false);
     }
 
     /** {@inheritDoc} */
-    @Override public ConcurrentNavigableMap<K, V> subMap(final K fromKey, final K toKey) {
+    @Override public ConcurrentNavigableMap<K,V> subMap(final K fromKey, final K toKey) {
         return subMap(fromKey, true, toKey, false);
     }
 
     /** {@inheritDoc} */
-    @Override public ConcurrentNavigableMap<K, V> headMap(final K toKey) {
+    @Override public ConcurrentNavigableMap<K,V> headMap(final K toKey) {
         return headMap(toKey, false);
     }
 
     /** {@inheritDoc} */
-    @Override public ConcurrentNavigableMap<K, V> tailMap(final K fromKey) {
+    @Override public ConcurrentNavigableMap<K,V> tailMap(final K fromKey) {
         return tailMap(fromKey, true);
     }
 
     /** {@inheritDoc} */
-    @Override public ConcurrentNavigableMap<K, V> descendingMap() {
+    @Override public ConcurrentNavigableMap<K,V> descendingMap() {
         return new SubMap(this, null, null, false, null, null, false, true);
     }
 
     /**
      * Submap.
      */
-    private class SubMap extends AbstractMap<K, V> implements ConcurrentNavigableMap<K, V> {
+    private class SubMap extends AbstractMap<K,V> implements ConcurrentNavigableMap<K,V> {
         /** */
-        private final GridOffHeapSnapTreeMap<K, V> m;
+        private final GridOffHeapSnapTreeMap<K,V> m;
 
         /** */
         private final GridOffHeapSmartPointer minKey;
@@ -3828,7 +3821,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
          * @param maxIncl Include upper bound.
          * @param descending Iterator in descending order.
          */
-        private SubMap(final GridOffHeapSnapTreeMap<K, V> m, final GridOffHeapSmartPointer minKey,
+        private SubMap(final GridOffHeapSnapTreeMap<K,V> m, final GridOffHeapSmartPointer minKey,
             final Comparable<? super K> minCmp, final boolean minIncl, final GridOffHeapSmartPointer maxKey,
             final Comparable<? super K> maxCmp, final boolean maxIncl, final boolean descending) {
             this.m = m;
@@ -3924,7 +3917,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
                 throw new NullPointerException();
             }
 
-            final K k = (K)key;
+            final K k = (K) key;
 
             return inRange(k) && m.containsKey(k);
         }
@@ -3942,7 +3935,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
                 throw new NullPointerException();
             }
 
-            final K k = (K)key;
+            final K k = (K) key;
 
             return !inRange(k) ? null : m.get(k);
         }
@@ -3964,14 +3957,14 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
         }
 
         /** {@inheritDoc} */
-        @Override public Set<Entry<K, V>> entrySet() {
+        @Override public Set<Entry<K,V>> entrySet() {
             return new EntrySubSet();
         }
 
         /**
          * Entry subset.
          */
-        private class EntrySubSet extends AbstractSet<Map.Entry<K, V>> {
+        private class EntrySubSet extends AbstractSet<Map.Entry<K,V>> {
             /** {@inheritDoc} */
             @Override public int size() {
                 return SubMap.this.size();
@@ -3984,17 +3977,17 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
 
             /** {@inheritDoc} */
             @Override public boolean contains(final Object o) {
-                if (!(o instanceof Map.Entry<?, ?>)) {
+                if (!(o instanceof Map.Entry<?,?>)) {
                     return false;
                 }
 
-                final Object k = ((Map.Entry<?, ?>)o).getKey();
+                final Object k = ((Map.Entry<?,?>)o).getKey();
 
                 if (!inRange((K)k)) {
                     return false;
                 }
 
-                final Object v = ((Map.Entry<?, ?>)o).getValue();
+                final Object v = ((Map.Entry<?,?>)o).getValue();
                 final Object actual = m.getImpl((K)k);
 
                 if (actual == null) {
@@ -4006,7 +3999,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
             }
 
             /** {@inheritDoc} */
-            @Override public boolean add(final Entry<K, V> e) {
+            @Override public boolean add(final Entry<K,V> e) {
                 requireInRange(e.getKey());
 
                 final V v = e.getValue();
@@ -4019,18 +4012,18 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
 
             /** {@inheritDoc} */
             @Override public boolean remove(final Object o) {
-                if (!(o instanceof Map.Entry<?, ?>)) {
+                if (!(o instanceof Map.Entry<?,?>)) {
                     return false;
                 }
 
-                final Object k = ((Map.Entry<?, ?>)o).getKey();
-                final Object v = ((Map.Entry<?, ?>)o).getValue();
+                final Object k = ((Map.Entry<?,?>)o).getKey();
+                final Object v = ((Map.Entry<?,?>)o).getValue();
 
                 return SubMap.this.remove(k, v);
             }
 
             /** {@inheritDoc} */
-            @Override public Iterator<Entry<K, V>> iterator() {
+            @Override public Iterator<Entry<K,V>> iterator() {
                 return new EntryIter(m, minCmp, minIncl, maxCmp, maxIncl, descending);
             }
         }
@@ -4063,28 +4056,28 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
          * @return First key or {@code null}.
          */
         private K firstKeyOrNull() {
-            return (K)m.boundedExtreme(minCmp, minIncl, maxCmp, maxIncl, true, minDir());
+            return (K) m.boundedExtreme(minCmp, minIncl, maxCmp, maxIncl, true, minDir());
         }
 
         /**
          * @return Last key or {@code null}.
          */
         private K lastKeyOrNull() {
-            return (K)m.boundedExtreme(minCmp, minIncl, maxCmp, maxIncl, true, maxDir());
+            return (K) m.boundedExtreme(minCmp, minIncl, maxCmp, maxIncl, true, maxDir());
         }
 
         /**
          * @return First entry or {@code null}.
          */
         private Entry firstEntryOrNull() {
-            return (Entry)m.boundedExtreme(minCmp, minIncl, maxCmp, maxIncl, false, minDir());
+            return (Entry) m.boundedExtreme(minCmp, minIncl, maxCmp, maxIncl, false, minDir());
         }
 
         /**
          * @return Last entry or {@code null}.
          */
         private Entry lastEntryOrNull() {
-            return (Entry)m.boundedExtreme(minCmp, minIncl, maxCmp, maxIncl, false, maxDir());
+            return (Entry) m.boundedExtreme(minCmp, minIncl, maxCmp, maxIncl, false, maxDir());
         }
 
         /** {@inheritDoc} */
@@ -4126,7 +4119,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
             }
 
             return ((!descending ? tooHigh(key) : tooLow(key)) ? this : subMapInRange(null, false, key, true)).
-                lastEntryOrNull();
+                    lastEntryOrNull();
         }
 
         /** {@inheritDoc} */
@@ -4201,18 +4194,18 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
 
         /** {@inheritDoc} */
         @Override public Entry firstEntry() {
-            return (Entry)m.boundedExtreme(minCmp, minIncl, maxCmp, maxIncl, false, minDir());
+            return (Entry) m.boundedExtreme(minCmp, minIncl, maxCmp, maxIncl, false, minDir());
         }
 
         /** {@inheritDoc} */
         @Override public Entry lastEntry() {
-            return (Entry)m.boundedExtreme(minCmp, minIncl, maxCmp, maxIncl, false, maxDir());
+            return (Entry) m.boundedExtreme(minCmp, minIncl, maxCmp, maxIncl, false, maxDir());
         }
 
         /** {@inheritDoc} */
         @Override public Entry pollFirstEntry() {
             while (true) {
-                final Entry snapshot = (Entry)m.boundedExtreme(minCmp, minIncl, maxCmp, maxIncl, false, minDir());
+                final Entry snapshot = (Entry) m.boundedExtreme(minCmp, minIncl, maxCmp, maxIncl, false, minDir());
 
                 if (snapshot == null || m.remove(snapshot.getKey(), snapshot.getValue())) {
                     return snapshot;
@@ -4223,7 +4216,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
         /** {@inheritDoc} */
         @Override public Entry pollLastEntry() {
             while (true) {
-                final Entry snapshot = (Entry)m.boundedExtreme(minCmp, minIncl, maxCmp, maxIncl, false, maxDir());
+                final Entry snapshot = (Entry) m.boundedExtreme(minCmp, minIncl, maxCmp, maxIncl, false, maxDir());
 
                 if (snapshot == null || m.remove(snapshot.getKey(), snapshot.getValue())) {
                     return snapshot;
@@ -4421,7 +4414,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
 
             Lock l = new Lock(key, th);
 
-            for (; ; ) {
+            for (;;) {
                 Lock l2 = m.putIfAbsent(key, l);
 
                 if (l2 == null)
