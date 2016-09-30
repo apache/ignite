@@ -25,5 +25,6 @@ namespace Apache.Ignite.Core.Plugin
         // TODO: DoOutInOp, etc
         // Hide all unmanaged stuff behind this interface
         // Implementors should not deal with pointers and contexts.
+        // Among other things, this allows for CLS compliant interface.
     }
 }
