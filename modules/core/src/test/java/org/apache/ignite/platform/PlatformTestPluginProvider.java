@@ -40,7 +40,7 @@ import java.util.UUID;
  */
 public class PlatformTestPluginProvider implements PluginProvider<PluginConfiguration> {
     /** */
-    private PlatformContext platformContext;
+    private final PlatformTestPlugin plugin = new PlatformTestPlugin();
 
     /** {@inheritDoc} */
     @Override public String name() {
@@ -59,7 +59,7 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
 
     /** {@inheritDoc} */
     @Override public <T extends IgnitePlugin> T plugin() {
-        return (T)new PlatformTestPlugin(platformContext);
+        return (T)plugin;
     }
 
     /** {@inheritDoc} */
@@ -74,7 +74,7 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
 
     /** {@inheritDoc} */
     @Override public void start(PluginContext ctx) throws IgniteCheckedException {
-        platformContext = PlatformUtils.platformContext(ctx.grid());
+        plugin.setContext(PlatformUtils.platformContext(ctx.grid()));
     }
 
     /** {@inheritDoc} */
@@ -110,19 +110,36 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
     /**
      * Test plugin.
      */
-    public static class PlatformTestPlugin extends PlatformAbstractTarget implements IgnitePlatformPlugin {
+    public static class PlatformTestPlugin implements IgnitePlatformPlugin {
+        /** */
+        private PlatformContext platformContext;
+
+        /**
+         * Sets the context.
+         */
+        public void setContext(PlatformContext platformContext) {
+            this.platformContext = platformContext;
+        }
+
+        /** {@inheritDoc} */
+        @Override public PlatformTarget platformTarget() {
+            assert platformContext != null;
+
+            return new PlatformTestPluginTarget(platformContext);
+        }
+    }
+
+    /**
+     * Test target.
+     */
+    public static class PlatformTestPluginTarget extends PlatformAbstractTarget {
         /**
          * Constructor.
          *
          * @param platformCtx Context.
          */
-        protected PlatformTestPlugin(PlatformContext platformCtx) {
+        protected PlatformTestPluginTarget(PlatformContext platformCtx) {
             super(platformCtx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public PlatformTarget platformTarget() {
-            return this;
         }
     }
 }
