@@ -2557,6 +2557,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         // Needed to suppress influence of previous tests:
         fs.resetMetrics();
 
+        long locSpaceSize = fs.metrics().localSpaceSize();
+
+        assertTrue("Local space size: " + locSpaceSize, locSpaceSize >= 0);
+
         checkMetricsZero(fs);
 
         try (IgfsOutputStream os = fs.create(new IgfsPath("/file1"), 128, true/*overwrite*/, null, 0, 256, null)) {
@@ -2564,8 +2568,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         }
 
         IgfsMetrics m = fs.metrics();
-
-        assertTrue(m.localSpaceSize() >= 0);
 
         if (dual || isProxy())
             assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
@@ -2649,6 +2651,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         assertEquals(0, m.filesOpenedForWrite());
 
         assertTrue(m.maxSpaceSize() >= 0);
+        assertTrue(m.localSpaceSize() >= 0);
 
         // Sizes are updated asynchronously, so we need to wait
         // this to change:
@@ -2670,13 +2673,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception
      */
-    public final void testMetricsBlock() throws Exception {
+    public void testMetricsBlock() throws Exception {
         final boolean proxy = isProxy();
 
         final IgfsImpl secIgfsEx = (dual || proxy) ? (IgfsImpl)igfsSecondary.igfs() : null;
 
-        assert !dual || (igfsSecondaryFileSystem != null);
-        assert !proxy || (igfsSecondaryFileSystem != null);
+        assert !dual || igfsSecondaryFileSystem != null;
+        assert !proxy || igfsSecondaryFileSystem != null;
         assert !(dual && proxy);
 
         final IgfsPath file00 = new IgfsPath("/file00");
@@ -2685,16 +2688,14 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
         final int blockSize = igfs.info(file00).blockSize();
 
-        igfs.await(file00);
-
         IgfsEntryInfo info = null;
 
         if (proxy) {
             if (secIgfsEx != null)
-                info = secIgfsEx.meta.infoForPath(file00);
+                info = secIgfsEx.meta().infoForPath(file00);
         }
         else
-            info = igfs.meta.infoForPath(file00);
+            info = igfs.meta().infoForPath(file00);
 
         if (info != null) {
             final int blockSize2 = info.blockSize();
@@ -2706,7 +2707,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
         igfs.configuration().setPrefetchBlocks(0);
 
-        Assert.assertTrue("https://issues.apache.org/jira/browse/IGNITE-3664", !(igfsSecondaryFileSystem instanceof LocalIgfsSecondaryFileSystem));
+        Assert.assertTrue("https://issues.apache.org/jira/browse/IGNITE-3664",
+            !(igfsSecondaryFileSystem instanceof LocalIgfsSecondaryFileSystem));
 
         igfs.format();
 

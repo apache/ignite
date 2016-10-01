@@ -123,7 +123,7 @@ public final class IgfsImpl implements IgfsEx {
     private final IgfsPaths secondaryPaths;
 
     /** Cache based structure (meta data) manager. */
-    IgfsMetaManager meta;
+    private IgfsMetaManager meta;
 
     /** Cache based file's data container. */
     private IgfsDataManager data;
@@ -1779,6 +1779,13 @@ public final class IgfsImpl implements IgfsEx {
      */
     private int bufferSize(int bufSize) {
         return bufSize == 0 ? cfg.getStreamBufferSize() : bufSize;
+    }
+
+    /**
+     * Getter for tests.
+     */
+    IgfsMetaManager meta() {
+        return meta;
     }
 
     /**
