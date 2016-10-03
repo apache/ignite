@@ -19,6 +19,7 @@ package org.apache.ignite.loadtests.continuous;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
@@ -188,27 +189,29 @@ public abstract class CacheContinuousQueryAbstractLoadTest extends GridCommonAbs
 
         final IgniteLogger log = this.log;
 
-        Thread t = new Thread(() -> {
-            sleep(initialDelay);
+        Thread t = new Thread(new Runnable() {
+            public void run() {
+                sleep(initialDelay);
 
-            try {
-                for (int i = 1; i <= restartCycles && !Thread.interrupted(); i++) {
+                try {
+                    for (int i = 1; i <= restartCycles && !Thread.interrupted(); i++) {
 
-                    IgniteConfiguration cfg = getConfiguration(getTestGridName(no)).setGridLogger(new NullLogger());
+                        IgniteConfiguration cfg = getConfiguration(getTestGridName(no)).setGridLogger(new NullLogger());
 
-                    log.debug("Node restart cycle started: " + i);
+                        log.debug("Node restart cycle started: " + i);
 
-                    try (Ignite node = Ignition.start(cfg)) {
+                        try (Ignite node = Ignition.start(cfg)) {
+                            sleep(restartDelay);
+                        }
+
+                        log.info("Node restart cycle finished: " + i);
+
                         sleep(restartDelay);
                     }
-
-                    log.info("Node restart cycle finished: " + i);
-
-                    sleep(restartDelay);
                 }
-            }
-            catch (Exception e) {
-                log.error("Unexpected error.", e);
+                catch (Exception e) {
+                    log.error("Unexpected error.", e);
+                }
             }
         });
 
