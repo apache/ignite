@@ -644,20 +644,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     }
 
     /**
-     *
-     */
-    private void clearPageStore() {
-        try {
-            if (cctx.shared().pageStore() != null)
-                cctx.shared().pageStore().onPartitionDestroyed(cctx.cacheId(), id);
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to gracefully clean resources for evicted partition " +
-                "[cache=" + cctx.name() + ", partId=" + id + ']');
-        }
-    }
-
-    /**
      * @return {@code true} If there is a group reservation.
      */
     boolean groupReserved() {
@@ -742,8 +728,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         rent.onDone();
 
         ((GridDhtPreloader)cctx.preloader()).onPartitionEvicted(this, updateSeq);
-
-        clearPageStore();
 
         clearDeferredDeletes();
     }

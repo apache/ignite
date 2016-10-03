@@ -129,7 +129,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      *
      */
-    @Nullable public IgniteInternalFuture wakeupForCheckpoint() {
+    @Nullable public IgniteInternalFuture wakeupForCheckpoint(String reason) {
         return null;
     }
 
@@ -138,7 +138,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      * @throws IgniteCheckedException If failed.
      */
-    public void waitForCheckpoint() throws IgniteCheckedException {
+    public void waitForCheckpoint(String reason) throws IgniteCheckedException {
         // No-op
     }
 
