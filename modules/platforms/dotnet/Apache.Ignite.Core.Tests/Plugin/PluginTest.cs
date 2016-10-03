@@ -122,5 +122,14 @@ namespace Apache.Ignite.Core.Tests.Plugin
 
             // TODO: Verify that Java part got our response back via additional op.
         }
+
+        /// <summary>
+        /// Tests returning a new plugin target.
+        /// </summary>
+        [Test]
+        public void TestReturnObject()
+        {
+            // TODO
+        }
     }
 }
