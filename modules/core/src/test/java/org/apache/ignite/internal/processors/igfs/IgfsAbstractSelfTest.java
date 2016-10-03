@@ -797,8 +797,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
-                try (IgfsInputStream is = igfs.open(FILE)) {
-                    // noop
+                try (IgfsInputStream ignored = igfs.open(FILE)) {
+                    // No-op.
                 }
 
                 return null;
