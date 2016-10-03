@@ -87,16 +87,12 @@ public class PojoValueField extends PojoField {
         super(desc);
     }
 
-    /**
-     * Returns DDL for Cassandra columns corresponding to POJO field.
-     *
-     * @return columns DDL.
-     */
-    public String getColumnDDL() {
+    /** {@inheritDoc} */
+    @Override public String getColumnDDL() {
         String colDDL = super.getColumnDDL();
 
         if (isStatic != null && isStatic)
-            colDDL = colDDL + " static";
+            colDDL += " static";
 
         return colDDL;
     }
@@ -140,13 +136,8 @@ public class PojoValueField extends PojoField {
         return builder.append(";").toString();
     }
 
-    /**
-     * Initializes descriptor from {@link QuerySqlField} annotation.
-     *
-     * @param sqlField {@link QuerySqlField} annotation.
-     */
-    protected void init(QuerySqlField sqlField) {
-        if (sqlField.index())
-            isIndexed = true;
+    /** {@inheritDoc} */
+    @Override protected void init(QuerySqlField sqlField) {
+        // No-op.
     }
 }

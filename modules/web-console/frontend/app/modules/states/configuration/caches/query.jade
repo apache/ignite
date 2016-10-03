@@ -30,7 +30,15 @@ include ../../../../../app/helpers/jade/mixins.jade
         .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
             .col-sm-6
                 .settings-row
-                    +text('SQL schema name:', model + '.sqlSchema', '"sqlSchema"', 'false', 'Input schema name', 'Schema name for cache according to SQL ANSI-99')
+                    +text('SQL schema name:', model + '.sqlSchema', '"sqlSchema"', 'false', 'Input schema name',
+                        'Schema name allow to use existing database queries in your application and according to SQL ANSI-99<br>\
+                        Cache is reffered by schema name in cross-cache queries<br/>\
+                        Nonquoted identifiers are not case sensitive. Quoted identifiers are case sensitive<br/>\
+                        When SQL schema is not specified, quoted cache name should be used<br/>\
+                        Query example without schema name:<br>\
+                        SELECT .... FROM "cache1".Type1 JOIN "cache2".Type2 ...<br>\
+                        The same query using schema name:<br>\
+                        SELECT .... FROM cache1.Type1 JOIN cache2.Type2 ...')
                 .settings-row
                     +number('On-heap cache for off-heap indexes:', model + '.sqlOnheapRowCacheSize', '"sqlOnheapRowCacheSize"', 'true', '10240', '1',
                         'Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access')
@@ -89,7 +97,7 @@ include ../../../../../app/helpers/jade/mixins.jade
                         'Flag indicating whether SQL indexes should support snapshots')
                 .settings-row
                     +checkbox('Escape table and filed names', model + '.sqlEscapeAll', '"sqlEscapeAll"',
-                        'If set then all the SQL table and field names will be escaped with double quotes<br/>\
+                        'If enabled than all the SQL table and field names will be escaped with double quotes like "tableName"."fieldName"<br/>\
                         This enforces case sensitivity for field names and also allows having special characters in table and field names')
             .col-sm-6
                 +preview-xml-java(model, 'cacheQuery', 'domains')

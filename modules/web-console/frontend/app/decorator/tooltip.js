@@ -25,31 +25,45 @@ import angular from 'angular';
 angular.module('mgcrea.ngStrap.tooltip')
     .decorator('$tooltip', ['$delegate', ($delegate) => {
         function TooltipFactoryDecorated(element, config) {
-            const delegate = $delegate(element, config);
+            let tipElementEntered = false;
 
-            const scope = delegate.$scope;
+            config.onShow = ($tooltip) => {
+                $tooltip.$element.on('mouseenter', () => tipElementEntered = true);
+                $tooltip.$element.on('mouseleave', () => {
+                    tipElementEntered = false;
 
-            const options = delegate.$options;
+                    $tooltip.leave();
+                });
+            };
 
-            const hideWraped = delegate.hide;
+            const $tooltip = $delegate(element, config);
 
-            delegate.hide = (blur) => {
-                if (!delegate.$isShown)
+            const scope = $tooltip.$scope;
+            const options = $tooltip.$options;
+
+            const _hide = $tooltip.hide;
+
+            $tooltip.hide = (blur) => {
+                if (!$tooltip.$isShown || tipElementEntered)
                     return;
 
-                if (delegate.$element !== null)
-                    return hideWraped(blur);
+                if ($tooltip.$element) {
+                    $tooltip.$element.off('mouseenter');
+                    $tooltip.$element.off('mouseleave');
 
-                scope.$emit(options.prefixEvent + '.hide.before', delegate);
+                    return _hide(blur);
+                }
+
+                scope.$emit(options.prefixEvent + '.hide.before', $tooltip);
 
                 if (angular.isDefined(options.onBeforeHide) && angular.isFunction(options.onBeforeHide))
-                    options.onBeforeHide(delegate);
+                    options.onBeforeHide($tooltip);
 
-                delegate.$isShown = scope.$isShown = false;
+                $tooltip.$isShown = scope.$isShown = false;
                 scope.$$phase || (scope.$root && scope.$root.$$phase) || scope.$digest();
             };
 
-            return delegate;
+            return $tooltip;
         }
 
         return TooltipFactoryDecorated;

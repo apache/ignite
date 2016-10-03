@@ -83,16 +83,24 @@ export default class NotebookData {
         this.$q = $q;
     }
 
-    read() {
-        if (!_.isNil(this.initLatch))
-            return this.initLatch;
+    load() {
+        if (this.demo) {
+            if (this.initLatch)
+                return this.initLatch;
 
-        if (this.demo)
             return this.initLatch = this.$q.when(this.notebooks = [DEMO_NOTEBOOK]);
+        }
 
         return this.initLatch = this.$http.get('/api/v1/notebooks')
             .then(({data}) => this.notebooks = data)
             .catch(({data}) => Promise.reject(data));
+    }
+
+    read() {
+        if (this.initLatch)
+            return this.initLatch;
+
+        return this.load();
     }
 
     find(_id) {

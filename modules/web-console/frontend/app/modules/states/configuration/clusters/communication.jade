@@ -90,7 +90,7 @@ include ../../../../../app/helpers/jade/mixins.jade
                 .settings-row
                     +checkbox('Direct buffer', communication + '.directBuffer', '"directBuffer"',
                     'If value is true, then SPI will use ByteBuffer.allocateDirect(int) call<br/>\
-                    Otherwise, SPI will use ByteBuffer.allocate(int) call.')
+                    Otherwise, SPI will use ByteBuffer.allocate(int) call')
                 .settings-row
                     +checkbox('Direct send buffer', communication + '.directSendBuffer', '"directSendBuffer"', 'Flag defining whether direct send buffer should be used')
                 .settings-row
