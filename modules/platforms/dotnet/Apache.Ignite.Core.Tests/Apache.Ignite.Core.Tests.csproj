@@ -196,6 +196,10 @@
       <Project>{C6B58E4A-A2E9-4554-AD02-68CE6DA5CFB7}</Project>
       <Name>Apache.Ignite.NLog</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Apache.Ignite.NLog\Apache.Ignite.NLog.csproj">
+      <Project>{C6B58E4A-A2E9-4554-AD02-68CE6DA5CFB7}</Project>
+      <Name>Apache.Ignite.NLog</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Apache.Ignite\Apache.Ignite.csproj">
       <Project>{27F7F3C6-BDDE-43A9-B565-856F8395A04B}</Project>
       <Name>Apache.Ignite</Name>
