@@ -301,7 +301,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
                 OutputStream os = new FileOutputStream(file, true);
 
                 try {
-                    update(path, props);
+                    updatePropertiesIfNeeded(path, props);
 
                     return os;
                 }
