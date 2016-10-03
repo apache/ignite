@@ -261,18 +261,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      */
     public abstract GridNearCacheAdapter<K, V> near();
 
-    /** {@inheritDoc} */
-    @Override public void forceKeyCheck() {
-        if (!keyCheck) {
-            super.forceKeyCheck();
-
-            GridNearCacheAdapter near = near();
-
-            if (near != null)
-                near.forceKeyCheck();
-        }
-    }
-
     /**
      * @return Partition topology.
      */
