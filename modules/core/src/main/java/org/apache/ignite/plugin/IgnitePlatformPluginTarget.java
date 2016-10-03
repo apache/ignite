@@ -25,5 +25,7 @@ import org.apache.ignite.binary.BinaryRawWriter;
  * Platform plugin target: interface that is invoked from platform code to perform operations.
  */
 public interface IgnitePlatformPluginTarget {
+    // TODO: Comments
+    // TODO: Return an object
     void invokeOperation(int opCode, BinaryRawReader reader, BinaryRawWriter writer) throws IgniteException;
 }
