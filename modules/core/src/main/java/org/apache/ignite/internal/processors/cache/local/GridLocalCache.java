@@ -36,7 +36,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCachePreloader;
 import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -49,8 +48,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Local cache implementation.
  */
-public class GridLocalCache<K, V> extends GridCacheAdapter<K, V>
-    implements IgniteCacheOffheapManager.CacheDataStore.SizeTracker {
+public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -239,20 +237,6 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V>
             if (log().isDebugEnabled())
                 log().debug("Explicitly removed future from map of futures: " + fut);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onInsert() {
-        storageSize.incrementAndGet();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onRemove() {
-        storageSize.decrementAndGet();
-    }
-
-    @Override public long updateCounter() {
-        return 0;
     }
 
     /** {@inheritDoc} */

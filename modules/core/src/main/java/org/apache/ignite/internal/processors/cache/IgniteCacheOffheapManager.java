@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -64,11 +63,10 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
 
     /**
      * @param p Partition.
-     * @param lsnr Listener.
      * @return Data store.
      * @throws IgniteCheckedException If failed.
      */
-    public CacheDataStore createCacheDataStore(int p, CacheDataStore.SizeTracker lsnr) throws IgniteCheckedException;
+    public CacheDataStore createCacheDataStore(int p) throws IgniteCheckedException;
 
     /**
      * @param p Partition ID.
@@ -236,7 +234,6 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      *
      */
     interface CacheDataStore {
-
         /**
          * @return Partition ID.
          */
@@ -246,6 +243,37 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
          * @return Store name.
          */
         String name();
+
+        /**
+         * @param size Size to init.
+         * @param updCntr Update counter to init.
+         */
+        void init(long size, long updCntr);
+
+        /**
+         * @return Size.
+         */
+        int size();
+
+        /**
+         * @return Update counter.
+         */
+        long updateCounter();
+
+        /**
+         *
+         */
+        void updateCounter(long val);
+
+        /**
+         * @return Next update counter.
+         */
+        public long nextUpdateCounter();
+
+        /**
+         * @return Initial update counter.
+         */
+        public long initialUpdateCounter();
 
         /**
          * @param key Key.
@@ -292,40 +320,5 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
          * @return Row store.
          */
         public RowStore rowStore();
-
-        /**
-         * @return Size.
-         */
-        public int size();
-
-        /**
-         * @return Update counter.
-         */
-        public long updateCounter();
-
-        /**
-         * Data store size tracker.
-         */
-        interface SizeTracker {
-            /**
-             * On new entry inserted.
-             */
-            void onInsert();
-
-            /**
-             * On entry removed.
-             */
-            void onRemove();
-
-            /**
-             * @return Size.
-             */
-            int size();
-
-            /**
-             * @return Update counter.
-             */
-            long updateCounter();
-        }
     }
 }
