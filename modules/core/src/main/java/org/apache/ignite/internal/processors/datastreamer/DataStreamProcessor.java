@@ -70,7 +70,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    public DataStreamProcessor(GridKernalContext ctx) {
+    public DataStreamProcessor(final GridKernalContext ctx) {
         super(ctx);
 
         marsh = ctx.config().getMarshaller();
