@@ -33,21 +33,10 @@ public interface IgnitePlatformPluginTarget {
      * @param opCode Operation code.
      * @param reader Reader.
      * @param writer Writer.
+     * @param arg Optional argument.
      *
      * @throws IgniteException In case of error.
      */
-    void invokeOperation(int opCode, BinaryRawReader reader, BinaryRawWriter writer)
+    Object invokeOperation(int opCode, BinaryRawReader reader, BinaryRawWriter writer, Object arg)
         throws IgniteException;
-
-    /**
-     * Invokes operation that returns a new object.
-     *
-     * @param opCode Operation code.
-     * @param reader Reader.
-     *
-     * @return New target object.
-     *
-     * @throws IgniteException In case of error.
-     */
-    IgnitePlatformPluginTarget invokeObjectOperation(int opCode, BinaryRawReader reader) throws IgniteException;
 }

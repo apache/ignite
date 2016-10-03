@@ -23,6 +23,7 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.plugin.IgnitePlatformPluginTarget;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Adapts user-defined IgnitePlatformPluginTarget to internal PlatformAbstractTarget.
@@ -46,9 +47,9 @@ public class PlatformPluginTargetAdapter extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader,
-        BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override protected Object processInObjectStreamOutObjectStream(int type, @Nullable Object arg,
+        BinaryRawReaderEx reader, BinaryRawWriterEx writer) throws IgniteCheckedException {
 
-        target.invokeOperation(type, reader, writer);
+        return target.invokeOperation(type, reader, writer, arg);
     }
 }

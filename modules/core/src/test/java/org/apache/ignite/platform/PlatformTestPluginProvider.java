@@ -134,15 +134,15 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
         private static final int OP_INVOKE_CALLBACK = 3;
 
         /** {@inheritDoc} */
-        @Override public void invokeOperation(int opCode,
-            BinaryRawReader reader, BinaryRawWriter writer) {
+        @Override public Object invokeOperation(int opCode,
+            BinaryRawReader reader, BinaryRawWriter writer, Object arg) {
             switch (opCode) {
                 case OP_READ_WRITE: {
                     Object data = reader.readObject();
 
                     writer.writeObject(data);
 
-                    return;
+                    return null;
                 }
 
                 case OP_ERROR: {
@@ -156,19 +156,11 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
                     // Something should be injected VIA THIS METHOD ARG, like IgnitePlatformPluginContext
                     // Where there is a way to invoke callbacks (route by plugin name internally)
 
-                    return;
+                    return null;
                 }
             }
 
             throw new IgniteException("Unknown op code: " + opCode);
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgnitePlatformPluginTarget invokeObjectOperation(int opCode,
-            BinaryRawReader reader) throws IgniteException {
-
-            // TODO
-            return null;
         }
     }
 }
