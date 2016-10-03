@@ -448,6 +448,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             void* res = JNI.TargetInObjectStreamOutObjectStream(target.Context, target.Target, opType, arg, inMemPtr, outMemPtr);
 
+            if (res == null)
+                return null;
+
             return target.ChangeTarget(res);
         }
 
