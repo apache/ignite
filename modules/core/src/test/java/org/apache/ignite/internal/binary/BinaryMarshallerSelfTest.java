@@ -51,8 +51,10 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+
 import junit.framework.Assert;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryCollectionFactory;
@@ -73,6 +75,7 @@ import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteProperties;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -124,6 +127,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testInt() throws Exception {
+        assertEquals(0, marshalUnmarshal(0).intValue());
         assertEquals(100, marshalUnmarshal(100).intValue());
     }
 
@@ -131,6 +135,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLong() throws Exception {
+        assertEquals(0L, marshalUnmarshal(0L).longValue());
         assertEquals(100L, marshalUnmarshal(100L).longValue());
     }
 
@@ -629,7 +634,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(obj.b, (byte)po.field("b"));
         assertEquals(obj.s, (short)po.field("s"));
         assertEquals(obj.i, (int)po.field("i"));
+        assertEquals(obj.zi, (int)po.field("zi"));
         assertEquals(obj.l, (long)po.field("l"));
+        assertEquals(obj.zl, (long)po.field("zl"));
         assertEquals(obj.f, (float)po.field("f"), 0);
         assertEquals(obj.d, (double)po.field("d"), 0);
         assertEquals(obj.c, (char)po.field("c"));
@@ -664,7 +671,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(obj.inner.b, (byte)innerPo.field("b"));
         assertEquals(obj.inner.s, (short)innerPo.field("s"));
         assertEquals(obj.inner.i, (int)innerPo.field("i"));
+        assertEquals(obj.inner.zi, (int)innerPo.field("zi"));
         assertEquals(obj.inner.l, (long)innerPo.field("l"));
+        assertEquals(obj.inner.zl, (long)innerPo.field("zl"));
         assertEquals(obj.inner.f, (float)innerPo.field("f"), 0);
         assertEquals(obj.inner.d, (double)innerPo.field("d"), 0);
         assertEquals(obj.inner.c, (char)innerPo.field("c"));
@@ -715,7 +724,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(obj.b, (byte)po.field("_b"));
         assertEquals(obj.s, (short)po.field("_s"));
         assertEquals(obj.i, (int)po.field("_i"));
+        assertEquals(obj.zi, (int)po.field("_zi"));
         assertEquals(obj.l, (long)po.field("_l"));
+        assertEquals(obj.zl, (long)po.field("_zl"));
         assertEquals(obj.f, (float)po.field("_f"), 0);
         assertEquals(obj.d, (double)po.field("_d"), 0);
         assertEquals(obj.c, (char)po.field("_c"));
@@ -749,7 +760,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(obj.simple.b, (byte)simplePo.field("b"));
         assertEquals(obj.simple.s, (short)simplePo.field("s"));
         assertEquals(obj.simple.i, (int)simplePo.field("i"));
+        assertEquals(obj.simple.zi, (int)simplePo.field("zi"));
         assertEquals(obj.simple.l, (long)simplePo.field("l"));
+        assertEquals(obj.simple.zl, (long)simplePo.field("zl"));
         assertEquals(obj.simple.f, (float)simplePo.field("f"), 0);
         assertEquals(obj.simple.d, (double)simplePo.field("d"), 0);
         assertEquals(obj.simple.c, (char)simplePo.field("c"));
@@ -787,7 +800,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(obj.binary.b, (byte)binaryPo.field("_b"));
         assertEquals(obj.binary.s, (short)binaryPo.field("_s"));
         assertEquals(obj.binary.i, (int)binaryPo.field("_i"));
+        assertEquals(obj.binary.zi, (int)binaryPo.field("_zi"));
         assertEquals(obj.binary.l, (long)binaryPo.field("_l"));
+        assertEquals(obj.binary.zl, (long)binaryPo.field("_zl"));
         assertEquals(obj.binary.f, (float)binaryPo.field("_f"), 0);
         assertEquals(obj.binary.d, (double)binaryPo.field("_d"), 0);
         assertEquals(obj.binary.c, (char)binaryPo.field("_c"));
@@ -841,8 +856,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         assertEquals(clazz, marshalUnmarshal(clazz));
     }
-
-
 
     /**
      *
@@ -953,7 +966,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(obj.b, (byte)po.field("b"));
         assertEquals(obj.s, (short)po.field("s"));
         assertEquals(obj.i, (int)po.field("i"));
+        assertEquals(obj.zi, (int)po.field("zi"));
         assertEquals(obj.l, (long)po.field("l"));
+        assertEquals(obj.zl, (long)po.field("zl"));
         assertEquals(obj.f, (float)po.field("f"), 0);
         assertEquals(obj.d, (double)po.field("d"), 0);
         assertEquals(obj.c, (char)po.field("c"));
@@ -2297,6 +2312,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         SimpleObject newObj = new SimpleObject();
 
         newObj.i = 12345;
+        newObj.zi = 0;
         newObj.fArr = new float[] {5, 8, 0};
         newObj.str = "newStr";
 
@@ -2326,6 +2342,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         SimpleObject newObj = new SimpleObject();
 
         newObj.i = 12345;
+        newObj.zi = 0;
         newObj.fArr = new float[] {5, 8, 0};
         newObj.str = "newStr";
 
@@ -3337,7 +3354,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         inner.b = 1;
         inner.s = 1;
         inner.i = 1;
+        inner.zi = 0;
         inner.l = 1;
+        inner.zl = 0L;
         inner.f = 1.1f;
         inner.d = 1.1d;
         inner.c = 1;
@@ -3377,7 +3396,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         outer.b = 2;
         outer.s = 2;
         outer.i = 2;
+        outer.zi = 0;
         outer.l = 2;
+        outer.zl = 0L;
         outer.f = 2.2f;
         outer.d = 2.2d;
         outer.c = 2;
@@ -3425,7 +3446,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         innerSimple.b = 1;
         innerSimple.s = 1;
         innerSimple.i = 1;
+        innerSimple.zi = 0;
         innerSimple.l = 1;
+        innerSimple.zl = 0L;
         innerSimple.f = 1.1f;
         innerSimple.d = 1.1d;
         innerSimple.c = 1;
@@ -3464,7 +3487,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         innerBinary.b = 2;
         innerBinary.s = 2;
         innerBinary.i = 2;
+        innerBinary.zi = 0;
         innerBinary.l = 2;
+        innerBinary.zl = 0L;
         innerBinary.f = 2.2f;
         innerBinary.d = 2.2d;
         innerBinary.c = 2;
@@ -3539,7 +3564,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         outer.b = 4;
         outer.s = 4;
         outer.i = 4;
+        outer.zi = 0;
         outer.l = 4;
+        outer.zl = 0L;
         outer.f = 4.4f;
         outer.d = 4.4d;
         outer.c = 4;
@@ -3634,7 +3661,13 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         private int i;
 
         /** */
+        private int zi;
+
+        /** */
         private long l;
+
+        /** */
+        private long zl;
 
         /** */
         private float f;
@@ -3752,10 +3785,16 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         private int i;
 
         /** */
+        private int zi;
+
+        /** */
         private int iRaw;
 
         /** */
         private long l;
+
+        /** */
+        private long zl;
 
         /** */
         private long lRaw;
@@ -3921,7 +3960,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             writer.writeByte("_b", b);
             writer.writeShort("_s", s);
             writer.writeInt("_i", i);
+            writer.writeInt("_zi", zi);
             writer.writeLong("_l", l);
+            writer.writeLong("_zl", zl);
             writer.writeFloat("_f", f);
             writer.writeDouble("_d", d);
             writer.writeChar("_c", c);
@@ -3988,7 +4029,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             b = reader.readByte("_b");
             s = reader.readShort("_s");
             i = reader.readInt("_i");
+            zi = reader.readInt("_zi");
             l = reader.readLong("_l");
+            zl = reader.readLong("_zl");
             f = reader.readFloat("_f");
             d = reader.readDouble("_d");
             c = reader.readChar("_c");

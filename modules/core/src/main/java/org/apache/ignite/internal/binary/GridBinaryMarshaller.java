@@ -55,7 +55,13 @@ public class GridBinaryMarshaller {
     public static final byte INT = 3;
 
     /** */
+    public static final byte ZERO_INT = 37;
+
+    /** */
     public static final byte LONG = 4;
+
+    /** */
+    public static final byte ZERO_LONG = 36;
 
     /** */
     public static final byte FLOAT = 5;
