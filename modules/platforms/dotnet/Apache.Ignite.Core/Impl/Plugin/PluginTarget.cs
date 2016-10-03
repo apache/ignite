@@ -39,9 +39,20 @@ namespace Apache.Ignite.Core.Impl.Plugin
         }
 
         /** <inheritdoc /> */
-        public T InvokeOperation<T>(int opCode, Action<IBinaryRawWriter> writeAction, Func<IBinaryRawReader, T> readFunc)
+        public unsafe T InvokeOperation<T>(int opCode, Action<IBinaryRawWriter> writeAction, 
+            Func<IBinaryRawReader, IPluginTarget, T> readFunc, IPluginTarget arg)
         {
-            return DoOutInOp(opCode, writeAction, stream => readFunc(Marshaller.StartUnmarshal(stream)));
+            void* argPtr = null;
+
+            var arg0 = arg as PluginTarget;
+
+            if (arg0 != null)
+                argPtr = arg0.Target.Target;
+            else if (arg != null)
+                throw new ArgumentException("Unsupported IPluginTarget implementation: " + arg.GetType(), "arg");
+
+            return DoOutInOp(opCode, writeAction, (stream, res) => readFunc(Marshaller.StartUnmarshal(stream), null), 
+                argPtr);
         }
 
         /** <inheritdoc /> */

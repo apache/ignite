@@ -81,14 +81,14 @@ namespace Apache.Ignite.Core.Tests.Plugin
 
             // Test round trip.
             Assert.AreEqual(1, target.InvokeOperation(OpReadWrite,
-                w => w.WriteObject(1), r => r.ReadObject<int>()));
+                w => w.WriteObject(1), (r, _) => r.ReadObject<int>(), null));
 
             Assert.AreEqual("hello", target.InvokeOperation(OpReadWrite,
-                w => w.WriteObject("hello"), r => r.ReadObject<string>()));
+                w => w.WriteObject("hello"), (r, _) => r.ReadObject<string>(), null));
 
             // Test exception.
             var ex = Assert.Throws<IgniteException>(() => target.InvokeOperation(OpError,
-                w => w.WriteObject("error text"), r => (object) null));
+                w => w.WriteObject("error text"), (r, _) => (object) null, null));
 
             Assert.AreEqual("error text", ex.Message);
         }
@@ -110,7 +110,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
                 args = a;
             };
 
-            target.InvokeOperation(OpInvokeCallback, w => w.WriteObject("test value"), r => (object) null);
+            target.InvokeOperation(OpInvokeCallback, w => w.WriteObject("test value"), (r, _) => (object) null, null);
 
             Assert.AreEqual(target, sender);
             Assert.IsNotNull(args);

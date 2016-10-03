@@ -32,11 +32,12 @@ namespace Apache.Ignite.Core.Plugin
         /// <param name="opCode">The operation code.</param>
         /// <param name="writeAction">The write action.</param>
         /// <param name="readFunc">The read action.</param>
+        /// <param name="arg">The optional argument.</param>
         /// <returns>
         /// Result of the processing.
         /// </returns>
         T InvokeOperation<T>(int opCode, Action<IBinaryRawWriter> writeAction,
-            Func<IBinaryRawReader, T> readFunc);
+            Func<IBinaryRawReader, IPluginTarget, T> readFunc, IPluginTarget arg);
 
         /// <summary>
         /// Occurs when Java part of the plugin invokes a callback.
