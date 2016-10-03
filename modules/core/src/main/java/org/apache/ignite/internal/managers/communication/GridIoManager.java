@@ -215,7 +215,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private boolean stopping;
 
     /** */
-    private final AtomicReference<ConcurrentHashMap<Long, GridFutureAdapter>> ioTestMap = new AtomicReference<>();
+    private final AtomicReference<ConcurrentHashMap<Long, IoTestFuture>> ioTestMap = new AtomicReference<>();
 
     /** */
     private final AtomicLong ioTestId = new AtomicLong();
@@ -384,18 +384,48 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     }
                 }
                 else {
-                    GridFutureAdapter fut = ioTestMap().remove(msg0.id());
+                    IoTestFuture fut = ioTestMap().get(msg0.id());
 
-                    if (fut == null) {
+                    if (fut == null)
                         U.warn(log, "Failed to find IO test future [msg=" + msg0 + ']');
-
-                        return;
-                    }
-
-                    fut.onDone();
+                    else
+                        fut.onResponse();
                 }
             }
         });
+    }
+
+    /**
+     * @param nodes Nodes.
+     * @param payload Payload.
+     * @param procFromNioThread If {@code true} message is processed from NIO thread.
+     * @return Response future.
+     */
+    public IgniteInternalFuture sendIoTest(List<ClusterNode> nodes, byte[] payload, boolean procFromNioThread) {
+        long id = ioTestId.getAndIncrement();
+
+        IoTestFuture fut = new IoTestFuture(id, nodes.size());
+
+        IgniteIoTestMessage msg = new IgniteIoTestMessage(id, true, payload);
+
+        msg.processFromNioThread(procFromNioThread);
+
+        ioTestMap().put(id, fut);
+
+        for (int i = 0; i < nodes.size(); i++) {
+            ClusterNode node = nodes.get(i);
+
+            try {
+                send(node, GridTopic.TOPIC_IO_TEST, msg, GridIoPolicy.SYSTEM_POOL);
+            }
+            catch (IgniteCheckedException e) {
+                ioTestMap().remove(msg.id());
+
+                return new GridFinishedFuture(e);
+            }
+        }
+
+        return fut;
     }
 
     /**
@@ -405,24 +435,21 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @return Response future.
      */
     public IgniteInternalFuture sendIoTest(ClusterNode node, byte[] payload, boolean procFromNioThread) {
-        if (ctx.localNodeId().equals(node.id()))
-            throw new IllegalArgumentException();
-
         long id = ioTestId.getAndIncrement();
 
-        GridFutureAdapter fut = new GridFutureAdapter();
+        IoTestFuture fut = new IoTestFuture(id, 1);
+
+        IgniteIoTestMessage msg = new IgniteIoTestMessage(id, true, payload);
+
+        msg.processFromNioThread(procFromNioThread);
 
         ioTestMap().put(id, fut);
 
         try {
-            IgniteIoTestMessage msg = new IgniteIoTestMessage(id, true, payload);
-
-            msg.processFromNioThread(procFromNioThread);
-
             send(node, GridTopic.TOPIC_IO_TEST, msg, GridIoPolicy.SYSTEM_POOL);
         }
         catch (IgniteCheckedException e) {
-            ioTestMap().remove(id);
+            ioTestMap().remove(msg.id());
 
             return new GridFinishedFuture(e);
         }
@@ -433,8 +460,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /**
      * @return IO test futures map.
      */
-    private ConcurrentHashMap<Long, GridFutureAdapter> ioTestMap() {
-        ConcurrentHashMap<Long, GridFutureAdapter> map = ioTestMap.get();
+    private ConcurrentHashMap<Long, IoTestFuture> ioTestMap() {
+        ConcurrentHashMap<Long, IoTestFuture> map = ioTestMap.get();
 
         if (map == null) {
             if (!ioTestMap.compareAndSet(null, map = new ConcurrentHashMap<>()))
@@ -2718,6 +2745,58 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(DelayedMessage.class, this, super.toString());
+        }
+    }
+
+    /**
+     *
+     */
+    private class IoTestFuture extends GridFutureAdapter<Object> {
+        /** */
+        private final long id;
+
+        /** */
+        private int cntr;
+
+        /**
+         * @param id ID.
+         * @param cntr Counter.
+         */
+        IoTestFuture(long id, int cntr) {
+            assert cntr > 0 : cntr;
+
+            this.id = id;
+            this.cntr = cntr;
+        }
+
+        /**
+         *
+         */
+        void onResponse() {
+            boolean complete;
+
+            synchronized (this) {
+                complete = --cntr == 0;
+            }
+
+            if (complete)
+                onDone();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
+            if (super.onDone(res, err)) {
+                ioTestMap().remove(id);
+
+                return true;
+            }
+
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(IoTestFuture.class, this);
         }
     }
 }
