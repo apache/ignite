@@ -970,7 +970,10 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testMkdirsParentPathMissingPartially() throws Exception {
-        Map<String, String> props = properties(null, null, "0555"); // mkdirs command doesn't propagate user info.
+        Map<String, String> props = null;
+
+        if (permissionsSupported())
+            props = properties(null, null, "0555"); // mkdirs command doesn't propagate user info.
 
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, paths(DIR), null);
@@ -997,7 +1000,10 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testMkdrisParentPathMissing() throws Exception {
-        Map<String, String> props = properties(null, null, "0555"); // mkdirs command doesn't propagate user info.
+        Map<String, String> props = null;
+
+        if (permissionsSupported())
+            props = properties(null, null, "0555"); // mkdirs command doesn't propagate user info.
 
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, null, null);
@@ -1131,10 +1137,18 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testUpdateParentRootPathMissing() throws Exception {
+        doUpdateParentRootPathMissing(properties("owner", "group", "0555"));
+    }
+
+    /**
+     * Test update when parent is the root and the path being updated is missing locally.
+     *
+     * @param props Properties.
+     * @throws Exception If failed.
+     */
+    protected void doUpdateParentRootPathMissing(Map<String, String> props) throws Exception {
         if (!propertiesSupported())
             return;
-
-        Map<String, String> props = properties("owner", "group", "0555");
 
         create(igfsSecondary, paths(DIR), null);
         create(igfs, null, null);
@@ -1143,8 +1157,8 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
         checkExist(igfs, DIR);
 
-        assertEquals(props, igfsSecondary.properties(DIR.toString()));
-        assertEquals(props, igfs.info(DIR).properties());
+        assertTrue(propertiesContains(igfsSecondary.properties(DIR.toString()), props));
+        assertTrue(propertiesContains(igfs.info(DIR).properties(), props));
     }
 
     /**
@@ -1612,5 +1626,21 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
         assertEquals(chunk.length, igfs.size(FILE));
         assertEquals(chunk.length * 2, igfs.size(SUBDIR));
+    }
+
+    /**
+     * @param allProps All properties.
+     * @param checkedProps Checked properies
+     * @return {@code true} If allchecked properties are contained in the #propsAll.
+     */
+    public static boolean propertiesContains(Map<String, String> allProps, Map<String, String> checkedProps) {
+        for (String name : checkedProps.keySet())
+            if (!checkedProps.get(name).equals(allProps.get(name))) {
+                System.err.println("All properties: " + allProps);
+                System.err.println("Checked properties: " + checkedProps);
+                return false;
+            }
+
+        return true;
     }
 }
