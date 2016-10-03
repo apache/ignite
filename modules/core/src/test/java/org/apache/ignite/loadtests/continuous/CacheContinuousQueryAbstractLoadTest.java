@@ -25,6 +25,7 @@ import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -124,9 +125,9 @@ public abstract class CacheContinuousQueryAbstractLoadTest extends GridCommonAbs
 
                 log.info("Batch loaded. Iteration: " + iteration);
 
-                long cnt = lsnr.count();
+                final long cnt = lsnr.count();
 
-                long expCnt = putCnt * stableNodeCnt + ignoredDupEvents;
+                final long expCnt = putCnt * stableNodeCnt + ignoredDupEvents;
 
                 GridTestUtils.waitForCondition(new GridAbsPredicate() {
                     @Override public boolean apply() {
@@ -184,6 +185,9 @@ public abstract class CacheContinuousQueryAbstractLoadTest extends GridCommonAbs
     @SuppressWarnings("InfiniteLoopStatement")
     public Thread getNodeRestartThread(final int no, final int restartCycles,
         final long initialDelay, final long restartDelay) {
+
+        final IgniteLogger log = this.log;
+
         Thread t = new Thread(() -> {
             sleep(initialDelay);
 
