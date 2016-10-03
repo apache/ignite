@@ -169,23 +169,46 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
 
     /** {@inheritDoc} */
     @Override public Object inObjectStreamOutObjectStream(int type, Object arg, long inMemPtr, long outMemPtr) throws Exception {
-        try (PlatformMemory inMem = platformCtx.memory().get(inMemPtr)) {
-            BinaryRawReaderEx reader = platformCtx.reader(inMem);
+        PlatformMemory inMem = null;
 
-            try (PlatformMemory outMem = platformCtx.memory().get(outMemPtr)) {
-                PlatformOutputStream out = outMem.output();
+        PlatformMemory outMem = null;
 
-                BinaryRawWriterEx writer = platformCtx.writer(out);
+        try {
+            BinaryRawReaderEx reader = null;
 
-                Object res = processInObjectStreamOutObjectStream(type, arg, reader, writer);
+            if (inMemPtr != 0) {
+                inMem = platformCtx.memory().get(inMemPtr);
+                reader = platformCtx.reader(inMem);
+            }
 
+            PlatformOutputStream out = null;
+            BinaryRawWriterEx writer = null;
+
+            if (outMemPtr != 0) {
+                outMem = platformCtx.memory().get(outMemPtr);
+                out = outMem.output();
+                writer = platformCtx.writer(out);
+            }
+
+            Object res = processInObjectStreamOutObjectStream(type, arg, reader, writer);
+
+            if (out != null)
                 out.synchronize();
 
-                return res;
-            }
+            return res;
         }
         catch (Exception e) {
             throw convertException(e);
+        }
+        finally {
+            try {
+                if (inMem != null)
+                    inMem.close();
+            }
+            finally {
+                if (outMem != null)
+                    outMem.close();
+            }
         }
     }
 

@@ -598,23 +598,23 @@ namespace Apache.Ignite.Core.Impl
             PlatformMemoryStream inStream = null;
             long inPtr = 0;
 
-            if (outAction != null)
-            {
-                outStream = IgniteManager.Memory.Allocate().GetStream();
-                var writer = _marsh.StartMarshal(outStream);
-                outAction(writer);
-                FinishMarshal(writer);
-                outPtr = outStream.SynchronizeOutput();
-            }
-
-            if (inAction != null)
-            {
-                inStream = IgniteManager.Memory.Allocate().GetStream();
-                inPtr = inStream.MemoryPointer;
-            }
-
             try
             {
+                if (outAction != null)
+                {
+                    outStream = IgniteManager.Memory.Allocate().GetStream();
+                    var writer = _marsh.StartMarshal(outStream);
+                    outAction(writer);
+                    FinishMarshal(writer);
+                    outPtr = outStream.SynchronizeOutput();
+                }
+
+                if (inAction != null)
+                {
+                    inStream = IgniteManager.Memory.Allocate().GetStream();
+                    inPtr = inStream.MemoryPointer;
+                }
+
                 var res = UU.TargetInObjectStreamOutObjectStream(_target, type, arg, outPtr, inPtr);
 
                 if (inAction == null)
@@ -633,14 +633,14 @@ namespace Apache.Ignite.Core.Impl
                         inStream.Dispose();
 
                 }
-                finally 
+                finally
                 {
                     if (outStream != null)
                         outStream.Dispose();
                 }
             }
         }
-        
+
         /// <summary>
         /// Perform out-in operation.
         /// </summary>
