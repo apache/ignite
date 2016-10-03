@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
     using System;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Plugin;
 
@@ -51,8 +52,11 @@ namespace Apache.Ignite.Core.Impl.Plugin
             else if (arg != null)
                 throw new ArgumentException("Unsupported IPluginTarget implementation: " + arg.GetType(), "arg");
 
-            return DoOutInOp(opCode, writeAction, (stream, res) => readFunc(Marshaller.StartUnmarshal(stream), null), 
-                argPtr);
+            var inAction = readFunc != null 
+                ? (stream, res) => readFunc(Marshaller.StartUnmarshal(stream), null) 
+                : (Func<IBinaryStream, IUnmanagedTarget, T>) null;
+
+            return DoOutInOp(opCode, writeAction, inAction, argPtr);
         }
 
         /** <inheritdoc /> */

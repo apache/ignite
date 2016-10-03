@@ -30,9 +30,9 @@ namespace Apache.Ignite.Core.Plugin
         /// </summary>
         /// <typeparam name="T">The type of the result.</typeparam>
         /// <param name="opCode">The operation code.</param>
-        /// <param name="writeAction">The write action.</param>
-        /// <param name="readFunc">The read action.</param>
-        /// <param name="arg">The optional argument.</param>
+        /// <param name="writeAction">The write action. Can be null.</param>
+        /// <param name="readFunc">The read action. Can be null.</param>
+        /// <param name="arg">The object argument. Can be null.</param>
         /// <returns>
         /// Result of the processing.
         /// </returns>
