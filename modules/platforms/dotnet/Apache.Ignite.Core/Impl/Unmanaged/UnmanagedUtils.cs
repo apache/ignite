@@ -444,6 +444,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             JNI.TargetInObjectStreamOutStream(target.Context, target.Target, opType, arg, inMemPtr, outMemPtr);
         }
 
+        internal static IUnmanagedTarget TargetInObjectStreamOutObjectStream(IUnmanagedTarget target, int opType, void* arg, long inMemPtr, long outMemPtr)
+        {
+            void* res = JNI.TargetInObjectStreamOutObjectStream(target.Context, target.Target, opType, arg, inMemPtr, outMemPtr);
+
+            return target.ChangeTarget(res);
+        }
+
         internal static long TargetOutLong(IUnmanagedTarget target, int opType)
         {
             return JNI.TargetOutLong(target.Context, target.Target, opType);
