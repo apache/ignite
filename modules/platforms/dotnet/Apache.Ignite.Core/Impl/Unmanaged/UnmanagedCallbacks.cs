@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.IO;
-    using System.Globalization;
     using System.Runtime.InteropServices;
     using System.Threading;
     using Apache.Ignite.Core.Cache.Affinity;
