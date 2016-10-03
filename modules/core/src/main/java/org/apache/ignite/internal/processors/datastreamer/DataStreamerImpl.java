@@ -98,6 +98,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.stream.StreamReceiver;
@@ -107,6 +108,8 @@ import org.jsr166.ConcurrentHashMap8;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.DATA_STREAM_POOL;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 
 /**
  * Data streamer implementation.
@@ -1680,6 +1683,37 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     U.error(log, "Failed to set initial value for cache entry: " + e, ex);
                 }
             }
+        }
+    }
+
+    /**
+     * Default IO policy resolver.
+     */
+    private static class DefaultIoPolicyResolver implements IgniteClosure<ClusterNode, Byte> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Data streamer separate pool feature major version. */
+        private static final int DATA_STREAMER_POOL_MAJOR_VER = 1;
+
+        /** Data streamer separate pool feature minor version. */
+        private static final int DATA_STREAMER_POOL_MINOR_VER = 7;
+
+        /** Data streamer separate pool feature maintenance version. */
+        private static final int DATA_STREAMER_POOL_MAINT_VER = 3;
+
+        /** {@inheritDoc} */
+        @Override public Byte apply(ClusterNode gridNode) {
+            assert gridNode != null;
+
+            IgniteProductVersion version = gridNode.version();
+
+            //TODO: change version to actual before merge.
+            if (gridNode.isLocal() || version.greaterThanEqual(DATA_STREAMER_POOL_MAJOR_VER, DATA_STREAMER_POOL_MINOR_VER,
+                DATA_STREAMER_POOL_MAINT_VER))
+                return DATA_STREAM_POOL;
+            else
+                return PUBLIC_POOL;
         }
     }
 
