@@ -507,6 +507,7 @@ public class IgniteConfiguration {
         clockSyncFreq = cfg.getClockSyncFrequency();
         clockSyncSamples = cfg.getClockSyncSamples();
         consistentId = cfg.getConsistentId();
+        dataStreamerPoolSize = cfg.getDataStreamerThreadPoolSize();
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
         failureDetectionTimeout = cfg.getFailureDetectionTimeout();
@@ -790,14 +791,13 @@ public class IgniteConfiguration {
     /**
      * Size of thread pool that is in charge of processing data stream messages.
      * <p>
-     * If not provided, executor service will have size {@link #DFLT_PUBLIC_THREAD_CNT}.
+     * If not provided, executor service will have size {@link #DFLT_DATA_STREAMER_POOL_SIZE}.
      *
      * @return Thread pool size to be used for data stream messages.
      */
     public int getDataStreamerThreadPoolSize() {
         return dataStreamerPoolSize;
     }
-
 
     /**
      * Default size of thread pool that is in charge of processing utility cache messages.
@@ -918,6 +918,19 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setIgfsThreadPoolSize(int poolSize) {
         igfsPoolSize = poolSize;
+
+        return this;
+    }
+
+    /**
+     * Set thread pool size that will be used to process data stream messages.
+     *
+     * @param poolSize Executor service to use for data stream messages.
+     * @see IgniteConfiguration#getDataStreamerThreadPoolSize()
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setDataStreamerThreadPoolSize(int poolSize) {
+        dataStreamerPoolSize = poolSize;
 
         return this;
     }

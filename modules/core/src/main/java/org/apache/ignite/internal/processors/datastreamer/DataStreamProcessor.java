@@ -26,10 +26,12 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.closure.GridClosurePolicy;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -44,6 +46,7 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 
 /**
  *
@@ -80,19 +83,19 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         super(ctx);
 
         marsh = ctx.config().getMarshaller();
-    }
 
-    @Override public void onKernalStart() throws IgniteCheckedException {
-        if (ctx.config().isDaemon() || ctx.clientNode())
-            return;
+        if (!ctx.config().isDaemon() && !ctx.clientNode())
+            ctx.io().addMessageListener(TOPIC_DATASTREAM, new GridMessageListener() {
+                @Override public void onMessage(final UUID nodeId, final Object msg) {
+                    assert msg instanceof DataStreamerRequest;
 
-        ctx.io().addMessageListener(TOPIC_DATASTREAM, new GridMessageListener() {
-            @Override public void onMessage(final UUID nodeId, final Object msg) {
-                assert msg instanceof DataStreamerRequest;
-
-                processRequest(nodeId, (DataStreamerRequest)msg);
-            }
-        });
+                    ctx.closure().runLocalSafe(new Runnable() {
+                        @Override public void run() {
+                            processRequest(nodeId, (DataStreamerRequest)msg);
+                        }
+                    }, GridClosurePolicy.DATA_STREAMER_POOL);
+                }
+            });
     }
 
     /** {@inheritDoc} */
@@ -230,7 +233,11 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                 if (fut != null && !fut.isDone()) {
                     fut.listen(new CI1<IgniteInternalFuture<?>>() {
                         @Override public void apply(IgniteInternalFuture<?> t) {
-                            processRequest(nodeId, req);
+                            ctx.closure().runLocalSafe(new Runnable() {
+                                @Override public void run() {
+                                    processRequest(nodeId, req);
+                                }
+                            }, GridClosurePolicy.DATA_STREAMER_POOL);
                         }
                     });
 
@@ -346,16 +353,10 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         DataStreamerResponse res = new DataStreamerResponse(reqId, errBytes, forceLocDep);
 
         try {
-            ClusterNode node = ctx.cluster().get().node(nodeId);
+            Byte plc = GridIoManager.currentPolicy();
 
-            if (node == null) {
-                if (log.isDebugEnabled())
-                    log.debug("Node not found: " + nodeId);
-
-                return;
-            }
-
-            Byte plc = ioPlcRslvr.apply(node);
+            if (plc == null)
+                plc = PUBLIC_POOL;
 
             ctx.io().send(nodeId, resTopic, res, plc);
         }

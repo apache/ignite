@@ -31,14 +31,24 @@ class DefaultIoPolicyResolver implements IgniteClosure<ClusterNode, Byte> {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Data streamer separate pool feature major version. */
+    private static final int DATA_STREAMER_POOL_MAJOR_VER = 1;
+
+    /** Data streamer separate pool feature minor version. */
+    private static final int DATA_STREAMER_POOL_MINOR_VER = 7;
+
+    /** Data streamer separate pool feature maintenance version. */
+    private static final int DATA_STREAMER_POOL_MAINT_VER = 3;
+
     /** {@inheritDoc} */
     @Override public Byte apply(ClusterNode gridNode) {
         assert gridNode != null;
 
         IgniteProductVersion version = gridNode.version();
 
-        //TODO: change version checking before merge.
-        if (gridNode.isLocal() || version.greaterThanEqual(1, 7, 3))
+        //TODO: change version to actual before merge.
+        if (gridNode.isLocal() || version.greaterThanEqual(DATA_STREAMER_POOL_MAJOR_VER, DATA_STREAMER_POOL_MINOR_VER,
+            DATA_STREAMER_POOL_MAINT_VER))
             return DATA_STREAM_POOL;
         else
             return PUBLIC_POOL;
