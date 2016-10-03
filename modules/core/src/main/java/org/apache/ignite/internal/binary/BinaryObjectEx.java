@@ -38,4 +38,12 @@ public interface BinaryObjectEx extends BinaryObject {
      * @throws BinaryObjectException If failed.
      */
     @Nullable public BinaryType rawType() throws BinaryObjectException;
+
+    /**
+     * Check if flag set.
+     *
+     * @param flag flag to check.
+     * @return {@code true} if flag is set, {@code false} otherwise.
+     */
+    public boolean isFlagSet(short flag);
 }
