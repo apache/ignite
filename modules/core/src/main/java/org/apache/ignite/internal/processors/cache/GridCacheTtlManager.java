@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -85,8 +83,16 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
-        if (pendingPointers != null)
-            pendingPointers.clear();
+        if (pendingPointers != null) {
+            guard.begin();
+
+            try {
+                pendingPointers.clear();
+            }
+            finally {
+                guard.end();
+            }
+        }
 
         cctx.shared().ttl().unregister(this);
     }
