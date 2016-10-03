@@ -26,6 +26,7 @@ import org.apache.ignite.binary.BinaryRawWriter;
  */
 public interface IgnitePlatformPluginTarget {
     // TODO: Comments
-    // TODO: Return an object
-    void invokeOperation(int opCode, BinaryRawReader reader, BinaryRawWriter writer) throws IgniteException;
+    // TODO: Expose all existing methods for now.
+    void invokeOperation(int opCode, BinaryRawReader reader, BinaryRawWriter writer)
+        throws IgniteException;
 }
