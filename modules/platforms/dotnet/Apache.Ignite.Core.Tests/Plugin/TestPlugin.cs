@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
         /// </summary>
         public void Error(string text)
         {
-            _target.InvokeOperation(OpError, w => w.WriteString(text), (r, _) => (object) null, null);
+            _target.InvokeOperation<object>(OpError, w => w.WriteString(text), null, null);
         }
 
         /// <summary>
@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
         /// </summary>
         public void InvokeCallback(string text)
         {
-            _target.InvokeOperation(OpInvokeCallback, w => w.WriteString(text), (r, _) => (object) null, null);
+            _target.InvokeOperation<object>(OpInvokeCallback, w => w.WriteString(text), null, null);
         }
 
         /// <summary>
