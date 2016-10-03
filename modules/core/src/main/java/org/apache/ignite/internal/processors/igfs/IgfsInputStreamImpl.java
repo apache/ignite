@@ -93,10 +93,10 @@ public class IgfsInputStreamImpl extends IgfsInputStream implements IgfsSecondar
     private boolean closed;
 
     /** Number of blocks to prefetch asynchronously. */
-    private final int prefetchBlocks;
+    private int prefetchBlocks;
 
     /** Numbed of blocks that must be read sequentially before prefetch is triggered. */
-    private final int seqReadsBeforePrefetch;
+    private int seqReadsBeforePrefetch;
 
     /** Bytes read. */
     private long bytes;

@@ -1777,13 +1777,6 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /**
-     * Getter for tests.
-     */
-    IgfsMetaManager meta() {
-        return meta;
-    }
-
-    /**
      * IGFS thread factory.
      */
     @SuppressWarnings("NullableProblems")

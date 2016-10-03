@@ -2694,10 +2694,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
         if (proxy) {
             if (secIgfsEx != null)
-                info = secIgfsEx.meta().infoForPath(file00);
+                info = secIgfsEx.context().meta().infoForPath(file00);
         }
         else
-            info = igfs.meta().infoForPath(file00);
+            info = igfs.context().meta().infoForPath(file00);
 
         if (info != null) {
             final int blockSize2 = info.blockSize();
