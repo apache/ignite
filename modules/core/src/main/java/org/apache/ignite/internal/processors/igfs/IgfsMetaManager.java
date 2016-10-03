@@ -2226,7 +2226,6 @@ public class IgfsMetaManager extends IgfsManager {
             try {
                 assert fs != null;
                 assert path != null;
-                assert props != null;
 
                 if (path.parent() == null)
                     return true; // No additional handling for root directory is needed.
