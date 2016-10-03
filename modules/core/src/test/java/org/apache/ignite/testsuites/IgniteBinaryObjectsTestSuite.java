@@ -22,6 +22,7 @@ import org.apache.ignite.internal.binary.BinaryBasicIdMapperSelfTest;
 import org.apache.ignite.internal.binary.BinaryBasicNameMapperSelfTest;
 import org.apache.ignite.internal.binary.BinaryConfigurationConsistencySelfTest;
 import org.apache.ignite.internal.binary.BinaryEnumsSelfTest;
+import org.apache.ignite.internal.binary.BinaryFieldOrderSelfTest;
 import org.apache.ignite.internal.binary.BinaryFieldsHeapSelfTest;
 import org.apache.ignite.internal.binary.BinaryFieldsOffheapSelfTest;
 import org.apache.ignite.internal.binary.BinaryFooterOffsetsHeapSelfTest;
@@ -104,6 +105,7 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         suite.addTestSuite(GridBinaryAffinityKeySelfTest.class);
         suite.addTestSuite(GridBinaryWildcardsSelfTest.class);
         suite.addTestSuite(BinaryObjectToStringSelfTest.class);
+        suite.addTestSuite(BinaryFieldOrderSelfTest.class);
 
         // Tests for objects with non-compact footers.
         suite.addTestSuite(BinaryMarshallerNonCompactSelfTest.class);
