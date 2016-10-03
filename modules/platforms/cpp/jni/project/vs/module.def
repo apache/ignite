@@ -139,3 +139,4 @@ IgniteRemoveConsoleHandler @136
 IgniteProcessorLoggerIsLevelEnabled @137
 IgniteProcessorLoggerLog @138
 IgniteProcessorPluginTarget @139
+IgniteTargetInObjectStreamOutObjectStream @140
