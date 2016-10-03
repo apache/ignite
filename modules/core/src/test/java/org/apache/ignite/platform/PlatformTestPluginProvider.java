@@ -162,5 +162,13 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
 
             throw new IgniteException("Unknown op code: " + opCode);
         }
+
+        /** {@inheritDoc} */
+        @Override public IgnitePlatformPluginTarget invokeObjectOperation(int opCode,
+            BinaryRawReader reader) throws IgniteException {
+
+            // TODO
+            return null;
+        }
     }
 }
