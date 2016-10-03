@@ -675,6 +675,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
+            case 59:
+                // ignore this message, there are case when unmarshall was fail,
+                // in this case thread will process processFailedMessage and catch to case 59:
+                break;
+
             case 114: {
                 processMessage(nodeId,msg,c);// Will be handled by Rebalance Demander.
             }
@@ -719,9 +724,13 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
-            default:
-                throw new IgniteCheckedException("Failed to send response to node. Unsupported direct type [message="
-                    + msg + "]", msg.classError());
+            default:{
+                String shortMsg = "Failed to send response to node. Unsupported direct type [message=" + msg + "]";
+
+                IgniteCheckedException e = new IgniteCheckedException(shortMsg, msg.classError());
+
+                registerUnhandledException(ctx, shortMsg, e);
+            }
         }
     }
 
