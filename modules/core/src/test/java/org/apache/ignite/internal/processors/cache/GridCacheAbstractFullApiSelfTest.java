@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadLocalRandom;
@@ -73,7 +72,6 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.lang.IgnitePair;
@@ -3493,7 +3491,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         // Expired entry should not be swapped.
         cache.localEvict(Collections.singleton(key));
 
-        assertNull(peek(cache, "key"));
+        assertNull(peek(cache, key));
 
         cache.localPromote(Collections.singleton(key));
 
@@ -4053,11 +4051,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         grid(0).cache(null).withExpiryPolicy(expiry).put(key, 1);
 
-        waitForCondition(new GridAbsPredicate() {
+        boolean wait = waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return cache.localPeek(key) == null;
             }
         }, ttl + 1000);
+
+        assertTrue("Failed to wait for entry expiration.", wait);
 
         // Peek will actually remove entry from cache.
         assertNull(cache.localPeek(key));
