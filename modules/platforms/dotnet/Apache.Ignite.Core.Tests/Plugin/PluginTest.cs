@@ -27,15 +27,6 @@ namespace Apache.Ignite.Core.Tests.Plugin
     public class PluginTest
     {
         /** */
-        private const int OpReadWrite = 1;
-
-        /** */
-        private const int OpError = 2;
-
-        /** */
-        private const int OpInvokeCallback = 3;
-
-        /** */
         private IIgnite _ignite;
 
         /// <summary>
@@ -77,18 +68,14 @@ namespace Apache.Ignite.Core.Tests.Plugin
         [Test]
         public void TestInvokeOperation()
         {
-            var target = _ignite.GetTestPlugin().Target;
+            var plugin = _ignite.GetTestPlugin();
 
             // Test round trip.
-            Assert.AreEqual(1, target.InvokeOperation(OpReadWrite,
-                w => w.WriteObject(1), (r, _) => r.ReadObject<int>(), null));
-
-            Assert.AreEqual("hello", target.InvokeOperation(OpReadWrite,
-                w => w.WriteObject("hello"), (r, _) => r.ReadObject<string>(), null));
+            Assert.AreEqual(1, plugin.ReadWrite(1));
+            Assert.AreEqual("hello", plugin.ReadWrite("hello"));
 
             // Test exception.
-            var ex = Assert.Throws<IgniteException>(() => target.InvokeOperation(OpError,
-                w => w.WriteObject("error text"), (r, _) => (object) null, null));
+            var ex = Assert.Throws<IgniteException>(() => plugin.Error("error text"));
 
             Assert.AreEqual("error text", ex.Message);
         }
@@ -99,7 +86,8 @@ namespace Apache.Ignite.Core.Tests.Plugin
         [Test]
         public void TestCallback()
         {
-            var target = _ignite.GetTestPlugin().Target;
+            var plugin = _ignite.GetTestPlugin();
+            var target = plugin.Target;
 
             object sender = null;
             PluginCallbackEventArgs args = null;
@@ -110,7 +98,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
                 args = a;
             };
 
-            target.InvokeOperation(OpInvokeCallback, w => w.WriteObject("test value"), (r, _) => (object) null, null);
+            plugin.InvokeCallback("test value");
 
             Assert.AreEqual(target, sender);
             Assert.IsNotNull(args);

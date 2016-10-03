@@ -28,6 +28,16 @@ namespace Apache.Ignite.Core.Tests.Plugin
         /** Target. */
         private readonly IPluginTarget _target;
 
+        /** */
+        private const int OpReadWrite = 1;
+
+        /** */
+        private const int OpError = 2;
+
+        /** */
+        private const int OpInvokeCallback = 3;
+
+
         /// <summary>
         /// Initializes a new instance of the <see cref="TestPlugin"/> class.
         /// </summary>
@@ -37,6 +47,31 @@ namespace Apache.Ignite.Core.Tests.Plugin
             IgniteArgumentCheck.NotNull(target, "target");
 
             _target = target;
+        }
+
+        /// <summary>
+        /// Performs read-write operation.
+        /// </summary>
+        public object ReadWrite(object obj)
+        {
+            return _target.InvokeOperation(OpReadWrite, w => w.WriteObject(obj), 
+                (r, _) => r.ReadObject<object>(), null);
+        }
+
+        /// <summary>
+        /// Performs operation with error.
+        /// </summary>
+        public void Error(string text)
+        {
+            _target.InvokeOperation(OpError, w => w.WriteString(text), (r, _) => (object) null, null);
+        }
+
+        /// <summary>
+        /// Invokes the callback.
+        /// </summary>
+        public void InvokeCallback(string text)
+        {
+            _target.InvokeOperation(OpInvokeCallback, w => w.WriteString(text), (r, _) => (object) null, null);
         }
 
         /// <summary>
