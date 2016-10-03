@@ -40,8 +40,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.NLog", "Apach
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.AspNet.Tests", "Apache.Ignite.AspNet.Tests\Apache.Ignite.AspNet.Tests.csproj", "{18EA4C71-A11D-4AB1-8042-418F7559D84F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.NLog", "Apache.Ignite.NLog\Apache.Ignite.NLog.csproj", "{C6B58E4A-A2E9-4554-AD02-68CE6DA5CFB7}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
