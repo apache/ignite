@@ -92,11 +92,6 @@ public class PlatformDotNetConfigurationEx extends PlatformDotNetConfiguration i
         return Collections.<PlatformCacheExtension>singleton(new PlatformDotNetSessionCacheExtension());
     }
 
-    /** {@inheritDoc} */
-    @Override public PlatformLogger logger() {
-        return logger;
-    }
-
     /**
      * @param warnings Warnings.
      */

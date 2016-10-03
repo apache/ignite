@@ -59,9 +59,4 @@ public interface PlatformConfigurationEx {
      * @return Available cache extensions.
      */
     @Nullable public Collection<PlatformCacheExtension> cacheExtensions();
-
-    /**
-     * @return Platform logger.
-     */
-    public PlatformLogger logger();
 }
