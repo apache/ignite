@@ -36,6 +36,7 @@ public class IgniteIgnoredBinaryTestSuite extends TestSuite {
 
         /* --- QUERY --- */
         suite.addTest(IgniteBinaryCacheQueryTestSuite.suite());
+        suite.addTest(IgniteBinaryCacheQueryTestSuite2.suite());
 
         return suite;
     }

@@ -48,6 +48,7 @@ public class IgniteIgnoredTestSuite extends TestSuite {
 
         /* --- QUERIES --- */
         suite.addTest(IgniteCacheQuerySelfTestSuite.suite());
+        suite.addTest(IgniteCacheQuerySelfTestSuite2.suite());
 
         /* --- SPRING --- */
         suite.addTest(IgniteSpringTestSuite.suite());
