@@ -490,7 +490,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 }
             }
 
-            internal = dep.internalTask(task, taskCls);
+            internal = ses.isInternal();
 
             recordTaskEvent(EVT_TASK_STARTED, "Task started.");
 

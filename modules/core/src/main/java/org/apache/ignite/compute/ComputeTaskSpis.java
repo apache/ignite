@@ -38,21 +38,21 @@ import java.lang.annotation.Target;
 public @interface ComputeTaskSpis {
     /**
      * Optional load balancing SPI name. By default, SPI name is equal
-     * to the name of the SPI class. You can change SPI name by explicitely
+     * to the name of the SPI class. You can change SPI name by explicitly
      * supplying {@link org.apache.ignite.spi.IgniteSpi#getName()} parameter in grid configuration.
      */
     public String loadBalancingSpi() default "";
 
     /**
      * Optional failover SPI name. By default, SPI name is equal
-     * to the name of the SPI class. You can change SPI name by explicitely
+     * to the name of the SPI class. You can change SPI name by explicitly
      * supplying {@link org.apache.ignite.spi.IgniteSpi#getName()} parameter in grid configuration.
      */
     public String failoverSpi() default "";
 
     /**
      * Optional checkpoint SPI name. By default, SPI name is equal
-     * to the name of the SPI class. You can change SPI name by explicitely
+     * to the name of the SPI class. You can change SPI name by explicitly
      * supplying {@link org.apache.ignite.spi.IgniteSpi#getName()} parameter in grid configuration.
      */
     public String checkpointSpi() default "";

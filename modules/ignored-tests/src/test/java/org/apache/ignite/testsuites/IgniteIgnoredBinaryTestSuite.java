@@ -17,24 +17,26 @@
 
 package org.apache.ignite.testsuites;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import junit.framework.TestSuite;
+import org.apache.ignite.testframework.IgniteTestSuite;
 
 /**
- * Annotation which indicates that the test is ignored.
+ * Special test suite with ignored tests for Binary mode.
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD, ElementType.TYPE})
-public @interface IgniteIgnore {
+public class IgniteIgnoredBinaryTestSuite extends TestSuite {
     /**
-     * Reason for ignore (usually link to JIRA ticket).
+     * @return IgniteCache test suite.
+     * @throws Exception Thrown in case of the failure.
      */
-    String value();
+    public static TestSuite suite() throws Exception {
+        IgniteTestSuite.ignoreDefault(true);
 
-    /**
-     * Whether test should be failed immediately. Useful when test hangs or consumes a lot of time.
-     */
-    boolean forceFailure() default false;
+        IgniteTestSuite suite = new IgniteTestSuite(null, "Ignite Ignored Binary Test Suite");
+
+        /* --- QUERY --- */
+        suite.addTest(IgniteBinaryCacheQueryTestSuite.suite());
+        suite.addTest(IgniteBinaryCacheQueryTestSuite2.suite());
+
+        return suite;
+    }
 }
