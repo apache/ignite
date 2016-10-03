@@ -116,14 +116,9 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public void forceKeyCheck() {
-        if (!keyCheck) {
-            super.forceKeyCheck();
+        super.forceKeyCheck();
 
-            GridDhtCacheAdapter dht = dht();
-
-            if (dht != null)
-                dht.forceKeyCheck();
-        }
+        dht().forceKeyCheck();
     }
 
     /** {@inheritDoc} */
