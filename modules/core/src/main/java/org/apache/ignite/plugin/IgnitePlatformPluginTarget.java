@@ -25,11 +25,9 @@ import org.apache.ignite.binary.BinaryRawWriter;
  * Platform plugin target: interface that is invoked from platform code to perform operations.
  */
 public interface IgnitePlatformPluginTarget {
-    // TODO: Expose all existing methods for now? Or a minimal subset?
-    // Or create a mega method that covers all cases? With overloads on .NET side which do not create streams?
-
     /**
      * Invokes operation.
+     *
      * @param opCode Operation code.
      * @param reader Reader.
      * @param writer Writer.
