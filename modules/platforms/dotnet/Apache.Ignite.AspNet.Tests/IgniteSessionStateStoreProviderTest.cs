@@ -133,6 +133,19 @@ namespace Apache.Ignite.AspNet.Tests
             stateProvider = GetProvider();
 
             CheckProvider(stateProvider);
+
+            // Omitted cache name results in default cache name (not null).
+            stateProvider = new IgniteSessionStateStoreProvider();
+
+            stateProvider.Initialize("testName", new NameValueCollection
+            {
+                {GridNameAttr, GridName}
+            });
+
+            var cacheNames = Ignition.GetIgnite(GridName).GetCacheNames();
+
+            Assert.IsFalse(cacheNames.Contains(null));
+            Assert.IsTrue(cacheNames.Contains(IgniteSessionStateStoreProvider.DefaultCacheName));
         }
 
         /// <summary>

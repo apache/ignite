@@ -86,6 +86,11 @@ public class PlatformCppConfigurationEx extends PlatformCppConfiguration impleme
         return null;
     }
 
+    /** {@inheritDoc} */
+    @Override public PlatformLogger logger() {
+        return null;
+    }
+
     /**
      * @param warnings Warnings.
      */
