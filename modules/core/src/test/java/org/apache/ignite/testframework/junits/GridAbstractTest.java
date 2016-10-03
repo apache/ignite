@@ -161,6 +161,12 @@ public abstract class GridAbstractTest extends TestCase {
     /** Force failure message. */
     private String forceFailureMsg;
 
+    /** Whether test count is known is advance. */
+    private boolean forceTestCnt;
+
+    /** Number of tests. */
+    private int testCnt;
+
     /**
      *
      */
@@ -1770,6 +1776,15 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * Set test count.
+     */
+    public void forceTestCount(int cnt) {
+        testCnt = cnt;
+
+        forceTestCnt = true;
+    }
+
+    /**
      * @throws Throwable If failed.
      */
     @SuppressWarnings({"ProhibitedExceptionDeclared"})
@@ -2076,11 +2091,19 @@ public abstract class GridAbstractTest extends TestCase {
          */
         public int getNumberOfTests() {
             if (numOfTests == -1) {
-                int cnt = 0;
+                GridAbstractTest this0 = GridAbstractTest.this;
 
-                for (Method m : GridAbstractTest.this.getClass().getMethods())
-                    if (m.getName().startsWith("test") && Modifier.isPublic(m.getModifiers()))
-                        cnt++;
+                int cnt;
+
+                if (this0.forceTestCnt)
+                    cnt = this0.testCnt;
+                else {
+                    cnt = 0;
+
+                    for (Method m : this0.getClass().getMethods())
+                        if (m.getName().startsWith("test") && Modifier.isPublic(m.getModifiers()))
+                            cnt++;
+                }
 
                 numOfTests = cnt;
             }
