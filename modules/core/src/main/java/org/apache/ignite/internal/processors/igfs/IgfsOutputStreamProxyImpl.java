@@ -151,13 +151,12 @@ class IgfsOutputStreamProxyImpl extends IgfsAbstractOutputStream {
                 throw new IgniteCheckedException("Cannot write more data to the secondary file system output " +
                     "stream because it was marked as closed: " + batch.path());
             else {
-                int blkSize = info.blockSize();
+                int blockSize = info.blockSize();
 
-                if (blkSize > 0) { // anyway, prevent division by zero
-                    int blocks = writeLen / blkSize;
+                if (blockSize > 0) {
+                    int blocks = writeLen / blockSize;
 
-                    // by convention, do ceil rounding:
-                    if (writeLen % blkSize > 0)
+                    if (writeLen % blockSize > 0)
                         blocks++;
 
                     igfsCtx.metrics().addWriteBlocks(blocks, blocks);
