@@ -18,15 +18,8 @@
 package org.apache.ignite.yardstick.cache.expiry;
 
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
 import org.apache.ignite.yardstick.cache.IgnitePutAllBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
-
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 /**
  * Ignite benchmark that performs putAll operations with expiration policy set.

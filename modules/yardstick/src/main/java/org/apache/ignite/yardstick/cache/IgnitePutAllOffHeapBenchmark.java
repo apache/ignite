@@ -19,13 +19,7 @@ package org.apache.ignite.yardstick.cache;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMemoryMode;
-import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cluster.ClusterNode;
 import org.yardstickframework.BenchmarkConfiguration;
-
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 /**
  * Ignite benchmark that performs putAll operations with {@link CacheMemoryMode#OFFHEAP_TIERED OFFHEAP TIERED}
