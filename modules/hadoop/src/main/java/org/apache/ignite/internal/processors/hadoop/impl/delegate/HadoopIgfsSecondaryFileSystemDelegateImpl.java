@@ -27,7 +27,6 @@ import org.apache.hadoop.fs.PathExistsException;
 import org.apache.hadoop.fs.PathIsNotEmptyDirectoryException;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
@@ -378,7 +377,7 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
 
     /** {@inheritDoc} */
     @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len,
-        long maxLen, Collection<ClusterNode> nodes) throws IgniteException {
+        long maxLen) throws IgniteException {
         try {
             BlockLocation[] hadoopBlks = fileSystemForUser().getFileBlockLocations(convert(path), start, len);
 

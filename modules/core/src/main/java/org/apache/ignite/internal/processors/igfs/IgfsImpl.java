@@ -180,8 +180,11 @@ public final class IgfsImpl implements IgfsEx {
         data = igfsCtx.data();
         secondaryFs = cfg.getSecondaryFileSystem();
 
-        if (secondaryFs instanceof IgfsKernalContextAware)
-            ((IgfsKernalContextAware)secondaryFs).setKernalContext(igfsCtx.kernalContext());
+        if (secondaryFs != null) {
+            igfsCtx.kernalContext().resource().injectGeneric(secondaryFs);
+
+            igfsCtx.kernalContext().resource().injectFilesystem(secondaryFs, this);
+        }
 
         if (secondaryFs instanceof LifecycleAware)
             ((LifecycleAware)secondaryFs).start();
@@ -1274,8 +1277,7 @@ public final class IgfsImpl implements IgfsEx {
 
                 if (mode == PROXY) {
                     if (secondaryFs instanceof IgfsSecondaryFileSystemV2)
-                        return ((IgfsSecondaryFileSystemV2)secondaryFs).affinity(path, start, len, maxLen,
-                            Collections.singleton(igfsCtx.localNode()));
+                        return ((IgfsSecondaryFileSystemV2)secondaryFs).affinity(path, start, len, maxLen);
                     else {
                         IgfsFile info = info(path);
                         return (info != null) ?

@@ -51,12 +51,11 @@ public interface IgfsSecondaryFileSystemV2 extends IgfsSecondaryFileSystem {
      * @param start Position in the file to start affinity resolution from.
      * @param len Size of data in the file to resolve affinity for.
      * @param maxLen Maximum length of a single returned block location length.
-     * @param nodes Cluster nodes where secondary filesystem is available.
      *
      * @return Affinity block locations.
      * @throws IgniteException In case of error.
      * @throws IgfsPathNotFoundException If path doesn't exist.
      */
     public Collection<IgfsBlockLocation> affinity(final IgfsPath path, final long start, final long len,
-        final long maxLen, Collection<ClusterNode> nodes) throws IgniteException;
+        final long maxLen) throws IgniteException;
 }
