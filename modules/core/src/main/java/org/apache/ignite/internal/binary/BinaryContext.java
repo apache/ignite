@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataKey;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.datastructures.CollocatedQueueItemKey;
 import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
+import org.apache.ignite.internal.processors.platform.entityframework.PlatformDotNetEntityFrameworkCacheEntry;
 import org.apache.ignite.internal.processors.igfs.IgfsBlockKey;
 import org.apache.ignite.internal.processors.igfs.IgfsDirectoryInfo;
 import org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange;
@@ -325,6 +326,8 @@ public class BinaryContext {
 
         registerPredefinedType(PlatformDotNetSessionData.class, 0);
         registerPredefinedType(PlatformDotNetSessionLockResult.class, 0);
+
+        registerPredefinedType(PlatformDotNetEntityFrameworkCacheEntry.class, 0);
 
         // IDs range [200..1000] is used by Ignite internal APIs.
     }

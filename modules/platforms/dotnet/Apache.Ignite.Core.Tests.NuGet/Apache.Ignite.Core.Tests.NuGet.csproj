@@ -95,6 +95,16 @@
       <HintPath>packages\Apache.Ignite.Log4Net.1.8.0\lib\net40\Apache.Ignite.Log4Net.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Apache.Ignite.EntityFramework">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>packages\Apache.Ignite.EntityFramework.1.8.0\lib\net40\Apache.Ignite.EntityFramework.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>packages\EntityFramework.6.1.0\lib\net40\EntityFramework.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
       <HintPath>packages\NLog.4.3.7\lib\net40\NLog.dll</HintPath>
       <Private>True</Private>
@@ -126,6 +136,7 @@
     <Compile Include="AspNetTest.cs" />
     <Compile Include="ComputeTest.cs" />
     <Compile Include="SchemaTest.cs" />
+    <Compile Include="EntityFrameworkCacheTest.cs" />
     <Compile Include="StartupTest.cs" />
     <Compile Include="CacheTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

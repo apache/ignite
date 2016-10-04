@@ -957,10 +957,17 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsFalse(cache0.ContainsKey(key0));
             Assert.IsFalse(cache0.ContainsKey(key1));
 
+            // Test sliding expiration
             cache0.Put(key0, key0);
             cache0.Put(key1, key1);
-            cache.Get(key0); 
-            cache.Get(key1);
+            for (var i = 0; i < 3; i++)
+            {
+                Thread.Sleep(50);
+
+                // Prolong expiration by touching the entry
+                cache.Get(key0);
+                cache.Get(key1);
+            }
             Assert.IsTrue(cache0.ContainsKey(key0));
             Assert.IsTrue(cache0.ContainsKey(key1));
             Thread.Sleep(200);

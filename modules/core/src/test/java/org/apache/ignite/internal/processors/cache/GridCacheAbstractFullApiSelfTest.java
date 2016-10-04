@@ -74,6 +74,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
+import org.apache.ignite.internal.processors.platform.entityframework.PlatformDotNetEntityFrameworkCacheExtension;
+import org.apache.ignite.internal.processors.platform.entityframework.PlatformDotNetEntityFrameworkIncreaseVersionProcessor;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -1314,6 +1316,42 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals("3", res.get("key3").get());
 
         assertEquals(3, res.size());
+    }
+
+    public void testInvokeAllMultithreaded() throws Exception {
+        final IgniteCache<String, Integer> cache = jcache();
+        final int threadCnt = 2;
+        final int cnt = 90000;
+
+        final Set<String> keys = Collections.singleton("myKey");
+
+        GridTestUtils.runMultiThreaded(new Runnable() {
+            @Override public void run() {
+                for (int i = 0; i < cnt; i++) {
+                    final Map<String, EntryProcessorResult<Integer>> res =
+                        cache.invokeAll(keys, new CacheEntryProcessor<String, Integer, Integer>() {
+                            @Override
+                            public Integer process(MutableEntry<String, Integer> entry,
+                                Object... objects) throws EntryProcessorException {
+                                Integer val = entry.getValue();
+
+                                if (val == null)
+                                    val = 0;
+
+                                val++;
+
+                                entry.setValue(val);
+
+                                return val;
+                            }
+                        });
+
+                    assertEquals(1, res.size());
+                }
+            }
+        }, threadCnt, "testInvokeAllMultithreaded");
+
+        assertEquals(cnt*threadCnt, (int)cache.get("myKey"));
     }
 
     /**

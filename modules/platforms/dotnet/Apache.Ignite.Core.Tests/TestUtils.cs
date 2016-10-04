@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
     using Apache.Ignite.Core.Discovery.Tcp;
@@ -341,6 +342,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Runs the test in new process.
         /// </summary>
+        [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
         public static void RunTestInNewProcess(string fixtureName, string testName)
         {
             var procStart = new ProcessStartInfo
