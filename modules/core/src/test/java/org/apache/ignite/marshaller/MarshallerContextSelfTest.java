@@ -50,8 +50,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
 
         evts.add(new CacheContinuousQueryManager.CacheEntryEventImpl(cache, EventType.CREATED, 1, String.class.getName()));
 
-        for (int i = 0; i < 10; i++)
-            queryListener.onUpdated(evts);
+        queryListener.onUpdated(evts);
 
         Ignite g1 = startGrid(1);
 
@@ -77,8 +76,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
 
         evts.add(new CacheContinuousQueryManager.CacheEntryEventImpl(cache, EventType.CREATED, 1, String.class.getName()));
 
-        for (int i = 0; i < 10; i++)
-            queryListener.onUpdated(evts);
+        queryListener.onUpdated(evts);
 
         String fileName = "1.classname";
 
