@@ -32,9 +32,11 @@ public interface PlatformPluginTarget {
      * @param reader Reader.
      * @param writer Writer.
      * @param arg Optional argument.
+     * @param context Plugin context.
      *
      * @throws IgniteException In case of error.
      */
-    PlatformPluginTarget invokeOperation(int opCode, BinaryRawReader reader, BinaryRawWriter writer, Object arg)
+    PlatformPluginTarget invokeOperation(int opCode, BinaryRawReader reader, BinaryRawWriter writer,
+        PlatformPluginTarget arg, PlatformPluginContext context)
         throws IgniteException;
 }

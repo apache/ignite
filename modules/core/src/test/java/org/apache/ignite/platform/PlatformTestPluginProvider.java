@@ -24,6 +24,7 @@ import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.IgnitePlatformPlugin;
+import org.apache.ignite.plugin.PlatformPluginContext;
 import org.apache.ignite.plugin.PlatformPluginTarget;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginConfiguration;
@@ -140,11 +141,17 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
         private static final int OP_GET_CHILD = 5;
 
         /** */
+        private static final int OP_GET_OBJECT_NAME = 6;
+
+        /** */
+        private static final int OP_GET_NODE_ID = 7;
+
+        /** */
         private String name = "root";
 
         /** {@inheritDoc} */
-        @Override public PlatformPluginTarget invokeOperation(int opCode,
-            BinaryRawReader reader, BinaryRawWriter writer, Object arg) {
+        @Override public PlatformPluginTarget invokeOperation(int opCode, BinaryRawReader reader,
+            BinaryRawWriter writer, PlatformPluginTarget arg, PlatformPluginContext context) {
             switch (opCode) {
                 case OP_READ_WRITE: {
                     Object data = reader.readObject();
@@ -180,6 +187,18 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
                     child.name = reader.readString();
 
                     return child;
+                }
+
+                case OP_GET_OBJECT_NAME: {
+                    PlatformTestPluginTarget target = (PlatformTestPluginTarget)arg;
+
+                    writer.writeString(target.name);
+                }
+
+                case OP_GET_NODE_ID: {
+                    writer.writeUuid(context.ignite().cluster().localNode().id());
+
+                    return null;
                 }
             }
 

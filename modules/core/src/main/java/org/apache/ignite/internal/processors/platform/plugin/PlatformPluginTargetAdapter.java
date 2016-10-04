@@ -17,18 +17,24 @@
 
 package org.apache.ignite.internal.processors.platform.plugin;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.plugin.PlatformPluginContext;
 import org.apache.ignite.plugin.PlatformPluginTarget;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Adapts user-defined IgnitePlatformPluginTarget to internal PlatformAbstractTarget.
  */
-public class PlatformPluginTargetAdapter extends PlatformAbstractTarget {
+public class PlatformPluginTargetAdapter extends PlatformAbstractTarget implements PlatformPluginContext {
     /** */
     private final PlatformPluginTarget target;
 
@@ -50,8 +56,21 @@ public class PlatformPluginTargetAdapter extends PlatformAbstractTarget {
     @Override protected Object processInObjectStreamOutObjectStream(int type, @Nullable Object arg,
         BinaryRawReaderEx reader, BinaryRawWriterEx writer) throws IgniteCheckedException {
 
-        PlatformPluginTarget res = target.invokeOperation(type, reader, writer, arg);
+        PlatformPluginTarget res = target.invokeOperation(type, reader, writer, (PlatformPluginTarget)arg, this);
 
         return res == null ? null : new PlatformPluginTargetAdapter(platformCtx, res);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Ignite ignite() {
+        return platformContext().kernalContext().grid();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T callback(IgniteInClosure<BinaryRawWriter> writeClosure,
+        IgniteClosure<BinaryRawReader, T> readClosure) {
+
+        // TODO:
+        return null;
     }
 }

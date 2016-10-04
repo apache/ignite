@@ -47,6 +47,9 @@ namespace Apache.Ignite.Core.Tests.Plugin
         /** */
         private const int OpGetObjectName = 6;
 
+        /** */
+        private const int OpGetNodeId = 7;
+
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TestPlugin"/> class.
@@ -106,6 +109,14 @@ namespace Apache.Ignite.Core.Tests.Plugin
         public TestPlugin GetChild(string name)
         {
             return _target.InvokeOperation(OpGetChild, w => w.WriteString(name), (_, t) => new TestPlugin(t), null);
+        }
+
+        /// <summary>
+        /// Gets the node id.
+        /// </summary>
+        public Guid GetNodeId()
+        {
+            return _target.InvokeOperation(OpGetNodeId, null, (r, _) => r.ReadGuid(), null) ?? Guid.Empty;
         }
 
         /// <summary>

@@ -75,6 +75,9 @@ namespace Apache.Ignite.Core.Tests.Plugin
             Assert.AreEqual(1, plugin.ReadWrite(1));
             Assert.AreEqual("hello", plugin.ReadWrite("hello"));
 
+            // Test node id from PluginContext.
+            Assert.AreEqual(_ignite.GetCluster().GetLocalNode().Id, plugin.GetNodeId());
+
             // Test exception.
             var ex = Assert.Throws<IgniteException>(() => plugin.Error("error text"));
 
