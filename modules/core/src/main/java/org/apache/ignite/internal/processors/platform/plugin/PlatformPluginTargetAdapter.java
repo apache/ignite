@@ -55,8 +55,9 @@ public class PlatformPluginTargetAdapter extends PlatformAbstractTarget implemen
     /** {@inheritDoc} */
     @Override protected Object processInObjectStreamOutObjectStream(int type, @Nullable Object arg,
         BinaryRawReaderEx reader, BinaryRawWriterEx writer) throws IgniteCheckedException {
+        PlatformPluginTarget arg0 = arg == null ? null : ((PlatformPluginTargetAdapter)arg).target;
 
-        PlatformPluginTarget res = target.invokeOperation(type, reader, writer, (PlatformPluginTarget)arg, this);
+        PlatformPluginTarget res = target.invokeOperation(type, reader, writer, arg0, this);
 
         return res == null ? null : new PlatformPluginTargetAdapter(platformCtx, res);
     }
