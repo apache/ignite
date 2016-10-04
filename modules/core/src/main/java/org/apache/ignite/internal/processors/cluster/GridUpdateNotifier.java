@@ -17,25 +17,6 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
-import java.net.URL;
-import java.net.URLConnection;
-import java.util.Collection;
-import java.util.Properties;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.atomic.AtomicReference;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -48,12 +29,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.EntityResolver;
-import org.xml.sax.InputSource;
+
+import java.io.*;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.Collection;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static java.net.URLEncoder.encode;
 
@@ -113,7 +95,7 @@ class GridUpdateNotifier {
     private final Thread workerThread;
 
     /** Url for request version. */
-    private String  url = "https://ignite.run/update_status_ignite.php";
+    private String  url = "https://ignite.run/update_status_ignite-plain-text.php";
 
     /**
      * Creates new notifier with default values.
