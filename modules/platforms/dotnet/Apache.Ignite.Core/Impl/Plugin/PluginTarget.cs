@@ -52,8 +52,9 @@ namespace Apache.Ignite.Core.Impl.Plugin
             else if (arg != null)
                 throw new ArgumentException("Unsupported IPluginTarget implementation: " + arg.GetType(), "arg");
 
-            var inAction = readFunc != null 
-                ? (stream, res) => readFunc(Marshaller.StartUnmarshal(stream), null) 
+            var inAction = readFunc != null
+                ? (stream, res) => readFunc(Marshaller.StartUnmarshal(stream),
+                    res == null ? null : new PluginTarget(res, Marshaller))
                 : (Func<IBinaryStream, IUnmanagedTarget, T>) null;
 
             return DoOutInOp(opCode, writeAction, inAction, argPtr);
