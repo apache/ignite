@@ -61,12 +61,9 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        Path file = Paths.get(igniteHome + "/work/log/" + "test.log");
-        Files.delete(file);
-
+        Files.delete(Paths.get(igniteHome + "/work/log/" + "test.log"));
         Files.delete(Paths.get(igniteHome + "/work/log/" + "ignite.log"));
         Files.delete(Paths.get(igniteHome + "/work/log/"));
-        Files.delete(Paths.get(igniteHome + "/work/"));
 
         super.afterTestsStopped();
     }

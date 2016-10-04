@@ -36,7 +36,6 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -291,7 +290,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
                 folder = new File(curDirPath);
             else {
                 try {
-                    folder = U.resolveWorkDirectory(curDirPath, false);
+                    folder = U.resolveWorkDirectory(ignite.configuration().getWorkDirectory(), curDirPath, false);
                 }
                 catch (IgniteCheckedException e) {
                     if (log.isDebugEnabled())
