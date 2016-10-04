@@ -79,41 +79,38 @@ public class GridLogThrottle {
      * Logs warning if needed.
      *
      * @param log Logger.
-     * @param e Error (optional).
      * @param msg Message.
      */
-    public static void warn(@Nullable IgniteLogger log, @Nullable Throwable e, String msg) {
+    public static void warn(@Nullable IgniteLogger log, String msg) {
         assert !F.isEmpty(msg);
 
-        log(log, e, msg, null, LogLevel.WARN, false);
+        log(log, null, msg, null, LogLevel.WARN, false);
     }
 
     /**
      * Logs warning if needed.
      *
      * @param log Logger.
-     * @param e Error (optional).
      * @param msg Message.
-     * @param quite Print warning anyway.
+     * @param quiet Print warning anyway.
      */
-    public static void warn(@Nullable IgniteLogger log, @Nullable Throwable e, String msg, boolean quite) {
+    public static void warn(@Nullable IgniteLogger log, String msg, boolean quiet) {
         assert !F.isEmpty(msg);
 
-        log(log, e, msg, null, LogLevel.WARN, quite);
+        log(log, null, msg, null, LogLevel.WARN, quiet);
     }
 
     /**
      * Logs warning if needed.
      *
      * @param log Logger.
-     * @param e Error (optional).
      * @param longMsg Long message (or just message).
-     * @param shortMsg Short message for quite logging.
+     * @param shortMsg Short message for quiet logging.
      */
-    public static void warn(@Nullable IgniteLogger log, @Nullable Throwable e, String longMsg, @Nullable String shortMsg) {
+    public static void warn(@Nullable IgniteLogger log, String longMsg, @Nullable String shortMsg) {
         assert !F.isEmpty(longMsg);
 
-        log(log, e, longMsg, shortMsg, LogLevel.WARN, false);
+        log(log, null, longMsg, shortMsg, LogLevel.WARN, false);
     }
 
     /**
@@ -121,12 +118,12 @@ public class GridLogThrottle {
      *
      * @param log Logger.
      * @param msg Message.
-     * @param quite Print info anyway.
+     * @param quiet Print info anyway.
      */
-    public static void info(@Nullable IgniteLogger log, String msg, boolean quite) {
+    public static void info(@Nullable IgniteLogger log, String msg, boolean quiet) {
         assert !F.isEmpty(msg);
 
-        log(log, null, msg, null, LogLevel.INFO, quite);
+        log(log, null, msg, null, LogLevel.INFO, quiet);
     }
 
     /**
@@ -136,6 +133,8 @@ public class GridLogThrottle {
      * @param msg Message.
      */
     public static void info(@Nullable IgniteLogger log, String msg) {
+        assert !F.isEmpty(msg);
+
         info(log, msg, false);
     }
 
@@ -152,12 +151,12 @@ public class GridLogThrottle {
      * @param log Logger.
      * @param e Error (optional).
      * @param longMsg Long message (or just message).
-     * @param shortMsg Short message for quite logging.
+     * @param shortMsg Short message for quiet logging.
      * @param level Level where messages should appear.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
-    private static void log(@Nullable IgniteLogger log, @Nullable Throwable e, String longMsg, @Nullable String shortMsg,
-        LogLevel level, boolean quiet) {
+    private static void log(@Nullable IgniteLogger log, @Nullable Throwable e, String longMsg,
+        @Nullable String shortMsg, LogLevel level, boolean quiet) {
         assert !F.isEmpty(longMsg);
 
         IgniteBiTuple<Class<? extends Throwable>, String> tup =

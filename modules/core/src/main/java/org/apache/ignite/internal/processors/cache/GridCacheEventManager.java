@@ -251,7 +251,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         assert key != null || type == EVT_CACHE_STARTED || type == EVT_CACHE_STOPPED;
 
         if (!cctx.events().isRecordable(type))
-            LT.warn(log, null, "Added event without checking if event is recordable: " + U.gridEventName(type));
+            LT.warn(log, "Added event without checking if event is recordable: " + U.gridEventName(type));
 
         // Events are not fired for internal entry.
         if (key == null || !key.internal()) {
@@ -261,7 +261,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
                 evtNode = findNodeInHistory(evtNodeId);
 
             if (evtNode == null)
-                LT.warn(log, null, "Failed to find event node in grid topology history " +
+                LT.warn(log, "Failed to find event node in grid topology history " +
                     "(try to increase topology history size configuration property of configured " +
                     "discovery SPI): " + evtNodeId);
 
@@ -284,7 +284,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
                     log.debug("Failed to unmarshall cache object value for the event notification: " + e);
 
                 if (!forceKeepBinary)
-                    LT.warn(log, null, "Failed to unmarshall cache object value for the event notification " +
+                    LT.warn(log, "Failed to unmarshall cache object value for the event notification " +
                         "(all further notifications will keep binary object format).");
 
                 forceKeepBinary = true;
@@ -351,7 +351,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         assert discoTs > 0;
 
         if (!cctx.events().isRecordable(type))
-            LT.warn(log, null, "Added event without checking if event is recordable: " + U.gridEventName(type));
+            LT.warn(log, "Added event without checking if event is recordable: " + U.gridEventName(type));
 
         cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(), cctx.localNode(),
             "Cache rebalancing event.", type, part, discoNode, discoType, discoTs));
@@ -364,7 +364,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
      */
     public void addUnloadEvent(int part) {
         if (!cctx.events().isRecordable(EVT_CACHE_REBALANCE_PART_UNLOADED))
-            LT.warn(log, null, "Added event without checking if event is recordable: " +
+            LT.warn(log, "Added event without checking if event is recordable: " +
                 U.gridEventName(EVT_CACHE_REBALANCE_PART_UNLOADED));
 
         cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(), cctx.localNode(),
