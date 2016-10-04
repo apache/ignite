@@ -50,6 +50,8 @@ namespace Apache.Ignite.Core.Tests.Plugin
         /** */
         private const int OpGetNodeId = 7;
 
+        /** */
+        private const int OpGetCallbackResponse = 8;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TestPlugin"/> class.
@@ -117,6 +119,14 @@ namespace Apache.Ignite.Core.Tests.Plugin
         public Guid GetNodeId()
         {
             return _target.InvokeOperation(OpGetNodeId, null, (r, _) => r.ReadGuid(), null) ?? Guid.Empty;
+        }
+
+        /// <summary>
+        /// Gets the callback response that is saved in Java object.
+        /// </summary>
+        public string GetCallbackResponse()
+        {
+            return _target.InvokeOperation(OpGetCallbackResponse, null, (r, _) => r.ReadString(), null);
         }
 
         /// <summary>

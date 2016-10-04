@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Tests.Plugin
 {
     using System;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Plugin;
     using NUnit.Framework;
 
     /// <summary>
@@ -94,25 +93,21 @@ namespace Apache.Ignite.Core.Tests.Plugin
             var target = plugin.Target;
 
             object sender = null;
-            PluginCallbackEventArgs args = null;
 
             target.Callback += (s, a) =>
             {
+                Assert.AreEqual("test value", a.Reader.ReadObject<string>());
+
+                a.Writer.WriteString("callback response");
+
                 sender = s;
-                args = a;
             };
 
             plugin.InvokeCallback("test value");
 
             Assert.AreEqual(target, sender);
-            Assert.IsNotNull(args);
 
-            Assert.IsNotNull(args.Reader);
-            Assert.IsNotNull(args.Writer);
-
-            Assert.AreEqual("test value", args.Reader.ReadObject<string>());
-
-            // TODO: Verify that Java part got our response back via additional op.
+            Assert.AreEqual("callback response", plugin.GetCallbackResponse());
         }
 
         /// <summary>

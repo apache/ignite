@@ -22,6 +22,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.typedef.C1;
+import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.IgnitePlatformPlugin;
 import org.apache.ignite.plugin.PlatformPluginContext;
@@ -147,7 +149,13 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
         private static final int OP_GET_NODE_ID = 7;
 
         /** */
+        private static final int OP_GET_CALLBACK_RESPONSE = 8;
+
+        /** */
         private String name = "root";
+
+        /** */
+        private String callbackResponse = "";
 
         /** {@inheritDoc} */
         @Override public PlatformPluginTarget invokeOperation(int opCode, BinaryRawReader reader,
@@ -168,9 +176,17 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
                 }
 
                 case OP_INVOKE_CALLBACK: {
-                    // TODO: ???
-                    // Something should be injected VIA THIS METHOD ARG, like IgnitePlatformPluginContext
-                    // Where there is a way to invoke callbacks (route by plugin name internally)
+                    final String val = reader.readString();
+
+                    callbackResponse = context.callback(new CI1<BinaryRawWriter>() {
+                        @Override public void apply(BinaryRawWriter writer) {
+                            writer.writeString(val);
+                        }
+                    }, new C1<BinaryRawReader, String>() {
+                        @Override public String apply(BinaryRawReader reader) {
+                            return reader.readString();
+                        }
+                    });
 
                     return null;
                 }
@@ -197,6 +213,12 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
 
                 case OP_GET_NODE_ID: {
                     writer.writeUuid(context.ignite().cluster().localNode().id());
+
+                    return null;
+                }
+
+                case OP_GET_CALLBACK_RESPONSE: {
+                    writer.writeString(callbackResponse);
 
                     return null;
                 }
