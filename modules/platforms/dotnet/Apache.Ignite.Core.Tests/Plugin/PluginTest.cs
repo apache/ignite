@@ -124,22 +124,19 @@ namespace Apache.Ignite.Core.Tests.Plugin
 
             var child = plugin.GetChild("child");
 
-            Assert.AreEqual("child", child.GetName());
-
+            // Verify new target.
             Assert.AreNotSame(plugin.Target, child.Target);
 
+            // Call the new object.
+            Assert.AreEqual("child", child.GetName());
+
+            // Pass the new object as an argument.
+            Assert.AreEqual("child", plugin.GetObjectName(child.Target));
+
+            // Check disposal.
             child.Dispose();
 
             Assert.Throws<ObjectDisposedException>(() => child.GetName());
-        }
-
-        /// <summary>
-        /// Tests passing object.
-        /// </summary>
-        [Test]
-        public void TestPassObject()
-        {
-            // TODO
         }
     }
 }

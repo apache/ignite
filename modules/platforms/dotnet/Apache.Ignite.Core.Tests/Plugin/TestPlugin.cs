@@ -44,6 +44,9 @@ namespace Apache.Ignite.Core.Tests.Plugin
         /** */
         private const int OpGetChild = 5;
 
+        /** */
+        private const int OpGetObjectName = 6;
+
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TestPlugin"/> class.
@@ -87,6 +90,14 @@ namespace Apache.Ignite.Core.Tests.Plugin
         public string GetName()
         {
             return _target.InvokeOperation(OpGetName, null, (r, _) => r.ReadString(), null);
+        }
+
+        /// <summary>
+        /// Gets the name.
+        /// </summary>
+        public string GetObjectName(IPluginTarget obj)
+        {
+            return _target.InvokeOperation(OpGetObjectName, null, (r, _) => r.ReadString(), obj);
         }
 
         /// <summary>
