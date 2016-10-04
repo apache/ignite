@@ -908,8 +908,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                         }
 
                     case OpPluginCallback:
+                        // inStream is never null (plugin name is there).
+                        // outStream can be null when closure in Java is null.
                         using (var inStream = IgniteManager.Memory.Get(arg1).GetStream())
-                        using (var outStream = IgniteManager.Memory.Get(arg2).GetStream())
+                        using (var outStream = arg2 != 0 ? IgniteManager.Memory.Get(arg2).GetStream() : null)
                         {
                             _ignite.PluginCallback(inStream, outStream);
 

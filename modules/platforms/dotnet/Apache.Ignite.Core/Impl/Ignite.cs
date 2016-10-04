@@ -846,10 +846,9 @@ namespace Apache.Ignite.Core.Impl
         internal void PluginCallback(PlatformMemoryStream inStream, PlatformMemoryStream outStream)
         {
             Debug.Assert(inStream != null);
-            Debug.Assert(outStream != null);
 
             var reader = Marshaller.StartUnmarshal(inStream);
-            var writer = Marshaller.StartMarshal(outStream);
+            var writer = outStream != null ? Marshaller.StartMarshal(outStream) : null;
 
             var pluginName = reader.ReadString();
 
