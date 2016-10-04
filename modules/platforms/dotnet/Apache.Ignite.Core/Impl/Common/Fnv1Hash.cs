@@ -18,7 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     /// <summary>
-    /// Fowler–Noll–Vo hash function.
+    /// Fowler-Noll-Vo hash function.
     /// </summary>
     internal static class Fnv1Hash
     {

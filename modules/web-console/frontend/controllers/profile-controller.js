@@ -19,7 +19,8 @@
 export default ['profileController', [
     '$rootScope', '$scope', '$http', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteFocus', 'IgniteConfirm', 'IgniteCountries', 'User',
     function($root, $scope, $http, LegacyUtils, Messages, Focus, Confirm, Countries, User) {
-        $scope.user = angular.copy($root.user);
+        User.read()
+            .then((user) => $scope.user = angular.copy(user));
 
         $scope.countries = Countries.getAll();
 
@@ -74,7 +75,7 @@ export default ['profileController', [
         $scope.saveUser = () => {
             $http.post('/api/v1/profile/save', $scope.user)
                 .catch(({data}) => Promise.reject(data))
-                .then(User.read)
+                .then(User.load)
                 .then(() => {
                     if ($scope.expandedPassword)
                         $scope.togglePassword();

@@ -24,7 +24,7 @@
  */
 module.exports = {
     implements: 'mongo',
-    inject: ['require(passport-local-mongoose)', 'settings', 'ignite_modules/mongo:*', 'require(mongoose)']
+    inject: ['require(passport-local-mongoose)', 'settings', 'ignite_modules/mongo:*', 'mongoose']
 };
 
 module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose) {
@@ -564,6 +564,11 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             trustManagers: [String]
         },
         rebalanceThreadPoolSize: Number,
+        odbc: {
+            odbcEnabled: Boolean,
+            endpointAddress: String,
+            maxOpenCursors: Number
+        },
         attributes: [{name: String, value: String}],
         collision: {
             kind: {type: String, enum: ['Noop', 'PriorityQueue', 'FifoQueue', 'JobStealing', 'Custom']},

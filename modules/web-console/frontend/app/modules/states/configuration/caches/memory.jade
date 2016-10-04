@@ -78,7 +78,7 @@ include ../../../../../app/helpers/jade/mixins.jade
                 .settings-row(data-ng-if=model + '.offHeapMode === 1 && ' + model + '.memoryMode !== "OFFHEAP_VALUES"')
                     +number-required('Off-heap memory max size:', model + '.offHeapMaxMemory', '"offHeapMaxMemory"', 'true',
                         model + '.offHeapMode === 1', '', 1,
-                        'Sets maximum amount of memory available to off-heap storage in bytes')
+                        'Maximum amount of memory available to off-heap storage in bytes')
                 .settings-row
                     -var onHeapTired = model + '.memoryMode === "ONHEAP_TIERED"'
                     -var swapEnabled = model + '.swapEnabled'
@@ -94,8 +94,7 @@ include ../../../../../app/helpers/jade/mixins.jade
                             <li>SORTED - Eviction policy which will select the minimum cache entry for eviction</li>\
                         </ul>')
                 .settings-row
-                    +number('Start size:', model + '.startSize', '"startSize"', 'true', '1500000', '0',
-                        'Initial cache size which will be used to pre-create internal hash table after start')
+                    +number('Start size:', model + '.startSize', '"startSize"', 'true', '1500000', '0', 'Initial cache size in entries number')
                 .settings-row
                     +checkbox('Swap enabled', model + '.swapEnabled', '"swapEnabled"', 'Flag indicating whether swap storage is enabled or not for this cache')
             .col-sm-6

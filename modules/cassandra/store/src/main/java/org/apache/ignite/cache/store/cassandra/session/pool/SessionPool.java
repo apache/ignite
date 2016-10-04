@@ -146,7 +146,7 @@ public class SessionPool {
 
         synchronized (sessions) {
             try {
-                if (sessions.size() == 0)
+                if (sessions.isEmpty())
                     return;
 
                 wrappers = new LinkedList<>();

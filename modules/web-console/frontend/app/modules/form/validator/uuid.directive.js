@@ -17,16 +17,10 @@
 
 export default ['uuid', ['JavaTypes', (JavaTypes) => {
     const link = (scope, el, attrs, [ngModel]) => {
-        const isEmpty = (modelValue) => {
-            return ngModel.$isEmpty(modelValue) || _.isUndefined(attrs.uuid) || attrs.uuid !== 'true';
-        };
+        if (_.isNil(attrs.uuid) || attrs.uuid !== 'true')
+            return;
 
-        ngModel.$validators.uuid = (modelValue) => {
-            if (isEmpty(modelValue))
-                return true;
-
-            return JavaTypes.validUUID(modelValue);
-        };
+        ngModel.$validators.uuid = (modelValue) => _.isEmpty(modelValue) || JavaTypes.validUUID(modelValue);
     };
 
     return {
