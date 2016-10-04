@@ -29,7 +29,6 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Events;
-    using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Messaging;
