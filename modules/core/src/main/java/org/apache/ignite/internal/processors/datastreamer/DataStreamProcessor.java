@@ -77,14 +77,10 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
         if (!ctx.config().isDaemon() && !ctx.clientNode())
             ctx.io().addMessageListener(TOPIC_DATASTREAM, new GridMessageListener() {
-                @Override public void onMessage(final UUID nodeId, final Object msg) {
+                @Override public void onMessage(UUID nodeId, Object msg) {
                     assert msg instanceof DataStreamerRequest;
 
-                    ctx.closure().runLocalSafe(new Runnable() {
-                        @Override public void run() {
-                            processRequest(nodeId, (DataStreamerRequest)msg);
-                        }
-                    }, GridClosurePolicy.DATA_STREAMER_POOL);
+                    processRequest(nodeId, (DataStreamerRequest)msg);
                 }
             });
     }

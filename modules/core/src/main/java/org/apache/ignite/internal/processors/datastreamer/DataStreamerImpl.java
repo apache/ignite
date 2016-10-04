@@ -1318,7 +1318,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             Byte plc = ioPlcRslvr.apply(node);
 
-            assert plc != null;
+            if (plc == null)
+                plc = PUBLIC_POOL;
 
             if (isLocNode && plc == GridIoPolicy.DATA_STREAM_POOL) {
                 fut = ctx.closure().callLocalSafe(
@@ -1697,10 +1698,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         private static final int DATA_STREAMER_POOL_MAJOR_VER = 1;
 
         /** Data streamer separate pool feature minor version. */
-        private static final int DATA_STREAMER_POOL_MINOR_VER = 7;
+        private static final int DATA_STREAMER_POOL_MINOR_VER = 6;
 
         /** Data streamer separate pool feature maintenance version. */
-        private static final int DATA_STREAMER_POOL_MAINT_VER = 3;
+        private static final int DATA_STREAMER_POOL_MAINT_VER = 10;
 
         /** {@inheritDoc} */
         @Override public Byte apply(ClusterNode gridNode) {
@@ -1708,7 +1709,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             IgniteProductVersion version = gridNode.version();
 
-            //TODO: change version to actual before merge.
             if (gridNode.isLocal() || version.greaterThanEqual(DATA_STREAMER_POOL_MAJOR_VER, DATA_STREAMER_POOL_MINOR_VER,
                 DATA_STREAMER_POOL_MAINT_VER))
                 return DATA_STREAM_POOL;

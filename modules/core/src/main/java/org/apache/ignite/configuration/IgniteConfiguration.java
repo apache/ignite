@@ -172,9 +172,6 @@ public class IgniteConfiguration {
     /** Default keep alive time for utility thread pool. */
     public static final long DFLT_UTILITY_KEEP_ALIVE_TIME = 10_000;
 
-    /** Default keep alive time for data streamer thread pool. */
-    public static final long DFLT_DATA_STREAMER_KEEP_ALIVE_TIME = 5 * 60 * 1_000;
-
     /** Default max queue capacity of system thread pool. */
     public static final int DFLT_SYSTEM_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
 

@@ -119,7 +119,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_DATA_STREAMER_KEEP_ALIVE_TIME;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_PUBLIC_KEEP_ALIVE_TIME;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_PUBLIC_THREADPOOL_QUEUE_CAP;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SYSTEM_KEEP_ALIVE_TIME;
@@ -546,8 +545,7 @@ public class IgnitionEx {
      * @throws IgniteCheckedException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
      */
-    public static Ignite start(IgniteConfiguration cfg,
-        @Nullable GridSpringResourceContext springCtx) throws IgniteCheckedException {
+    public static Ignite start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx) throws IgniteCheckedException {
         A.notNull(cfg, "cfg");
 
         return start0(new GridStartContext(cfg, null, springCtx), true).grid();
@@ -567,8 +565,7 @@ public class IgnitionEx {
      * @throws IgniteCheckedException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
      */
-    public static Ignite start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx,
-        boolean failIfStarted) throws IgniteCheckedException {
+    public static Ignite start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx, boolean failIfStarted) throws IgniteCheckedException {
         A.notNull(cfg, "cfg");
 
         return start0(new GridStartContext(cfg, null, springCtx), failIfStarted).grid();
@@ -611,8 +608,7 @@ public class IgnitionEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Ignite start(@Nullable String springCfgPath,
-        @Nullable String gridName) throws IgniteCheckedException {
+    public static Ignite start(@Nullable String springCfgPath, @Nullable String gridName) throws IgniteCheckedException {
         if (springCfgPath == null) {
             IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -1003,8 +999,7 @@ public class IgnitionEx {
      * @return Started grid.
      * @throws IgniteCheckedException If grid could not be started.
      */
-    private static IgniteNamedInstance start0(GridStartContext startCtx,
-        boolean failIfStarted) throws IgniteCheckedException {
+    private static IgniteNamedInstance start0(GridStartContext startCtx, boolean failIfStarted ) throws IgniteCheckedException {
         assert startCtx != null;
 
         String name = startCtx.config().getGridName();
@@ -1381,12 +1376,13 @@ public class IgnitionEx {
         private boolean single;
 
         /**
+         *
          * @param cfg User-defined configuration.
          * @param cfgUrl Optional configuration path.
          * @param springCtx Optional Spring application context.
          */
         GridStartContext(IgniteConfiguration cfg, @Nullable URL cfgUrl, @Nullable GridSpringResourceContext springCtx) {
-            assert (cfg != null);
+            assert(cfg != null);
 
             this.cfg = cfg;
             this.cfgUrl = cfgUrl;
@@ -1697,9 +1693,9 @@ public class IgnitionEx {
             dataStreamerExecSvc = new IgniteThreadPoolExecutor(
                 "data-streamer",
                 cfg.getGridName(),
-                0,
                 cfg.getDataStreamerThreadPoolSize(),
-                DFLT_DATA_STREAMER_KEEP_ALIVE_TIME,
+                cfg.getDataStreamerThreadPoolSize(),
+                0,
                 new LinkedBlockingQueue<Runnable>());
 
             // Note that we do not pre-start threads here as igfs pool may not be needed.
@@ -1942,10 +1938,10 @@ public class IgnitionEx {
             if (marsh == null) {
                 if (!BinaryMarshaller.available()) {
                     U.warn(log, "OptimizedMarshaller is not supported on this JVM " +
-                            "(only recent 1.6 and 1.7 versions HotSpot VMs are supported). " +
-                            "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release. " +
-                            "Switching to standard JDK marshalling - " +
-                            "object serialization performance will be significantly slower.",
+                        "(only recent 1.6 and 1.7 versions HotSpot VMs are supported). " +
+                        "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release. " +
+                        "Switching to standard JDK marshalling - " +
+                        "object serialization performance will be significantly slower.",
                         "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release.");
 
                     marsh = new JdkMarshaller();
