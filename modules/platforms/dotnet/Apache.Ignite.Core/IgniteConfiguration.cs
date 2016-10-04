@@ -748,6 +748,7 @@
         /// </summary>
         /// <param name="xml">Xml string.</param>
         /// <returns>Deserialized instance.</returns>
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         public static IgniteConfiguration FromXml(string xml)
         {
             IgniteArgumentCheck.NotNullOrEmpty(xml, "xml");

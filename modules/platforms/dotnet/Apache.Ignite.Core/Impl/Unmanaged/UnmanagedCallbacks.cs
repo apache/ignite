@@ -1181,6 +1181,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return SafeCall(() => _log.IsEnabled((LogLevel) level), true);
         }
 
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private static void ConsoleWrite(sbyte* chars, int charsLen, bool isErr)
         {
             try
