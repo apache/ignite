@@ -17,24 +17,30 @@
 
 package org.apache.ignite.plugin;
 
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteInClosure;
 
 /**
- * Platform plugin target: interface that is invoked from platform code to perform operations.
+ * Platform plugin context.
  */
-public interface IgnitePlatformPluginTarget {
+public interface PlatformPluginContext {
     /**
-     * Invokes operation.
+     * Gets the Ignite instance.
      *
-     * @param opCode Operation code.
-     * @param reader Reader.
-     * @param writer Writer.
-     * @param arg Optional argument.
-     *
-     * @throws IgniteException In case of error.
+     * @return Ignite instance.
      */
-    IgnitePlatformPluginTarget invokeOperation(int opCode, BinaryRawReader reader, BinaryRawWriter writer, Object arg)
-        throws IgniteException;
+    Ignite ignite();
+
+    /**
+     * Invokes the plugin callback to the platform.
+     *
+     * @param writeClosure Writer closure. Can be null.
+     * @param readClosure Reader closure. Can be null.
+     * @param <T> Result type.
+     * @return Result.
+     */
+    <T> T callback(IgniteInClosure<BinaryRawWriter> writeClosure, IgniteClosure<BinaryRawReader, T> readClosure);
 }

@@ -24,7 +24,7 @@ import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.IgnitePlatformPlugin;
-import org.apache.ignite.plugin.IgnitePlatformPluginTarget;
+import org.apache.ignite.plugin.PlatformPluginTarget;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.PluginContext;
@@ -112,10 +112,10 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
      */
     public static class PlatformTestPlugin implements IgnitePlatformPlugin {
         /** Plugin target. */
-        private final IgnitePlatformPluginTarget target = new PlatformTestPluginTarget();
+        private final PlatformPluginTarget target = new PlatformTestPluginTarget();
 
         /** {@inheritDoc} */
-        @Override public IgnitePlatformPluginTarget platformTarget() {
+        @Override public PlatformPluginTarget platformTarget() {
             return target;
         }
     }
@@ -123,7 +123,7 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
     /**
      * Test target.
      */
-    public static class PlatformTestPluginTarget implements IgnitePlatformPluginTarget {
+    public static class PlatformTestPluginTarget implements PlatformPluginTarget {
         /** */
         private static final int OP_READ_WRITE = 1;
 
@@ -143,7 +143,7 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
         private String name = "root";
 
         /** {@inheritDoc} */
-        @Override public IgnitePlatformPluginTarget invokeOperation(int opCode,
+        @Override public PlatformPluginTarget invokeOperation(int opCode,
             BinaryRawReader reader, BinaryRawWriter writer, Object arg) {
             switch (opCode) {
                 case OP_READ_WRITE: {

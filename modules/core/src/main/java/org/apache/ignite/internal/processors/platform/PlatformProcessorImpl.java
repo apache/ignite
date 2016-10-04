@@ -59,7 +59,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.IgnitePlatformPlugin;
-import org.apache.ignite.plugin.IgnitePlatformPluginTarget;
+import org.apache.ignite.plugin.PlatformPluginTarget;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
@@ -496,7 +496,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     public PlatformTarget pluginTarget(String name) {
         final IgnitePlatformPlugin plugin = platformCtx.kernalContext().grid().plugin("PlatformTestPlugin");
 
-        IgnitePlatformPluginTarget pluginTarget = plugin.platformTarget();
+        PlatformPluginTarget pluginTarget = plugin.platformTarget();
 
         return new PlatformPluginTargetAdapter(platformCtx, pluginTarget);
     }

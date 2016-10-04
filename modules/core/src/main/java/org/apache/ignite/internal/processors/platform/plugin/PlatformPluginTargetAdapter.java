@@ -22,7 +22,7 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
-import org.apache.ignite.plugin.IgnitePlatformPluginTarget;
+import org.apache.ignite.plugin.PlatformPluginTarget;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class PlatformPluginTargetAdapter extends PlatformAbstractTarget {
     /** */
-    private final IgnitePlatformPluginTarget target;
+    private final PlatformPluginTarget target;
 
     /**
      * Constructor.
@@ -38,7 +38,7 @@ public class PlatformPluginTargetAdapter extends PlatformAbstractTarget {
      * @param platformCtx Context.
      * @param target User-defined target.
      */
-    public PlatformPluginTargetAdapter(PlatformContext platformCtx, IgnitePlatformPluginTarget target) {
+    public PlatformPluginTargetAdapter(PlatformContext platformCtx, PlatformPluginTarget target) {
         super(platformCtx);
 
         assert target != null;
@@ -50,7 +50,7 @@ public class PlatformPluginTargetAdapter extends PlatformAbstractTarget {
     @Override protected Object processInObjectStreamOutObjectStream(int type, @Nullable Object arg,
         BinaryRawReaderEx reader, BinaryRawWriterEx writer) throws IgniteCheckedException {
 
-        IgnitePlatformPluginTarget res = target.invokeOperation(type, reader, writer, arg);
+        PlatformPluginTarget res = target.invokeOperation(type, reader, writer, arg);
 
         return res == null ? null : new PlatformPluginTargetAdapter(platformCtx, res);
     }

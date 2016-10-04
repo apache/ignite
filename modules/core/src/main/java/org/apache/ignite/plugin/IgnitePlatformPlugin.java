@@ -17,8 +17,6 @@
 
 package org.apache.ignite.plugin;
 
-import org.apache.ignite.internal.processors.platform.PlatformTarget;
-
 /**
  * Interface for plugins that interact with platforms.
  */
@@ -28,5 +26,5 @@ public interface IgnitePlatformPlugin extends IgnitePlugin {
      *
      * @return Platform target.
      */
-    IgnitePlatformPluginTarget platformTarget();
+    PlatformPluginTarget platformTarget();
 }
