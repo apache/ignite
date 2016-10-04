@@ -50,6 +50,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -60,6 +61,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.stream.StreamReceiver;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -958,24 +960,31 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             Ignite ignite = startGrid(1);
 
-            try (IgniteDataStreamer<String, String> ldr = ignite.dataStreamer(null)) {
+            final IgniteCache<String, String> cache = ignite.cache(null);
+
+            IgniteDataStreamer<String, String> ldr = ignite.dataStreamer(null);
+            try {
                 ldr.receiver(new StreamReceiver<String, String>() {
                     @Override public void receive(IgniteCache<String, String> cache,
                         Collection<Map.Entry<String, String>> entries) throws IgniteException {
                         String threadName = Thread.currentThread().getName();
 
-                        cache.put("key",threadName);
+                        cache.put("key", threadName);
                     }
                 });
-
-                ldr.allowOverwrite(true);
-
                 ldr.addData("key", "value");
 
-                ldr.flush();
-            }
+                ldr.tryFlush();
 
-            IgniteCache<String, String> cache = ignite.cache(null);
+                GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                    @Override public boolean apply() {
+                        return cache.get("key") != null;
+                    }
+                }, 3_000);
+            }
+            finally {
+                ldr.close(true);
+            }
 
             assertNotNull(cache.get("key"));
 
@@ -1000,24 +1009,32 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             Ignite client = startGrid(0);
 
-            try (IgniteDataStreamer<String, String> ldr = client.dataStreamer(null)) {
+            final IgniteCache<String, String> cache = ignite.cache(null);
+
+            IgniteDataStreamer<String, String> ldr = client.dataStreamer(null);
+            try {
                 ldr.receiver(new StreamReceiver<String, String>() {
                     @Override public void receive(IgniteCache<String, String> cache,
                         Collection<Map.Entry<String, String>> entries) throws IgniteException {
                         String threadName = Thread.currentThread().getName();
 
-                        cache.put("key",threadName);
+                        cache.put("key", threadName);
                     }
                 });
 
-                ldr.allowOverwrite(true);
-
                 ldr.addData("key", "value");
 
-                ldr.flush();
-            }
+                ldr.tryFlush();
 
-            IgniteCache<String, String> cache = ignite.cache(null);
+                GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                    @Override public boolean apply() {
+                        return cache.get("key") != null;
+                    }
+                }, 3_000);
+            }
+            finally {
+                ldr.close(true);
+            }
 
             assertNotNull(cache.get("key"));
 
