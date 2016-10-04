@@ -153,7 +153,7 @@ public class IgfsServer {
      * @return Server endpoint.
      * @throws IgniteCheckedException If failed.
      */
-    private static IpcServerEndpoint createEndpoint(IgfsIpcEndpointConfiguration endpointCfg, boolean mgmt)
+    private IpcServerEndpoint createEndpoint(IgfsIpcEndpointConfiguration endpointCfg, boolean mgmt)
         throws IgniteCheckedException {
         A.notNull(endpointCfg, "endpointCfg");
 
@@ -164,7 +164,8 @@ public class IgfsServer {
 
         switch (typ) {
             case SHMEM: {
-                IpcSharedMemoryServerEndpoint endpoint = new IpcSharedMemoryServerEndpoint();
+                IpcSharedMemoryServerEndpoint endpoint =
+                    new IpcSharedMemoryServerEndpoint(igfsCtx.kernalContext().config().getWorkDirectory());
 
                 endpoint.setPort(endpointCfg.getPort());
                 endpoint.setSize(endpointCfg.getMemorySize());

@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingRe
 import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingTxErrorTest;
 import org.apache.ignite.internal.processors.cache.IgniteDaemonNodeMarshallerCacheTest;
 import org.apache.ignite.internal.util.GridHandleTableSelfTest;
-import org.apache.ignite.internal.util.GridStartupWithSpecifiedWorkDirectorySelfTest;
 import org.apache.ignite.internal.util.IgniteUtilsSelfTest;
 import org.apache.ignite.internal.util.io.GridUnsafeDataOutputArraySizingSelfTest;
 import org.apache.ignite.internal.util.nio.GridNioSelfTest;
@@ -80,7 +79,6 @@ public class IgniteBinaryBasicTestSuite extends TestSuite {
         ignoredTests.add(IgniteCacheP2pUnmarshallingNearErrorTest.class);
         ignoredTests.add(IgniteCacheP2pUnmarshallingRebalanceErrorTest.class);
         ignoredTests.add(GridReleaseTypeSelfTest.class);
-        ignoredTests.add(GridStartupWithSpecifiedWorkDirectorySelfTest.class);
         ignoredTests.add(IgniteUtilsSelfTest.class);
         ignoredTests.add(ClusterGroupSelfTest.class);
         ignoredTests.add(GridMessagingNoPeerClassLoadingSelfTest.class);

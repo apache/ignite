@@ -72,13 +72,14 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     private ContinuousQueryListener lsnr;
 
     /**
+     * @param igniteWorkDir Ignite work directory.
      * @param plugins Plugins.
      * @throws IgniteCheckedException In case of error.
      */
-    public MarshallerContextImpl(List<PluginProvider> plugins) throws IgniteCheckedException {
+    public MarshallerContextImpl(String igniteWorkDir, List<PluginProvider> plugins) throws IgniteCheckedException {
         super(plugins);
 
-        workDir = U.resolveWorkDirectory("marshaller", false);
+        workDir = U.resolveWorkDirectory(igniteWorkDir, "marshaller", false);
     }
 
     /**

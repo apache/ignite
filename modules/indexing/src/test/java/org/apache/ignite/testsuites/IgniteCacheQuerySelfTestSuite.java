@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.query.IndexingSpiQueryTxSelfT
 import org.apache.ignite.internal.processors.query.IgniteSqlSchemaIndexingTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSplitterSelfTest;
 import org.apache.ignite.internal.processors.query.h2.sql.GridQueryParsingTest;
+import org.apache.ignite.testframework.IgniteTestSuite;
 
 /**
  * Test suite for cache queries.
@@ -75,7 +76,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Cache Queries Test Suite");
+        IgniteTestSuite suite = new IgniteTestSuite("Ignite Cache Queries Test Suite");
 
         // Parsing
         suite.addTestSuite(GridQueryParsingTest.class);
