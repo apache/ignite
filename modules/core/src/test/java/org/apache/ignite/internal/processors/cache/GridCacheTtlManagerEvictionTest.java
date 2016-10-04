@@ -127,7 +127,7 @@ public class GridCacheTtlManagerEvictionTest extends GridCommonAbstractTest {
         try {
             final IgniteCache<Object, Object> cache = g.cache(null);
 
-            GridCacheContext<Object, Object> cctx = g.cachex(null).context();
+            final GridCacheContext<Object, Object> cctx = g.cachex(null).context();
 
             for (int i = 1; i <= ENTRIES_TO_PUT; i++) {
                 String key = "Some test entry key#" + i;
