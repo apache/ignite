@@ -15,31 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.binary;
+package org.apache.ignite.testsuites;
 
+import junit.framework.TestSuite;
 import org.apache.ignite.IgniteSystemProperties;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNotEquals;
-
 /**
- * Binary marshaller tests with compact mode on.
- * Compact Long zeroes should become default mode in Apache Ignite 2.0, so this test will be redundant.
+ * Test for binary objects stored in cache using {@link IgniteSystemProperties#IGNITE_BINARY_COMPACT_ZEROES}
  *
- * @deprecated Should be removed in Apache Ignite 2.0.
+ * @deprecated IGNITE_BINARY_COMPACT_ZEROES should be default mode in Apache Ignite 2.0, so this test will be redundant.
  */
 @Deprecated
-public class BinaryMarshallerCompactZeroesSelfTest extends BinaryMarshallerSelfTest {
+public class IgniteBinaryObjectsTestSuite2 extends TestSuite {
+    /**
+     * @return Suite.
+     * @throws Exception If failed.
+     */
+    public static TestSuite suite() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_BINARY_COMPACT_ZEROES, "true");
 
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        System.setProperty(IgniteSystemProperties.IGNITE_BINARY_COMPACT_INT_ZEROES, "true");
-    }
-
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        System.clearProperty(IgniteSystemProperties.IGNITE_BINARY_COMPACT_INT_ZEROES);
+        return IgniteBinaryObjectsTestSuite.suite();
     }
 }

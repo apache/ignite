@@ -17,17 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
-import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.IOException;
 import java.io.ObjectOutput;
 import java.lang.reflect.InvocationHandler;
@@ -39,6 +28,16 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -51,6 +50,13 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** Initial capacity. */
     private static final int INIT_CAP = 1024;
+
+    /** Compress zeroes feature flag.
+     * See {@link IgniteSystemProperties#IGNITE_BINARY_COMPACT_ZEROES}
+     *  @deprecated This mode should be default mode in Apache Ignite 2.0 and option should be removed.
+     * */
+    public static final boolean IGNITE_BINARY_COMPACT_ZEROES =
+        !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_BINARY_COMPACT_ZEROES);
 
     /** */
     private final BinaryContext ctx;
@@ -934,8 +940,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeIntFieldPrimitive(int val) {
-        if (val == 0 &&
-            IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_BINARY_COMPACT_INT_ZEROES, false)) {
+        if (val == 0 && IGNITE_BINARY_COMPACT_ZEROES) {
             out.unsafeEnsure(1);
 
             out.unsafeWriteByte(GridBinaryMarshaller.ZERO_INT);
@@ -962,8 +967,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeLongFieldPrimitive(long val) {
-        if (val == 0L &&
-            IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_BINARY_COMPACT_INT_ZEROES, false)) {
+        if (val == 0L && IGNITE_BINARY_COMPACT_ZEROES) {
             out.unsafeEnsure(1);
 
             out.unsafeWriteByte(GridBinaryMarshaller.ZERO_LONG);

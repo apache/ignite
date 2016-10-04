@@ -478,10 +478,10 @@ public final class IgniteSystemProperties {
      * with no value included, that saves 8-bytes per field.
      * Otherwise Integer\Long zeroes will be encoded in old manner, preserving compatibility.
      * <p>
-     * @deprecated Should be removed in Apache Ignite 2.0.
+     * @deprecated This mode should be default mode in Apache Ignite 2.0 and option should be removed.
      */
     @Deprecated
-    public static final String IGNITE_BINARY_COMPACT_INT_ZEROES = "IGNITE_BINARY_COMPACT_INT_ZEROES";
+    public static final String IGNITE_BINARY_COMPACT_ZEROES = "IGNITE_BINARY_COMPACT_ZEROES";
 
     /**
      * Enforces singleton.

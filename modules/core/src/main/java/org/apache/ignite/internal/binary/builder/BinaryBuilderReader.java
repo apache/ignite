@@ -274,7 +274,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 break;
 
             case GridBinaryMarshaller.DECIMAL:
-                len = /** scale */4 + /** mag len */4 + /** mag bytes count */readInt(4);
+                len = /** scale */ 4  + /** mag len */ 4  + /** mag bytes count */ readInt(4);
 
                 break;
 
@@ -409,11 +409,11 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.INT:
                 return BinaryPrimitives.readInt(arr, pos + 1);
 
-            case GridBinaryMarshaller.ZERO_INT:
-                return 0;
-
             case GridBinaryMarshaller.LONG:
                 return BinaryPrimitives.readLong(arr, pos + 1);
+
+            case GridBinaryMarshaller.ZERO_INT:
+                return 0;
 
             case GridBinaryMarshaller.ZERO_LONG:
                 return 0L;
@@ -546,13 +546,13 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.INT:
                 return readInt();
 
-            case GridBinaryMarshaller.ZERO_INT:
-                plainLazyValLen = 0;
+            case GridBinaryMarshaller.LONG:
+                plainLazyValLen = 8;
 
                 break;
 
-            case GridBinaryMarshaller.LONG:
-                plainLazyValLen = 8;
+            case GridBinaryMarshaller.ZERO_INT:
+                plainLazyValLen = 0;
 
                 break;
 
@@ -580,7 +580,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 return arr[pos++] != 0;
 
             case GridBinaryMarshaller.DECIMAL:
-                plainLazyValLen = /** scale */4 + /** mag len */4 + /** mag bytes count */readInt(4);
+                plainLazyValLen = /** scale */ 4  + /** mag len */ 4  + /** mag bytes count */ readInt(4);
 
                 break;
 
