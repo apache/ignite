@@ -494,11 +494,11 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     public PlatformTarget pluginTarget(String name) {
-        final IgnitePlatformPlugin plugin = platformCtx.kernalContext().grid().plugin("PlatformTestPlugin");
+        final IgnitePlatformPlugin plugin = platformCtx.kernalContext().grid().plugin(name);
 
         PlatformPluginTarget pluginTarget = plugin.platformTarget();
 
-        return new PlatformPluginTargetAdapter(platformCtx, pluginTarget);
+        return new PlatformPluginTargetAdapter(platformCtx, pluginTarget, name);
     }
 
     /**

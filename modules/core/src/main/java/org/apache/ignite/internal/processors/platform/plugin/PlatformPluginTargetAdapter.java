@@ -25,6 +25,9 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
+import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.PlatformPluginContext;
@@ -35,21 +38,27 @@ import org.jetbrains.annotations.Nullable;
  * Adapts user-defined IgnitePlatformPluginTarget to internal PlatformAbstractTarget.
  */
 public class PlatformPluginTargetAdapter extends PlatformAbstractTarget implements PlatformPluginContext {
-    /** */
+    /** User-defined target. */
     private final PlatformPluginTarget target;
+
+    /** Plugin name. */
+    private final String name;
 
     /**
      * Constructor.
      *
      * @param platformCtx Context.
      * @param target User-defined target.
+     * @param name Plugin name.
      */
-    public PlatformPluginTargetAdapter(PlatformContext platformCtx, PlatformPluginTarget target) {
+    public PlatformPluginTargetAdapter(PlatformContext platformCtx, PlatformPluginTarget target, String name) {
         super(platformCtx);
 
         assert target != null;
+        assert name != null;
 
         this.target = target;
+        this.name = name;
     }
 
     /** {@inheritDoc} */
@@ -59,19 +68,38 @@ public class PlatformPluginTargetAdapter extends PlatformAbstractTarget implemen
 
         PlatformPluginTarget res = target.invokeOperation(type, reader, writer, arg0, this);
 
-        return res == null ? null : new PlatformPluginTargetAdapter(platformCtx, res);
+        return res == null ? null : new PlatformPluginTargetAdapter(platformCtx, res, name);
     }
 
     /** {@inheritDoc} */
     @Override public Ignite ignite() {
-        return platformContext().kernalContext().grid();
+        return platformCtx.kernalContext().grid();
     }
 
     /** {@inheritDoc} */
     @Override public <T> T callback(IgniteInClosure<BinaryRawWriter> writeClosure,
         IgniteClosure<BinaryRawReader, T> readClosure) {
 
-        // TODO:
-        return null;
+        try (PlatformMemory mem = platformCtx.memory().allocate()) {
+            PlatformOutputStream out = mem.output();
+
+            BinaryRawWriterEx writer = platformCtx.writer(out);
+
+            writer.writeString(name);
+
+            if (writeClosure != null)
+                writeClosure.apply(writer);
+
+            out.synchronize();
+
+            platformCtx.gateway().extensionCallbackInLongLongOutLong(
+                PlatformUtils.OP_PLUGIN_CALLBACK, mem.pointer(), 0);
+
+            if (readClosure == null)
+                return null;
+
+            // TODO: Reader
+            return readClosure.apply(null);
+        }
     }
 }

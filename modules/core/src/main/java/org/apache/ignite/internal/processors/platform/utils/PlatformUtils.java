@@ -87,6 +87,9 @@ public class PlatformUtils {
     /** Operation: prepare .Net platform. */
     public static final int OP_PREPARE_DOT_NET = 1;
 
+    /** Operation: plugin callback. */
+    public static final int OP_PLUGIN_CALLBACK = 2;
+
     /** Amount of peek modes available. */
     private static final int CACHE_PEEK_MODES_CNT = CachePeekMode.values().length;
 
