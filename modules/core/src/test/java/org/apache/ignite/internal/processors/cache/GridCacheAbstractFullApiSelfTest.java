@@ -4049,7 +4049,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
-        grid(0).cache(null).withExpiryPolicy(expiry).put(key, 1);
+        cache.withExpiryPolicy(expiry).put(key, 1);
 
         boolean wait = waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
