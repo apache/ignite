@@ -55,8 +55,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * See {@link IgniteSystemProperties#IGNITE_BINARY_COMPACT_ZEROES}
      *  @deprecated This mode should be default mode in Apache Ignite 2.0 and option should be removed.
      * */
-    public static final boolean IGNITE_BINARY_COMPACT_ZEROES =
-        !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_BINARY_COMPACT_ZEROES);
+    private static final boolean IGNITE_BINARY_COMPACT_ZEROES =
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_BINARY_COMPACT_ZEROES);
 
     /** */
     private final BinaryContext ctx;
