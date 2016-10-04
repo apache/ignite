@@ -90,7 +90,7 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
         public void executeTest(GridTestLog4jLogger log) throws Exception {
             counter.incrementAndGet();
 
-            File workDir = U.resolveWorkDirectory("marshaller", false);
+            File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false);
 
             final MarshallerContextImpl.ContinuousQueryListener queryListener = new MarshallerContextImpl.ContinuousQueryListener(log, workDir);
 

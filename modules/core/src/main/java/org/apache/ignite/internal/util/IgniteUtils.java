@@ -305,9 +305,6 @@ public abstract class IgniteUtils {
     /** Project home directory. */
     private static volatile GridTuple<String> ggHome;
 
-    /** Project work directory. */
-    private static volatile String igniteWork;
-
     /** OS JDK string. */
     private static String osJdkStr;
 
@@ -8826,54 +8823,56 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Get default work directory.
+     *
+     * @return Default work directory.
+     */
+    public static String defaultWorkDirectory() throws IgniteCheckedException {
+        return workDirectory(null, null);
+    }
+
+    /**
+     * Get work directory for the given user-provided work directory and Ignite home.
+     *
      * @param userWorkDir Ignite work folder provided by user.
      * @param userIgniteHome Ignite home folder provided by user.
      */
-    public static void setWorkDirectory(@Nullable String userWorkDir, @Nullable String userIgniteHome)
+    public static String workDirectory(@Nullable String userWorkDir, @Nullable String userIgniteHome)
         throws IgniteCheckedException {
-        String igniteWork0 = igniteWork;
+        if (userIgniteHome == null)
+            userIgniteHome = getIgniteHome();
 
-        if (igniteWork0 == null) {
-            synchronized (IgniteUtils.class) {
-                // Double check.
-                igniteWork0 = igniteWork;
+        File workDir;
 
-                if (igniteWork0 != null)
-                    return;
+        if (!F.isEmpty(userWorkDir))
+            workDir = new File(userWorkDir);
+        else if (!F.isEmpty(IGNITE_WORK_DIR))
+            workDir = new File(IGNITE_WORK_DIR);
+        else if (!F.isEmpty(userIgniteHome))
+            workDir = new File(userIgniteHome, "work");
+        else {
+            String tmpDirPath = System.getProperty("java.io.tmpdir");
 
-                File workDir;
+            if (tmpDirPath == null)
+                throw new IgniteCheckedException("Failed to create work directory in OS temp " +
+                    "(property 'java.io.tmpdir' is null).");
 
-                if (!F.isEmpty(userWorkDir))
-                    workDir = new File(userWorkDir);
-                else if (!F.isEmpty(IGNITE_WORK_DIR))
-                    workDir = new File(IGNITE_WORK_DIR);
-                else if (!F.isEmpty(userIgniteHome))
-                    workDir = new File(userIgniteHome, "work");
-                else {
-                    String tmpDirPath = System.getProperty("java.io.tmpdir");
-
-                    if (tmpDirPath == null)
-                        throw new IgniteCheckedException("Failed to create work directory in OS temp " +
-                            "(property 'java.io.tmpdir' is null).");
-
-                    workDir = new File(tmpDirPath, "ignite" + File.separator + "work");
-                }
-
-                if (!workDir.isAbsolute())
-                    throw new IgniteCheckedException("Work directory path must be absolute: " + workDir);
-
-                if (!mkdirs(workDir))
-                    throw new IgniteCheckedException("Work directory does not exist and cannot be created: " + workDir);
-
-                if (!workDir.canRead())
-                    throw new IgniteCheckedException("Cannot read from work directory: " + workDir);
-
-                if (!workDir.canWrite())
-                    throw new IgniteCheckedException("Cannot write to work directory: " + workDir);
-
-                igniteWork = workDir.getAbsolutePath();
-            }
+            workDir = new File(tmpDirPath, "ignite" + File.separator + "work");
         }
+
+        if (!workDir.isAbsolute())
+            throw new IgniteCheckedException("Work directory path must be absolute: " + workDir);
+
+        if (!mkdirs(workDir))
+            throw new IgniteCheckedException("Work directory does not exist and cannot be created: " + workDir);
+
+        if (!workDir.canRead())
+            throw new IgniteCheckedException("Cannot read from work directory: " + workDir);
+
+        if (!workDir.canWrite())
+            throw new IgniteCheckedException("Cannot write to work directory: " + workDir);
+
+        return workDir.getAbsolutePath();
     }
 
     /**
@@ -8884,30 +8883,23 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Nullifies work directory. For test purposes only.
-     */
-    public static void nullifyWorkDirectory() {
-        igniteWork = null;
-    }
-
-    /**
      * Resolves work directory.
      *
+     * @param workDir Work directory.
      * @param path Path to resolve.
      * @param delIfExist Flag indicating whether to delete the specify directory or not.
      * @return Resolved work directory.
      * @throws IgniteCheckedException If failed.
      */
-    public static File resolveWorkDirectory(String path, boolean delIfExist) throws IgniteCheckedException {
+    public static File resolveWorkDirectory(String workDir, String path, boolean delIfExist)
+        throws IgniteCheckedException {
         File dir = new File(path);
 
         if (!dir.isAbsolute()) {
-            String ggWork0 = igniteWork;
-
-            if (F.isEmpty(ggWork0))
+            if (F.isEmpty(workDir))
                 throw new IgniteCheckedException("Failed to resolve path (work directory has not been set): " + path);
 
-            dir = new File(ggWork0, dir.getPath());
+            dir = new File(workDir, dir.getPath());
         }
 
         if (delIfExist && dir.exists()) {

@@ -1823,7 +1823,10 @@ public class IgnitionEx {
                 // If user provided IGNITE_HOME - set it as a system property.
                 U.setIgniteHome(ggHome);
 
-            U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
+            // Correctly resolve work directory and set it back to configuration.
+            String workDir = U.workDirectory(cfg.getWorkDirectory(), ggHome);
+
+            myCfg.setWorkDirectory(workDir);
 
             // Ensure invariant.
             // It's a bit dirty - but this is a result of late refactoring
@@ -1834,7 +1837,7 @@ public class IgnitionEx {
 
             myCfg.setNodeId(nodeId);
 
-            IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), nodeId);
+            IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), nodeId, workDir);
 
             assert cfgLog != null;
 
@@ -2095,11 +2098,13 @@ public class IgnitionEx {
         /**
          * @param cfgLog Configured logger.
          * @param nodeId Local node ID.
+         * @param workDir Work directory.
          * @return Initialized logger.
          * @throws IgniteCheckedException If failed.
          */
         @SuppressWarnings("ErrorNotRethrown")
-        private IgniteLogger initLogger(@Nullable IgniteLogger cfgLog, UUID nodeId) throws IgniteCheckedException {
+        private IgniteLogger initLogger(@Nullable IgniteLogger cfgLog, UUID nodeId, String workDir)
+            throws IgniteCheckedException {
             try {
                 Exception log4jInitErr = null;
 
@@ -2156,6 +2161,10 @@ public class IgnitionEx {
                     if (log4jCls == null || log4jInitErr != null)
                         cfgLog = new JavaLogger();
                 }
+
+                // Special handling for Java logger which requires work directory.
+                if (cfgLog instanceof JavaLogger)
+                    ((JavaLogger)cfgLog).setWorkDirectory(workDir);
 
                 // Set node IDs for all file appenders.
                 if (cfgLog instanceof LoggerNodeIdAware)
