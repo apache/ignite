@@ -54,7 +54,7 @@ public class HadoopBasicFileSystemFactoryDelegate implements HadoopFileSystemFac
     private UserNameMapper usrNameMapper;
 
     /** Work directory. */
-    protected String workDir;
+    protected Path workDir;
 
     /**
      * Constructor.
@@ -115,7 +115,10 @@ public class HadoopBasicFileSystemFactoryDelegate implements HadoopFileSystemFac
      */
     protected FileSystem create(String usrName) throws IOException, InterruptedException {
         FileSystem fs = FileSystem.get(fullUri, cfg, usrName);
-        fs.setWorkingDirectory(new Path(workDir));
+
+        if (workDir != null)
+            fs.setWorkingDirectory(workDir);
+
         return fs;
     }
 
@@ -156,7 +159,10 @@ public class HadoopBasicFileSystemFactoryDelegate implements HadoopFileSystemFac
             }
         }
 
-        workDir = fullUri.getPath();
+        String strWorkDir = fullUri.getPath();
+
+        if (!"/".equals(strWorkDir))
+            workDir = new Path(strWorkDir);
 
         usrNameMapper = proxy0.getUserNameMapper();
 
