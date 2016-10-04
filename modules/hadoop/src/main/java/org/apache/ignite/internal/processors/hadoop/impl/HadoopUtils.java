@@ -287,25 +287,28 @@ public class HadoopUtils {
     /**
      * Returns work directory for job execution.
      *
+     * @param workDir Work directory.
      * @param locNodeId Local node ID.
      * @param jobId Job ID.
      * @return Working directory for job.
      * @throws IgniteCheckedException If Failed.
      */
-    public static File jobLocalDir(UUID locNodeId, HadoopJobId jobId) throws IgniteCheckedException {
-        return new File(new File(U.resolveWorkDirectory("hadoop", false), "node-" + locNodeId), "job_" + jobId);
+    public static File jobLocalDir(String workDir, UUID locNodeId, HadoopJobId jobId) throws IgniteCheckedException {
+        return new File(new File(U.resolveWorkDirectory(workDir, "hadoop", false),
+            "node-" + locNodeId), "job_" + jobId);
     }
 
     /**
      * Returns subdirectory of job working directory for task execution.
      *
+     * @param workDir Work directory.
      * @param locNodeId Local node ID.
      * @param info Task info.
      * @return Working directory for task.
      * @throws IgniteCheckedException If Failed.
      */
-    public static File taskLocalDir(UUID locNodeId, HadoopTaskInfo info) throws IgniteCheckedException {
-        File jobLocDir = jobLocalDir(locNodeId, info.jobId());
+    public static File taskLocalDir(String workDir, UUID locNodeId, HadoopTaskInfo info) throws IgniteCheckedException {
+        File jobLocDir = jobLocalDir(workDir, locNodeId, info.jobId());
 
         return new File(jobLocDir, info.type() + "_" + info.taskNumber() + "_" + info.attempt());
     }
