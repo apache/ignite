@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Plugin
     /// <summary>
     /// Unmanaged plugin target.
     /// </summary>
-    public interface IPluginTarget
+    public interface IPluginTarget : IDisposable
     {
         /// <summary>
         /// Invokes a cache extension.
