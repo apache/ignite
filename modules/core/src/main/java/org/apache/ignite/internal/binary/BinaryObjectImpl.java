@@ -211,10 +211,8 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         this.detachAllowed = detachAllowed;
     }
 
-    /**
-     * @return Context.
-     */
-    public BinaryContext context() {
+    /** {@inheritDoc} */
+    @Override public BinaryContext context() {
         return ctx;
     }
 

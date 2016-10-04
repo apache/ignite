@@ -23,9 +23,11 @@ import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryKeyHashingMode;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryObjectHashCodeResolver;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
@@ -105,6 +107,13 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
      */
     protected abstract BinarySchema createSchema();
 
+    /**
+     * Get binary context.
+     *
+     * @return Binary context.
+     */
+    protected abstract BinaryContext context();
+
     /** {@inheritDoc} */
     @Override public BinaryObjectBuilder toBuilder() throws BinaryObjectException {
         return BinaryObjectBuilderImpl.wrap(this);
@@ -127,6 +136,16 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
             return false;
 
         BinaryObjectExImpl otherPo = (BinaryObjectExImpl)other;
+
+        BinaryKeyHashingMode hashingMode = context().keyHashingMode(typeId());
+
+        if (hashingMode == BinaryKeyHashingMode.FIELDS_HASH || hashingMode == BinaryKeyHashingMode.CUSTOM) {
+            BinaryObjectHashCodeResolver rslvr = context().hashCodeResolver(typeId());
+
+            assert rslvr != null;
+
+            return rslvr.equals(this, otherPo);
+        }
 
         if (length() != otherPo.length() || typeId() != otherPo.typeId())
             return false;

@@ -125,6 +125,11 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
+    @Override protected BinaryContext context() {
+        return ctx;
+    }
+
+    /** {@inheritDoc} */
     @Override public int start() {
         return start;
     }

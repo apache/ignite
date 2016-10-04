@@ -20,11 +20,13 @@ package org.apache.ignite.internal.processors.cache.binary;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -36,28 +38,36 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryKeyHashingMode;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryObjectHashCodeResolver;
 import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryObjectExImpl;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -103,13 +113,72 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
         cfg.setDiscoverySpi(disco);
 
+        CacheConfiguration cacheCfg = createCacheConfig();
+
+        cacheCfg.setCacheStoreFactory(singletonFactory(new TestStore()));
+
+        CacheConfiguration binKeysCacheCfg = createCacheConfig();
+
+        binKeysCacheCfg.setCacheStoreFactory(singletonFactory(new MapCacheStoreStrategy.MapCacheStore()));
+        binKeysCacheCfg.setStoreKeepBinary(true);
+        binKeysCacheCfg.setName("BinKeysCache");
+
+        cfg.setCacheConfiguration(cacheCfg, binKeysCacheCfg);
+        cfg.setMarshaller(new BinaryMarshaller());
+
+        List<BinaryTypeConfiguration> binTypes = new ArrayList<>();
+
+        binTypes.add(new BinaryTypeConfiguration() {{
+            setTypeName("BytesHashedKey");
+        }});
+
+        binTypes.add(new BinaryTypeConfiguration() {{
+            setTypeName("FieldsHashedKey");
+        }});
+
+        binTypes.add(new BinaryTypeConfiguration() {{
+            setTypeName("CustomHashedKey");
+        }});
+
+        BinaryConfiguration binCfg = new BinaryConfiguration();
+        binCfg.setTypeConfigurations(binTypes);
+
+        cfg.setBinaryConfiguration(binCfg);
+
+        CacheKeyConfiguration arrHashConfiguration = new CacheKeyConfiguration("BytesHashedKey", "fld1") {{
+            setBinaryHashingMode(BinaryKeyHashingMode.BYTES_HASH);
+        }};
+
+        CacheKeyConfiguration fieldsHashConfiguration = new CacheKeyConfiguration("FieldsHashedKey", "fld1") {{
+            setBinaryHashingMode(BinaryKeyHashingMode.FIELDS_HASH);
+
+            setBinaryHashCodeFields(Arrays.asList("fld1", "fld3"));
+        }};
+
+        CacheKeyConfiguration customHashConfiguration = new CacheKeyConfiguration("CustomHashedKey", "fld1") {{
+            setBinaryHashingMode(BinaryKeyHashingMode.CUSTOM);
+
+            setBinHashCodeResolverClassName(HashCodeResolver.class.getName());
+        }};
+
+        cfg.setCacheKeyConfiguration(arrHashConfiguration, fieldsHashConfiguration, customHashConfiguration);
+
+        GridCacheBinaryObjectsAbstractSelfTest.cfg = cfg;
+
+        return cfg;
+    }
+
+    /**
+     * @return Cache configuration with basic settings.
+     */
+    @SuppressWarnings("unchecked")
+    private CacheConfiguration createCacheConfig() {
         CacheConfiguration cacheCfg = new CacheConfiguration();
 
         cacheCfg.setCacheMode(cacheMode());
         cacheCfg.setAtomicityMode(atomicityMode());
         cacheCfg.setNearConfiguration(nearConfiguration());
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setCacheStoreFactory(singletonFactory(new TestStore()));
         cacheCfg.setReadThrough(true);
         cacheCfg.setWriteThrough(true);
         cacheCfg.setLoadPreviousValue(true);
@@ -120,13 +189,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             cacheCfg.setOffHeapMaxMemory(0);
         }
 
-        cfg.setCacheConfiguration(cacheCfg);
-
-        cfg.setMarshaller(new BinaryMarshaller());
-
-        this.cfg = cfg;
-
-        return cfg;
+        return cacheCfg;
     }
 
     /**
@@ -918,6 +981,101 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     }
 
     /**
+     *
+     */
+    @SuppressWarnings("unchecked")
+    public void testPutWithArrayHashing() {
+        IgniteCache c = binKeysCache();
+
+        {
+            BinaryObjectBuilder bldr = grid(0).binary().builder("BytesHashedKey");
+
+            bldr.setField("fld1", 5);
+            bldr.setField("fld2", "abc");
+
+            BinaryObject binKey = bldr.build();
+
+            c.put(binKey, "zzz");
+        }
+
+        // Now let's build an identical key for get
+        {
+            BinaryObjectBuilder bldr = grid(0).binary().builder("BytesHashedKey");
+
+            bldr.setField("fld1", 5);
+            bldr.setField("fld2", "abc");
+
+            BinaryObject binKey = bldr.build();
+
+            assertEquals("zzz", c.get(binKey));
+        }
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("unchecked")
+    public void testPutWithFieldsHashing() {
+        IgniteCache c = binKeysCache();
+
+        {
+            BinaryObjectBuilder bldr = grid(0).binary().builder("FieldsHashedKey");
+
+            bldr.setField("fld1", 5);
+            bldr.setField("fld2", 1);
+            bldr.setField("fld3", "abc");
+
+            BinaryObject binKey = bldr.build();
+
+            c.put(binKey, "zzz");
+        }
+
+        // Now let's build an identical key for get
+        {
+            BinaryObjectBuilder bldr = grid(0).binary().builder("FieldsHashedKey");
+
+            bldr.setField("fld1", 5);
+            bldr.setField("fld2", 100); // This one does not participate in hashing
+            bldr.setField("fld3", "abc");
+
+            BinaryObject binKey = bldr.build();
+
+            c.put(binKey, "zzz");
+        }
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("unchecked")
+    public void testPutWithCustomHashing() {
+        IgniteCache c = binKeysCache();
+
+        {
+            BinaryObjectBuilder bldr = grid(0).binary().builder("CustomHashedKey");
+
+            bldr.setField("fld1", 5);
+            bldr.setField("fld2", "abc");
+
+            BinaryObject binKey = bldr.build();
+
+            c.put(binKey, "zzz");
+        }
+
+        // Now let's build an identical key for get
+        {
+            BinaryObjectBuilder bldr = grid(0).binary().builder("CustomHashedKey");
+
+            bldr.setField("fld1", 5);
+            bldr.setField("fld2", "xxx");
+
+            BinaryObject binKey = bldr.build();
+
+            assertEquals("zzz", c.get(binKey));
+        }
+    }
+
+    /**
      * @throws Exception if failed.
      */
     public void testKeepBinaryTxOverwrite() throws Exception {
@@ -1025,6 +1183,13 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      */
     private <K, V> IgniteCache<K, V> keepBinaryCache() {
         return ignite(0).cache(null).withKeepBinary();
+    }
+
+    /**
+     * @return Cache tuned to utilize classless binary objects as keys.
+     */
+    private <K, V> IgniteCache<K, V> binKeysCache() {
+        return ignite(0).cache("BinKeysCache").withKeepBinary();
     }
 
     /**
@@ -1213,6 +1378,22 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         /** {@inheritDoc} */
         @Override public void delete(Object key) {
             // No-op.
+        }
+    }
+
+    /**
+     *
+     */
+    private final static class HashCodeResolver implements BinaryObjectHashCodeResolver {
+        /** {@inheritDoc} */
+        @Override public int hash(BinaryObjectBuilder builder) {
+            return (Integer) builder.getField("fld1") * 31 / 5;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(BinaryObjectExImpl o1, BinaryObjectExImpl o2) {
+            return o1 == o2 || (o1 != null && o2 != null && F.eq(o1.field("fld1"), o2.field("fld1")));
+
         }
     }
 }
