@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFailoverTxReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFailoverTxSelfTest;
 import org.apache.ignite.loadtests.continuous.CacheContinuousQueryFailoverAtomicPrimaryWriteOrderLoadTest;
+import org.apache.ignite.loadtests.continuous.CacheContinuousQueryFailoverTxPrimaryWriteOrderLoadTest;
 
 /**
  * Test suite for cache queries.
@@ -54,6 +55,7 @@ public class IgniteCacheQuerySelfTestSuite4 extends TestSuite {
 
         // Continuous queries failover load tests. (Long run)
         suite.addTestSuite(CacheContinuousQueryFailoverAtomicPrimaryWriteOrderLoadTest.class);
+        suite.addTestSuite(CacheContinuousQueryFailoverTxPrimaryWriteOrderLoadTest.class);
 
         return suite;
     }
