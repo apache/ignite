@@ -133,8 +133,17 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
         /** */
         private static final int OP_INVOKE_CALLBACK = 3;
 
+        /** */
+        private static final int OP_GET_NAME = 4;
+
+        /** */
+        private static final int OP_GET_CHILD = 5;
+
+        /** */
+        private String name = "root";
+
         /** {@inheritDoc} */
-        @Override public Object invokeOperation(int opCode,
+        @Override public IgnitePlatformPluginTarget invokeOperation(int opCode,
             BinaryRawReader reader, BinaryRawWriter writer, Object arg) {
             switch (opCode) {
                 case OP_READ_WRITE: {
@@ -157,6 +166,20 @@ public class PlatformTestPluginProvider implements PluginProvider<PluginConfigur
                     // Where there is a way to invoke callbacks (route by plugin name internally)
 
                     return null;
+                }
+
+                case OP_GET_NAME: {
+                    writer.writeString(name);
+
+                    return null;
+                }
+
+                case OP_GET_CHILD: {
+                    final PlatformTestPluginTarget child = new PlatformTestPluginTarget();
+
+                    child.name = reader.readString();
+
+                    return child;
                 }
             }
 

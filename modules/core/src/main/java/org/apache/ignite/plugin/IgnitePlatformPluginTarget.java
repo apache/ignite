@@ -35,6 +35,6 @@ public interface IgnitePlatformPluginTarget {
      *
      * @throws IgniteException In case of error.
      */
-    Object invokeOperation(int opCode, BinaryRawReader reader, BinaryRawWriter writer, Object arg)
+    IgnitePlatformPluginTarget invokeOperation(int opCode, BinaryRawReader reader, BinaryRawWriter writer, Object arg)
         throws IgniteException;
 }

@@ -117,6 +117,23 @@ namespace Apache.Ignite.Core.Tests.Plugin
         [Test]
         public void TestReturnObject()
         {
+            var plugin = _ignite.GetTestPlugin();
+
+            Assert.AreEqual("root", plugin.GetName());
+
+            var child = plugin.GetChild("child");
+
+            Assert.AreEqual("child", child.GetName());
+
+            Assert.AreNotSame(plugin.Target, child.Target);
+        }
+
+        /// <summary>
+        /// Tests passing object.
+        /// </summary>
+        [Test]
+        public void TestPassObject()
+        {
             // TODO
         }
     }

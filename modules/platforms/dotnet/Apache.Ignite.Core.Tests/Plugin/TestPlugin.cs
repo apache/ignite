@@ -37,6 +37,12 @@ namespace Apache.Ignite.Core.Tests.Plugin
         /** */
         private const int OpInvokeCallback = 3;
 
+        /** */
+        private const int OpGetName = 4;
+
+        /** */
+        private const int OpGetChild = 5;
+
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TestPlugin"/> class.
@@ -72,6 +78,22 @@ namespace Apache.Ignite.Core.Tests.Plugin
         public void InvokeCallback(string text)
         {
             _target.InvokeOperation<object>(OpInvokeCallback, w => w.WriteString(text), null, null);
+        }
+
+        /// <summary>
+        /// Gets the name.
+        /// </summary>
+        public string GetName()
+        {
+            return _target.InvokeOperation(OpGetName, null, (r, _) => r.ReadString(), null);
+        }
+
+        /// <summary>
+        /// Gets the child plugin.
+        /// </summary>
+        public TestPlugin GetChild(string name)
+        {
+            return _target.InvokeOperation(OpGetChild, w => w.WriteString(name), (_, t) => new TestPlugin(t), null);
         }
 
         /// <summary>
