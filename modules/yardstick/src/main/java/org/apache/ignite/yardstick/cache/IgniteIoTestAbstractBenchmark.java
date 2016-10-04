@@ -17,35 +17,32 @@
 
 package org.apache.ignite.yardstick.cache;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
 /**
  *
  */
-public class IgniteIoTestBenchmark extends IgniteAbstractBenchmark {
+public abstract class IgniteIoTestAbstractBenchmark extends IgniteAbstractBenchmark {
     /** */
-    private List<ClusterNode> targetNodes;
+    protected final List<ClusterNode> targetNodes = new ArrayList<>();
 
     /** */
-    private IgniteKernal ignite;
+    protected IgniteKernal ignite;
 
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
         ignite = (IgniteKernal)ignite();
-
-        targetNodes = new ArrayList<>();
 
         ClusterNode loc = ignite().cluster().localNode();
 
@@ -59,15 +56,6 @@ public class IgniteIoTestBenchmark extends IgniteAbstractBenchmark {
         if (targetNodes.isEmpty())
             throw new IgniteException("Failed to find remote server nodes [nodes=" + nodes + ']');
 
-        BenchmarkUtils.println(cfg, "Initialized target nodes: " + targetNodes + ']');
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        ClusterNode node = targetNodes.get(nextRandom(targetNodes.size()));
-
-        ignite.sendIoTest(node, null, false).get();
-
-        return true;
+        BenchmarkUtils.println(cfg, "Initialized target nodes: " + F.nodeIds(targetNodes) + ']');
     }
 }

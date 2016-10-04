@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -109,7 +110,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 if (cctx.isLocal()) {
                     assert cctx.cache() instanceof GridLocalCache : cctx.cache();
 
-                    locCacheDataStore = createCacheDataStore(0, (CacheDataStore.SizeTracker)cctx.cache());
+                    locCacheDataStore = createCacheDataStore(0);
                 }
             }
             finally {
@@ -638,9 +639,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     }
 
     /** {@inheritDoc} */
-    @Override public final CacheDataStore createCacheDataStore(int p,
-        CacheDataStore.SizeTracker lsnr) throws IgniteCheckedException {
-        CacheDataStore dataStore = createCacheDataStore0(p, lsnr);
+    @Override public final CacheDataStore createCacheDataStore(int p) throws IgniteCheckedException {
+        CacheDataStore dataStore = createCacheDataStore0(p);
 
         partDataStores.put(p, dataStore);
 
@@ -649,11 +649,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
     /**
      * @param p Partition.
-     * @param lsnr Listener.
      * @return Cache data store.
      * @throws IgniteCheckedException If failed.
      */
-    protected CacheDataStore createCacheDataStore0(int p, CacheDataStore.SizeTracker lsnr)
+    protected CacheDataStore createCacheDataStore0(int p)
         throws IgniteCheckedException {
         IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
 
@@ -673,7 +672,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             rootPage,
             true);
 
-        return new CacheDataStoreImpl(p, idxName, rowStore, dataTree, lsnr);
+        return new CacheDataStoreImpl(p, idxName, rowStore, dataTree);
     }
 
     /** {@inheritDoc} */
@@ -742,27 +741,30 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         /** */
         private final CacheDataTree dataTree;
 
-        /** */
-        private final SizeTracker lsnr;
+        /** Update counter. */
+        protected final AtomicLong cntr = new AtomicLong();
+
+        /** Partition size. */
+        protected final AtomicLong storageSize = new AtomicLong();
+
+        /** Initialized update counter. */
+        protected long initCntr;
 
         /**
          * @param name Name.
          * @param rowStore Row store.
          * @param dataTree Data tree.
-         * @param lsnr Listener.
          */
         public CacheDataStoreImpl(
             int partId,
             String name,
             CacheDataRowStore rowStore,
-            CacheDataTree dataTree,
-            SizeTracker lsnr
+            CacheDataTree dataTree
         ) {
             this.partId = partId;
             this.name = name;
             this.rowStore = rowStore;
             this.dataTree = dataTree;
-            this.lsnr = lsnr;
         }
 
         /** {@inheritDoc} */
@@ -772,12 +774,27 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
         /** {@inheritDoc} */
         @Override public int size() {
-            return lsnr.size();
+            return (int)storageSize.get();
         }
 
         /** {@inheritDoc} */
         @Override public long updateCounter() {
-            return lsnr.updateCounter();
+            return cntr.get();
+        }
+
+        /**
+         * @param val Update index value.
+         */
+        @Override public void updateCounter(long val) {
+            while (true) {
+                long val0 = cntr.get();
+
+                if (val0 >= val)
+                    break;
+
+                if (cntr.compareAndSet(val0, val))
+                    break;
+            }
         }
 
         /** {@inheritDoc} */
@@ -804,7 +821,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             DataRow old = dataTree.put(dataRow);
 
             if (old == null)
-                lsnr.onInsert();
+                storageSize.incrementAndGet();
 
             if (indexingEnabled) {
                 GridCacheQueryManager qryMgr = cctx.queries();
@@ -846,7 +863,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 if (pendingEntries != null && dataRow.expireTime() != 0)
                     pendingEntries.remove(new PendingRow(dataRow.expireTime(), dataRow.link()));
 
-                lsnr.onRemove();
+                storageSize.decrementAndGet();
 
                 val = dataRow.value();
 
@@ -884,6 +901,25 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         /** {@inheritDoc} */
         @Override public RowStore rowStore() {
             return rowStore;
+        }
+
+        /**
+         * @return Next update index.
+         */
+        @Override public long nextUpdateCounter() {
+            return cntr.incrementAndGet();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long initialUpdateCounter() {
+            return initCntr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void init(long size, long updCntr) {
+            initCntr = updCntr;
+            storageSize.set(size);
+            cntr.set(updCntr);
         }
     }
 

@@ -706,6 +706,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
     /**
      * @param noVal If {@code true} there is no cache value when read in tx.
+     * @param needVer If {@code true} then gets entry, otherwise just value.
      * @throws Exception If failed.
      */
     private void txConflictRead(boolean noVal, boolean needVer) throws Exception {
@@ -732,28 +733,21 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                         cache.put(key, expVal);
                     }
 
-                    try {
-                        try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
-                            if (needVer) {
-                                CacheEntry<Integer, Integer> val = cache.getEntry(key);
+                    try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
+                        if (needVer) {
+                            CacheEntry<Integer, Integer> val = cache.getEntry(key);
 
-                                assertEquals(expVal, val == null ? null : val.getValue());
-                            }
-                            else {
-                                Integer val = cache.get(key);
+                            assertEquals(expVal, val == null ? null : val.getValue());
+                        }
+                        else {
+                            Integer val = cache.get(key);
 
-                                assertEquals(expVal, val);
-                            }
-
-                            updateKey(cache, key, 1);
-
-                            tx.commit();
+                            assertEquals(expVal, val);
                         }
 
-                        fail();
-                    }
-                    catch (TransactionOptimisticException e) {
-                        log.info("Expected exception: " + e);
+                        updateKey(cache, key, 1);
+
+                        tx.commit();
                     }
 
                     checkValue(key, 1, cache.getName());
@@ -2622,21 +2616,14 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             cache0.put(key2, -1);
             cache0.put(key3, -1);
 
-            try {
-                try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
-                    cache.get(key1);
-                    cache.get(key2);
-                    cache.get(key3);
+            try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
+                cache.get(key1);
+                cache.get(key2);
+                cache.get(key3);
 
-                    updateKey(near ? cache : cache0, key2, -2);
+                updateKey(near ? cache : cache0, key2, -2);
 
-                    tx.commit();
-                }
-
-                fail();
-            }
-            catch (TransactionOptimisticException e) {
-                log.info("Expected exception: " + e);
+                tx.commit();
             }
 
             checkValue(key1, -1, cacheName);
@@ -2887,23 +2874,16 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 checkValue(key1, newVal, CACHE1);
                 checkValue(key2, newVal, CACHE2);
 
-                try {
-                    try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
-                        Object val1 = cache1.get(key1);
-                        Object val2 = cache2.get(key2);
+                try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
+                    Object val1 = cache1.get(key1);
+                    Object val2 = cache2.get(key2);
 
-                        assertEquals(newVal, val1);
-                        assertEquals(newVal, val2);
+                    assertEquals(newVal, val1);
+                    assertEquals(newVal, val2);
 
-                        updateKey(cache2, key2, newVal);
+                    updateKey(cache2, key2, newVal);
 
-                        tx.commit();
-                    }
-
-                    fail();
-                }
-                catch (TransactionOptimisticException e) {
-                    log.info("Expected exception: " + e);
+                    tx.commit();
                 }
 
                 try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {

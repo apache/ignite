@@ -72,8 +72,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 /**
  * Key partition.
  */
-public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>, GridReservable, GridCacheConcurrentMap,
-    CacheDataStore.SizeTracker {
+public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>, GridReservable, GridCacheConcurrentMap {
     /** Maximum size for delete queue. */
     public static final int MAX_DELETE_QUEUE_SIZE = Integer.getInteger(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE,
         200_000);
@@ -121,17 +120,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /** Group reservations. */
     private final CopyOnWriteArrayList<GridDhtPartitionsReservation> reservations = new CopyOnWriteArrayList<>();
 
-    /** Update counter. */
-    private final AtomicLong cntr = new AtomicLong();
-
-    /** Initialized update counter. */
-    private long initCntr;
-
     /** */
     private final CacheDataStore store;
-
-    /** Partition size. */
-    private final AtomicLong storageSize = new AtomicLong();
 
     /** Partition updates. */
     private ConcurrentNavigableMap<Long, Boolean> updates = new ConcurrentSkipListMap<>();
@@ -171,7 +161,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         rmvQueue = new GridCircularBuffer<>(U.ceilPow2(delQueueSize));
 
         try {
-            store = cctx.offheap().createCacheDataStore(id, this);
+            store = cctx.offheap().createCacheDataStore(id);
         }
         catch (IgniteCheckedException e) {
             // TODO ignite-db
@@ -184,17 +174,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      */
     public CacheDataStore dataStore() {
         return store;
-    }
-
-    /**
-     * @param size Partition size.
-     * @param partCntr Partition counter.
-     */
-    public void init(long size, long partCntr) {
-        storageSize.set(size);
-        cntr.set(partCntr);
-
-        initCntr = partCntr;
     }
 
     /**
@@ -311,22 +290,12 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return (int)storageSize.get();
+        return (int)store.size();
     }
 
     /** {@inheritDoc} */
     @Override public int publicSize() {
-        return (int)storageSize.get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onInsert() {
-        storageSize.incrementAndGet();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onRemove() {
-        storageSize.decrementAndGet();
+        return (int)store.size();
     }
 
     /** {@inheritDoc} */
@@ -644,20 +613,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     }
 
     /**
-     *
-     */
-    private void clearPageStore() {
-        try {
-            if (cctx.shared().pageStore() != null)
-                cctx.shared().pageStore().onPartitionDestroyed(cctx.cacheId(), id);
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to gracefully clean resources for evicted partition " +
-                "[cache=" + cctx.name() + ", partId=" + id + ']');
-        }
-    }
-
-    /**
      * @return {@code true} If there is a group reservation.
      */
     boolean groupReserved() {
@@ -743,8 +698,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
         ((GridDhtPreloader)cctx.preloader()).onPartitionEvicted(this, updateSeq);
 
-        clearPageStore();
-
         clearDeferredDeletes();
     }
 
@@ -817,36 +770,28 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return Next update index.
      */
     public long nextUpdateCounter() {
-        return cntr.incrementAndGet();
+        return store.nextUpdateCounter();
     }
 
     /**
      * @return Current update index.
      */
     public long updateCounter() {
-        return cntr.get();
+        return store.updateCounter();
     }
 
     /**
      * @return Initial update counter.
      */
     public long initialUpdateCounter() {
-        return initCntr;
+        return store.initialUpdateCounter();
     }
 
     /**
      * @param val Update index value.
      */
     public void updateCounter(long val) {
-        while (true) {
-            long val0 = cntr.get();
-
-            if (val0 >= val)
-                break;
-
-            if (cntr.compareAndSet(val0, val))
-                break;
-        }
+        store.updateCounter(val);
     }
 
     /**
