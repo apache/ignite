@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Plugin
 {
+    using System;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Plugin;
     using NUnit.Framework;
@@ -126,6 +127,10 @@ namespace Apache.Ignite.Core.Tests.Plugin
             Assert.AreEqual("child", child.GetName());
 
             Assert.AreNotSame(plugin.Target, child.Target);
+
+            child.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => child.GetName());
         }
 
         /// <summary>

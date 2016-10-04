@@ -17,13 +17,14 @@
 
 namespace Apache.Ignite.Core.Tests.Plugin
 {
+    using System;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Plugin;
 
     /// <summary>
     /// Test Ignite plugin.
     /// </summary>
-    public class TestPlugin
+    public class TestPlugin : IDisposable
     {
         /** Target. */
         private readonly IPluginTarget _target;
@@ -102,6 +103,14 @@ namespace Apache.Ignite.Core.Tests.Plugin
         public IPluginTarget Target
         {
             get { return _target; }
+        }
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            _target.Dispose();
         }
     }
 
