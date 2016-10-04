@@ -142,8 +142,12 @@ namespace Apache.Ignite.Core.Tests.Plugin
     /// </summary>
     public static class IgniteTestPluginExtensions
     {
+        /** Plugin name. */
         private const string PluginName = "PlatformTestPlugin";
 
+        /// <summary>
+        /// Gets the test plugin.
+        /// </summary>
         public static TestPlugin GetTestPlugin(this IIgnite ignite)
         {
             var target = ignite.GetPluginTarget(PluginName);
