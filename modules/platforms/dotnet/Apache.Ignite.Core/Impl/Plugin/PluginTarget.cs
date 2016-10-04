@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
     /// <summary>
     /// Plugin target.
     /// </summary>
-    internal class PluginTarget : PlatformTarget, IPluginTarget
+    internal class PluginTarget : PlatformDisposableTarget, IPluginTarget
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="PluginTarget" /> class.
