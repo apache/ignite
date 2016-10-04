@@ -80,8 +80,8 @@ public class PlatformPluginTargetAdapter extends PlatformAbstractTarget implemen
     @Override public <T> T callback(IgniteInClosure<BinaryRawWriter> writeClosure,
         IgniteClosure<BinaryRawReader, T> readClosure) {
 
-        try (PlatformMemory mem = platformCtx.memory().allocate()) {
-            PlatformOutputStream out = mem.output();
+        try (PlatformMemory outMem = platformCtx.memory().allocate()) {
+            PlatformOutputStream out = outMem.output();
 
             BinaryRawWriterEx writer = platformCtx.writer(out);
 
@@ -92,14 +92,21 @@ public class PlatformPluginTargetAdapter extends PlatformAbstractTarget implemen
 
             out.synchronize();
 
+            PlatformMemory inMem = null;
+            long inMemPtr = 0;
+
+            if (readClosure != null) {
+                inMem = platformCtx.memory().allocate();
+                inMemPtr = inMem.pointer();
+            }
+
             platformCtx.gateway().extensionCallbackInLongLongOutLong(
-                PlatformUtils.OP_PLUGIN_CALLBACK, mem.pointer(), 0);
+                PlatformUtils.OP_PLUGIN_CALLBACK, outMem.pointer(), inMemPtr);
 
             if (readClosure == null)
                 return null;
 
-            // TODO: Reader
-            return readClosure.apply(null);
+            return readClosure.apply(platformCtx.reader(inMem.input()));
         }
     }
 }
