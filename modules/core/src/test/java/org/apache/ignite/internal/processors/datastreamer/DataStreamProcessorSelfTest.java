@@ -33,6 +33,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -942,6 +943,85 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                 assertNotNull(val);
                 assertEquals(i + 1, val.val);
             }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalDataStreamerDedicatedThreadPool() throws Exception {
+        try {
+            useCache = true;
+
+            Ignite ignite = startGrid(1);
+
+            try (IgniteDataStreamer<String, String> ldr = ignite.dataStreamer(null)) {
+                ldr.receiver(new StreamReceiver<String, String>() {
+                    @Override public void receive(IgniteCache<String, String> cache,
+                        Collection<Map.Entry<String, String>> entries) throws IgniteException {
+                        String threadName = Thread.currentThread().getName();
+
+                        cache.put("key",threadName);
+                    }
+                });
+
+                ldr.allowOverwrite(true);
+
+                ldr.addData("key", "value");
+
+                ldr.flush();
+            }
+
+            IgniteCache<String, String> cache = ignite.cache(null);
+
+            assertNotNull(cache.get("key"));
+
+            assertTrue(cache.get("key").startsWith("data-streamer"));
+
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRemoteDataStreamerDedicatedThreadPool() throws Exception {
+        try {
+            useCache = true;
+
+            Ignite ignite = startGrid(1);
+
+            useCache = false;
+
+            Ignite client = startGrid(0);
+
+            try (IgniteDataStreamer<String, String> ldr = client.dataStreamer(null)) {
+                ldr.receiver(new StreamReceiver<String, String>() {
+                    @Override public void receive(IgniteCache<String, String> cache,
+                        Collection<Map.Entry<String, String>> entries) throws IgniteException {
+                        String threadName = Thread.currentThread().getName();
+
+                        cache.put("key",threadName);
+                    }
+                });
+
+                ldr.allowOverwrite(true);
+
+                ldr.addData("key", "value");
+
+                ldr.flush();
+            }
+
+            IgniteCache<String, String> cache = ignite.cache(null);
+
+            assertNotNull(cache.get("key"));
+
+            assertTrue(cache.get("key").startsWith("data-streamer"));
         }
         finally {
             stopAllGrids();

@@ -1321,10 +1321,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             if (plc == null)
                 plc = PUBLIC_POOL;
 
-            if (isLocNode && plc == GridIoPolicy.DATA_STREAM_POOL) {
+            if (isLocNode && (plc == GridIoPolicy.DATA_STREAM_POOL || plc == GridIoPolicy.PUBLIC_POOL)) {
+                GridClosurePolicy closurePolicy = (plc == GridIoPolicy.DATA_STREAM_POOL) ?
+                    GridClosurePolicy.DATA_STREAMER_POOL : GridClosurePolicy.PUBLIC_POOL;
+
                 fut = ctx.closure().callLocalSafe(
                     new DataStreamerUpdateJob(ctx, log, cacheName, entries, false, skipStore, keepBinary, rcvr),
-                    GridClosurePolicy.DATA_STREAMER_POOL);
+                    closurePolicy);
 
                 locFuts.add(fut);
 
