@@ -150,7 +150,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
     /// Expected Ignite plugin entry point is IIgnite extension method,
     /// so users simply say ignite.GetTestPlugin().
     /// </summary>
-    public static class IgniteTestPluginExtensions
+    public static class TestPluginExtensions
     {
         /** Plugin name. */
         private const string PluginName = "PlatformTestPlugin";
