@@ -43,6 +43,8 @@ namespace Apache.Ignite.Core.Impl.Plugin
         public unsafe T InvokeOperation<T>(int opCode, Action<IBinaryRawWriter> writeAction, 
             Func<IBinaryRawReader, IPluginTarget, T> readFunc, IPluginTarget arg)
         {
+            ThrowIfDisposed();
+
             void* argPtr = null;
 
             var arg0 = arg as PluginTarget;
