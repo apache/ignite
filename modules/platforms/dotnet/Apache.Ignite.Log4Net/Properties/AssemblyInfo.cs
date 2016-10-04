@@ -19,8 +19,8 @@ using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-[assembly: AssemblyTitle("Apache.Ignite.NLog")]
-[assembly: AssemblyDescription("Apache Ignite.NET NLog integration.")]
+[assembly: AssemblyTitle("Apache.Ignite.Log4Net")]
+[assembly: AssemblyDescription("Apache Ignite.NET log4net integration.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Apache Software Foundation")]
 [assembly: AssemblyProduct("Apache Ignite.NET")]
@@ -31,10 +31,10 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("c6b58e4a-a2e9-4554-ad02-68ce6da5cfb7")]
+[assembly: Guid("6f82d669-382e-4435-8092-68c4440146d8")]
 
-[assembly: AssemblyVersion("1.8.0.13244")]
-[assembly: AssemblyFileVersion("1.8.0.13244")]
+[assembly: AssemblyVersion("1.8.0.14218")]
+[assembly: AssemblyFileVersion("1.8.0.14218")]
 [assembly: AssemblyInformationalVersion("1.8.0")]
 
 [assembly: CLSCompliant(true)]
