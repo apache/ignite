@@ -19,30 +19,23 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.util.typedef.CAX;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.hamcrest.CoreMatchers;
-import org.junit.Assert;
 
 import java.util.concurrent.TimeUnit;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
-import javax.cache.expiry.TouchedExpiryPolicy;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -57,7 +50,10 @@ public class GridCacheTtlManagerEvictionTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final int ENTRIES_COUNT = 10_100;
+    private static final int ENTRIES_TO_PUT = 10_100;
+
+    /** */
+    private static final int ENTRIES_LIMIT = 1_000;
 
     /**
      * Test cache mode.
@@ -86,7 +82,7 @@ public class GridCacheTtlManagerEvictionTest extends GridCommonAbstractTest {
         ccfg.setMemoryMode(cacheMemoryMode);
         ccfg.setEagerTtl(true);
         ccfg.setSwapEnabled(false);
-        ccfg.setEvictionPolicy(new FifoEvictionPolicy(1000, 100));
+        ccfg.setEvictionPolicy(new FifoEvictionPolicy(ENTRIES_LIMIT, 100));
         ccfg.setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.HOURS, 12)));
 
         cfg.setCacheConfiguration(ccfg);
@@ -126,41 +122,48 @@ public class GridCacheTtlManagerEvictionTest extends GridCommonAbstractTest {
         cacheMode = mode;
         cacheMemoryMode = memoryMode;
 
-        final IgniteKernal g = (IgniteKernal) startGrid(0);
+        final IgniteKernal g = (IgniteKernal)startGrid(0);
 
         try {
             final IgniteCache<Object, Object> cache = g.cache(null);
 
-            GridCacheContext<Object, Object> cctx = g.cachex().context();
+            GridCacheContext<Object, Object> cctx = g.cachex(null).context();
 
-            for (int i = 1; i <= ENTRIES_COUNT; i++) {
+            for (int i = 1; i <= ENTRIES_TO_PUT; i++) {
                 String key = "Some test entry key#" + i;
                 String value = "Some test entry value#" + i;
 
                 cache.put(key, value);
             }
 
-            Thread.sleep(100);
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return (cctx.isSwapOrOffheapEnabled()) ?
+                        ENTRIES_TO_PUT == cctx.ttl().pendingSize() :
+                        ENTRIES_LIMIT == cctx.ttl().pendingSize();
+                }
+            }, 3_000);
 
-//            cctx.ttl().printMemoryStats();
+            if (log.isTraceEnabled())
+                cctx.ttl().printMemoryStats();
 
             final String firstKey = "Some test entry key#0";
-            final String lastKey = "Some test entry key#" + ENTRIES_COUNT;
+            final String lastKey = "Some test entry key#" + ENTRIES_TO_PUT;
 
             if (cctx.isSwapOrOffheapEnabled()) {
                 assertTrue("last key should NOT be evicted", cache.containsKey(lastKey));
 
-                assertEquals(ENTRIES_COUNT, cctx.ttl().pendingSize());
-            } else {
+                assertEquals(ENTRIES_TO_PUT, cctx.ttl().pendingSize());
+            }
+            else {
                 assertFalse("first key should be evicted", cache.containsKey(firstKey));
 
                 assertTrue("last key should NOT be evicted", cache.containsKey(lastKey));
 
-                assertEquals("Ttl Manager should NOT track evicted entries", 1000, cctx.ttl().pendingSize());
+                assertEquals("Ttl Manager should NOT track evicted entries", ENTRIES_LIMIT, cctx.ttl().pendingSize());
             }
-
-//            cctx.ttl().printMemoryStats();
-        } finally {
+        }
+        finally {
             Ignition.stopAll(true);
         }
     }
