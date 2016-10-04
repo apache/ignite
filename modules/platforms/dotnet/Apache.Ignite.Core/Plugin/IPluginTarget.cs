@@ -22,7 +22,8 @@ namespace Apache.Ignite.Core.Plugin
 
     /// <summary>
     /// Plugin target which holds unmanaged reference to a Java <c>IgnitePlatformPluginTarget</c> object,
-    /// can call <c>InvokeOperation</c> method and listens to callbacks invoked via TODO.
+    /// can call <c>InvokeOperation</c> method and listens to callbacks
+    /// invoked via <c>PlatformPluginContext.callback()</c>.
     /// </summary>
     public interface IPluginTarget : IDisposable
     {
