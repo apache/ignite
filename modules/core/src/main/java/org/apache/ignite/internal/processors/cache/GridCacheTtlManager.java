@@ -400,9 +400,6 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     private static class PendingEntrySmartPointerFactory
         implements GridOffHeapSmartPointerFactory<EntryGridOffHeapSmartPointer> {
 
-        private final ConcurrentHashMap8<Long, FutureTask<PendingEntry>> futureMap =
-            new ConcurrentHashMap8<Long, FutureTask<PendingEntry>>();
-
         /** */
         private final GridUnsafeMemory mem;
 
