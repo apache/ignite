@@ -248,7 +248,6 @@ namespace ignite
             JniMethod M_PLATFORM_CACHE_WITH_NO_RETRIES = JniMethod("withNoRetries", "()Lorg/apache/ignite/internal/processors/platform/cache/PlatformCache;", false);
             JniMethod M_PLATFORM_CACHE_WITH_EXPIRY_PLC = JniMethod("withExpiryPolicy", "(JJJ)Lorg/apache/ignite/internal/processors/platform/cache/PlatformCache;", false);
             JniMethod M_PLATFORM_CACHE_WITH_KEEP_PORTABLE = JniMethod("withKeepBinary", "()Lorg/apache/ignite/internal/processors/platform/cache/PlatformCache;", false);
-            JniMethod M_PLATFORM_CACHE_REMOVE_ALL = JniMethod("removeAll", "()V", false);
             JniMethod M_PLATFORM_CACHE_ITERATOR = JniMethod("iterator", "()Lorg/apache/ignite/internal/processors/platform/cache/PlatformCacheIterator;", false);
             JniMethod M_PLATFORM_CACHE_LOCAL_ITERATOR = JniMethod("localIterator", "(I)Lorg/apache/ignite/internal/processors/platform/cache/PlatformCacheIterator;", false);
             JniMethod M_PLATFORM_CACHE_ENTER_LOCK = JniMethod("enterLock", "(J)V", false);
@@ -595,7 +594,6 @@ namespace ignite
                 m_PlatformCache_withNoRetries = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_WITH_NO_RETRIES);
                 m_PlatformCache_withExpiryPolicy = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_WITH_EXPIRY_PLC);
                 m_PlatformCache_withKeepPortable = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_WITH_KEEP_PORTABLE);
-                m_PlatformCache_removeAll = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_REMOVE_ALL);
                 m_PlatformCache_iterator = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_ITERATOR);
                 m_PlatformCache_localIterator = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_LOCAL_ITERATOR);
                 m_PlatformCache_enterLock = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_ENTER_LOCK);
@@ -1660,7 +1658,7 @@ namespace ignite
             void JniContext::CacheRemoveAll(jobject obj, JniErrorInfo* err) {
                 JNIEnv* env = Attach();
 
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformCache_removeAll);
+                TargetOutLong(obj, 43, err);
 
                 ExceptionCheck(env, err);
             }

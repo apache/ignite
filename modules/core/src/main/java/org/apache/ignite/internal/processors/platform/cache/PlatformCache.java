@@ -28,7 +28,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
@@ -48,18 +48,14 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
-import javax.cache.Cache;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.integration.CompletionListener;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
@@ -195,6 +191,21 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_WITH_ASYNC = 42;
 
+    /** */
+    public static final int OP_REMOVE_ALL2 = 43;
+
+    /** */
+    public static final int OP_WITH_KEEP_BINARY = 44;
+
+    /** */
+    public static final int OP_WITH_EXPIRY_POLICY = 45;
+
+    /** */
+    public static final int OP_WITH_NO_RETRIES = 46;
+
+    /** */
+    public static final int OP_WITH_SKIP_STORE = 47;
+
     /** Underlying JCache. */
     private final IgniteCacheProxy cache;
 
@@ -230,63 +241,16 @@ public class PlatformCache extends PlatformAbstractTarget {
         this.keepBinary = keepBinary;
     }
 
-    /**
-     * Gets cache with "skip-store" flag set.
-     *
-     * @return Cache with "skip-store" flag set.
-     */
-    public PlatformCache withSkipStore() {
-        if (cache.delegate().skipStore())
-            return this;
-
-        return new PlatformCache(platformCtx, cache.withSkipStore(), keepBinary);
-    }
-
-    /**
-     * Gets cache with "keep binary" flag.
-     *
-     * @return Cache with "keep binary" flag set.
-     */
-    public PlatformCache withKeepBinary() {
-        if (keepBinary)
-            return this;
-
-        return new PlatformCache(platformCtx, cache.withKeepBinary(), true);
-    }
-
-    /**
-     * Gets cache with provided expiry policy.
-     *
-     * @param create Create.
-     * @param update Update.
-     * @param access Access.
-     * @return Cache.
-     */
-    public PlatformCache withExpiryPolicy(final long create, final long update, final long access) {
-        IgniteCache cache0 = cache.withExpiryPolicy(new InteropExpiryPolicy(create, update, access));
-
-        return new PlatformCache(platformCtx, cache0, keepBinary);
-    }
-
-    /**
-     * Gets cache with no-retries mode enabled.
-     *
-     * @return Cache with no-retries mode enabled.
-     */
-    public PlatformCache withNoRetries() {
-        CacheOperationContext opCtx = cache.operationContext();
-
-        if (opCtx != null && opCtx.noRetries())
-            return this;
-
-        return new PlatformCache(platformCtx, cache.withNoRetries(), keepBinary);
-    }
-
     /** {@inheritDoc} */
     @Override protected long processOutLong(int type) throws IgniteCheckedException {
         switch (type) {
             case OP_CLEAR_CACHE:
                 cache.clear();
+
+                return TRUE;
+
+            case OP_REMOVE_ALL2:
+                cache.removeAll();
 
                 return TRUE;
         }
@@ -458,6 +422,39 @@ public class PlatformCache extends PlatformAbstractTarget {
                     return this;
 
                 return new PlatformCache(platformCtx, (IgniteCache)cache.withAsync(), keepBinary);
+            }
+
+            case OP_WITH_EXPIRY_POLICY: {
+                long create = reader.readLong();
+                long update = reader.readLong();
+                long access = reader.readLong();
+
+                IgniteCache cache0 = cache.withExpiryPolicy(new InteropExpiryPolicy(create, update, access));
+
+                return new PlatformCache(platformCtx, cache0, keepBinary);
+            }
+
+            case OP_WITH_KEEP_BINARY: {
+                if (keepBinary)
+                    return this;
+
+                return new PlatformCache(platformCtx, cache.withKeepBinary(), true);
+            }
+
+            case OP_WITH_NO_RETRIES: {
+                CacheOperationContext opCtx = cache.operationContext();
+
+                if (opCtx != null && opCtx.noRetries())
+                    return this;
+
+                return new PlatformCache(platformCtx, cache.withNoRetries(), keepBinary);
+            }
+
+            case OP_WITH_SKIP_STORE: {
+                if (cache.delegate().skipStore())
+                    return this;
+
+                return new PlatformCache(platformCtx, cache.withSkipStore(), keepBinary);
             }
 
             default:
@@ -747,107 +744,6 @@ public class PlatformCache extends PlatformAbstractTarget {
             return WRITER_INVOKE_ALL;
 
         return null;
-    }
-
-    /**
-     * Removes all entries.
-     *
-     * @throws org.apache.ignite.IgniteCheckedException In case of error.
-     */
-    public void removeAll() throws IgniteCheckedException {
-        cache.removeAll();
-    }
-
-    /**
-     * Read cache size.
-     *
-     * @param peekModes Encoded peek modes.
-     * @param loc Local mode flag.
-     * @return Size.
-     */
-    public int size(int peekModes, boolean loc) {
-        CachePeekMode[] modes = PlatformUtils.decodeCachePeekModes(peekModes);
-
-        return loc ? cache.localSize(modes) :  cache.size(modes);
-    }
-
-    /**
-     * Create cache iterator.
-     *
-     * @return Cache iterator.
-     */
-    public PlatformCacheIterator iterator() {
-        Iterator<Cache.Entry> iter = cache.iterator();
-
-        return new PlatformCacheIterator(platformCtx, iter);
-    }
-
-    /**
-     * Create cache iterator over local entries.
-     *
-     * @param peekModes Peke modes.
-     * @return Cache iterator.
-     */
-    public PlatformCacheIterator localIterator(int peekModes) {
-        CachePeekMode[] peekModes0 = PlatformUtils.decodeCachePeekModes(peekModes);
-
-        Iterator<Cache.Entry> iter = cache.localEntries(peekModes0).iterator();
-
-        return new PlatformCacheIterator(platformCtx, iter);
-    }
-
-    /**
-     * Enters a lock.
-     *
-     * @param id Lock id.
-     */
-    public void enterLock(long id) throws InterruptedException {
-        lock(id).lockInterruptibly();
-    }
-
-    /**
-     * Exits a lock.
-     *
-     * @param id Lock id.
-     */
-    public void exitLock(long id) {
-        lock(id).unlock();
-    }
-
-    /**
-     * Attempts to enter a lock.
-     *
-     * @param id Lock id.
-     * @param timeout Timeout, in milliseconds. -1 for infinite timeout.
-     */
-    public boolean tryEnterLock(long id, long timeout) throws InterruptedException {
-        return timeout == -1
-            ? lock(id).tryLock()
-            : lock(id).tryLock(timeout, TimeUnit.MILLISECONDS);
-    }
-
-    /**
-     * Rebalances the cache.
-     *
-     * @param futId Future id.
-     */
-    public void rebalance(long futId) {
-        PlatformFutureUtils.listen(platformCtx, cache.rebalance().chain(new C1<IgniteFuture, Object>() {
-            @Override public Object apply(IgniteFuture fut) {
-                return null;
-            }
-        }), futId, PlatformFutureUtils.TYP_OBJ, this);
-    }
-
-    /**
-     * Unregister lock.
-     *
-     * @param id Lock id.
-     */
-    public void closeLock(long id){
-        Lock lock = lockMap.remove(id);
-
-        assert lock != null : "Failed to unregister lock: " + id;
     }
 
     /**
