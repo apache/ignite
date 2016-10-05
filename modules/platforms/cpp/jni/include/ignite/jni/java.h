@@ -544,23 +544,8 @@ namespace ignite
                 
                 int AffinityPartitions(jobject obj);
 
-                jobject CacheWithSkipStore(jobject obj);
-                jobject CacheWithNoRetries(jobject obj);
-                jobject CacheWithExpiryPolicy(jobject obj, long long create, long long update, long long access);
-                jobject CacheWithAsync(jobject obj);
-                jobject CacheWithKeepPortable(jobject obj);
-                void CacheClear(jobject obj, JniErrorInfo* errInfo = NULL);
-                void CacheRemoveAll(jobject obj, JniErrorInfo* errInfo = NULL);
                 jobject CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr);
-                jobject CacheIterator(jobject obj);
-                jobject CacheLocalIterator(jobject obj, int peekModes);
-                void CacheEnterLock(jobject obj, long long id);
-                void CacheExitLock(jobject obj, long long id);
-                bool CacheTryEnterLock(jobject obj, long long id, long long timeout);
-                void CacheCloseLock(jobject obj, long long id);
-                void CacheRebalance(jobject obj, long long futId);
-                int CacheSize(jobject obj, int peekModes, bool loc, JniErrorInfo* errInfo = NULL);
 
                 void CacheStoreCallbackInvoke(jobject obj, long long memPtr);
 

@@ -1567,22 +1567,6 @@ namespace ignite
                 return parts;
             }
 
-            void JniContext::CacheClear(jobject obj, JniErrorInfo* err) {
-                JNIEnv* env = Attach();
-
-                TargetOutLong(obj, 41, err);
-
-                ExceptionCheck(env, err);
-            }
-
-            void JniContext::CacheRemoveAll(jobject obj, JniErrorInfo* err) {
-                JNIEnv* env = Attach();
-
-                TargetOutLong(obj, 43, err);
-
-                ExceptionCheck(env, err);
-            }
-
             jobject JniContext::CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* err) {
                 JNIEnv* env = Attach();
 
