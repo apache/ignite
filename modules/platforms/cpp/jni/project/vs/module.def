@@ -24,11 +24,6 @@ IgniteTargetInObjectStreamOutStream @21
 IgniteTargetListenFuture @22 
 IgniteTargetListenFutureForOperation @23 
 IgniteAffinityPartitions @24 
-IgniteCacheWithSkipStore @25 
-IgniteCacheWithNoRetries @26 
-IgniteCacheWithExpiryPolicy @27 
-IgniteCacheWithAsync @28 
-IgniteCacheWithKeepPortable @29 
 IgniteCacheRemoveAll @31 
 IgniteCacheOutOpQueryCursor @32 
 IgniteCacheOutOpContinuousQuery @33 

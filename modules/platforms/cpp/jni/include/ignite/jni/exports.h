@@ -69,10 +69,6 @@ extern "C" {
 
     int IGNITE_CALL IgniteAffinityPartitions(gcj::JniContext* ctx, void* obj);
 
-    void* IGNITE_CALL IgniteCacheWithSkipStore(gcj::JniContext* ctx, void* obj);
-    void* IGNITE_CALL IgniteCacheWithNoRetries(gcj::JniContext* ctx, void* obj);
-    void* IGNITE_CALL IgniteCacheWithExpiryPolicy(gcj::JniContext* ctx, void* obj, long long create, long long update, long long access);
-    void* IGNITE_CALL IgniteCacheWithKeepPortable(gcj::JniContext* ctx, void* obj);
     void IGNITE_CALL IgniteCacheRemoveAll(gcj::JniContext* ctx, void* obj);
     void* IGNITE_CALL IgniteCacheOutOpQueryCursor(gcj::JniContext* ctx, void* obj, int type, long long memPtr);
     void* IGNITE_CALL IgniteCacheOutOpContinuousQuery(gcj::JniContext* ctx, void* obj, int type, long long memPtr);

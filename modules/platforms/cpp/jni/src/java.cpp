@@ -244,10 +244,6 @@ namespace ignite
             JniMethod M_PLATFORM_COMPUTE_EXECUTE_NATIVE = JniMethod("executeNative", "(JJ)Lorg/apache/ignite/internal/processors/platform/utils/PlatformListenable;", false);
 
             const char* C_PLATFORM_CACHE = "org/apache/ignite/internal/processors/platform/cache/PlatformCache";
-            JniMethod M_PLATFORM_CACHE_WITH_SKIP_STORE = JniMethod("withSkipStore", "()Lorg/apache/ignite/internal/processors/platform/cache/PlatformCache;", false);
-            JniMethod M_PLATFORM_CACHE_WITH_NO_RETRIES = JniMethod("withNoRetries", "()Lorg/apache/ignite/internal/processors/platform/cache/PlatformCache;", false);
-            JniMethod M_PLATFORM_CACHE_WITH_EXPIRY_PLC = JniMethod("withExpiryPolicy", "(JJJ)Lorg/apache/ignite/internal/processors/platform/cache/PlatformCache;", false);
-            JniMethod M_PLATFORM_CACHE_WITH_KEEP_PORTABLE = JniMethod("withKeepBinary", "()Lorg/apache/ignite/internal/processors/platform/cache/PlatformCache;", false);
             JniMethod M_PLATFORM_CACHE_ITERATOR = JniMethod("iterator", "()Lorg/apache/ignite/internal/processors/platform/cache/PlatformCacheIterator;", false);
             JniMethod M_PLATFORM_CACHE_LOCAL_ITERATOR = JniMethod("localIterator", "(I)Lorg/apache/ignite/internal/processors/platform/cache/PlatformCacheIterator;", false);
             JniMethod M_PLATFORM_CACHE_ENTER_LOCK = JniMethod("enterLock", "(J)V", false);
@@ -590,10 +586,6 @@ namespace ignite
                 m_PlatformAffinity_partitions = FindMethod(env, c_PlatformAffinity, C_PLATFORM_AFFINITY_PARTITIONS);
 
                 c_PlatformCache = FindClass(env, C_PLATFORM_CACHE);
-                m_PlatformCache_withSkipStore = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_WITH_SKIP_STORE);
-                m_PlatformCache_withNoRetries = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_WITH_NO_RETRIES);
-                m_PlatformCache_withExpiryPolicy = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_WITH_EXPIRY_PLC);
-                m_PlatformCache_withKeepPortable = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_WITH_KEEP_PORTABLE);
                 m_PlatformCache_iterator = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_ITERATOR);
                 m_PlatformCache_localIterator = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_LOCAL_ITERATOR);
                 m_PlatformCache_enterLock = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_ENTER_LOCK);
@@ -1594,57 +1586,6 @@ namespace ignite
                 ExceptionCheck(env);
 
                 return parts;
-            }
-
-            jobject JniContext::CacheWithSkipStore(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jobject cache = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformCache_withSkipStore);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, cache);
-            }
-
-            jobject JniContext::CacheWithNoRetries(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jobject cache = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformCache_withNoRetries);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, cache);
-            }
-
-            jobject JniContext::CacheWithExpiryPolicy(jobject obj, long long create, long long update, long long access) {
-                JNIEnv* env = Attach();
-
-                jobject cache = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformCache_withExpiryPolicy,
-                    create, update, access);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, cache);
-            }
-
-            jobject JniContext::CacheWithAsync(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jobject cache = TargetInStreamOutObject(obj, 42, 0);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, cache);
-            }
-
-            jobject JniContext::CacheWithKeepPortable(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jobject cache = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformCache_withKeepPortable);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, cache);
             }
 
             void JniContext::CacheClear(jobject obj, JniErrorInfo* err) {

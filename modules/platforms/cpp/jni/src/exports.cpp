@@ -186,23 +186,6 @@ extern "C" {
         return ctx->AffinityPartitions(static_cast<jobject>(obj));
     }
 
-    void* IGNITE_CALL IgniteCacheWithSkipStore(gcj::JniContext* ctx, void* obj) {
-        return ctx->CacheWithSkipStore(static_cast<jobject>(obj));
-    }
-
-    void* IGNITE_CALL IgniteCacheWithNoRetries(gcj::JniContext* ctx, void* obj) {
-        return ctx->CacheWithNoRetries(static_cast<jobject>(obj));
-    }
-
-    void* IGNITE_CALL IgniteCacheWithExpiryPolicy(gcj::JniContext* ctx, void* obj, long long create, long long update, long long access) {
-        return ctx->CacheWithExpiryPolicy(static_cast<jobject>(obj), create, update, access);
-    }
-
-    void* IGNITE_CALL IgniteCacheWithKeepPortable(gcj::JniContext* ctx, void* obj)
-    {
-        return ctx->CacheWithKeepPortable(static_cast<jobject>(obj));
-    }
-
     void IGNITE_CALL IgniteCacheRemoveAll(gcj::JniContext* ctx, void* obj) {
         ctx->CacheRemoveAll(static_cast<jobject>(obj));
     }
