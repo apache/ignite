@@ -105,6 +105,11 @@ namespace Apache.Ignite.Core.Impl.Cache
             _flagNoRetries = cache._flagNoRetries;
         }
 
+        //private CacheImpl<TK, TV> WithAsync()
+        //{
+        //    var target = DoOutOpObject()
+        //}
+
         /** <inheritDoc /> */
         public IIgnite Ignite
         {

@@ -192,6 +192,9 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_CLEAR_CACHE = 41;
 
+    /** */
+    public static final int OP_WITH_ASYNC = 42;
+
     /** Underlying JCache. */
     private final IgniteCacheProxy cache;
 
@@ -263,18 +266,6 @@ public class PlatformCache extends PlatformAbstractTarget {
         IgniteCache cache0 = cache.withExpiryPolicy(new InteropExpiryPolicy(create, update, access));
 
         return new PlatformCache(platformCtx, cache0, keepBinary);
-    }
-
-    /**
-     * Gets cache with asynchronous mode enabled.
-     *
-     * @return Cache with asynchronous mode enabled.
-     */
-    public PlatformCache withAsync() {
-        if (cache.isAsync())
-            return this;
-
-        return new PlatformCache(platformCtx, (IgniteCache)cache.withAsync(), keepBinary);
     }
 
     /**
@@ -460,6 +451,13 @@ public class PlatformCache extends PlatformAbstractTarget {
                 qry.start(cache, loc, bufSize, timeInterval, autoUnsubscribe, initQry);
 
                 return qry;
+            }
+
+            case OP_WITH_ASYNC: {
+                if (cache.isAsync())
+                    return this;
+
+                return new PlatformCache(platformCtx, (IgniteCache)cache.withAsync(), keepBinary);
             }
 
             default:
