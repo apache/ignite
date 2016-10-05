@@ -62,8 +62,8 @@ public class MergeRecord<L> extends PageDeltaRecord {
         BPlusIO<L> io = PageIO.getBPlusIO(leftBuf);
 
         try (
-            Page prnt = pageMem.page(cacheId(), prntId);
-            Page right = pageMem.page(cacheId(), rightId)
+            Page prnt = pageMem.page(cacheId(), prntId, true);
+            Page right = pageMem.page(cacheId(), rightId, true)
         ) {
             ByteBuffer prntBuf = prnt.getForRead();
 

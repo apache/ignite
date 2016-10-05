@@ -34,6 +34,16 @@ public interface PageMemory extends LifecycleAware, PageIdAllocator {
     public Page page(int cacheId, long pageId) throws IgniteCheckedException;
 
     /**
+     * @see #page(int, long)
+     * Will not read page from file if it is not present in memory
+     *
+     * @param cacheId Cache id.
+     * @param pageId Page id.
+     * @param restore Skip reading from file.
+     */
+    public Page page(int cacheId, long pageId, boolean restore) throws IgniteCheckedException;
+
+    /**
      * @param page Page to release.
      */
     public void releasePage(Page page) throws IgniteCheckedException;

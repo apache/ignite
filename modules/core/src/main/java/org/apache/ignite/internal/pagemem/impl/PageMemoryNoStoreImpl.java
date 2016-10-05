@@ -268,6 +268,10 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         return seg.acquirePage(cacheId, pageId);
     }
 
+    @Override public Page page(int cacheId, long pageId, boolean restore) throws IgniteCheckedException {
+        throw new UnsupportedOperationException();
+    }
+
     /** {@inheritDoc} */
     @Override public void releasePage(Page p) {
         PageNoStoreImpl page = (PageNoStoreImpl)p;

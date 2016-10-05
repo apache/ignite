@@ -95,14 +95,14 @@ public class PageNoStoreImpl implements Page {
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public ByteBuffer getForWriteNoTagCheck() {
-        boolean locked = pageMem.writeLockPage(absPtr, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
-
-        assert locked;
-
-        return reset(buf);
-    }
+//    /** {@inheritDoc} */
+//    @Override public ByteBuffer getForWriteNoTagCheck() {
+//        boolean locked = pageMem.writeLockPage(absPtr, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
+//
+//        assert locked;
+//
+//        return reset(buf);
+//    }
 
     /** {@inheritDoc} */
     @Override public ByteBuffer tryGetForWrite() {
