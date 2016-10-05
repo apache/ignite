@@ -24,6 +24,7 @@ import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SelectableChannel;
@@ -131,6 +132,8 @@ import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.IN_BUFF;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.REMINDER;
 
 /**
  * <tt>TcpCommunicationSpi</tt> is default communication SPI which uses
@@ -2207,7 +2210,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             }
 
             try {
-                safeHandshake(client, null, node.id(), timeoutHelper.nextTimeoutChunk(connTimeout0), null);
+                safeHandshake(client, null, node.id(), timeoutHelper.nextTimeoutChunk(connTimeout0), null, null);
             }
             catch (HandshakeTimeoutException | IgniteSpiOperationTimeoutException e) {
                 client.forceClose();
@@ -2376,6 +2379,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     SSLEngine sslEngine = null;
 
+                    Map<Integer, Object> meta = new HashMap<>();
+
                     try {
                         ch.socket().connect(addr, (int)timeoutHelper.nextTimeoutChunk(connTimeout));
 
@@ -2386,7 +2391,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         }
 
                         rcvCnt = safeHandshake(ch, recoveryDesc, node.id(),
-                            timeoutHelper.nextTimeoutChunk(connTimeout0), sslEngine);
+                            timeoutHelper.nextTimeoutChunk(connTimeout0), sslEngine, meta);
 
                         if (rcvCnt == -1)
                             return null;
@@ -2397,8 +2402,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     }
 
                     try {
-                        Map<Integer, Object> meta = new HashMap<>();
-
                         meta.put(NODE_ID_META, node.id());
 
                         if (isSslEnabled()) {
@@ -2559,6 +2562,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @param rmtNodeId Remote node.
      * @param timeout Timeout for handshake.
      * @param ssl SSL engine if used cryptography, otherwise {@code null}.
+     * @param meta Session meta.
      * @throws IgniteCheckedException If handshake failed or wasn't completed withing timeout.
      * @return Handshake response.
      */
@@ -2568,7 +2572,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         @Nullable GridNioRecoveryDescriptor recovery,
         UUID rmtNodeId,
         long timeout,
-        @Nullable SSLEngine ssl
+        @Nullable SSLEngine ssl,
+        Map<Integer, Object> meta
     ) throws IgniteCheckedException {
         HandshakeTimeoutObject<T> obj = new HandshakeTimeoutObject<>(client, U.currentTimeMillis() + timeout);
 
@@ -2708,11 +2713,27 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                                 i += decode.remaining();
 
-                                buf.flip();
-                                buf.compact();
+                                buf.clear();
                             }
 
                             rcvCnt = decode.getLong(1);
+
+                            Buffer inBuf = sslHnd.inputBuffer();
+
+                            if (meta != null) {
+                                if (inBuf.position() > 0)
+                                    meta.put(IN_BUFF.ordinal(), inBuf);
+
+                                if (decode.limit() > 9) {
+                                    ByteBuffer rem = ByteBuffer.allocate(decode.limit());
+
+                                    rem.put(decode);
+
+                                    rem.position(9);
+
+                                    meta.put(REMINDER.ordinal(), rem);
+                                }
+                            }
                         }
                         else {
                             buf = ByteBuffer.allocate(9);

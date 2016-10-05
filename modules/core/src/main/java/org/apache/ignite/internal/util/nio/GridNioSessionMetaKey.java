@@ -48,7 +48,13 @@ public enum GridNioSessionMetaKey {
     SSL_ENGINE,
 
     /** Ack closure. */
-    ACK_CLOSURE;
+    ACK_CLOSURE,
+
+    /** Reminder. */
+    REMINDER,
+
+    /** Input buffer. */
+    IN_BUFF;
 
     /** Maximum count of NIO session keys in system. */
     public static final int MAX_KEYS_CNT = 64;

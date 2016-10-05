@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.REMINDER;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_HANDLER;
 
 /**
@@ -305,6 +306,11 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
             ByteBuffer appBuf = hnd.getApplicationBuffer();
 
             appBuf.flip();
+
+            ByteBuffer reminder = ses.removeMeta(REMINDER.ordinal());
+
+            if (reminder != null)
+                proceedMessageReceived(ses, reminder);
 
             if (appBuf.hasRemaining())
                 proceedMessageReceived(ses, appBuf);

@@ -19,6 +19,8 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConcurrentConnectSslSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiRecoverySelfTest;
 import org.apache.ignite.spi.communication.tcp.IgniteCacheSslStartStopSelfTest;
 
 /**
@@ -33,8 +35,11 @@ public class IgniteCacheFailoverTestSuiteSsl extends TestSuite {
         TestSuite suite = new TestSuite("Cache Failover Test Suite SSL");
 
         // Disable SSL test with old JDK because of https://bugs.openjdk.java.net/browse/JDK-8013809.
-        if (!IgniteUtils.isHotSpot() || IgniteUtils.isJavaVersionAtLeast("1.7.0_65"))
+        if (!IgniteUtils.isHotSpot() || IgniteUtils.isJavaVersionAtLeast("1.7.0_65")) {
             suite.addTestSuite(IgniteCacheSslStartStopSelfTest.class);
+            suite.addTestSuite(GridTcpCommunicationSpiConcurrentConnectSslSelfTest.class);
+            suite.addTestSuite(GridTcpCommunicationSpiRecoverySelfTest.class);
+        }
 
         return suite;
     }

@@ -43,6 +43,7 @@ import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING;
 import static javax.net.ssl.SSLEngineResult.Status;
 import static javax.net.ssl.SSLEngineResult.Status.BUFFER_UNDERFLOW;
 import static javax.net.ssl.SSLEngineResult.Status.CLOSED;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.IN_BUFF;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_ENGINE;
 import static org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter.HANDSHAKE_FUT_META_KEY;
 
@@ -143,9 +144,15 @@ class GridNioSslHandler extends ReentrantLock {
 
         outNetBuf.order(order);
 
-        inNetBuf = directBuf ? ByteBuffer.allocateDirect(netBufSize) : ByteBuffer.allocate(netBufSize);
+        ByteBuffer blockInBuf = ses.removeMeta(IN_BUFF.ordinal());
 
-        inNetBuf.order(order);
+        if (blockInBuf != null)
+            inNetBuf = blockInBuf;
+        else {
+            inNetBuf = directBuf ? ByteBuffer.allocateDirect(netBufSize) : ByteBuffer.allocate(netBufSize);
+
+            inNetBuf.order(order);
+        }
 
         // Initially buffer is empty.
         outNetBuf.position(0);

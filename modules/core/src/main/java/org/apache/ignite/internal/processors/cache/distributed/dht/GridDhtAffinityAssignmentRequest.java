@@ -130,6 +130,6 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtAffinityAssignmentRequest.class, this);
+        return S.toString(GridDhtAffinityAssignmentRequest.class, this, super.toString());
     }
 }

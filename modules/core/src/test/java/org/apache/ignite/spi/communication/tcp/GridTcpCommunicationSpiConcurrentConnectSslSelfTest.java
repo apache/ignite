@@ -17,28 +17,19 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryAbstractSelfTest;
-import org.apache.ignite.testframework.GridTestUtils;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-
 /**
  *
  */
-public class IgniteCacheSslStartStopSelfTest extends IgniteCachePutRetryAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setSslContextFactory(GridTestUtils.sslFactory());
-
-        return cfg;
+public class GridTcpCommunicationSpiConcurrentConnectSslSelfTest extends GridTcpCommunicationSpiConcurrentConnectSelfTest {
+    /**
+     * Default constructor.
+     */
+    public GridTcpCommunicationSpiConcurrentConnectSslSelfTest() {
+        useSsl = true;
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
+    @Override protected long getTestTimeout() {
+        return super.getTestTimeout() * 4;
     }
 }
