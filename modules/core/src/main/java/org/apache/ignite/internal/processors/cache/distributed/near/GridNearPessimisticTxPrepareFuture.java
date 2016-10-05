@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -292,7 +293,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
                     fut.onNodeLeft(e);
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteCheckedException | IgniteException e) {
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("Near pessimistic prepare, failed send request [txId=" + tx.nearXidVersion() +
                             ", node=" + node.id() + ", err=" + e + ']');

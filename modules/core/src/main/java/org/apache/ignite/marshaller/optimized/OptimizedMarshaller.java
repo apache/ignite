@@ -193,7 +193,7 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
 
             return objOut.out().array();
         }
-        catch (IOException e) {
+        catch (Exception e) {
             throw new IgniteCheckedException("Failed to serialize object: " + obj, e);
         }
         finally {
@@ -217,13 +217,13 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
 
             return (T)objIn.readObject();
         }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Failed to deserialize object with given class loader: " + clsLdr, e);
-        }
         catch (ClassNotFoundException e) {
             throw new IgniteCheckedException("Failed to find class with given class loader for unmarshalling " +
                 "(make sure same versions of all classes are available on all nodes or enable peer-class-loading): " +
                 clsLdr, e);
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException("Failed to deserialize object with given class loader: " + clsLdr, e);
         }
         finally {
             OptimizedObjectStreamRegistry.closeIn(objIn);
@@ -246,13 +246,13 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
 
             return (T)objIn.readObject();
         }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Failed to deserialize object with given class loader: " + clsLdr, e);
-        }
         catch (ClassNotFoundException e) {
             throw new IgniteCheckedException("Failed to find class with given class loader for unmarshalling " +
                 "(make sure same version of all classes are available on all nodes or enable peer-class-loading): " +
                 clsLdr, e);
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException("Failed to deserialize object with given class loader: " + clsLdr, e);
         }
         finally {
             OptimizedObjectStreamRegistry.closeIn(objIn);
