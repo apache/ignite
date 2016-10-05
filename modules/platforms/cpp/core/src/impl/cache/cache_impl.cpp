@@ -17,12 +17,8 @@
 
 #include <ignite/common/utils.h>
 
-#include "ignite/cache/cache_peek_mode.h"
 #include "ignite/impl/cache/cache_impl.h"
-#include "ignite/impl/interop/interop.h"
-#include "ignite/impl/binary/binary_reader_impl.h"
 #include "ignite/impl/binary/binary_type_updater_impl.h"
-#include "ignite/binary/binary.h"
 
 using namespace ignite::common::concurrent;
 using namespace ignite::jni::java;
@@ -146,11 +142,6 @@ namespace ignite
             const char* CacheImpl::GetName() const
             {
                 return name;
-            }
-
-            bool CacheImpl::IsEmpty(IgniteError* err)
-            {
-                return Size(IGNITE_PEEK_MODE_ALL, err) == 0;
             }
 
             bool CacheImpl::ContainsKey(InputOperation& inOp, IgniteError* err)
@@ -281,9 +272,14 @@ namespace ignite
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
             }
 
-            void CacheImpl::Size(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
+            int32_t CacheImpl::Size(int32_t peekModes, bool local, IgniteError* err)
             {
+                In2Operation<int32_t, bool> inOp(&peekModes, &local);
+                Out1Operation<int32_t> outOp;
+
                 OutInOp(OP_SIZE, inOp, outOp, err);
+
+                return outOp.GetResult();
             }
 
             QueryCursorImpl* CacheImpl::QuerySql(const SqlQuery& qry, IgniteError* err)

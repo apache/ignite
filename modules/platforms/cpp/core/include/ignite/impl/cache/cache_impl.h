@@ -60,14 +60,6 @@ namespace ignite
                 const char* GetName() const;
 
                 /**
-                 * Perform IsEmpty.
-                 *
-                 * @param err Error.
-                 * @return Result.
-                 */
-                bool IsEmpty(IgniteError* err);
-
-                /**
                  * Perform ContainsKey.
                  *
                  * @param inOp Input.
@@ -276,11 +268,11 @@ namespace ignite
                 /**
                 * Perform Size.
                 *
-                * @param inOp Input.
-                * @param outOp Output.
+                * @param peekModes Peek modes.
+                * @param local Local flag.
                 * @param err Error.
                 */
-                void Size(InputOperation& inOp, OutputOperation& outOp, IgniteError* err);
+                int32_t CacheImpl::Size(int32_t peekModes, bool local, IgniteError* err);
 
                 /**
                  * Invoke query.
