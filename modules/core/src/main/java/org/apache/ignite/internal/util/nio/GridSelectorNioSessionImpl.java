@@ -37,7 +37,7 @@ import org.jsr166.ConcurrentLinkedDeque8;
  */
 class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     /** Pending write requests. */
-    private final ConcurrentLinkedDeque8<GridNioFuture<?>> queue = new ConcurrentLinkedDeque8<>();
+    private final ConcurrentLinkedDeque8<SessionWriteRequest> queue = new ConcurrentLinkedDeque8<>();
 
     /** Selection key associated with this session. */
     @GridToStringExclude
@@ -67,6 +67,9 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
 
     /** */
     final AtomicBoolean procWrite = new AtomicBoolean();
+
+    /** */
+    private Object sysMsg;
 
     /**
      * Creates session instance.
@@ -166,7 +169,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      * @param writeFut Write request.
      * @return Updated size of the queue.
      */
-    int offerSystemFuture(GridNioFuture<?> writeFut) {
+    int offerSystemFuture(SessionWriteRequest writeFut) {
         writeFut.messageThread(true);
 
         boolean res = queue.offerFirst(writeFut);
@@ -186,7 +189,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      * @param writeFut Write request to add.
      * @return Updated size of the queue.
      */
-    int offerFuture(GridNioFuture<?> writeFut) {
+    int offerFuture(SessionWriteRequest writeFut) {
         boolean msgThread = GridNioBackPressureControl.threadProcessingMessage();
 
         if (sem != null && !msgThread)
@@ -204,7 +207,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     /**
      * @param futs Futures to resend.
      */
-    void resend(Collection<GridNioFuture<?>> futs) {
+    void resend(Collection<SessionWriteRequest> futs) {
         assert queue.isEmpty() : queue.size();
 
         boolean add = queue.addAll(futs);
@@ -215,8 +218,8 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     /**
      * @return Message that is in the head of the queue, {@code null} if queue is empty.
      */
-    @Nullable GridNioFuture<?> pollFuture() {
-        GridNioFuture<?> last = queue.poll();
+    @Nullable SessionWriteRequest pollFuture() {
+        SessionWriteRequest last = queue.poll();
 
         if (last != null) {
             if (sem != null && !last.messageThread())
@@ -246,7 +249,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      * @param fut Future.
      * @return {@code True} if future was removed from queue.
      */
-    boolean removeFuture(GridNioFuture<?> fut) {
+    boolean removeFuture(SessionWriteRequest fut) {
         assert closed();
 
         return queue.removeLastOccurrence(fut);
@@ -264,7 +267,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     /**
      * @return Write requests.
      */
-    Collection<GridNioFuture<?>> writeQueue() {
+    Collection<SessionWriteRequest> writeQueue() {
         return queue;
     }
 
@@ -318,6 +321,31 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     void onClosed() {
         if (sem != null)
             sem.release(1_000_000);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void systemMessage(Object sysMsg) {
+        this.sysMsg = sysMsg;
+    }
+
+    /**
+     * @return {@code True} if have pending system message to send.
+     */
+    boolean hasSystemMessage() {
+        return sysMsg != null;
+    }
+
+    /**
+     * Gets and clears pending system message.
+     *
+     * @return Pending system message.
+     */
+    Object systemMessage() {
+        Object ret = sysMsg;
+
+        sysMsg = null;
+
+        return ret;
     }
 
     /** {@inheritDoc} */

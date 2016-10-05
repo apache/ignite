@@ -18,13 +18,12 @@
 package org.apache.ignite.internal.util.nio;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 
 /**
- * NIO future.
+ *
  */
-public interface GridNioFuture<R> extends IgniteInternalFuture<R> {
+public interface SessionWriteRequest {
     /**
      * Sets flag indicating that message send future was created in thread that was processing a message.
      *
@@ -58,4 +57,29 @@ public interface GridNioFuture<R> extends IgniteInternalFuture<R> {
      * @return Ack closure.
      */
     public IgniteInClosure<IgniteException> ackClosure();
+
+    /**
+     * @return Session.
+     */
+    public GridNioSession session();
+
+    /**
+     * @param ses Session.
+     */
+    public void resetSession(GridNioSession ses);
+
+    /**
+     *
+     */
+    public void onError(Exception e);
+
+    /**
+     * @return Message.
+     */
+    public Object message();
+
+    /**
+     *
+     */
+    public void onMessageWritten();
 }

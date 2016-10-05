@@ -3422,11 +3422,21 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /**
      * @param node Node.
      * @param payload Message payload.
-     * @param processFromNioThread If {@code true} message is processed from NIO thread.
+     * @param procFromNioThread If {@code true} message is processed from NIO thread.
      * @return Response future.
      */
-    public IgniteInternalFuture sendIoTest(ClusterNode node, byte[] payload, boolean processFromNioThread) {
-        return ctx.io().sendIoTest(node, payload, processFromNioThread);
+    public IgniteInternalFuture sendIoTest(ClusterNode node, byte[] payload, boolean procFromNioThread) {
+        return ctx.io().sendIoTest(node, payload, procFromNioThread);
+    }
+
+    /**
+     * @param nodes Nodes.
+     * @param payload Message payload.
+     * @param procFromNioThread If {@code true} message is processed from NIO thread.
+     * @return Response future.
+     */
+    public IgniteInternalFuture sendIoTest(List<ClusterNode> nodes, byte[] payload, boolean procFromNioThread) {
+        return ctx.io().sendIoTest(nodes, payload, procFromNioThread);
     }
 
     /** {@inheritDoc} */
