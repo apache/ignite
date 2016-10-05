@@ -68,19 +68,7 @@ extern "C" {
     void* IGNITE_CALL IgniteTargetListenFutureForOperationAndGet(gcj::JniContext* ctx, void* obj, long long futId, int typ, int opId);
 
     int IGNITE_CALL IgniteAffinityPartitions(gcj::JniContext* ctx, void* obj);
-
-    void IGNITE_CALL IgniteCacheRemoveAll(gcj::JniContext* ctx, void* obj);
-    void* IGNITE_CALL IgniteCacheOutOpQueryCursor(gcj::JniContext* ctx, void* obj, int type, long long memPtr);
-    void* IGNITE_CALL IgniteCacheOutOpContinuousQuery(gcj::JniContext* ctx, void* obj, int type, long long memPtr);
-    void* IGNITE_CALL IgniteCacheIterator(gcj::JniContext* ctx, void* obj);
-    void* IGNITE_CALL IgniteCacheLocalIterator(gcj::JniContext* ctx, void* obj, int peekModes);
-    void IGNITE_CALL IgniteCacheEnterLock(gcj::JniContext* ctx, void* obj, long long id);
-    void IGNITE_CALL IgniteCacheExitLock(gcj::JniContext* ctx, void* obj, long long id);
-    bool IGNITE_CALL IgniteCacheTryEnterLock(gcj::JniContext* ctx, void* obj, long long id, long long timeout);
-    void IGNITE_CALL IgniteCacheCloseLock(gcj::JniContext* ctx, void* obj, long long id);
-    void IGNITE_CALL IgniteCacheRebalance(gcj::JniContext* ctx, void* obj, long long futId);
-    int IGNITE_CALL IgniteCacheSize(gcj::JniContext* ctx, void* obj, int peekModes, bool loc);
-
+    
     void IGNITE_CALL IgniteCacheStoreCallbackInvoke(gcj::JniContext* ctx, void* obj, long long memPtr);
 
     void IGNITE_CALL IgniteComputeWithNoFailover(gcj::JniContext* ctx, void* obj);

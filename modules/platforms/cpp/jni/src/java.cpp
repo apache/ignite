@@ -243,16 +243,6 @@ namespace ignite
             JniMethod M_PLATFORM_COMPUTE_WITH_TIMEOUT = JniMethod("withTimeout", "(J)V", false);
             JniMethod M_PLATFORM_COMPUTE_EXECUTE_NATIVE = JniMethod("executeNative", "(JJ)Lorg/apache/ignite/internal/processors/platform/utils/PlatformListenable;", false);
 
-            const char* C_PLATFORM_CACHE = "org/apache/ignite/internal/processors/platform/cache/PlatformCache";
-            JniMethod M_PLATFORM_CACHE_ITERATOR = JniMethod("iterator", "()Lorg/apache/ignite/internal/processors/platform/cache/PlatformCacheIterator;", false);
-            JniMethod M_PLATFORM_CACHE_LOCAL_ITERATOR = JniMethod("localIterator", "(I)Lorg/apache/ignite/internal/processors/platform/cache/PlatformCacheIterator;", false);
-            JniMethod M_PLATFORM_CACHE_ENTER_LOCK = JniMethod("enterLock", "(J)V", false);
-            JniMethod M_PLATFORM_CACHE_EXIT_LOCK = JniMethod("exitLock", "(J)V", false);
-            JniMethod M_PLATFORM_CACHE_TRY_ENTER_LOCK = JniMethod("tryEnterLock", "(JJ)Z", false);
-            JniMethod M_PLATFORM_CACHE_CLOSE_LOCK = JniMethod("closeLock", "(J)V", false);
-            JniMethod M_PLATFORM_CACHE_REBALANCE = JniMethod("rebalance", "(J)V", false);
-            JniMethod M_PLATFORM_CACHE_SIZE = JniMethod("size", "(IZ)I", false);
-
             const char* C_PLATFORM_AFFINITY = "org/apache/ignite/internal/processors/platform/cache/affinity/PlatformAffinity";
             JniMethod C_PLATFORM_AFFINITY_PARTITIONS = JniMethod("partitions", "()I", false);
 
@@ -585,16 +575,6 @@ namespace ignite
                 c_PlatformAffinity = FindClass(env, C_PLATFORM_AFFINITY);
                 m_PlatformAffinity_partitions = FindMethod(env, c_PlatformAffinity, C_PLATFORM_AFFINITY_PARTITIONS);
 
-                c_PlatformCache = FindClass(env, C_PLATFORM_CACHE);
-                m_PlatformCache_iterator = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_ITERATOR);
-                m_PlatformCache_localIterator = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_LOCAL_ITERATOR);
-                m_PlatformCache_enterLock = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_ENTER_LOCK);
-                m_PlatformCache_exitLock = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_EXIT_LOCK);
-                m_PlatformCache_tryEnterLock = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_TRY_ENTER_LOCK);
-                m_PlatformCache_closeLock = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_CLOSE_LOCK);
-                m_PlatformCache_rebalance = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_REBALANCE);
-                m_PlatformCache_size = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_SIZE);
-
                 c_PlatformCacheStoreCallback = FindClass(env, C_PLATFORM_CACHE_STORE_CALLBACK);
                 m_PlatformCacheStoreCallback_invoke = FindMethod(env, c_PlatformCacheStoreCallback, M_PLATFORM_CACHE_STORE_CALLBACK_INVOKE);
 
@@ -744,7 +724,6 @@ namespace ignite
             void JniMembers::Destroy(JNIEnv* env) {
                 DeleteClass(env, c_PlatformAbstractQryCursor);
                 DeleteClass(env, c_PlatformAffinity);
-                DeleteClass(env, c_PlatformCache);
                 DeleteClass(env, c_PlatformCacheStoreCallback);
                 DeleteClass(env, c_IgniteException);
                 DeleteClass(env, c_PlatformClusterGroup);
@@ -1624,78 +1603,6 @@ namespace ignite
                 ExceptionCheck(env);
 
                 return LocalToGlobal(env, res);
-            }
-
-            jobject JniContext::CacheIterator(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformCache_iterator);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, res);
-            }
-
-            jobject JniContext::CacheLocalIterator(jobject obj, int peekModes) {
-                JNIEnv*env = Attach();
-
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformCache_localIterator, peekModes);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, res);
-            }
-
-            void JniContext::CacheEnterLock(jobject obj, long long id) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformCache_enterLock, id);
-
-                ExceptionCheck(env);
-            }
-
-            void JniContext::CacheExitLock(jobject obj, long long id) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformCache_exitLock, id);
-
-                ExceptionCheck(env);
-            }
-
-            bool JniContext::CacheTryEnterLock(jobject obj, long long id, long long timeout) {
-                JNIEnv* env = Attach();
-
-                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformCache_tryEnterLock, id, timeout);
-
-                ExceptionCheck(env);
-
-                return res != 0;
-            }
-
-            void JniContext::CacheCloseLock(jobject obj, long long id) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformCache_closeLock, id);
-
-                ExceptionCheck(env);
-            }
-
-            void JniContext::CacheRebalance(jobject obj, long long futId) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformCache_rebalance, futId);
-
-                ExceptionCheck(env);
-            }
-
-            int JniContext::CacheSize(jobject obj, int peekModes, bool loc, JniErrorInfo* err) {
-                JNIEnv* env = Attach();
-
-                jint res = env->CallIntMethod(obj, jvm->GetMembers().m_PlatformCache_size, peekModes, loc);
-
-                ExceptionCheck(env, err);
-
-                return res;
             }
 
             void JniContext::CacheStoreCallbackInvoke(jobject obj, long long memPtr) {

@@ -231,16 +231,6 @@ namespace ignite
                 jclass c_PlatformAffinity;
                 jmethodID m_PlatformAffinity_partitions;
 
-                jclass c_PlatformCache;
-                jmethodID m_PlatformCache_iterator;
-                jmethodID m_PlatformCache_localIterator;
-                jmethodID m_PlatformCache_enterLock;
-                jmethodID m_PlatformCache_exitLock;
-                jmethodID m_PlatformCache_tryEnterLock;
-                jmethodID m_PlatformCache_closeLock;
-                jmethodID m_PlatformCache_rebalance;
-                jmethodID m_PlatformCache_size;
-
                 jclass c_PlatformCacheStoreCallback;
                 jmethodID m_PlatformCacheStoreCallback_invoke;
 

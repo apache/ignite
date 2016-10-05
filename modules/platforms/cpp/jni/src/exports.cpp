@@ -186,50 +186,6 @@ extern "C" {
         return ctx->AffinityPartitions(static_cast<jobject>(obj));
     }
 
-    void IGNITE_CALL IgniteCacheRemoveAll(gcj::JniContext* ctx, void* obj) {
-        ctx->CacheRemoveAll(static_cast<jobject>(obj));
-    }
-
-    void* IGNITE_CALL IgniteCacheOutOpQueryCursor(gcj::JniContext* ctx, void* obj, int type, long long memPtr) {
-        return ctx->CacheOutOpQueryCursor(static_cast<jobject>(obj), type, memPtr);
-    }
-
-    void* IGNITE_CALL IgniteCacheOutOpContinuousQuery(gcj::JniContext* ctx, void* obj, int type, long long memPtr) {
-        return ctx->CacheOutOpContinuousQuery(static_cast<jobject>(obj), type, memPtr);
-    }
-
-    void* IGNITE_CALL IgniteCacheIterator(gcj::JniContext* ctx, void* obj) {
-        return ctx->CacheIterator(static_cast<jobject>(obj));
-    }
-
-    void* IGNITE_CALL IgniteCacheLocalIterator(gcj::JniContext* ctx, void* obj, int peekModes) {
-        return ctx->CacheLocalIterator(static_cast<jobject>(obj), peekModes);
-    }
-
-    void IGNITE_CALL IgniteCacheEnterLock(gcj::JniContext* ctx, void* obj, long long id) {
-        ctx->CacheEnterLock(static_cast<jobject>(obj), id);
-    }
-
-    void IGNITE_CALL IgniteCacheExitLock(gcj::JniContext* ctx, void* obj, long long id) {
-        ctx->CacheExitLock(static_cast<jobject>(obj), id);
-    }
-
-    bool IGNITE_CALL IgniteCacheTryEnterLock(gcj::JniContext* ctx, void* obj, long long id, long long timeout) {
-        return ctx->CacheTryEnterLock(static_cast<jobject>(obj), id, timeout);
-    }
-
-    void IGNITE_CALL IgniteCacheCloseLock(gcj::JniContext* ctx, void* obj, long long id) {
-        ctx->CacheCloseLock(static_cast<jobject>(obj), id);
-    }
-
-    void IGNITE_CALL IgniteCacheRebalance(gcj::JniContext* ctx, void* obj, long long futId) {
-        ctx->CacheRebalance(static_cast<jobject>(obj), futId);
-    }
-
-    int IGNITE_CALL IgniteCacheSize(gcj::JniContext* ctx, void* obj, int peekModes, bool loc) {
-        return ctx->CacheSize(static_cast<jobject>(obj), peekModes, loc);
-    }
-
     void IGNITE_CALL IgniteComputeWithNoFailover(gcj::JniContext* ctx, void* obj) {
         ctx->ComputeWithNoFailover(static_cast<jobject>(obj));
     }
