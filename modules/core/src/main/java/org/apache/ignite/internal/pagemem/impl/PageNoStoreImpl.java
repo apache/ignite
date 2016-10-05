@@ -49,17 +49,23 @@ public class PageNoStoreImpl implements Page {
     /** */
     private final ByteBuffer buf;
 
+    /** Page for memory restore */
+    private final boolean restore;
+
     /**
      * @param segIdx Segment index.
      * @param absPtr Absolute pointer.
      */
-    public PageNoStoreImpl(PageMemoryNoStoreImpl pageMem, int segIdx, long absPtr, int cacheId, long pageId) {
+    public PageNoStoreImpl(
+        PageMemoryNoStoreImpl pageMem, int segIdx, long absPtr, int cacheId, long pageId, boolean restore
+    ) {
         this.pageMem = pageMem;
         this.segIdx = segIdx;
         this.absPtr = absPtr;
 
         this.cacheId = cacheId;
         this.pageId = pageId;
+        this.restore = restore;
 
         buf = pageMem.wrapPointer(absPtr + PageMemoryNoStoreImpl.PAGE_OVERHEAD, pageMem.pageSize());
     }
@@ -89,20 +95,16 @@ public class PageNoStoreImpl implements Page {
 
     /** {@inheritDoc} */
     @Override public ByteBuffer getForWrite() {
-        if (pageMem.writeLockPage(absPtr, PageIdUtils.itemId(pageId)))
-            return reset(buf);
+        boolean locked = pageMem.writeLockPage(absPtr, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
 
-        return null;
+        if (!locked && !restore)
+            return null;
+
+        assert locked;
+
+        return reset(buf);
+
     }
-
-//    /** {@inheritDoc} */
-//    @Override public ByteBuffer getForWriteNoTagCheck() {
-//        boolean locked = pageMem.writeLockPage(absPtr, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
-//
-//        assert locked;
-//
-//        return reset(buf);
-//    }
 
     /** {@inheritDoc} */
     @Override public ByteBuffer tryGetForWrite() {
