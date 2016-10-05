@@ -319,7 +319,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.IsTrue(Directory.Exists(marshDir));
             }
 
-            Directory.Delete(cfg.WorkDirectory);
+            Directory.Delete(cfg.WorkDirectory, true);
         }
 
         /// <summary>
