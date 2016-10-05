@@ -160,9 +160,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheWithExpiryPolicy")]
         public static extern void* CacheWithExpiryPolicy(void* ctx, void* obj, long create, long update, long access);
 
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheWithAsync")]
-        public static extern void* CacheWithAsync(void* ctx, void* obj);
-
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheWithKeepPortable")]
         public static extern void* CacheWithKeepBinary(void* ctx, void* obj);
 

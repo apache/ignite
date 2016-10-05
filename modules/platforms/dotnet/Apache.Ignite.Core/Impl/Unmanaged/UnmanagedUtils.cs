@@ -463,13 +463,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return target.ChangeTarget(res);
         }
 
-        internal static IUnmanagedTarget CacheWithAsync(IUnmanagedTarget target)
-        {
-            void* res = JNI.CacheWithAsync(target.Context, target.Target);
-
-            return target.ChangeTarget(res);
-        }
-
         internal static IUnmanagedTarget CacheWithKeepBinary(IUnmanagedTarget target)
         {
             void* res = JNI.CacheWithKeepBinary(target.Context, target.Target);

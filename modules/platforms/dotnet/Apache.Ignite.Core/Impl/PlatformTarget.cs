@@ -306,15 +306,18 @@ namespace Apache.Ignite.Core.Impl
         /// <returns></returns>
         protected IUnmanagedTarget DoOutOpObject(int type, Action<BinaryWriter> action)
         {
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            using (var stream = action != null ? IgniteManager.Memory.Allocate().GetStream() : null)
             {
-                var writer = _marsh.StartMarshal(stream);
+                if (stream != null)
+                {
+                    var writer = _marsh.StartMarshal(stream);
 
-                action(writer);
+                    action(writer);
 
-                FinishMarshal(writer);
+                    FinishMarshal(writer);
+                }
 
-                return UU.TargetInStreamOutObject(_target, type, stream.SynchronizeOutput());
+                return UU.TargetInStreamOutObject(_target, type, stream != null ? stream.SynchronizeOutput() : 0);
             }
         }
 

@@ -198,10 +198,6 @@ extern "C" {
         return ctx->CacheWithExpiryPolicy(static_cast<jobject>(obj), create, update, access);
     }
 
-    void* IGNITE_CALL IgniteCacheWithAsync(gcj::JniContext* ctx, void* obj) {
-        return ctx->CacheWithAsync(static_cast<jobject>(obj));
-    }
-
     void* IGNITE_CALL IgniteCacheWithKeepPortable(gcj::JniContext* ctx, void* obj)
     {
         return ctx->CacheWithKeepPortable(static_cast<jobject>(obj));

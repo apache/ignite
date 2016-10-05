@@ -62,6 +62,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         Replace3 = 38,
         GetConfig = 39,
         LoadAll = 40,
-        ClearCache = 41
+        ClearCache = 41,
+        WithAsync = 42
     }
 }

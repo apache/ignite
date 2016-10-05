@@ -89,26 +89,19 @@ namespace Apache.Ignite.Core.Impl.Cache
             _flagAsync = flagAsync;
             _flagNoRetries = flagNoRetries;
 
-            _asyncInstance = new Lazy<CacheImpl<TK, TV>>(() => new CacheImpl<TK, TV>(this));
+            _asyncInstance = new Lazy<CacheImpl<TK, TV>>(WithAsync);
         }
 
         /// <summary>
-        /// Initializes a new async instance.
+        /// Returns an instance with async mode enabled.
         /// </summary>
-        /// <param name="cache">The cache.</param>
-        private CacheImpl(CacheImpl<TK, TV> cache) : base(UU.CacheWithAsync(cache.Target), cache.Marshaller)
+        private CacheImpl<TK, TV> WithAsync()
         {
-            _ignite = cache._ignite;
-            _flagSkipStore = cache._flagSkipStore;
-            _flagKeepBinary = cache._flagKeepBinary;
-            _flagAsync = true;
-            _flagNoRetries = cache._flagNoRetries;
-        }
+            var target = DoOutOpObject((int) CacheOp.WithAsync, null);
 
-        //private CacheImpl<TK, TV> WithAsync()
-        //{
-        //    var target = DoOutOpObject()
-        //}
+            return new CacheImpl<TK, TV>(_ignite, target, Marshaller, _flagSkipStore, _flagKeepBinary, 
+                true, _flagNoRetries);
+        }
 
         /** <inheritDoc /> */
         public IIgnite Ignite
