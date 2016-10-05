@@ -304,7 +304,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="type">Operation type.</param>
         /// <param name="action">Action to be performed on the stream.</param>
         /// <returns></returns>
-        protected IUnmanagedTarget DoOutOpObject(int type, Action<BinaryWriter> action)
+        protected IUnmanagedTarget DoOutOpObject(int type, Action<BinaryWriter> action = null)
         {
             using (var stream = action != null ? IgniteManager.Memory.Allocate().GetStream() : null)
             {

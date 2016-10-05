@@ -442,34 +442,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region NATIVE METHODS: CACHE
 
-        internal static IUnmanagedTarget CacheWithSkipStore(IUnmanagedTarget target)
-        {
-            void* res = JNI.CacheWithSkipStore(target.Context, target.Target);
-
-            return target.ChangeTarget(res);
-        }
-
-        internal static IUnmanagedTarget CacheWithNoRetries(IUnmanagedTarget target)
-        {
-            void* res = JNI.CacheWithNoRetries(target.Context, target.Target);
-
-            return target.ChangeTarget(res);
-        }
-
-        internal static IUnmanagedTarget CacheWithExpiryPolicy(IUnmanagedTarget target, long create, long update, long access)
-        {
-            void* res = JNI.CacheWithExpiryPolicy(target.Context, target.Target, create, update, access);
-
-            return target.ChangeTarget(res);
-        }
-
-        internal static IUnmanagedTarget CacheWithKeepBinary(IUnmanagedTarget target)
-        {
-            void* res = JNI.CacheWithKeepBinary(target.Context, target.Target);
-
-            return target.ChangeTarget(res);
-        }
-
         internal static void CacheRemoveAll(IUnmanagedTarget target)
         {
             JNI.CacheRemoveAll(target.Context, target.Target);

@@ -97,7 +97,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         private CacheImpl<TK, TV> WithAsync()
         {
-            var target = DoOutOpObject((int) CacheOp.WithAsync, null);
+            var target = DoOutOpObject((int) CacheOp.WithAsync);
 
             return new CacheImpl<TK, TV>(_ignite, target, Marshaller, _flagSkipStore, _flagKeepBinary, 
                 true, _flagNoRetries);
@@ -168,7 +168,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             if (_flagSkipStore)
                 return this;
 
-            return new CacheImpl<TK, TV>(_ignite, UU.CacheWithSkipStore(Target), Marshaller, 
+            return new CacheImpl<TK, TV>(_ignite, DoOutOpObject((int) CacheOp.WithSkipStore), Marshaller,
                 true, _flagKeepBinary, _flagAsync, true);
         }
 
@@ -192,7 +192,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return result;
             }
 
-            return new CacheImpl<TK1, TV1>(_ignite, UU.CacheWithKeepBinary(Target), Marshaller, 
+            return new CacheImpl<TK1, TV1>(_ignite, DoOutOpObject((int)CacheOp.WithKeepBinary), Marshaller, 
                 _flagSkipStore, true, _flagAsync, _flagNoRetries);
         }
 
@@ -205,7 +205,12 @@ namespace Apache.Ignite.Core.Impl.Cache
             long update = ConvertDuration(plc.GetExpiryForUpdate());
             long access = ConvertDuration(plc.GetExpiryForAccess());
 
-            IUnmanagedTarget cache0 = UU.CacheWithExpiryPolicy(Target, create, update, access);
+            IUnmanagedTarget cache0 = DoOutOpObject((int)CacheOp.WithExpiryPolicy, w =>
+            {
+                w.WriteLong(create);
+                w.WriteLong(update);
+                w.WriteLong(access);
+            });
 
             return new CacheImpl<TK, TV>(_ignite, cache0, Marshaller, _flagSkipStore, _flagKeepBinary, _flagAsync, _flagNoRetries);
         }
@@ -921,7 +926,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             if (_flagNoRetries)
                 return this;
 
-            return new CacheImpl<TK, TV>(_ignite, UU.CacheWithNoRetries(Target), Marshaller,
+            return new CacheImpl<TK, TV>(_ignite, DoOutOpObject((int) CacheOp.WithNoRetries), Marshaller,
                 _flagSkipStore, _flagKeepBinary, _flagAsync, true);
         }
 
