@@ -120,6 +120,12 @@ namespace ignite
             /** Operation: Replace(K, V, V). */
             const int32_t OP_REPLACE_3 = 38;
 
+            /** Operation: Clear(). */
+            const int32_t OP_CLEAR_CACHE = 41;
+
+            /** Operation: RemoveAll(). */
+            const int32_t OP_REMOVE_ALL2 = 43;
+
             CacheImpl::CacheImpl(char* name, SharedPointer<IgniteEnvironment> env, jobject javaRef) :
                 InteropTarget(env, javaRef),
                 name(name)
@@ -223,7 +229,7 @@ namespace ignite
             {
                 JniErrorInfo jniErr;
 
-                GetEnvironment().Context()->CacheClear(GetTarget(), &jniErr);
+                OutOp(OP_CLEAR_CACHE, err);
 
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
             }
@@ -267,7 +273,7 @@ namespace ignite
             {
                 JniErrorInfo jniErr;
 
-                GetEnvironment().Context()->CacheRemoveAll(GetTarget(), &jniErr);
+                OutOp(OP_REMOVE_ALL2, err);
 
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
             }
