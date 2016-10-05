@@ -386,15 +386,6 @@ public class PlatformCache extends PlatformAbstractTarget {
                 return TRUE;
             }
 
-            case OP_SIZE: {
-                int peekModes = reader.readInt();
-                boolean loc = reader.readBoolean();
-
-                CachePeekMode[] modes = PlatformUtils.decodeCachePeekModes(peekModes);
-
-                return loc ? cache.localSize(modes) :  cache.size(modes);
-            }
-
             case OP_ENTER_LOCK: {
                 try {
                     lock(reader.readLong()).lockInterruptibly();
@@ -759,6 +750,17 @@ public class PlatformCache extends PlatformAbstractTarget {
                 writer.writeLong(registerLock(cache.lockAll(PlatformUtils.readCollection(reader))));
 
                 break;
+
+            case OP_SIZE: {
+                int peekModes = reader.readInt();
+                boolean loc = reader.readBoolean();
+
+                CachePeekMode[] modes = PlatformUtils.decodeCachePeekModes(peekModes);
+
+                int size = loc ? cache.localSize(modes) :  cache.size(modes);
+
+                writer.writeInt(size);
+            }
 
             default:
                 super.processInStreamOutStream(type, reader, writer);

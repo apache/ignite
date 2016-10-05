@@ -274,22 +274,13 @@ namespace ignite
                 void RemoveAll(IgniteError* err);
 
                 /**
-                 * Perform Size.
-                 *
-                 * @param peekModes Peek modes.
-                 * @param err Error.
-                 * @return Result.
-                 */
-                int32_t Size(const int32_t peekModes, IgniteError* err);
-
-                /**
-                 * Perform LocalSize.
-                 * 
-                 * @param peekModes Peek modes.
-                 * @param err Error.
-                 * @return Result.
-                 */
-                int32_t LocalSize(const int32_t peekModes, IgniteError* err);
+                * Perform Size.
+                *
+                * @param inOp Input.
+                * @param outOp Output.
+                * @param err Error.
+                */
+                void Size(InputOperation& inOp, OutputOperation& outOp, IgniteError* err);
 
                 /**
                  * Invoke query.

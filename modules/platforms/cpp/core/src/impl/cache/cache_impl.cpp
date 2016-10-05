@@ -126,6 +126,9 @@ namespace ignite
             /** Operation: RemoveAll(). */
             const int32_t OP_REMOVE_ALL2 = 43;
 
+            /** Operation: Size(peekModes, local). */
+            const int32_t OP_SIZE = 48;
+
             CacheImpl::CacheImpl(char* name, SharedPointer<IgniteEnvironment> env, jobject javaRef) :
                 InteropTarget(env, javaRef),
                 name(name)
@@ -278,14 +281,9 @@ namespace ignite
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
             }
 
-            int32_t CacheImpl::Size(const int32_t peekModes, IgniteError* err)
+            void CacheImpl::Size(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
             {
-                return SizeInternal(peekModes, false, err);
-            }
-
-            int32_t CacheImpl::LocalSize(const int32_t peekModes, IgniteError* err)
-            {
-                return SizeInternal(peekModes, true, err);
+                OutInOp(OP_SIZE, inOp, outOp, err);
             }
 
             QueryCursorImpl* CacheImpl::QuerySql(const SqlQuery& qry, IgniteError* err)
@@ -306,20 +304,6 @@ namespace ignite
             QueryCursorImpl* CacheImpl::QuerySqlFields(const SqlFieldsQuery& qry, IgniteError* err)
             {
                 return QueryInternal(qry, OP_QRY_SQL_FIELDS, err);
-            }
-
-            int CacheImpl::SizeInternal(const int32_t peekModes, const bool loc, IgniteError* err)
-            {
-                JniErrorInfo jniErr;
-
-                int res = GetEnvironment().Context()->CacheSize(GetTarget(), peekModes, loc, &jniErr);
-
-                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
-
-                if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
-                    return res;
-                else
-                    return -1;
             }
         }
     }
