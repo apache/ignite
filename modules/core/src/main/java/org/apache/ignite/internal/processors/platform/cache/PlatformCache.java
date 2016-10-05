@@ -189,6 +189,9 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_LOAD_ALL = 40;
 
+    /** */
+    public static final int OP_CLEAR_CACHE = 41;
+
     /** Underlying JCache. */
     private final IgniteCacheProxy cache;
 
@@ -286,6 +289,18 @@ public class PlatformCache extends PlatformAbstractTarget {
             return this;
 
         return new PlatformCache(platformCtx, cache.withNoRetries(), keepBinary);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long processOutLong(int type) throws IgniteCheckedException {
+        switch (type) {
+            case OP_CLEAR_CACHE:
+                cache.clear();
+
+                return TRUE;
+        }
+
+        return super.processOutLong(type);
     }
 
     /** {@inheritDoc} */
@@ -734,16 +749,6 @@ public class PlatformCache extends PlatformAbstractTarget {
             return WRITER_INVOKE_ALL;
 
         return null;
-    }
-
-    /**
-     * Clears the contents of the cache, without notifying listeners or CacheWriters.
-     *
-     * @throws IllegalStateException if the cache is closed.
-     * @throws javax.cache.CacheException if there is a problem during the clear
-     */
-    public void clear() throws IgniteCheckedException {
-        cache.clear();
     }
 
     /**

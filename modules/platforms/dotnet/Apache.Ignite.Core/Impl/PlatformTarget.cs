@@ -256,6 +256,16 @@ namespace Apache.Ignite.Core.Impl
         /// Perform out operation.
         /// </summary>
         /// <param name="type">Operation type.</param>
+        /// <returns>Long result.</returns>
+        protected long DoOutOp(int type)
+        {
+            return UU.TargetOutLong(_target, type);
+        }
+
+        /// <summary>
+        /// Perform out operation.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
         /// <param name="action">Action to be performed on the stream.</param>
         /// <returns></returns>
         protected long DoOutOp(int type, Action<IBinaryStream> action)

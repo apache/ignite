@@ -166,9 +166,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheWithKeepPortable")]
         public static extern void* CacheWithKeepBinary(void* ctx, void* obj);
 
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheClear")]
-        public static extern void CacheClear(void* ctx, void* obj);
-
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheRemoveAll")]
         public static extern void CacheRemoveAll(void* ctx, void* obj);
 

@@ -207,10 +207,6 @@ extern "C" {
         return ctx->CacheWithKeepPortable(static_cast<jobject>(obj));
     }
 
-    void IGNITE_CALL IgniteCacheClear(gcj::JniContext* ctx, void* obj) {
-        ctx->CacheClear(static_cast<jobject>(obj));
-    }
-
     void IGNITE_CALL IgniteCacheRemoveAll(gcj::JniContext* ctx, void* obj) {
         ctx->CacheRemoveAll(static_cast<jobject>(obj));
     }

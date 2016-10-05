@@ -477,11 +477,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return target.ChangeTarget(res);
         }
 
-        internal static void CacheClear(IUnmanagedTarget target)
-        {
-            JNI.CacheClear(target.Context, target.Target);
-        }
-
         internal static void CacheRemoveAll(IUnmanagedTarget target)
         {
             JNI.CacheRemoveAll(target.Context, target.Target);

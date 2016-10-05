@@ -237,7 +237,6 @@ namespace ignite
                 jmethodID m_PlatformCache_withExpiryPolicy;
                 jmethodID m_PlatformCache_withAsync;
                 jmethodID m_PlatformCache_withKeepPortable;
-                jmethodID m_PlatformCache_clear;
                 jmethodID m_PlatformCache_removeAll;
                 jmethodID m_PlatformCache_iterator;
                 jmethodID m_PlatformCache_localIterator;

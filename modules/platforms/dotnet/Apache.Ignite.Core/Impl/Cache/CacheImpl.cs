@@ -637,7 +637,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public void Clear()
         {
-            UU.CacheClear(Target);
+            DoOutOp((int) CacheOp.ClearCache);
         }
 
         /** <inheritDoc /> */
