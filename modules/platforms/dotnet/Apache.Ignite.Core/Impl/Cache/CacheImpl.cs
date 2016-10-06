@@ -752,7 +752,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public void RemoveAll()
         {
-            UU.CacheRemoveAll(Target);
+            DoOutOp((int) CacheOp.RemoveAll2);
         }
 
         /** <inheritDoc /> */
@@ -793,7 +793,11 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             int modes0 = EncodePeekModes(modes);
 
-            return UU.CacheSize(Target, modes0, loc);
+            return DoOutInOp((int) CacheOp.Size, w =>
+            {
+                w.WriteInt(modes0);
+                w.WriteBoolean(loc);
+            }, r => r.ReadInt());
         }
 
         /** <inheritDoc /> */
@@ -917,7 +921,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task Rebalance()
         {
-            return GetFuture<object>((futId, futTyp) => UU.CacheRebalance(Target, futId)).Task;
+            return GetFuture<object>((futId, futTyp) => DoOutOp((int) CacheOp.Rebalance,
+                (IBinaryStream w) => w.WriteLong(futId))).Task;
         }
 
         /** <inheritDoc /> */
@@ -1129,9 +1134,13 @@ namespace Apache.Ignite.Core.Impl.Cache
         internal CacheEnumerator<TK, TV> CreateEnumerator(bool loc, int peekModes)
         {
             if (loc)
-                return new CacheEnumerator<TK, TV>(UU.CacheLocalIterator(Target, peekModes), Marshaller, _flagKeepBinary);
+            {
+                var target = DoOutOpObject((int) CacheOp.LocIterator, w => w.WriteInt(peekModes));
 
-            return new CacheEnumerator<TK, TV>(UU.CacheIterator(Target), Marshaller, _flagKeepBinary);
+                return new CacheEnumerator<TK, TV>(target, Marshaller, _flagKeepBinary);
+            }
+
+            return new CacheEnumerator<TK, TV>(DoOutOpObject((int) CacheOp.Iterator), Marshaller, _flagKeepBinary);
         }
 
         #endregion

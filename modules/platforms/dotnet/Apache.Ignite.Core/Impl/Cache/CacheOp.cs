@@ -68,6 +68,14 @@ namespace Apache.Ignite.Core.Impl.Cache
         WithKeepBinary = 44,
         WithExpiryPolicy = 45,
         WithNoRetries = 46,
-        WithSkipStore = 47
+        WithSkipStore = 47,
+        Size = 48,
+        Iterator = 49,
+        LocIterator = 50,
+        EnterLock = 51,
+        ExitLock = 52,
+        TryEnterLock = 53,
+        CloseLock = 54,
+        Rebalance = 55
     }
 }

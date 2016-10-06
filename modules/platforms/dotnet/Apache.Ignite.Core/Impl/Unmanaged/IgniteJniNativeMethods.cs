@@ -151,52 +151,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAffinityPartitions")]
         public static extern int AffinityParts(void* ctx, void* target);
 
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheWithSkipStore")]
-        public static extern void* CacheWithSkipStore(void* ctx, void* obj);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheWithNoRetries")]
-        public static extern void* CacheWithNoRetries(void* ctx, void* obj);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheWithExpiryPolicy")]
-        public static extern void* CacheWithExpiryPolicy(void* ctx, void* obj, long create, long update, long access);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheWithKeepPortable")]
-        public static extern void* CacheWithKeepBinary(void* ctx, void* obj);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheRemoveAll")]
-        public static extern void CacheRemoveAll(void* ctx, void* obj);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheOutOpQueryCursor")]
-        public static extern void* CacheOutOpQueryCursor(void* ctx, void* obj, int type, long memPtr);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheOutOpContinuousQuery")]
-        public static extern void* CacheOutOpContinuousQuery(void* ctx, void* obj, int type, long memPtr);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheIterator")]
-        public static extern void* CacheIterator(void* ctx, void* obj);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheLocalIterator")]
-        public static extern void* CacheLocalIterator(void* ctx, void* obj, int peekModes);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheEnterLock")]
-        public static extern void CacheEnterLock(void* ctx, void* obj, long id);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheExitLock")]
-        public static extern void CacheExitLock(void* ctx, void* obj, long id);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheTryEnterLock")]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool CacheTryEnterLock(void* ctx, void* obj, long id, long timeout);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheCloseLock")]
-        public static extern void CacheCloseLock(void* ctx, void* obj, long id);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheRebalance")]
-        public static extern void CacheRebalance(void* ctx, void* obj, long futId);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheSize")]
-        public static extern int CacheSize(void* ctx, void* obj, int peekModes, [MarshalAs(UnmanagedType.U1)] bool loc);
-
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheStoreCallbackInvoke")]
         public static extern void CacheStoreCallbackInvoke(void* ctx, void* obj, long memPtr);
 

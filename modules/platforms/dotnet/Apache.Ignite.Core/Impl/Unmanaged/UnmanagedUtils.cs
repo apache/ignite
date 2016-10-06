@@ -442,72 +442,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region NATIVE METHODS: CACHE
 
-        internal static void CacheRemoveAll(IUnmanagedTarget target)
-        {
-            JNI.CacheRemoveAll(target.Context, target.Target);
-        }
-
-        internal static IUnmanagedTarget CacheOutOpQueryCursor(IUnmanagedTarget target, int type, long memPtr)
-        {
-            void* res = JNI.CacheOutOpQueryCursor(target.Context, target.Target, type, memPtr);
-
-            return target.ChangeTarget(res);
-        }
-
-        internal static IUnmanagedTarget CacheOutOpContinuousQuery(IUnmanagedTarget target, int type, long memPtr)
-        {
-            void* res = JNI.CacheOutOpContinuousQuery(target.Context, target.Target, type, memPtr);
-
-            return target.ChangeTarget(res);
-        }
-
-        internal static IUnmanagedTarget CacheIterator(IUnmanagedTarget target)
-        {
-            void* res = JNI.CacheIterator(target.Context, target.Target);
-
-            return target.ChangeTarget(res);
-        }
-
-        internal static IUnmanagedTarget CacheLocalIterator(IUnmanagedTarget target, int peekModes)
-        {
-            void* res = JNI.CacheLocalIterator(target.Context, target.Target, peekModes);
-
-            return target.ChangeTarget(res);
-        }
-
-        internal static void CacheEnterLock(IUnmanagedTarget target, long id)
-        {
-            JNI.CacheEnterLock(target.Context, target.Target, id);
-        }
-
-        internal static void CacheExitLock(IUnmanagedTarget target, long id)
-        {
-            JNI.CacheExitLock(target.Context, target.Target, id);
-        }
-
-        internal static bool CacheTryEnterLock(IUnmanagedTarget target, long id, long timeout)
-        {
-            return JNI.CacheTryEnterLock(target.Context, target.Target, id, timeout);
-        }
-
-        internal static void CacheCloseLock(IUnmanagedTarget target, long id)
-        {
-            JNI.CacheCloseLock(target.Context, target.Target, id);
-        }
-
-        internal static void CacheRebalance(IUnmanagedTarget target, long futId)
-        {
-            JNI.CacheRebalance(target.Context, target.Target, futId);
-        }
-
         internal static void CacheStoreCallbackInvoke(IUnmanagedTarget target, long memPtr)
         {
             JNI.CacheStoreCallbackInvoke(target.Context, target.Target, memPtr);
-        }
-
-        internal static int CacheSize(IUnmanagedTarget target, int modes, bool loc)
-        {
-            return JNI.CacheSize(target.Context, target.Target, modes, loc);
         }
 
         #endregion
