@@ -39,8 +39,9 @@ public enum BinaryKeyHashingMode {
     /**
      * Generate hash code based upon serialized representation of binary object fields - namely, byte array constructed
      * by {@link BinaryObjectBuilder}. Use this mode if you are NOT planning to retrieve data from cache via
-     * ordinary cache methods like {@link IgniteCache#get(Object)}, {@link IgniteCache#getAll(Set)}, etc. -
-     * it's an convenient way to manipulate and retrieve binary data in cache only via full-scale SQL features
+     * ordinary cache methods like {@link IgniteCache#get(Object)}, {@link IgniteCache#getAll(Set)}, etc., or
+     * if you don't have particular classes for keys neither on client nor on server - it's an convenient way
+     * to manipulate and retrieve binary data in cache only via full-scale SQL features
      * with as little additional configuration overhead as choosing this mode.
      */
     BYTES_HASH,
