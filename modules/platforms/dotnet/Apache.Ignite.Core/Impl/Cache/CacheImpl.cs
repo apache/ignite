@@ -973,22 +973,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             if (string.IsNullOrEmpty(qry.Sql))
                 throw new ArgumentException("Sql cannot be null or empty");
 
-            IUnmanagedTarget cursor;
-
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            var cursor = DoOutOpObject((int) CacheOp.QrySqlFields, writer =>
             {
-                var writer = Marshaller.StartMarshal(stream);
-
                 writer.WriteBoolean(qry.Local);
                 writer.WriteString(qry.Sql);
                 writer.WriteInt(qry.PageSize);
 
                 WriteQueryArgs(writer, qry.Arguments);
-
-                FinishMarshal(writer);
-
-                cursor = UU.CacheOutOpQueryCursor(Target, (int) CacheOp.QrySqlFields, stream.SynchronizeOutput());
-            }
+            });
         
             return new FieldsQueryCursor<T>(cursor, Marshaller, _flagKeepBinary, readerFunc);
         }
@@ -998,18 +990,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(qry, "qry");
 
-            IUnmanagedTarget cursor;
-
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
-            {
-                var writer = Marshaller.StartMarshal(stream);
-
-                qry.Write(writer, IsKeepBinary);
-
-                FinishMarshal(writer);
-
-                cursor = UU.CacheOutOpQueryCursor(Target, (int)qry.OpId, stream.SynchronizeOutput()); 
-            }
+            var cursor = DoOutOpObject((int) qry.OpId, writer => qry.Write(writer, IsKeepBinary));
 
             return new QueryCursor<TK, TV>(cursor, Marshaller, _flagKeepBinary);
         }
