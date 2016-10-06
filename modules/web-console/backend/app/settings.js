@@ -45,13 +45,14 @@ module.exports.factory = function(nconf, fs) {
         return false;
     };
 
-    const mailConfig = nconf.get('mail') || {};
+    const mail = nconf.get('mail') || {};
+
+    mail.address = (username, email) => username ? '"' + username + '" <' + email + '>' : email;
 
     return {
         agent: {
             dists: 'agent_dists',
             port: _normalizePort(nconf.get('agentServer:port') || 3002),
-            legacyPort: _normalizePort(nconf.get('agentServer:legacyPort')),
             SSLOptions: nconf.get('agentServer:ssl') && {
                 key: fs.readFileSync(nconf.get('agentServer:key')),
                 cert: fs.readFileSync(nconf.get('agentServer:cert')),
@@ -68,10 +69,7 @@ module.exports.factory = function(nconf, fs) {
                 passphrase: nconf.get('server:keyPassphrase')
             }
         },
-        smtp: {
-            ...mailConfig,
-            address: (username, email) => username ? '"' + username + '" <' + email + '>' : email
-        },
+        mail,
         mongoUrl: nconf.get('mongodb:url') || 'mongodb://localhost/console',
         cookieTTL: 3600000 * 24 * 30,
         sessionSecret: nconf.get('server:sessionSecret') || 'keyboard cat',

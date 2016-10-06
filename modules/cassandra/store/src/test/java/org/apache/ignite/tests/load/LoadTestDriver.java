@@ -74,7 +74,7 @@ public abstract class LoadTestDriver {
         }
 
         // calculates host unique prefix based on its subnet IP address
-        long hostUniqePrefix = getHostUniquePrefix();
+        long hostUniquePrefix = getHostUniquePrefix();
 
         logger().info("Load tests driver setup successfully completed");
 
@@ -87,8 +87,8 @@ public abstract class LoadTestDriver {
 
             for (int i = 0; i < TestsHelper.getLoadTestsThreadsCount(); i++) {
                 Worker worker = createWorker(clazz, cfg,
-                    hostUniqePrefix + startPosition,
-                    hostUniqePrefix + startPosition + 100000000);
+                    hostUniquePrefix + startPosition,
+                    hostUniquePrefix + startPosition + 100000000);
                 workers.add(worker);
                 worker.setName(testName + "-worker-" + i);
                 worker.start();
@@ -224,14 +224,14 @@ public abstract class LoadTestDriver {
         long part4 = Long.parseLong(parts[3]);
 
         if (part3 < 10)
-            part3 = part3 * 100;
+            part3 *= 100;
         else if (part4 < 100)
-            part3 = part3 * 10;
+            part3 *= 10;
 
         if (part4 < 10)
-            part4 = part4 * 100;
+            part4 *= 100;
         else if (part4 < 100)
-            part4 = part4 * 10;
+            part4 *= 10;
 
         return (part4 * 100000000000000L) + (part3 * 100000000000L) + Thread.currentThread().getId();
     }

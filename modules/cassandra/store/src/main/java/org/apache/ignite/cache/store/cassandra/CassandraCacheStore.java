@@ -22,8 +22,10 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Row;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -41,6 +43,9 @@ import org.apache.ignite.cache.store.cassandra.session.CassandraSession;
 import org.apache.ignite.cache.store.cassandra.session.ExecutionAssistant;
 import org.apache.ignite.cache.store.cassandra.session.GenericBatchExecutionAssistant;
 import org.apache.ignite.cache.store.cassandra.session.LoadCacheCustomQueryWorker;
+import org.apache.ignite.cache.store.cassandra.session.transaction.DeleteMutation;
+import org.apache.ignite.cache.store.cassandra.session.transaction.Mutation;
+import org.apache.ignite.cache.store.cassandra.session.transaction.WriteMutation;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.logger.NullLogger;
@@ -54,14 +59,16 @@ import org.apache.ignite.resources.LoggerResource;
  * @param <V> Ignite cache value type.
  */
 public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
-    /** Connection attribute property name. */
-    private static final String ATTR_CONN_PROP = "CASSANDRA_STORE_CONNECTION";
+    /** Buffer to store mutations performed withing transaction. */
+    private static final String TRANSACTION_BUFFER = "CASSANDRA_TRANSACTION_BUFFER";
 
     /** Auto-injected store session. */
+    @SuppressWarnings("unused")
     @CacheStoreSessionResource
     private CacheStoreSession storeSes;
 
     /** Auto-injected logger instance. */
+    @SuppressWarnings("unused")
     @LoggerResource
     private IgniteLogger log;
 
@@ -127,12 +134,22 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
 
     /** {@inheritDoc} */
     @Override public void sessionEnd(boolean commit) throws CacheWriterException {
-        if (storeSes == null || storeSes.transaction() == null)
+        if (!storeSes.isWithinTransaction())
             return;
 
-        CassandraSession cassandraSes = (CassandraSession) storeSes.properties().remove(ATTR_CONN_PROP);
+        List<Mutation> mutations = mutations();
+        if (mutations == null || mutations.isEmpty())
+            return;
 
-        U.closeQuiet(cassandraSes);
+        CassandraSession ses = getCassandraSession();
+
+        try {
+            ses.execute(mutations);
+        }
+        finally {
+            mutations.clear();
+            U.closeQuiet(ses);
+        }
     }
 
     /** {@inheritDoc} */
@@ -182,7 +199,7 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
             });
         }
         finally {
-            closeCassandraSession(ses);
+            U.closeQuiet(ses);
         }
     }
 
@@ -235,7 +252,7 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
             }, keys);
         }
         finally {
-            closeCassandraSession(ses);
+            U.closeQuiet(ses);
         }
     }
 
@@ -243,6 +260,11 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
     @Override public void write(final Cache.Entry<? extends K, ? extends V> entry) throws CacheWriterException {
         if (entry == null || entry.getKey() == null)
             return;
+
+        if (storeSes.isWithinTransaction()) {
+            accumulate(new WriteMutation(entry, cassandraTable(), controller));
+            return;
+        }
 
         CassandraSession ses = getCassandraSession();
 
@@ -285,7 +307,7 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
             });
         }
         finally {
-            closeCassandraSession(ses);
+            U.closeQuiet(ses);
         }
     }
 
@@ -293,6 +315,13 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
     @Override public void writeAll(Collection<Cache.Entry<? extends K, ? extends V>> entries) throws CacheWriterException {
         if (entries == null || entries.isEmpty())
             return;
+
+        if (storeSes.isWithinTransaction()) {
+            for (Cache.Entry<?, ?> entry : entries)
+                accumulate(new WriteMutation(entry, cassandraTable(), controller));
+
+            return;
+        }
 
         CassandraSession ses = getCassandraSession();
 
@@ -331,7 +360,7 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
             }, entries);
         }
         finally {
-            closeCassandraSession(ses);
+            U.closeQuiet(ses);
         }
     }
 
@@ -339,6 +368,11 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
     @Override public void delete(final Object key) throws CacheWriterException {
         if (key == null)
             return;
+
+        if (storeSes.isWithinTransaction()) {
+            accumulate(new DeleteMutation(key, cassandraTable(), controller));
+            return;
+        }
 
         CassandraSession ses = getCassandraSession();
 
@@ -382,7 +416,7 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
             });
         }
         finally {
-            closeCassandraSession(ses);
+            U.closeQuiet(ses);
         }
     }
 
@@ -390,6 +424,13 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
     @Override public void deleteAll(Collection<?> keys) throws CacheWriterException {
         if (keys == null || keys.isEmpty())
             return;
+
+        if (storeSes.isWithinTransaction()) {
+            for (Object key : keys)
+                accumulate(new DeleteMutation(key, cassandraTable(), controller));
+
+            return;
+        }
 
         CassandraSession ses = getCassandraSession();
 
@@ -422,7 +463,7 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
             }, keys);
         }
         finally {
-            closeCassandraSession(ses);
+            U.closeQuiet(ses);
         }
     }
 
@@ -433,27 +474,7 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
      * @return Cassandra session wrapper.
      */
     private CassandraSession getCassandraSession() {
-        if (storeSes == null || storeSes.transaction() == null)
-            return dataSrc.session(log != null ? log : new NullLogger());
-
-        CassandraSession ses = (CassandraSession) storeSes.properties().get(ATTR_CONN_PROP);
-
-        if (ses == null) {
-            ses = dataSrc.session(log != null ? log : new NullLogger());
-            storeSes.properties().put(ATTR_CONN_PROP, ses);
-        }
-
-        return ses;
-    }
-
-    /**
-     * Releases Cassandra related resources.
-     *
-     * @param ses Cassandra session wrapper.
-     */
-    private void closeCassandraSession(CassandraSession ses) {
-        if (ses != null && (storeSes == null || storeSes.transaction() == null))
-            U.closeQuiet(ses);
+        return dataSrc.session(log != null ? log : new NullLogger());
     }
 
     /**
@@ -463,6 +484,33 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
      */
     private String cassandraTable() {
         return controller.getPersistenceSettings().getTable() != null ?
-            controller.getPersistenceSettings().getTable() : storeSes.cacheName().toLowerCase();
+            controller.getPersistenceSettings().getTable() : storeSes.cacheName().trim().toLowerCase();
+    }
+
+    /**
+     * Accumulates mutation in the transaction buffer.
+     *
+     * @param mutation Mutation operation.
+     */
+    private void accumulate(Mutation mutation) {
+        //noinspection unchecked
+        List<Mutation> mutations = (List<Mutation>)storeSes.properties().get(TRANSACTION_BUFFER);
+
+        if (mutations == null) {
+            mutations = new LinkedList<>();
+            storeSes.properties().put(TRANSACTION_BUFFER, mutations);
+        }
+
+        mutations.add(mutation);
+    }
+
+    /**
+     * Returns all the mutations performed withing transaction.
+     *
+     * @return Mutations
+     */
+    private List<Mutation> mutations() {
+        //noinspection unchecked
+        return (List<Mutation>)storeSes.properties().get(TRANSACTION_BUFFER);
     }
 }
