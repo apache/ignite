@@ -957,6 +957,10 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     public void testPutWithoutHashCode() throws Exception {
         final IgniteCache c = jcache(0);
 
+        GridCacheAdapter<Object, Object> cache0 = grid(0).context().cache().internalCache(null);
+
+        cache0.forceKeyCheck();
+
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             /** {@inheritDoc} */
             @Override public Object call() throws Exception {
@@ -969,6 +973,8 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         bldr.setField("val", 5);
 
         final BinaryObject binKey = bldr.build();
+
+        cache0.forceKeyCheck();
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             /** {@inheritDoc} */
