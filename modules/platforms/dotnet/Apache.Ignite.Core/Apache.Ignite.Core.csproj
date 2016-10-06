@@ -166,6 +166,7 @@
     <Compile Include="Common\Package-Info.cs" />
     <Compile Include="Impl\Binary\BinaryWriterExtensions.cs" />
     <Compile Include="Impl\Cache\Affinity\AffinityFunctionBase.cs" />
+    <Compile Include="Impl\Cache\ICacheLockInternal.cs" />
     <Compile Include="Impl\Common\Platform.cs" />
     <Compile Include="Impl\Cache\Affinity\AffinityFunctionSerializer.cs" />
     <Compile Include="Impl\Cache\Affinity\PlatformAffinityFunction.cs" />

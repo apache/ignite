@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     /// Native cache wrapper.
     /// </summary>
     [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")]
-    internal class CacheImpl<TK, TV> : PlatformTarget, ICache<TK, TV>, ICacheInternal
+    internal class CacheImpl<TK, TV> : PlatformTarget, ICache<TK, TV>, ICacheInternal, ICacheLockInternal
     {
         /** Duration: unchanged. */
         private const long DurUnchanged = -2;
@@ -881,7 +881,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             return DoOutInOp((int)CacheOp.Lock, writer =>
             {
                 writer.Write(key);
-            }, input => new CacheLock(input.ReadInt(), Target));
+            }, input => new CacheLock(input.ReadInt(), this));
         }
 
         /** <inheritdoc /> */
@@ -892,7 +892,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             return DoOutInOp((int)CacheOp.LockAll, writer =>
             {
                 WriteEnumerable(writer, keys);
-            }, input => new CacheLock(input.ReadInt(), Target));
+            }, input => new CacheLock(input.ReadInt(), this));
         }
 
         /** <inheritdoc /> */
@@ -1284,6 +1284,26 @@ namespace Apache.Ignite.Core.Impl.Cache
             return res == null
                 ? new CacheResult<TR>()
                 : new CacheResult<TR>((TR)res);
+        }
+
+        public void Enter(long id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool TryEnter(long id, TimeSpan timeout)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Exit(long id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Close(long id)
+        {
+            throw new NotImplementedException();
         }
     }
 }
