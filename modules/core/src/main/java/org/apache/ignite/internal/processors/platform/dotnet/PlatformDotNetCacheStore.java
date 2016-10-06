@@ -221,7 +221,9 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                 }
             }, new IgniteInClosureX<BinaryRawReaderEx>() {
                 @Override public void applyx(BinaryRawReaderEx reader) {
-                    for (int i = 0; i < args.length; i++)
+                    int cnt = reader.readInt();
+
+                    for (int i = 0; i < cnt; i++)
                         clo.apply((K) reader.readObjectDetached(), (V) reader.readObjectDetached());
                 }
             });

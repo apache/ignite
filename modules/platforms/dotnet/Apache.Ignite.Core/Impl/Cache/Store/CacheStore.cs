@@ -173,12 +173,27 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
                 switch (opType)
                 {
                     case OpLoadCache:
-                        _store.LoadCache((k, v) => WriteObjects(stream, grid, k, v), rawReader.ReadArray<object>());
+                        var args = rawReader.ReadArray<object>();
+
+                        stream.Seek(0, SeekOrigin.Begin);
+
+                        int cnt = 0;
+                        stream.WriteInt(cnt);
+
+                        _store.LoadCache((k, v) =>
+                        {
+                            WriteObjects(stream, grid, k, v);
+                            cnt++;
+                        }, args);
+
+                        stream.WriteInt(0, cnt);
 
                         break;
 
                     case OpLoad:
                         object val = _store.Load(rawReader.ReadObject<object>());
+
+                        stream.Seek(0, SeekOrigin.Begin);
 
                         if (val != null)
                             WriteObjects(stream, grid, val);
@@ -190,6 +205,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
 
                         var result = _store.LoadAll(keys);
 
+                        stream.Seek(0, SeekOrigin.Begin);
+
+                        // TODO: Optimize?
                         foreach (DictionaryEntry entry in result)
                             WriteObjects(stream, grid, entry.Key, entry.Value);
 
@@ -249,8 +267,6 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         /// <param name="objects">Objects.</param>
         private static void WriteObjects(IBinaryStream stream, Ignite grid, params object[] objects)
         {
-            stream.Seek(0, SeekOrigin.Begin);
-
             var writer = grid.Marshaller.StartMarshal(stream);
 
             try
