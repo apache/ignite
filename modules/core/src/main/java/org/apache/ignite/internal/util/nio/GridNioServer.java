@@ -73,7 +73,6 @@ import sun.nio.ch.DirectBuffer;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.ACK_CLOSURE;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_WRITER;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.NIO_OPERATION;
-import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.REMINDER;
 
 /**
  * TCP NIO server. Due to asynchronous nature of connections processing
@@ -903,9 +902,7 @@ public class GridNioServer<T> {
             if (log.isTraceEnabled())
                 log.trace("Bytes received [sockCh=" + sockCh + ", cnt=" + cnt + ']');
 
-            ByteBuffer reminder = ses.meta(REMINDER.ordinal());
-
-            if (cnt == 0 && reminder == null)
+            if (cnt == 0)
                 return;
 
             if (metricsLsnr != null)
@@ -915,7 +912,7 @@ public class GridNioServer<T> {
 
             readBuf.flip();
 
-            assert readBuf.hasRemaining() || reminder != null;
+            assert readBuf.hasRemaining();
 
             try {
                 filterChain.onMessageReceived(ses, readBuf);
@@ -1582,7 +1579,7 @@ public class GridNioServer<T> {
                 assert ses != null;
 
                 try {
-                    if (key.isReadable() || ses.meta(REMINDER.ordinal()) != null)
+                    if (key.isReadable())
                         processRead(key);
 
                     if (key.isValid() && key.isWritable())

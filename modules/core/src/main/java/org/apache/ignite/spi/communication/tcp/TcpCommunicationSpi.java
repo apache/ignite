@@ -24,7 +24,6 @@ import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SelectableChannel;
@@ -91,6 +90,7 @@ import org.apache.ignite.internal.util.nio.GridShmemCommunicationClient;
 import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
 import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
+import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -132,8 +132,7 @@ import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.IN_BUFF;
-import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.REMINDER;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
 
 /**
  * <tt>TcpCommunicationSpi</tt> is default communication SPI which uses
@@ -2210,7 +2209,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             }
 
             try {
-                safeHandshake(client, null, node.id(), timeoutHelper.nextTimeoutChunk(connTimeout0), null, null);
+                safeHandshake(client, null, node.id(), timeoutHelper.nextTimeoutChunk(connTimeout0), null);
             }
             catch (HandshakeTimeoutException | IgniteSpiOperationTimeoutException e) {
                 client.forceClose();
@@ -2377,21 +2376,28 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     long rcvCnt = -1;
 
-                    SSLEngine sslEngine = null;
-
                     Map<Integer, Object> meta = new HashMap<>();
+
+                    GridSslMeta sslMeta = null;
 
                     try {
                         ch.socket().connect(addr, (int)timeoutHelper.nextTimeoutChunk(connTimeout));
 
                         if (isSslEnabled()) {
-                            sslEngine = ignite.configuration().getSslContextFactory().create().createSSLEngine();
+                            meta.put(SSL_META.ordinal(), sslMeta = new GridSslMeta());
+
+                            SSLEngine sslEngine = ignite.configuration().getSslContextFactory().create().createSSLEngine();
 
                             sslEngine.setUseClientMode(true);
+
+                            sslMeta.sslEngine(sslEngine);
                         }
 
-                        rcvCnt = safeHandshake(ch, recoveryDesc, node.id(),
-                            timeoutHelper.nextTimeoutChunk(connTimeout0), sslEngine, meta);
+                        rcvCnt = safeHandshake(ch,
+                            recoveryDesc,
+                            node.id(),
+                            timeoutHelper.nextTimeoutChunk(connTimeout0),
+                            sslMeta);
 
                         if (rcvCnt == -1)
                             return null;
@@ -2403,12 +2409,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     try {
                         meta.put(NODE_ID_META, node.id());
-
-                        if (isSslEnabled()) {
-                            assert sslEngine != null;
-
-                            meta.put(GridNioSessionMetaKey.SSL_ENGINE.ordinal(), sslEngine);
-                        }
 
                         if (recoveryDesc != null) {
                             recoveryDesc.onHandshake(rcvCnt);
@@ -2561,8 +2561,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @param recovery Recovery descriptor if use recovery handshake, otherwise {@code null}.
      * @param rmtNodeId Remote node.
      * @param timeout Timeout for handshake.
-     * @param ssl SSL engine if used cryptography, otherwise {@code null}.
-     * @param meta Session meta.
+     * @param sslMeta Session meta.
      * @throws IgniteCheckedException If handshake failed or wasn't completed withing timeout.
      * @return Handshake response.
      */
@@ -2572,8 +2571,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         @Nullable GridNioRecoveryDescriptor recovery,
         UUID rmtNodeId,
         long timeout,
-        @Nullable SSLEngine ssl,
-        Map<Integer, Object> meta
+        GridSslMeta sslMeta
     ) throws IgniteCheckedException {
         HandshakeTimeoutObject<T> obj = new HandshakeTimeoutObject<>(client, U.currentTimeMillis() + timeout);
 
@@ -2595,7 +2593,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     ByteBuffer buf;
 
                     if (isSslEnabled()) {
-                        sslHnd = new BlockingSslHandler(ssl, ch, directBuf, ByteOrder.nativeOrder(), log);
+                        assert sslMeta != null;
+
+                        sslHnd = new BlockingSslHandler(sslMeta.sslEngine(), ch, directBuf, ByteOrder.nativeOrder(), log);
 
                         if (!sslHnd.handshake())
                             throw new IgniteCheckedException("SSL handshake is not completed.");
@@ -2718,22 +2718,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                             rcvCnt = decode.getLong(1);
 
-                            Buffer inBuf = sslHnd.inputBuffer();
+                            if (decode.limit() > 9) {
+                                decode.position(9);
 
-                            if (meta != null) {
-                                if (inBuf.position() > 0)
-                                    meta.put(IN_BUFF.ordinal(), inBuf);
-
-                                if (decode.limit() > 9) {
-                                    ByteBuffer rem = ByteBuffer.allocate(decode.limit());
-
-                                    rem.put(decode);
-
-                                    rem.position(9);
-
-                                    meta.put(REMINDER.ordinal(), rem);
-                                }
+                                sslMeta.decodedBuffer(decode);
                             }
+
+                            ByteBuffer inBuf = sslHnd.inputBuffer();
+
+                            if (inBuf.position() > 0)
+                                sslMeta.encodedBuffer(inBuf);
                         }
                         else {
                             buf = ByteBuffer.allocate(9);

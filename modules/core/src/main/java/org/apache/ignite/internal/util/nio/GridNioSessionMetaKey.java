@@ -26,8 +26,8 @@ public enum GridNioSessionMetaKey {
     /** NIO parser state. */
     PARSER_STATE,
 
-    /** SSL handler. */
-    SSL_HANDLER,
+    /** SSL Meta. */
+    SSL_META,
 
     /** NIO operation (request type). */
     NIO_OPERATION,
@@ -44,17 +44,8 @@ public enum GridNioSessionMetaKey {
     /** Message writer. */
     MSG_WRITER,
 
-    /** SSL engine. */
-    SSL_ENGINE,
-
     /** Ack closure. */
-    ACK_CLOSURE,
-
-    /** Reminder. */
-    REMINDER,
-
-    /** Input buffer. */
-    IN_BUFF;
+    ACK_CLOSURE;
 
     /** Maximum count of NIO session keys in system. */
     public static final int MAX_KEYS_CNT = 64;

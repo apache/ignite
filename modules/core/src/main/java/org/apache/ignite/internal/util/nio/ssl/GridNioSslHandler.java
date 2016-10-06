@@ -43,8 +43,6 @@ import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING;
 import static javax.net.ssl.SSLEngineResult.Status;
 import static javax.net.ssl.SSLEngineResult.Status.BUFFER_UNDERFLOW;
 import static javax.net.ssl.SSLEngineResult.Status.CLOSED;
-import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.IN_BUFF;
-import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_ENGINE;
 import static org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter.HANDSHAKE_FUT_META_KEY;
 
 /**
@@ -105,6 +103,8 @@ class GridNioSslHandler extends ReentrantLock {
      * @param log Logger to use.
      * @param directBuf Direct buffer flag.
      * @param order Byte order.
+     * @param handshake is handshake required.
+     * @param encBuf encoded buffer to be used.
      * @throws SSLException If exception occurred when starting SSL handshake.
      */
     GridNioSslHandler(GridNioSslFilter parent,
@@ -112,7 +112,9 @@ class GridNioSslHandler extends ReentrantLock {
         SSLEngine engine,
         boolean directBuf,
         ByteOrder order,
-        IgniteLogger log) throws SSLException {
+        IgniteLogger log,
+        boolean handshake,
+        ByteBuffer encBuf) throws SSLException {
         assert parent != null;
         assert ses != null;
         assert engine != null;
@@ -126,11 +128,9 @@ class GridNioSslHandler extends ReentrantLock {
 
         sslEngine = engine;
 
-        if (ses.meta(SSL_ENGINE.ordinal()) == null)
+        if (handshake)
             sslEngine.beginHandshake();
         else {
-            sslEngine = ses.meta(SSL_ENGINE.ordinal());
-
             handshakeFinished = true;
             initHandshakeComplete = true;
         }
@@ -144,14 +144,14 @@ class GridNioSslHandler extends ReentrantLock {
 
         outNetBuf.order(order);
 
-        ByteBuffer blockInBuf = ses.removeMeta(IN_BUFF.ordinal());
+        inNetBuf = directBuf ? ByteBuffer.allocateDirect(netBufSize) : ByteBuffer.allocate(netBufSize);
 
-        if (blockInBuf != null)
-            inNetBuf = blockInBuf;
-        else {
-            inNetBuf = directBuf ? ByteBuffer.allocateDirect(netBufSize) : ByteBuffer.allocate(netBufSize);
+        inNetBuf.order(order);
 
-            inNetBuf.order(order);
+        if (encBuf != null) {
+            encBuf.flip();
+
+            inNetBuf.put(encBuf); // Buffer contains bytes read but not handled by sslEngine at BlockingSslHandler.
         }
 
         // Initially buffer is empty.
