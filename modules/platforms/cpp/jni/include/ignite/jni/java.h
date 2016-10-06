@@ -231,9 +231,6 @@ namespace ignite
                 jclass c_PlatformAffinity;
                 jmethodID m_PlatformAffinity_partitions;
 
-                jclass c_PlatformCacheStoreCallback;
-                jmethodID m_PlatformCacheStoreCallback_invoke;
-
                 jclass c_IgniteException;
 
                 jclass c_PlatformClusterGroup;
@@ -537,8 +534,6 @@ namespace ignite
 
                 jobject CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr);
-
-                void CacheStoreCallbackInvoke(jobject obj, long long memPtr);
 
                 void DataStreamerListenTopology(jobject obj, long long ptr);
                 bool DataStreamerAllowOverwriteGet(jobject obj);

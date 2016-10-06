@@ -186,10 +186,6 @@ extern "C" {
         return ctx->AffinityPartitions(static_cast<jobject>(obj));
     }
 
-    void IGNITE_CALL IgniteCacheStoreCallbackInvoke(gcj::JniContext* ctx, void* obj, long long memPtr) {
-        ctx->CacheStoreCallbackInvoke(static_cast<jobject>(obj), memPtr);
-    }
-
     void IGNITE_CALL IgniteDataStreamerListenTopology(gcj::JniContext* ctx, void* obj, long long ptr) {
         ctx->DataStreamerListenTopology(static_cast<jobject>(obj), ptr);
     }

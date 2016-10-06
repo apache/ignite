@@ -440,15 +440,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #endregion
 
-        #region NATIVE METHODS: CACHE
-
-        internal static void CacheStoreCallbackInvoke(IUnmanagedTarget target, long memPtr)
-        {
-            JNI.CacheStoreCallbackInvoke(target.Context, target.Target, memPtr);
-        }
-
-        #endregion
-
         #region NATIVE METHODS: DATA STREAMER
 
         internal static void DataStreamerListenTopology(IUnmanagedTarget target, long ptr)

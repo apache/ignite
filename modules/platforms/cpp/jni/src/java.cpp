@@ -263,9 +263,6 @@ namespace ignite
             JniMethod M_PLATFORM_TRANSACTIONS_TX_CLOSE = JniMethod("txClose", "(J)I", false);
             JniMethod M_PLATFORM_TRANSACTIONS_RESET_METRICS = JniMethod("resetMetrics", "()V", false);
 
-            const char* C_PLATFORM_CACHE_STORE_CALLBACK = "org/apache/ignite/internal/processors/platform/cache/store/PlatformCacheStoreCallback";
-            JniMethod M_PLATFORM_CACHE_STORE_CALLBACK_INVOKE = JniMethod("invoke", "(J)V", false);
-
             const char* C_PLATFORM_CALLBACK_UTILS = "org/apache/ignite/internal/processors/platform/callback/PlatformCallbackUtils";
 
             JniMethod M_PLATFORM_CALLBACK_UTILS_CACHE_STORE_CREATE = JniMethod("cacheStoreCreate", "(JJ)J", true);
@@ -566,9 +563,6 @@ namespace ignite
                 c_PlatformAffinity = FindClass(env, C_PLATFORM_AFFINITY);
                 m_PlatformAffinity_partitions = FindMethod(env, c_PlatformAffinity, C_PLATFORM_AFFINITY_PARTITIONS);
 
-                c_PlatformCacheStoreCallback = FindClass(env, C_PLATFORM_CACHE_STORE_CALLBACK);
-                m_PlatformCacheStoreCallback_invoke = FindMethod(env, c_PlatformCacheStoreCallback, M_PLATFORM_CACHE_STORE_CALLBACK_INVOKE);
-
                 c_IgniteException = FindClass(env, C_IGNITE_EXCEPTION);
 
                 c_PlatformClusterGroup = FindClass(env, C_PLATFORM_CLUSTER_GRP);
@@ -706,7 +700,6 @@ namespace ignite
             void JniMembers::Destroy(JNIEnv* env) {
                 DeleteClass(env, c_PlatformAbstractQryCursor);
                 DeleteClass(env, c_PlatformAffinity);
-                DeleteClass(env, c_PlatformCacheStoreCallback);
                 DeleteClass(env, c_IgniteException);
                 DeleteClass(env, c_PlatformClusterGroup);
                 DeleteClass(env, c_PlatformDataStreamer);
@@ -1567,14 +1560,6 @@ namespace ignite
                 ExceptionCheck(env);
 
                 return LocalToGlobal(env, res);
-            }
-
-            void JniContext::CacheStoreCallbackInvoke(jobject obj, long long memPtr) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformCacheStoreCallback_invoke, memPtr);
-
-                ExceptionCheck(env);
             }
 
             void JniContext::DataStreamerListenTopology(jobject obj, long long ptr) {
