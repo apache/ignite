@@ -878,7 +878,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutInOp((int)CacheOp.Lock, writer =>
+            return DoOutInOp((int) CacheOp.Lock, writer =>
             {
                 writer.Write(key);
             }, input => new CacheLock(input.ReadInt(), this));
@@ -889,7 +889,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
-            return DoOutInOp((int)CacheOp.LockAll, writer =>
+            return DoOutInOp((int) CacheOp.LockAll, writer =>
             {
                 WriteEnumerable(writer, keys);
             }, input => new CacheLock(input.ReadInt(), this));
@@ -1286,24 +1286,32 @@ namespace Apache.Ignite.Core.Impl.Cache
                 : new CacheResult<TR>((TR)res);
         }
 
+        /** <inheritdoc /> */
         public void Enter(long id)
         {
-            throw new NotImplementedException();
+            DoOutOp((int) CacheOp.EnterLock, (IBinaryStream s) => s.WriteLong(id));
         }
 
+        /** <inheritdoc /> */
         public bool TryEnter(long id, TimeSpan timeout)
         {
-            throw new NotImplementedException();
+            return DoOutOp((int) CacheOp.TryEnterLock, (IBinaryStream s) =>
+                   {
+                       s.WriteLong(id);
+                       s.WriteLong((long) timeout.TotalMilliseconds);
+                   }) == True;
         }
 
+        /** <inheritdoc /> */
         public void Exit(long id)
         {
-            throw new NotImplementedException();
+            DoOutOp((int) CacheOp.ExitLock, (IBinaryStream s) => s.WriteLong(id));
         }
 
+        /** <inheritdoc /> */
         public void Close(long id)
         {
-            throw new NotImplementedException();
+            DoOutOp((int) CacheOp.CloseLock, (IBinaryStream s) => s.WriteLong(id));
         }
     }
 }
