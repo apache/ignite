@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
  * Apache Flink Ignite sink implemented as a RichSinkFunction.
