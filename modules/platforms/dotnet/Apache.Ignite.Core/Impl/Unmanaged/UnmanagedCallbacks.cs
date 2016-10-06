@@ -95,7 +95,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private const int OpPrepareDotNet = 1;
 
         private delegate long CacheStoreCreateCallbackDelegate(void* target, long memPtr);
-        private delegate int CacheStoreInvokeCallbackDelegate(void* target, long objPtr, long memPtr, void* cb);
+        private delegate int CacheStoreInvokeCallbackDelegate(void* target, long objPtr, long memPtr);
         private delegate void CacheStoreDestroyCallbackDelegate(void* target, long objPtr);
         private delegate long CacheStoreSessionCreateCallbackDelegate(void* target, long storePtr);
 
@@ -305,20 +305,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         }
 
         [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
-        private int CacheStoreInvoke(void* target, long objPtr, long memPtr, void* cb)
+        private int CacheStoreInvoke(void* target, long objPtr, long memPtr)
         {
             return SafeCall(() =>
             {
                 var t = _handleRegistry.Get<CacheStore>(objPtr, true);
 
-                IUnmanagedTarget cb0 = null;
-
-                if ((long) cb != 0)
-                    cb0 = new UnmanagedNonReleaseableTarget(_ctx, cb);
-
                 using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
-                    return t.Invoke(stream, cb0, _ignite);
+                    return t.Invoke(stream, _ignite);
                 }
             });
         }

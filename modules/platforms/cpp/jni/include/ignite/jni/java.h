@@ -31,7 +31,7 @@ namespace ignite
         {
             /* Handlers for callbacks from Java. */
             typedef long long(JNICALL *CacheStoreCreateHandler)(void* target, long long memPtr);
-            typedef int(JNICALL *CacheStoreInvokeHandler)(void* target, long long objPtr, long long memPtr, void* cb);
+            typedef int(JNICALL *CacheStoreInvokeHandler)(void* target, long long objPtr, long long memPtr);
             typedef void(JNICALL *CacheStoreDestroyHandler)(void* target, long long objPtr);
             typedef long long(JNICALL *CacheStoreSessionCreateHandler)(void* target, long long storePtr);
 
@@ -634,7 +634,7 @@ namespace ignite
             };
 
             JNIEXPORT jlong JNICALL JniCacheStoreCreate(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr);
-            JNIEXPORT jint JNICALL JniCacheStoreInvoke(JNIEnv *env, jclass cls, jlong envPtr, jlong objPtr, jlong memPtr, jobject cb);
+            JNIEXPORT jint JNICALL JniCacheStoreInvoke(JNIEnv *env, jclass cls, jlong envPtr, jlong objPtr, jlong memPtr);
             JNIEXPORT void JNICALL JniCacheStoreDestroy(JNIEnv *env, jclass cls, jlong envPtr, jlong objPtr);
             JNIEXPORT jlong JNICALL JniCacheStoreSessionCreate(JNIEnv *env, jclass cls, jlong envPtr, jlong storePtr);
 

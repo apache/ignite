@@ -269,7 +269,7 @@ namespace ignite
             const char* C_PLATFORM_CALLBACK_UTILS = "org/apache/ignite/internal/processors/platform/callback/PlatformCallbackUtils";
 
             JniMethod M_PLATFORM_CALLBACK_UTILS_CACHE_STORE_CREATE = JniMethod("cacheStoreCreate", "(JJ)J", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_CACHE_STORE_INVOKE = JniMethod("cacheStoreInvoke", "(JJJLjava/lang/Object;)I", true);
+            JniMethod M_PLATFORM_CALLBACK_UTILS_CACHE_STORE_INVOKE = JniMethod("cacheStoreInvoke", "(JJJ)I", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_CACHE_STORE_DESTROY = JniMethod("cacheStoreDestroy", "(JJ)V", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_CACHE_STORE_SESSION_CREATE = JniMethod("cacheStoreSessionCreate", "(JJ)J", true);
 
@@ -2360,23 +2360,8 @@ namespace ignite
                 IGNITE_SAFE_FUNC(env, envPtr, CacheStoreCreateHandler, cacheStoreCreate, memPtr);
             }
 
-            JNIEXPORT jint JNICALL JniCacheStoreInvoke(JNIEnv *env, jclass cls, jlong envPtr, jlong objPtr, jlong memPtr, jobject cb) {
-                if (cb)
-                {
-                    jobject cb0 = env->NewGlobalRef(cb);
-
-                    if (cb0)
-                    {
-                        JniGlobalRefGuard guard(env, cb0);
-
-                        IGNITE_SAFE_FUNC(env, envPtr, CacheStoreInvokeHandler, cacheStoreInvoke, objPtr, memPtr, cb0);
-                    }
-                    else
-                        return 0;
-                }
-                else {
-                    IGNITE_SAFE_FUNC(env, envPtr, CacheStoreInvokeHandler, cacheStoreInvoke, objPtr, memPtr, NULL);
-                }
+            JNIEXPORT jint JNICALL JniCacheStoreInvoke(JNIEnv *env, jclass cls, jlong envPtr, jlong objPtr, jlong memPtr) {
+                IGNITE_SAFE_FUNC(env, envPtr, CacheStoreInvokeHandler, cacheStoreInvoke, objPtr, memPtr);
             }
 
             JNIEXPORT void JNICALL JniCacheStoreDestroy(JNIEnv *env, jclass cls, jlong envPtr, jlong objPtr) {
