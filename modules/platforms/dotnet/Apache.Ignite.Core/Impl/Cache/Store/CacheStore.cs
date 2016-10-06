@@ -182,8 +182,11 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
 
                         _store.LoadCache((k, v) =>
                         {
-                            WriteObjects(stream, grid, k, v);
-                            cnt++;
+                            lock (stream)  // TODO: How did it work before?
+                            {
+                                WriteObjects(stream, grid, k, v);
+                                cnt++;
+                            }
                         }, args);
 
                         stream.WriteInt(0, cnt);
