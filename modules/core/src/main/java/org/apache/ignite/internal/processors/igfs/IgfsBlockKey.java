@@ -45,7 +45,7 @@ import org.jetbrains.annotations.Nullable;
  * File's binary data block key.
  */
 @GridInternal
-public final class IgfsBlockKey implements Message, Externalizable, Binarylizable, Comparable<IgfsBlockKey> {
+public final class IgfsBlockKey implements IgfsBaseBlockKey, Message, Externalizable, Binarylizable, Comparable<IgfsBlockKey> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -93,11 +93,19 @@ public final class IgfsBlockKey implements Message, Externalizable, Binarylizabl
         return fileId;
     }
 
-    /**
-     * @return Block affinity key.
-     */
-    public IgniteUuid affinityKey() {
+    /** {@inheritDoc} */
+    @Override public IgniteUuid affinityKey() {
         return affKey;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getBlockId() {
+        return blockId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getFileHash() {
+        return fileId.hashCode();
     }
 
     /**
@@ -107,12 +115,6 @@ public final class IgfsBlockKey implements Message, Externalizable, Binarylizabl
         return evictExclude;
     }
 
-    /**
-     * @return Block ID.
-     */
-    public long getBlockId() {
-        return blockId;
-    }
 
     /** {@inheritDoc} */
     @Override public void onAckReceived() {

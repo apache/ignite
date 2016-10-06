@@ -18,7 +18,7 @@
 package org.apache.ignite.igfs;
 
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
-import org.apache.ignite.internal.processors.igfs.IgfsBlockKey;
+import org.apache.ignite.internal.processors.igfs.IgfsBaseBlockKey;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -84,15 +84,15 @@ public class IgfsGroupDataBlocksKeyMapper extends GridCacheDefaultAffinityKeyMap
 
     /** {@inheritDoc} */
     @Override public Object affinityKey(Object key) {
-        if (key != null && IgfsBlockKey.class.equals(key.getClass())) {
-            IgfsBlockKey blockKey = (IgfsBlockKey)key;
+        if (key instanceof IgfsBaseBlockKey) {
+            IgfsBaseBlockKey blockKey = (IgfsBaseBlockKey)key;
 
             if (blockKey.affinityKey() != null)
                 return blockKey.affinityKey();
 
             long grpId = blockKey.getBlockId() / grpSize;
 
-            return blockKey.getFileId().hashCode() + (int)(grpId ^ (grpId >>> 32));
+            return blockKey.getFileHash() + (int)(grpId ^ (grpId >>> 32));
         }
 
         return super.affinityKey(key);
