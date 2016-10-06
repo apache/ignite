@@ -186,16 +186,19 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
         try {
             final Map<K, V> loaded = new HashMap<>();
 
+            final Collection keys0 = (Collection)keys;
+
             doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
                 @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
                     writer.writeByte(OP_LOAD_ALL);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
-                    writer.writeCollection((Collection)keys);
+                    writer.writeCollection(keys0);
                 }
             }, new IgniteInClosureX<BinaryRawReaderEx>() {
                 @Override public void applyx(BinaryRawReaderEx reader) {
-                    loaded.put((K) reader.readObjectDetached(), (V) reader.readObjectDetached());
+                    for (int i = 0; i < keys0.size(); i++)
+                        loaded.put((K) reader.readObjectDetached(), (V) reader.readObjectDetached());
                 }
             });
 
@@ -218,7 +221,8 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                 }
             }, new IgniteInClosureX<BinaryRawReaderEx>() {
                 @Override public void applyx(BinaryRawReaderEx reader) {
-                    clo.apply((K) reader.readObjectDetached(), (V) reader.readObjectDetached());
+                    for (int i = 0; i < args.length; i++)
+                        clo.apply((K) reader.readObjectDetached(), (V) reader.readObjectDetached());
                 }
             });
         }
