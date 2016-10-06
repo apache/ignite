@@ -186,14 +186,6 @@ extern "C" {
         return ctx->AffinityPartitions(static_cast<jobject>(obj));
     }
 
-    void IGNITE_CALL IgniteContinuousQueryClose(gcj::JniContext* ctx, void* obj) {
-        ctx->ContinuousQueryClose(static_cast<jobject>(obj));
-    }
-
-    void* IGNITE_CALL IgniteContinuousQueryGetInitialQueryCursor(gcj::JniContext* ctx, void* obj) {
-        return ctx->ContinuousQueryGetInitialQueryCursor(static_cast<jobject>(obj));
-    }
-
     void IGNITE_CALL IgniteCacheStoreCallbackInvoke(gcj::JniContext* ctx, void* obj, long long memPtr) {
         ctx->CacheStoreCallbackInvoke(static_cast<jobject>(obj), memPtr);
     }

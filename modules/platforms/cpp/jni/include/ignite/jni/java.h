@@ -245,10 +245,6 @@ namespace ignite
                 jmethodID m_PlatformClusterGroup_forYoungest;
                 jmethodID m_PlatformClusterGroup_resetMetrics;
 
-                jclass c_PlatformContinuousQuery;
-                jmethodID m_PlatformContinuousQuery_close;
-                jmethodID m_PlatformContinuousQuery_getInitialQueryCursor;
-
                 jclass c_PlatformDataStreamer;
                 jmethodID m_PlatformDataStreamer_listenTopology;
                 jmethodID m_PlatformDataStreamer_getAllowOverwrite;
@@ -543,9 +539,6 @@ namespace ignite
                 jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr);
 
                 void CacheStoreCallbackInvoke(jobject obj, long long memPtr);
-
-                void ContinuousQueryClose(jobject obj);
-                jobject ContinuousQueryGetInitialQueryCursor(jobject obj);
 
                 void DataStreamerListenTopology(jobject obj, long long ptr);
                 bool DataStreamerAllowOverwriteGet(jobject obj);

@@ -154,12 +154,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheStoreCallbackInvoke")]
         public static extern void CacheStoreCallbackInvoke(void* ctx, void* obj, long memPtr);
 
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteContinuousQueryClose")]
-        public static extern void ContinuousQryClose(void* ctx, void* target);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteContinuousQueryGetInitialQueryCursor")]
-        public static extern void* ContinuousQryGetInitialQueryCursor(void* ctx, void* target);
-
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteDataStreamerListenTopology")]
         public static extern void DataStreamerListenTop(void* ctx, void* obj, long ptr);
 

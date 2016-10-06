@@ -361,10 +361,6 @@ namespace ignite
             JniMethod M_PLATFORM_ABSTRACT_QRY_CURSOR_ITER_HAS_NEXT = JniMethod("iteratorHasNext", "()Z", false);
             JniMethod M_PLATFORM_ABSTRACT_QRY_CURSOR_CLOSE = JniMethod("close", "()V", false);
 
-            const char* C_PLATFORM_CONT_QRY = "org/apache/ignite/internal/processors/platform/cache/query/PlatformContinuousQuery";
-            JniMethod M_PLATFORM_CONT_QRY_CLOSE = JniMethod("close", "()V", false);
-            JniMethod M_PLATFORM_CONT_QRY_GET_INITIAL_QUERY_CURSOR = JniMethod("getInitialQueryCursor", "()Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
-
             const char* C_PLATFORM_EVENTS = "org/apache/ignite/internal/processors/platform/events/PlatformEvents";
             JniMethod M_PLATFORM_EVENTS_WITH_ASYNC = JniMethod("withAsync", "()Lorg/apache/ignite/internal/processors/platform/events/PlatformEvents;", false);
             JniMethod M_PLATFORM_EVENTS_STOP_LOCAL_LISTEN = JniMethod("stopLocalListen", "(J)Z", false);
@@ -584,10 +580,6 @@ namespace ignite
                 m_PlatformClusterGroup_forYoungest = FindMethod(env, c_PlatformClusterGroup, M_PLATFORM_CLUSTER_GRP_FOR_YOUNGEST);
                 m_PlatformClusterGroup_resetMetrics = FindMethod(env, c_PlatformClusterGroup, M_PLATFORM_CLUSTER_GRP_RESET_METRICS);
 
-                c_PlatformContinuousQuery = FindClass(env, C_PLATFORM_CONT_QRY);
-                m_PlatformContinuousQuery_close = FindMethod(env, c_PlatformContinuousQuery, M_PLATFORM_CONT_QRY_CLOSE);
-                m_PlatformContinuousQuery_getInitialQueryCursor = FindMethod(env, c_PlatformContinuousQuery, M_PLATFORM_CONT_QRY_GET_INITIAL_QUERY_CURSOR);
-
                 c_PlatformDataStreamer = FindClass(env, C_PLATFORM_DATA_STREAMER);
                 m_PlatformDataStreamer_listenTopology = FindMethod(env, c_PlatformDataStreamer, M_PLATFORM_DATA_STREAMER_LISTEN_TOPOLOGY);
                 m_PlatformDataStreamer_getAllowOverwrite = FindMethod(env, c_PlatformDataStreamer, M_PLATFORM_DATA_STREAMER_GET_ALLOW_OVERWRITE);
@@ -717,7 +709,6 @@ namespace ignite
                 DeleteClass(env, c_PlatformCacheStoreCallback);
                 DeleteClass(env, c_IgniteException);
                 DeleteClass(env, c_PlatformClusterGroup);
-                DeleteClass(env, c_PlatformContinuousQuery);
                 DeleteClass(env, c_PlatformDataStreamer);
                 DeleteClass(env, c_PlatformEvents);
                 DeleteClass(env, c_PlatformIgnition);
@@ -1584,25 +1575,6 @@ namespace ignite
                 env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformCacheStoreCallback_invoke, memPtr);
 
                 ExceptionCheck(env);
-            }
-
-            void JniContext::ContinuousQueryClose(jobject obj) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformContinuousQuery_close);
-
-                ExceptionCheck(env);
-            }
-
-            jobject JniContext::ContinuousQueryGetInitialQueryCursor(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jobject res = env->CallObjectMethod(obj,
-                    jvm->GetMembers().m_PlatformContinuousQuery_getInitialQueryCursor);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env,  res);
             }
 
             void JniContext::DataStreamerListenTopology(jobject obj, long long ptr) {

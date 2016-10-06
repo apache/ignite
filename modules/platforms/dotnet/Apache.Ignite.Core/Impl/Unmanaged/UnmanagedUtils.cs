@@ -449,22 +449,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #endregion
 
-        #region NATIVE METHODS: CONTINUOUS QUERY
-
-        internal static void ContinuousQueryClose(IUnmanagedTarget target)
-        {
-            JNI.ContinuousQryClose(target.Context, target.Target);
-        }
-
-        internal static IUnmanagedTarget ContinuousQueryGetInitialQueryCursor(IUnmanagedTarget target)
-        {
-            void* res = JNI.ContinuousQryGetInitialQueryCursor(target.Context, target.Target);
-
-            return res == null ? null : target.ChangeTarget(res);
-        }
-
-        #endregion
-
         #region NATIVE METHODS: DATA STREAMER
 
         internal static void DataStreamerListenTopology(IUnmanagedTarget target, long ptr)
