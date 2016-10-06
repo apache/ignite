@@ -154,15 +154,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheStoreCallbackInvoke")]
         public static extern void CacheStoreCallbackInvoke(void* ctx, void* obj, long memPtr);
 
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteComputeWithNoFailover")]
-        public static extern void ComputeWithNoFailover(void* ctx, void* target);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteComputeWithTimeout")]
-        public static extern void ComputeWithTimeout(void* ctx, void* target, long timeout);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteComputeExecuteNative")]
-        public static extern void* ComputeExecuteNative(void* ctx, void* target, long taskPtr, long topVer);
-
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteContinuousQueryClose")]
         public static extern void ContinuousQryClose(void* ctx, void* target);
 

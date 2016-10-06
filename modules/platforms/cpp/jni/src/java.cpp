@@ -238,11 +238,6 @@ namespace ignite
             const char* C_PLATFORM_MESSAGING = "org/apache/ignite/internal/processors/platform/messaging/PlatformMessaging";
             JniMethod M_PLATFORM_MESSAGING_WITH_ASYNC = JniMethod("withAsync", "()Lorg/apache/ignite/internal/processors/platform/messaging/PlatformMessaging;", false);
 
-            const char* C_PLATFORM_COMPUTE = "org/apache/ignite/internal/processors/platform/compute/PlatformCompute";
-            JniMethod M_PLATFORM_COMPUTE_WITH_NO_FAILOVER = JniMethod("withNoFailover", "()V", false);
-            JniMethod M_PLATFORM_COMPUTE_WITH_TIMEOUT = JniMethod("withTimeout", "(J)V", false);
-            JniMethod M_PLATFORM_COMPUTE_EXECUTE_NATIVE = JniMethod("executeNative", "(JJ)Lorg/apache/ignite/internal/processors/platform/utils/PlatformListenable;", false);
-
             const char* C_PLATFORM_AFFINITY = "org/apache/ignite/internal/processors/platform/cache/affinity/PlatformAffinity";
             JniMethod C_PLATFORM_AFFINITY_PARTITIONS = JniMethod("partitions", "()I", false);
 
@@ -589,11 +584,6 @@ namespace ignite
                 m_PlatformClusterGroup_forYoungest = FindMethod(env, c_PlatformClusterGroup, M_PLATFORM_CLUSTER_GRP_FOR_YOUNGEST);
                 m_PlatformClusterGroup_resetMetrics = FindMethod(env, c_PlatformClusterGroup, M_PLATFORM_CLUSTER_GRP_RESET_METRICS);
 
-                c_PlatformCompute = FindClass(env, C_PLATFORM_COMPUTE);
-                m_PlatformCompute_withNoFailover = FindMethod(env, c_PlatformCompute, M_PLATFORM_COMPUTE_WITH_NO_FAILOVER);
-                m_PlatformCompute_withTimeout = FindMethod(env, c_PlatformCompute, M_PLATFORM_COMPUTE_WITH_TIMEOUT);
-                m_PlatformCompute_executeNative = FindMethod(env, c_PlatformCompute, M_PLATFORM_COMPUTE_EXECUTE_NATIVE);
-
                 c_PlatformContinuousQuery = FindClass(env, C_PLATFORM_CONT_QRY);
                 m_PlatformContinuousQuery_close = FindMethod(env, c_PlatformContinuousQuery, M_PLATFORM_CONT_QRY_CLOSE);
                 m_PlatformContinuousQuery_getInitialQueryCursor = FindMethod(env, c_PlatformContinuousQuery, M_PLATFORM_CONT_QRY_GET_INITIAL_QUERY_CURSOR);
@@ -727,7 +717,6 @@ namespace ignite
                 DeleteClass(env, c_PlatformCacheStoreCallback);
                 DeleteClass(env, c_IgniteException);
                 DeleteClass(env, c_PlatformClusterGroup);
-                DeleteClass(env, c_PlatformCompute);
                 DeleteClass(env, c_PlatformContinuousQuery);
                 DeleteClass(env, c_PlatformDataStreamer);
                 DeleteClass(env, c_PlatformEvents);
@@ -1595,33 +1584,6 @@ namespace ignite
                 env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformCacheStoreCallback_invoke, memPtr);
 
                 ExceptionCheck(env);
-            }
-
-            void JniContext::ComputeWithNoFailover(jobject obj) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformCompute_withNoFailover);
-
-                ExceptionCheck(env);
-            }
-
-            void JniContext::ComputeWithTimeout(jobject obj, long long timeout) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformCompute_withTimeout, timeout);
-
-                ExceptionCheck(env);
-            }
-
-            void* JniContext::ComputeExecuteNative(jobject obj, long long taskPtr, long long topVer) {
-                JNIEnv* env = Attach();
-
-                jobject res = env->CallObjectMethod(obj,
-                    jvm->GetMembers().m_PlatformCompute_executeNative, taskPtr, topVer);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, res);
             }
 
             void JniContext::ContinuousQueryClose(jobject obj) {

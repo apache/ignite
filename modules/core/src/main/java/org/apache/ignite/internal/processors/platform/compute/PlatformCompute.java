@@ -70,6 +70,9 @@ public class PlatformCompute extends PlatformAbstractTarget {
     /** */
     private static final int OP_WITH_TIMEOUT = 7;
 
+    /** */
+    private static final int OP_EXEC_NATIVE = 8;
+
     /** Compute instance. */
     private final IgniteComputeImpl compute;
 
@@ -109,6 +112,15 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
             case OP_AFFINITY:
                 return processClosures(reader.readLong(), reader, false, true);
+
+            case OP_EXEC_NATIVE: {
+                long taskPtr = reader.readLong();
+                long topVer = reader.readLong();
+
+                final PlatformFullTask task = new PlatformFullTask(platformCtx, computeForPlatform, taskPtr, topVer);
+
+                return executeNative0(task);
+            }
 
             default:
                 return super.processInStreamOutObject(type, reader);
@@ -234,18 +246,6 @@ public class PlatformCompute extends PlatformAbstractTarget {
             default:
                 super.processInStreamOutStream(type, reader, writer);
         }
-    }
-
-    /**
-     * Execute native full-fledged task.
-     *
-     * @param taskPtr Pointer to the task.
-     * @param topVer Topology version.
-     */
-    public PlatformListenable executeNative(long taskPtr, long topVer) {
-        final PlatformFullTask task = new PlatformFullTask(platformCtx, computeForPlatform, taskPtr, topVer);
-
-        return executeNative0(task);
     }
 
     /** <inheritDoc /> */

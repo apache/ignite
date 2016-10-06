@@ -245,11 +245,6 @@ namespace ignite
                 jmethodID m_PlatformClusterGroup_forYoungest;
                 jmethodID m_PlatformClusterGroup_resetMetrics;
 
-                jclass c_PlatformCompute;
-                jmethodID m_PlatformCompute_withNoFailover;
-                jmethodID m_PlatformCompute_withTimeout;
-                jmethodID m_PlatformCompute_executeNative;
-
                 jclass c_PlatformContinuousQuery;
                 jmethodID m_PlatformContinuousQuery_close;
                 jmethodID m_PlatformContinuousQuery_getInitialQueryCursor;
@@ -548,10 +543,6 @@ namespace ignite
                 jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr);
 
                 void CacheStoreCallbackInvoke(jobject obj, long long memPtr);
-
-                void ComputeWithNoFailover(jobject obj);
-                void ComputeWithTimeout(jobject obj, long long timeout);
-                void* ComputeExecuteNative(jobject obj, long long taskPtr, long long topVer);
 
                 void ContinuousQueryClose(jobject obj);
                 jobject ContinuousQueryGetInitialQueryCursor(jobject obj);

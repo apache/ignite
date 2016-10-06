@@ -449,27 +449,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #endregion
 
-        #region NATIVE METHODS: COMPUTE
-
-        internal static void ComputeWithNoFailover(IUnmanagedTarget target)
-        {
-            JNI.ComputeWithNoFailover(target.Context, target.Target);
-        }
-
-        internal static void ComputeWithTimeout(IUnmanagedTarget target, long timeout)
-        {
-            JNI.ComputeWithTimeout(target.Context, target.Target, timeout);
-        }
-
-        internal static IUnmanagedTarget ComputeExecuteNative(IUnmanagedTarget target, long taskPtr, long topVer)
-        {
-            void* res = JNI.ComputeExecuteNative(target.Context, target.Target, taskPtr, topVer);
-
-            return target.ChangeTarget(res);
-        }
-
-        #endregion
-
         #region NATIVE METHODS: CONTINUOUS QUERY
 
         internal static void ContinuousQueryClose(IUnmanagedTarget target)
