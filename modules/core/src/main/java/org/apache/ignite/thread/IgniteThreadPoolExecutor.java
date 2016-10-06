@@ -17,6 +17,7 @@
 
 package org.apache.ignite.thread;
 
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -222,5 +223,19 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor {
             threadFactory,
             hnd == null ? new AbortPolicy() : hnd
         );
+    }
+
+    @Override
+    public void shutdown() {
+        System.out.println(">>> S");
+
+        super.shutdown();
+    }
+
+    @Override
+    public List<Runnable> shutdownNow() {
+        System.out.println(">>> SN");
+
+        return super.shutdownNow();
     }
 }
