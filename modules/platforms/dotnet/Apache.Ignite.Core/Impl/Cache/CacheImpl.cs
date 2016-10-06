@@ -1052,7 +1052,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             try
             {
                 hnd.Start(_ignite, writeAction => DoOutOpObject((int) CacheOp.QryContinuous, writeAction), 
-                    qry, initialQry, IsKeepBinary);
+                    qry, initialQry);
 
                 return hnd;
             }

@@ -97,9 +97,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="cb">Callback invoked when all necessary data is written to stream.</param>
         /// <param name="qry">Query.</param>
         /// <param name="initialQry">The initial query.</param>
-        /// <param name="initialQryKeepBinary">Keep binary flag for the initial query.</param>
         public void Start(Ignite grid, Func<Action<BinaryWriter>, IUnmanagedTarget> cb, 
-            ContinuousQuery<TK, TV> qry, QueryBase initialQry, bool initialQryKeepBinary)
+            ContinuousQuery<TK, TV> qry, QueryBase initialQry)
         {
             // 1. Inject resources.
             ResourceProcessor.Inject(_lsnr, grid);
@@ -138,7 +137,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
                 {
                     writer.WriteInt((int) initialQry.OpId);
 
-                    initialQry.Write(writer, initialQryKeepBinary);
+                    initialQry.Write(writer, _keepBinary);
                 }
                 else
                     writer.WriteInt(-1); // no initial query
