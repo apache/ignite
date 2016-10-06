@@ -817,25 +817,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (log.isDebugEnabled())
                     log.debug("Join request message has not been sent (local node is the first in the topology).");
 
-                if (spi.nodeAuth != null) {
-                    // Authenticate local node.
-                    try {
-                        SecurityContext subj = spi.nodeAuth.authenticateNode(locNode, locCred);
-
-                        if (subj == null)
-                            throw new IgniteSpiException("Authentication failed for local node: " + locNode.id());
-
-                        Map<String, Object> attrs = new HashMap<>(locNode.attributes());
-
-                        attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT, spi.marshaller().marshal(subj));
-                        attrs.remove(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
-
-                        locNode.setAttributes(attrs);
-                    }
-                    catch (IgniteException | IgniteCheckedException e) {
-                        throw new IgniteSpiException("Failed to authenticate local node (will shutdown local node).", e);
-                    }
-                }
+                authentication(locCred);
 
                 locNode.order(1);
                 locNode.internalOrder(1);
@@ -882,8 +864,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                if (spiState == CONNECTED)
+                if (spiState == CONNECTED){
+                    if (spi.nodeAuth != null && spi.nodeAuth.isGlobalNodeAuthentication())
+                        authentication(locCred);
+
                     break;
+                }
                 else if (spiState == DUPLICATE_ID)
                     throw spi.duplicateIdError((TcpDiscoveryDuplicateIdMessage)joinRes.get());
                 else if (spiState == AUTH_FAILED)
@@ -919,6 +905,31 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         if (log.isDebugEnabled())
             log.debug("Discovery SPI has been connected to topology with order: " + locNode.internalOrder());
+    }
+
+    /**
+     * Authenticate local node.
+     * @throws IgniteSpiException If any error occurs.
+     */
+    private void authentication(SecurityCredentials locCred){
+        if (spi.nodeAuth != null) {
+            try {
+                SecurityContext subj = spi.nodeAuth.authenticateNode(locNode, locCred);
+
+                if (subj == null)
+                    throw new IgniteSpiException("Authentication failed for local node: " + locNode.id());
+
+                Map<String, Object> attrs = new HashMap<>(locNode.attributes());
+
+                attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT, spi.marshaller().marshal(subj));
+                attrs.remove(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
+
+                locNode.setAttributes(attrs);
+            }
+            catch (IgniteException | IgniteCheckedException e) {
+                throw new IgniteSpiException("Failed to authenticate local node (will shutdown local node).", e);
+            }
+        }
     }
 
     /**
