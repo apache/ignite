@@ -771,7 +771,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public PoolProcessor pool() {
+    @Override public PoolProcessor pools() {
         return poolProc;
     }
 

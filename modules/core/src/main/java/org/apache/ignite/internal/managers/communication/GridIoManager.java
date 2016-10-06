@@ -182,7 +182,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     public GridIoManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getCommunicationSpi());
 
-        pools = ctx.pool();
+        pools = ctx.pools();
 
         assert pools != null;
 

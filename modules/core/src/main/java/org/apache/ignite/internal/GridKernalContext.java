@@ -291,7 +291,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return Pool processor.
      */
-    public PoolProcessor pool();
+    public PoolProcessor pools();
 
     /**
      * Gets Hadoop helper.
