@@ -19,6 +19,7 @@ import angular from 'angular';
 
 import igniteEventGroups from './EventGroups.provider';
 import igniteSidebar from './Sidebar.provider';
+import Version from './Version.service';
 
 import GeneratorXml from './generator/Xml.service';
 import GeneratorJava from './generator/Java.service';
@@ -35,6 +36,7 @@ angular
 .provider(...igniteEventGroups)
 .provider(...igniteSidebar)
 .directive(...igniteSidebarDirective)
+.service('IgniteVersion', Version)
 .service(...GeneratorXml)
 .service(...GeneratorJava)
 .service(...GeneratorDocker)

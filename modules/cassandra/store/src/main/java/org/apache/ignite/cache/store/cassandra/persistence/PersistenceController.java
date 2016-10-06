@@ -166,7 +166,7 @@ public class PersistenceController {
     }
 
     /**
-     * Binds Ignite cache key object to {@link com.datastax.driver.core.PreparedStatement}.
+     * Binds Ignite cache key object to {@link PreparedStatement}.
      *
      * @param statement statement to which key object should be bind.
      * @param key key object.
@@ -347,6 +347,12 @@ public class PersistenceController {
         return new String[] {hdrWithKeyFields + statement.toString(), hdr + statement.toString()};
     }
 
+    /**
+     * @param table Table.
+     * @param template Template.
+     * @param statements Statements.
+     * @return Statement.
+     */
     private String getStatement(final String table, final String template, final Map<String, String> statements) {
         //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (statements) {

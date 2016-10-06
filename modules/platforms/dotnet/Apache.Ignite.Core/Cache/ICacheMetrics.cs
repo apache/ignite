@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Cache
         /// The mean time to execute gets.
         /// </summary>
         /// <returns>
-        /// The time in �s.
+        /// The time in ms.
         /// </returns>
         float AverageGetTime { get; }
 
@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Cache
         /// The mean time to execute puts.
         /// </summary>
         /// <returns>
-        /// The time in �s.
+        /// The time in s.
         /// </returns>
         float AveragePutTime { get; }
 
@@ -108,7 +108,7 @@ namespace Apache.Ignite.Core.Cache
         /// The mean time to execute removes.
         /// </summary>
         /// <returns>
-        /// The time in �s.
+        /// The time in ms.
         /// </returns>
         float AverageRemoveTime { get; }
 
@@ -116,7 +116,7 @@ namespace Apache.Ignite.Core.Cache
         /// The mean time to execute tx commit.
         /// </summary>
         /// <returns>
-        /// The time in �s.
+        /// The time in ms.
         /// </returns>
         float AverageTxCommitTime { get; }
 

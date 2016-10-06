@@ -42,7 +42,6 @@ import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -81,7 +80,7 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.F0;
-import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedMap;
+import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -113,15 +112,16 @@ import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
+import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -169,7 +169,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private static final String PREFIX = "Topology snapshot";
 
     /** Discovery cached history size. */
-    protected static final int DISCOVERY_HISTORY_SIZE = 100;
+    static final int DISCOVERY_HISTORY_SIZE = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, 500);
 
     /** Predicate filtering out daemon nodes. */
     private static final IgnitePredicate<ClusterNode> FILTER_DAEMON = new P1<ClusterNode>() {
@@ -210,8 +210,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private final AtomicBoolean lastSegChkRes = new AtomicBoolean(true);
 
     /** Topology cache history. */
-    private final ConcurrentNavigableMap<AffinityTopologyVersion, DiscoCache> discoCacheHist =
-        new GridBoundedConcurrentOrderedMap<>(DISCOVERY_HISTORY_SIZE);
+    private final GridBoundedConcurrentLinkedHashMap<AffinityTopologyVersion, DiscoCache> discoCacheHist =
+        new GridBoundedConcurrentLinkedHashMap<>(DISCOVERY_HISTORY_SIZE);
 
     /** Topology snapshots history. */
     private volatile Map<Long, Collection<ClusterNode>> topHist = new HashMap<>();
@@ -599,7 +599,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     registeredCaches.clear();
 
-                    discoCacheHist.clear();
+                    for (AffinityTopologyVersion histVer : discoCacheHist.keySet()) {
+                        Object rmvd = discoCacheHist.remove(histVer);
+
+                        assert rmvd != null : histVer;
+                    }
 
                     topHist.clear();
 
@@ -991,7 +995,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 break;
 
             if (ctx.config().isWaitForSegmentOnStart()) {
-                LT.warn(log, null, "Failed to check network segment (retrying every 2000 ms).");
+                LT.warn(log, "Failed to check network segment (retrying every 2000 ms).");
 
                 // Wait and check again.
                 U.sleep(2000);
@@ -1199,9 +1203,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /**
      * Prints the latest topology info into log taking into account logging/verbosity settings.
+     *
+     * @param topVer Topology version.
      */
-    public void ackTopology() {
-        ackTopology(topSnap.get().topVer.topologyVersion(), false);
+    public void ackTopology(long topVer) {
+        ackTopology(topVer, false);
     }
 
     /**
@@ -1213,7 +1219,22 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private void ackTopology(long topVer, boolean throttle) {
         assert !isLocDaemon;
 
-        DiscoCache discoCache = discoCache();
+        DiscoCache discoCache = discoCacheHist.get(new AffinityTopologyVersion(topVer));
+
+        if (discoCache == null) {
+            String msg = "Failed to resolve nodes topology [topVer=" + topVer +
+                ", hist=" + discoCacheHist.keySet() + ']';
+
+            if (log.isQuiet())
+                U.quiet(false, msg);
+
+            if (log.isDebugEnabled())
+                log.debug(msg);
+            else if (log.isInfoEnabled())
+                log.info(msg);
+
+            return;
+        }
 
         Collection<ClusterNode> rmtNodes = discoCache.remoteNodes();
 
@@ -1237,7 +1258,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         double heap = U.heapSize(allNodes, 2);
 
         if (log.isQuiet())
-            U.quiet(false, topologySnapshotMessage(srvNodes.size(), clientNodes.size(), totalCpus, heap));
+            U.quiet(false, topologySnapshotMessage(topVer, srvNodes.size(), clientNodes.size(), totalCpus, heap));
 
         if (log.isDebugEnabled()) {
             String dbg = "";
@@ -1281,19 +1302,20 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             log.debug(dbg);
         }
         else if (log.isInfoEnabled())
-            log.info(topologySnapshotMessage(srvNodes.size(), clientNodes.size(), totalCpus, heap));
+            log.info(topologySnapshotMessage(topVer, srvNodes.size(), clientNodes.size(), totalCpus, heap));
     }
 
     /**
+     * @param topVer Topology version.
      * @param srvNodesNum Server nodes number.
      * @param clientNodesNum Client nodes number.
      * @param totalCpus Total cpu number.
      * @param heap Heap size.
      * @return Topology snapshot message.
      */
-    private String topologySnapshotMessage(int srvNodesNum, int clientNodesNum, int totalCpus, double heap) {
+    private String topologySnapshotMessage(long topVer, int srvNodesNum, int clientNodesNum, int totalCpus, double heap) {
         return PREFIX + " [" +
-            (discoOrdered ? "ver=" + topSnap.get().topVer.topologyVersion() + ", " : "") +
+            (discoOrdered ? "ver=" + topVer + ", " : "") +
             "servers=" + srvNodesNum +
             ", clients=" + clientNodesNum +
             ", CPUs=" + totalCpus +
@@ -1506,7 +1528,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      *
      * @return Discovery collection cache.
      */
-    public DiscoCache discoCache() {
+    private DiscoCache discoCache() {
         Snapshot cur = topSnap.get();
 
         assert cur != null;
@@ -1531,15 +1553,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** @return All non-daemon nodes in topology. */
     public Collection<ClusterNode> allNodes() {
         return discoCache().allNodes();
-    }
-
-    /**
-     * Gets topology grouped by node versions.
-     *
-     * @return Version to collection of nodes map.
-     */
-    public NavigableMap<IgniteProductVersion, Collection<ClusterNode>> topologyVersionMap() {
-        return discoCache().versionsMap();
     }
 
     /** @return Full topology size. */
@@ -1780,16 +1793,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         DiscoCache cache = AffinityTopologyVersion.NONE.equals(topVer) || topVer.equals(snap.topVer) ?
             snap.discoCache : discoCacheHist.get(topVer);
-
-        if (cache == null) {
-            // Find the eldest acceptable discovery cache.
-            Map.Entry<AffinityTopologyVersion, DiscoCache> eldest = discoCacheHist.firstEntry();
-
-            if (eldest != null) {
-                if (topVer.compareTo(eldest.getKey()) < 0)
-                    cache = eldest.getValue();
-            }
-        }
 
         if (cache == null) {
             throw new IgniteException("Failed to resolve nodes topology [cacheName=" + cacheName +

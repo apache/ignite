@@ -17,6 +17,21 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.io.OutputStream;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -80,22 +95,6 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
-
-import java.io.OutputStream;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static org.apache.ignite.events.EventType.EVT_IGFS_DIR_DELETED;
 import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_DELETED;
@@ -183,8 +182,11 @@ public final class IgfsImpl implements IgfsEx {
         data = igfsCtx.data();
         secondaryFs = cfg.getSecondaryFileSystem();
 
+        if (secondaryFs instanceof IgfsKernalContextAware)
+            ((IgfsKernalContextAware)secondaryFs).setKernalContext(igfsCtx.kernalContext());
+
         if (secondaryFs instanceof LifecycleAware)
-            ((LifecycleAware) secondaryFs).start();
+            ((LifecycleAware)secondaryFs).start();
 
         /* Default IGFS mode. */
         IgfsMode dfltMode;
@@ -1232,10 +1234,20 @@ public final class IgfsImpl implements IgfsEx {
             @Override public Void call() throws Exception {
                 IgfsMode mode = resolveMode(path);
 
-                boolean useSecondary = IgfsUtils.isDualMode(mode) && secondaryFs instanceof IgfsSecondaryFileSystemV2;
+                if (mode == PROXY) {
+                    if (secondaryFs instanceof IgfsSecondaryFileSystemV2)
+                        ((IgfsSecondaryFileSystemV2)secondaryFs).setTimes(path, accessTime, modificationTime);
+                    else
+                        throw new UnsupportedOperationException("setTimes is not supported in PROXY mode for " +
+                            "this secondary file system,");
+                }
+                else {
+                    boolean useSecondary =
+                        IgfsUtils.isDualMode(mode) && secondaryFs instanceof IgfsSecondaryFileSystemV2;
 
-                meta.updateTimes(path, accessTime, modificationTime,
-                    useSecondary ? (IgfsSecondaryFileSystemV2)secondaryFs : null);
+                    meta.updateTimes(path, accessTime, modificationTime,
+                        useSecondary ? (IgfsSecondaryFileSystemV2) secondaryFs : null);
+                }
 
                 return null;
             }
@@ -1300,7 +1312,7 @@ public final class IgfsImpl implements IgfsEx {
                         secondarySpaceSize = secondaryFs.usedSpaceSize();
                     }
                     catch (IgniteException e) {
-                        LT.warn(log, e, "Failed to get secondary file system consumed space size.");
+                        LT.error(log, e, "Failed to get secondary file system consumed space size.");
 
                         secondarySpaceSize = -1;
                     }

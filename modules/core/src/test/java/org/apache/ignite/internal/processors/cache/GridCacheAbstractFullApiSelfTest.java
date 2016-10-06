@@ -3477,9 +3477,16 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         grid(0).cache(null).withExpiryPolicy(expiry).put(key, 1);
 
+        final Affinity<String> aff = ignite(0).affinity(null);
+
         boolean wait = waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return cache.localPeek(key) == null;
+                for (int i = 0; i < gridCount(); i++) {
+                    if (peek(jcache(i), key) != null)
+                        return false;
+                }
+
+                return true;
             }
         }, ttl + 1000);
 
@@ -3497,8 +3504,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertTrue(cache.localSize() == 0);
 
         load(cache, key, true);
-
-        Affinity<String> aff = ignite(0).affinity(null);
 
         for (int i = 0; i < gridCount(); i++) {
             if (aff.isPrimary(grid(i).cluster().localNode(), key))
@@ -4059,7 +4064,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         // Peek will actually remove entry from cache.
         assertNull(cache.localPeek(key));
 
-        assert cache.localSize() == 0;
+        assertEquals(0, cache.localSize());
 
         // Clear readers, if any.
         cache.remove(key);

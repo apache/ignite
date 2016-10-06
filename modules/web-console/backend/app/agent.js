@@ -24,13 +24,12 @@
  */
 module.exports = {
     implements: 'agent-manager',
-    inject: ['require(lodash)', 'require(ws)', 'require(fs)', 'require(path)', 'require(jszip)', 'require(socket.io)', 'settings', 'mongo']
+    inject: ['require(lodash)', 'require(fs)', 'require(path)', 'require(jszip)', 'require(socket.io)', 'settings', 'mongo']
 };
 
 /**
  * @param _
  * @param fs
- * @param ws
  * @param path
  * @param JSZip
  * @param socketio
@@ -38,7 +37,7 @@ module.exports = {
  * @param mongo
  * @returns {AgentManager}
  */
-module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mongo) {
+module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo) {
     /**
      *
      */
@@ -487,6 +486,56 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
 
             return this.executeRest(cmd);
         }
+
+        /**
+         * Collect cache partitions.
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {Array.<String>} nids Cache node IDs.
+         * @param {String} cacheName Cache name.
+         * @returns {Promise}
+         */
+        partitions(demo, nids, cacheName) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', nids)
+                .addParam('p2', 'org.apache.ignite.internal.visor.cache.VisorCachePartitionsTask')
+                .addParam('p3', 'java.lang.String')
+                .addParam('p4', cacheName);
+
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * Stops given node IDs.
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {Array.<String>} nids Nodes IDs.
+         * @returns {Promise}
+         */
+        stopNodes(demo, nids) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', nids)
+                .addParam('p2', 'org.apache.ignite.internal.visor.node.VisorNodeStopTask')
+                .addParam('p3', 'java.lang.Void');
+
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * Restarts given node IDs.
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {Array.<String>} nids Nodes IDs.
+         * @returns {Promise}
+         */
+        restartNodes(demo, nids) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', nids)
+                .addParam('p2', 'org.apache.ignite.internal.visor.node.VisorNodeRestartTask')
+                .addParam('p3', 'java.lang.Void');
+
+            return this.executeRest(cmd);
+        }
     }
 
     /**
@@ -571,17 +620,6 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
                     if (latest)
                         this.supportedAgents.latest = this.supportedAgents[latest];
                 });
-        }
-
-        attachLegacy(server) {
-            const wsSrv = new ws.Server({server});
-
-            wsSrv.on('connection', (_wsClient) => {
-                _wsClient.send(JSON.stringify({
-                    method: 'authResult',
-                    args: ['You are using an older version of the agent. Please reload agent archive']
-                }));
-            });
         }
 
         /**

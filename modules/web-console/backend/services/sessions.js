@@ -38,10 +38,12 @@ module.exports.factory = (_, mongo, errors) => {
          * @param {mongo.ObjectId|String} viewedUserId - id of user to become.
          */
         static become(session, viewedUserId) {
-            return mongo.Account.findById(viewedUserId).exec()
+            return mongo.Account.findById(viewedUserId).lean().exec()
                 .then((viewedUser) => {
                     if (!session.req.user.admin)
                         throw new errors.IllegalAccessError('Became this user is not permitted. Only administrators can perform this actions.');
+
+                    viewedUser.token = session.req.user.token;
 
                     session.viewedUser = viewedUser;
                 });
