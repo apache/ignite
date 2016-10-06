@@ -17,16 +17,21 @@
 
 package org.apache.ignite.igfs.secondary.local;
 
+import java.util.ArrayList;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
+import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathAlreadyExistsException;
 import org.apache.ignite.igfs.IgfsPathIsNotDirectoryException;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
+import org.apache.ignite.internal.processors.igfs.IgfsDataManager;
+import org.apache.ignite.internal.processors.igfs.IgfsImpl;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsBlockLocationImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsSecondaryFileSystemV2;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
@@ -37,6 +42,8 @@ import org.apache.ignite.internal.processors.igfs.secondary.local.LocalIgfsSecon
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.resources.FilesystemResource;
+import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -60,6 +67,14 @@ import java.util.Map;
 public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystemV2, LifecycleAware {
     /** Path that will be added to each passed path. */
     private String workDir;
+
+    /** Logger. */
+    @LoggerResource
+    private IgniteLogger log;
+
+    /** IGFS instance. */
+    @FilesystemResource
+    private IgfsImpl igfs;
 
     /**
      * Heuristically checks if exception was caused by invalid HDFS version and returns appropriate exception.
@@ -386,13 +401,36 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystemV2, 
 
     /** {@inheritDoc} */
     @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len,
-        long maxLen, Collection<ClusterNode> nodes) throws IgniteException {
+        long maxLen) throws IgniteException {
         File f = fileForPath(path);
 
         if (!f.exists())
             return null;
 
-        return Collections.<IgfsBlockLocation>singleton(new IgfsBlockLocationImpl(0, f.length(), nodes));
+        long blockSize =  maxLen > igfs.configuration().getBlockSize() ? maxLen : igfs.configuration().getBlockSize();
+
+        Collection<IgfsBlockLocation> blocks = new ArrayList<>((int)(len/ blockSize + (len % blockSize == 0 ? 0 : 1)));
+
+        long end = start + len;
+
+        IgfsDataManager data = igfs.context().data();
+
+        int pathHash = path.hashCode();
+
+        long blockIdxBegin = start / blockSize;
+
+        for (long offset = blockSize * blockIdxBegin; offset < end; offset += blockSize) {
+            long grpId = blockIdxBegin / IgfsGroupDataBlocksKeyMapper.DFLT_GRP_SIZE;
+
+            // Create fake affinity key to map blocks of secondary filesystem to nodes.
+            int affKey = pathHash + (int)(grpId ^ (grpId >>> 32));
+
+            blocks.add(new IgfsBlockLocationImpl(offset, blockSize, data.affinityNodes(affKey)));
+
+            ++blockIdxBegin;
+        }
+
+        return blocks;
     }
 
     /**

@@ -15,18 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.igfs;
+package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.GridKernalContext;
+import junit.framework.TestSuite;
+import org.apache.ignite.testframework.IgniteTestSuite;
 
 /**
- * Indicates whether particular file system accepts kernal context.
+ * Special test suite with ignored tests for Binary mode.
  */
-public interface IgfsKernalContextAware {
+public class IgniteIgnoredBinaryTestSuite extends TestSuite {
     /**
-     * Set kernal context.
-     *
-     * @param ctx Kernal context.
+     * @return IgniteCache test suite.
+     * @throws Exception Thrown in case of the failure.
      */
-    public void setKernalContext(GridKernalContext ctx);
+    public static TestSuite suite() throws Exception {
+        IgniteTestSuite.ignoreDefault(true);
+
+        IgniteTestSuite suite = new IgniteTestSuite(null, "Ignite Ignored Binary Test Suite");
+
+        /* --- QUERY --- */
+        suite.addTest(IgniteBinaryCacheQueryTestSuite.suite());
+        suite.addTest(IgniteBinaryCacheQueryTestSuite2.suite());
+
+        return suite;
+    }
 }

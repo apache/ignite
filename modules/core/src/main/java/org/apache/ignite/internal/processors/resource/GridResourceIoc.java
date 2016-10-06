@@ -37,6 +37,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.CacheNameResource;
 import org.apache.ignite.resources.CacheStoreSessionResource;
+import org.apache.ignite.resources.FilesystemResource;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoadBalancerResource;
@@ -511,7 +512,9 @@ public class GridResourceIoc {
         JOB_CONTEXT(JobContextResource.class),
 
         /** */
-        CACHE_STORE_SESSION(CacheStoreSessionResource.class);
+        CACHE_STORE_SESSION(CacheStoreSessionResource.class),
+
+        FILESYSTEM_RESOURCE(FilesystemResource.class);
 
         /** */
         public final Class<? extends Annotation> clazz;
@@ -534,7 +537,8 @@ public class GridResourceIoc {
             ResourceAnnotation.SPRING,
             ResourceAnnotation.IGNITE_INSTANCE,
             ResourceAnnotation.LOGGER,
-            ResourceAnnotation.SERVICE
+            ResourceAnnotation.SERVICE,
+            ResourceAnnotation.FILESYSTEM_RESOURCE
         ),
 
         /** */
@@ -558,7 +562,8 @@ public class GridResourceIoc {
             ResourceAnnotation.SPRING,
             ResourceAnnotation.IGNITE_INSTANCE,
             ResourceAnnotation.LOGGER,
-            ResourceAnnotation.SERVICE
+            ResourceAnnotation.SERVICE,
+            ResourceAnnotation.FILESYSTEM_RESOURCE
         ),
 
         /** */
@@ -570,7 +575,8 @@ public class GridResourceIoc {
             ResourceAnnotation.SPRING,
             ResourceAnnotation.IGNITE_INSTANCE,
             ResourceAnnotation.LOGGER,
-            ResourceAnnotation.SERVICE
+            ResourceAnnotation.SERVICE,
+            ResourceAnnotation.FILESYSTEM_RESOURCE
         );
 
         /** Resource annotations bits for fast checks. */

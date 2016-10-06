@@ -125,7 +125,7 @@ class IgfsSecondaryFileSystemImpl implements IgfsSecondaryFileSystemV2 {
 
     /** {@inheritDoc} */
     @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len,
-        long maxLen, Collection<ClusterNode> nodes) throws IgniteException {
+        long maxLen) throws IgniteException {
         return igfs.affinity(path, start, len, maxLen);
     }
 
