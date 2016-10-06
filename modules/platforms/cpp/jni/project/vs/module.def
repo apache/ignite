@@ -25,9 +25,6 @@ IgniteTargetListenFuture @22
 IgniteTargetListenFutureForOperation @23 
 IgniteAffinityPartitions @24 
 IgniteCacheStoreCallbackInvoke @42
-IgniteComputeWithNoFailover @43
-IgniteComputeWithTimeout @44 
-IgniteComputeExecuteNative @45 
 IgniteContinuousQueryClose @46 
 IgniteContinuousQueryGetInitialQueryCursor @47 
 IgniteDataStreamerListenTopology @48 

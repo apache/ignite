@@ -186,18 +186,6 @@ extern "C" {
         return ctx->AffinityPartitions(static_cast<jobject>(obj));
     }
 
-    void IGNITE_CALL IgniteComputeWithNoFailover(gcj::JniContext* ctx, void* obj) {
-        ctx->ComputeWithNoFailover(static_cast<jobject>(obj));
-    }
-
-    void IGNITE_CALL IgniteComputeWithTimeout(gcj::JniContext* ctx, void* obj, long long timeout) {
-        ctx->ComputeWithTimeout(static_cast<jobject>(obj), timeout);
-    }
-
-    void* IGNITE_CALL IgniteComputeExecuteNative(gcj::JniContext* ctx, void* obj, long long taskPtr, long long topVer) {
-        return ctx->ComputeExecuteNative(static_cast<jobject>(obj), taskPtr, topVer);
-    }
-
     void IGNITE_CALL IgniteContinuousQueryClose(gcj::JniContext* ctx, void* obj) {
         ctx->ContinuousQueryClose(static_cast<jobject>(obj));
     }
