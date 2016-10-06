@@ -500,13 +500,6 @@ public class PlatformCache extends PlatformAbstractTarget {
                 return qry;
             }
 
-            case OP_WITH_ASYNC: {
-                if (cache.isAsync())
-                    return this;
-
-                return new PlatformCache(platformCtx, (IgniteCache)cache.withAsync(), keepBinary);
-            }
-
             case OP_WITH_EXPIRY_POLICY: {
                 long create = reader.readLong();
                 long update = reader.readLong();
@@ -749,6 +742,13 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** {@inheritDoc} */
     @Override protected Object processOutObject(int type) throws IgniteCheckedException {
         switch (type) {
+            case OP_WITH_ASYNC: {
+                if (cache.isAsync())
+                    return this;
+
+                return new PlatformCache(platformCtx, (IgniteCache)cache.withAsync(), keepBinary);
+            }
+
             case OP_WITH_KEEP_BINARY: {
                 if (keepBinary)
                     return this;
