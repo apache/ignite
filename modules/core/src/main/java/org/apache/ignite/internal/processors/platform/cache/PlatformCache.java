@@ -517,29 +517,6 @@ public class PlatformCache extends PlatformAbstractTarget {
                 return new PlatformCache(platformCtx, cache0, keepBinary);
             }
 
-            case OP_WITH_KEEP_BINARY: {
-                if (keepBinary)
-                    return this;
-
-                return new PlatformCache(platformCtx, cache.withKeepBinary(), true);
-            }
-
-            case OP_WITH_NO_RETRIES: {
-                CacheOperationContext opCtx = cache.operationContext();
-
-                if (opCtx != null && opCtx.noRetries())
-                    return this;
-
-                return new PlatformCache(platformCtx, cache.withNoRetries(), keepBinary);
-            }
-
-            case OP_WITH_SKIP_STORE: {
-                if (cache.delegate().skipStore())
-                    return this;
-
-                return new PlatformCache(platformCtx, cache.withSkipStore(), keepBinary);
-            }
-
             case OP_LOC_ITERATOR: {
                 int peekModes = reader.readInt();
 
@@ -760,6 +737,8 @@ public class PlatformCache extends PlatformAbstractTarget {
                 int size = loc ? cache.localSize(modes) :  cache.size(modes);
 
                 writer.writeInt(size);
+
+                break;
             }
 
             default:
@@ -770,6 +749,29 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** {@inheritDoc} */
     @Override protected Object processOutObject(int type) throws IgniteCheckedException {
         switch (type) {
+            case OP_WITH_KEEP_BINARY: {
+                if (keepBinary)
+                    return this;
+
+                return new PlatformCache(platformCtx, cache.withKeepBinary(), true);
+            }
+
+            case OP_WITH_NO_RETRIES: {
+                CacheOperationContext opCtx = cache.operationContext();
+
+                if (opCtx != null && opCtx.noRetries())
+                    return this;
+
+                return new PlatformCache(platformCtx, cache.withNoRetries(), keepBinary);
+            }
+
+            case OP_WITH_SKIP_STORE: {
+                if (cache.delegate().skipStore())
+                    return this;
+
+                return new PlatformCache(platformCtx, cache.withSkipStore(), keepBinary);
+            }
+
             case OP_ITERATOR: {
                 Iterator<Cache.Entry> iter = cache.iterator();
 

@@ -192,7 +192,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return result;
             }
 
-            return new CacheImpl<TK1, TV1>(_ignite, DoOutOpObject((int)CacheOp.WithKeepBinary), Marshaller, 
+            return new CacheImpl<TK1, TV1>(_ignite, DoOutOpObject((int) CacheOp.WithKeepBinary), Marshaller,
                 _flagSkipStore, true, _flagAsync, _flagNoRetries);
         }
 
