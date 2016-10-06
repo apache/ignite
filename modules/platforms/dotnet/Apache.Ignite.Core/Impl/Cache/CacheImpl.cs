@@ -1051,28 +1051,8 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             try
             {
-                using (var stream = IgniteManager.Memory.Allocate().GetStream())
-                {
-                    var writer = Marshaller.StartMarshal(stream);
-
-                    hnd.Start(_ignite, writer, () =>
-                    {
-                        if (initialQry != null)
-                        {
-                            writer.WriteInt((int) initialQry.OpId);
-
-                            initialQry.Write(writer, IsKeepBinary);
-                        }
-                        else
-                            writer.WriteInt(-1); // no initial query
-
-                        FinishMarshal(writer);
-
-                        // ReSharper disable once AccessToDisposedClosure
-                        return UU.CacheOutOpContinuousQuery(Target, (int) CacheOp.QryContinuous,
-                            stream.SynchronizeOutput());
-                    }, qry);
-                }
+                hnd.Start(_ignite, writeAction => DoOutOpObject((int) CacheOp.QryContinuous, writeAction), 
+                    qry, initialQry, IsKeepBinary);
 
                 return hnd;
             }

@@ -94,11 +94,12 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// Start execution.
         /// </summary>
         /// <param name="grid">Ignite instance.</param>
-        /// <param name="writer">Writer.</param>
         /// <param name="cb">Callback invoked when all necessary data is written to stream.</param>
         /// <param name="qry">Query.</param>
-        public void Start(Ignite grid, BinaryWriter writer, Func<IUnmanagedTarget> cb, 
-            ContinuousQuery<TK, TV> qry)
+        /// <param name="initialQry">The initial query.</param>
+        /// <param name="initialQryKeepBinary">Keep binary flag for the initial query.</param>
+        public void Start(Ignite grid, Func<Action<BinaryWriter>, IUnmanagedTarget> cb, 
+            ContinuousQuery<TK, TV> qry, QueryBase initialQry, bool initialQryKeepBinary)
         {
             // 1. Inject resources.
             ResourceProcessor.Inject(_lsnr, grid);
@@ -107,34 +108,43 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
             // 2. Allocate handle.
             _hnd = grid.HandleRegistry.Allocate(this);
 
-            // 3. Write data to stream.
-            writer.WriteLong(_hnd);
-            writer.WriteBoolean(qry.Local);
-            writer.WriteBoolean(_filter != null);
-
-            var javaFilter = _filter as PlatformJavaObjectFactoryProxy;
-
-            if (javaFilter != null)
+            // 3. Call Java.
+            _nativeQry = cb(writer =>
             {
-                writer.WriteObject(javaFilter.GetRawProxy());
-            }
-            else
-            {
-                var filterHolder = _filter == null || qry.Local
-                    ? null
-                    : new ContinuousQueryFilterHolder(_filter, _keepBinary);
+                writer.WriteLong(_hnd);
+                writer.WriteBoolean(qry.Local);
+                writer.WriteBoolean(_filter != null);
 
-                writer.WriteObject(filterHolder);
-            }
+                var javaFilter = _filter as PlatformJavaObjectFactoryProxy;
 
-            writer.WriteInt(qry.BufferSize);
-            writer.WriteLong((long)qry.TimeInterval.TotalMilliseconds);
-            writer.WriteBoolean(qry.AutoUnsubscribe);
+                if (javaFilter != null)
+                {
+                    writer.WriteObject(javaFilter.GetRawProxy());
+                }
+                else
+                {
+                    var filterHolder = _filter == null || qry.Local
+                        ? null
+                        : new ContinuousQueryFilterHolder(_filter, _keepBinary);
 
-            // 4. Call Java.
-            _nativeQry = cb();
+                    writer.WriteObject(filterHolder);
+                }
 
-            // 5. Initial query.
+                writer.WriteInt(qry.BufferSize);
+                writer.WriteLong((long) qry.TimeInterval.TotalMilliseconds);
+                writer.WriteBoolean(qry.AutoUnsubscribe);
+
+                if (initialQry != null)
+                {
+                    writer.WriteInt((int) initialQry.OpId);
+
+                    initialQry.Write(writer, initialQryKeepBinary);
+                }
+                else
+                    writer.WriteInt(-1); // no initial query
+            });
+
+            // 4. Initial query.
             var nativeInitialQryCur = UU.ContinuousQueryGetInitialQueryCursor(_nativeQry);
             _initialQueryCursor = nativeInitialQryCur == null
                 ? null
