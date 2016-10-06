@@ -95,7 +95,7 @@ class GridUpdateNotifier {
     private final Thread workerThread;
 
     /** Url for request version. */
-    private String  url = "https://ignite.run/update_status_ignite-plain-text.php";
+    private final static String UPDATE_NOTIFIER_URL = "https://ignite.run/update_status_ignite-plain-text.php";
 
     /**
      * Creates new notifier with default values.
@@ -306,7 +306,7 @@ class GridUpdateNotifier {
                     (!F.isEmpty(vmProps) ? "&vmProps=" + encode(vmProps, CHARSET) : "") +
                         pluginsVers;
 
-                URLConnection conn = new URL(url).openConnection();
+                URLConnection conn = new URL(UPDATE_NOTIFIER_URL).openConnection();
 
                 if (!isCancelled()) {
                     conn.setDoOutput(true);
