@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
     /// <summary>
     /// Continuous query handle.
     /// </summary>
-    internal class ContinuousQueryHandleImpl<TK, TV> : IContinuousQueryHandleImpl, IContinuousQueryFilter, 
+    internal class ContinuousQueryHandleImpl<TK, TV> : IContinuousQueryHandleImpl, IContinuousQueryFilter,
         IContinuousQueryHandle<ICacheEntry<TK, TV>>
     {
         /** Marshaller. */
@@ -64,11 +64,11 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         private readonly ICacheEntryEventFilter<TK, TV> _filter;
 
         /** GC handle. */
-        private long _hnd;
+        private readonly long _hnd;
 
         /** Native query. */
-        private volatile IUnmanagedTarget _nativeQry;
-        
+        private readonly IUnmanagedTarget _nativeQry;
+
         /** Initial query cursor. */
         private volatile IQueryCursor<ICacheEntry<TK, TV>> _initialQueryCursor;
 
@@ -81,73 +81,81 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="qry">Query.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="keepBinary">Keep binary flag.</param>
-        public ContinuousQueryHandleImpl(ContinuousQuery<TK, TV> qry, Marshaller marsh, bool keepBinary)
+        /// <param name="createTargetCb">The initialization callback.</param>
+        /// <param name="initialQry">The initial query.</param>
+        public ContinuousQueryHandleImpl(ContinuousQuery<TK, TV> qry, Marshaller marsh, bool keepBinary,
+            Func<Action<BinaryWriter>, IUnmanagedTarget> createTargetCb, QueryBase initialQry)
         {
             _marsh = marsh;
             _keepBinary = keepBinary;
 
             _lsnr = qry.Listener;
             _filter = qry.Filter;
-        }
 
-        /// <summary>
-        /// Start execution.
-        /// </summary>
-        /// <param name="grid">Ignite instance.</param>
-        /// <param name="cb">Callback invoked when all necessary data is written to stream.</param>
-        /// <param name="qry">Query.</param>
-        /// <param name="initialQry">The initial query.</param>
-        public void Start(Ignite grid, Func<Action<BinaryWriter>, IUnmanagedTarget> cb, 
-            ContinuousQuery<TK, TV> qry, QueryBase initialQry)
-        {
             // 1. Inject resources.
-            ResourceProcessor.Inject(_lsnr, grid);
-            ResourceProcessor.Inject(_filter, grid);
+            ResourceProcessor.Inject(_lsnr, _marsh.Ignite);
+            ResourceProcessor.Inject(_filter, _marsh.Ignite);
 
-            // 2. Allocate handle.
-            _hnd = grid.HandleRegistry.Allocate(this);
-
-            // 3. Call Java.
-            _nativeQry = cb(writer =>
+            try
             {
-                writer.WriteLong(_hnd);
-                writer.WriteBoolean(qry.Local);
-                writer.WriteBoolean(_filter != null);
+                // 2. Allocate handle.
+                _hnd = _marsh.Ignite.HandleRegistry.Allocate(this);
 
-                var javaFilter = _filter as PlatformJavaObjectFactoryProxy;
-
-                if (javaFilter != null)
+                // 3. Call Java.
+                _nativeQry = createTargetCb(writer =>
                 {
-                    writer.WriteObject(javaFilter.GetRawProxy());
-                }
-                else
-                {
-                    var filterHolder = _filter == null || qry.Local
-                        ? null
-                        : new ContinuousQueryFilterHolder(_filter, _keepBinary);
+                    writer.WriteLong(_hnd);
+                    writer.WriteBoolean(qry.Local);
+                    writer.WriteBoolean(_filter != null);
 
-                    writer.WriteObject(filterHolder);
-                }
+                    var javaFilter = _filter as PlatformJavaObjectFactoryProxy;
 
-                writer.WriteInt(qry.BufferSize);
-                writer.WriteLong((long) qry.TimeInterval.TotalMilliseconds);
-                writer.WriteBoolean(qry.AutoUnsubscribe);
+                    if (javaFilter != null)
+                    {
+                        writer.WriteObject(javaFilter.GetRawProxy());
+                    }
+                    else
+                    {
+                        var filterHolder = _filter == null || qry.Local
+                            ? null
+                            : new ContinuousQueryFilterHolder(_filter, _keepBinary);
 
-                if (initialQry != null)
-                {
-                    writer.WriteInt((int) initialQry.OpId);
+                        writer.WriteObject(filterHolder);
+                    }
 
-                    initialQry.Write(writer, _keepBinary);
-                }
-                else
-                    writer.WriteInt(-1); // no initial query
-            });
+                    writer.WriteInt(qry.BufferSize);
+                    writer.WriteLong((long)qry.TimeInterval.TotalMilliseconds);
+                    writer.WriteBoolean(qry.AutoUnsubscribe);
 
-            // 4. Initial query.
-            var nativeInitialQryCur = UU.ContinuousQueryGetInitialQueryCursor(_nativeQry);
-            _initialQueryCursor = nativeInitialQryCur == null
-                ? null
-                : new QueryCursor<TK, TV>(nativeInitialQryCur, _marsh, _keepBinary);
+                    if (initialQry != null)
+                    {
+                        writer.WriteInt((int)initialQry.OpId);
+
+                        initialQry.Write(writer, _keepBinary);
+                    }
+                    else
+                        writer.WriteInt(-1); // no initial query
+                });
+
+                // 4. Initial query.
+                var nativeInitialQryCur = UU.TargetOutObject(_nativeQry, 0);
+                _initialQueryCursor = nativeInitialQryCur == null
+                    ? null
+                    : new QueryCursor<TK, TV>(nativeInitialQryCur, _marsh, _keepBinary);
+            }
+            catch (Exception)
+            {
+                if (_hnd > 0)
+                    _marsh.Ignite.HandleRegistry.Release(_hnd);
+
+                if (_nativeQry != null)
+                    _nativeQry.Dispose();
+
+                if (_initialQueryCursor != null)
+                    _initialQueryCursor.Dispose();
+                
+                throw;
+            }
         }
 
         /** <inheritdoc /> */
@@ -217,7 +225,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
 
                 try
                 {
-                    UU.ContinuousQueryClose(_nativeQry);
+                    UU.TargetOutLong(_nativeQry, 0);
                 }
                 finally
                 {

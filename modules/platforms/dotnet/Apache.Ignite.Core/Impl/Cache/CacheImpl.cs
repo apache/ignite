@@ -1047,21 +1047,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             qry.Validate();
 
-            var hnd = new ContinuousQueryHandleImpl<TK, TV>(qry, Marshaller, _flagKeepBinary);
-
-            try
-            {
-                hnd.Start(_ignite, writeAction => DoOutOpObject((int) CacheOp.QryContinuous, writeAction), 
-                    qry, initialQry);
-
-                return hnd;
-            }
-            catch (Exception)
-            {
-                hnd.Dispose();
-
-                throw;
-            }
+            return new ContinuousQueryHandleImpl<TK, TV>(qry, Marshaller, _flagKeepBinary,
+                writeAction => DoOutOpObject((int) CacheOp.QryContinuous, writeAction), initialQry);
         }
 
         #endregion
