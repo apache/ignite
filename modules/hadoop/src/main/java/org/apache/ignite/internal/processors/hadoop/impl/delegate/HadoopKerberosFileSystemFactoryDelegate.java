@@ -61,7 +61,12 @@ public class HadoopKerberosFileSystemFactoryDelegate extends HadoopBasicFileSyst
 
         return proxyUgi.doAs(new PrivilegedExceptionAction<FileSystem>() {
             @Override public FileSystem run() throws Exception {
-                return FileSystem.get(fullUri, cfg);
+                FileSystem fs = FileSystem.get(fullUri, cfg);
+
+                if (workDir != null)
+                    fs.setWorkingDirectory(workDir);
+
+                return fs;
             }
         });
     }
