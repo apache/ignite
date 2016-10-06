@@ -180,8 +180,7 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
 
         /** Instance holder. */
         private static class Holder {
-            @IgniteInstanceResource
-            private static final transient Ignite IGNITE = Ignition.start(igniteCfgFile);
+            private static final Ignite IGNITE = Ignition.start(igniteCfgFile);
             private static final IgniteDataStreamer STREAMER = IGNITE.dataStreamer(cacheName);
         }
 

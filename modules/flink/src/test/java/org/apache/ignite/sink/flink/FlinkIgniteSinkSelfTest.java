@@ -47,8 +47,7 @@ public class FlinkIgniteSinkSelfTest extends GridCommonAbstractTest {
     private static final long DFLT_STREAMING_EVENT = 10000;
 
     /** Ignite instance. */
-    @IgniteInstanceResource
-    private transient Ignite ignite;
+    private Ignite ignite;
 
     /** Ignite test configuration file. */
     private static final String GRID_CONF_FILE = "modules/flink/src/test/resources/example-ignite.xml";
