@@ -403,9 +403,11 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
             int res = platformCtx.gateway().cacheStoreInvoke(ptr, mem.pointer());
 
-            BinaryRawReaderEx reader = platformCtx.reader(mem);
+            if (readClo != null) {
+                BinaryRawReaderEx reader = platformCtx.reader(mem);
 
-            readClo.apply(reader);
+                readClo.apply(reader);
+            }
 
             return res;
         }
