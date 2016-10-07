@@ -301,7 +301,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IClusterGroup ForRemotes()
         {
-            return GetClusterGroup(UU.ProjectionForRemotes(Target));
+            return GetClusterGroup(DoOutOpObject(OpForRemotes));
         }
 
         /** <inheritDoc /> */
@@ -320,19 +320,19 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IClusterGroup ForRandom()
         {
-            return GetClusterGroup(UU.ProjectionForRandom(Target));
+            return GetClusterGroup(DoOutOpObject(OpForRandom));
         }
 
         /** <inheritDoc /> */
         public IClusterGroup ForOldest()
         {
-            return GetClusterGroup(UU.ProjectionForOldest(Target));
+            return GetClusterGroup(DoOutOpObject(OpForOldest));
         }
 
         /** <inheritDoc /> */
         public IClusterGroup ForYoungest()
         {
-            return GetClusterGroup(UU.ProjectionForYoungest(Target));
+            return GetClusterGroup(DoOutOpObject(OpForYoungest));
         }
 
         /** <inheritDoc /> */
@@ -552,16 +552,8 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <returns>Native projection.</returns>
         private IUnmanagedTarget DoProjetionOutOp(int type, Action<BinaryWriter> action)
         {
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
-            {
-                var writer = Marshaller.StartMarshal(stream);
-
-                action(writer);
-
-                FinishMarshal(writer);
-
-                return UU.ProjectionOutOpRet(Target, type, stream.SynchronizeOutput());
-            }
+            // TODO: ???
+            return DoOutOpObject(type, action);
         }
         
         /** <inheritDoc /> */
