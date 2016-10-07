@@ -185,7 +185,7 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @return IGFS data cache configuration.
      */
-    private CacheConfiguration dataCacheConfiguration() {
+    protected CacheConfiguration dataCacheConfiguration() {
         CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setName(igfsDataCacheName);

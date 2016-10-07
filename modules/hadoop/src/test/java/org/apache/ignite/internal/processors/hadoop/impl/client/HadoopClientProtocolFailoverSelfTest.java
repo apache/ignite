@@ -1,0 +1,297 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.hadoop.impl.client;
+
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.concurrent.Callable;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.JobContext;
+import org.apache.hadoop.mapreduce.JobStatus;
+import org.apache.hadoop.mapreduce.MRConfig;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.OutputCommitter;
+import org.apache.hadoop.mapreduce.OutputFormat;
+import org.apache.hadoop.mapreduce.RecordWriter;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.hadoop.mapreduce.IgniteHadoopClientProtocolProvider;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.client.GridServerUnreachableException;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopAbstractSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
+
+/**
+ * Hadoop client protocol tests in external process mode.
+ */
+@SuppressWarnings("ResultOfMethodCallIgnored")
+public class HadoopClientProtocolFailoverSelfTest extends HadoopAbstractSelfTest {
+    /** Input path. */
+    private static final String PATH_INPUT = "/input";
+
+    /** Job name. */
+    private static final String JOB_NAME = "myJob";
+
+    /** Flag to create configure with multiple ignite hosts. */
+    private static boolean isHA;
+
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 3;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean igfsEnabled() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean restEnabled() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        startGrids(gridCount());
+
+        awaitPartitionMapExchange();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration dataCacheConfiguration() {
+        CacheConfiguration cfg = super.dataCacheConfiguration();
+
+        cfg.setBackups(1);
+
+        return cfg;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void beforeJob() throws Exception {
+        IgniteFileSystem igfs = grid(0).fileSystem(HadoopAbstractSelfTest.igfsName);
+
+        igfs.format();
+
+        igfs.mkdirs(new IgfsPath(PATH_INPUT));
+
+        try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(igfs.create(
+            new IgfsPath(PATH_INPUT + "/test.file"), true)))) {
+
+            bw.write("word");
+        }
+    }
+
+    /**
+     * Test job submission.
+     *
+     * @throws Exception If failed.
+     */
+    public void checkJobSubmit() throws Exception {
+        Configuration conf = config();
+
+        final Job job = Job.getInstance(conf);
+
+        job.setJobName(JOB_NAME);
+
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(IntWritable.class);
+
+        job.setInputFormatClass(TextInputFormat.class);
+        job.setOutputFormatClass(OutFormat.class);
+
+        job.setMapperClass(TestMapper.class);
+        job.setReducerClass(TestReducer.class);
+
+        job.setNumReduceTasks(0);
+
+        FileInputFormat.setInputPaths(job, new Path(PATH_INPUT));
+
+        job.submit();
+
+        job.waitForCompletion(false);
+
+        assert job.getStatus().getState() == JobStatus.State.SUCCEEDED : job.getStatus().getState();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("ConstantConditions")
+    public void testMultipleAddresses() throws Exception {
+        isHA = true;
+
+        beforeJob();
+
+        stopGrid(0);
+
+        U.sleep(5000);
+
+        checkJobSubmit();
+
+        startGrid(0);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("ConstantConditions")
+    public void testSingleAddress() throws Exception {
+        isHA = false;
+
+        stopGrid(0);
+
+        U.sleep(5000);
+
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    checkJobSubmit();
+                    return null;
+                }
+            },
+            GridServerUnreachableException.class, "Failed to connect to any of the servers in list");
+
+        startGrid(0);
+
+        awaitPartitionMapExchange();
+    }
+
+    /**
+     * @return Configuration.
+     */
+    private Configuration config() {
+        if (isHA)
+            return configHA(REST_PORT, gridCount());
+        else
+            return configSingleAddress(REST_PORT);
+    }
+
+    /**
+     * @param port Port.
+     * @return Configuration.
+     */
+    private Configuration configSingleAddress(int port) {
+        Configuration conf = HadoopUtils.safeCreateConfiguration();
+
+        setupFileSystems(conf);
+
+        conf.set(MRConfig.FRAMEWORK_NAME, IgniteHadoopClientProtocolProvider.FRAMEWORK_NAME);
+        conf.set(MRConfig.MASTER_ADDRESS, "127.0.0.1:" + port);
+
+        conf.set("fs.defaultFS", "igfs:///");
+
+        return conf;
+    }
+
+    /**
+     * @param beginPort Port.
+     * @param serversCnt Count ov servers.
+     * @return Configuration.
+     */
+    private Configuration configHA(int beginPort, int serversCnt) {
+        Configuration conf = HadoopUtils.safeCreateConfiguration();
+
+        setupFileSystems(conf);
+
+        conf.set(MRConfig.FRAMEWORK_NAME, IgniteHadoopClientProtocolProvider.FRAMEWORK_NAME);
+
+        Collection<String> addrs = new ArrayList<>(serversCnt);
+
+        for (int i = 0; i < serversCnt; ++i)
+            addrs.add("127.0.0.1:" + Integer.toString(beginPort + i));
+
+        conf.set(MRConfig.MASTER_ADDRESS, F.concat(addrs, ","));
+
+        conf.set("fs.defaultFS", "igfs:///");
+
+        return conf;
+    }
+
+    /**
+     * @return Protocol provider.
+     */
+    private IgniteHadoopClientProtocolProvider provider() {
+        return new IgniteHadoopClientProtocolProvider();
+    }
+
+    /**
+     * Test mapper.
+     */
+    public static class TestMapper extends Mapper<Object, Text, Text, IntWritable> {
+        /** {@inheritDoc} */
+        @Override public void map(Object key, Text val, Context ctx) throws IOException, InterruptedException {
+            // No-op.
+        }
+    }
+
+    /**
+     * Test reducer.
+     */
+    public static class TestReducer extends Reducer<Text, IntWritable, Text, IntWritable> {
+
+        /** {@inheritDoc} */
+        @Override public void reduce(Text key, Iterable<IntWritable> values, Context ctx) throws IOException,
+            InterruptedException {
+            // No-op.
+        }
+    }
+
+    /**
+     *
+     */
+    public static class OutFormat extends OutputFormat {
+        /** {@inheritDoc} */
+        @Override public RecordWriter getRecordWriter(TaskAttemptContext context) throws IOException, InterruptedException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void checkOutputSpecs(JobContext context) throws IOException, InterruptedException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public OutputCommitter getOutputCommitter(TaskAttemptContext context) throws IOException, InterruptedException {
+            return null;
+        }
+    }
+}
