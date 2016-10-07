@@ -100,13 +100,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         private const int OpSchema = 15;
 
         /** */
-        private const int OpForOthers = 16;
-        
-        /** */
         private const int OpForRemotes = 17;
-        
-        /** */
-        private const int OpForDaemons = 18;
         
         /** */
         private const int OpForRandom = 19;
@@ -229,10 +223,11 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             Debug.Assert(items != null);
 
-            IUnmanagedTarget prj = DoProjetionOutOp(OpForNodeIds, writer =>
+            Action<BinaryWriter> action = writer =>
             {
                 WriteEnumerable(writer, items, func);
-            });
+            };
+            IUnmanagedTarget prj = DoOutOpObject(OpForNodeIds, action);
             
             return GetClusterGroup(prj);
         }
@@ -250,11 +245,12 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             IgniteArgumentCheck.NotNull(name, "name");
 
-            IUnmanagedTarget prj = DoProjetionOutOp(OpForAttribute, writer =>
+            Action<BinaryWriter> action = writer =>
             {
                 writer.WriteString(name);
                 writer.WriteString(val);
-            });
+            };
+            IUnmanagedTarget prj = DoOutOpObject(OpForAttribute, action);
 
             return GetClusterGroup(prj);
         }
@@ -269,10 +265,11 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// </returns>
         private IClusterGroup ForCacheNodes(string name, int op)
         {
-            IUnmanagedTarget prj = DoProjetionOutOp(op, writer =>
+            Action<BinaryWriter> action = writer =>
             {
                 writer.WriteString(name);
-            });
+            };
+            IUnmanagedTarget prj = DoOutOpObject(op, action);
 
             return GetClusterGroup(prj);
         }
@@ -306,10 +303,11 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             IgniteArgumentCheck.NotNull(node, "node");
 
-            IUnmanagedTarget prj = DoProjetionOutOp(OpForHost, writer =>
+            Action<BinaryWriter> action = writer =>
             {
                 writer.WriteGuid(node.Id);
-            });    
+            };
+            IUnmanagedTarget prj = DoOutOpObject(OpForHost, action);    
                     
             return GetClusterGroup(prj);
         }
@@ -540,19 +538,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
 
             return _nodes;
         }
-        
-        /// <summary>
-        /// Perform synchronous out operation returning value.
-        /// </summary>
-        /// <param name="type">Operation type.</param>
-        /// <param name="action">Action.</param>
-        /// <returns>Native projection.</returns>
-        private IUnmanagedTarget DoProjetionOutOp(int type, Action<BinaryWriter> action)
-        {
-            // TODO: ???
-            return DoOutOpObject(type, action);
-        }
-        
+
         /** <inheritDoc /> */
         public IBinaryType GetBinaryType(int typeId)
         {
