@@ -236,9 +236,6 @@ namespace ignite
             JniMethod M_PLATFORM_CLUSTER_GRP_FOR_YOUNGEST = JniMethod("forYoungest", "()Lorg/apache/ignite/internal/processors/platform/cluster/PlatformClusterGroup;", false);
             JniMethod M_PLATFORM_CLUSTER_GRP_RESET_METRICS = JniMethod("resetMetrics", "()V", false);
 
-            const char* C_PLATFORM_MESSAGING = "org/apache/ignite/internal/processors/platform/messaging/PlatformMessaging";
-            JniMethod M_PLATFORM_MESSAGING_WITH_ASYNC = JniMethod("withAsync", "()Lorg/apache/ignite/internal/processors/platform/messaging/PlatformMessaging;", false);
-
             const char* C_PLATFORM_DATA_STREAMER = "org/apache/ignite/internal/processors/platform/datastreamer/PlatformDataStreamer";
             JniMethod M_PLATFORM_DATA_STREAMER_LISTEN_TOPOLOGY = JniMethod("listenTopology", "(J)V", false);
             JniMethod M_PLATFORM_DATA_STREAMER_GET_ALLOW_OVERWRITE = JniMethod("allowOverwrite", "()Z", false);
@@ -589,9 +586,6 @@ namespace ignite
                 m_PlatformIgnition_stop = FindMethod(env, c_PlatformIgnition, M_PLATFORM_IGNITION_STOP);
                 m_PlatformIgnition_stopAll = FindMethod(env, c_PlatformIgnition, M_PLATFORM_IGNITION_STOP_ALL);
 
-                c_PlatformMessaging = FindClass(env, C_PLATFORM_MESSAGING);
-                m_PlatformMessaging_withAsync = FindMethod(env, c_PlatformMessaging, M_PLATFORM_MESSAGING_WITH_ASYNC);
-
                 c_PlatformProcessor = FindClass(env, C_PLATFORM_PROCESSOR);
                 m_PlatformProcessor_releaseStart = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_RELEASE_START);
                 m_PlatformProcessor_cache = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_CACHE);
@@ -688,7 +682,6 @@ namespace ignite
                 DeleteClass(env, c_PlatformClusterGroup);
                 DeleteClass(env, c_PlatformEvents);
                 DeleteClass(env, c_PlatformIgnition);
-                DeleteClass(env, c_PlatformMessaging);
                 DeleteClass(env, c_PlatformProcessor);
                 DeleteClass(env, c_PlatformTarget);
                 DeleteClass(env, c_PlatformTransactions);
@@ -1543,16 +1536,6 @@ namespace ignite
                 ExceptionCheck(env);
 
                 return LocalToGlobal(env, res);
-            }
-
-            jobject JniContext::MessagingWithAsync(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jobject msg = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformMessaging_withAsync);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, msg);
             }
 
             jobject JniContext::ProjectionForOthers(jobject obj, jobject prj) {

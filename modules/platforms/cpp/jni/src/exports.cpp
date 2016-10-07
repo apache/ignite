@@ -186,10 +186,6 @@ extern "C" {
         return ctx->TargetListenFutureForOperationAndGet(static_cast<jobject>(obj), futId, typ, opId);
     }
 
-    void* IGNITE_CALL IgniteMessagingWithAsync(gcj::JniContext* ctx, void* obj) {
-        return ctx->MessagingWithAsync(static_cast<jobject>(obj));
-    }
-
     void* IGNITE_CALL IgniteProjectionForOthers(gcj::JniContext* ctx, void* obj, void* prj) {
         return ctx->ProjectionForOthers(static_cast<jobject>(obj), static_cast<jobject>(prj));
     }

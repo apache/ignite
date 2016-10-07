@@ -151,9 +151,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetListenFutureForOperationAndGet")]
         public static extern void* TargetListenFutForOpAndGet(void* ctx, void* target, long futId, int typ, int opId);
 
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteMessagingWithAsync")]
-        public static extern void* MessagingWithAsync(void* ctx, void* target);
-
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProjectionForOthers")]
         public static extern void* ProjectionForOthers(void* ctx, void* obj, void* prj);
 

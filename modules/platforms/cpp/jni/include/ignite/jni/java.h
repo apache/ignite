@@ -259,9 +259,6 @@ namespace ignite
                 jmethodID m_PlatformIgnition_stop;
                 jmethodID m_PlatformIgnition_stopAll;
 
-                jclass c_PlatformMessaging;
-                jmethodID m_PlatformMessaging_withAsync;
-
                 jclass c_PlatformProcessor;
                 jmethodID m_PlatformProcessor_releaseStart;
                 jmethodID m_PlatformProcessor_cache;
@@ -520,8 +517,6 @@ namespace ignite
                 
                 jobject CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr);
-
-                jobject MessagingWithAsync(jobject obj);
 
                 jobject ProjectionForOthers(jobject obj, jobject prj);
                 jobject ProjectionForRemotes(jobject obj);

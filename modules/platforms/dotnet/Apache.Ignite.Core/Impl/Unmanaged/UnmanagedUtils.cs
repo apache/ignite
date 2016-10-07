@@ -436,17 +436,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #endregion
 
-        #region NATIVE METHODS: MESSAGING
-
-        internal static IUnmanagedTarget MessagingWithASync(IUnmanagedTarget target)
-        {
-            void* res = JNI.MessagingWithAsync(target.Context, target.Target);
-
-            return target.ChangeTarget(res);
-        }
-
-        #endregion
-
         #region NATIVE METHODS: PROJECTION
 
         internal static IUnmanagedTarget ProjectionForOthers(IUnmanagedTarget target, IUnmanagedTarget prj)
