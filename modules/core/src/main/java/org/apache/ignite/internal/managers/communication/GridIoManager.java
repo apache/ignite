@@ -605,7 +605,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 int topicOrd = msg.topicOrdinal();
 
                 msg.topic(topicOrd >= 0 ? GridTopic.fromOrdinal(topicOrd) :
-                    marsh.unmarshal(msg.topicBytes(), U.resolveClassLoader(ctx.config())));
+                    U.unmarshal(marsh, msg.topicBytes(), U.resolveClassLoader(ctx.config())));
             }
 
             if (!started) {
@@ -1278,7 +1278,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
         else {
             if (topicOrd < 0)
-                ioMsg.topicBytes(marsh.marshal(topic));
+                ioMsg.topicBytes(U.marshal(marsh, topic));
 
             try {
                 if ((CommunicationSpi)getSpi() instanceof TcpCommunicationSpi)
@@ -1538,10 +1538,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         byte[] serTopic = null;
 
         if (!loc) {
-            serMsg = marsh.marshal(msg);
+            serMsg = U.marshal(marsh, msg);
 
             if (topic != null)
-                serTopic = marsh.marshal(topic);
+                serTopic = U.marshal(marsh, topic);
         }
 
         GridDeployment dep = null;
@@ -2198,7 +2198,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                     // Unmarshall message topic if needed.
                     if (msgTopic == null && msgTopicBytes != null) {
-                        msgTopic = marsh.unmarshal(msgTopicBytes,
+                        msgTopic = U.unmarshal(marsh, msgTopicBytes,
                             U.resolveClassLoader(dep != null ? dep.classLoader() : null, ctx.config()));
 
                         ioMsg.topic(msgTopic); // Save topic to avoid future unmarshallings.
@@ -2208,7 +2208,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                         return;
 
                     if (msgBody == null) {
-                        msgBody = marsh.unmarshal(ioMsg.bodyBytes(),
+                        msgBody = U.unmarshal(marsh, ioMsg.bodyBytes(),
                             U.resolveClassLoader(dep != null ? dep.classLoader() : null, ctx.config()));
 
                         ioMsg.body(msgBody); // Save body to avoid future unmarshallings.
