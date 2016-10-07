@@ -208,6 +208,8 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
                 int topSize = discoMgr.cacheNodes(cacheName, topVer).size();
 
                 platformCtx.gateway().dataStreamerTopologyUpdate(ptr, topVer.topologyVersion(), topSize);
+
+                return TRUE;
             }
 
             default:
