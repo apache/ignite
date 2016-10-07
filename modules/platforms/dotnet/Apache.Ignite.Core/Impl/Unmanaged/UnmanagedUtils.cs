@@ -446,20 +446,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #endregion
 
-        #region NATIVE METHODS: QUERY CURSOR
-
-        internal static void QueryCursorIterator(IUnmanagedTarget target)
-        {
-            JNI.QryCursorIterator(target.Context, target.Target);
-        }
-
-        internal static void QueryCursorClose(IUnmanagedTarget target)
-        {
-            JNI.QryCursorClose(target.Context, target.Target);
-        }
-
-        #endregion
-
         #region NATIVE METHODS: TRANSACTIONS
 
         internal static long TransactionsStart(IUnmanagedTarget target, int concurrency, int isolation, long timeout, int txSize)

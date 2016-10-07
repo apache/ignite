@@ -340,11 +340,6 @@ namespace ignite
             JniMethod M_PLATFORM_IGNITION_STOP = JniMethod("stop", "(Ljava/lang/String;Z)Z", true);
             JniMethod M_PLATFORM_IGNITION_STOP_ALL = JniMethod("stopAll", "(Z)V", true);
 
-            const char* C_PLATFORM_ABSTRACT_QRY_CURSOR = "org/apache/ignite/internal/processors/platform/cache/query/PlatformAbstractQueryCursor";
-            JniMethod M_PLATFORM_ABSTRACT_QRY_CURSOR_ITER = JniMethod("iterator", "()V", false);
-            JniMethod M_PLATFORM_ABSTRACT_QRY_CURSOR_ITER_HAS_NEXT = JniMethod("iteratorHasNext", "()Z", false);
-            JniMethod M_PLATFORM_ABSTRACT_QRY_CURSOR_CLOSE = JniMethod("close", "()V", false);
-
             const char* C_PLATFORM_EVENTS = "org/apache/ignite/internal/processors/platform/events/PlatformEvents";
             JniMethod M_PLATFORM_EVENTS_WITH_ASYNC = JniMethod("withAsync", "()Lorg/apache/ignite/internal/processors/platform/events/PlatformEvents;", false);
             JniMethod M_PLATFORM_EVENTS_STOP_LOCAL_LISTEN = JniMethod("stopLocalListen", "(J)Z", false);
@@ -542,11 +537,6 @@ namespace ignite
             }
 
             void JniMembers::Initialize(JNIEnv* env) {
-                c_PlatformAbstractQryCursor = FindClass(env, C_PLATFORM_ABSTRACT_QRY_CURSOR);
-                m_PlatformAbstractQryCursor_iter = FindMethod(env, c_PlatformAbstractQryCursor, M_PLATFORM_ABSTRACT_QRY_CURSOR_ITER);
-                m_PlatformAbstractQryCursor_iterHasNext = FindMethod(env, c_PlatformAbstractQryCursor, M_PLATFORM_ABSTRACT_QRY_CURSOR_ITER_HAS_NEXT);
-                m_PlatformAbstractQryCursor_close = FindMethod(env, c_PlatformAbstractQryCursor, M_PLATFORM_ABSTRACT_QRY_CURSOR_CLOSE);
-
                 c_IgniteException = FindClass(env, C_IGNITE_EXCEPTION);
 
                 c_PlatformEvents = FindClass(env, C_PLATFORM_EVENTS);
@@ -661,7 +651,6 @@ namespace ignite
             }
 
             void JniMembers::Destroy(JNIEnv* env) {
-                DeleteClass(env, c_PlatformAbstractQryCursor);
                 DeleteClass(env, c_IgniteException);
                 DeleteClass(env, c_PlatformEvents);
                 DeleteClass(env, c_PlatformIgnition);
@@ -1529,33 +1518,6 @@ namespace ignite
                 ExceptionCheck(env);
 
                 return LocalToGlobal(env, res);
-            }
-
-            void JniContext::QueryCursorIterator(jobject obj, JniErrorInfo* errInfo) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformAbstractQryCursor_iter);
-
-                ExceptionCheck(env, errInfo);
-            }
-
-            bool JniContext::QueryCursorIteratorHasNext(jobject obj, JniErrorInfo* errInfo)
-            {
-                JNIEnv* env = Attach();
-
-                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformAbstractQryCursor_iterHasNext);
-
-                ExceptionCheck(env, errInfo);
-
-                return res != 0;
-            }
-
-            void JniContext::QueryCursorClose(jobject obj, JniErrorInfo* errInfo) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformAbstractQryCursor_close);
-
-                ExceptionCheck(env, errInfo);
             }
 
             long long JniContext::TransactionsStart(jobject obj, int concurrency,

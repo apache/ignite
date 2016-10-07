@@ -223,11 +223,6 @@ namespace ignite
              * JNI members.
              */
             struct JniMembers {
-                jclass c_PlatformAbstractQryCursor;
-                jmethodID m_PlatformAbstractQryCursor_iter;
-                jmethodID m_PlatformAbstractQryCursor_iterHasNext;
-                jmethodID m_PlatformAbstractQryCursor_close;
-
                 jclass c_IgniteException;
 
                 jclass c_PlatformEvents;
@@ -510,10 +505,6 @@ namespace ignite
                 
                 jobject CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr);
-
-                void QueryCursorIterator(jobject obj, JniErrorInfo* errInfo = NULL);
-                bool QueryCursorIteratorHasNext(jobject obj, JniErrorInfo* errInfo = NULL);
-                void QueryCursorClose(jobject obj, JniErrorInfo* errInfo = NULL);
 
                 long long TransactionsStart(jobject obj, int concurrency, int isolation, long long timeout, int txSize, JniErrorInfo* errInfo = NULL);
                 int TransactionsCommit(jobject obj, long long id, JniErrorInfo* errInfo = NULL);

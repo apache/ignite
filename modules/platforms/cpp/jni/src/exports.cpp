@@ -190,14 +190,6 @@ extern "C" {
         return ctx->TargetListenFutureForOperationAndGet(static_cast<jobject>(obj), futId, typ, opId);
     }
 
-    void IGNITE_CALL IgniteQueryCursorIterator(gcj::JniContext* ctx, void* obj) {
-        ctx->QueryCursorIterator(static_cast<jobject>(obj));
-    }
-
-    void IGNITE_CALL IgniteQueryCursorClose(gcj::JniContext* ctx, void* obj) {
-        ctx->QueryCursorClose(static_cast<jobject>(obj));
-    }
-
     long long IGNITE_CALL IgniteTransactionsStart(gcj::JniContext* ctx, void* obj, int concurrency, int isolation, long long timeout, int txSize) {
         return ctx->TransactionsStart(static_cast<jobject>(obj), concurrency, isolation, timeout, txSize);
     }   

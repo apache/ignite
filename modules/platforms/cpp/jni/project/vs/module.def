@@ -27,8 +27,6 @@ IgniteTargetInLongOutLong @24
 IgniteProcessorCompute @64 
 IgniteProcessorMessage @65 
 IgniteProcessorEvents @66 
-IgniteQueryCursorIterator @69 
-IgniteQueryCursorClose @70 
 IgniteTransactionsStart @71 
 IgniteTransactionsCommit @72 
 IgniteTransactionsCommitAsync @73 
