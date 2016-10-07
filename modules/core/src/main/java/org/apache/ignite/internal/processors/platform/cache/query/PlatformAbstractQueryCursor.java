@@ -138,8 +138,12 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
             case OP_ITERATOR:
                 iter = cursor.iterator();
 
+                return TRUE;
+
             case OP_ITERATOR_CLOSE:
                 cursor.close();
+
+                return TRUE;
         }
 
         return super.processOutLong(type);
@@ -155,6 +159,11 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
         assert iter != null : "iterator() has not been called";
 
         return iter.hasNext();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() throws Exception {
+        cursor.close();
     }
 
     /**
