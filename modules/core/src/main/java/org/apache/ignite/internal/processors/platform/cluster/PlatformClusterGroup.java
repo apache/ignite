@@ -316,9 +316,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
             case OP_FOR_YOUNGEST:
                 return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forYoungest());
-
-            case OP_PROJECTION:
-                return prj;
         }
 
         return super.processOutObject(type);
