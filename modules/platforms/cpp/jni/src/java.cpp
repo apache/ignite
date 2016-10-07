@@ -238,9 +238,6 @@ namespace ignite
             const char* C_PLATFORM_MESSAGING = "org/apache/ignite/internal/processors/platform/messaging/PlatformMessaging";
             JniMethod M_PLATFORM_MESSAGING_WITH_ASYNC = JniMethod("withAsync", "()Lorg/apache/ignite/internal/processors/platform/messaging/PlatformMessaging;", false);
 
-            const char* C_PLATFORM_AFFINITY = "org/apache/ignite/internal/processors/platform/cache/affinity/PlatformAffinity";
-            JniMethod C_PLATFORM_AFFINITY_PARTITIONS = JniMethod("partitions", "()I", false);
-
             const char* C_PLATFORM_DATA_STREAMER = "org/apache/ignite/internal/processors/platform/datastreamer/PlatformDataStreamer";
             JniMethod M_PLATFORM_DATA_STREAMER_LISTEN_TOPOLOGY = JniMethod("listenTopology", "(J)V", false);
             JniMethod M_PLATFORM_DATA_STREAMER_GET_ALLOW_OVERWRITE = JniMethod("allowOverwrite", "()Z", false);
@@ -560,9 +557,6 @@ namespace ignite
                 m_PlatformAbstractQryCursor_iterHasNext = FindMethod(env, c_PlatformAbstractQryCursor, M_PLATFORM_ABSTRACT_QRY_CURSOR_ITER_HAS_NEXT);
                 m_PlatformAbstractQryCursor_close = FindMethod(env, c_PlatformAbstractQryCursor, M_PLATFORM_ABSTRACT_QRY_CURSOR_CLOSE);
 
-                c_PlatformAffinity = FindClass(env, C_PLATFORM_AFFINITY);
-                m_PlatformAffinity_partitions = FindMethod(env, c_PlatformAffinity, C_PLATFORM_AFFINITY_PARTITIONS);
-
                 c_IgniteException = FindClass(env, C_IGNITE_EXCEPTION);
 
                 c_PlatformClusterGroup = FindClass(env, C_PLATFORM_CLUSTER_GRP);
@@ -699,7 +693,6 @@ namespace ignite
 
             void JniMembers::Destroy(JNIEnv* env) {
                 DeleteClass(env, c_PlatformAbstractQryCursor);
-                DeleteClass(env, c_PlatformAffinity);
                 DeleteClass(env, c_IgniteException);
                 DeleteClass(env, c_PlatformClusterGroup);
                 DeleteClass(env, c_PlatformDataStreamer);
@@ -1528,16 +1521,6 @@ namespace ignite
                 ExceptionCheck(env);
 
                 return LocalToGlobal(env, res);
-            }
-
-            int JniContext::AffinityPartitions(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jint parts = env->CallIntMethod(obj, jvm->GetMembers().m_PlatformAffinity_partitions);
-
-                ExceptionCheck(env);
-
-                return parts;
             }
 
             jobject JniContext::CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* err) {

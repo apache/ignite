@@ -23,7 +23,6 @@ IgniteTargetInStreamOutStream @20
 IgniteTargetInObjectStreamOutStream @21 
 IgniteTargetListenFuture @22 
 IgniteTargetListenFutureForOperation @23 
-IgniteAffinityPartitions @24 
 IgniteDataStreamerListenTopology @48 
 IgniteDataStreamerAllowOverwriteGet @49 
 IgniteDataStreamerAllowOverwriteSet @50 

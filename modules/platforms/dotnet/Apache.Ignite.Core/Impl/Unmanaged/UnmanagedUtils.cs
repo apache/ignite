@@ -431,15 +431,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #endregion
 
-        #region NATIVE METHODS: AFFINITY
-
-        internal static int AffinityPartitions(IUnmanagedTarget target)
-        {
-            return JNI.AffinityParts(target.Context, target.Target);
-        }
-
-        #endregion
-
         #region NATIVE METHODS: DATA STREAMER
 
         internal static void DataStreamerListenTopology(IUnmanagedTarget target, long ptr)

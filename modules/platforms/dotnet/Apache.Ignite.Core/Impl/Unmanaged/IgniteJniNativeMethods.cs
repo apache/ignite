@@ -148,9 +148,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetListenFutureForOperationAndGet")]
         public static extern void* TargetListenFutForOpAndGet(void* ctx, void* target, long futId, int typ, int opId);
 
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAffinityPartitions")]
-        public static extern int AffinityParts(void* ctx, void* target);
-
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteDataStreamerListenTopology")]
         public static extern void DataStreamerListenTop(void* ctx, void* obj, long ptr);
 

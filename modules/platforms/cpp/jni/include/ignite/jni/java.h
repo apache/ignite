@@ -228,9 +228,6 @@ namespace ignite
                 jmethodID m_PlatformAbstractQryCursor_iterHasNext;
                 jmethodID m_PlatformAbstractQryCursor_close;
 
-                jclass c_PlatformAffinity;
-                jmethodID m_PlatformAffinity_partitions;
-
                 jclass c_IgniteException;
 
                 jclass c_PlatformClusterGroup;
@@ -530,8 +527,6 @@ namespace ignite
                 void* TargetListenFutureAndGet(jobject obj, long long futId, int typ);
                 void* TargetListenFutureForOperationAndGet(jobject obj, long long futId, int typ, int opId);
                 
-                int AffinityPartitions(jobject obj);
-
                 jobject CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr);
 
