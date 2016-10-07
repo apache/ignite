@@ -239,17 +239,6 @@ namespace ignite
                 jmethodID m_PlatformClusterGroup_forYoungest;
                 jmethodID m_PlatformClusterGroup_resetMetrics;
 
-                jclass c_PlatformDataStreamer;
-                jmethodID m_PlatformDataStreamer_listenTopology;
-                jmethodID m_PlatformDataStreamer_getAllowOverwrite;
-                jmethodID m_PlatformDataStreamer_setAllowOverwrite;
-                jmethodID m_PlatformDataStreamer_getSkipStore;
-                jmethodID m_PlatformDataStreamer_setSkipStore;
-                jmethodID m_PlatformDataStreamer_getPerNodeBufSize;
-                jmethodID m_PlatformDataStreamer_setPerNodeBufSize;
-                jmethodID m_PlatformDataStreamer_getPerNodeParallelOps;
-                jmethodID m_PlatformDataStreamer_setPerNodeParallelOps;
-
                 jclass c_PlatformEvents;
                 jmethodID m_PlatformEvents_withAsync;
                 jmethodID m_PlatformEvents_stopLocalListen;
@@ -529,16 +518,6 @@ namespace ignite
                 
                 jobject CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr);
-
-                void DataStreamerListenTopology(jobject obj, long long ptr);
-                bool DataStreamerAllowOverwriteGet(jobject obj);
-                void DataStreamerAllowOverwriteSet(jobject obj, bool val);
-                bool DataStreamerSkipStoreGet(jobject obj);
-                void DataStreamerSkipStoreSet(jobject obj, bool val);
-                int DataStreamerPerNodeBufferSizeGet(jobject obj);
-                void DataStreamerPerNodeBufferSizeSet(jobject obj, int val);
-                int DataStreamerPerNodeParallelOperationsGet(jobject obj);
-                void DataStreamerPerNodeParallelOperationsSet(jobject obj, int val);
 
                 jobject MessagingWithAsync(jobject obj);
 

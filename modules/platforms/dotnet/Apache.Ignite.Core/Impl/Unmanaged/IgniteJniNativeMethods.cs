@@ -148,37 +148,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetListenFutureForOperationAndGet")]
         public static extern void* TargetListenFutForOpAndGet(void* ctx, void* target, long futId, int typ, int opId);
 
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteDataStreamerListenTopology")]
-        public static extern void DataStreamerListenTop(void* ctx, void* obj, long ptr);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteDataStreamerAllowOverwriteGet")]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool DataStreamerAllowOverwriteGet(void* ctx, void* obj);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteDataStreamerAllowOverwriteSet")]
-        public static extern void DataStreamerAllowOverwriteSet(void* ctx, void* obj, 
-            [MarshalAs(UnmanagedType.U1)] bool val);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteDataStreamerSkipStoreGet")]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool DataStreamerSkipStoreGet(void* ctx, void* obj);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteDataStreamerSkipStoreSet")]
-        public static extern void DataStreamerSkipStoreSet(void* ctx, void* obj, 
-            [MarshalAs(UnmanagedType.U1)] bool val);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteDataStreamerPerNodeBufferSizeGet")]
-        public static extern int DataStreamerPerNodeBufferSizeGet(void* ctx, void* obj);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteDataStreamerPerNodeBufferSizeSet")]
-        public static extern void DataStreamerPerNodeBufferSizeSet(void* ctx, void* obj, int val);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteDataStreamerPerNodeParallelOperationsGet")]
-        public static extern int DataStreamerPerNodeParallelOpsGet(void* ctx, void* obj);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteDataStreamerPerNodeParallelOperationsSet")]
-        public static extern void DataStreamerPerNodeParallelOpsSet(void* ctx, void* obj, int val);
-
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteMessagingWithAsync")]
         public static extern void* MessagingWithAsync(void* ctx, void* target);
 

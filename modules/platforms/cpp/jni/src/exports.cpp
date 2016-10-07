@@ -182,42 +182,6 @@ extern "C" {
         return ctx->TargetListenFutureForOperationAndGet(static_cast<jobject>(obj), futId, typ, opId);
     }
 
-    void IGNITE_CALL IgniteDataStreamerListenTopology(gcj::JniContext* ctx, void* obj, long long ptr) {
-        ctx->DataStreamerListenTopology(static_cast<jobject>(obj), ptr);
-    }
-
-    bool IGNITE_CALL IgniteDataStreamerAllowOverwriteGet(gcj::JniContext* ctx, void* obj) {
-        return ctx->DataStreamerAllowOverwriteGet(static_cast<jobject>(obj));
-    }
-
-    void IGNITE_CALL IgniteDataStreamerAllowOverwriteSet(gcj::JniContext* ctx, void* obj, bool val) {
-        ctx->DataStreamerAllowOverwriteSet(static_cast<jobject>(obj), val);
-    }
-
-    bool IGNITE_CALL IgniteDataStreamerSkipStoreGet(gcj::JniContext* ctx, void* obj) {
-        return ctx->DataStreamerSkipStoreGet(static_cast<jobject>(obj));
-    }
-
-    void IGNITE_CALL IgniteDataStreamerSkipStoreSet(gcj::JniContext* ctx, void* obj, bool val) {
-        ctx->DataStreamerSkipStoreSet(static_cast<jobject>(obj), val);
-    }
-
-    int IGNITE_CALL IgniteDataStreamerPerNodeBufferSizeGet(gcj::JniContext* ctx, void* obj) {
-        return ctx->DataStreamerPerNodeBufferSizeGet(static_cast<jobject>(obj));
-    }
-
-    void IGNITE_CALL IgniteDataStreamerPerNodeBufferSizeSet(gcj::JniContext* ctx, void* obj, int val) {
-        ctx->DataStreamerPerNodeBufferSizeSet(static_cast<jobject>(obj), val);
-    }
-
-    int IGNITE_CALL IgniteDataStreamerPerNodeParallelOperationsGet(gcj::JniContext* ctx, void* obj) {
-        return ctx->DataStreamerPerNodeParallelOperationsGet(static_cast<jobject>(obj));
-    }
-
-    void IGNITE_CALL IgniteDataStreamerPerNodeParallelOperationsSet(gcj::JniContext* ctx, void* obj, int val) {
-        ctx->DataStreamerPerNodeParallelOperationsSet(static_cast<jobject>(obj), val);
-    }
-
     void* IGNITE_CALL IgniteMessagingWithAsync(gcj::JniContext* ctx, void* obj) {
         return ctx->MessagingWithAsync(static_cast<jobject>(obj));
     }

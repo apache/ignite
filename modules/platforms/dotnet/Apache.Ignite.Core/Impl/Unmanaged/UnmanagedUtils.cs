@@ -431,55 +431,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #endregion
 
-        #region NATIVE METHODS: DATA STREAMER
-
-        internal static void DataStreamerListenTopology(IUnmanagedTarget target, long ptr)
-        {
-            JNI.DataStreamerListenTop(target.Context, target.Target, ptr);
-        }
-
-        internal static bool DataStreamerAllowOverwriteGet(IUnmanagedTarget target)
-        {
-            return JNI.DataStreamerAllowOverwriteGet(target.Context, target.Target);
-        }
-
-        internal static void DataStreamerAllowOverwriteSet(IUnmanagedTarget target, bool val)
-        {
-            JNI.DataStreamerAllowOverwriteSet(target.Context, target.Target, val);
-        }
-
-        internal static bool DataStreamerSkipStoreGet(IUnmanagedTarget target)
-        {
-            return JNI.DataStreamerSkipStoreGet(target.Context, target.Target);
-        }
-
-        internal static void DataStreamerSkipStoreSet(IUnmanagedTarget target, bool val)
-        {
-            JNI.DataStreamerSkipStoreSet(target.Context, target.Target, val);
-        }
-
-        internal static int DataStreamerPerNodeBufferSizeGet(IUnmanagedTarget target)
-        {
-            return JNI.DataStreamerPerNodeBufferSizeGet(target.Context, target.Target);
-        }
-
-        internal static void DataStreamerPerNodeBufferSizeSet(IUnmanagedTarget target, int val)
-        {
-            JNI.DataStreamerPerNodeBufferSizeSet(target.Context, target.Target, val);
-        }
-
-        internal static int DataStreamerPerNodeParallelOperationsGet(IUnmanagedTarget target)
-        {
-            return JNI.DataStreamerPerNodeParallelOpsGet(target.Context, target.Target);
-        }
-
-        internal static void DataStreamerPerNodeParallelOperationsSet(IUnmanagedTarget target, int val)
-        {
-            JNI.DataStreamerPerNodeParallelOpsSet(target.Context, target.Target, val);
-        }
-
-        #endregion
-
         #region NATIVE METHODS: MESSAGING
 
         internal static IUnmanagedTarget MessagingWithASync(IUnmanagedTarget target)

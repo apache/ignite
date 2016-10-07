@@ -568,17 +568,6 @@ namespace ignite
                 m_PlatformClusterGroup_forYoungest = FindMethod(env, c_PlatformClusterGroup, M_PLATFORM_CLUSTER_GRP_FOR_YOUNGEST);
                 m_PlatformClusterGroup_resetMetrics = FindMethod(env, c_PlatformClusterGroup, M_PLATFORM_CLUSTER_GRP_RESET_METRICS);
 
-                c_PlatformDataStreamer = FindClass(env, C_PLATFORM_DATA_STREAMER);
-                m_PlatformDataStreamer_listenTopology = FindMethod(env, c_PlatformDataStreamer, M_PLATFORM_DATA_STREAMER_LISTEN_TOPOLOGY);
-                m_PlatformDataStreamer_getAllowOverwrite = FindMethod(env, c_PlatformDataStreamer, M_PLATFORM_DATA_STREAMER_GET_ALLOW_OVERWRITE);
-                m_PlatformDataStreamer_setAllowOverwrite = FindMethod(env, c_PlatformDataStreamer, M_PLATFORM_DATA_STREAMER_SET_ALLOW_OVERWRITE);
-                m_PlatformDataStreamer_getSkipStore = FindMethod(env, c_PlatformDataStreamer, M_PLATFORM_DATA_STREAMER_GET_SKIP_STORE);
-                m_PlatformDataStreamer_setSkipStore = FindMethod(env, c_PlatformDataStreamer, M_PLATFORM_DATA_STREAMER_SET_SKIP_STORE);
-                m_PlatformDataStreamer_getPerNodeBufSize = FindMethod(env, c_PlatformDataStreamer, M_PLATFORM_DATA_STREAMER_GET_PER_NODE_BUFFER_SIZE);
-                m_PlatformDataStreamer_setPerNodeBufSize = FindMethod(env, c_PlatformDataStreamer, M_PLATFORM_DATA_STREAMER_SET_PER_NODE_BUFFER_SIZE);
-                m_PlatformDataStreamer_getPerNodeParallelOps = FindMethod(env, c_PlatformDataStreamer, M_PLATFORM_DATA_STREAMER_GET_PER_NODE_PARALLEL_OPS);
-                m_PlatformDataStreamer_setPerNodeParallelOps = FindMethod(env, c_PlatformDataStreamer, M_PLATFORM_DATA_STREAMER_SET_PER_NODE_PARALLEL_OPS);
-
                 c_PlatformEvents = FindClass(env, C_PLATFORM_EVENTS);
                 m_PlatformEvents_withAsync = FindMethod(env, c_PlatformEvents, M_PLATFORM_EVENTS_WITH_ASYNC);
                 m_PlatformEvents_stopLocalListen = FindMethod(env, c_PlatformEvents, M_PLATFORM_EVENTS_STOP_LOCAL_LISTEN);
@@ -695,7 +684,6 @@ namespace ignite
                 DeleteClass(env, c_PlatformAbstractQryCursor);
                 DeleteClass(env, c_IgniteException);
                 DeleteClass(env, c_PlatformClusterGroup);
-                DeleteClass(env, c_PlatformDataStreamer);
                 DeleteClass(env, c_PlatformEvents);
                 DeleteClass(env, c_PlatformIgnition);
                 DeleteClass(env, c_PlatformMessaging);
@@ -1543,86 +1531,6 @@ namespace ignite
                 ExceptionCheck(env);
 
                 return LocalToGlobal(env, res);
-            }
-
-            void JniContext::DataStreamerListenTopology(jobject obj, long long ptr) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformDataStreamer_listenTopology, ptr);
-
-                ExceptionCheck(env);
-            }
-
-            bool JniContext::DataStreamerAllowOverwriteGet(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformDataStreamer_getAllowOverwrite);
-
-                ExceptionCheck(env);
-
-                return res != 0;
-            }
-
-            void JniContext::DataStreamerAllowOverwriteSet(jobject obj, bool val) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformDataStreamer_setAllowOverwrite, val);
-
-                ExceptionCheck(env);
-            }
-
-            bool JniContext::DataStreamerSkipStoreGet(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformDataStreamer_getSkipStore);
-
-                ExceptionCheck(env);
-
-                return res != 0;
-            }
-
-            void JniContext::DataStreamerSkipStoreSet(jobject obj, bool val) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformDataStreamer_setSkipStore, val);
-
-                ExceptionCheck(env);
-            }
-
-            int JniContext::DataStreamerPerNodeBufferSizeGet(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jint res = env->CallIntMethod(obj, jvm->GetMembers().m_PlatformDataStreamer_getPerNodeBufSize);
-
-                ExceptionCheck(env);
-
-                return res;
-            }
-
-            void JniContext::DataStreamerPerNodeBufferSizeSet(jobject obj, int val) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformDataStreamer_setPerNodeBufSize, val);
-
-                ExceptionCheck(env);
-            }
-
-            int JniContext::DataStreamerPerNodeParallelOperationsGet(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jint res = env->CallIntMethod(obj, jvm->GetMembers().m_PlatformDataStreamer_getPerNodeParallelOps);
-
-                ExceptionCheck(env);
-
-                return res;
-            }
-
-            void JniContext::DataStreamerPerNodeParallelOperationsSet(jobject obj, int val) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformDataStreamer_setPerNodeParallelOps, val);
-
-                ExceptionCheck(env);
             }
 
             jobject JniContext::MessagingWithAsync(jobject obj) {
