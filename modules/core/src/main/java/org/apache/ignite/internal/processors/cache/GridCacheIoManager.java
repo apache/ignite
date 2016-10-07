@@ -676,8 +676,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             break;
 
             case 59:
-                // ignore this message, there are case when unmarshall was fail,
-                // in this case thread will process processFailedMessage and catch to case 59:
+                // No additional actions required, just skipping default switch section,
+                // since UnhandledException already registered.
                 break;
 
             case 114: {
@@ -740,15 +740,15 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param ex Original Exception.
      */
     public static void registerUnhandledException(GridCacheContext ctx, String shortMsg, IgniteCheckedException ex) {
+        GridKernalContext kctx = ctx.kernalContext();
+
+        kctx.exceptionRegistry().onException(shortMsg, ex);
+
         ClusterNode node = ctx.discovery().localNode();
 
         UnhandledExceptionEvent evt = new UnhandledExceptionEvent(node, shortMsg, ex, EVT_UNHANDLED_EXCEPTION);
 
-        GridKernalContext cont = ctx.kernalContext();
-
-        cont.exceptionRegistry().onException(shortMsg, ex);
-
-        cont.event().record(evt);
+        kctx.event().record(evt);
     }
 
     /**

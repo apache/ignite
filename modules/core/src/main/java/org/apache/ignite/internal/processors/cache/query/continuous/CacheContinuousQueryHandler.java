@@ -654,8 +654,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             return;
         }
 
-        GridCacheQueryManager qryMgr = cctx.queries();
-
         final Collection<CacheEntryEvent<? extends K, ? extends V>> entries0 = new ArrayList<>(entries.size());
 
         for (CacheContinuousQueryEntry e : entries) {
@@ -687,6 +685,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                     String shortMsg = "Failed to unmarshal entry.";
 
                     U.error(ctx.log(getClass()), shortMsg, ex);
+
+                    GridCacheQueryManager qryMgr = cctx.queries();
 
                     qryMgr.onUnhandledException();
 

@@ -17,9 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.Cache;
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -38,16 +46,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.thread.IgniteThread;
 
-import javax.cache.Cache;
-import javax.cache.event.CacheEntryEvent;
-import javax.cache.event.CacheEntryUpdatedListener;
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
-
 /**
  * Checks behavior on exception while unmarshalling key for continuous query.
  */
@@ -59,15 +57,14 @@ public class IgniteCacheP2pUnmarshallingContinuousQueryErrorTest extends IgniteC
         return 3;
     }
 
-    /**
-     * Used inside InitialQuery listener
-     */
-    private static CountDownLatch latchInitQry = new CountDownLatch(1);
+    /** Used inside InitialQuery listener. */
+    private static final CountDownLatch latch = new CountDownLatch(1);
 
-    /**
-     * Node for fail.
-     */
-    private static String node4fail;
+    /** Node where unmarshalling fails with exceptions. */
+    private static volatile String failNode;
+
+    /** Used to count UnhandledExceptionEvents at client node. */
+    private static final AtomicInteger cnt = new AtomicInteger();
 
     /**
      * {@inheritDoc}
@@ -84,43 +81,33 @@ public class IgniteCacheP2pUnmarshallingContinuousQueryErrorTest extends IgniteC
      * {@inheritDoc}
      */
     @Override public void testResponseMessageOnUnmarshallingFailed() throws Exception {
-        final AtomicInteger unhandledECntr = new AtomicInteger();
+        IgniteEx client = grid(0);
+        IgniteEx node1 = grid(1);
+        IgniteEx node2 = grid(2);
 
-        IgniteEx cNode = grid(0);
+        assert client.configuration().isClientMode() &&
+            !node1.configuration().isClientMode() &&
+            !node2.configuration().isClientMode();
 
-        assert cNode.configuration().isClientMode();
+        failNode = client.name();
 
-        node4fail = cNode.name();
+        client.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                UnhandledExceptionEvent uex = (UnhandledExceptionEvent)evt;
 
-        IgniteEx pNode = grid(1);
-        IgniteEx bBode = grid(2);
+                assertTrue(X.getFullStackTrace(uex.getException()).
+                    contains("IOException: Class can not be unmarshalled"));
 
-        assert !pNode.configuration().isClientMode();
-        assert !pNode.configuration().isClientMode();
-
-        IgniteCache<Object, Object> cCache = jcache(0);
-        IgniteCache<Object, Object> pCache = jcache(1);
-        IgniteCache<Object, Object> bCache = jcache(2);
-
-        cNode.events().localListen(new IgnitePredicate<Event>() {
-            @Override
-            public boolean apply(Event evt) {
-                UnhandledExceptionEvent uex = (UnhandledExceptionEvent) evt;
-
-                String eMsg = X.getFullStackTrace(uex.getException());
-
-                assertTrue(eMsg.contains("IOException: Class can not be unmarshalled"));
-
-                unhandledECntr.incrementAndGet();
+                cnt.incrementAndGet();
 
                 return true;
             }
         }, EventType.EVT_UNHANDLED_EXCEPTION);
 
-        pNode.events().localListen(new IgnitePredicate<Event>() {
-            @Override
-            public boolean apply(Event evt) {
-                fail("This line newer calls");
+        node1.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                fail("This line should newer calls.");
+
                 return true;
             }
         }, EventType.EVT_UNHANDLED_EXCEPTION);
@@ -128,95 +115,122 @@ public class IgniteCacheP2pUnmarshallingContinuousQueryErrorTest extends IgniteC
         ContinuousQuery<TestKey, String> qry = new ContinuousQuery<>();
 
         qry.setInitialQuery(new ScanQuery<>(new IgniteBiPredicate<TestKey, String>() {
-            @Override
-            public boolean apply(TestKey key, String val) {
-                latchInitQry.countDown();
+            @Override public boolean apply(TestKey key, String val) {
+                latch.countDown(); // Gives guarantee query initialized.
+
                 return true;
             }
         }));
 
         qry.setLocalListener(new CacheEntryUpdatedListener<TestKey, String>() {
             @Override public void onUpdated(Iterable<CacheEntryEvent<? extends TestKey, ? extends String>> evts) {
-                fail("This line newer calls");
+                fail("This line should newer calls.");
             }
         });
 
-        // Before test
-        validateCacheQueryMetrics(cCache, 0, 0);
-        validateCacheQueryMetrics(pCache, 0, 0);
-        validateCacheQueryMetrics(bCache, 0, 0);
-
-        assertEquals(unhandledECntr.intValue(), 0);
+        validate(
+            0,//execs
+            0,//evts
+            0,//fails
+            client,
+            node1,
+            node2);
 
         // Put element before creating QueryCursor.
-        pCache.put(generateNodeKeys(pNode, pCache), "value");
+        putPrimary(node1);
 
-        try (QueryCursor<Cache.Entry<TestKey, String>> cur = jcache(0).query(qry)) {
-            latchInitQry.await();
+        try (QueryCursor<Cache.Entry<TestKey, String>> cur = client.cache(null).query(qry)) {
+            latch.await();
 
-            jcache(1).clear();
+            validate(
+                1,//execs
+                0,//evts
+                0,//fails
+                client,
+                node1,
+                node2);
 
-            pCache.put(generateNodeKeys(pNode, pCache), "value");
+            putPrimary(node1);
 
-            Validate(1);
+            validate(
+                1,//execs
+                1,//evts
+                1,//fails
+                client,
+                node1,
+                node2);
 
-            assertEquals(1, unhandledECntr.intValue());
+            putPrimary(node2);
 
-            bCache.put(generateNodeKeys(bBode, bCache), "value");
-
-            Validate(2);
-
-            assertEquals(2, unhandledECntr.intValue());
+            validate(
+                1,//execs
+                2,//evts
+                2,//fails
+                client,
+                node1,
+                node2);
         }
     }
 
     /**
-     * @throws Exception If failed.
+     * @param ignite Ignite.
      */
-    private void Validate(final int failsNum) throws Exception {
+    private void putPrimary(IgniteEx ignite) {
+        IgniteCache<TestKey, Object> cache = ignite.cache(null);
 
-        boolean res = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override
-            public boolean apply() {
-                return jcache(0).queryMetrics().fails() == failsNum;
-            }
-        }, 5_000);
-
-        assertTrue(res);
-
-        validateCacheQueryMetrics(jcache(0), 1, failsNum);
-        validateCacheQueryMetrics(jcache(1), 0, 0);
-        validateCacheQueryMetrics(jcache(2), 0, 0);
+        cache.put(generateNodeKeys(ignite, cache), "value");
     }
 
     /**
-     * @throws Exception If failed.
+     * @param execs Executions.
+     * @param evts Events.
+     * @param failsNum Fails number.
+     * @param client Client.
+     * @param node1 Node 1.
+     * @param node2 Node 2.
      */
-    private void validateCacheQueryMetrics(IgniteCache cache, int executions, int faild) {
-        GridCacheQueryMetricsAdapter metr = (GridCacheQueryMetricsAdapter) cache.queryMetrics();
+    private void validate(final int execs, final int evts, final int failsNum, final IgniteEx client, IgniteEx node1,
+        IgniteEx node2) throws Exception {
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return client.cache(null).queryMetrics().fails() == failsNum;
+            }
+        }, 5_000));
 
-        log.info(metr.toString());
+        assertEquals(evts, cnt.intValue());
+
+        validateCacheQueryMetrics(client, execs, failsNum);
+        validateCacheQueryMetrics(node1, 0, 0);
+        validateCacheQueryMetrics(node2, 0, 0);
+    }
+
+    /**
+     * @param ignite Ignite.
+     * @param executions Executions.
+     * @param fails Fails.
+     */
+    private void validateCacheQueryMetrics(IgniteEx ignite, int executions, int fails) {
+        IgniteCache<Object, Object> cache = ignite.cache(null);
+
+        GridCacheQueryMetricsAdapter metr = (GridCacheQueryMetricsAdapter)cache.queryMetrics();
 
         assertEquals(metr.executions(), executions);
 
-        assertEquals(metr.fails(), faild);
+        assertEquals(metr.fails(), fails);
     }
 
-
     /**
-     * @param node  Node.
+     * @param node Node.
      * @param cache Cache.
      */
-    private TestKey generateNodeKeys(IgniteEx node, IgniteCache cache) {
+    private TestKey generateNodeKeys(IgniteEx node, IgniteCache<TestKey, Object> cache) {
 
         ClusterNode locNode = node.localNode();
-
-        Affinity<TestKey> aff = (Affinity<TestKey>) affinity(cache);
 
         for (int ind = 0; ind < 100_000; ind++) {
             TestKey key = new TestKey("key" + ind);
 
-            if (aff.isPrimary(locNode, key))
+            if (affinity(cache).isPrimary(locNode, key))
                 return key;
         }
 
@@ -255,7 +269,7 @@ public class IgniteCacheP2pUnmarshallingContinuousQueryErrorTest extends IgniteC
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            IgniteCacheP2pUnmarshallingContinuousQueryErrorTest.TestKey key = (IgniteCacheP2pUnmarshallingContinuousQueryErrorTest.TestKey) o;
+            IgniteCacheP2pUnmarshallingContinuousQueryErrorTest.TestKey key = (IgniteCacheP2pUnmarshallingContinuousQueryErrorTest.TestKey)o;
 
             return !(field != null ? !field.equals(key.field) : key.field != null);
         }
@@ -278,9 +292,9 @@ public class IgniteCacheP2pUnmarshallingContinuousQueryErrorTest extends IgniteC
          * {@inheritDoc}
          */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            field = (String) in.readObject();
+            field = (String)in.readObject();
 
-            if (((IgniteThread) Thread.currentThread()).getGridName().equals(node4fail))
+            if (((IgniteThread)Thread.currentThread()).getGridName().equals(failNode))
                 throw new IOException("Class can not be unmarshalled.");
 
         }

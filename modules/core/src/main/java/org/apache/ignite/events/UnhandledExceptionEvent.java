@@ -29,11 +29,18 @@ public class UnhandledExceptionEvent extends EventAdapter {
     /** */
     private Exception ex;
 
-    /** {@inheritDoc} */
+    /**
+     * Default constructor.
+     */
     public UnhandledExceptionEvent() {
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param node Node.
+     * @param msg Message.
+     * @param ex Exception.
+     * @param type Type.
+     */
     public UnhandledExceptionEvent(ClusterNode node, String msg, Exception ex, int type) {
         super(node, msg, type);
         this.ex = ex;
@@ -51,6 +58,4 @@ public class UnhandledExceptionEvent extends EventAdapter {
     public Exception getException() {
         return ex;
     }
-
-
 }
