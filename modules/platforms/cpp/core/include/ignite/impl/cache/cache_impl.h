@@ -272,7 +272,7 @@ namespace ignite
                 * @param local Local flag.
                 * @param err Error.
                 */
-                int32_t CacheImpl::Size(int32_t peekModes, bool local, IgniteError* err);
+                int32_t Size(int32_t peekModes, bool local, IgniteError* err);
 
                 /**
                  * Invoke query.
