@@ -85,49 +85,25 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     private static final int OP_FOR_OTHERS = 16;
 
     /** */
-    private static final int OP_SET_FOR_OTHERS = 17;
+    private static final int OP_FOR_REMOTES = 17;
 
     /** */
-    private static final int OP_FOR_REMOTES = 18;
+    private static final int OP_FOR_DAEMONS = 18;
 
     /** */
-    private static final int OP_SET_FOR_REMOTES = 19;
+    private static final int OP_FOR_RANDOM = 19;
 
     /** */
-    private static final int OP_FOR_DAEMONS = 20;
+    private static final int OP_FOR_OLDEST = 20;
 
     /** */
-    private static final int OP_SET_FOR_DAEMONS = 21;
+    private static final int OP_FOR_YOUNGEST = 21;
 
     /** */
-    private static final int OP_FOR_RANDOM = 22;
+    private static final int OP_PROJECTION = 22;
 
     /** */
-    private static final int OP_SET_FOR_RANDOM = 23;
-
-    /** */
-    private static final int OP_FOR_OLDEST = 24;
-
-    /** */
-    private static final int OP_SET_FOR_OLDEST = 25;
-
-    /** */
-    private static final int OP_FOR_YOUNGEST = 26;
-
-    /** */
-    private static final int OP_SET_FOR_YOUNGEST = 27;
-
-    /** */
-    private static final int OP_PROJECTION = 28;
-
-    /** */
-    private static final int OP_SET_PROJECTION = 29;
-
-    /** */
-    private static final int OP_RESET_METRICS = 30;
-
-    /** */
-    private static final int OP_SET_RESET_METRICS = 31;
+    private static final int OP_RESET_METRICS = 23;
 
     /** Projection. */
     private final ClusterGroupEx prj;

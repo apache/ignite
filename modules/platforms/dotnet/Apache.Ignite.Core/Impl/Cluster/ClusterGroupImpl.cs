@@ -103,50 +103,26 @@ namespace Apache.Ignite.Core.Impl.Cluster
         private const int OpForOthers = 16;
         
         /** */
-        private const int OpSetForOthers = 17;
+        private const int OpForRemotes = 17;
         
         /** */
-        private const int OpForRemotes = 18;
+        private const int OpForDaemons = 18;
         
         /** */
-        private const int OpSetForRemotes = 19;
+        private const int OpForRandom = 19;
         
         /** */
-        private const int OpForDaemons = 20;
+        private const int OpForOldest = 20;
         
         /** */
-        private const int OpSetForDaemons = 21;
+        private const int OpForYoungest = 21;
         
         /** */
-        private const int OpForRandom = 22;
+        private const int OpProjection = 22;
         
         /** */
-        private const int OpSetForRandom = 23;
+        public const int OpResetMetrics = 23;
         
-        /** */
-        private const int OpForOldest = 24;
-        
-        /** */
-        private const int OpSetForOldest = 25;
-        
-        /** */
-        private const int OpForYoungest = 26;
-        
-        /** */
-        private const int OpSetForYoungest = 27;
-        
-        /** */
-        private const int OpProjection = 28;
-        
-        /** */
-        private const int OpSetProjection = 29;
-        
-        /** */
-        private const int OpResetMetrics = 30;
-        
-        /** */
-        private const int OpSetResetMetrics = 31;
-
         /** Initial Ignite instance. */
         private readonly Ignite _ignite;
         
