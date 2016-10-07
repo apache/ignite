@@ -406,18 +406,6 @@ public class PlatformCache extends PlatformAbstractTarget {
                 }
             }
 
-            case OP_REBALANCE: {
-                long futId = reader.readLong();
-
-                PlatformFutureUtils.listen(platformCtx, cache.rebalance().chain(new C1<IgniteFuture, Object>() {
-                    @Override public Object apply(IgniteFuture fut) {
-                        return null;
-                    }
-                }), futId, PlatformFutureUtils.TYP_OBJ, this);
-
-                return TRUE;
-            }
-
             default:
                 return super.processInStreamOutLong(type, reader);
         }
@@ -784,6 +772,16 @@ public class PlatformCache extends PlatformAbstractTarget {
                 Lock lock = lockMap.remove(val);
 
                 assert lock != null : "Failed to unregister lock: " + val;
+
+                return TRUE;
+            }
+
+            case OP_REBALANCE: {
+                PlatformFutureUtils.listen(platformCtx, cache.rebalance().chain(new C1<IgniteFuture, Object>() {
+                    @Override public Object apply(IgniteFuture fut) {
+                        return null;
+                    }
+                }), val, PlatformFutureUtils.TYP_OBJ, this);
 
                 return TRUE;
             }

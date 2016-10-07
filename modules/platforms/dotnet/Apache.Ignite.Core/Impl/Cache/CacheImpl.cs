@@ -919,8 +919,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task Rebalance()
         {
-            return GetFuture<object>((futId, futTyp) => DoOutOp((int) CacheOp.Rebalance,
-                (IBinaryStream w) => w.WriteLong(futId))).Task;
+            return GetFuture<object>((futId, futTyp) => DoOutInOpLong((int) CacheOp.Rebalance, futId)).Task;
         }
 
         /** <inheritDoc /> */
