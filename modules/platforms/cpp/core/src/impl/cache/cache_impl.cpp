@@ -122,8 +122,11 @@ namespace ignite
             /** Operation: RemoveAll(). */
             const int32_t OP_REMOVE_ALL2 = 43;
 
-            /** Operation: Size(peekModes, local). */
+            /** Operation: Size(peekModes). */
             const int32_t OP_SIZE = 48;
+
+            /** Operation: SizeLoc(peekModes). */
+            const int32_t OP_SIZE_LOC = 48;
 
             CacheImpl::CacheImpl(char* name, SharedPointer<IgniteEnvironment> env, jobject javaRef) :
                 InteropTarget(env, javaRef),
@@ -274,13 +277,9 @@ namespace ignite
 
             int32_t CacheImpl::Size(int32_t peekModes, bool local, IgniteError* err)
             {
-                // TODO: This is not correct, need to use raw writer.
-                In2Operation<int32_t, bool> inOp(&peekModes, &local);
-                Out1Operation<int32_t> outOp;
+                int32_t op = local ? OP_SIZE_LOC : OP_SIZE;
 
-                OutInOp(OP_SIZE, inOp, outOp, err);
-
-                return outOp.GetResult();
+                return static_cast<int32_t>(OutInOpLong(op, peekModes, err));
             }
 
             QueryCursorImpl* CacheImpl::QuerySql(const SqlQuery& qry, IgniteError* err)

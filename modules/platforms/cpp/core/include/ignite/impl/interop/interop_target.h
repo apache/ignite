@@ -87,6 +87,15 @@ namespace ignite
                     IgniteError* err);
 
                 /**
+                * Internal out-in operation.
+                *
+                * @param opType Operation type.
+                * @param val Value.
+                * @param err Error.
+                */
+                int64_t OutInOpLong(int32_t opType, int64_t val, IgniteError* err);
+
+                /**
                  * Get environment shared pointer.
                  *
                  * @return Environment shared pointer.
