@@ -23,15 +23,6 @@ IgniteTargetInStreamOutStream @20
 IgniteTargetInObjectStreamOutStream @21 
 IgniteTargetListenFuture @22 
 IgniteTargetListenFutureForOperation @23 
-IgniteDataStreamerListenTopology @48 
-IgniteDataStreamerAllowOverwriteGet @49 
-IgniteDataStreamerAllowOverwriteSet @50 
-IgniteDataStreamerSkipStoreGet @51 
-IgniteDataStreamerSkipStoreSet @52 
-IgniteDataStreamerPerNodeBufferSizeGet @53 
-IgniteDataStreamerPerNodeBufferSizeSet @54 
-IgniteDataStreamerPerNodeParallelOperationsGet @55 
-IgniteDataStreamerPerNodeParallelOperationsSet @56 
 IgniteMessagingWithAsync @57 
 IgniteProjectionForOthers @58 
 IgniteProjectionForRemotes @59 
