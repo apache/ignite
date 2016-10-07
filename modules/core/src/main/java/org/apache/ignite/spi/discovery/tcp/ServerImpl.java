@@ -533,7 +533,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         U.join(msgWorker, log);
 
         for (ClientMessageProcessor clientWorker : clientMsgWorkers.values())
-            stopClientProcessor(clientWorker);
+            stopClientProcessor(clientWorker, true);
 
         clientNioSrv.stop();
 
@@ -600,7 +600,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @param proc Client message processor.
      * @throws IgniteSpiException
      */
-    private void stopClientProcessor(final ClientMessageProcessor proc) throws IgniteSpiException {
+    private void stopClientProcessor(final ClientMessageProcessor proc, final boolean nioBlock) throws IgniteSpiException {
         if (proc == null)
             return;
 
@@ -613,7 +613,10 @@ class ServerImpl extends TcpDiscoveryImpl {
             } else if (proc instanceof ClientNioMessageWorker) {
                 final ClientNioMessageWorker nioWrk = (ClientNioMessageWorker) proc;
 
-                nioWrk.stop();
+                if (nioBlock)
+                    nioWrk.stop();
+                else
+                    nioWrk.nonblockingStop();
             }
         }
         catch (IgniteCheckedException e) {
@@ -1645,7 +1648,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         U.join(msgWorker, log);
 
         for (ClientMessageProcessor msgWorker : clientMsgWorkers.values())
-            stopClientProcessor(msgWorker);
+            stopClientProcessor(msgWorker, true);
 
         clientNioSrv.stop();
 
@@ -6043,7 +6046,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             final ClientMessageProcessor proc = clientMsgWorkers.remove(clientNodeId);
 
-            stopClientProcessor(proc);
+            stopClientProcessor(proc, false);
         }
 
         /** {@inheritDoc} */
