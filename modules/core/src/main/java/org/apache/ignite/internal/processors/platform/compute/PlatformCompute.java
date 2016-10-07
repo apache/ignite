@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
-import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -128,19 +127,17 @@ public class PlatformCompute extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+    @Override protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         switch (type) {
             case OP_WITH_TIMEOUT: {
-                long timeout = reader.readLong();
-
-                compute.withTimeout(timeout);
-                computeForPlatform.withTimeout(timeout);
+                compute.withTimeout(val);
+                computeForPlatform.withTimeout(val);
 
                 return TRUE;
             }
         }
 
-        return super.processInStreamOutLong(type, reader);
+        return super.processInLongOutLong(type, val);
     }
 
     /** {@inheritDoc} */
