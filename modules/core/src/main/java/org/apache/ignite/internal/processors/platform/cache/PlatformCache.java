@@ -235,6 +235,9 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_REBALANCE = 55;
 
+    /** */
+    public static final int OP_SIZE_LOC = 56;
+
     /** Underlying JCache. */
     private final IgniteCacheProxy cache;
 
@@ -722,19 +725,6 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 break;
 
-            case OP_SIZE: {
-                int peekModes = reader.readInt();
-                boolean loc = reader.readBoolean();
-
-                CachePeekMode[] modes = PlatformUtils.decodeCachePeekModes(peekModes);
-
-                int size = loc ? cache.localSize(modes) :  cache.size(modes);
-
-                writer.writeInt(size);
-
-                break;
-            }
-
             default:
                 super.processInStreamOutStream(type, reader, writer);
         }
@@ -781,6 +771,24 @@ public class PlatformCache extends PlatformAbstractTarget {
         }
 
         return super.processOutObject(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        switch (type) {
+            case OP_SIZE: {
+                CachePeekMode[] modes = PlatformUtils.decodeCachePeekModes((int)val);
+
+                return cache.size(modes);
+            }
+
+            case OP_SIZE_LOC: {
+                CachePeekMode[] modes = PlatformUtils.decodeCachePeekModes((int)val);
+
+                return cache.localSize(modes);
+            }
+        }
+        return super.processInLongOutLong(type, val);
     }
 
     /** {@inheritDoc} */
