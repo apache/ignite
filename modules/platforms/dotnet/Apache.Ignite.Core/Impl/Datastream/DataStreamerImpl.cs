@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
@@ -67,7 +68,34 @@ namespace Apache.Ignite.Core.Impl.Datastream
         
         /** Operation: set receiver. */
         private const int OpReceiver = 2;
-        
+
+        /** */
+        private const int OpAllowOverwrite = 3;
+
+        /** */
+        private const int OpSetAllowOverwrite = 4;
+
+        /** */
+        private const int OpSkipStore = 5;
+
+        /** */
+        private const int OpSetSkipStore = 6;
+
+        /** */
+        private const int OpPerNodeBufferSize = 7;
+
+        /** */
+        private const int OpSetPerNodeBufferSize = 8;
+
+        /** */
+        private const int OpPerNodeParallelOps = 9;
+
+        /** */
+        private const int OpSetPerNodeParallelOps = 10;
+
+        /** */
+        private const int OpListenTopology = 11;
+
         /** Cache name. */
         private readonly string _cacheName;
 
@@ -129,7 +157,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             _hnd = marsh.Ignite.HandleRegistry.Allocate(thisRef);
 
             // Start topology listening. This call will ensure that buffer size member is updated.
-            UU.DataStreamerListenTopology(target, _hnd);
+            DoOutOp(OpListenTopology, (IBinaryStream s) => s.WriteLong(_hnd));
 
             // Membar to ensure fields initialization before leaving constructor.
             Thread.MemoryBarrier();
