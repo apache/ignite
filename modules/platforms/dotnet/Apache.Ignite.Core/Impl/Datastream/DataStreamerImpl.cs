@@ -185,7 +185,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    return UU.DataStreamerAllowOverwriteGet(Target);
+                    return DoOutOp(OpAllowOverwrite) == True;
                 }
                 finally
                 {
@@ -200,7 +200,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    UU.DataStreamerAllowOverwriteSet(Target, value);
+                    DoOutOp(OpSetAllowOverwrite, s => s.WriteBool(value));
                 }
                 finally
                 {
@@ -220,7 +220,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    return UU.DataStreamerSkipStoreGet(Target);
+                    return DoOutOp(OpSkipStore) == True;
                 }
                 finally
                 {
@@ -235,7 +235,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    UU.DataStreamerSkipStoreSet(Target, value);
+                    DoOutOp(OpSetSkipStore, s => s.WriteBool(value));
                 }
                 finally
                 {
@@ -255,7 +255,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    return UU.DataStreamerPerNodeBufferSizeGet(Target);
+                    return (int) DoOutOp(OpPerNodeBufferSize);
                 }
                 finally
                 {
@@ -270,7 +270,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    UU.DataStreamerPerNodeBufferSizeSet(Target, value);
+                    DoOutOp(OpSetPerNodeBufferSize, (IBinaryStream s) => s.WriteInt(value));
 
                     _bufSndSize = _topSize * value;
                 }
@@ -292,7 +292,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    return UU.DataStreamerPerNodeParallelOperationsGet(Target);
+                    return (int) DoOutOp(OpPerNodeParallelOps);
                 }
                 finally
                 {
@@ -308,7 +308,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    UU.DataStreamerPerNodeParallelOperationsSet(Target, value);
+                    DoOutOp(OpSetPerNodeParallelOps, (IBinaryStream s) => s.WriteInt(value));
                 }
                 finally
                 {
@@ -599,7 +599,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                     _topVer = topVer;
                     _topSize = topSize > 0 ? topSize : 1;  // Do not set to 0 to avoid 0 buffer size.
 
-                    _bufSndSize = _topSize * UU.DataStreamerPerNodeBufferSizeGet(Target);
+                    _bufSndSize = (int) (_topSize * DoOutOp(OpPerNodeBufferSize));
                 }
             }
             finally
