@@ -1274,7 +1274,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public void Enter(long id)
         {
-            DoOutOp((int) CacheOp.EnterLock, (IBinaryStream s) => s.WriteLong(id));
+            DoOutInOpLong((int) CacheOp.EnterLock, id);
         }
 
         /** <inheritdoc /> */
@@ -1290,13 +1290,13 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public void Exit(long id)
         {
-            DoOutOp((int) CacheOp.ExitLock, (IBinaryStream s) => s.WriteLong(id));
+            DoOutInOpLong((int) CacheOp.ExitLock, id);
         }
 
         /** <inheritdoc /> */
         public void Close(long id)
         {
-            DoOutOp((int) CacheOp.CloseLock, (IBinaryStream s) => s.WriteLong(id));
+            DoOutInOpLong((int) CacheOp.CloseLock, id);
         }
     }
 }

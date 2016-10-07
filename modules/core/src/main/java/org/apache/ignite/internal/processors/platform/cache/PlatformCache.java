@@ -390,23 +390,6 @@ public class PlatformCache extends PlatformAbstractTarget {
                 return TRUE;
             }
 
-            case OP_ENTER_LOCK: {
-                try {
-                    lock(reader.readLong()).lockInterruptibly();
-
-                    return TRUE;
-                }
-                catch (InterruptedException e) {
-                    throw new IgniteCheckedException("Failed to enter cache lock.", e);
-                }
-            }
-
-            case OP_EXIT_LOCK: {
-                lock(reader.readLong()).unlock();
-
-                return TRUE;
-            }
-
             case OP_TRY_ENTER_LOCK: {
                 try {
                     long id = reader.readLong();
@@ -421,16 +404,6 @@ public class PlatformCache extends PlatformAbstractTarget {
                 catch (InterruptedException e) {
                     throw new IgniteCheckedException(e);
                 }
-            }
-
-            case OP_CLOSE_LOCK: {
-                long id = reader.readLong();
-
-                Lock lock = lockMap.remove(id);
-
-                assert lock != null : "Failed to unregister lock: " + id;
-
-                return TRUE;
             }
 
             case OP_REBALANCE: {
@@ -451,6 +424,8 @@ public class PlatformCache extends PlatformAbstractTarget {
 
         return TRUE;
     }
+
+
 
     /**
      * Loads cache via localLoadCache or loadCache.
@@ -786,6 +761,31 @@ public class PlatformCache extends PlatformAbstractTarget {
                 CachePeekMode[] modes = PlatformUtils.decodeCachePeekModes((int)val);
 
                 return cache.localSize(modes);
+            }
+
+            case OP_ENTER_LOCK: {
+                try {
+                    lock(val).lockInterruptibly();
+
+                    return TRUE;
+                }
+                catch (InterruptedException e) {
+                    throw new IgniteCheckedException("Failed to enter cache lock.", e);
+                }
+            }
+
+            case OP_EXIT_LOCK: {
+                lock(val).unlock();
+
+                return TRUE;
+            }
+
+            case OP_CLOSE_LOCK: {
+                Lock lock = lockMap.remove(val);
+
+                assert lock != null : "Failed to unregister lock: " + val;
+
+                return TRUE;
             }
         }
         return super.processInLongOutLong(type, val);
