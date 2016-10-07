@@ -104,7 +104,6 @@ public class PageNoStoreImpl implements Page {
         assert locked;
 
         return reset(buf);
-
     }
 
     /** {@inheritDoc} */

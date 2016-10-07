@@ -35,7 +35,8 @@ public interface PageMemory extends LifecycleAware, PageIdAllocator {
 
     /**
      * @see #page(int, long)
-     * Will not read page from file if it is not present in memory
+     * Will not read page from file if it is not present in memory.
+     * TODO this method should be moved to PageMemoryEx altogether will all WAL records.
      *
      * @param cacheId Cache id.
      * @param pageId Page id.
