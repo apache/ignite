@@ -44,6 +44,9 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
     /** Close iterator. */
     private static final int OP_ITERATOR_CLOSE = 5;
 
+    /** Close iterator. */
+    private static final int OP_ITERATOR_HAS_NEXT = 6;
+
     /** Underlying cursor. */
     private final QueryCursorEx<T> cursor;
 
@@ -144,21 +147,14 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
                 cursor.close();
 
                 return TRUE;
+
+            case OP_ITERATOR_HAS_NEXT:
+                assert iter != null : "iterator() has not been called";
+
+                return iter.hasNext() ? TRUE : FALSE;
         }
 
         return super.processOutLong(type);
-    }
-
-    /**
-     * Check whether next iterator entry exists.
-     *
-     * @return {@code True} if exists.
-     */
-    @SuppressWarnings("UnusedDeclaration")
-    public boolean iteratorHasNext() {
-        assert iter != null : "iterator() has not been called";
-
-        return iter.hasNext();
     }
 
     /** {@inheritDoc} */
