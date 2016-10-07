@@ -36,7 +36,7 @@ import org.apache.ignite.services.ServiceDescriptor;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * {@link org.apache.ignite.IgniteCompute} implementation.
+ * {@link org.apache.ignite.IgniteServices} implementation.
  */
 public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteServices, Externalizable {
     /** */
