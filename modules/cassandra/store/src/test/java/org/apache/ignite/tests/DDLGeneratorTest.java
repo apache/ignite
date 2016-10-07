@@ -25,33 +25,33 @@ import org.junit.Test;
  * DDLGenerator test.
  */
 public class DDLGeneratorTest {
-    private static final String URL1 = "org/apache/ignite/tests/persistence/primitive/persistence-settings-1.xml";
-    private static final String URL2 = "org/apache/ignite/tests/persistence/pojo/persistence-settings-3.xml";
-    private static final String URL3 = "org/apache/ignite/tests/persistence/pojo/persistence-settings-4.xml";
+    /** */
+    private static final String[] RESOURCES = new String[] {
+        "org/apache/ignite/tests/persistence/primitive/persistence-settings-1.xml",
+        "org/apache/ignite/tests/persistence/pojo/persistence-settings-3.xml",
+        "org/apache/ignite/tests/persistence/pojo/persistence-settings-4.xml",
+        "org/apache/ignite/tests/persistence/pojo/product.xml",
+        "org/apache/ignite/tests/persistence/pojo/order.xml"
+    };
 
+    /**
+     * Test DDL generator.
+     */
     @Test
     @SuppressWarnings("unchecked")
-    /** */
     public void generatorTest() {
+        String[] files = new String[RESOURCES.length];
+
         ClassLoader clsLdr = DDLGeneratorTest.class.getClassLoader();
 
-        URL url1 = clsLdr.getResource(URL1);
-        if (url1 == null)
-            throw new IllegalStateException("Failed to find resource: " + URL1);
+        for (int i = 0; i < RESOURCES.length; i++) {
+            URL url = clsLdr.getResource(RESOURCES[i]);
+            if (url == null)
+                throw new IllegalStateException("Failed to find resource: " + RESOURCES[i]);
 
-        URL url2 = clsLdr.getResource(URL2);
-        if (url2 == null)
-            throw new IllegalStateException("Failed to find resource: " + URL2);
+            files[i] = url.getFile();
+        }
 
-        URL url3 = clsLdr.getResource(URL3);
-        if (url3 == null)
-            throw new IllegalStateException("Failed to find resource: " + URL3);
-
-        String file1 = url1.getFile();
-        String file2 = url2.getFile();
-        String file3 = url3.getFile();
-
-        DDLGenerator.main(new String[]{file1, file2, file3});
+        DDLGenerator.main(files);
     }
-
 }

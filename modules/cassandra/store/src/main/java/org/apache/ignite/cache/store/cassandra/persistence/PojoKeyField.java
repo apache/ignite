@@ -40,7 +40,7 @@ public class PojoKeyField extends PojoField {
     private static final String SORT_ATTR = "sort";
 
     /** Sort order. */
-    private SortOrder sortOrder = null;
+    private SortOrder sortOrder;
 
     /**
      * Constructs Ignite cache key POJO object descriptor.
@@ -79,12 +79,8 @@ public class PojoKeyField extends PojoField {
         return sortOrder;
     }
 
-    /**
-     * Initializes descriptor from {@link QuerySqlField} annotation.
-     *
-     * @param sqlField {@link QuerySqlField} annotation.
-     */
-    protected void init(QuerySqlField sqlField) {
+    /** {@inheritDoc} */
+    @Override protected void init(QuerySqlField sqlField) {
         if (sqlField.descending())
             sortOrder = SortOrder.DESC;
     }
