@@ -83,6 +83,9 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
     /** */
     private static final int OP_SET_PER_NODE_PARALLEL_OPS = 10;
 
+    /** */
+    private static final int OP_LISTEN_TOPOLOGY = 11;
+
     /** Cache name. */
     private final String cacheName;
 
@@ -150,7 +153,7 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
 
                 return TRUE;
 
-            case OP_RECEIVER:
+            case OP_RECEIVER: {
                 long ptr = reader.readLong();
 
                 Object rec = reader.readObjectDetached();
@@ -158,6 +161,7 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
                 ldr.receiver(platformCtx.createStreamReceiver(rec, ptr, keepBinary));
 
                 return TRUE;
+            }
 
             case OP_SET_ALLOW_OVERWRITE:
                 ldr.allowOverwrite(reader.readBoolean());
@@ -178,6 +182,33 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
                 ldr.perNodeParallelOperations(reader.readInt());
 
                 return TRUE;
+
+            case OP_LISTEN_TOPOLOGY: {
+                final long ptr = reader.readLong();
+
+                lsnr = new GridLocalEventListener() {
+                    @Override public void onEvent(Event evt) {
+                        DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
+
+                        long topVer = discoEvt.topologyVersion();
+                        int topSize = platformCtx.kernalContext().discovery().cacheNodes(
+                                cacheName, new AffinityTopologyVersion(topVer)).size();
+
+                        platformCtx.gateway().dataStreamerTopologyUpdate(ptr, topVer, topSize);
+                    }
+                };
+
+                platformCtx.kernalContext().event().addLocalEventListener(lsnr,
+                        EVT_NODE_JOINED, EVT_NODE_FAILED, EVT_NODE_LEFT);
+
+                GridDiscoveryManager discoMgr = platformCtx.kernalContext().discovery();
+
+                AffinityTopologyVersion topVer = discoMgr.topologyVersionEx();
+
+                int topSize = discoMgr.cacheNodes(cacheName, topVer).size();
+
+                platformCtx.gateway().dataStreamerTopologyUpdate(ptr, topVer.topologyVersion(), topSize);
+            }
 
             default:
                 return super.processInStreamOutLong(type, reader);
@@ -201,35 +232,6 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
         }
 
         return super.processOutLong(type);
-    }
-
-    /**
-     * Listen topology changes.
-     *
-     * @param ptr Pointer.
-     */
-    public void listenTopology(final long ptr) {
-        lsnr = new GridLocalEventListener() {
-            @Override public void onEvent(Event evt) {
-                DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
-
-                long topVer = discoEvt.topologyVersion();
-                int topSize = platformCtx.kernalContext().discovery().cacheNodes(
-                    cacheName, new AffinityTopologyVersion(topVer)).size();
-
-                platformCtx.gateway().dataStreamerTopologyUpdate(ptr, topVer, topSize);
-            }
-        };
-
-        platformCtx.kernalContext().event().addLocalEventListener(lsnr, EVT_NODE_JOINED, EVT_NODE_FAILED, EVT_NODE_LEFT);
-
-        GridDiscoveryManager discoMgr = platformCtx.kernalContext().discovery();
-
-        AffinityTopologyVersion topVer = discoMgr.topologyVersionEx();
-
-        int topSize = discoMgr.cacheNodes(cacheName, topVer).size();
-
-        platformCtx.gateway().dataStreamerTopologyUpdate(ptr, topVer.topologyVersion(), topSize);
     }
 
     /**
