@@ -151,30 +151,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetListenFutureForOperationAndGet")]
         public static extern void* TargetListenFutForOpAndGet(void* ctx, void* target, long futId, int typ, int opId);
 
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProjectionForOthers")]
-        public static extern void* ProjectionForOthers(void* ctx, void* obj, void* prj);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProjectionForRemotes")]
-        public static extern void* ProjectionForRemotes(void* ctx, void* obj);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProjectionForDaemons")]
-        public static extern void* ProjectionForDaemons(void* ctx, void* obj);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProjectionForRandom")]
-        public static extern void* ProjectionForRandom(void* ctx, void* obj);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProjectionForOldest")]
-        public static extern void* ProjectionForOldest(void* ctx, void* obj);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProjectionForYoungest")]
-        public static extern void* ProjectionForYoungest(void* ctx, void* obj);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProjectionResetMetrics")]
-        public static extern void ProjectionResetMetrics(void* ctx, void* obj);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProjectionOutOpRet")]
-        public static extern void* ProjectionOutOpRet(void* ctx, void* obj, int type, long memPtr);
-
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteQueryCursorIterator")]
         public static extern void QryCursorIterator(void* ctx, void* target);
 

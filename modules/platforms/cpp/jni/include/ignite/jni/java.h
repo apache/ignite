@@ -230,15 +230,6 @@ namespace ignite
 
                 jclass c_IgniteException;
 
-                jclass c_PlatformClusterGroup;
-                jmethodID m_PlatformClusterGroup_forOthers;
-                jmethodID m_PlatformClusterGroup_forRemotes;
-                jmethodID m_PlatformClusterGroup_forDaemons;
-                jmethodID m_PlatformClusterGroup_forRandom;
-                jmethodID m_PlatformClusterGroup_forOldest;
-                jmethodID m_PlatformClusterGroup_forYoungest;
-                jmethodID m_PlatformClusterGroup_resetMetrics;
-
                 jclass c_PlatformEvents;
                 jmethodID m_PlatformEvents_withAsync;
                 jmethodID m_PlatformEvents_stopLocalListen;
@@ -517,15 +508,6 @@ namespace ignite
                 
                 jobject CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr);
-
-                jobject ProjectionForOthers(jobject obj, jobject prj);
-                jobject ProjectionForRemotes(jobject obj);
-                jobject ProjectionForDaemons(jobject obj);
-                jobject ProjectionForRandom(jobject obj);
-                jobject ProjectionForOldest(jobject obj);
-                jobject ProjectionForYoungest(jobject obj);
-                void ProjectionResetMetrics(jobject obj);
-                jobject ProjectionOutOpRet(jobject obj, int type, long long memPtr);
 
                 void QueryCursorIterator(jobject obj, JniErrorInfo* errInfo = NULL);
                 bool QueryCursorIteratorHasNext(jobject obj, JniErrorInfo* errInfo = NULL);

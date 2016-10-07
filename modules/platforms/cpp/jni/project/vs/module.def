@@ -24,17 +24,9 @@ IgniteTargetInObjectStreamOutStream @21
 IgniteTargetListenFuture @22 
 IgniteTargetListenFutureForOperation @23 
 IgniteTargetInLongOutLong @24
-IgniteProjectionForOthers @58 
-IgniteProjectionForRemotes @59 
-IgniteProjectionForDaemons @60 
-IgniteProjectionForRandom @61 
-IgniteProjectionForOldest @62 
-IgniteProjectionForYoungest @63 
 IgniteProcessorCompute @64 
 IgniteProcessorMessage @65 
 IgniteProcessorEvents @66 
-IgniteProjectionResetMetrics @67 
-IgniteProjectionOutOpRet @68 
 IgniteQueryCursorIterator @69 
 IgniteQueryCursorClose @70 
 IgniteTransactionsStart @71 

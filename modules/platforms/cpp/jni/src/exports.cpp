@@ -186,38 +186,6 @@ extern "C" {
         return ctx->TargetListenFutureForOperationAndGet(static_cast<jobject>(obj), futId, typ, opId);
     }
 
-    void* IGNITE_CALL IgniteProjectionForOthers(gcj::JniContext* ctx, void* obj, void* prj) {
-        return ctx->ProjectionForOthers(static_cast<jobject>(obj), static_cast<jobject>(prj));
-    }
-
-    void* IGNITE_CALL IgniteProjectionForRemotes(gcj::JniContext* ctx, void* obj) {
-        return ctx->ProjectionForRemotes(static_cast<jobject>(obj));
-    }
-
-    void* IGNITE_CALL IgniteProjectionForDaemons(gcj::JniContext* ctx, void* obj) {
-        return ctx->ProjectionForDaemons(static_cast<jobject>(obj));
-    }
-
-    void* IGNITE_CALL IgniteProjectionForRandom(gcj::JniContext* ctx, void* obj) {
-        return ctx->ProjectionForRandom(static_cast<jobject>(obj));
-    }
-
-    void* IGNITE_CALL IgniteProjectionForOldest(gcj::JniContext* ctx, void* obj) {
-        return ctx->ProjectionForOldest(static_cast<jobject>(obj));
-    }
-
-    void* IGNITE_CALL IgniteProjectionForYoungest(gcj::JniContext* ctx, void* obj) {
-        return ctx->ProjectionForYoungest(static_cast<jobject>(obj));
-    }
-
-    void IGNITE_CALL IgniteProjectionResetMetrics(gcj::JniContext* ctx, void* obj) {
-        ctx->ProjectionResetMetrics(static_cast<jobject>(obj));
-    }
-
-    void* IGNITE_CALL IgniteProjectionOutOpRet(gcj::JniContext* ctx, void* obj, int type, long long memPtr) {
-        return ctx->ProjectionOutOpRet(static_cast<jobject>(obj), type, memPtr);
-    }
-
     void IGNITE_CALL IgniteQueryCursorIterator(gcj::JniContext* ctx, void* obj) {
         ctx->QueryCursorIterator(static_cast<jobject>(obj));
     }

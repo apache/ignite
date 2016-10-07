@@ -557,15 +557,6 @@ namespace ignite
 
                 c_IgniteException = FindClass(env, C_IGNITE_EXCEPTION);
 
-                c_PlatformClusterGroup = FindClass(env, C_PLATFORM_CLUSTER_GRP);
-                m_PlatformClusterGroup_forOthers = FindMethod(env, c_PlatformClusterGroup, M_PLATFORM_CLUSTER_GRP_FOR_OTHERS);
-                m_PlatformClusterGroup_forRemotes = FindMethod(env, c_PlatformClusterGroup, M_PLATFORM_CLUSTER_GRP_FOR_REMOTES);
-                m_PlatformClusterGroup_forDaemons = FindMethod(env, c_PlatformClusterGroup, M_PLATFORM_CLUSTER_GRP_FOR_DAEMONS);
-                m_PlatformClusterGroup_forRandom = FindMethod(env, c_PlatformClusterGroup, M_PLATFORM_CLUSTER_GRP_FOR_RANDOM);
-                m_PlatformClusterGroup_forOldest = FindMethod(env, c_PlatformClusterGroup, M_PLATFORM_CLUSTER_GRP_FOR_OLDEST);
-                m_PlatformClusterGroup_forYoungest = FindMethod(env, c_PlatformClusterGroup, M_PLATFORM_CLUSTER_GRP_FOR_YOUNGEST);
-                m_PlatformClusterGroup_resetMetrics = FindMethod(env, c_PlatformClusterGroup, M_PLATFORM_CLUSTER_GRP_RESET_METRICS);
-
                 c_PlatformEvents = FindClass(env, C_PLATFORM_EVENTS);
                 m_PlatformEvents_withAsync = FindMethod(env, c_PlatformEvents, M_PLATFORM_EVENTS_WITH_ASYNC);
                 m_PlatformEvents_stopLocalListen = FindMethod(env, c_PlatformEvents, M_PLATFORM_EVENTS_STOP_LOCAL_LISTEN);
@@ -679,7 +670,6 @@ namespace ignite
             void JniMembers::Destroy(JNIEnv* env) {
                 DeleteClass(env, c_PlatformAbstractQryCursor);
                 DeleteClass(env, c_IgniteException);
-                DeleteClass(env, c_PlatformClusterGroup);
                 DeleteClass(env, c_PlatformEvents);
                 DeleteClass(env, c_PlatformIgnition);
                 DeleteClass(env, c_PlatformProcessor);
@@ -1537,86 +1527,6 @@ namespace ignite
 
                 return LocalToGlobal(env, res);
             }
-
-            jobject JniContext::ProjectionForOthers(jobject obj, jobject prj) {
-                JNIEnv* env = Attach();
-
-                jobject newPrj = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformClusterGroup_forOthers, prj);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, newPrj);
-            }
-
-            jobject JniContext::ProjectionForRemotes(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jobject newPrj = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformClusterGroup_forRemotes);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, newPrj);
-            }
-
-            jobject JniContext::ProjectionForDaemons(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jobject newPrj = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformClusterGroup_forDaemons);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, newPrj);
-            }
-
-            jobject JniContext::ProjectionForRandom(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jobject newPrj = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformClusterGroup_forRandom);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, newPrj);
-            }
-
-            jobject JniContext::ProjectionForOldest(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jobject newPrj = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformClusterGroup_forOldest);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, newPrj);
-            }
-
-            jobject JniContext::ProjectionForYoungest(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jobject newPrj = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformClusterGroup_forYoungest);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, newPrj);
-            }
-
-            void JniContext::ProjectionResetMetrics(jobject obj) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformClusterGroup_resetMetrics);
-
-                ExceptionCheck(env);
-            }
-
-            jobject JniContext::ProjectionOutOpRet(jobject obj, int type, long long memPtr) {
-                JNIEnv* env = Attach();
-
-                jobject res = env->CallObjectMethod(
-                    obj, jvm->GetMembers().m_PlatformTarget_inStreamOutObject, type, memPtr);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, res);
-            }
-
 
             void JniContext::QueryCursorIterator(jobject obj, JniErrorInfo* errInfo) {
                 JNIEnv* env = Attach();

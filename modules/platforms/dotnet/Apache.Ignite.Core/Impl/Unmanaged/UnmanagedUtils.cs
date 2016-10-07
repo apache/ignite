@@ -436,64 +436,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #endregion
 
-        #region NATIVE METHODS: PROJECTION
-
-        internal static IUnmanagedTarget ProjectionForOthers(IUnmanagedTarget target, IUnmanagedTarget prj)
-        {
-            void* res = JNI.ProjectionForOthers(target.Context, target.Target, prj.Target);
-
-            return target.ChangeTarget(res);
-        }
-
-        internal static IUnmanagedTarget ProjectionForRemotes(IUnmanagedTarget target)
-        {
-            void* res = JNI.ProjectionForRemotes(target.Context, target.Target);
-
-            return target.ChangeTarget(res);
-        }
-
-        internal static IUnmanagedTarget ProjectionForDaemons(IUnmanagedTarget target)
-        {
-            void* res = JNI.ProjectionForDaemons(target.Context, target.Target);
-
-            return target.ChangeTarget(res);
-        }
-
-        internal static IUnmanagedTarget ProjectionForRandom(IUnmanagedTarget target)
-        {
-            void* res = JNI.ProjectionForRandom(target.Context, target.Target);
-
-            return target.ChangeTarget(res);
-        }
-
-        internal static IUnmanagedTarget ProjectionForOldest(IUnmanagedTarget target)
-        {
-            void* res = JNI.ProjectionForOldest(target.Context, target.Target);
-
-            return target.ChangeTarget(res);
-        }
-
-        internal static IUnmanagedTarget ProjectionForYoungest(IUnmanagedTarget target)
-        {
-            void* res = JNI.ProjectionForYoungest(target.Context, target.Target);
-
-            return target.ChangeTarget(res);
-        }
-        
-        internal static void ProjectionResetMetrics(IUnmanagedTarget target)
-        {
-            JNI.ProjectionResetMetrics(target.Context, target.Target);
-        }
-
-        internal static IUnmanagedTarget ProjectionOutOpRet(IUnmanagedTarget target, int type, long memPtr)
-        {
-            void* res = JNI.ProjectionOutOpRet(target.Context, target.Target, type, memPtr);
-
-            return target.ChangeTarget(res);
-        }
-
-        #endregion
-
         #region NATIVE METHODS: QUERY CURSOR
 
         internal static void QueryCursorIterator(IUnmanagedTarget target)
