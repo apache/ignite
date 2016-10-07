@@ -76,6 +76,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         ExitLock = 52,
         TryEnterLock = 53,
         CloseLock = 54,
-        Rebalance = 55
+        Rebalance = 55,
+        SizeLoc = 56
     }
 }

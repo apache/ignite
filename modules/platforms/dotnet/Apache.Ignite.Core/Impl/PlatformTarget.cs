@@ -603,6 +603,17 @@ namespace Apache.Ignite.Core.Impl
             }
         }
 
+        /// <summary>
+        /// Perform simple out-in operation accepting two arguments.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
+        /// <param name="val">Value.</param>
+        /// <returns>Result.</returns>
+        protected long DoOutInOpLong(int type, long val)
+        {
+            return UU.TargetInLongOutLong(_target, type, val);
+        }
+
         #endregion
 
         #region Miscelanneous

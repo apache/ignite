@@ -791,13 +791,11 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>Size.</returns>
         private int Size0(bool loc, params CachePeekMode[] modes)
         {
-            int modes0 = EncodePeekModes(modes);
+            var modes0 = EncodePeekModes(modes);
 
-            return DoOutInOp((int) CacheOp.Size, w =>
-            {
-                w.WriteInt(modes0);
-                w.WriteBoolean(loc);
-            }, r => r.ReadInt());
+            var op = loc ? CacheOp.SizeLoc : CacheOp.Size;
+
+            return (int) DoOutInOpLong((int) op, modes0);
         }
 
         /** <inheritDoc /> */
