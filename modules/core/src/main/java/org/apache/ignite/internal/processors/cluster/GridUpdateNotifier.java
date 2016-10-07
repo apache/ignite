@@ -17,6 +17,19 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.Collection;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -29,13 +42,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.*;
-import java.net.URL;
-import java.net.URLConnection;
-import java.util.Collection;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static java.net.URLEncoder.encode;
 
@@ -56,7 +62,10 @@ class GridUpdateNotifier {
     private static final long THROTTLE_PERIOD = 24 * 60 * 60 * 1000; // 1 day.
 
     /** Sleep milliseconds time for worker thread. */
-    public static final int WORKER_THREAD_SLEEP_TIME = 5000;
+    private static final int WORKER_THREAD_SLEEP_TIME = 5000;
+
+    /** Url for request version. */
+    private final static String UPDATE_NOTIFIER_URL = "https://ignite.run/update_status_ignite-plain-text.php";
 
     /** Grid version. */
     private final String ver;
@@ -93,9 +102,6 @@ class GridUpdateNotifier {
 
     /** Worker thread to process http request. */
     private final Thread workerThread;
-
-    /** Url for request version. */
-    private final static String UPDATE_NOTIFIER_URL = "https://ignite.run/update_status_ignite-plain-text.php";
 
     /**
      * Creates new notifier with default values.
@@ -147,7 +153,8 @@ class GridUpdateNotifier {
             workerThread.setDaemon(true);
 
             workerThread.start();
-        } catch (UnsupportedEncodingException e) {
+        }
+        catch (UnsupportedEncodingException e) {
             throw new IgniteCheckedException("Failed to encode.", e);
         }
     }
@@ -351,8 +358,8 @@ class GridUpdateNotifier {
         /**
          * Gets the version from the current {@code node}, if one exists.
          *
-         * @param  line which contain value for extract
-         * @param  metaName for extract
+         * @param  line Line which contains value for extract.
+         * @param  metaName Name for extract.
          * @return Version or {@code null} if one's not found.
          */
         @Nullable private String obtainMeta(String metaName, String line) {
@@ -365,7 +372,7 @@ class GridUpdateNotifier {
         /**
          * Gets the version from the current {@code node}, if one exists.
          *
-         * @param  line which contain value for extract
+         * @param  line Line which contains value for extract.
          * @return Version or {@code null} if one's not found.
          */
         @Nullable private String obtainVersionFrom(String line) {
@@ -375,7 +382,7 @@ class GridUpdateNotifier {
         /**
          * Gets the download url from the current {@code node}, if one exists.
          *
-         * @param line which contain value for extract
+         * @param line Which contains value for extract.
          * @return download url or {@code null} if one's not found.
          */
         @Nullable private String obtainDownloadUrlFrom(String line) {
