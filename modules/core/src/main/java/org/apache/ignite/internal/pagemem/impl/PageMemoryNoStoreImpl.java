@@ -265,7 +265,14 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     @Override public Page page(int cacheId, long pageId) throws IgniteCheckedException {
         Segment seg = segment(pageId);
 
-        return seg.acquirePage(cacheId, pageId);
+        return seg.acquirePage(cacheId, pageId, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Page page(int cacheId, long pageId, boolean restore) throws IgniteCheckedException {
+        Segment seg = segment(pageId);
+
+        return seg.acquirePage(cacheId, pageId, true);
     }
 
     /** {@inheritDoc} */
@@ -527,7 +534,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
          * @return Pinned page impl.
          */
         @SuppressWarnings("TypeMayBeWeakened")
-        private PageNoStoreImpl acquirePage(int cacheId, long pageId) {
+        private PageNoStoreImpl acquirePage(int cacheId, long pageId, boolean restore) {
             long absPtr = absolute(pageId);
 
             long marker = GridUnsafe.getLong(absPtr);
@@ -550,7 +557,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
             acquiredPages.incrementAndGet();
 
-            return new PageNoStoreImpl(PageMemoryNoStoreImpl.this, idx, absPtr, cacheId, pageId);
+            return new PageNoStoreImpl(PageMemoryNoStoreImpl.this, idx, absPtr, cacheId, pageId, restore);
         }
 
         /**
