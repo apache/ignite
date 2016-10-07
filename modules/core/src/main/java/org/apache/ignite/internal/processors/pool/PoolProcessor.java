@@ -43,35 +43,34 @@ public class PoolProcessor extends GridProcessorAdapter {
     public PoolProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        // Assuming that pool processor is started after plugin processor, so that extensions are already initialized.
         IgnitePluginProcessor plugins = ctx.plugins();
 
-        assert plugins != null;
+        if (plugins != null) {
+            // Process custom IO messaging pool extensions:
+            final IoPool[] executorExtensions = ctx.plugins().extensions(IoPool.class);
 
-        // Process custom IO messaging pool extensions:
-        final IoPool[] executorExtensions = ctx.plugins().extensions(IoPool.class);
+            if (executorExtensions != null) {
+                // Store it into the map and check for duplicates:
+                for (IoPool ex : executorExtensions) {
+                    final byte id = ex.id();
 
-        if (executorExtensions != null) {
-            // Store it into the map and check for duplicates:
-            for (IoPool ex : executorExtensions) {
-                final byte id = ex.id();
+                    // 1. Check the pool id is non-negative:
+                    if (id < 0)
+                        throw new IgniteException("Failed to register IO executor pool because its ID is " +
+                            "negative: " + id);
 
-                // 1. Check the pool id is non-negative:
-                if (id < 0)
-                    throw new IgniteException("Failed to register IO executor pool because its ID is " +
-                        "negative: " + id);
+                    // 2. Check the pool id is in allowed range:
+                    if (GridIoPolicy.isReservedGridIoPolicy(id))
+                        throw new IgniteException("Failed to register IO executor pool because its ID in in the " +
+                            "reserved range: " + id);
 
-                // 2. Check the pool id is in allowed range:
-                if (GridIoPolicy.isReservedGridIoPolicy(id))
-                    throw new IgniteException("Failed to register IO executor pool because its ID in in the " +
-                        "reserved range: " + id);
+                    // 3. Check the pool for duplicates:
+                    if (extPools[id] != null)
+                        throw new IgniteException("Failed to register IO executor pool because its ID as " +
+                            "already used: " + id);
 
-                // 3. Check the pool for duplicates:
-                if (extPools[id] != null)
-                    throw new IgniteException("Failed to register IO executor pool because its ID as " +
-                        "already used: " + id);
-
-                extPools[id] = ex;
+                    extPools[id] = ex;
+                }
             }
         }
     }
