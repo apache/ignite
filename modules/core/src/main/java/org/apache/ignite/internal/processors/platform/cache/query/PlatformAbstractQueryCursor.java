@@ -38,6 +38,12 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
     /** Get single entry. */
     private static final int OP_GET_SINGLE = 3;
 
+    /** Start iterating. */
+    private static final int OP_ITERATOR = 4;
+
+    /** Close iterator. */
+    private static final int OP_ITERATOR_CLOSE = 5;
+
     /** Underlying cursor. */
     private final QueryCursorEx<T> cursor;
 
@@ -126,11 +132,17 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
         }
     }
 
-    /**
-     * Get cursor iterator.
-     */
-    public void iterator() {
-        iter = cursor.iterator();
+    /** {@inheritDoc} */
+    @Override protected long processOutLong(int type) throws IgniteCheckedException {
+        switch (type) {
+            case OP_ITERATOR:
+                iter = cursor.iterator();
+
+            case OP_ITERATOR_CLOSE:
+                cursor.close();
+        }
+
+        return super.processOutLong(type);
     }
 
     /**
@@ -143,11 +155,6 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
         assert iter != null : "iterator() has not been called";
 
         return iter.hasNext();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() throws Exception {
-        cursor.close();
     }
 
     /**
