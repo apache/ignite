@@ -40,6 +40,9 @@ namespace Apache.Ignite.Core.Impl
     internal abstract class PlatformTarget
     {
         /** */
+        protected const int False = 0;
+
+        /** */
         protected const int True = 1;
 
         /** */

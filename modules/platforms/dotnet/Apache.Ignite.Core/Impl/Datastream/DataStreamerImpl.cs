@@ -25,7 +25,6 @@ namespace Apache.Ignite.Core.Impl.Datastream
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
@@ -157,7 +156,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             _hnd = marsh.Ignite.HandleRegistry.Allocate(thisRef);
 
             // Start topology listening. This call will ensure that buffer size member is updated.
-            DoOutOp(OpListenTopology, (IBinaryStream s) => s.WriteLong(_hnd));
+            DoOutInOpLong(OpListenTopology, _hnd);
 
             // Membar to ensure fields initialization before leaving constructor.
             Thread.MemoryBarrier();
@@ -200,7 +199,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    DoOutOp(OpSetAllowOverwrite, s => s.WriteBool(value));
+                    DoOutInOpLong(OpSetAllowOverwrite, value ? True : False);
                 }
                 finally
                 {
@@ -235,7 +234,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    DoOutOp(OpSetSkipStore, s => s.WriteBool(value));
+                    DoOutInOpLong(OpSetSkipStore, value ? True : False);
                 }
                 finally
                 {
@@ -270,7 +269,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    DoOutOp(OpSetPerNodeBufferSize, (IBinaryStream s) => s.WriteInt(value));
+                    DoOutInOpLong(OpSetPerNodeBufferSize, value);
 
                     _bufSndSize = _topSize * value;
                 }
@@ -308,7 +307,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    DoOutOp(OpSetPerNodeParallelOps, (IBinaryStream s) => s.WriteInt(value));
+                    DoOutInOpLong(OpSetPerNodeParallelOps, value);
                 }
                 finally
                 {

@@ -116,7 +116,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="timeout">Computation timeout in milliseconds.</param>
         public void WithTimeout(long timeout)
         {
-            DoOutOp(OpWithTimeout, (IBinaryStream s) => s.WriteLong(timeout));
+            DoOutInOpLong(OpWithTimeout, timeout);
         }
 
         /// <summary>
