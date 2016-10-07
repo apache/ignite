@@ -163,29 +163,35 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
                 return TRUE;
             }
 
+            default:
+                return super.processInStreamOutLong(type, reader);
+        }
+    }
+
+    /** {@inheritDoc}  */
+    @Override protected long processInLongOutLong(int type, final long val) throws IgniteCheckedException {
+        switch (type) {
             case OP_SET_ALLOW_OVERWRITE:
-                ldr.allowOverwrite(reader.readBoolean());
+                ldr.allowOverwrite(val == TRUE);
 
                 return TRUE;
 
             case OP_SET_PER_NODE_BUFFER_SIZE:
-                ldr.perNodeBufferSize(reader.readInt());
+                ldr.perNodeBufferSize((int) val);
 
                 return TRUE;
 
             case OP_SET_SKIP_STORE:
-                ldr.skipStore(reader.readBoolean());
+                ldr.skipStore(val == TRUE);
 
                 return TRUE;
 
             case OP_SET_PER_NODE_PARALLEL_OPS:
-                ldr.perNodeParallelOperations(reader.readInt());
+                ldr.perNodeParallelOperations((int) val);
 
                 return TRUE;
 
             case OP_LISTEN_TOPOLOGY: {
-                final long ptr = reader.readLong();
-
                 lsnr = new GridLocalEventListener() {
                     @Override public void onEvent(Event evt) {
                         DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
@@ -194,7 +200,7 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
                         int topSize = platformCtx.kernalContext().discovery().cacheNodes(
                                 cacheName, new AffinityTopologyVersion(topVer)).size();
 
-                        platformCtx.gateway().dataStreamerTopologyUpdate(ptr, topVer, topSize);
+                        platformCtx.gateway().dataStreamerTopologyUpdate(val, topVer, topSize);
                     }
                 };
 
@@ -207,14 +213,13 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
 
                 int topSize = discoMgr.cacheNodes(cacheName, topVer).size();
 
-                platformCtx.gateway().dataStreamerTopologyUpdate(ptr, topVer.topologyVersion(), topSize);
+                platformCtx.gateway().dataStreamerTopologyUpdate(val, topVer.topologyVersion(), topSize);
 
                 return TRUE;
             }
-
-            default:
-                return super.processInStreamOutLong(type, reader);
         }
+
+        return super.processInLongOutLong(type, val);
     }
 
     /** {@inheritDoc}  */
