@@ -59,6 +59,16 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
     }
 
     /** {@inheritDoc} */
+    @Override public long inLongOutLong(int type, long val) throws Exception {
+        try {
+            return processInLongOutLong(type, val);
+        }
+        catch (Exception e) {
+            throw convertException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public long inStreamOutLong(int type, long memPtr) throws Exception {
         try (PlatformMemory mem = platformCtx.memory().get(memPtr)) {
             BinaryRawReaderEx reader = platformCtx.reader(mem);
@@ -220,6 +230,18 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      */
     @Nullable protected PlatformFutureUtils.Writer futureWriter(int opId){
         return null;
+    }
+
+    /**
+     * Process IN operation.
+     *
+     * @param type Type.
+     * @param val Value.
+     * @return Result.
+     * @throws IgniteCheckedException In case of exception.
+     */
+    protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        return throwUnsupported(type);
     }
 
     /**

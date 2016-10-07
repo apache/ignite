@@ -27,6 +27,16 @@ import org.jetbrains.annotations.Nullable;
 @SuppressWarnings("UnusedDeclaration")
 public interface PlatformTarget {
     /**
+     * Operation accepting long value and returning long value.
+     *
+     * @param type Operation type.
+     * @param val Value.
+     * @return Result.
+     * @throws Exception If case of failure.
+     */
+    public long inLongOutLong(int type, long val) throws Exception;
+
+    /**
      * Operation accepting memory stream and returning long value.
      *
      * @param type Operation type.
