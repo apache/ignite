@@ -234,7 +234,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
                     if (log.isDebugEnabled())
                         log.debug("Unacknowledged messages queue size overflow, will attempt to reconnect " +
                             "[remoteAddr=" + remoteAddress() +
-                            ", queueSize=" + outRecovery.messagesFutures().size() +
+                            ", queueSize=" + outRecovery.messagesRequests().size() +
                             ", queueLimit=" + outRecovery.queueLimit() + ']');
 
                     close();

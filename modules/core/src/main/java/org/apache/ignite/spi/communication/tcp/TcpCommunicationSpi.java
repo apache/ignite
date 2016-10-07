@@ -391,7 +391,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                         if (outDesc != null) {
                             if (outDesc.nodeAlive(getSpiContext().node(id))) {
-                                if (!outDesc.messagesFutures().isEmpty()) {
+                                if (!outDesc.messagesRequests().isEmpty()) {
                                     if (log.isDebugEnabled())
                                         log.debug("Session was closed but there are unacknowledged messages, " +
                                             "will try to reconnect [rmtNode=" + outDesc.node().id() + ']');
@@ -3554,7 +3554,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                         if (recovery != null &&
                             recovery.nodeAlive(getSpiContext().node(nodeId)) &&
-                            !recovery.messagesFutures().isEmpty()) {
+                            !recovery.messagesRequests().isEmpty()) {
                             if (log.isDebugEnabled())
                                 log.debug("Node connection is idle, but there are unacknowledged messages, " +
                                     "will wait: " + nodeId);

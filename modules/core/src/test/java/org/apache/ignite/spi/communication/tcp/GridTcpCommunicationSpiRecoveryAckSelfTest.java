@@ -188,12 +188,12 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
 
                             GridTestUtils.waitForCondition(new GridAbsPredicate() {
                                 @Override public boolean apply() {
-                                    return recoveryDesc.messagesFutures().isEmpty();
+                                    return recoveryDesc.messagesRequests().isEmpty();
                                 }
                             }, 10_000);
 
-                            assertEquals("Unexpected messages: " + recoveryDesc.messagesFutures(), 0,
-                                recoveryDesc.messagesFutures().size());
+                            assertEquals("Unexpected messages: " + recoveryDesc.messagesRequests(), 0,
+                                recoveryDesc.messagesRequests().size());
 
                             break;
                         }

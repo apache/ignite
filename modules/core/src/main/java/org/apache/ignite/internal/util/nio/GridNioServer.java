@@ -549,8 +549,8 @@ public class GridNioServer<T> {
 
         GridNioRecoveryDescriptor recoveryDesc = ses.outRecoveryDescriptor();
 
-        if (recoveryDesc != null && !recoveryDesc.messagesFutures().isEmpty()) {
-            Deque<SessionWriteRequest> futs = recoveryDesc.messagesFutures();
+        if (recoveryDesc != null && !recoveryDesc.messagesRequests().isEmpty()) {
+            Deque<SessionWriteRequest> futs = recoveryDesc.messagesRequests();
 
             if (log.isDebugEnabled())
                 log.debug("Resend messages [rmtNode=" + recoveryDesc.node().id() + ", msgCnt=" + futs.size() + ']');

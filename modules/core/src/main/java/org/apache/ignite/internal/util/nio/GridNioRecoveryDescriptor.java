@@ -185,16 +185,16 @@ public class GridNioRecoveryDescriptor {
                 ", msgReqs=" + msgReqs.size() + ']');
 
         while (acked < rcvCnt) {
-            SessionWriteRequest fut = msgReqs.pollFirst();
+            SessionWriteRequest req = msgReqs.pollFirst();
 
-            assert fut != null : "Missed message future [rcvCnt=" + rcvCnt +
+            assert req != null : "Missed message [rcvCnt=" + rcvCnt +
                 ", acked=" + acked +
                 ", desc=" + this + ']';
 
-            if (fut.ackClosure() != null)
-                fut.ackClosure().apply(null);
+            if (req.ackClosure() != null)
+                req.ackClosure().apply(null);
 
-            fut.onAckReceived();
+            req.onAckReceived();
 
             acked++;
         }
@@ -235,9 +235,9 @@ public class GridNioRecoveryDescriptor {
     }
 
     /**
-     * @return Message futures for unacknowledged messages.
+     * @return Requests for unacknowledged messages.
      */
-    public Deque<SessionWriteRequest> messagesFutures() {
+    public Deque<SessionWriteRequest> messagesRequests() {
         return msgReqs;
     }
 
