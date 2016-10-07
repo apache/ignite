@@ -118,10 +118,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         private const int OpForYoungest = 21;
         
         /** */
-        private const int OpProjection = 22;
-        
-        /** */
-        public const int OpResetMetrics = 23;
+        public const int OpResetMetrics = 22;
         
         /** Initial Ignite instance. */
         private readonly Ignite _ignite;

@@ -100,10 +100,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     private static final int OP_FOR_YOUNGEST = 21;
 
     /** */
-    private static final int OP_PROJECTION = 22;
-
-    /** */
-    private static final int OP_RESET_METRICS = 23;
+    private static final int OP_RESET_METRICS = 22;
 
     /** Projection. */
     private final ClusterGroupEx prj;
@@ -340,6 +337,13 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
         }
 
         return super.processOutLong(type);
+    }
+
+    /**
+     * @return Projection.
+     */
+    public ClusterGroupEx projection() {
+        return prj;
     }
 
     /**
