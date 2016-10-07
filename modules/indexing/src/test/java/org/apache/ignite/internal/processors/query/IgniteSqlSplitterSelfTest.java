@@ -39,6 +39,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testsuites.IgniteIgnore;
 
 /**
  * Tests for correct distributed partitioned queries.
@@ -281,9 +282,8 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-1886", forceFailure = true)
     public void testFunctionNpe() {
-        assert false : "https://issues.apache.org/jira/browse/IGNITE-1886";
-
         IgniteCache<Integer, User> userCache = ignite(0).createCache(
             cacheConfig("UserCache", true, Integer.class, User.class));
         IgniteCache<Integer, UserOrder> userOrderCache = ignite(0).createCache(
@@ -310,6 +310,81 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             userOrderCache.destroy();
             orderGoodCache.destroy();
         }
+    }
+
+    /**
+     *
+     */
+    public void testImplicitJoinConditionGeneration() {
+        IgniteCache<Integer, Person> p = ignite(0).createCache(cacheConfig("P", true, Integer.class, Person.class));
+        IgniteCache<Integer, Department> d = ignite(0).createCache(cacheConfig("D", true, Integer.class, Department.class));
+        IgniteCache<Integer, Org> o = ignite(0).createCache(cacheConfig("O", true, Integer.class, Org.class));
+
+        try {
+            info("Plan: " + p.query(new SqlFieldsQuery(
+                "explain select P.Person.*,dep.*,org.* " +
+                    "from P.Person inner join D.Department dep ON dep.id=P.Person.depId " +
+                    "left join O.Org org ON org.id=dep.orgId"
+            )).getAll());
+
+            assertEquals(0, p.query(new SqlFieldsQuery(
+                "select P.Person.*,dep.*,org.* " +
+                    "from P.Person inner join D.Department dep ON dep.id=P.Person.depId " +
+                    "left join O.Org org ON org.id=dep.orgId"
+            )).getAll().size());
+        }
+        finally {
+            p.destroy();
+            d.destroy();
+            o.destroy();
+        }
+    }
+
+    /**
+     *
+     */
+    public static class Person {
+        /** */
+        @QuerySqlField
+        private int id;
+
+        /** */
+        @QuerySqlField
+        private String name;
+
+        /** */
+        @QuerySqlField
+        private int depId;
+    }
+
+    /**
+     *
+     */
+    public static class Org {
+        /** */
+        @QuerySqlField(index = true)
+        private int id;
+
+        /** */
+        @QuerySqlField
+        private String name;
+    }
+
+    /**
+     *
+     */
+    public static class Department {
+        /** */
+        @QuerySqlField(index = true)
+        private int id;
+
+        /** */
+        @QuerySqlField(index = true)
+        private int orgId;
+
+        /** */
+        @QuerySqlField
+        private String name;
     }
 
     /**

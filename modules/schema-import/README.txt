@@ -19,12 +19,12 @@ For example you may use the following script for create sample type 'Person' in 
 
 create table PERSON(id integer not null PRIMARY KEY, first_name varchar(50), last_name varchar(50), salary double);
 
-insert into PERSON(id, first_name, first_name, salary) values(1, 'Johannes', 'Kepler', 1000);
-insert into PERSON(id, first_name, first_name, salary) values(2, 'Galileo', 'Galilei', 1200);
-insert into PERSON(id, first_name, first_name, salary) values(3, 'Henry', 'More', 1150);
-insert into PERSON(id, first_name, first_name, salary) values(4, 'Polish', 'Brethren', 2000);
-insert into PERSON(id, first_name, first_name, salary) values(5, 'Robert', 'Boyle', 2500);
-insert into PERSON(id, first_name, first_name, salary) values(6, 'Isaac', 'Newton', 1300);
+insert into PERSON(id, first_name, last_name, salary) values(1, 'Johannes', 'Kepler', 1000);
+insert into PERSON(id, first_name, last_name, salary) values(2, 'Galileo', 'Galilei', 1200);
+insert into PERSON(id, first_name, last_name, salary) values(3, 'Henry', 'More', 1150);
+insert into PERSON(id, first_name, last_name, salary) values(4, 'Polish', 'Brethren', 2000);
+insert into PERSON(id, first_name, last_name, salary) values(5, 'Robert', 'Boyle', 2500);
+insert into PERSON(id, first_name, last_name, salary) values(6, 'Isaac', 'Newton', 1300);
 
 The Ignite Schema Import utility generates the following artifacts:
  # Java POJO key and value classes (enter "org.apache.ignite.schema" package name before generation).

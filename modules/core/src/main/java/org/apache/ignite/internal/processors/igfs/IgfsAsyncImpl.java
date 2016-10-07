@@ -25,7 +25,9 @@ import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsFile;
+import org.apache.ignite.igfs.IgfsInputStream;
 import org.apache.ignite.igfs.IgfsMetrics;
+import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathSummary;
@@ -33,7 +35,6 @@ import org.apache.ignite.igfs.mapreduce.IgfsRecordResolver;
 import org.apache.ignite.igfs.mapreduce.IgfsTask;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.AsyncSupportAdapter;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -125,18 +126,18 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsInputStreamAdapter open(IgfsPath path, int bufSize,
+    @Override public IgfsInputStream open(IgfsPath path, int bufSize,
         int seqReadsBeforePrefetch) {
         return igfs.open(path, bufSize, seqReadsBeforePrefetch);
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsInputStreamAdapter open(IgfsPath path) {
+    @Override public IgfsInputStream open(IgfsPath path) {
         return igfs.open(path);
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsInputStreamAdapter open(IgfsPath path, int bufSize) {
+    @Override public IgfsInputStream open(IgfsPath path, int bufSize) {
         return igfs.open(path, bufSize);
     }
 
@@ -156,18 +157,8 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsLocalMetrics localMetrics() {
-        return igfs.localMetrics();
-    }
-
-    /** {@inheritDoc} */
     @Override public long groupBlockSize() {
         return igfs.groupBlockSize();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> awaitDeletesAsync() throws IgniteCheckedException {
-        return igfs.awaitDeletesAsync();
     }
 
     /** {@inheritDoc} */
@@ -314,6 +305,11 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     }
 
     /** {@inheritDoc} */
+    @Override public IgfsMode mode(IgfsPath path) {
+        return igfs.mode(path);
+    }
+
+    /** {@inheritDoc} */
     @Override public long usedSpaceSize() {
         return igfs.usedSpaceSize();
     }
@@ -321,5 +317,10 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     /** {@inheritDoc} */
     @Override public IgfsSecondaryFileSystem asSecondary() {
         return igfs.asSecondary();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void await(IgfsPath... paths) {
+        igfs.await(paths);
     }
 }

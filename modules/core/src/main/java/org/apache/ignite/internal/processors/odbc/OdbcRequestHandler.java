@@ -18,14 +18,17 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.odbc.escape.OdbcEscapeUtils;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteProductVersion;
 
@@ -44,6 +47,9 @@ public class OdbcRequestHandler {
 
     /** Kernel context. */
     private final GridKernalContext ctx;
+
+    /** Logger. */
+    private final IgniteLogger log;
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock;
@@ -65,15 +71,18 @@ public class OdbcRequestHandler {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
+
+        log = ctx.log(OdbcRequestHandler.class);
     }
 
     /**
      * Handle request.
      *
+     * @param reqId Request ID.
      * @param req Request.
      * @return Response.
      */
-    public OdbcResponse handle(OdbcRequest req) {
+    public OdbcResponse handle(long reqId, OdbcRequest req) {
         assert req != null;
 
         if (!busyLock.enterBusy())
@@ -83,22 +92,22 @@ public class OdbcRequestHandler {
         try {
             switch (req.command()) {
                 case HANDSHAKE:
-                    return performHandshake((OdbcHandshakeRequest) req);
+                    return performHandshake((OdbcHandshakeRequest)req);
 
                 case EXECUTE_SQL_QUERY:
-                    return executeQuery((OdbcQueryExecuteRequest) req);
+                    return executeQuery(reqId, (OdbcQueryExecuteRequest)req);
 
                 case FETCH_SQL_QUERY:
-                    return fetchQuery((OdbcQueryFetchRequest) req);
+                    return fetchQuery(reqId, (OdbcQueryFetchRequest)req);
 
                 case CLOSE_SQL_QUERY:
-                    return closeQuery((OdbcQueryCloseRequest) req);
+                    return closeQuery(reqId, (OdbcQueryCloseRequest)req);
 
                 case GET_COLUMNS_META:
-                    return getColumnsMeta((OdbcQueryGetColumnsMetaRequest) req);
+                    return getColumnsMeta(reqId, (OdbcQueryGetColumnsMetaRequest)req);
 
                 case GET_TABLES_META:
-                    return getTablesMeta((OdbcQueryGetTablesMetaRequest) req);
+                    return getTablesMeta(reqId, (OdbcQueryGetTablesMetaRequest)req);
             }
 
             return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Unsupported ODBC request: " + req);
@@ -115,17 +124,19 @@ public class OdbcRequestHandler {
      * @return Response.
      */
     private OdbcResponse performHandshake(OdbcHandshakeRequest req) {
-        OdbcHandshakeResult res;
+        OdbcProtocolVersion version = req.version();
 
-        if (req.version() == OdbcMessageParser.PROTO_VER)
-            res = new OdbcHandshakeResult(true, null, null);
-        else {
+        if (version.isUnknown()) {
             IgniteProductVersion ver = ctx.grid().version();
 
             String verStr = Byte.toString(ver.major()) + '.' + ver.minor() + '.' + ver.maintenance();
 
-            res = new OdbcHandshakeResult(false, OdbcMessageParser.PROTO_VER_SINCE, verStr);
+            OdbcHandshakeResult res = new OdbcHandshakeResult(false, OdbcProtocolVersion.current().since(), verStr);
+
+            return new OdbcResponse(res);
         }
+
+        OdbcHandshakeResult res = new OdbcHandshakeResult(true, null, null);
 
         return new OdbcResponse(res);
     }
@@ -133,10 +144,11 @@ public class OdbcRequestHandler {
     /**
      * {@link OdbcQueryExecuteRequest} command handler.
      *
+     * @param reqId Request ID.
      * @param req Execute query request.
      * @return Response.
      */
-    private OdbcResponse executeQuery(OdbcQueryExecuteRequest req) {
+    private OdbcResponse executeQuery(long reqId, OdbcQueryExecuteRequest req) {
         int cursorCnt = qryCursors.size();
 
         if (maxCursors > 0 && cursorCnt >= maxCursors)
@@ -147,7 +159,13 @@ public class OdbcRequestHandler {
         long qryId = QRY_ID_GEN.getAndIncrement();
 
         try {
-            SqlFieldsQuery qry = new SqlFieldsQuery(req.sqlQuery());
+            String sql = OdbcEscapeUtils.parse(req.sqlQuery());
+
+            if (log.isDebugEnabled())
+                log.debug("ODBC query parsed [reqId=" + reqId + ", original=" + req.sqlQuery() +
+                    ", parsed=" + sql + ']');
+
+            SqlFieldsQuery qry = new SqlFieldsQuery(sql);
 
             qry.setArgs(req.arguments());
 
@@ -172,6 +190,8 @@ public class OdbcRequestHandler {
         catch (Exception e) {
             qryCursors.remove(qryId);
 
+            U.error(log, "Failed to execute SQL query [reqId=" + reqId + ", req=" + req + ']', e);
+
             return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
         }
     }
@@ -179,10 +199,11 @@ public class OdbcRequestHandler {
     /**
      * {@link OdbcQueryCloseRequest} command handler.
      *
+     * @param reqId Request ID.
      * @param req Execute query request.
      * @return Response.
      */
-    private OdbcResponse closeQuery(OdbcQueryCloseRequest req) {
+    private OdbcResponse closeQuery(long reqId, OdbcQueryCloseRequest req) {
         try {
             QueryCursor cur = qryCursors.get(req.queryId()).get1();
 
@@ -200,6 +221,8 @@ public class OdbcRequestHandler {
         catch (Exception e) {
             qryCursors.remove(req.queryId());
 
+            U.error(log, "Failed to close SQL query [reqId=" + reqId + ", req=" + req.queryId() + ']', e);
+
             return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
         }
     }
@@ -207,10 +230,11 @@ public class OdbcRequestHandler {
     /**
      * {@link OdbcQueryFetchRequest} command handler.
      *
+     * @param reqId Request ID.
      * @param req Execute query request.
      * @return Response.
      */
-    private OdbcResponse fetchQuery(OdbcQueryFetchRequest req) {
+    private OdbcResponse fetchQuery(long reqId, OdbcQueryFetchRequest req) {
         try {
             Iterator cur = qryCursors.get(req.queryId()).get2();
 
@@ -227,6 +251,8 @@ public class OdbcRequestHandler {
             return new OdbcResponse(res);
         }
         catch (Exception e) {
+            U.error(log, "Failed to fetch SQL query result [reqId=" + reqId + ", req=" + req + ']', e);
+
             return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
         }
     }
@@ -234,10 +260,11 @@ public class OdbcRequestHandler {
     /**
      * {@link OdbcQueryGetColumnsMetaRequest} command handler.
      *
+     * @param reqId Request ID.
      * @param req Get columns metadata request.
      * @return Response.
      */
-    private OdbcResponse getColumnsMeta(OdbcQueryGetColumnsMetaRequest req) {
+    private OdbcResponse getColumnsMeta(long reqId, OdbcQueryGetColumnsMetaRequest req) {
         try {
             List<OdbcColumnMeta> meta = new ArrayList<>();
 
@@ -281,6 +308,8 @@ public class OdbcRequestHandler {
             return new OdbcResponse(res);
         }
         catch (Exception e) {
+            U.error(log, "Failed to get columns metadata [reqId=" + reqId + ", req=" + req + ']', e);
+
             return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
         }
     }
@@ -288,10 +317,11 @@ public class OdbcRequestHandler {
     /**
      * {@link OdbcQueryGetTablesMetaRequest} command handler.
      *
+     * @param reqId Request ID.
      * @param req Get tables metadata request.
      * @return Response.
      */
-    private OdbcResponse getTablesMeta(OdbcQueryGetTablesMetaRequest req) {
+    private OdbcResponse getTablesMeta(long reqId, OdbcQueryGetTablesMetaRequest req) {
         try {
             List<OdbcTableMeta> meta = new ArrayList<>();
 
@@ -323,6 +353,8 @@ public class OdbcRequestHandler {
             return new OdbcResponse(res);
         }
         catch (Exception e) {
+            U.error(log, "Failed to get tables metadata [reqId=" + reqId + ", req=" + req + ']', e);
+
             return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
         }
     }

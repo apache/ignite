@@ -37,6 +37,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testsuites.IgniteIgnore;
 
 /**
  * Base set of queries to compare query results from h2 database instance and mixed ignite caches (replicated and partitioned)
@@ -204,8 +205,8 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception
      */
+    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-705", forceFailure = true)
     public void testAllExamples() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-705");
 //        compareQueryRes0("select ? limit ? offset ?");
 
 //        compareQueryRes0("select cool1()");

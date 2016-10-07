@@ -25,8 +25,8 @@
 #include <ignite/guid.h>
 #include <ignite/date.h>
 #include <ignite/timestamp.h>
+#include <ignite/common/decimal.h>
 
-#include "ignite/odbc/decimal.h"
 #include "ignite/odbc/common_types.h"
 #include "ignite/odbc/type_traits.h"
 
@@ -56,7 +56,8 @@ namespace ignite
                  * @param reslen Resulting data length.
                  * @param offset Pointer to buffer and reslen offset pointer.
                  */
-                ApplicationDataBuffer(type_traits::IgniteSqlType type, void* buffer, SqlLen buflen, SqlLen* reslen, size_t** offset = 0);
+                ApplicationDataBuffer(type_traits::IgniteSqlType type, void* buffer,
+                    SqlLen buflen, SqlLen* reslen, int** offset = 0);
 
                 /**
                  * Copy constructor.
@@ -83,7 +84,7 @@ namespace ignite
                  *
                  * @param offset Pointer to offset pointer.
                  */
-                void SetPtrToOffsetPtr(size_t** offset)
+                void SetPtrToOffsetPtr(int** offset)
                 {
                     this->offset = offset;
                 }
@@ -164,7 +165,7 @@ namespace ignite
                  *
                  * @param value Value to put.
                  */
-                void PutDecimal(const Decimal& value);
+                void PutDecimal(const common::Decimal& value);
 
                 /**
                  * Put date to buffer.
@@ -251,6 +252,13 @@ namespace ignite
                 Timestamp GetTimestamp() const;
 
                 /**
+                 * Get value of type Decimal.
+                 *
+                 * @param val Result is placed here.
+                 */
+                void GetDecimal(common::Decimal& val) const;
+
+                /**
                  * Get raw data.
                  *
                  * @return Buffer data.
@@ -265,17 +273,6 @@ namespace ignite
                 const SqlLen* GetResLen() const;
 
                 /**
-                 * Get buffer size in bytes.
-                 *
-                 * @return Buffer size.
-                 */
-                SqlLen GetSize() const
-                {
-                    return buflen;
-                }
-
-            private:
-                /**
                  * Get raw data.
                  *
                  * @return Buffer data.
@@ -289,6 +286,52 @@ namespace ignite
                  */
                 SqlLen* GetResLen();
 
+                /**
+                 * Get buffer size in bytes.
+                 *
+                 * @return Buffer size.
+                 */
+                SqlLen GetSize() const
+                {
+                    return buflen;
+                }
+
+                /**
+                 * Check if the data is going to be provided at execution.
+                 *
+                 * @return True if the data is going to be provided
+                 *     at execution.
+                 */
+                bool IsDataAtExec() const;
+
+                /**
+                 * Get size of the data that is going to be provided at
+                 * execution.
+                 *
+                 * @return Size of the data that is going to be provided
+                 *     at execution.
+                 */
+                size_t GetDataAtExecSize() const;
+
+                /**
+                 * Get size of the input buffer.
+                 *
+                 * @return Input buffer size, or zero if the data is going
+                 *     to be provided at execution.
+                 */
+                size_t GetInputSize() const;
+
+                /**
+                 * Get buffer type.
+                 *
+                 * @return Buffer type.
+                 */
+                type_traits::IgniteSqlType GetType() const
+                {
+                    return type;
+                }
+
+            private:
                 /**
                  * Put value of numeric type in the buffer.
                  *
@@ -367,7 +410,7 @@ namespace ignite
                 SqlLen* reslen;
 
                 /** Pointer to implementation pointer to application offset */
-                size_t** offset;
+                int** offset;
             };
 
             /** Column binging map type alias. */

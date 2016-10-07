@@ -27,13 +27,20 @@ import scala.reflect.ClassTag
 abstract class IgniteAbstractRDD[R:ClassTag, K, V] (
     ic: IgniteContext[K, V],
     cacheName: String,
-    cacheCfg: CacheConfiguration[K, V]
+    cacheCfg: CacheConfiguration[K, V],
+    keepBinary: Boolean
 ) extends RDD[R] (ic.sparkContext, deps = Nil) {
     protected def ensureCache(): IgniteCache[K, V] = {
         // Make sure to deploy the cache
-        if (cacheCfg != null)
-            ic.ignite().getOrCreateCache(cacheCfg)
+        val cache =
+            if (cacheCfg != null)
+                ic.ignite().getOrCreateCache(cacheCfg)
+            else
+                ic.ignite().getOrCreateCache(cacheName)
+
+        if (keepBinary)
+            cache.withKeepBinary()
         else
-            ic.ignite().getOrCreateCache(cacheName)
+            cache.asInstanceOf[IgniteCache[K, V]]
     }
 }

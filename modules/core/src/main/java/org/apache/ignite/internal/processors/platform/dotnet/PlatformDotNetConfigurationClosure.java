@@ -17,20 +17,25 @@
 
 package org.apache.ignite.internal.processors.platform.dotnet;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
+import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
 import org.apache.ignite.internal.processors.platform.lifecycle.PlatformLifecycleBean;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManagerImpl;
@@ -40,6 +45,7 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.platform.dotnet.PlatformDotNetAffinityFunction;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetLifecycleBean;
 
@@ -144,18 +150,8 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
         // Set Ignite home so that marshaller context works.
         String ggHome = igniteCfg.getIgniteHome();
 
-        if (ggHome == null)
-            ggHome = U.getIgniteHome();
-        else
-            // If user provided IGNITE_HOME - set it as a system property.
+        if (ggHome != null)
             U.setIgniteHome(ggHome);
-
-        try {
-            U.setWorkDirectory(igniteCfg.getWorkDirectory(), ggHome);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
 
         // 4. Callback to .Net.
         prepare(igniteCfg, dotNetCfg0);
@@ -187,6 +183,16 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                 for (PlatformDotNetLifecycleBean bean : beans) {
                     writer.writeString(bean.getTypeName());
                     writer.writeMap(bean.getProperties());
+                }
+
+                // Write .NET affinity funcs
+                List<PlatformDotNetAffinityFunction> affFuncs = affinityFunctions(igniteCfg);
+
+                writer.writeInt(affFuncs.size());
+
+                for (PlatformDotNetAffinityFunction func : affFuncs) {
+                    writer.writeString(func.getTypeName());
+                    writer.writeMap(func.getProperties());
                 }
 
                 out.synchronize();
@@ -240,6 +246,63 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                 cfg.setLifecycleBeans(mergedBeans);
             }
         }
+
+        // Process affinity functions
+        List<PlatformDotNetAffinityFunction> affFuncs = affinityFunctions(cfg);
+
+        if (!affFuncs.isEmpty()) {
+            for (PlatformDotNetAffinityFunction aff : affFuncs)
+                aff.init(readAffinityFunction(in));
+        }
+    }
+
+    /**
+     * Reads the affinity function.
+     *
+     * @param in Stream.
+     * @return Affinity function.
+     */
+    private static PlatformAffinityFunction readAffinityFunction(BinaryRawReaderEx in) {
+        byte plcTyp = in.readByte();
+
+        if (plcTyp == 0)
+            return null;
+
+        int partitions = in.readInt();
+        boolean exclNeighbours = in.readBoolean();
+        byte overrideFlags = in.readByte();
+        Object userFunc = in.readObjectDetached();
+
+        AffinityFunction baseFunc = null;
+
+        switch (plcTyp) {
+            case 1: {
+                FairAffinityFunction f = new FairAffinityFunction();
+
+                f.setPartitions(partitions);
+                f.setExcludeNeighbors(exclNeighbours);
+
+                baseFunc = f;
+
+                break;
+            }
+
+            case 2: {
+                RendezvousAffinityFunction f = new RendezvousAffinityFunction();
+
+                f.setPartitions(partitions);
+                f.setExcludeNeighbors(exclNeighbours);
+
+                baseFunc = f;
+
+                break;
+            }
+
+            default:
+                assert plcTyp == 3 : "Unknown affinity function policy type: " + plcTyp;
+        }
+
+        return new PlatformAffinityFunction(userFunc, partitions, overrideFlags, baseFunc);
     }
 
     /**
@@ -255,6 +318,27 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
             for (LifecycleBean bean : cfg.getLifecycleBeans()) {
                 if (bean instanceof PlatformDotNetLifecycleBean)
                     res.add((PlatformDotNetLifecycleBean)bean);
+            }
+        }
+
+        return res;
+    }
+
+    /**
+     * Find .NET affinity functions in configuration.
+     *
+     * @param cfg Configuration.
+     * @return affinity functions.
+     */
+    private static List<PlatformDotNetAffinityFunction> affinityFunctions(IgniteConfiguration cfg) {
+        List<PlatformDotNetAffinityFunction> res = new ArrayList<>();
+
+        CacheConfiguration[] cacheCfg = cfg.getCacheConfiguration();
+
+        if (cacheCfg != null) {
+            for (CacheConfiguration ccfg : cacheCfg) {
+                if (ccfg.getAffinity() instanceof PlatformDotNetAffinityFunction)
+                    res.add((PlatformDotNetAffinityFunction)ccfg.getAffinity());
             }
         }
 
