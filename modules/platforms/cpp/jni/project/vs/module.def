@@ -23,6 +23,7 @@ IgniteTargetInStreamOutStream @20
 IgniteTargetInObjectStreamOutStream @21 
 IgniteTargetListenFuture @22 
 IgniteTargetListenFutureForOperation @23 
+IgniteTargetInLongOutLong @24
 IgniteMessagingWithAsync @57 
 IgniteProjectionForOthers @58 
 IgniteProjectionForRemotes @59 

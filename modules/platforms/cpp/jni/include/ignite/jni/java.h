@@ -288,6 +288,7 @@ namespace ignite
                 jmethodID m_PlatformProcessor_atomicReference;
 
                 jclass c_PlatformTarget;
+                jmethodID m_PlatformTarget_inLongOutLong;
                 jmethodID m_PlatformTarget_inStreamOutLong;
                 jmethodID m_PlatformTarget_inStreamOutObject;
                 jmethodID m_PlatformTarget_outLong;
@@ -504,6 +505,7 @@ namespace ignite
 				void ProcessorGetIgniteConfiguration(jobject obj, long long memPtr);
 				void ProcessorGetCacheNames(jobject obj, long long memPtr);
 
+                long long TargetInLongOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 long long TargetInStreamOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 void TargetInStreamOutStream(jobject obj, int opType, long long inMemPtr, long long outMemPtr, JniErrorInfo* errInfo = NULL);
                 jobject TargetInStreamOutObject(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);

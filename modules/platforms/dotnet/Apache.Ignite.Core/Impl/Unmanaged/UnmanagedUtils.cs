@@ -365,6 +365,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region NATIVE METHODS: TARGET
 
+        internal static long TargetInLongOutLong(IUnmanagedTarget target, int opType, long memPtr)
+        {
+            return JNI.TargetInLongOutLong(target.Context, target.Target, opType, memPtr);
+        }
+
         internal static long TargetInStreamOutLong(IUnmanagedTarget target, int opType, long memPtr)
         {
             return JNI.TargetInStreamOutLong(target.Context, target.Target, opType, memPtr);

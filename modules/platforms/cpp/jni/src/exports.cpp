@@ -138,6 +138,10 @@ extern "C" {
         return ctx->ProcessorGetCacheNames(static_cast<jobject>(obj), memPtr);
     }
 
+    long long IGNITE_CALL IgniteTargetInLongOutLong(gcj::JniContext* ctx, void* obj, int opType, long long val) {
+        return ctx->TargetInLongOutLong(static_cast<jobject>(obj), opType, val);
+    }
+
     long long IGNITE_CALL IgniteTargetInStreamOutLong(gcj::JniContext* ctx, void* obj, int opType, long long memPtr) {
         return ctx->TargetInStreamOutLong(static_cast<jobject>(obj), opType, memPtr);
     }
