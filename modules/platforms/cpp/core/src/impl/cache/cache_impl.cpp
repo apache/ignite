@@ -274,6 +274,7 @@ namespace ignite
 
             int32_t CacheImpl::Size(int32_t peekModes, bool local, IgniteError* err)
             {
+                // TODO: This is not correct, need to use raw writer.
                 In2Operation<int32_t, bool> inOp(&peekModes, &local);
                 Out1Operation<int32_t> outOp;
 

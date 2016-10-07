@@ -317,16 +317,6 @@ namespace ignite
                 IGNITE_NO_COPY_ASSIGNMENT(CacheImpl)
 
                 /**
-                 * Internal cache size routine.
-                 *
-                 * @param peekModes Peek modes.
-                 * @param loc Local flag.
-                 * @param err Error.
-                 * @return Size.
-                 */
-                int SizeInternal(const int32_t peekModes, const bool loc, IgniteError* err);
-
-                /**
                  * Internal query execution routine.
                  *
                  * @param qry Query.
