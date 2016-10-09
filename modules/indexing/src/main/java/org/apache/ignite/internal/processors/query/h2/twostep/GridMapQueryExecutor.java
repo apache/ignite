@@ -456,18 +456,13 @@ public class GridMapQueryExecutor {
             int i = 0;
 
             for (GridCacheSqlQuery qry : qrys) {
-                GridQueryCancel cancel = new GridQueryCancel();
-
-                if (!qr.cancels.compareAndSet(i, null, cancel))
-                    throw new IllegalStateException();
-
                 ResultSet rs = h2.executeSqlQueryWithTimer(req.space(),
-                    h2.connectionForSpace(req.space()),
-                    qry.query(),
-                    F.asList(qry.parameters()),
-                    true,
-                    req.timeout(),
-                    cancel);
+                        h2.connectionForSpace(req.space()),
+                        qry.query(),
+                        F.asList(qry.parameters()),
+                        true,
+                        req.timeout(),
+                        qr.cancels[i]);
 
                 if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                     ctx.event().record(new CacheQueryExecutedEvent<>(
@@ -521,6 +516,15 @@ public class GridMapQueryExecutor {
             // Release reserved partitions.
             for (GridReservable r : reserved)
                 r.release();
+
+            // Ensure all cancels state is correct.
+            if (qr != null)
+                for (int i = 0; i < qr.cancels.length; i++) {
+                    GridQueryCancel cancel = qr.cancels[i];
+
+                    if (cancel != null)
+                        cancel.done();
+                }
         }
     }
 
@@ -649,7 +653,7 @@ public class GridMapQueryExecutor {
         private final AtomicReferenceArray<QueryResult> results;
 
         /** */
-        private final AtomicReferenceArray<GridQueryCancel> cancels;
+        private final GridQueryCancel[] cancels;
 
         /** */
         private final GridCacheContext<?,?> cctx;
@@ -667,7 +671,10 @@ public class GridMapQueryExecutor {
             this.cctx = cctx;
 
             results = new AtomicReferenceArray<>(qrys);
-            cancels = new AtomicReferenceArray<>(qrys);
+            cancels = new GridQueryCancel[qrys];
+
+            for (int i = 0; i < cancels.length; i++)
+                cancels[i] = new GridQueryCancel();
         }
 
         /**
@@ -715,13 +722,16 @@ public class GridMapQueryExecutor {
             for (int i = 0; i < results.length(); i++) {
                 QueryResult res = results.get(i);
 
-                if (res != null)
+                if (res != null) {
                     res.close();
 
-                GridQueryCancel ref = cancels.get(i);
+                    continue;
+                }
 
-                if (ref != null)
-                    ref.cancel();
+                GridQueryCancel cancel = cancels[i];
+
+                if (cancel != null)
+                    cancel.cancel();
             }
         }
     }

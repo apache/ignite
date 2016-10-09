@@ -53,7 +53,7 @@ public class GridQueryCancel {
     }
 
     /**
-     * Spins until query is completed by cancel or normal termination.
+     * Spins until a query is completed by cancel or normal termination.
      * Only one thread can enter this method.
      * This is guaranteed by {@link org.apache.ignite.internal.processors.cache.QueryCursorImpl}
      */
@@ -68,7 +68,6 @@ public class GridQueryCancel {
                 try {
                     U.sleep(sleep);
                 } catch (IgniteInterruptedCheckedException ignored) {
-
                     return;
                 }
 
@@ -85,7 +84,7 @@ public class GridQueryCancel {
     }
 
     /**
-     * Signals the spinner to stop because two things are happen: query was completed or query was cancelled.
+     * Signals the spinner to stop because two things have been happened: query was completed or cancelled.
      */
     public void done() {
         completed = true;

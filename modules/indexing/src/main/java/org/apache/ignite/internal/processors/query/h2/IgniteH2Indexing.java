@@ -861,7 +861,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
-    private ResultSet executeSqlQuery(Connection conn, final PreparedStatement stmt,
+    private ResultSet executeSqlQuery(final Connection conn, final PreparedStatement stmt,
         int timeoutMillis, @Nullable GridQueryCancel cancel)
         throws IgniteCheckedException {
 
@@ -873,8 +873,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 @Override public void run() {
                     try {
                         stmt.cancel();
-                    } catch (SQLException e) {
-                        throw new IgniteException("Failed to cancel the statement.", e);
+                    } catch (SQLException ignored) {
+                        // No-op.
                     }
                 }
             });
