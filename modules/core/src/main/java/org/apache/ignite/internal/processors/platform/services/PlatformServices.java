@@ -167,6 +167,8 @@ public class PlatformServices extends PlatformAbstractTarget {
                 String name = reader.readString();
 
                 services.cancel(name);
+
+                return TRUE;
             }
 
             default:
