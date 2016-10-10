@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -505,11 +504,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                 fut.onResult(e);
 
                 return e;
-            }
-            catch (IgniteException e) {
-                fut.onResult(e);
-
-                return new IgniteCheckedException(e);
             }
         }
 

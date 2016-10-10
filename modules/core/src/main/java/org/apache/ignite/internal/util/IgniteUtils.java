@@ -9641,6 +9641,8 @@ public abstract class IgniteUtils {
     /**
      * Unmarshals object from the input stream using given class loader.
      * This method should not close given input stream.
+     * <p/>
+     * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
      *
      * @param <T> Type of unmarshalled object.
      * @param in Input stream.
@@ -9667,6 +9669,8 @@ public abstract class IgniteUtils {
     /**
      * Unmarshals object from the input stream using given class loader.
      * This method should not close given input stream.
+     * <p/>
+     * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
      *
      * @param <T> Type of unmarshalled object.
      * @param marsh Marshaller.
@@ -9694,6 +9698,8 @@ public abstract class IgniteUtils {
     /**
      * Unmarshals object from the input stream using given class loader.
      * This method should not close given input stream.
+     * <p/>
+     * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
      *
      * @param <T> Type of unmarshalled object.
      * @param ctx Kernal contex.
@@ -9708,7 +9714,7 @@ public abstract class IgniteUtils {
         assert arr != null;
 
         try {
-            return U.unmarshal(ctx, arr, clsLdr);
+            return U.unmarshal(ctx.config().getMarshaller(), arr, clsLdr);
         }
         catch (IgniteCheckedException e) {
             throw e;
@@ -9721,6 +9727,8 @@ public abstract class IgniteUtils {
     /**
      * Unmarshals object from the input stream using given class loader.
      * This method should not close given input stream.
+     * <p/>
+     * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
      *
      * @param <T> Type of unmarshalled object.
      * @param ctx Kernal contex.
@@ -9735,7 +9743,7 @@ public abstract class IgniteUtils {
         assert arr != null;
 
         try {
-            return U.unmarshal(ctx, arr, clsLdr);
+            return U.unmarshal(ctx.marshaller(), arr, clsLdr);
         }
         catch (IgniteCheckedException e) {
             throw e;
@@ -9746,8 +9754,9 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Marshals object to byte array. This method wraps marshaller invocations and guaranty throws
-     * {@link IgniteCheckedException} in fail case.
+     * Marshals object to byte array.
+     * <p/>
+     * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
      *
      * @param marsh Marshaller.
      * @param obj Object to marshal.
@@ -9769,8 +9778,9 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Marshals object to byte array. This method wraps marshaller invocations and guaranty throws
-     * {@link IgniteCheckedException} in fail case.
+     * Marshals object to byte array.
+     * <p/>
+     * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
      *
      * @param marsh Marshaller.
      * @param obj Object to marshal.
@@ -9795,6 +9805,8 @@ public abstract class IgniteUtils {
 
     /**
      * Marshals object to byte array. Wrap marshaller
+     * <p/>
+     * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
      *
      * @param ctx Kernal context.
      * @param obj Object to marshal.
@@ -9809,6 +9821,8 @@ public abstract class IgniteUtils {
 
     /**
      * Marshals object to byte array. Wrap marshaller
+     * <p/>
+     * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
      *
      * @param ctx Cache context.
      * @param obj Object to marshal.
