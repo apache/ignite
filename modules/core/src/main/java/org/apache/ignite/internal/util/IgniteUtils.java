@@ -9650,7 +9650,7 @@ public abstract class IgniteUtils {
      * @return Unmarshalled object.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
-    public static  <T> T unmarshal(Marshaller marsh, InputStream in, @Nullable ClassLoader clsLdr)
+    public static <T> T unmarshal(Marshaller marsh, InputStream in, @Nullable ClassLoader clsLdr)
         throws IgniteCheckedException {
         assert marsh != null;
         assert in != null;
@@ -9679,7 +9679,7 @@ public abstract class IgniteUtils {
      * @return Unmarshalled object.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
-    public static  <T> T unmarshal(Marshaller marsh, byte[] arr, @Nullable ClassLoader clsLdr)
+    public static <T> T unmarshal(Marshaller marsh, byte[] arr, @Nullable ClassLoader clsLdr)
         throws IgniteCheckedException {
         assert marsh != null;
         assert arr != null;
@@ -9708,7 +9708,7 @@ public abstract class IgniteUtils {
      * @return Unmarshalled object.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
-    public static  <T> T unmarshal(GridKernalContext ctx, byte[] arr, @Nullable ClassLoader clsLdr)
+    public static <T> T unmarshal(GridKernalContext ctx, byte[] arr, @Nullable ClassLoader clsLdr)
         throws IgniteCheckedException {
         assert ctx != null;
         assert arr != null;
@@ -9737,7 +9737,7 @@ public abstract class IgniteUtils {
      * @return Unmarshalled object.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
-    public static  <T> T unmarshal(GridCacheSharedContext ctx, byte[] arr, @Nullable ClassLoader clsLdr)
+    public static <T> T unmarshal(GridCacheSharedContext ctx, byte[] arr, @Nullable ClassLoader clsLdr)
         throws IgniteCheckedException {
         assert ctx != null;
         assert arr != null;
@@ -9785,7 +9785,6 @@ public abstract class IgniteUtils {
      * @param marsh Marshaller.
      * @param obj Object to marshal.
      * @param out Output stream.
-     * @return Byte array.
      * @throws IgniteCheckedException If marshalling failed.
      */
     public static void marshal(Marshaller marsh, @Nullable Object obj, OutputStream out)
