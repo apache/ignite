@@ -81,12 +81,12 @@ namespace ignite
                     // No-op.
                 }
 
-                virtual void ProcessInput(ignite::impl::binary::BinaryWriterImpl& writer)
-                {
-                    writer.GetStream()->WriteInt32(concurrency);
-                    writer.GetStream()->WriteInt32(isolation);
-                    writer.GetStream()->WriteInt64(timeout);
-                    writer.GetStream()->WriteInt32(txSize);
+                virtual void ProcessInput(binary::BinaryWriterImpl& writer)
+                {                        
+                    writer.WriteInt32(concurrency);
+                    writer.WriteInt32(isolation);
+                    writer.WriteInt64(timeout);
+                    writer.WriteInt32(txSize);
                 }
             private:
                 int concurrency; 
@@ -179,7 +179,7 @@ namespace ignite
             {
                 JniErrorInfo jniErr;
 
-                bool rollbackOnly = OutInOpLong(OP_COMMIT, id, &err) == 1;
+                bool rollbackOnly = OutInOpLong(OP_SET_ROLLBACK_ONLY, id, &err) == 1;
 
                 return rollbackOnly;
             }
