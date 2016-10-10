@@ -339,7 +339,7 @@ namespace Apache.Ignite.Core.Impl.Events
                 // Should do this inside lock to avoid race with subscription
                 // ToArray is required because we are going to modify underlying dictionary during enumeration
                 foreach (var filter in GetLocalFilters(listener, types).ToArray())
-                    success |= UU.EventsStopLocalListen(Target, filter.Handle);
+                    success |= (DoOutInOpLong((int) Op.StopLocalListen, filter.Handle) == True);
 
                 return success;
             }
@@ -388,7 +388,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /** <inheritDoc /> */
         public bool IsEnabled(int type)
         {
-            return UU.EventsIsEnabled(Target, type);
+            return DoOutInOpLong((int) Op.IsEnabled, type) == True;
         }
 
         /// <summary>
@@ -512,7 +512,11 @@ namespace Apache.Ignite.Core.Impl.Events
                     filters[type] = localFilter;
                 }
 
-                UU.EventsLocalListen(Target, localFilter.Handle, type);
+                DoOutOp((int) Op.LocalListen, (IBinaryStream s) =>
+                {
+                    s.WriteLong(localFilter.Handle);
+                    s.WriteInt(type);
+                });
             }
         }
 

@@ -131,6 +131,11 @@ public class PlatformEvents extends PlatformAbstractTarget {
 
                 return TRUE;
 
+            case OP_LOCAL_LISTEN:
+                events.localListen(localFilter(reader.readLong()), reader.readInt());
+
+                return TRUE;
+
             default:
                 return super.processInStreamOutLong(type, reader);
         }
@@ -257,19 +262,12 @@ public class PlatformEvents extends PlatformAbstractTarget {
             case OP_IS_ENABLED:
                 return events.isEnabled((int)val) ? TRUE : FALSE;
 
-            case OP_LOCAL_LISTEN:
-                events.localListen(localFilter(val), type);
-
-                return TRUE;
-
             case OP_STOP_LOCAL_LISTEN:
                 return events.stopLocalListen(localFilter(val)) ? TRUE : FALSE;
         }
 
         return super.processInLongOutLong(type, val);
     }
-
-
 
     /** {@inheritDoc} */
     @Override protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
