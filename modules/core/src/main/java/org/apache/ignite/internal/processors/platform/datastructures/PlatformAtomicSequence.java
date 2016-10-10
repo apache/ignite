@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.platform.datastructures;
 
 import org.apache.ignite.IgniteAtomicSequence;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 
@@ -27,6 +28,33 @@ import org.apache.ignite.internal.processors.platform.PlatformContext;
 public class PlatformAtomicSequence extends PlatformAbstractTarget {
     /** */
     private final IgniteAtomicSequence atomicSeq;
+
+    /** */
+    private static final int OP_ADD_AND_GET = 1;
+
+    /** */
+    private static final int OP_CLOSE = 2;
+
+    /** */
+    private static final int OP_GET = 3;
+
+    /** */
+    private static final int OP_GET_AND_ADD = 4;
+
+    /** */
+    private static final int OP_GET_AND_INCREMENT = 5;
+
+    /** */
+    private static final int OP_GET_BATCH_SIZE = 6;
+
+    /** */
+    private static final int OP_INCREMENT_AND_GET = 7;
+
+    /** */
+    private static final int OP_IS_CLOSED = 8;
+
+    /** */
+    private static final int OP_SET_BATCH_SIZE = 9;
 
     /**
      * Ctor.
@@ -40,6 +68,52 @@ public class PlatformAtomicSequence extends PlatformAbstractTarget {
 
         this.atomicSeq = atomicSeq;
     }
+
+
+    /** {@inheritDoc} */
+    @Override protected long processOutLong(int type) throws IgniteCheckedException {
+        switch (type) {
+            case OP_CLOSE:
+                atomicSeq.close();
+
+                return TRUE;
+
+            case OP_GET:
+                return atomicSeq.get();
+
+            case OP_GET_AND_INCREMENT:
+                return atomicSeq.getAndIncrement();
+
+            case OP_INCREMENT_AND_GET:
+                return atomicSeq.incrementAndGet();
+
+            case OP_IS_CLOSED:
+                return atomicSeq.removed() ? TRUE : FALSE;
+
+            case OP_GET_BATCH_SIZE:
+                return atomicSeq.batchSize();
+        }
+
+        return super.processOutLong(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        switch (type) {
+            case OP_ADD_AND_GET:
+                return atomicSeq.addAndGet(val);
+
+            case OP_GET_AND_ADD:
+                return atomicSeq.getAndAdd(val);
+
+            case OP_SET_BATCH_SIZE:
+                atomicSeq.batchSize((int)val);
+
+                return TRUE;
+        }
+
+        return super.processInLongOutLong(type, val);
+    }    
 
     /**
      * Reads the value.
