@@ -61,18 +61,91 @@ namespace ignite
                 // No-op.
             }
 
+            /*
+             * Input operation for starting a transaction.
+             */
+            class InTransactionStartOperation : public InputOperation
+            {
+            public:
+                /**
+                * Constructor.
+                *
+                * @param concurrency Concurrency.
+                * @param isolation Isolation.
+                * @param timeout Timeout in milliseconds. Zero if for infinite timeout.
+                * @param txSize Number of entries participating in transaction (may be approximate).
+                */
+                InTransactionStartOperation(int concurrency, int isolation, int64_t timeout, int32_t txSize) :
+                    concurrency(concurrency), isolation(isolation), timeout(timeout), txSize(txSize)
+                {
+                    // No-op.
+                }
+
+                virtual void ProcessInput(ignite::impl::binary::BinaryWriterImpl& writer)
+                {
+                    writer.GetStream()->WriteInt32(concurrency);
+                    writer.GetStream()->WriteInt32(isolation);
+                    writer.GetStream()->WriteInt64(timeout);
+                    writer.GetStream()->WriteInt32(txSize);
+                }
+            private:
+                int concurrency; 
+                
+                int isolation;
+                    
+                int64_t timeout;
+                
+                int32_t txSize;
+
+                IGNITE_NO_COPY_ASSIGNMENT(InTransactionStartOperation)
+            };
+
+            /**
+            * Output operation for starting a transaction.
+            */
+            class OutTransactionStartOperation : public OutputOperation
+            {
+            public:
+                /**
+                * Constructor.
+                */
+                OutTransactionStartOperation(): val(0)
+                {
+                    // No-op.
+                }
+
+                virtual void ProcessOutput(binary::BinaryReaderImpl& reader) 
+                {
+                    val = reader.ReadInt64();
+                }
+
+                /**
+                * Get value.
+                *
+                * @return Value.
+                */
+                int64_t Get()
+                {
+                    return val;
+                }
+
+            private:
+                /** Value */
+                int64_t val;
+
+                IGNITE_NO_COPY_ASSIGNMENT(OutTransactionStartOperation)
+            };
+
+
             int64_t TransactionsImpl::TxStart(int concurrency, int isolation,
                 int64_t timeout, int32_t txSize, IgniteError& err)
             {
-                JniErrorInfo jniErr;
+                InTransactionStartOperation inOp(concurrency, isolation, timeout, txSize);
+                OutTransactionStartOperation outOp;
 
-                int64_t id = GetEnvironment().Context()->TransactionsStart(GetTarget(),
-                    concurrency, isolation, timeout, txSize, &jniErr);
+                OutInOp(OP_START, inOp, outOp, &err);
 
-                if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
-
-                return id;
+                return outOp.Get();
             }
 
             TransactionsImpl::TransactionState TransactionsImpl::TxCommit(int64_t id, IgniteError& err)
