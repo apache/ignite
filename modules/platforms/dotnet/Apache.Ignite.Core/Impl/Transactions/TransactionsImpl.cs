@@ -50,6 +50,9 @@ namespace Apache.Ignite.Core.Impl.Transactions
         public const int OpClose = 6;
 
         /** */
+        public const int OpState = 7;
+
+        /** */
         public const int OpSetRollbackOnly = 8;
 
         /** */
@@ -193,7 +196,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <returns>Transaction current state.</returns>
         internal TransactionState TxState(TransactionImpl tx)
         {
-            return GetTransactionState(DoOutInOpLong(OpClose, tx.Id));
+            return GetTransactionState(DoOutInOpLong(OpState, tx.Id));
         }
 
         /// <summary>
