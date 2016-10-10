@@ -218,22 +218,6 @@ extern "C" {
         ctx->DestroyJvm();
     }
 
-    void* IGNITE_CALL IgniteEventsWithAsync(gcj::JniContext* ctx, void* obj) {
-        return ctx->EventsWithAsync(static_cast<jobject>(obj));
-    }
-
-    bool IGNITE_CALL IgniteEventsStopLocalListen(gcj::JniContext* ctx, void* obj, long long hnd) {
-        return ctx->EventsStopLocalListen(static_cast<jobject>(obj), hnd);
-    }
-
-    void IGNITE_CALL IgniteEventsLocalListen(gcj::JniContext* ctx, void* obj, long long hnd, int type) {
-        ctx->EventsLocalListen(static_cast<jobject>(obj), hnd, type);
-    }
-
-    bool IGNITE_CALL IgniteEventsIsEnabled(gcj::JniContext* ctx, void* obj, int type) {
-        return ctx->EventsIsEnabled(static_cast<jobject>(obj), type);
-    }    
-    
 	void* IGNITE_CALL IgniteServicesWithAsync(gcj::JniContext* ctx, void* obj) {
 		return ctx->ServicesWithAsync(static_cast<jobject>(obj));
     }

@@ -225,12 +225,6 @@ namespace ignite
             struct JniMembers {
                 jclass c_IgniteException;
 
-                jclass c_PlatformEvents;
-                jmethodID m_PlatformEvents_withAsync;
-                jmethodID m_PlatformEvents_stopLocalListen;
-                jmethodID m_PlatformEvents_localListen;
-                jmethodID m_PlatformEvents_isEnabled;
-
                 jclass c_PlatformServices;
                 jmethodID m_PlatformServices_withAsync;
                 jmethodID m_PlatformServices_withServerKeepPortable;

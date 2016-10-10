@@ -176,20 +176,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteDestroyJvm")]
         public static extern void DestroyJvm(void* ctx);
 
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteEventsWithAsync")]
-        public static extern void* EventsWithAsync(void* ctx, void* obj);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteEventsStopLocalListen")]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool EventsStopLocalListen(void* ctx, void* obj, long hnd);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteEventsLocalListen")]
-        public static extern void EventsLocalListen(void* ctx, void* obj, long hnd, int type);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteEventsIsEnabled")]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool EventsIsEnabled(void* ctx, void* obj, int type);
-
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteServicesWithAsync")]
         public static extern void* ServicesWithAsync(void* ctx, void* target);
 

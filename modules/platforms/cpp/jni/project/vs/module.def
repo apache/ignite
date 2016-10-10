@@ -34,10 +34,6 @@ IgniteHandlersSize @83
 IgniteCreateContext @84 
 IgniteDeleteContext @85 
 IgniteDestroyJvm @86 
-IgniteEventsWithAsync @87 
-IgniteEventsStopLocalListen @88 
-IgniteEventsLocalListen @89 
-IgniteEventsIsEnabled @90 
 IgniteTargetOutObject @91 
 IgniteServicesWithAsync @92
 IgniteServicesWithServerKeepPortable @93

@@ -505,30 +505,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #endregion
 
-        #region NATIVE METHODS: EVENTS
-
-        internal static IUnmanagedTarget EventsWithAsync(IUnmanagedTarget target)
-        {
-            return target.ChangeTarget(JNI.EventsWithAsync(target.Context, target.Target));
-        }
-
-        internal static bool EventsStopLocalListen(IUnmanagedTarget target, long handle)
-        {
-            return JNI.EventsStopLocalListen(target.Context, target.Target, handle);
-        }
-
-        internal static bool EventsIsEnabled(IUnmanagedTarget target, int type)
-        {
-            return JNI.EventsIsEnabled(target.Context, target.Target, type);
-        }
-
-        internal static void EventsLocalListen(IUnmanagedTarget target, long handle, int type)
-        {
-            JNI.EventsLocalListen(target.Context, target.Target, handle, type);
-        }
-
-        #endregion
-
         #region NATIVE METHODS: SERVICES
 
         internal static IUnmanagedTarget ServicesWithAsync(IUnmanagedTarget target)

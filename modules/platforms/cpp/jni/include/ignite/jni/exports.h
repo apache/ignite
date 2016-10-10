@@ -81,11 +81,6 @@ extern "C" {
 
     void IGNITE_CALL IgniteDestroyJvm(gcj::JniContext* ctx);
 
-    void* IGNITE_CALL IgniteEventsWithAsync(gcj::JniContext* ctx, void* obj);
-    bool IGNITE_CALL IgniteEventsStopLocalListen(gcj::JniContext* ctx, void* obj, long long hnd);
-    void IGNITE_CALL IgniteEventsLocalListen(gcj::JniContext* ctx, void* obj, long long hnd, int type);
-    bool IGNITE_CALL IgniteEventsIsEnabled(gcj::JniContext* ctx, void* obj, int type);
-        
 	void* IGNITE_CALL IgniteServicesWithAsync(gcj::JniContext* ctx, void* obj);
 	void* IGNITE_CALL IgniteServicesWithServerKeepPortable(gcj::JniContext* ctx, void* obj);
 	void IGNITE_CALL IgniteServicesCancel(gcj::JniContext* ctx, void* obj, char* name);

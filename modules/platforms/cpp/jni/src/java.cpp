@@ -329,12 +329,6 @@ namespace ignite
             JniMethod M_PLATFORM_IGNITION_STOP = JniMethod("stop", "(Ljava/lang/String;Z)Z", true);
             JniMethod M_PLATFORM_IGNITION_STOP_ALL = JniMethod("stopAll", "(Z)V", true);
 
-            const char* C_PLATFORM_EVENTS = "org/apache/ignite/internal/processors/platform/events/PlatformEvents";
-            JniMethod M_PLATFORM_EVENTS_WITH_ASYNC = JniMethod("withAsync", "()Lorg/apache/ignite/internal/processors/platform/events/PlatformEvents;", false);
-            JniMethod M_PLATFORM_EVENTS_STOP_LOCAL_LISTEN = JniMethod("stopLocalListen", "(J)Z", false);
-            JniMethod M_PLATFORM_EVENTS_LOCAL_LISTEN = JniMethod("localListen", "(JI)V", false);
-            JniMethod M_PLATFORM_EVENTS_IS_ENABLED = JniMethod("isEnabled", "(I)Z", false);
-
             const char* C_PLATFORM_SERVICES = "org/apache/ignite/internal/processors/platform/services/PlatformServices";
 			JniMethod M_PLATFORM_SERVICES_WITH_ASYNC = JniMethod("withAsync", "()Lorg/apache/ignite/internal/processors/platform/services/PlatformServices;", false);
 			JniMethod M_PLATFORM_SERVICES_WITH_SERVER_KEEP_PORTABLE = JniMethod("withServerKeepBinary", "()Lorg/apache/ignite/internal/processors/platform/services/PlatformServices;", false);
@@ -528,12 +522,6 @@ namespace ignite
             void JniMembers::Initialize(JNIEnv* env) {
                 c_IgniteException = FindClass(env, C_IGNITE_EXCEPTION);
 
-                c_PlatformEvents = FindClass(env, C_PLATFORM_EVENTS);
-                m_PlatformEvents_withAsync = FindMethod(env, c_PlatformEvents, M_PLATFORM_EVENTS_WITH_ASYNC);
-                m_PlatformEvents_stopLocalListen = FindMethod(env, c_PlatformEvents, M_PLATFORM_EVENTS_STOP_LOCAL_LISTEN);
-                m_PlatformEvents_localListen = FindMethod(env, c_PlatformEvents, M_PLATFORM_EVENTS_LOCAL_LISTEN);
-                m_PlatformEvents_isEnabled = FindMethod(env, c_PlatformEvents, M_PLATFORM_EVENTS_IS_ENABLED);
-
 				c_PlatformServices = FindClass(env, C_PLATFORM_SERVICES);
 				m_PlatformServices_withAsync = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_WITH_ASYNC);
 				m_PlatformServices_withServerKeepPortable = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_WITH_SERVER_KEEP_PORTABLE);
@@ -630,7 +618,6 @@ namespace ignite
 
             void JniMembers::Destroy(JNIEnv* env) {
                 DeleteClass(env, c_IgniteException);
-                DeleteClass(env, c_PlatformEvents);
                 DeleteClass(env, c_PlatformIgnition);
                 DeleteClass(env, c_PlatformProcessor);
                 DeleteClass(env, c_PlatformTarget);
@@ -1495,44 +1482,6 @@ namespace ignite
                 ExceptionCheck(env);
 
                 return LocalToGlobal(env, res);
-            }
-
-            jobject JniContext::EventsWithAsync(jobject obj) {
-                JNIEnv * env = Attach();
-
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformEvents_withAsync);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, res);
-            }
-
-            bool JniContext::EventsStopLocalListen(jobject obj, long long hnd) {
-                JNIEnv * env = Attach();
-
-                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformEvents_stopLocalListen, hnd);
-
-                ExceptionCheck(env);
-
-                return res != 0;
-            }
-
-            void JniContext::EventsLocalListen(jobject obj, long long hnd, int type) {
-                JNIEnv * env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformEvents_localListen, hnd, type);
-
-                ExceptionCheck(env);
-            }
-
-            bool JniContext::EventsIsEnabled(jobject obj, int type) {
-                JNIEnv * env = Attach();
-
-                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformEvents_isEnabled, type);
-
-                ExceptionCheck(env);
-
-                return res != 0;
             }
 
 			jobject JniContext::ServicesWithAsync(jobject obj) {
