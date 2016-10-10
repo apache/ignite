@@ -37,9 +37,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
@@ -58,6 +58,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.KEEP_BINARY_FLAG_MASK;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.OLD_VAL_ON_PRIMARY;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.SKIP_STORE_FLAG_MASK;
 
 /**
@@ -113,6 +114,10 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     @GridToStringInclude
     @GridDirectTransient
     private TxEntryValueHolder prevVal = new TxEntryValueHolder();
+
+    /** Old value before update. */
+    @GridToStringInclude
+    private TxEntryValueHolder oldVal = new TxEntryValueHolder();
 
     /** Transform. */
     @GridToStringInclude
@@ -193,9 +198,11 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     private byte[] expiryPlcBytes;
 
     /**
-     * Additional flags.
-     * GridCacheUtils.SKIP_STORE_FLAG_MASK - for skipStore flag value.
-     * GridCacheUtils.KEEP_BINARY_FLAG_MASK - for withKeepBinary flag.
+     * Additional flags:
+     * <ul>
+     * <li>{@link GridCacheUtils#SKIP_STORE_FLAG_MASK} - for skipStore flag value.</li>
+     * <li>{@link GridCacheUtils#KEEP_BINARY_FLAG_MASK} - for withKeepBinary flag.</li>
+     * </ul>
      */
     private byte flags;
 
@@ -494,6 +501,20 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     }
 
     /**
+     * @param oldValOnPrimary {@code True} If old value for was non null on primary node.
+     */
+    public void oldValueOnPrimary(boolean oldValOnPrimary) {
+        setFlag(oldValOnPrimary, OLD_VAL_ON_PRIMARY);
+    }
+
+    /**
+     * @return {@code True} If old value for 'invoke' operation was non null on primary node.
+     */
+    public boolean oldValueOnPrimary() {
+        return isFlag(OLD_VAL_ON_PRIMARY);
+    }
+
+    /**
      * Sets keep binary flag value.
      *
      * @param keepBinary Keep binary flag value.
@@ -563,6 +584,30 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      */
     @Nullable public CacheObject value() {
         return val.value();
+    }
+
+    /**
+     * @return Old value.
+     */
+    @Nullable public CacheObject oldValue() {
+        return oldVal != null ? oldVal.value() : null;
+    }
+
+    /**
+     * @param oldVal Old value.
+     */
+    public void oldValue(CacheObject oldVal, boolean hasOldVal) {
+        if (this.oldVal == null)
+            this.oldVal = new TxEntryValueHolder();
+
+        this.oldVal.value(op(), oldVal, hasOldVal, hasOldVal);
+    }
+
+    /**
+     * @return {@code True} if old value present.
+     */
+    public boolean hasOldValue() {
+        return oldVal != null && oldVal.hasValue();
     }
 
     /**
@@ -943,7 +988,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param ver Entry version.
      */
     public void entryReadVersion(GridCacheVersion ver) {
-        assert this.serReadVer == null;
+        assert this.serReadVer == null: "Wrong version [serReadVer=" + serReadVer + ", ver=" + ver + "]";
         assert ver != null;
 
         this.serReadVer = ver;
@@ -1052,6 +1097,11 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
                 writer.incrementState();
 
+            case 13:
+                if (!writer.writeMessage("oldVal", oldVal))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -1169,6 +1219,13 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
                 reader.incrementState();
 
+            case 13:
+                oldVal = reader.readMessage("oldVal");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(IgniteTxEntry.class);
@@ -1181,7 +1238,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 13;
+        return 14;
     }
 
     /** {@inheritDoc} */

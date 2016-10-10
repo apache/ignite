@@ -17,7 +17,7 @@
 mixin check-tooltip(message)
     i.tipLabel.fa.fa-question-circle(bs-tooltip='"#{message}"')
 
-div
+.panel-details-noborder
     .details-row
         .col-xs-2.col-sm-2.col-md-2
             label POJO class:
@@ -37,4 +37,4 @@ div
                 input(type='checkbox' ng-model='ctrl.includeKeyFields')
                 | Include key fields
             +check-tooltip("Generate key fields in POJO value class")
-    div(ng-if='ctrl.data' ignite-ace='{onLoad: onLoad, mode: "java"}' ng-model='ctrl.data')
+    .details-row(ng-if='ctrl.data' ignite-ace='{onLoad: onLoad, mode: "java"}' ng-model='ctrl.data')

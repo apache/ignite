@@ -19,6 +19,9 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
+
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -89,6 +92,11 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage {
      */
     public boolean success() {
         return success;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+        return ctx.txRecoveryMessageLogger();
     }
 
     /** {@inheritDoc} */

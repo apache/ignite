@@ -70,13 +70,12 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
                 try {
                     int cntPos = writer.reserveInt();
 
-                    int cnt;
+                    int cnt = 0;
 
-                    for (cnt = 0; cnt < batchSize; cnt++) {
-                        if (iter.hasNext())
-                            write(writer, iter.next());
-                        else
-                            break;
+                    while (cnt < batchSize && iter.hasNext()) {
+                        write(writer, iter.next());
+
+                        cnt++;
                     }
 
                     writer.writeInt(cntPos, cnt);

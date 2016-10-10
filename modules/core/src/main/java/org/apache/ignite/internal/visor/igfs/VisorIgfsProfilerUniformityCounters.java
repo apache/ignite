@@ -19,6 +19,7 @@ package org.apache.ignite.internal.visor.igfs;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.visor.igfs.VisorIgfsProfiler.UNIFORMITY_BLOCKS;
@@ -31,7 +32,7 @@ import static org.apache.ignite.internal.visor.igfs.VisorIgfsProfiler.UNIFORMITY
  * </p>
  * Count read frequency for each file and compare with ideal uniform distribution.
  */
-public class VisorIgfsProfilerUniformityCounters implements Serializable {
+public class VisorIgfsProfilerUniformityCounters implements Serializable, LessNamingBean {
     /** */
     private static final long serialVersionUID = 0L;
 

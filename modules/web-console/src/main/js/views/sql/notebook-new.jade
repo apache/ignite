@@ -25,7 +25,7 @@
                     .col-sm-2
                         label.required.labelFormField Name:&nbsp;
                     .col-sm-10
-                        input.form-control(id='create-notebook' type='text' ng-model='name' required on-enter='ui.inputForm.$valid && createNewNotebook(name)' auto-focus)
+                        input.form-control(id='create-notebook' type='text' ng-model='name' required ignite-on-enter='ui.inputForm.$valid && createNewNotebook(name)' ignite-auto-focus)
             .modal-footer
                 button.btn.btn-default(id='copy-btn-cancel' ng-click='$hide()') Cancel
                 button.btn.btn-primary(id='copy-btn-confirm' ng-disabled='ui.inputForm.$invalid' ng-click='createNewNotebook(name)') Create

@@ -122,6 +122,27 @@ public class GridCacheUtils {
     /** Marshaller system cache name. */
     public static final String MARSH_CACHE_NAME = "ignite-marshaller-sys-cache";
 
+    /** */
+    public static final String CACHE_MSG_LOG_CATEGORY = "org.apache.ignite.cache.msg";
+
+    /** */
+    public static final String ATOMIC_MSG_LOG_CATEGORY = CACHE_MSG_LOG_CATEGORY + ".atomic";
+
+    /** */
+    public static final String TX_MSG_LOG_CATEGORY = CACHE_MSG_LOG_CATEGORY + ".tx";
+
+    /** */
+    public static final String TX_MSG_PREPARE_LOG_CATEGORY = TX_MSG_LOG_CATEGORY + ".prepare";
+
+    /** */
+    public static final String TX_MSG_FINISH_LOG_CATEGORY = TX_MSG_LOG_CATEGORY + ".finish";
+
+    /** */
+    public static final String TX_MSG_LOCK_LOG_CATEGORY = TX_MSG_LOG_CATEGORY + ".lock";
+
+    /** */
+    public static final String TX_MSG_RECOVERY_LOG_CATEGORY = TX_MSG_LOG_CATEGORY + ".recovery";
+
     /** Default mask name. */
     private static final String DEFAULT_MASK_NAME = "<default>";
 
@@ -148,6 +169,9 @@ public class GridCacheUtils {
 
     /** Keep serialized flag. */
     public static final int KEEP_BINARY_FLAG_MASK = 0x2;
+
+    /** Flag indicating that old value for 'invoke' operation was non null on primary node. */
+    public static final int OLD_VAL_ON_PRIMARY = 0x4;
 
     /** Empty predicate array. */
     private static final IgnitePredicate[] EMPTY = new IgnitePredicate[0];
@@ -1146,6 +1170,7 @@ public class GridCacheUtils {
 
     /**
      * Validates that cache key object has overridden equals and hashCode methods.
+     * Will also check that a BinaryObject has a hash code set.
      *
      * @param key Key.
      * @throws IllegalArgumentException If equals or hashCode is not implemented.
@@ -1157,6 +1182,10 @@ public class GridCacheUtils {
         if (!U.overridesEqualsAndHashCode(key))
             throw new IllegalArgumentException("Cache key must override hashCode() and equals() methods: " +
                 key.getClass().getName());
+
+        if (U.isHashCodeEmpty(key))
+            throw new IllegalArgumentException("Cache key created with BinaryBuilder is missing hash code - " +
+                "please set it explicitly during building by using BinaryBuilder.hashCode(int)");
     }
 
     /**

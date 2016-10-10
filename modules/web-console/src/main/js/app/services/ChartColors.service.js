@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import COLORS from 'app/data/colors.json!';
+import COLORS from 'app/data/colors.json';
 
 export default ['IgniteChartColors', function() {
     return COLORS;

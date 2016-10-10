@@ -17,24 +17,33 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.query.annotations.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.io.Serializable;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Collection;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.affinity.AffinityKey;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.io.*;
-import java.sql.*;
-import java.util.*;
-
-import static java.sql.Types.*;
-import static org.apache.ignite.IgniteJdbcDriver.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static java.sql.Types.INTEGER;
+import static java.sql.Types.OTHER;
+import static java.sql.Types.VARCHAR;
+import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Metadata tests.
@@ -273,6 +282,24 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
 
             assertTrue(names.isEmpty());
             assertEquals(4, cnt);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMetadataResultSetClose() throws Exception {
+        try (Connection conn = DriverManager.getConnection(BASE_URL);
+             ResultSet tbls = conn.getMetaData().getTables(null, null, "%", null)) {
+            int colCnt = tbls.getMetaData().getColumnCount();
+
+            while (tbls.next()) {
+                for (int i = 0; i < colCnt; i++)
+                    tbls.getObject(i + 1);
+            }
+        }
+        catch (Exception e) {
+            fail();
         }
     }
 

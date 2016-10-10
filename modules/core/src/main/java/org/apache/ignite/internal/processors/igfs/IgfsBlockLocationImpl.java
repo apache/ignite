@@ -27,6 +27,12 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -37,7 +43,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * File block location in the grid.
  */
-public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable {
+public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable, Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -155,13 +161,7 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable 
         return S.toString(IgfsBlockLocationImpl.class, this);
     }
 
-    /**
-     * Writes this object to data output. Note that this is not externalizable
-     * interface because we want to eliminate any marshaller.
-     *
-     * @param out Data output to write.
-     * @throws IOException If write failed.
-     */
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         assert names != null;
         assert hosts != null;
@@ -189,13 +189,7 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable 
             out.writeUTF(host);
     }
 
-    /**
-     * Reads object from data input. Note we do not use externalizable interface
-     * to eliminate marshaller.
-     *
-     * @param in Data input.
-     * @throws IOException If read failed.
-     */
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {
         start = in.readLong();
         len = in.readLong();
@@ -224,6 +218,69 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable 
 
         for (int i = 0; i < size; i++)
             hosts.add(in.readUTF());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        BinaryRawWriter rawWriter = writer.rawWriter();
+
+        assert names != null;
+        assert hosts != null;
+
+        rawWriter.writeLong(start);
+        rawWriter.writeLong(len);
+
+        rawWriter.writeBoolean(nodeIds != null);
+
+        if (nodeIds != null) {
+            rawWriter.writeInt(nodeIds.size());
+
+            for (UUID nodeId : nodeIds)
+                U.writeUuid(rawWriter, nodeId);
+        }
+
+        rawWriter.writeInt(names.size());
+
+        for (String name : names)
+            rawWriter.writeString(name);
+
+        rawWriter.writeInt(hosts.size());
+
+        for (String host : hosts)
+            rawWriter.writeString(host);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        BinaryRawReader rawReader = reader.rawReader();
+
+        start = rawReader.readLong();
+        len = rawReader.readLong();
+
+        int size;
+
+        if (rawReader.readBoolean()) {
+            size = rawReader.readInt();
+
+            nodeIds = new ArrayList<>(size);
+
+            for (int i = 0; i < size; i++)
+                nodeIds.add(U.readUuid(rawReader));
+        }
+
+        size = rawReader.readInt();
+
+        names = new ArrayList<>(size);
+
+        for (int i = 0; i < size; i++)
+            names.add(rawReader.readString());
+
+        size = rawReader.readInt();
+
+        hosts = new ArrayList<>(size);
+
+        for (int i = 0; i < size; i++)
+            hosts.add(rawReader.readString());
     }
 
     /**

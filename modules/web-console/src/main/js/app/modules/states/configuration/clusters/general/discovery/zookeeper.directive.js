@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './zookeeper.jade!';
+import templateUrl from './zookeeper.jade';
 
 export default ['igniteConfigurationClustersGeneralDiscoveryZookeeper', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];
