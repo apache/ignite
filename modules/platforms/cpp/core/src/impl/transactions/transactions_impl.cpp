@@ -32,8 +32,22 @@ namespace ignite
              */
             enum Operation
             {
-                /** Get metrics operation. */
-                OP_METRICS = 2
+                /** Get metrics. */
+                OP_METRICS = 2,
+                /** Start tx. */
+                OP_START = 3,
+                /** Commit. */
+                OP_COMMIT = 4,
+                /** Rollback. */
+                OP_ROLLBACK = 5,
+                /** Close tx. */
+                OP_CLOSE = 6,
+                /** Get tx state. */
+                OP_STATE = 7,
+                /** Set rollback-only mode. */
+                OP_SET_ROLLBACK_ONLY = 8,
+                /** Reset metrics. */
+                OP_RESET_METRICS = 11,
             };
 
             TransactionsImpl::TransactionsImpl(SP_IgniteEnvironment env, jobject javaRef) :
