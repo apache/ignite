@@ -46,6 +46,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.hadoop.HadoopClassLoader;
+import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopComponent;
 import org.apache.ignite.internal.processors.hadoop.HadoopContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
@@ -58,14 +59,12 @@ import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlan;
 import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlanner;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskCancelledException;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
-import org.apache.ignite.internal.processors.hadoop.HadoopUtils;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounterWriter;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCountersImpl;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopPerformanceCounter;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopTaskStatus;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.HadoopProcessDescriptor;
-import org.apache.ignite.internal.processors.hadoop.v2.HadoopV2Job;
 import org.apache.ignite.internal.util.GridMutex;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -153,23 +152,16 @@ public class HadoopJobTracker extends HadoopComponent {
 
         evtProcSvc = Executors.newFixedThreadPool(1);
 
-        UUID nodeId = ctx.localNodeId();
-
         assert jobCls == null;
 
-        String[] libNames = null;
-
-        if (ctx.configuration() != null)
-            libNames = ctx.configuration().getNativeLibraryNames();
-
-        HadoopClassLoader ldr = new HadoopClassLoader(null, HadoopClassLoader.nameForJob(nodeId), libNames);
+        HadoopClassLoader ldr = ctx.kernalContext().hadoopHelper().commonClassLoader();
 
         try {
-            jobCls = (Class<HadoopV2Job>)ldr.loadClass(HadoopV2Job.class.getName());
+            jobCls = (Class<HadoopJob>)ldr.loadClass(HadoopCommonUtils.JOB_CLS_NAME);
         }
         catch (Exception ioe) {
-            throw new IgniteCheckedException("Failed to load job class [class="
-                + HadoopV2Job.class.getName() + ']', ioe);
+            throw new IgniteCheckedException("Failed to load job class [class=" +
+                HadoopCommonUtils.JOB_CLS_NAME + ']', ioe);
         }
     }
 
@@ -903,7 +895,7 @@ public class HadoopJobTracker extends HadoopComponent {
                     ClassLoader ldr = job.getClass().getClassLoader();
 
                     try {
-                        String statWriterClsName = job.info().property(HadoopUtils.JOB_COUNTER_WRITER_PROPERTY);
+                        String statWriterClsName = job.info().property(HadoopCommonUtils.JOB_COUNTER_WRITER_PROPERTY);
 
                         if (statWriterClsName != null) {
                             Class<?> cls = ldr.loadClass(statWriterClsName);
@@ -1060,7 +1052,8 @@ public class HadoopJobTracker extends HadoopComponent {
                 jobInfo = meta.jobInfo();
             }
 
-            job = jobInfo.createJob(jobCls, jobId, log, ctx.configuration().getNativeLibraryNames());
+            job = jobInfo.createJob(jobCls, jobId, log, ctx.configuration().getNativeLibraryNames(),
+                ctx.kernalContext().hadoopHelper());
 
             job.initialize(false, ctx.localNodeId());
 
