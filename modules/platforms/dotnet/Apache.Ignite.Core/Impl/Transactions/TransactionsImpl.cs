@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Transactions;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
@@ -48,9 +49,6 @@ namespace Apache.Ignite.Core.Impl.Transactions
 
         /** */
         public const int OpClose = 6;
-
-        /** */
-        public const int OpState = 7;
 
         /** */
         public const int OpSetRollbackOnly = 8;
@@ -156,7 +154,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /** <inheritDoc /> */
         public void ResetMetrics()
         {
-            UU.TransactionsResetMetrics(Target);
+            DoOutOp(OpResetMetrics);
         }
 
         /// <summary>
@@ -166,7 +164,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <returns>Final transaction state.</returns>
         internal TransactionState TxCommit(TransactionImpl tx)
         {
-            return (TransactionState) UU.TransactionsCommit(Target, tx.Id);
+            return (TransactionState) DoOutInOpLong(OpCommit, tx.Id);
         }
 
         /// <summary>
@@ -176,7 +174,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <returns>Final transaction state.</returns>
         internal TransactionState TxRollback(TransactionImpl tx)
         {
-            return (TransactionState)UU.TransactionsRollback(Target, tx.Id);
+            return (TransactionState) DoOutInOpLong(OpRollback, tx.Id);
         }
 
         /// <summary>
@@ -186,7 +184,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <returns>Final transaction state.</returns>
         internal int TxClose(TransactionImpl tx)
         {
-            return UU.TransactionsClose(Target, tx.Id);
+            return (int) DoOutInOpLong(OpClose, tx.Id);
         }
 
         /// <summary>
@@ -196,7 +194,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <returns>Transaction current state.</returns>
         internal TransactionState TxState(TransactionImpl tx)
         {
-            return GetTransactionState(UU.TransactionsState(Target, tx.Id));
+            return GetTransactionState(DoOutInOpLong(OpClose, tx.Id));
         }
 
         /// <summary>
@@ -206,7 +204,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <returns><c>true</c> if the flag was set.</returns>
         internal bool TxSetRollbackOnly(TransactionImpl tx)
         {
-            return UU.TransactionsSetRollbackOnly(Target, tx.Id);
+            return DoOutInOpLong(OpSetRollbackOnly, tx.Id) == True;
         }
 
         /// <summary>
@@ -214,7 +212,11 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// </summary>
         internal Task CommitAsync(TransactionImpl tx)
         {
-            return GetFuture<object>((futId, futTyp) => UU.TransactionsCommitAsync(Target, tx.Id, futId)).Task;
+            return GetFuture<object>((futId, futTyp) => DoOutOp(OpCommitAsync, (IBinaryStream s) =>
+            {
+                s.WriteLong(tx.Id);
+                s.WriteLong(futId);
+            })).Task;
         }
 
         /// <summary>
@@ -222,13 +224,17 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// </summary>
         internal Task RollbackAsync(TransactionImpl tx)
         {
-            return GetFuture<object>((futId, futTyp) => UU.TransactionsRollbackAsync(Target, tx.Id, futId)).Task;
+            return GetFuture<object>((futId, futTyp) => DoOutOp(OpRollbackAsync, (IBinaryStream s) =>
+            {
+                s.WriteLong(tx.Id);
+                s.WriteLong(futId);
+            })).Task;
         }
  
         /// <summary>
         /// Gets the state of the transaction from int.
         /// </summary>
-        private static TransactionState GetTransactionState(int state)
+        private static TransactionState GetTransactionState(long state)
         {
             return (TransactionState)state;
         }
