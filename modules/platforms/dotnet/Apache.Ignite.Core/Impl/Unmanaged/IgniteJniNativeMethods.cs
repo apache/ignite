@@ -176,60 +176,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteDestroyJvm")]
         public static extern void DestroyJvm(void* ctx);
 
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicLongGet")]
-        public static extern long AtomicLongGet(void* ctx, void* target);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicLongIncrementAndGet")]
-        public static extern long AtomicLongIncrementAndGet(void* ctx, void* target);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicLongAddAndGet")]
-        public static extern long AtomicLongAddAndGet(void* ctx, void* target, long value);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicLongDecrementAndGet")]
-        public static extern long AtomicLongDecrementAndGet(void* ctx, void* target);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicLongGetAndSet")]
-        public static extern long AtomicLongGetAndSet(void* ctx, void* target, long value);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicLongCompareAndSetAndGet")]
-        public static extern long AtomicLongCompareAndSetAndGet(void* ctx, void* target, long expVal, long newVal);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicLongIsClosed")]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool AtomicLongIsClosed(void* ctx, void* target);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicLongClose")]
-        public static extern void AtomicLongClose(void* ctx, void* target);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicSequenceGet")]
-        public static extern long AtomicSequenceGet(void* ctx, void* target);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicSequenceIncrementAndGet")]
-        public static extern long AtomicSequenceIncrementAndGet(void* ctx, void* target);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicSequenceAddAndGet")]
-        public static extern long AtomicSequenceAddAndGet(void* ctx, void* target, long value);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicSequenceGetBatchSize")]
-        public static extern int AtomicSequenceGetBatchSize(void* ctx, void* target);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicSequenceSetBatchSize")]
-        public static extern void AtomicSequenceSetBatchSize(void* ctx, void* target, int size);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicSequenceIsClosed")]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool AtomicSequenceIsClosed(void* ctx, void* target);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicSequenceClose")]
-        public static extern void AtomicSequenceClose(void* ctx, void* target);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicReferenceIsClosed")]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool AtomicReferenceIsClosed(void* ctx, void* target);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicReferenceClose")]
-        public static extern void AtomicReferenceClose(void* ctx, void* target);
-
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteListenableCancel")]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool ListenableCancel(void* ctx, void* target);

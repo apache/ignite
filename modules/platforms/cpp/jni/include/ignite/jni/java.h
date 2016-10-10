@@ -283,34 +283,6 @@ namespace ignite
                 jmethodID m_PlatformUtils_reallocate;
                 jmethodID m_PlatformUtils_errData;
 
-                jclass c_PlatformAtomicLong;
-                jmethodID m_PlatformAtomicLong_get;
-                jmethodID m_PlatformAtomicLong_incrementAndGet;
-                jmethodID m_PlatformAtomicLong_getAndIncrement;
-                jmethodID m_PlatformAtomicLong_addAndGet;
-                jmethodID m_PlatformAtomicLong_getAndAdd;
-                jmethodID m_PlatformAtomicLong_decrementAndGet;
-                jmethodID m_PlatformAtomicLong_getAndDecrement;
-                jmethodID m_PlatformAtomicLong_getAndSet;
-                jmethodID m_PlatformAtomicLong_compareAndSetAndGet;
-                jmethodID m_PlatformAtomicLong_isClosed;
-                jmethodID m_PlatformAtomicLong_close;
-
-                jclass c_PlatformAtomicSequence;
-                jmethodID m_PlatformAtomicSequence_get;
-                jmethodID m_PlatformAtomicSequence_incrementAndGet;
-                jmethodID m_PlatformAtomicSequence_getAndIncrement;
-                jmethodID m_PlatformAtomicSequence_addAndGet;
-                jmethodID m_PlatformAtomicSequence_getAndAdd;
-                jmethodID m_PlatformAtomicSequence_getBatchSize;
-                jmethodID m_PlatformAtomicSequence_setBatchSize;
-                jmethodID m_PlatformAtomicSequence_isClosed;
-                jmethodID m_PlatformAtomicSequence_close;
-
-                jclass c_PlatformAtomicReference;
-                jmethodID m_PlatformAtomicReference_isClosed;
-                jmethodID m_PlatformAtomicReference_close;
-
                 jclass c_PlatformListenable;
                 jmethodID m_PlatformListenable_cancel;
                 jmethodID m_PlatformListenable_isCancelled;
@@ -488,31 +460,6 @@ namespace ignite
                 
                 jobject CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr);
-
-                long long AtomicLongGet(jobject obj);
-                long long AtomicLongIncrementAndGet(jobject obj);
-                long long AtomicLongGetAndIncrement(jobject obj);
-                long long AtomicLongAddAndGet(jobject obj, long long value);
-                long long AtomicLongGetAndAdd(jobject obj, long long value);
-                long long AtomicLongDecrementAndGet(jobject obj);
-                long long AtomicLongGetAndDecrement(jobject obj);
-                long long AtomicLongGetAndSet(jobject obj, long long value);
-                long long AtomicLongCompareAndSetAndGet(jobject obj, long long expVal, long long newVal);
-                bool AtomicLongIsClosed(jobject obj);
-                void AtomicLongClose(jobject obj);
-
-                long long AtomicSequenceGet(jobject obj);
-                long long AtomicSequenceIncrementAndGet(jobject obj);
-                long long AtomicSequenceGetAndIncrement(jobject obj);
-                long long AtomicSequenceAddAndGet(jobject obj, long long l);
-                long long AtomicSequenceGetAndAdd(jobject obj, long long l);
-                int AtomicSequenceGetBatchSize(jobject obj);
-                void AtomicSequenceSetBatchSize(jobject obj, int size);
-                bool AtomicSequenceIsClosed(jobject obj);
-                void AtomicSequenceClose(jobject obj);
-
-                bool AtomicReferenceIsClosed(jobject obj);
-                void AtomicReferenceClose(jobject obj);
 
                 bool ListenableCancel(jobject obj);
                 bool ListenableIsCancelled(jobject obj);
