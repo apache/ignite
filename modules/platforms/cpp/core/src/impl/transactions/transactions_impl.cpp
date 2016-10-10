@@ -79,10 +79,7 @@ namespace ignite
             {
                 JniErrorInfo jniErr;
 
-                int state = GetEnvironment().Context()->TransactionsCommit(GetTarget(), id, &jniErr);
-
-                if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                int state = static_cast<int>(OutInOpLong(OP_COMMIT, id, &err));
 
                 return ToTransactionState(state);
             }
@@ -91,10 +88,7 @@ namespace ignite
             {
                 JniErrorInfo jniErr;
 
-                int state = GetEnvironment().Context()->TransactionsRollback(GetTarget(), id, &jniErr);
-
-                if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                int state = static_cast<int>(OutInOpLong(OP_ROLLBACK, id, &err));
 
                 return ToTransactionState(state);
             }
@@ -103,10 +97,7 @@ namespace ignite
             {
                 JniErrorInfo jniErr;
 
-                int state = GetEnvironment().Context()->TransactionsClose(GetTarget(), id, &jniErr);
-
-                if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                int state = static_cast<int>(OutInOpLong(OP_CLOSE, id, &err));
 
                 return ToTransactionState(state);
             }
@@ -115,10 +106,7 @@ namespace ignite
             {
                 JniErrorInfo jniErr;
 
-                bool rollbackOnly = GetEnvironment().Context()->TransactionsSetRollbackOnly(GetTarget(), id, &jniErr);
-
-                if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                bool rollbackOnly = OutInOpLong(OP_COMMIT, id, &err) == 1;
 
                 return rollbackOnly;
             }
@@ -127,10 +115,7 @@ namespace ignite
             {
                 JniErrorInfo jniErr;
 
-                int state = GetEnvironment().Context()->TransactionsState(GetTarget(), id, &jniErr);
-
-                if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                int state = static_cast<int>(OutInOpLong(OP_STATE, id, &err));
 
                 return ToTransactionState(state);
             }
