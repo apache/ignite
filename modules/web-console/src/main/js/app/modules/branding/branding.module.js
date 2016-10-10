@@ -43,4 +43,3 @@ angular
 .directive(...igniteTerms)
 .directive(...igniteFeatures)
 .directive(...igniteFooter);
-

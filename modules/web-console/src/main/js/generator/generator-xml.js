@@ -19,16 +19,16 @@
 const $generatorXml = {};
 
 // Do XML escape.
-$generatorXml.escape = function (s) {
-    if (typeof(s) !== 'string')
+$generatorXml.escape = function(s) {
+    if (typeof (s) !== 'string')
         return s;
 
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 };
 
 // Add constructor argument
-$generatorXml.constructorArg = function (res, ix, obj, propName, dflt, opt) {
-    var v = (obj ? obj[propName] : undefined) || dflt;
+$generatorXml.constructorArg = function(res, ix, obj, propName, dflt, opt) {
+    const v = (obj ? obj[propName] : null) || dflt;
 
     if ($generatorCommon.isDefinedAndNotEmpty(v))
         res.line('<constructor-arg ' + (ix >= 0 ? 'index="' + ix + '" ' : '') + 'value="' + v + '"/>');
@@ -40,8 +40,8 @@ $generatorXml.constructorArg = function (res, ix, obj, propName, dflt, opt) {
 };
 
 // Add XML element.
-$generatorXml.element = function (res, tag, attr1, val1, attr2, val2) {
-    var elem = '<' + tag;
+$generatorXml.element = function(res, tag, attr1, val1, attr2, val2) {
+    let elem = '<' + tag;
 
     if (attr1)
         elem += ' ' + attr1 + '="' + val1 + '"';
@@ -56,12 +56,12 @@ $generatorXml.element = function (res, tag, attr1, val1, attr2, val2) {
 };
 
 // Add property.
-$generatorXml.property = function (res, obj, propName, setterName, dflt) {
+$generatorXml.property = function(res, obj, propName, setterName, dflt) {
     if (!_.isNil(obj)) {
-        var val = obj[propName];
+        const val = obj[propName];
 
         if ($generatorCommon.isDefinedAndNotEmpty(val)) {
-            var missDflt = _.isNil(dflt);
+            const missDflt = _.isNil(dflt);
 
             // Add to result if no default provided or value not equals to default.
             if (missDflt || (!missDflt && val !== dflt)) {
@@ -76,16 +76,16 @@ $generatorXml.property = function (res, obj, propName, setterName, dflt) {
 };
 
 // Add property for class name.
-$generatorXml.classNameProperty = function (res, obj, propName) {
-    var val = obj[propName];
+$generatorXml.classNameProperty = function(res, obj, propName) {
+    const val = obj[propName];
 
     if (!_.isNil(val))
         $generatorXml.element(res, 'property', 'name', propName, 'value', $generatorCommon.JavaTypes.fullClassName(val));
 };
 
 // Add list property.
-$generatorXml.listProperty = function (res, obj, propName, listType, rowFactory) {
-    var val = obj[propName];
+$generatorXml.listProperty = function(res, obj, propName, listType, rowFactory) {
+    const val = obj[propName];
 
     if (val && val.length > 0) {
         res.emptyLineIfNeeded();
@@ -94,16 +94,12 @@ $generatorXml.listProperty = function (res, obj, propName, listType, rowFactory)
             listType = 'list';
 
         if (!rowFactory)
-            rowFactory = function (val) {
-                return '<value>' + $generatorXml.escape(val) + '</value>';
-            };
+            rowFactory = (v) => '<value>' + $generatorXml.escape(v) + '</value>';
 
         res.startBlock('<property name="' + propName + '">');
         res.startBlock('<' + listType + '>');
 
-        _.forEach(val, function(v) {
-            res.line(rowFactory(v));
-        });
+        _.forEach(val, (v) => res.line(rowFactory(v)));
 
         res.endBlock('</' + listType + '>');
         res.endBlock('</property>');
@@ -113,23 +109,19 @@ $generatorXml.listProperty = function (res, obj, propName, listType, rowFactory)
 };
 
 // Add array property
-$generatorXml.arrayProperty = function (res, obj, propName, descr, rowFactory) {
-    var val = obj[propName];
+$generatorXml.arrayProperty = function(res, obj, propName, descr, rowFactory) {
+    const val = obj[propName];
 
     if (val && val.length > 0) {
         res.emptyLineIfNeeded();
 
         if (!rowFactory)
-            rowFactory = function (val) {
-                return '<bean class="' + val + '"/>';
-            };
+            rowFactory = (v) => '<bean class="' + v + '"/>';
 
         res.startBlock('<property name="' + propName + '">');
         res.startBlock('<list>');
 
-        _.forEach(val, function (v) {
-            res.append(rowFactory(v));
-        });
+        _.forEach(val, (v) => res.append(rowFactory(v)));
 
         res.endBlock('</list>');
         res.endBlock('</property>');
@@ -145,8 +137,8 @@ $generatorXml.arrayProperty = function (res, obj, propName, descr, rowFactory) {
  * @param desc Bean metadata object.
  * @param createBeanAlthoughNoProps Always generate bean even it has no properties defined.
  */
-$generatorXml.beanProperty = function (res, bean, beanPropName, desc, createBeanAlthoughNoProps) {
-    var props = desc.fields;
+$generatorXml.beanProperty = function(res, bean, beanPropName, desc, createBeanAlthoughNoProps) {
+    const props = desc.fields;
 
     if (bean && $generatorCommon.hasProperty(bean, props)) {
         if (!createBeanAlthoughNoProps)
@@ -160,7 +152,7 @@ $generatorXml.beanProperty = function (res, bean, beanPropName, desc, createBean
 
         res.startBlock('<bean class="' + desc.className + '">');
 
-        var hasData = false;
+        let hasData = false;
 
         _.forIn(props, function(descr, propName) {
             if (props.hasOwnProperty(propName)) {
@@ -177,14 +169,14 @@ $generatorXml.beanProperty = function (res, bean, beanPropName, desc, createBean
                             break;
 
                         case 'propertiesAsList':
-                            var val = bean[propName];
+                            const val = bean[propName];
 
                             if (val && val.length > 0) {
                                 res.startBlock('<property name="' + propName + '">');
                                 res.startBlock('<props>');
 
                                 _.forEach(val, function(nameAndValue) {
-                                    var eqIndex = nameAndValue.indexOf('=');
+                                    const eqIndex = nameAndValue.indexOf('=');
                                     if (eqIndex >= 0) {
                                         res.line('<prop key="' + $generatorXml.escape(nameAndValue.substring(0, eqIndex)) + '">' +
                                             $generatorXml.escape(nameAndValue.substr(eqIndex + 1)) + '</prop>');
@@ -249,9 +241,9 @@ $generatorXml.beanProperty = function (res, bean, beanPropName, desc, createBean
  * @param obj Object to take bean class name.
  * @param propName Property name.
  */
-$generatorXml.simpleBeanProperty = function (res, obj, propName) {
+$generatorXml.simpleBeanProperty = function(res, obj, propName) {
     if (!_.isNil(obj)) {
-        var val = obj[propName];
+        const val = obj[propName];
 
         if ($generatorCommon.isDefinedAndNotEmpty(val)) {
             res.startBlock('<property name="' + propName + '">');
@@ -264,7 +256,7 @@ $generatorXml.simpleBeanProperty = function (res, obj, propName) {
 };
 
 // Generate eviction policy.
-$generatorXml.evictionPolicy = function (res, evtPlc, propName) {
+$generatorXml.evictionPolicy = function(res, evtPlc, propName) {
     if (evtPlc && evtPlc.kind) {
         $generatorXml.beanProperty(res, evtPlc[evtPlc.kind.toUpperCase()], propName,
             $generatorCommon.EVICTION_POLICIES[evtPlc.kind], true);
@@ -272,7 +264,7 @@ $generatorXml.evictionPolicy = function (res, evtPlc, propName) {
 };
 
 // Generate discovery.
-$generatorXml.clusterGeneral = function (cluster, res) {
+$generatorXml.clusterGeneral = function(cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -284,7 +276,7 @@ $generatorXml.clusterGeneral = function (cluster, res) {
         res.startBlock('<bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">');
         res.startBlock('<property name="ipFinder">');
 
-        var d = cluster.discovery;
+        const d = cluster.discovery;
 
         switch (d.kind) {
             case 'Multicast':
@@ -306,9 +298,8 @@ $generatorXml.clusterGeneral = function (cluster, res) {
             case 'Vm':
                 res.startBlock('<bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">');
 
-                if (d.Vm) {
+                if (d.Vm)
                     $generatorXml.listProperty(res, d.Vm, 'addresses');
-                }
 
                 res.endBlock('</bean>');
 
@@ -359,9 +350,8 @@ $generatorXml.clusterGeneral = function (cluster, res) {
             case 'Jdbc':
                 res.startBlock('<bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinder">');
 
-                if (d.Jdbc) {
+                if (d.Jdbc)
                     res.line('<property name="initSchema" value="' + (!_.isNil(d.Jdbc.initSchema) && d.Jdbc.initSchema) + '"/>');
-                }
 
                 res.endBlock('</bean>');
 
@@ -370,9 +360,8 @@ $generatorXml.clusterGeneral = function (cluster, res) {
             case 'SharedFs':
                 res.startBlock('<bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinder">');
 
-                if (d.SharedFs) {
+                if (d.SharedFs)
                     $generatorXml.property(res, d.SharedFs, 'path');
-                }
 
                 res.endBlock('</bean>');
 
@@ -391,9 +380,9 @@ $generatorXml.clusterGeneral = function (cluster, res) {
                     $generatorXml.property(res, d.ZooKeeper, 'zkConnectionString');
 
                     if (d.ZooKeeper.retryPolicy && d.ZooKeeper.retryPolicy.kind) {
-                        var kind = d.ZooKeeper.retryPolicy.kind;
-                        var retryPolicy = d.ZooKeeper.retryPolicy[kind];
-                        var customClassDefined = retryPolicy && $generatorCommon.isDefinedAndNotEmpty(retryPolicy.className);
+                        const kind = d.ZooKeeper.retryPolicy.kind;
+                        const retryPolicy = d.ZooKeeper.retryPolicy[kind];
+                        const customClassDefined = retryPolicy && $generatorCommon.isDefinedAndNotEmpty(retryPolicy.className);
 
                         if (kind !== 'Custom' || customClassDefined)
                             res.startBlock('<property name="retryPolicy">');
@@ -403,7 +392,7 @@ $generatorXml.clusterGeneral = function (cluster, res) {
                                 res.startBlock('<bean class="org.apache.curator.retry.ExponentialBackoffRetry">');
                                 $generatorXml.constructorArg(res, 0, retryPolicy, 'baseSleepTimeMs', 1000);
                                 $generatorXml.constructorArg(res, 1, retryPolicy, 'maxRetries', 10);
-                                $generatorXml.constructorArg(res, 2, retryPolicy, 'maxSleepMs', undefined, true);
+                                $generatorXml.constructorArg(res, 2, retryPolicy, 'maxSleepMs', null, true);
                                 res.endBlock('</bean>');
 
                                 break;
@@ -452,6 +441,8 @@ $generatorXml.clusterGeneral = function (cluster, res) {
                                     res.line('<bean class="' + retryPolicy.className + '"/>');
 
                                 break;
+
+                            default:
                         }
 
                         if (kind !== 'Custom' || customClassDefined)
@@ -485,7 +476,7 @@ $generatorXml.clusterGeneral = function (cluster, res) {
 };
 
 // Generate atomics group.
-$generatorXml.clusterAtomics = function (atomics, res) {
+$generatorXml.clusterAtomics = function(atomics, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -497,9 +488,9 @@ $generatorXml.clusterAtomics = function (atomics, res) {
         res.startBlock('<property name="atomicConfiguration">');
         res.startBlock('<bean class="org.apache.ignite.configuration.AtomicConfiguration">');
 
-        var cacheMode = atomics.cacheMode ? atomics.cacheMode : 'PARTITIONED';
+        const cacheMode = atomics.cacheMode ? atomics.cacheMode : 'PARTITIONED';
 
-        var hasData = cacheMode !== 'PARTITIONED';
+        let hasData = cacheMode !== 'PARTITIONED';
 
         $generatorXml.property(res, atomics, 'cacheMode', null, 'PARTITIONED');
 
@@ -521,7 +512,7 @@ $generatorXml.clusterAtomics = function (atomics, res) {
 };
 
 // Generate binary group.
-$generatorXml.clusterBinary = function (binary, res) {
+$generatorXml.clusterBinary = function(binary, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -537,7 +528,7 @@ $generatorXml.clusterBinary = function (binary, res) {
             res.startBlock('<property name="typeConfigurations">');
             res.startBlock('<list>');
 
-            _.forEach(binary.typeConfigurations, function (type) {
+            _.forEach(binary.typeConfigurations, function(type) {
                 res.startBlock('<bean class="org.apache.ignite.binary.BinaryTypeConfiguration">');
 
                 $generatorXml.property(res, type, 'typeName');
@@ -564,8 +555,90 @@ $generatorXml.clusterBinary = function (binary, res) {
     return res;
 };
 
+// Generate collision group.
+$generatorXml.clusterCollision = function(collision, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    if (collision && collision.kind && collision.kind !== 'Noop') {
+        const spi = collision[collision.kind];
+
+        if (collision.kind !== 'Custom' || (spi && $generatorCommon.isDefinedAndNotEmpty(spi.class))) {
+            res.startBlock('<property name="collisionSpi">');
+
+            switch (collision.kind) {
+                case 'JobStealing':
+                    res.startBlock('<bean class="org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi">');
+                    $generatorXml.property(res, spi, 'activeJobsThreshold', null, 95);
+                    $generatorXml.property(res, spi, 'waitJobsThreshold', null, 0);
+                    $generatorXml.property(res, spi, 'messageExpireTime', null, 1000);
+                    $generatorXml.property(res, spi, 'maximumStealingAttempts', null, 5);
+                    $generatorXml.property(res, spi, 'stealingEnabled', null, true);
+
+                    if ($generatorCommon.isDefinedAndNotEmpty(spi.externalCollisionListener)) {
+                        res.needEmptyLine = true;
+
+                        res.startBlock('<property name="externalCollisionListener">');
+                        res.line('<bean class="' + spi.externalCollisionListener + ' "/>');
+                        res.endBlock('</property>');
+                    }
+
+                    if ($generatorCommon.isDefinedAndNotEmpty(spi.stealingAttributes)) {
+                        res.needEmptyLine = true;
+
+                        res.startBlock('<property name="stealingAttributes">');
+                        res.startBlock('<map>');
+
+                        _.forEach(spi.stealingAttributes, function(attr) {
+                            $generatorXml.element(res, 'entry', 'key', attr.name, 'value', attr.value);
+                        });
+
+                        res.endBlock('</map>');
+                        res.endBlock('</property>');
+                    }
+
+                    res.endBlock('</bean>');
+
+                    break;
+
+                case 'FifoQueue':
+                    res.startBlock('<bean class="org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi">');
+                    $generatorXml.property(res, spi, 'parallelJobsNumber');
+                    $generatorXml.property(res, spi, 'waitingJobsNumber');
+                    res.endBlock('</bean>');
+
+                    break;
+
+                case 'PriorityQueue':
+                    res.startBlock('<bean class="org.apache.ignite.spi.collision.priorityqueue.PriorityQueueCollisionSpi">');
+                    $generatorXml.property(res, spi, 'parallelJobsNumber');
+                    $generatorXml.property(res, spi, 'waitingJobsNumber');
+                    $generatorXml.property(res, spi, 'priorityAttributeKey', null, 'grid.task.priority');
+                    $generatorXml.property(res, spi, 'jobPriorityAttributeKey', null, 'grid.job.priority');
+                    $generatorXml.property(res, spi, 'defaultPriority', null, 0);
+                    $generatorXml.property(res, spi, 'starvationIncrement', null, 1);
+                    $generatorXml.property(res, spi, 'starvationPreventionEnabled', null, true);
+                    res.endBlock('</bean>');
+
+                    break;
+
+                case 'Custom':
+                    res.line('<bean class="' + spi.class + '"/>');
+
+                    break;
+
+                default:
+            }
+
+            res.endBlock('</property>');
+        }
+    }
+
+    return res;
+};
+
 // Generate communication group.
-$generatorXml.clusterCommunication = function (cluster, res) {
+$generatorXml.clusterCommunication = function(cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -595,7 +668,7 @@ $generatorXml.clusterConnector = function(connector, res) {
         res = $generatorCommon.builder();
 
     if (!_.isNil(connector) && connector.enabled) {
-        var cfg = _.cloneDeep($generatorCommon.CONNECTOR_CONFIGURATION);
+        const cfg = _.cloneDeep($generatorCommon.CONNECTOR_CONFIGURATION);
 
         if (connector.sslEnabled) {
             cfg.fields.sslClientAuth = {dflt: false};
@@ -611,14 +684,14 @@ $generatorXml.clusterConnector = function(connector, res) {
 };
 
 // Generate deployment group.
-$generatorXml.clusterDeployment = function (cluster, res) {
+$generatorXml.clusterDeployment = function(cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
     if ($generatorXml.property(res, cluster, 'deploymentMode', null, 'SHARED'))
         res.needEmptyLine = true;
 
-    var p2pEnabled = cluster.peerClassLoadingEnabled;
+    const p2pEnabled = cluster.peerClassLoadingEnabled;
 
     if (!_.isNil(p2pEnabled)) {
         $generatorXml.property(res, cluster, 'peerClassLoadingEnabled', null, false);
@@ -636,7 +709,7 @@ $generatorXml.clusterDeployment = function (cluster, res) {
 };
 
 // Generate discovery group.
-$generatorXml.clusterDiscovery = function (disco, res) {
+$generatorXml.clusterDiscovery = function(disco, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -677,7 +750,7 @@ $generatorXml.clusterDiscovery = function (disco, res) {
 };
 
 // Generate events group.
-$generatorXml.clusterEvents = function (cluster, res) {
+$generatorXml.clusterEvents = function(cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -720,12 +793,120 @@ $generatorXml.clusterEvents = function (cluster, res) {
     return res;
 };
 
-// Generate marshaller group.
-$generatorXml.clusterMarshaller = function (cluster, res) {
+// Generate failover group.
+$generatorXml.clusterFailover = function(cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    var marshaller = cluster.marshaller;
+    if ($generatorCommon.isDefinedAndNotEmpty(cluster.failoverSpi) && _.findIndex(cluster.failoverSpi, function(spi) {
+        return $generatorCommon.isDefinedAndNotEmpty(spi.kind) && (spi.kind !== 'Custom' || $generatorCommon.isDefinedAndNotEmpty(_.get(spi, spi.kind + '.class')));
+    }) >= 0) {
+        res.startBlock('<property name="failoverSpi">');
+        res.startBlock('<list>');
+
+        _.forEach(cluster.failoverSpi, function(spi) {
+            if (spi.kind && (spi.kind !== 'Custom' || $generatorCommon.isDefinedAndNotEmpty(_.get(spi, spi.kind + '.class')))) {
+                const maxAttempts = _.get(spi, spi.kind + '.maximumFailoverAttempts');
+
+                if ((spi.kind === 'JobStealing' || spi.kind === 'Always') && $generatorCommon.isDefinedAndNotEmpty(maxAttempts) && maxAttempts !== 5) {
+                    res.startBlock('<bean class="' + $generatorCommon.failoverSpiClass(spi) + '">');
+
+                    $generatorXml.property(res, spi[spi.kind], 'maximumFailoverAttempts', null, 5);
+
+                    res.endBlock('</bean>');
+                }
+                else
+                    res.line('<bean class="' + $generatorCommon.failoverSpiClass(spi) + '"/>');
+
+                res.needEmptyLine = true;
+            }
+        });
+
+        res.needEmptyLine = true;
+
+        res.endBlock('</list>');
+        res.endBlock('</property>');
+    }
+
+    return res;
+};
+
+// Generate marshaller group.
+$generatorXml.clusterLogger = function(logger, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    if ($generatorCommon.loggerConfigured(logger)) {
+        res.startBlock('<property name="gridLogger">');
+
+        const log = logger[logger.kind];
+
+        switch (logger.kind) {
+            case 'Log4j2':
+                res.startBlock('<bean class="org.apache.ignite.logger.log4j2.Log4J2Logger">');
+                res.line('<constructor-arg value="' + $generatorXml.escape(log.path) + '"/>');
+                $generatorXml.property(res, log, 'level');
+                res.endBlock('</bean>');
+
+                break;
+
+            case 'Null':
+                res.line('<bean class="org.apache.ignite.logger.NullLogger"/>');
+
+                break;
+
+            case 'Java':
+                res.line('<bean class="org.apache.ignite.logger.java.JavaLogger"/>');
+
+                break;
+
+            case 'JCL':
+                res.line('<bean class="org.apache.ignite.logger.jcl.JclLogger"/>');
+
+                break;
+
+            case 'SLF4J':
+                res.line('<bean class="org.apache.ignite.logger.slf4j.Slf4jLogger"/>');
+
+                break;
+
+            case 'Log4j':
+                if (log.mode === 'Default' && !$generatorCommon.isDefinedAndNotEmpty(log.level))
+                    res.line('<bean class="org.apache.ignite.logger.log4j.Log4JLogger"/>');
+                else {
+                    res.startBlock('<bean class="org.apache.ignite.logger.log4j.Log4JLogger">');
+
+                    if (log.mode === 'Path')
+                        res.line('<constructor-arg value="' + $generatorXml.escape(log.path) + '"/>');
+
+                    $generatorXml.property(res, log, 'level');
+                    res.endBlock('</bean>');
+                }
+
+                break;
+
+            case 'Custom':
+                res.line('<bean class="' + log.class + '"/>');
+
+                break;
+
+            default:
+        }
+
+        res.endBlock('</property>');
+
+        res.needEmptyLine = true;
+    }
+
+    return res;
+};
+
+// Generate marshaller group.
+$generatorXml.clusterMarshaller = function(cluster, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    const marshaller = cluster.marshaller;
 
     if (marshaller && marshaller.kind)
         $generatorXml.beanProperty(res, marshaller[marshaller.kind], 'marshaller', $generatorCommon.MARSHALLERS[marshaller.kind], true);
@@ -742,7 +923,7 @@ $generatorXml.clusterMarshaller = function (cluster, res) {
 };
 
 // Generate metrics group.
-$generatorXml.clusterMetrics = function (cluster, res) {
+$generatorXml.clusterMetrics = function(cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -757,7 +938,7 @@ $generatorXml.clusterMetrics = function (cluster, res) {
 };
 
 // Generate swap group.
-$generatorXml.clusterSwap = function (cluster, res) {
+$generatorXml.clusterSwap = function(cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -772,7 +953,7 @@ $generatorXml.clusterSwap = function (cluster, res) {
 };
 
 // Generate time group.
-$generatorXml.clusterTime = function (cluster, res) {
+$generatorXml.clusterTime = function(cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -787,7 +968,7 @@ $generatorXml.clusterTime = function (cluster, res) {
 };
 
 // Generate thread pools group.
-$generatorXml.clusterPools = function (cluster, res) {
+$generatorXml.clusterPools = function(cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -803,11 +984,33 @@ $generatorXml.clusterPools = function (cluster, res) {
 };
 
 // Generate transactions group.
-$generatorXml.clusterTransactions = function (transactionConfiguration, res) {
+$generatorXml.clusterTransactions = function(transactionConfiguration, res) {
     if (!res)
         res = $generatorCommon.builder();
 
     $generatorXml.beanProperty(res, transactionConfiguration, 'transactionConfiguration', $generatorCommon.TRANSACTION_CONFIGURATION, false);
+
+    res.needEmptyLine = true;
+
+    return res;
+};
+
+// Generate user attributes group.
+$generatorXml.clusterUserAttributes = function(cluster, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    if ($generatorCommon.isDefinedAndNotEmpty(cluster.attributes)) {
+        res.startBlock('<property name="userAttributes">');
+        res.startBlock('<map>');
+
+        _.forEach(cluster.attributes, function(attr) {
+            $generatorXml.element(res, 'entry', 'key', attr.name, 'value', attr.value);
+        });
+
+        res.endBlock('</map>');
+        res.endBlock('</property>');
+    }
 
     res.needEmptyLine = true;
 
@@ -859,10 +1062,9 @@ $generatorXml.cacheGeneral = function(cache, res) {
     $generatorXml.property(res, cache, 'cacheMode');
     $generatorXml.property(res, cache, 'atomicityMode');
 
-    if (cache.cacheMode === 'PARTITIONED')
-        $generatorXml.property(res, cache, 'backups');
+    if (cache.cacheMode === 'PARTITIONED' && $generatorXml.property(res, cache, 'backups'))
+        $generatorXml.property(res, cache, 'readFromBackup');
 
-    $generatorXml.property(res, cache, 'readFromBackup');
     $generatorXml.property(res, cache, 'copyOnRead');
 
     if (cache.cacheMode === 'PARTITIONED' && cache.atomicityMode === 'TRANSACTIONAL')
@@ -904,9 +1106,7 @@ $generatorXml.cacheQuery = function(cache, res) {
     $generatorXml.property(res, cache, 'sqlOnheapRowCacheSize', null, 10240);
     $generatorXml.property(res, cache, 'longQueryWarningTimeout', null, 3000);
 
-    var indexedTypes = _.filter(cache.domains, function (domain) {
-        return domain.queryMetadata === 'Annotations'
-    });
+    const indexedTypes = _.filter(cache.domains, (domain) => domain.queryMetadata === 'Annotations');
 
     if (indexedTypes.length > 0) {
         res.startBlock('<property name="indexedTypes">');
@@ -941,9 +1141,9 @@ $generatorXml.cacheStore = function(cache, domains, res) {
         res = $generatorCommon.builder();
 
     if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind) {
-        var factoryKind = cache.cacheStoreFactory.kind;
+        const factoryKind = cache.cacheStoreFactory.kind;
 
-        var storeFactory = cache.cacheStoreFactory[factoryKind];
+        const storeFactory = cache.cacheStoreFactory[factoryKind];
 
         if (storeFactory) {
             if (factoryKind === 'CacheJdbcPojoStoreFactory') {
@@ -956,7 +1156,7 @@ $generatorXml.cacheStore = function(cache, domains, res) {
                 res.line('<bean class="' + $generatorCommon.jdbcDialectClassName(storeFactory.dialect) + '"/>');
                 res.endBlock('</property>');
 
-                var domainConfigs = _.filter(domains, function (domain) {
+                const domainConfigs = _.filter(domains, function(domain) {
                     return $generatorCommon.isDefinedAndNotEmpty(domain.databaseTable);
                 });
 
@@ -964,7 +1164,7 @@ $generatorXml.cacheStore = function(cache, domains, res) {
                     res.startBlock('<property name="types">');
                     res.startBlock('<list>');
 
-                    _.forEach(domainConfigs, function (domain) {
+                    _.forEach(domainConfigs, function(domain) {
                         res.startBlock('<bean class="org.apache.ignite.cache.store.jdbc.JdbcType">');
 
                         $generatorXml.property(res, cache, 'name', 'cacheName');
@@ -982,7 +1182,7 @@ $generatorXml.cacheStore = function(cache, domains, res) {
                 }
 
                 res.endBlock('</bean>');
-                res.endBlock("</property>");
+                res.endBlock('</property>');
             }
             else if (factoryKind === 'CacheJdbcBlobStoreFactory') {
                 res.startBlock('<property name="cacheStoreFactory">');
@@ -1004,15 +1204,13 @@ $generatorXml.cacheStore = function(cache, domains, res) {
                 $generatorXml.property(res, storeFactory, 'deleteQuery');
 
                 res.endBlock('</bean>');
-                res.endBlock("</property>");
+                res.endBlock('</property>');
             }
             else
                 $generatorXml.beanProperty(res, storeFactory, 'cacheStoreFactory', $generatorCommon.STORE_FACTORIES[factoryKind], true);
 
-            if (storeFactory.dataSourceBean && (storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : undefined) : storeFactory.dialect)) {
-                if (_.findIndex(res.datasources, function (ds) {
-                        return ds.dataSourceBean === storeFactory.dataSourceBean;
-                    }) < 0) {
+            if (storeFactory.dataSourceBean && (storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : null) : storeFactory.dialect)) {
+                if (_.findIndex(res.datasources, (ds) => ds.dataSourceBean === storeFactory.dataSourceBean) < 0) {
                     res.datasources.push({
                         dataSourceBean: storeFactory.dataSourceBean,
                         className: $generatorCommon.DATA_SOURCES[storeFactory.dialect],
@@ -1053,7 +1251,7 @@ $generatorXml.cacheConcurrency = function(cache, res) {
     $generatorXml.property(res, cache, 'maxConcurrentAsyncOperations', null, 500);
     $generatorXml.property(res, cache, 'defaultLockTimeout', null, 0);
     $generatorXml.property(res, cache, 'atomicWriteOrderMode');
-    $generatorXml.property(res, cache, 'writeSynchronizationMode', null, "PRIMARY_SYNC");
+    $generatorXml.property(res, cache, 'writeSynchronizationMode', null, 'PRIMARY_SYNC');
 
     res.needEmptyLine = true;
 
@@ -1130,8 +1328,8 @@ $generatorXml.cacheStatistics = function(cache, res) {
 };
 
 // Generate domain model query fields.
-$generatorXml.domainModelQueryFields = function (res, domain) {
-    var fields = domain.fields;
+$generatorXml.domainModelQueryFields = function(res, domain) {
+    const fields = domain.fields;
 
     if (fields && fields.length > 0) {
         res.emptyLineIfNeeded();
@@ -1139,7 +1337,7 @@ $generatorXml.domainModelQueryFields = function (res, domain) {
         res.startBlock('<property name="fields">');
         res.startBlock('<map>');
 
-        _.forEach(fields, function (field) {
+        _.forEach(fields, function(field) {
             $generatorXml.element(res, 'entry', 'key', field.name, 'value', $generatorCommon.JavaTypes.fullClassName(field.className));
         });
 
@@ -1151,8 +1349,8 @@ $generatorXml.domainModelQueryFields = function (res, domain) {
 };
 
 // Generate domain model query fields.
-$generatorXml.domainModelQueryAliases = function (res, domain) {
-    var aliases = domain.aliases;
+$generatorXml.domainModelQueryAliases = function(res, domain) {
+    const aliases = domain.aliases;
 
     if (aliases && aliases.length > 0) {
         res.emptyLineIfNeeded();
@@ -1160,7 +1358,7 @@ $generatorXml.domainModelQueryAliases = function (res, domain) {
         res.startBlock('<property name="aliases">');
         res.startBlock('<map>');
 
-        _.forEach(aliases, function (alias) {
+        _.forEach(aliases, function(alias) {
             $generatorXml.element(res, 'entry', 'key', alias.field, 'value', alias.alias);
         });
 
@@ -1172,8 +1370,8 @@ $generatorXml.domainModelQueryAliases = function (res, domain) {
 };
 
 // Generate domain model indexes.
-$generatorXml.domainModelQueryIndexes = function (res, domain) {
-    var indexes = domain.indexes;
+$generatorXml.domainModelQueryIndexes = function(res, domain) {
+    const indexes = domain.indexes;
 
     if (indexes && indexes.length > 0) {
         res.emptyLineIfNeeded();
@@ -1181,19 +1379,19 @@ $generatorXml.domainModelQueryIndexes = function (res, domain) {
         res.startBlock('<property name="indexes">');
         res.startBlock('<list>');
 
-        _.forEach(indexes, function (index) {
+        _.forEach(indexes, function(index) {
             res.startBlock('<bean class="org.apache.ignite.cache.QueryIndex">');
 
             $generatorXml.property(res, index, 'name');
             $generatorXml.property(res, index, 'indexType');
 
-            var fields = index.fields;
+            const fields = index.fields;
 
             if (fields && fields.length > 0) {
                 res.startBlock('<property name="fields">');
                 res.startBlock('<map>');
 
-                _.forEach(fields, function (field) {
+                _.forEach(fields, function(field) {
                     $generatorXml.element(res, 'entry', 'key', field.name, 'value', field.direction);
                 });
 
@@ -1212,8 +1410,8 @@ $generatorXml.domainModelQueryIndexes = function (res, domain) {
 };
 
 // Generate domain model db fields.
-$generatorXml.domainModelDatabaseFields = function (res, domain, fieldProp) {
-    var fields = domain[fieldProp];
+$generatorXml.domainModelDatabaseFields = function(res, domain, fieldProp) {
+    const fields = domain[fieldProp];
 
     if (fields && fields.length > 0) {
         res.emptyLineIfNeeded();
@@ -1222,7 +1420,7 @@ $generatorXml.domainModelDatabaseFields = function (res, domain, fieldProp) {
 
         res.startBlock('<list>');
 
-        _.forEach(fields, function (field) {
+        _.forEach(fields, function(field) {
             res.startBlock('<bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">');
 
             $generatorXml.property(res, field, 'databaseFieldName');
@@ -1277,6 +1475,8 @@ $generatorXml.domainModelGeneral = function(domain, res) {
             $generatorXml.property(res, domain, 'valueType');
 
             break;
+
+        default:
     }
 
     res.needEmptyLine = true;
@@ -1341,7 +1541,7 @@ $generatorXml.cacheDomains = function(domains, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    var domainConfigs = _.filter(domains, function (domain) {
+    const domainConfigs = _.filter(domains, function(domain) {
         return $generatorCommon.domainQueryMetadata(domain) === 'Configuration' &&
             $generatorCommon.isDefinedAndNotEmpty(domain.fields);
     });
@@ -1352,7 +1552,7 @@ $generatorXml.cacheDomains = function(domains, res) {
         res.startBlock('<property name="queryEntities">');
         res.startBlock('<list>');
 
-        _.forEach(domainConfigs, function (domain) {
+        _.forEach(domainConfigs, function(domain) {
             $generatorXml.cacheQueryMetadata(domain, res);
         });
 
@@ -1412,8 +1612,8 @@ $generatorXml.clusterCaches = function(caches, igfss, isSrvCfg, res) {
             res.needEmptyLine = true;
         });
 
-        if (isSrvCfg)
-            _.forEach(igfss, function(igfs) {
+        if (isSrvCfg) {
+            _.forEach(igfss, (igfs) => {
                 $generatorXml.cache($generatorCommon.igfsDataCache(igfs), res);
 
                 res.needEmptyLine = true;
@@ -1422,6 +1622,7 @@ $generatorXml.clusterCaches = function(caches, igfss, isSrvCfg, res) {
 
                 res.needEmptyLine = true;
             });
+        }
 
         res.endBlock('</list>');
         res.endBlock('</property>');
@@ -1524,21 +1725,21 @@ $generatorXml.igfsSecondFS = function(igfs, res) {
         res = $generatorCommon.builder();
 
     if (igfs.secondaryFileSystemEnabled) {
-        var secondFs = igfs.secondaryFileSystem || {};
+        const secondFs = igfs.secondaryFileSystem || {};
 
         res.startBlock('<property name="secondaryFileSystem">');
 
         res.startBlock('<bean class="org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem">');
 
-        var nameDefined = $generatorCommon.isDefinedAndNotEmpty(secondFs.userName);
-        var cfgDefined = $generatorCommon.isDefinedAndNotEmpty(secondFs.cfgPath);
+        const nameDefined = $generatorCommon.isDefinedAndNotEmpty(secondFs.userName);
+        const cfgDefined = $generatorCommon.isDefinedAndNotEmpty(secondFs.cfgPath);
 
         $generatorXml.constructorArg(res, 0, secondFs, 'uri');
 
         if (cfgDefined || nameDefined)
             $generatorXml.constructorArg(res, 1, secondFs, 'cfgPath');
 
-        $generatorXml.constructorArg(res, 2, secondFs, 'userName', undefined, true);
+        $generatorXml.constructorArg(res, 2, secondFs, 'userName', null, true);
 
         res.endBlock('</bean>');
         res.endBlock('</property>');
@@ -1561,7 +1762,7 @@ $generatorXml.igfsGeneral = function(igfs, res) {
         $generatorXml.property(res, igfs, 'name');
         $generatorXml.property(res, igfs, 'dataCacheName');
         $generatorXml.property(res, igfs, 'metaCacheName');
-        $generatorXml.property(res, igfs, 'defaultMode', null, "DUAL_ASYNC");
+        $generatorXml.property(res, igfs, 'defaultMode', null, 'DUAL_ASYNC');
 
         res.needEmptyLine = true;
     }
@@ -1605,15 +1806,15 @@ $generatorXml.igfsMisc = function(igfs, res) {
 };
 
 // Generate DataSource beans.
-$generatorXml.generateDataSources = function (datasources, res) {
+$generatorXml.generateDataSources = function(datasources, res) {
     if (!res)
         res = $generatorCommon.builder();
 
     if (datasources.length > 0) {
         res.line('<!-- Data source beans will be initialized from external properties file. -->');
 
-        _.forEach(datasources, function (item) {
-            var beanId = item.dataSourceBean;
+        _.forEach(datasources, function(item) {
+            const beanId = item.dataSourceBean;
 
             res.startBlock('<bean id="' + beanId + '" class="' + item.className + '">');
 
@@ -1658,8 +1859,8 @@ $generatorXml.generateDataSources = function (datasources, res) {
     return res;
 };
 
-$generatorXml.clusterConfiguration = function (cluster, clientNearCfg, res) {
-    var isSrvCfg = _.isNil(clientNearCfg);
+$generatorXml.clusterConfiguration = function(cluster, clientNearCfg, res) {
+    const isSrvCfg = _.isNil(clientNearCfg);
 
     if (!isSrvCfg) {
         res.line('<property name="clientMode" value="true"/>');
@@ -1673,6 +1874,8 @@ $generatorXml.clusterConfiguration = function (cluster, clientNearCfg, res) {
 
     $generatorXml.clusterBinary(cluster.binaryConfiguration, res);
 
+    $generatorXml.clusterCollision(cluster.collision, res);
+
     $generatorXml.clusterCommunication(cluster, res);
 
     $generatorXml.clusterConnector(cluster.connector, res);
@@ -1680,6 +1883,10 @@ $generatorXml.clusterConfiguration = function (cluster, clientNearCfg, res) {
     $generatorXml.clusterDeployment(cluster, res);
 
     $generatorXml.clusterEvents(cluster, res);
+
+    $generatorXml.clusterFailover(cluster, res);
+
+    $generatorXml.clusterLogger(cluster.logger, res);
 
     $generatorXml.clusterMarshaller(cluster, res);
 
@@ -1700,12 +1907,14 @@ $generatorXml.clusterConfiguration = function (cluster, clientNearCfg, res) {
     if (isSrvCfg)
         $generatorXml.igfss(cluster.igfss, res);
 
+    $generatorXml.clusterUserAttributes(cluster, res);
+
     return res;
 };
 
-$generatorXml.cluster = function (cluster, clientNearCfg) {
+$generatorXml.cluster = function(cluster, clientNearCfg) {
     if (cluster) {
-        var res = $generatorCommon.builder(1);
+        const res = $generatorCommon.builder(1);
 
         if (clientNearCfg) {
             res.startBlock('<bean id="nearCacheBean" class="org.apache.ignite.configuration.NearCacheConfiguration">');
@@ -1732,7 +1941,7 @@ $generatorXml.cluster = function (cluster, clientNearCfg) {
 
         // Build final XML:
         // 1. Add header.
-        var xml = '<?xml version="1.0" encoding="UTF-8"?>\n\n';
+        let xml = '<?xml version="1.0" encoding="UTF-8"?>\n\n';
 
         xml += '<!-- ' + $generatorCommon.mainComment() + ' -->\n\n';
         xml += '<beans xmlns="http://www.springframework.org/schema/beans"\n';

@@ -88,12 +88,10 @@ namespace ignite
                 }
 
                 virtual int32_t GetFieldId(const int32_t typeId, const char* name) {
-                    if (!name)
-                    {
+                    if (name)
+                        return type.GetFieldId(name);
+                    else
                         IGNITE_ERROR_1(IgniteError::IGNITE_ERR_BINARY, "Field name cannot be NULL.");
-                    }
-
-                    return type.GetFieldId(name);
                 }
             private:
                 /** Actual type.  */

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import template from './ui-ace-pom.jade!';
+import templateUrl from './ui-ace-pom.jade';
 import controller from './ui-ace-pom.controller';
 
 export default ['igniteUiAcePom', [() => {
@@ -33,7 +33,7 @@ export default ['igniteUiAcePom', [() => {
             cluster: '='
         },
         link,
-        template,
+        templateUrl,
         controller,
         controllerAs: 'ctrl',
         require: ['?^igniteUiAceTabs']

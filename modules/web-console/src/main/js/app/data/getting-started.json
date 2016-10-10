@@ -81,7 +81,7 @@
           "</div>",
           "<div class='col-xs-5'>",
           " <ul>",
-          "  <li>Preview XML Configuration</li>",
+          "  <li>Preview XML configuration</li>",
           "  <li>Preview code configuration</li>",
           "  <li>Preview Docker file</li>",
           "  <li>Preview POM dependencies</li>",

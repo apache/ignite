@@ -273,15 +273,6 @@ public interface CacheQuery<T> {
     public <R> CacheQueryFuture<R> execute(IgniteReducer<T, R> rmtReducer, @Nullable Object... args);
 
     /**
-     * Executes the query the same way as {@link #execute(Object...)} method but transforms result remotely.
-     *
-     * @param rmtTransform Remote transformer.
-     * @param args Optional arguments.
-     * @return Future for the query result.
-     */
-    public <R> CacheQueryFuture<R> execute(IgniteClosure<T, R> rmtTransform, @Nullable Object... args);
-
-    /**
      * Gets metrics for this query.
      *
      * @return Query metrics.
@@ -296,5 +287,5 @@ public interface CacheQuery<T> {
     /**
      * @return Scan query iterator.
      */
-    public <R extends Map.Entry> GridCloseableIterator<R> executeScanQuery() throws IgniteCheckedException;
+    public GridCloseableIterator executeScanQuery() throws IgniteCheckedException;
 }

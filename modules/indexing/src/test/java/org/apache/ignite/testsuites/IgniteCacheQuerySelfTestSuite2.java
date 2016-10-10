@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.reducefields.GridCacheReduceF
 import org.apache.ignite.internal.processors.query.h2.sql.BaseH2CompareQueryTest;
 import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryTest;
 import org.apache.ignite.spi.communication.tcp.GridOrderedMessageCancelSelfTest;
+import org.apache.ignite.testframework.IgniteTestSuite;
 
 /**
  * Test suite for cache queries.
@@ -57,7 +58,7 @@ public class IgniteCacheQuerySelfTestSuite2 extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Cache Queries Test Suite 2");
+        TestSuite suite = new IgniteTestSuite("Ignite Cache Queries Test Suite 2");
 
         // Scan queries.
         suite.addTestSuite(CacheScanPartitionQueryFallbackSelfTest.class);

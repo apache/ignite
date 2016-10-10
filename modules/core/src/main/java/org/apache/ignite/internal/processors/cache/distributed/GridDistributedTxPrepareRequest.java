@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -153,6 +154,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
     /**
      * @param tx Cache transaction.
+     * @param timeout Transactions timeout.
      * @param reads Read entries.
      * @param writes Write entries.
      * @param txNodes Transaction nodes mapping.
@@ -161,6 +163,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      */
     public GridDistributedTxPrepareRequest(
         IgniteInternalTx tx,
+        long timeout,
         @Nullable Collection<IgniteTxEntry> reads,
         Collection<IgniteTxEntry> writes,
         Map<UUID, Collection<UUID>> txNodes,
@@ -173,12 +176,12 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         threadId = tx.threadId();
         concurrency = tx.concurrency();
         isolation = tx.isolation();
-        timeout = tx.timeout();
         invalidate = tx.isInvalidate();
         txSize = tx.size();
         sys = tx.system();
         plc = tx.ioPolicy();
 
+        this.timeout = timeout;
         this.reads = reads;
         this.writes = writes;
         this.txNodes = txNodes;
@@ -377,6 +380,11 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo || forceAddDepInfo;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+        return ctx.txPrepareMessageLogger();
     }
 
     /** {@inheritDoc} */
