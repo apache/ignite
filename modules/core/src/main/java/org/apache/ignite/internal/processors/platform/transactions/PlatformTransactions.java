@@ -190,6 +190,8 @@ public class PlatformTransactions extends PlatformAbstractTarget {
             case OP_RESET_METRICS:
                 txs.resetMetrics();
 
+                break;
+
             case OP_STATE:
                 return tx(val).state().ordinal();
         }
@@ -243,9 +245,10 @@ public class PlatformTransactions extends PlatformAbstractTarget {
 
                 writer.writeLong(id);
 
-                break;
+                return;
             }
         }
+
         super.processInStreamOutStream(type, reader, writer);
     }
 
