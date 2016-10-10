@@ -72,6 +72,15 @@ public class PlatformEvents extends PlatformAbstractTarget {
     private static final int OP_WITH_ASYNC = 11;
 
     /** */
+    private static final int OP_IS_ENABLED = 12;
+
+    /** */
+    private static final int OP_LOCAL_LISTEN = 13;
+
+    /** */
+    private static final int OP_STOP_LOCAL_LISTEN = 14;
+
+    /** */
     private final IgniteEvents events;
 
     /** */
@@ -95,38 +104,6 @@ public class PlatformEvents extends PlatformAbstractTarget {
 
         eventResWriter = new EventResultWriter(platformCtx);
         eventColResWriter = new EventCollectionResultWriter(platformCtx);
-    }
-
-    /**
-     * Adds an event listener for local events.
-     *
-     * @param hnd Interop listener handle.
-     * @param type Event type.
-     */
-    @SuppressWarnings({"unchecked"})
-    public void localListen(long hnd, int type) {
-        events.localListen(localFilter(hnd), type);
-    }
-
-    /**
-     * Removes an event listener for local events.
-     *
-     * @param hnd Interop listener handle.
-     */
-    @SuppressWarnings({"UnusedDeclaration", "unchecked"})
-    public boolean stopLocalListen(long hnd) {
-        return events.stopLocalListen(localFilter(hnd));
-    }
-
-    /**
-     * Check if event is enabled.
-     *
-     * @param type Event type.
-     * @return {@code True} if event of passed in type is enabled.
-     */
-    @SuppressWarnings("UnusedDeclaration")
-    public boolean isEnabled(int type) {
-        return events.isEnabled(type);
     }
 
     /** {@inheritDoc} */
@@ -273,6 +250,26 @@ public class PlatformEvents extends PlatformAbstractTarget {
 
         return super.processOutObject(type);
     }
+
+    /** {@inheritDoc} */
+    @Override protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        switch (type) {
+            case OP_IS_ENABLED:
+                return events.isEnabled((int)val) ? TRUE : FALSE;
+
+            case OP_LOCAL_LISTEN:
+                events.localListen(localFilter(val), type);
+
+                return TRUE;
+
+            case OP_STOP_LOCAL_LISTEN:
+                return events.stopLocalListen(localFilter(val)) ? TRUE : FALSE;
+        }
+
+        return super.processInLongOutLong(type, val);
+    }
+
+
 
     /** {@inheritDoc} */
     @Override protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {

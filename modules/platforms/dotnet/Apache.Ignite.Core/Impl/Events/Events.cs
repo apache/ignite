@@ -53,7 +53,10 @@ namespace Apache.Ignite.Core.Impl.Events
             EnableLocal = 8,
             DisableLocal = 9,
             GetEnabledEvents = 10,
-            WithAsync = 11
+            WithAsync = 11,
+            IsEnabled = 12,
+            LocalListen = 13,
+            StopLocalListen = 14
         }
 
         /** Map from user func to local wrapper, needed for invoke/unsubscribe. */
