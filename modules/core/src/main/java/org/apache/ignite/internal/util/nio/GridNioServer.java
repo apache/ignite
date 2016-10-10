@@ -1398,6 +1398,9 @@ public class GridNioServer<T> {
         /** Worker index. */
         private final int idx;
 
+        /** {@code True} if calls 'selector.select'. */
+        private volatile boolean select;
+
         /**
          * @param idx Index of this worker in server's array.
          * @param gridName Grid name.
@@ -1498,7 +1501,8 @@ public class GridNioServer<T> {
         private void offer(SessionChangeRequest req) {
             changeReqs.offer(req);
 
-            selector.wakeup();
+            if (select)
+                selector.wakeup();
         }
 
         /**
@@ -1595,13 +1599,22 @@ public class GridNioServer<T> {
                         }
                     }
 
-                    // Wake up every 2 seconds to check if closed.
-                    if (selector.select(2000) > 0) {
-                        // Walk through the ready keys collection and process network events.
-                        if (selectedKeys == null)
-                            processSelectedKeys(selector.selectedKeys());
-                        else
-                            processSelectedKeysOptimized(selectedKeys.flip());
+                    select = true;
+
+                    try {
+                        if (changeReqs.isEmpty()) {
+                            // Wake up every 2 seconds to check if closed.
+                            if (selector.select(2000) > 0) {
+                                // Walk through the ready keys collection and process network events.
+                                if (selectedKeys == null)
+                                    processSelectedKeys(selector.selectedKeys());
+                                else
+                                    processSelectedKeysOptimized(selectedKeys.flip());
+                            }
+                        }
+                    }
+                    finally {
+                        select = false;
                     }
 
                     long now = U.currentTimeMillis();
