@@ -176,22 +176,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteDestroyJvm")]
         public static extern void DestroyJvm(void* ctx);
 
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteServicesWithAsync")]
-        public static extern void* ServicesWithAsync(void* ctx, void* target);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteServicesWithServerKeepPortable")]
-        public static extern void* ServicesWithServerKeepBinary(void* ctx, void* target);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteServicesCancel")]
-        public static extern long ServicesCancel(void* ctx, void* target, char* name);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteServicesCancelAll")]
-        public static extern long ServicesCancelAll(void* ctx, void* target);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteServicesGetServiceProxy")]
-        public static extern void* ServicesGetServiceProxy(void* ctx, void* target, char* name,
-            [MarshalAs(UnmanagedType.U1)] bool sticky);
-
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicLongGet")]
         public static extern long AtomicLongGet(void* ctx, void* target);
 

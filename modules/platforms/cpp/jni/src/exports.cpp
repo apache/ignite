@@ -218,26 +218,6 @@ extern "C" {
         ctx->DestroyJvm();
     }
 
-	void* IGNITE_CALL IgniteServicesWithAsync(gcj::JniContext* ctx, void* obj) {
-		return ctx->ServicesWithAsync(static_cast<jobject>(obj));
-    }
-
-    void* IGNITE_CALL IgniteServicesWithServerKeepPortable(gcj::JniContext* ctx, void* obj) {
-        return ctx->ServicesWithServerKeepPortable(static_cast<jobject>(obj));
-    }
-
-	void IGNITE_CALL IgniteServicesCancel(gcj::JniContext* ctx, void* obj, char* name) {
-		ctx->ServicesCancel(static_cast<jobject>(obj), name);
-    }
-
-	void IGNITE_CALL IgniteServicesCancelAll(gcj::JniContext* ctx, void* obj) {
-		ctx->ServicesCancelAll(static_cast<jobject>(obj));
-    }
-
-	void* IGNITE_CALL IgniteServicesGetServiceProxy(gcj::JniContext* ctx, void* obj, char* name, bool sticky) {
-		return ctx->ServicesGetServiceProxy(static_cast<jobject>(obj), name, sticky);
-    }
-
     long long IGNITE_CALL IgniteAtomicLongGet(gcj::JniContext* ctx, void* obj) {
         return ctx->AtomicLongGet(static_cast<jobject>(obj));
     }

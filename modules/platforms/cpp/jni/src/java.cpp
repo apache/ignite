@@ -329,13 +329,6 @@ namespace ignite
             JniMethod M_PLATFORM_IGNITION_STOP = JniMethod("stop", "(Ljava/lang/String;Z)Z", true);
             JniMethod M_PLATFORM_IGNITION_STOP_ALL = JniMethod("stopAll", "(Z)V", true);
 
-            const char* C_PLATFORM_SERVICES = "org/apache/ignite/internal/processors/platform/services/PlatformServices";
-			JniMethod M_PLATFORM_SERVICES_WITH_ASYNC = JniMethod("withAsync", "()Lorg/apache/ignite/internal/processors/platform/services/PlatformServices;", false);
-			JniMethod M_PLATFORM_SERVICES_WITH_SERVER_KEEP_PORTABLE = JniMethod("withServerKeepBinary", "()Lorg/apache/ignite/internal/processors/platform/services/PlatformServices;", false);
-			JniMethod M_PLATFORM_SERVICES_CANCEL = JniMethod("cancel", "(Ljava/lang/String;)V", false);
-			JniMethod M_PLATFORM_SERVICES_CANCEL_ALL = JniMethod("cancelAll", "()V", false);
-			JniMethod M_PLATFORM_SERVICES_SERVICE_PROXY = JniMethod("serviceProxy", "(Ljava/lang/String;Z)Ljava/lang/Object;", false);
-
             const char* C_PLATFORM_ATOMIC_LONG = "org/apache/ignite/internal/processors/platform/datastructures/PlatformAtomicLong";
             JniMethod M_PLATFORM_ATOMIC_LONG_GET = JniMethod("get", "()J", false);
             JniMethod M_PLATFORM_ATOMIC_LONG_INCREMENT_AND_GET = JniMethod("incrementAndGet", "()J", false);
@@ -521,13 +514,6 @@ namespace ignite
 
             void JniMembers::Initialize(JNIEnv* env) {
                 c_IgniteException = FindClass(env, C_IGNITE_EXCEPTION);
-
-				c_PlatformServices = FindClass(env, C_PLATFORM_SERVICES);
-				m_PlatformServices_withAsync = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_WITH_ASYNC);
-				m_PlatformServices_withServerKeepPortable = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_WITH_SERVER_KEEP_PORTABLE);
-				m_PlatformServices_cancel = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_CANCEL);
-				m_PlatformServices_cancelAll = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_CANCEL_ALL);
-				m_PlatformServices_serviceProxy = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_SERVICE_PROXY);
 
                 c_PlatformIgnition = FindClass(env, C_PLATFORM_IGNITION);
                 m_PlatformIgnition_start = FindMethod(env, c_PlatformIgnition, M_PLATFORM_IGNITION_START);
@@ -1483,62 +1469,6 @@ namespace ignite
 
                 return LocalToGlobal(env, res);
             }
-
-			jobject JniContext::ServicesWithAsync(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformServices_withAsync);
-
-				ExceptionCheck(env);
-
-				return LocalToGlobal(env, res);
-            }
-
-            jobject JniContext::ServicesWithServerKeepPortable(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformServices_withServerKeepPortable);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, res);
-            }
-
-			void JniContext::ServicesCancel(jobject obj, char* name) {
-                JNIEnv* env = Attach();
-
-				jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformServices_cancel, name0);
-
-				if (name0)
-					env->DeleteLocalRef(name0);
-
-				ExceptionCheck(env);
-            }
-
-			void JniContext::ServicesCancelAll(jobject obj) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformServices_cancelAll);
-
-				ExceptionCheck(env);
-            }
-
-			void* JniContext::ServicesGetServiceProxy(jobject obj, char* name, bool sticky) {
-				JNIEnv* env = Attach();
-
-				jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
-
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformServices_serviceProxy, name0, sticky);
-
-				if (name0)
-					env->DeleteLocalRef(name0);
-
-				ExceptionCheck(env);
-
-				return LocalToGlobal(env, res);;
-			}
 
             long long JniContext::AtomicLongGet(jobject obj)
             {

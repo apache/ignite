@@ -505,53 +505,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #endregion
 
-        #region NATIVE METHODS: SERVICES
-
-        internal static IUnmanagedTarget ServicesWithAsync(IUnmanagedTarget target)
-        {
-            return target.ChangeTarget(JNI.ServicesWithAsync(target.Context, target.Target));
-        }
-
-        internal static IUnmanagedTarget ServicesWithServerKeepBinary(IUnmanagedTarget target)
-        {
-            return target.ChangeTarget(JNI.ServicesWithServerKeepBinary(target.Context, target.Target));
-        }
-
-        internal static void ServicesCancel(IUnmanagedTarget target, string name)
-        {
-            var nameChars = (char*)IgniteUtils.StringToUtf8Unmanaged(name);
-
-            try
-            {
-                JNI.ServicesCancel(target.Context, target.Target, nameChars);
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(new IntPtr(nameChars));
-            }
-        }
-
-        internal static void ServicesCancelAll(IUnmanagedTarget target)
-        {
-            JNI.ServicesCancelAll(target.Context, target.Target);
-        }
-
-        internal static IUnmanagedTarget ServicesGetServiceProxy(IUnmanagedTarget target, string name, bool sticky)
-        {
-            var nameChars = (char*)IgniteUtils.StringToUtf8Unmanaged(name);
-
-            try
-            {
-                return target.ChangeTarget(JNI.ServicesGetServiceProxy(target.Context, target.Target, nameChars, sticky));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(new IntPtr(nameChars));
-            }
-        }
-
-        #endregion
-
         #region NATIVE METHODS: DATA STRUCTURES
 
         internal static long AtomicLongGet(IUnmanagedTarget target)

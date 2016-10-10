@@ -489,17 +489,6 @@ namespace ignite
                 jobject CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr);
 
-                jobject EventsWithAsync(jobject obj);
-                bool EventsStopLocalListen(jobject obj, long long hnd);
-                void EventsLocalListen(jobject obj, long long hnd, int type);
-                bool EventsIsEnabled(jobject obj, int type);
-                
-                jobject ServicesWithAsync(jobject obj);
-                jobject ServicesWithServerKeepPortable(jobject obj);
-                void ServicesCancel(jobject obj, char* name);
-                void ServicesCancelAll(jobject obj);
-                void* ServicesGetServiceProxy(jobject obj, char* name, bool sticky);
-
                 long long AtomicLongGet(jobject obj);
                 long long AtomicLongIncrementAndGet(jobject obj);
                 long long AtomicLongGetAndIncrement(jobject obj);

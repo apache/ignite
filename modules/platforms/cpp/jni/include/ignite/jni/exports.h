@@ -81,12 +81,6 @@ extern "C" {
 
     void IGNITE_CALL IgniteDestroyJvm(gcj::JniContext* ctx);
 
-	void* IGNITE_CALL IgniteServicesWithAsync(gcj::JniContext* ctx, void* obj);
-	void* IGNITE_CALL IgniteServicesWithServerKeepPortable(gcj::JniContext* ctx, void* obj);
-	void IGNITE_CALL IgniteServicesCancel(gcj::JniContext* ctx, void* obj, char* name);
-	void IGNITE_CALL IgniteServicesCancelAll(gcj::JniContext* ctx, void* obj);
-	void* IGNITE_CALL IgniteServicesGetServiceProxy(gcj::JniContext* ctx, void* obj, char* name, bool sticky);
-
     long long IGNITE_CALL IgniteAtomicLongGet(gcj::JniContext* ctx, void* obj);
     long long IGNITE_CALL IgniteAtomicLongIncrementAndGet(gcj::JniContext* ctx, void* obj);
     long long IGNITE_CALL IgniteAtomicLongGetAndIncrement(gcj::JniContext* ctx, void* obj);

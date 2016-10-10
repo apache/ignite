@@ -35,11 +35,6 @@ IgniteCreateContext @84
 IgniteDeleteContext @85 
 IgniteDestroyJvm @86 
 IgniteTargetOutObject @91 
-IgniteServicesWithAsync @92
-IgniteServicesWithServerKeepPortable @93
-IgniteServicesCancel @94
-IgniteServicesCancelAll @95
-IgniteServicesGetServiceProxy @96
 IgniteProcessorExtensions @97
 IgniteProcessorAtomicLong @98
 IgniteAtomicLongGet @99 
