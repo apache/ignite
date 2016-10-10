@@ -149,6 +149,11 @@ public class BasicJdbcDialect implements JdbcDialect {
     }
 
     /** {@inheritDoc} */
+    @Override public String escape(String ident) {
+        return '"' + ident + '"';
+    }
+
+    /** {@inheritDoc} */
     @Override public String loadCacheSelectRangeQuery(String fullTblName, Collection<String> keyCols) {
         String cols = mkString(keyCols, ",");
 
@@ -245,8 +250,7 @@ public class BasicJdbcDialect implements JdbcDialect {
     }
 
     /** {@inheritDoc} */
-    @Override public String mergeQuery(String fullTblName, Collection<String> keyCols,
-        Collection<String> uniqCols) {
+    @Override public String mergeQuery(String fullTblName, Collection<String> keyCols, Collection<String> uniqCols) {
         return "";
     }
 

@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.schema.parser.DbColumn;
 import org.apache.ignite.schema.parser.DbTable;
 
@@ -61,6 +60,9 @@ public class JdbcMetadataDialect extends DatabaseMetadataDialect {
 
     /** Column data type index. */
     private static final int COL_DATA_TYPE_IDX = 5;
+
+    /** Column type name index. */
+    private static final int COL_TYPE_NAME_IDX = 6;
 
     /** Column nullable index. */
     private static final int COL_NULLABLE_IDX = 11;
@@ -116,10 +118,12 @@ public class JdbcMetadataDialect extends DatabaseMetadataDialect {
 
         Set<String> sys = systemSchemas();
 
-        Collection<DbTable> tbls = new ArrayList<>();
+        Collection<String> unsignedTypes = unsignedTypes(dbMeta);
 
         if (schemas.isEmpty())
             schemas.add(null);
+
+        Collection<DbTable> tbls = new ArrayList<>();
 
         for (String toSchema: schemas) {
             try (ResultSet tblsRs = dbMeta.getTables(useCatalog() ? toSchema : null, useSchema() ? toSchema : null, "%",
@@ -136,24 +140,25 @@ public class JdbcMetadataDialect extends DatabaseMetadataDialect {
                     if (sys.contains(schema))
                         continue;
 
-                    Set<String> pkCols = new HashSet<>();
+                    Collection<String> pkCols = new HashSet<>();
 
                     try (ResultSet pkRs = dbMeta.getPrimaryKeys(tblCatalog, tblSchema, tblName)) {
                         while (pkRs.next())
                             pkCols.add(pkRs.getString(PK_COL_NAME_IDX));
                     }
 
-                    List<DbColumn> cols = new ArrayList<>();
+                    Collection<DbColumn> cols = new ArrayList<>();
 
                     try (ResultSet colsRs = dbMeta.getColumns(tblCatalog, tblSchema, tblName, null)) {
                         while (colsRs.next()) {
                             String colName = colsRs.getString(COL_NAME_IDX);
 
                             cols.add(new DbColumn(
-                                    colName,
-                                    colsRs.getInt(COL_DATA_TYPE_IDX),
-                                    pkCols.contains(colName),
-                                    colsRs.getInt(COL_NULLABLE_IDX) == DatabaseMetaData.columnNullable));
+                                colName,
+                                colsRs.getInt(COL_DATA_TYPE_IDX),
+                                pkCols.contains(colName),
+                                colsRs.getInt(COL_NULLABLE_IDX) == DatabaseMetaData.columnNullable,
+                                unsignedTypes.contains(colsRs.getString(COL_TYPE_NAME_IDX))));
                         }
                     }
 

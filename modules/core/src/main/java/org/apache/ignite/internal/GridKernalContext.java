@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
+import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
 import org.apache.ignite.internal.processors.igfs.IgfsHelper;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
@@ -283,6 +284,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Hadoop processor.
      */
     public HadoopProcessorAdapter hadoop();
+
+    /**
+     * Gets Hadoop helper.
+     *
+     * @return Hadoop helper.
+     */
+    public HadoopHelper hadoopHelper();
 
     /**
      * Gets utility cache pool.
