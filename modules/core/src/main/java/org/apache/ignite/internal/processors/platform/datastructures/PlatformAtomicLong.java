@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.datastructures;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicLongImpl;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
@@ -27,6 +28,42 @@ import org.apache.ignite.internal.processors.platform.PlatformContext;
 public class PlatformAtomicLong extends PlatformAbstractTarget {
     /** */
     private final GridCacheAtomicLongImpl atomicLong;
+
+    /** */
+    private static final int OP_ADD_AND_GET = 1;
+
+    /** */
+    private static final int OP_CLOSE = 2;
+
+    /** */
+    private static final int OP_COMPARE_AND_SET = 3;
+
+    /** */
+    private static final int OP_COMPARE_AND_SET_AND_GET = 4;
+
+    /** */
+    private static final int OP_DECREMENT_AND_GET = 5;
+
+    /** */
+    private static final int OP_GET = 6;
+
+    /** */
+    private static final int OP_GET_AND_ADD = 7;
+
+    /** */
+    private static final int OP_GET_AND_DECREMENT = 8;
+
+    /** */
+    private static final int OP_GET_AND_INCREMENT = 9;
+
+    /** */
+    private static final int OP_GET_AND_SET = 10;
+
+    /** */
+    private static final int OP_INCREMENT_AND_GET = 11;
+
+    /** */
+    private static final int OP_IS_CLOSED = 12;
 
     /**
      * Ctor.
@@ -39,6 +76,11 @@ public class PlatformAtomicLong extends PlatformAbstractTarget {
         assert atomicLong != null;
 
         this.atomicLong = atomicLong;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        return super.processInLongOutLong(type, val);
     }
 
     /**

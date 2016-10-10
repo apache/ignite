@@ -32,6 +32,23 @@ namespace Apache.Ignite.Core.Impl.DataStructures
         /** */
         private readonly string _name;
 
+        /** Operation codes. */
+        private enum Op
+        {
+            AddAndGet = 1,
+            Close = 2,
+            CompareAndSet = 3,
+            CompareAndSetAndGet = 4,
+            DecrementAndGet = 5,
+            Get = 6,
+            GetAndAdd = 7,
+            GetAndDecrement = 8,
+            GetAndIncrement = 9,
+            GetAndSet = 10,
+            IncrementAndGet = 11,
+            IsClosed = 12
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="AtomicLong"/> class.
         /// </summary>
