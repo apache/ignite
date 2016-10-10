@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
@@ -47,6 +48,33 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     public static final int OP_METRICS = 2;
 
     /** */
+    public static final int OP_START = 3;
+
+    /** */
+    public static final int OP_COMMIT = 4;
+
+    /** */
+    public static final int OP_ROLLBACK = 5;
+
+    /** */
+    public static final int OP_CLOSE = 6;
+
+    /** */
+    public static final int OP_STATE = 7;
+
+    /** */
+    public static final int OP_SET_ROLLBACK_ONLY = 8;
+
+    /** */
+    public static final int OP_COMMIT_ASYNC = 9;
+
+    /** */
+    public static final int OP_ROLLBACK_ASYNC = 10;
+
+    /** */
+    public static final int OP_RESET_METRICS = 11;
+
+    /** */
     private final IgniteTransactions txs;
 
     /** Map with currently active transactions. */
@@ -64,27 +92,6 @@ public class PlatformTransactions extends PlatformAbstractTarget {
         super(platformCtx);
 
         txs = platformCtx.kernalContext().grid().transactions();
-    }
-
-    /**
-     * @param concurrency Concurrency.
-     * @param isolation Isolation.
-     * @param timeout Timeout
-     * @param txSize Number of entries participating in transaction.
-     * @return Transaction thread ID.
-     */
-    public long txStart(int concurrency, int isolation, long timeout, int txSize) {
-        TransactionConcurrency txConcurrency = TransactionConcurrency.fromOrdinal(concurrency);
-
-        assert txConcurrency != null;
-
-        TransactionIsolation txIsolation = TransactionIsolation.fromOrdinal(isolation);
-
-        assert txIsolation != null;
-
-        Transaction tx = txs.txStart(txConcurrency, txIsolation);
-
-        return registerTx(tx);
     }
 
     /**
@@ -228,6 +235,27 @@ public class PlatformTransactions extends PlatformAbstractTarget {
         assert tx != null : "Transaction not found for ID: " + id;
 
         return tx;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+        switch (type) {
+            case OP_START: {
+                TransactionConcurrency txConcurrency = TransactionConcurrency.fromOrdinal(reader.readInt());
+
+                assert txConcurrency != null;
+
+                TransactionIsolation txIsolation = TransactionIsolation.fromOrdinal(reader.readInt());
+
+                assert txIsolation != null;
+
+                Transaction tx = txs.txStart(txConcurrency, txIsolation, reader.readLong(), reader.readInt());
+
+                return registerTx(tx);
+            }
+        }
+
+        return super.processInStreamOutLong(type, reader);
     }
 
     /** {@inheritDoc} */
