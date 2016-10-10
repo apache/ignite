@@ -95,26 +95,6 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     }
 
     /**
-     * @param id Transaction ID.
-     * @return Transaction state.
-     */
-    public int txState(long id) {
-        Transaction tx = tx(id);
-
-        return tx.state().ordinal();
-    }
-
-    /**
-     * @param id Transaction ID.
-     * @return {@code True} if rollback only flag was set.
-     */
-    public boolean txSetRollbackOnly(long id) {
-        Transaction tx = tx(id);
-
-        return tx.setRollbackOnly();
-    }
-
-    /**
      * Commits tx in async mode.
      */
     public void txCommitAsync(final long txId, final long futId) {
@@ -149,13 +129,6 @@ public class PlatformTransactions extends PlatformAbstractTarget {
         });
 
         PlatformFutureUtils.listen(platformCtx, fut, futId, PlatformFutureUtils.TYP_OBJ, this);
-    }
-
-    /**
-     * Resets transaction metrics.
-     */
-    public void resetMetrics() {
-       txs.resetMetrics();
     }
 
     /**
@@ -232,6 +205,15 @@ public class PlatformTransactions extends PlatformAbstractTarget {
 
             case OP_CLOSE:
                 return txClose(val);
+
+            case OP_SET_ROLLBACK_ONLY:
+                return tx(val).setRollbackOnly() ? TRUE : FALSE;
+
+            case OP_RESET_METRICS:
+                txs.resetMetrics();
+
+            case OP_STATE:
+                return tx(val).state().ordinal();
         }
 
         return super.processInLongOutLong(type, val);
