@@ -67,6 +67,21 @@ public class PlatformServices extends PlatformAbstractTarget {
     private static final int OP_DESCRIPTORS = 5;
 
     /** */
+    private static final int OP_WITH_ASYNC = 6;
+
+    /** */
+    private static final int OP_WITH_SERVER_KEEP_BINARY = 7;
+
+    /** */
+    private static final int OP_SERVICE_PROXY = 8;
+
+    /** */
+    private static final int OP_CANCEL = 9;
+
+    /** */
+    private static final int OP_CANCEL_ALL = 10;
+
+    /** */
     private static final byte PLATFORM_JAVA = 0;
 
     /** */
@@ -96,18 +111,6 @@ public class PlatformServices extends PlatformAbstractTarget {
 
         this.services = services;
         this.srvKeepBinary = srvKeepBinary;
-    }
-
-    /**
-     * Gets services with asynchronous mode enabled.
-     *
-     * @return Services with asynchronous mode enabled.
-     */
-    public PlatformServices withAsync() {
-        if (services.isAsync())
-            return this;
-
-        return new PlatformServices(platformCtx, services.withAsync(), srvKeepBinary);
     }
 
     /**
@@ -313,6 +316,19 @@ public class PlatformServices extends PlatformAbstractTarget {
             default:
                 super.processOutStream(type, writer);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Object processOutObject(int type) throws IgniteCheckedException {
+        switch (type) {
+            case OP_WITH_ASYNC:
+                if (services.isAsync())
+                    return this;
+
+                return new PlatformServices(platformCtx, services.withAsync(), srvKeepBinary);
+        }
+
+        return super.processOutObject(type);
     }
 
     /** <inheritDoc /> */
