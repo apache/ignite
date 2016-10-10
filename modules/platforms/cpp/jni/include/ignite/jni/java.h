@@ -285,17 +285,6 @@ namespace ignite
                 jmethodID m_PlatformTarget_listenFutureAndGet;
                 jmethodID m_PlatformTarget_listenFutureForOperationAndGet;
 
-                jclass c_PlatformTransactions;
-                jmethodID m_PlatformTransactions_txStart;
-                jmethodID m_PlatformTransactions_txCommit;
-                jmethodID m_PlatformTransactions_txCommitAsync;
-                jmethodID m_PlatformTransactions_txRollback;
-                jmethodID m_PlatformTransactions_txRollbackAsync;
-                jmethodID m_PlatformTransactions_txState;
-                jmethodID m_PlatformTransactions_txSetRollbackOnly;
-                jmethodID m_PlatformTransactions_txClose;
-                jmethodID m_PlatformTransactions_resetMetrics;
-
                 jclass c_PlatformUtils;
                 jmethodID m_PlatformUtils_reallocate;
                 jmethodID m_PlatformUtils_errData;
@@ -505,16 +494,6 @@ namespace ignite
                 
                 jobject CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr);
-
-                long long TransactionsStart(jobject obj, int concurrency, int isolation, long long timeout, int txSize, JniErrorInfo* errInfo = NULL);
-                int TransactionsCommit(jobject obj, long long id, JniErrorInfo* errInfo = NULL);
-                void TransactionsCommitAsync(jobject obj, long long id, long long futId);
-                int TransactionsRollback(jobject obj, long long id, JniErrorInfo* errInfo = NULL);
-                void TransactionsRollbackAsync(jobject obj, long long id, long long futId);
-                int TransactionsClose(jobject obj, long long id, JniErrorInfo* errInfo = NULL);
-                int TransactionsState(jobject obj, long long id, JniErrorInfo* errInfo = NULL);
-                bool TransactionsSetRollbackOnly(jobject obj, long long id, JniErrorInfo* errInfo = NULL);
-                void TransactionsResetMetrics(jobject obj);
 
                 jobject EventsWithAsync(jobject obj);
                 bool EventsStopLocalListen(jobject obj, long long hnd);

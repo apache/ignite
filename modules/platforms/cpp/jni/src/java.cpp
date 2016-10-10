@@ -239,17 +239,6 @@ namespace ignite
             JniMethod M_PLATFORM_DATA_STREAMER_GET_PER_NODE_PARALLEL_OPS = JniMethod("perNodeParallelOperations", "()I", false);
             JniMethod M_PLATFORM_DATA_STREAMER_SET_PER_NODE_PARALLEL_OPS = JniMethod("perNodeParallelOperations", "(I)V", false);
 
-            const char* C_PLATFORM_TRANSACTIONS = "org/apache/ignite/internal/processors/platform/transactions/PlatformTransactions";
-            JniMethod M_PLATFORM_TRANSACTIONS_TX_START = JniMethod("txStart", "(IIJI)J", false);
-            JniMethod M_PLATFORM_TRANSACTIONS_TX_COMMIT = JniMethod("txCommit", "(J)I", false);
-            JniMethod M_PLATFORM_TRANSACTIONS_TX_ROLLBACK = JniMethod("txRollback", "(J)I", false);
-            JniMethod M_PLATFORM_TRANSACTIONS_TX_COMMIT_ASYNC = JniMethod("txCommitAsync", "(JJ)V", false);
-            JniMethod M_PLATFORM_TRANSACTIONS_TX_ROLLBACK_ASYNC = JniMethod("txRollbackAsync", "(JJ)V", false);
-            JniMethod M_PLATFORM_TRANSACTIONS_TX_STATE = JniMethod("txState", "(J)I", false);
-            JniMethod M_PLATFORM_TRANSACTIONS_TX_SET_ROLLBACK_ONLY = JniMethod("txSetRollbackOnly", "(J)Z", false);
-            JniMethod M_PLATFORM_TRANSACTIONS_TX_CLOSE = JniMethod("txClose", "(J)I", false);
-            JniMethod M_PLATFORM_TRANSACTIONS_RESET_METRICS = JniMethod("resetMetrics", "()V", false);
-
             const char* C_PLATFORM_CALLBACK_UTILS = "org/apache/ignite/internal/processors/platform/callback/PlatformCallbackUtils";
 
             JniMethod M_PLATFORM_CALLBACK_UTILS_CACHE_STORE_CREATE = JniMethod("cacheStoreCreate", "(JJ)J", true);
@@ -599,17 +588,6 @@ namespace ignite
                 m_PlatformTarget_listenFutureAndGet = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_LISTEN_FUTURE_AND_GET);
                 m_PlatformTarget_listenFutureForOperationAndGet = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_LISTEN_FOR_OPERATION_AND_GET);
 
-                c_PlatformTransactions = FindClass(env, C_PLATFORM_TRANSACTIONS);
-                m_PlatformTransactions_txStart = FindMethod(env, c_PlatformTransactions, M_PLATFORM_TRANSACTIONS_TX_START);
-                m_PlatformTransactions_txCommit = FindMethod(env, c_PlatformTransactions, M_PLATFORM_TRANSACTIONS_TX_COMMIT);
-                m_PlatformTransactions_txRollback = FindMethod(env, c_PlatformTransactions, M_PLATFORM_TRANSACTIONS_TX_ROLLBACK);
-                m_PlatformTransactions_txCommitAsync = FindMethod(env, c_PlatformTransactions, M_PLATFORM_TRANSACTIONS_TX_COMMIT_ASYNC);
-                m_PlatformTransactions_txRollbackAsync = FindMethod(env, c_PlatformTransactions, M_PLATFORM_TRANSACTIONS_TX_ROLLBACK_ASYNC);
-                m_PlatformTransactions_txState = FindMethod(env, c_PlatformTransactions, M_PLATFORM_TRANSACTIONS_TX_STATE);
-                m_PlatformTransactions_txSetRollbackOnly = FindMethod(env, c_PlatformTransactions, M_PLATFORM_TRANSACTIONS_TX_SET_ROLLBACK_ONLY);
-                m_PlatformTransactions_txClose = FindMethod(env, c_PlatformTransactions, M_PLATFORM_TRANSACTIONS_TX_CLOSE);
-                m_PlatformTransactions_resetMetrics = FindMethod(env, c_PlatformTransactions, M_PLATFORM_TRANSACTIONS_RESET_METRICS);
-
                 c_PlatformUtils = FindClass(env, C_PLATFORM_UTILS);
                 m_PlatformUtils_reallocate = FindMethod(env, c_PlatformUtils, M_PLATFORM_UTILS_REALLOC);
                 m_PlatformUtils_errData = FindMethod(env, c_PlatformUtils, M_PLATFORM_UTILS_ERR_DATA);
@@ -656,7 +634,6 @@ namespace ignite
                 DeleteClass(env, c_PlatformIgnition);
                 DeleteClass(env, c_PlatformProcessor);
                 DeleteClass(env, c_PlatformTarget);
-                DeleteClass(env, c_PlatformTransactions);
                 DeleteClass(env, c_PlatformUtils);
             }
 
@@ -1518,93 +1495,6 @@ namespace ignite
                 ExceptionCheck(env);
 
                 return LocalToGlobal(env, res);
-            }
-
-            long long JniContext::TransactionsStart(jobject obj, int concurrency,
-                int isolation, long long timeout, int txSize, JniErrorInfo* errInfo) {
-                JNIEnv* env = Attach();
-
-                long long id = env->CallLongMethod(obj,
-                    jvm->GetMembers().m_PlatformTransactions_txStart,
-                    concurrency, isolation, timeout, txSize);
-
-                ExceptionCheck(env, errInfo);
-
-                return id;
-            }
-
-            int JniContext::TransactionsCommit(jobject obj, long long id, JniErrorInfo* errInfo) {
-                JNIEnv* env = Attach();
-
-                int res = env->CallIntMethod(obj, jvm->GetMembers().m_PlatformTransactions_txCommit, id);
-
-                ExceptionCheck(env, errInfo);
-
-                return res;
-            }
-
-            void JniContext::TransactionsCommitAsync(jobject obj, long long id, long long futId) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformTransactions_txCommitAsync, id, futId);
-
-                ExceptionCheck(env);
-            }
-
-            int JniContext::TransactionsRollback(jobject obj, long long id, JniErrorInfo* errInfo) {
-                JNIEnv* env = Attach();
-
-                int res = env->CallIntMethod(obj, jvm->GetMembers().m_PlatformTransactions_txRollback, id);
-
-                ExceptionCheck(env, errInfo);
-
-                return res;
-            }
-
-            void JniContext::TransactionsRollbackAsync(jobject obj, long long id, long long futId) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformTransactions_txRollbackAsync, id, futId);
-
-                ExceptionCheck(env);
-            }
-
-            int JniContext::TransactionsClose(jobject obj, long long id, JniErrorInfo* errInfo) {
-                JNIEnv* env = Attach();
-
-                jint state = env->CallIntMethod(obj, jvm->GetMembers().m_PlatformTransactions_txClose, id);
-
-                ExceptionCheck(env, errInfo);
-
-                return state;
-            }
-
-            int JniContext::TransactionsState(jobject obj, long long id, JniErrorInfo* errInfo) {
-                JNIEnv* env = Attach();
-
-                jint state = env->CallIntMethod(obj, jvm->GetMembers().m_PlatformTransactions_txState, id);
-
-                ExceptionCheck(env, errInfo);
-
-                return state;
-            }
-
-            bool JniContext::TransactionsSetRollbackOnly(jobject obj, long long id, JniErrorInfo* errInfo) {
-                JNIEnv* env = Attach();
-
-                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformTransactions_txSetRollbackOnly, id);
-
-                ExceptionCheck(env, errInfo);
-
-                return res != 0;
-            }
-
-            void JniContext::TransactionsResetMetrics(jobject obj) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformTransactions_resetMetrics);
-
-                ExceptionCheck(env);
             }
 
             jobject JniContext::EventsWithAsync(jobject obj) {

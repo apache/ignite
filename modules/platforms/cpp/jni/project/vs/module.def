@@ -27,15 +27,6 @@ IgniteTargetInLongOutLong @24
 IgniteProcessorCompute @64 
 IgniteProcessorMessage @65 
 IgniteProcessorEvents @66 
-IgniteTransactionsStart @71 
-IgniteTransactionsCommit @72 
-IgniteTransactionsCommitAsync @73 
-IgniteTransactionsRollback @74 
-IgniteTransactionsRollbackAsync @75 
-IgniteTransactionsClose @76 
-IgniteTransactionsState @77 
-IgniteTransactionsSetRollbackOnly @78 
-IgniteTransactionsResetMetrics @79 
 IgniteAcquire @80 
 IgniteRelease @81 
 IgniteThrowToJava @82 

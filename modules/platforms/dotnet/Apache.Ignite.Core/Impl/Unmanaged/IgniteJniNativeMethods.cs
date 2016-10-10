@@ -161,35 +161,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteRelease")]
         public static extern void Release(void* target);
 
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTransactionsStart")]
-        public static extern long TxStart(void* ctx, void* target, int concurrency, int isolation, long timeout,
-            int txSize);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTransactionsCommit")]
-        public static extern int TxCommit(void* ctx, void* target, long id);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTransactionsCommitAsync")]
-        public static extern void TxCommitAsync(void* ctx, void* target, long id, long futId);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTransactionsRollback")]
-        public static extern int TxRollback(void* ctx, void* target, long id);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTransactionsRollbackAsync")]
-        public static extern void TxRollbackAsync(void* ctx, void* target, long id, long futId);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTransactionsClose")]
-        public static extern int TxClose(void* ctx, void* target, long id);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTransactionsState")]
-        public static extern int TxState(void* ctx, void* target, long id);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTransactionsSetRollbackOnly")]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool TxSetRollbackOnly(void* ctx, void* target, long id);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTransactionsResetMetrics")]
-        public static extern void TxResetMetrics(void* ctx, void* target);
-
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteThrowToJava")]
         public static extern void ThrowToJava(void* ctx, char* msg);
 

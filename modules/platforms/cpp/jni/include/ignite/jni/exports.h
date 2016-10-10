@@ -69,16 +69,6 @@ extern "C" {
     void* IGNITE_CALL IgniteTargetListenFutureAndGet(gcj::JniContext* ctx, void* obj, long long futId, int typ);
     void* IGNITE_CALL IgniteTargetListenFutureForOperationAndGet(gcj::JniContext* ctx, void* obj, long long futId, int typ, int opId);
 
-    long long IGNITE_CALL IgniteTransactionsStart(gcj::JniContext* ctx, void* obj, int concurrency, int isolation, long long timeout, int txSize);
-    int IGNITE_CALL IgniteTransactionsCommit(gcj::JniContext* ctx, void* obj, long long id);
-    void IGNITE_CALL IgniteTransactionsCommitAsync(gcj::JniContext* ctx, void* obj, long long id, long long futId);
-    int IGNITE_CALL IgniteTransactionsRollback(gcj::JniContext* ctx, void* obj, long long id);
-    void IGNITE_CALL IgniteTransactionsRollbackAsync(gcj::JniContext* ctx, void* obj, long long id, long long futId);
-    int IGNITE_CALL IgniteTransactionsClose(gcj::JniContext* ctx, void* obj, long long id);
-    int IGNITE_CALL IgniteTransactionsState(gcj::JniContext* ctx, void* obj, long long id);
-    bool IGNITE_CALL IgniteTransactionsSetRollbackOnly(gcj::JniContext* ctx, void* obj, long long id);
-    void IGNITE_CALL IgniteTransactionsResetMetrics(gcj::JniContext* ctx, void* obj);
-
     void* IGNITE_CALL IgniteAcquire(gcj::JniContext* ctx, void* obj);
     void IGNITE_CALL IgniteRelease(void* obj);
 

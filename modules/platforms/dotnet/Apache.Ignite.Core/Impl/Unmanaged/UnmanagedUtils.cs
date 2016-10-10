@@ -446,55 +446,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #endregion
 
-        #region NATIVE METHODS: TRANSACTIONS
-
-        internal static long TransactionsStart(IUnmanagedTarget target, int concurrency, int isolation, long timeout, int txSize)
-        {
-            return JNI.TxStart(target.Context, target.Target, concurrency, isolation, timeout, txSize);
-        }
-
-        internal static int TransactionsCommit(IUnmanagedTarget target, long id)
-        {
-            return JNI.TxCommit(target.Context, target.Target, id);
-        }
-
-        internal static void TransactionsCommitAsync(IUnmanagedTarget target, long id, long futId)
-        {
-            JNI.TxCommitAsync(target.Context, target.Target, id, futId);
-        }
-
-        internal static int TransactionsRollback(IUnmanagedTarget target, long id)
-        {
-            return JNI.TxRollback(target.Context, target.Target, id);
-        }
-
-        internal static void TransactionsRollbackAsync(IUnmanagedTarget target, long id, long futId)
-        {
-            JNI.TxRollbackAsync(target.Context, target.Target, id, futId);
-        }
-
-        internal static int TransactionsClose(IUnmanagedTarget target, long id)
-        {
-            return JNI.TxClose(target.Context, target.Target, id);
-        }
-
-        internal static int TransactionsState(IUnmanagedTarget target, long id)
-        {
-            return JNI.TxState(target.Context, target.Target, id);
-        }
-
-        internal static bool TransactionsSetRollbackOnly(IUnmanagedTarget target, long id)
-        {
-            return JNI.TxSetRollbackOnly(target.Context, target.Target, id);
-        }
-
-        internal static void TransactionsResetMetrics(IUnmanagedTarget target)
-        {
-            JNI.TxResetMetrics(target.Context, target.Target);
-        }
-
-        #endregion
-
         #region NATIVE METHODS: MISCELANNEOUS
 
         internal static void Reallocate(long memPtr, int cap)

@@ -190,42 +190,6 @@ extern "C" {
         return ctx->TargetListenFutureForOperationAndGet(static_cast<jobject>(obj), futId, typ, opId);
     }
 
-    long long IGNITE_CALL IgniteTransactionsStart(gcj::JniContext* ctx, void* obj, int concurrency, int isolation, long long timeout, int txSize) {
-        return ctx->TransactionsStart(static_cast<jobject>(obj), concurrency, isolation, timeout, txSize);
-    }   
-
-    int IGNITE_CALL IgniteTransactionsCommit(gcj::JniContext* ctx, void* obj, long long id) {
-        return ctx->TransactionsCommit(static_cast<jobject>(obj), id);
-    }
-
-    void IGNITE_CALL IgniteTransactionsCommitAsync(gcj::JniContext* ctx, void* obj, long long id, long long futId) {
-        return ctx->TransactionsCommitAsync(static_cast<jobject>(obj), id, futId);
-    }
-
-    int IGNITE_CALL IgniteTransactionsRollback(gcj::JniContext* ctx, void* obj, long long id) {
-        return ctx->TransactionsRollback(static_cast<jobject>(obj), id);
-    }
-
-    void IGNITE_CALL IgniteTransactionsRollbackAsync(gcj::JniContext* ctx, void* obj, long long id, long long futId) {
-        return ctx->TransactionsRollbackAsync(static_cast<jobject>(obj), id, futId);
-    }
-
-    int IGNITE_CALL IgniteTransactionsClose(gcj::JniContext* ctx, void* obj, long long id) {
-        return ctx->TransactionsClose(static_cast<jobject>(obj), id);
-    }
-
-    int IGNITE_CALL IgniteTransactionsState(gcj::JniContext* ctx, void* obj, long long id) {
-        return ctx->TransactionsState(static_cast<jobject>(obj), id);
-    }
-
-    bool IGNITE_CALL IgniteTransactionsSetRollbackOnly(gcj::JniContext* ctx, void* obj, long long id) {
-        return ctx->TransactionsSetRollbackOnly(static_cast<jobject>(obj), id);
-    }
-
-    void IGNITE_CALL IgniteTransactionsResetMetrics(gcj::JniContext* ctx, void* obj) {
-        ctx->TransactionsResetMetrics(static_cast<jobject>(obj));
-    }
-
     void* IGNITE_CALL IgniteAcquire(gcj::JniContext* ctx, void* obj) {
         return ctx->Acquire(static_cast<jobject>(obj));
     }
