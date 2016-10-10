@@ -36,7 +36,35 @@ namespace Apache.Ignite.Core.Impl.Transactions
 
         /** */
         private const int OpMetrics = 2;
-        
+
+        /** */
+        public const int OpStart = 3;
+
+        /** */
+        public const int OpCommit = 4;
+
+        /** */
+        public const int OpRollback = 5;
+
+        /** */
+        public const int OpClose = 6;
+
+        /** */
+        public const int OpState = 7;
+
+        /** */
+        public const int OpSetRollbackOnly = 8;
+
+        /** */
+        public const int OpCommitAsync = 9;
+
+        /** */
+        public const int OpRollbackAsync = 10;
+
+        /** */
+        public const int OpResetMetrics = 11;
+
+
         /** */
         private readonly TransactionConcurrency _dfltConcurrency;
 
@@ -95,8 +123,13 @@ namespace Apache.Ignite.Core.Impl.Transactions
         public ITransaction TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation,
             TimeSpan timeout, int txSize)
         {
-            var id = UU.TransactionsStart(Target, (int)concurrency, (int)isolation, (long)timeout.TotalMilliseconds,
-                txSize);
+            var id = DoOutInOp(OpStart, w =>
+            {
+                w.WriteInt((int) concurrency);
+                w.WriteInt((int) isolation);
+                w.WriteTimeSpanAsLong(timeout);
+                w.WriteInt(txSize);
+            }, s => s.ReadLong());
 
             var innerTx = new TransactionImpl(id, this, concurrency, isolation, timeout, _localNodeId);
             
