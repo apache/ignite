@@ -52,7 +52,8 @@ namespace Apache.Ignite.Core.Impl.Events
             RecordLocal = 6,
             EnableLocal = 8,
             DisableLocal = 9,
-            GetEnabledEvents = 10
+            GetEnabledEvents = 10,
+            WithAsync = 11
         }
 
         /** Map from user func to local wrapper, needed for invoke/unsubscribe. */
@@ -85,7 +86,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// Initializes a new async instance.
         /// </summary>
         /// <param name="events">The events.</param>
-        private Events(Events events) : base(UU.EventsWithAsync(events.Target), events.Marshaller)
+        private Events(Events events) : base(UU.TargetOutObject(events.Target, (int) Op.WithAsync), events.Marshaller)
         {
             _clusterGroup = events.ClusterGroup;
         }

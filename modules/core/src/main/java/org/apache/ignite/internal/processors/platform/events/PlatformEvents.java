@@ -69,6 +69,9 @@ public class PlatformEvents extends PlatformAbstractTarget {
     private static final int OP_GET_ENABLED_EVENTS = 10;
 
     /** */
+    private static final int OP_WITH_ASYNC = 11;
+
+    /** */
     private final IgniteEvents events;
 
     /** */
@@ -92,18 +95,6 @@ public class PlatformEvents extends PlatformAbstractTarget {
 
         eventResWriter = new EventResultWriter(platformCtx);
         eventColResWriter = new EventCollectionResultWriter(platformCtx);
-    }
-
-    /**
-     * Gets events with asynchronous mode enabled.
-     *
-     * @return Events with asynchronous mode enabled.
-     */
-    public PlatformEvents withAsync() {
-        if (events.isAsync())
-            return this;
-
-        return new PlatformEvents(platformCtx, events.withAsync());
     }
 
     /**
@@ -270,12 +261,25 @@ public class PlatformEvents extends PlatformAbstractTarget {
         }
     }
 
-    /** <inheritDoc /> */
+    /** {@inheritDoc} */
+    @Override protected Object processOutObject(int type) throws IgniteCheckedException {
+        switch (type) {
+            case OP_WITH_ASYNC:
+                if (events.isAsync())
+                    return this;
+
+                return new PlatformEvents(platformCtx, events.withAsync());
+        }
+
+        return super.processOutObject(type);
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
         return ((IgniteFutureImpl)events.future()).internalFuture();
     }
 
-    /** <inheritDoc /> */
+    /** {@inheritDoc} */
     @Nullable @Override protected PlatformFutureUtils.Writer futureWriter(int opId) {
         switch (opId) {
             case OP_WAIT_FOR_LOCAL:
