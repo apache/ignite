@@ -95,28 +95,6 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     }
 
     /**
-     * Commits tx in async mode.
-     */
-    public void txCommitAsync(final long txId, final long futId) {
-        final Transaction asyncTx = (Transaction)tx(txId).withAsync();
-
-        asyncTx.commit();
-
-        listenAndNotifyIntFuture(futId, asyncTx);
-    }
-
-    /**
-     * Rolls back tx in async mode.
-     */
-    public void txRollbackAsync(final long txId, final long futId) {
-        final Transaction asyncTx = (Transaction)tx(txId).withAsync();
-
-        asyncTx.rollback();
-
-        listenAndNotifyIntFuture(futId, asyncTx);
-    }
-
-    /**
      * Listens to the transaction future and notifies .NET int future.
      */
     private void listenAndNotifyIntFuture(final long futId, final Transaction asyncTx) {
@@ -217,6 +195,34 @@ public class PlatformTransactions extends PlatformAbstractTarget {
         }
 
         return super.processInLongOutLong(type, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+        long txId = reader.readLong();
+        long futId = reader.readLong();
+
+        final Transaction asyncTx = (Transaction)tx(txId).withAsync();
+
+        switch (type) {
+            case OP_COMMIT_ASYNC:
+                asyncTx.commit();
+
+                break;
+
+
+            case OP_ROLLBACK_ASYNC:
+                asyncTx.rollback();
+
+                break;
+
+            default:
+                return super.processInStreamOutLong(type, reader);
+        }
+
+        listenAndNotifyIntFuture(futId, asyncTx);
+
+        return TRUE;
     }
 
     /** {@inheritDoc} */
