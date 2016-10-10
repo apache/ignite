@@ -96,44 +96,6 @@ public class PlatformTransactions extends PlatformAbstractTarget {
 
     /**
      * @param id Transaction ID.
-     * @throws org.apache.ignite.IgniteCheckedException In case of error.
-     */
-    public int txCommit(long id) throws IgniteCheckedException {
-        tx(id).commit();
-
-        return txClose(id);
-    }
-
-    /**
-     * @param id Transaction ID.
-     * @throws org.apache.ignite.IgniteCheckedException In case of error.
-     */
-    public int txRollback(long id) throws IgniteCheckedException {
-        tx(id).rollback();
-
-        return txClose(id);
-    }
-
-    /**
-     * @param id Transaction ID.
-     * @throws org.apache.ignite.IgniteCheckedException In case of error.
-     * @return Transaction state.
-     */
-    public int txClose(long id) throws IgniteCheckedException {
-        Transaction tx = tx(id);
-
-        try {
-            tx.close();
-
-            return tx.state().ordinal();
-        }
-        finally {
-            unregisterTx(id);
-        }
-    }
-
-    /**
-     * @param id Transaction ID.
      * @return Transaction state.
      */
     public int txState(long id) {
@@ -224,6 +186,24 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     }
 
     /**
+     * @param id Transaction ID.
+     * @throws org.apache.ignite.IgniteCheckedException In case of error.
+     * @return Transaction state.
+     */
+    private int txClose(long id) throws IgniteCheckedException {
+        Transaction tx = tx(id);
+
+        try {
+            tx.close();
+
+            return tx.state().ordinal();
+        }
+        finally {
+            unregisterTx(id);
+        }
+    }
+
+    /**
      * Get transaction by ID.
      *
      * @param id ID.
@@ -235,6 +215,26 @@ public class PlatformTransactions extends PlatformAbstractTarget {
         assert tx != null : "Transaction not found for ID: " + id;
 
         return tx;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        switch (type) {
+            case OP_COMMIT:
+                tx(val).commit();
+
+                return txClose(val);
+
+            case OP_ROLLBACK:
+                tx(val).rollback();
+
+                return txClose(val);
+
+            case OP_CLOSE:
+                return txClose(val);
+        }
+
+        return super.processInLongOutLong(type, val);
     }
 
     /** {@inheritDoc} */
