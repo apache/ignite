@@ -190,7 +190,7 @@ public class PlatformTransactions extends PlatformAbstractTarget {
             case OP_RESET_METRICS:
                 txs.resetMetrics();
 
-                break;
+                return TRUE;
 
             case OP_STATE:
                 return tx(val).state().ordinal();
