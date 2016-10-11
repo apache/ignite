@@ -207,8 +207,6 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     protected void assertCacheSize() {
         IgniteCache<Integer, String> cache = grid(0).cache(null);
 
-        assertNotNull("Flush failed.", cache.get(KEYS_CNT - 1));
-
         assertEquals("Data lost.", KEYS_CNT, cache.size(CachePeekMode.PRIMARY));
 
         int total = 0;
