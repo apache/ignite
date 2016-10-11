@@ -1051,7 +1051,7 @@ public class IgfsDataManager extends IgfsManager {
 
         // Create non-colocated key.
         IgfsBlockKey key = new IgfsBlockKey(colocatedKey.getFileId(), null,
-            colocatedKey.evictExclude(), colocatedKey.getBlockId());
+            colocatedKey.evictExclude(), colocatedKey.blockId());
 
         try (IgniteInternalTx tx = dataCachePrj.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
             // Lock keys.

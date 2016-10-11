@@ -90,9 +90,9 @@ public class IgfsGroupDataBlocksKeyMapper extends GridCacheDefaultAffinityKeyMap
             if (blockKey.affinityKey() != null)
                 return blockKey.affinityKey();
 
-            long grpId = blockKey.getBlockId() / grpSize;
+            long grpId = blockKey.blockId() / grpSize;
 
-            return blockKey.getFileHash() + (int)(grpId ^ (grpId >>> 32));
+            return blockKey.fileHash() + (int)(grpId ^ (grpId >>> 32));
         }
 
         return super.affinityKey(key);
