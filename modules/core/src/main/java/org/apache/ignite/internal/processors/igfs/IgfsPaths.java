@@ -74,7 +74,7 @@ public class IgfsPaths implements Externalizable {
         else {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-            new JdkMarshaller().marshal(payload, out);
+            U.marshal(new JdkMarshaller(), payload, out);
 
             payloadBytes = out.toByteArray();
         }
@@ -105,7 +105,7 @@ public class IgfsPaths implements Externalizable {
         else {
             ByteArrayInputStream in = new ByteArrayInputStream(payloadBytes);
 
-            return new JdkMarshaller().unmarshal(in, clsLdr);
+            return U.unmarshal(new JdkMarshaller(), in, clsLdr);
         }
     }
 
