@@ -33,7 +33,7 @@ import java.lang.annotation.Target;
  * public class MySecondaryFS implements IgfsSecondaryFileSystem {
  *      ...
  *      // Inject instance of primary filesystem.
- *      &#64;FilesystemResource
+ *      &#64;FileSystemResource
  *      private IgniteFileSystem igfs;
  *      ...
  *  }
@@ -45,7 +45,7 @@ import java.lang.annotation.Target;
  *     private IgniteFileSystem igfs;
  *     ...
  *      // Inject instance of primary filesystem.
- *      &#64;FilesystemResource
+ *      &#64;FileSystemResource
  *     public void setMyIgfs(IgniteFileSystem igfs) {
  *          this.igfs = igfs;
  *     }
@@ -57,5 +57,5 @@ import java.lang.annotation.Target;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
-public @interface FilesystemResource {
+public @interface FileSystemResource {
 }

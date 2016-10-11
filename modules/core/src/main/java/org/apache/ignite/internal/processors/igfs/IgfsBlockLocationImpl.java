@@ -137,6 +137,13 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable,
     }
 
     /**
+     * @param len Block length.
+     */
+    public void length(long len) {
+        this.len = len;
+    }
+
+    /**
      * @return Node IDs.
      */
     @Override public Collection<UUID> nodeIds() {

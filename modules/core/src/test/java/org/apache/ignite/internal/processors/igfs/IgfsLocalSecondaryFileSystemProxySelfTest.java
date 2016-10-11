@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
@@ -57,6 +58,11 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
 
     /** */
     private final File fileLinkSrc = new File(FS_WORK_DIR + File.separatorChar + "file");
+
+    /** {@inheritDoc} */
+    @Override protected int nodeCount() {
+        return 3;
+    }
 
     /**
      * Creates secondary filesystems.
@@ -212,6 +218,35 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
         createHierarchy.apply(1, new IgfsPath("/dir"));
 
         assertEquals(totalSize.get(), igfs.metrics().secondarySpaceSize());
+    }
+
+    /**
+     *
+     * @throws Exception If failed.
+     */
+    public void testAffinity() throws Exception {
+        long fileSize = 32 * 1024 * 1024;
+
+        IgfsPath filePath = new IgfsPath("/file");
+
+        try (OutputStream os = igfs.create(filePath, true)) {
+            for(int i = 0; i < fileSize / chunk.length; ++i)
+                os.write(chunk);
+        }
+
+        Collection<IgfsBlockLocation> affGolden = igfs.affinity(filePath, 0, igfs.info(filePath).length());
+
+        int blockSize = igfs.configuration().getBlockSize();
+
+        int blocks = 1;
+
+        for (int maxLen = blockSize; maxLen < blockSize * 10; maxLen += blockSize ) {
+            Collection<IgfsBlockLocation> aff = igfs.affinity(filePath, 0, igfs.info(filePath).length(), maxLen);
+
+            assertEquals(affGolden.size() / blocks + (affGolden.size() % blocks != 0 ? 1 : 0), aff.size());
+
+            blocks++;
+        }
     }
 
     /**

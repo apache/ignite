@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.igfs.IgfsLocalSecondaryBlockKey;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsBlockLocationImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsSecondaryFileSystemV2;
-import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemIgfsFile;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemSizeVisitor;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemUtils;
@@ -42,7 +41,7 @@ import org.apache.ignite.internal.processors.igfs.secondary.local.LocalIgfsSecon
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
-import org.apache.ignite.resources.FilesystemResource;
+import org.apache.ignite.resources.FileSystemResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
@@ -64,6 +63,7 @@ import java.util.Map;
 /**
  * Secondary file system which delegates to local file system.
  */
+@SuppressWarnings({"UnusedDeclaration"})
 public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystemV2, LifecycleAware {
     /** Path that will be added to each passed path. */
     private String workDir;
@@ -73,7 +73,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystemV2, 
     private IgniteLogger log;
 
     /** IGFS instance. */
-    @FilesystemResource
+    @FileSystemResource
     private IgfsImpl igfs;
 
     /**
@@ -405,9 +405,10 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystemV2, 
         File f = fileForPath(path);
 
         if (!f.exists())
-            return null;
+            throw new IgfsPathNotFoundException("File not found: " + path);
 
-        long blockSize =  maxLen > igfs.configuration().getBlockSize() ? maxLen : igfs.configuration().getBlockSize();
+        // Create fake block & fake affinity for blocks
+        long blockSize =  igfs.configuration().getBlockSize();
 
         Collection<IgfsBlockLocation> blocks = new ArrayList<>((int)(len/ blockSize + (len % blockSize == 0 ? 0 : 1)));
 
@@ -426,7 +427,39 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystemV2, 
             ++blockIdx;
         }
 
-        return blocks;
+        int maxBlocks = (int)(maxLen / blockSize);
+
+        // Not need to join blocks
+        if (maxBlocks <= 1)
+            return blocks;
+
+        Collection<IgfsBlockLocation> joinBlocks = new ArrayList<>(blocks.size() / maxBlocks);
+
+        IgfsBlockLocationImpl curBlk = null;
+
+        int cnt = 0;
+
+        // Join block by maxLen
+        for (IgfsBlockLocation blk : blocks) {
+            if (curBlk != null && cnt < maxBlocks && curBlk.hosts().equals(blk.hosts())) {
+                curBlk.length(curBlk.length() + blk.length());
+
+                ++cnt;
+            }
+            else {
+                if (curBlk != null)
+                    joinBlocks.add(curBlk);
+
+                curBlk = (IgfsBlockLocationImpl)blk;
+
+                cnt = 1;
+            }
+        }
+
+        if (curBlk != null)
+            joinBlocks.add(curBlk);
+
+        return joinBlocks;
     }
 
     /**

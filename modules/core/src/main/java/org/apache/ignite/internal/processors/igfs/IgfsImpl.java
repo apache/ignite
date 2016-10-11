@@ -1281,10 +1281,12 @@ public final class IgfsImpl implements IgfsEx {
                     else {
                         IgfsFile info = info(path);
 
-                        return (info != null) ?
-                            Collections.<IgfsBlockLocation>singleton(
-                                new IgfsBlockLocationImpl(0, info.length(), Collections.singleton(igfsCtx.localNode())))
-                            : Collections.<IgfsBlockLocation>emptySet();
+                        if (info == null)
+                            throw new IgfsPathNotFoundException("File not found: " + path);
+
+                        return Collections.<IgfsBlockLocation>singleton(
+                                new IgfsBlockLocationImpl(0, info.length(),
+                                    Collections.singleton(igfsCtx.localNode())));
                     }
                 }
 

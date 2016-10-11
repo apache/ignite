@@ -37,7 +37,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.CacheNameResource;
 import org.apache.ignite.resources.CacheStoreSessionResource;
-import org.apache.ignite.resources.FilesystemResource;
+import org.apache.ignite.resources.FileSystemResource;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoadBalancerResource;
@@ -515,7 +515,7 @@ public class GridResourceIoc {
         CACHE_STORE_SESSION(CacheStoreSessionResource.class),
 
         /** */
-        FILESYSTEM_RESOURCE(FilesystemResource.class);
+        FILESYSTEM_RESOURCE(FileSystemResource.class);
 
         /** */
         public final Class<? extends Annotation> clazz;
