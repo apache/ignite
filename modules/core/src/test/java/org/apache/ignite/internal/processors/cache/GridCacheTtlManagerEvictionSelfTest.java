@@ -36,38 +36,27 @@ import java.util.concurrent.TimeUnit;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 
-import static org.apache.ignite.cache.CacheMode.LOCAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
-
 /**
- * TTL manager self test.
+ * TTL manager eviction self test.
  */
-public class GridCacheTtlManagerEvictionTest extends GridCommonAbstractTest {
-    /**
-     * IP finder.
-     */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
+public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int ENTRIES_TO_PUT = 10_100;
 
     /** */
     private static final int ENTRIES_LIMIT = 1_000;
 
-    /**
-     * Test cache mode.
-     */
-    protected CacheMode cacheMode;
+    /** IP finder. */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** */
-    private CacheMemoryMode cacheMemoryMode;
+    /** Cache mode. */
+    private volatile CacheMode cacheMode;
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    /** Cache memory mode. */
+    private volatile CacheMemoryMode cacheMemoryMode;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
@@ -94,30 +83,31 @@ public class GridCacheTtlManagerEvictionTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLocalEviction() throws Exception {
-        checkEviction(LOCAL, CacheMemoryMode.ONHEAP_TIERED);
-        checkEviction(LOCAL, CacheMemoryMode.OFFHEAP_TIERED);
+        checkEviction(CacheMode.LOCAL, CacheMemoryMode.ONHEAP_TIERED);
+        checkEviction(CacheMode.LOCAL, CacheMemoryMode.OFFHEAP_TIERED);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPartitionedEviction() throws Exception {
-        checkEviction(PARTITIONED, CacheMemoryMode.ONHEAP_TIERED);
-        checkEviction(PARTITIONED, CacheMemoryMode.OFFHEAP_TIERED);
+        checkEviction(CacheMode.PARTITIONED, CacheMemoryMode.ONHEAP_TIERED);
+        checkEviction(CacheMode.PARTITIONED, CacheMemoryMode.OFFHEAP_TIERED);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testReplicatedEviction() throws Exception {
-        checkEviction(REPLICATED, CacheMemoryMode.ONHEAP_TIERED);
-        checkEviction(REPLICATED, CacheMemoryMode.OFFHEAP_TIERED);
+        checkEviction(CacheMode.REPLICATED, CacheMemoryMode.ONHEAP_TIERED);
+        checkEviction(CacheMode.REPLICATED, CacheMemoryMode.OFFHEAP_TIERED);
     }
 
     /**
      * @param mode Cache mode.
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ConstantConditions")
     private void checkEviction(CacheMode mode, CacheMemoryMode memoryMode) throws Exception {
         cacheMode = mode;
         cacheMemoryMode = memoryMode;
