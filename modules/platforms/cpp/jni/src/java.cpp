@@ -228,17 +228,6 @@ namespace ignite
             JniMethod M_PLATFORM_TARGET_LISTEN_FUTURE_AND_GET = JniMethod("listenFutureAndGet", "(JI)Lorg/apache/ignite/internal/processors/platform/utils/PlatformListenable;", false);
             JniMethod M_PLATFORM_TARGET_LISTEN_FOR_OPERATION_AND_GET = JniMethod("listenFutureForOperationAndGet", "(JII)Lorg/apache/ignite/internal/processors/platform/utils/PlatformListenable;", false);
 
-            const char* C_PLATFORM_DATA_STREAMER = "org/apache/ignite/internal/processors/platform/datastreamer/PlatformDataStreamer";
-            JniMethod M_PLATFORM_DATA_STREAMER_LISTEN_TOPOLOGY = JniMethod("listenTopology", "(J)V", false);
-            JniMethod M_PLATFORM_DATA_STREAMER_GET_ALLOW_OVERWRITE = JniMethod("allowOverwrite", "()Z", false);
-            JniMethod M_PLATFORM_DATA_STREAMER_SET_ALLOW_OVERWRITE = JniMethod("allowOverwrite", "(Z)V", false);
-            JniMethod M_PLATFORM_DATA_STREAMER_GET_SKIP_STORE = JniMethod("skipStore", "()Z", false);
-            JniMethod M_PLATFORM_DATA_STREAMER_SET_SKIP_STORE = JniMethod("skipStore", "(Z)V", false);
-            JniMethod M_PLATFORM_DATA_STREAMER_GET_PER_NODE_BUFFER_SIZE = JniMethod("perNodeBufferSize", "()I", false);
-            JniMethod M_PLATFORM_DATA_STREAMER_SET_PER_NODE_BUFFER_SIZE = JniMethod("perNodeBufferSize", "(I)V", false);
-            JniMethod M_PLATFORM_DATA_STREAMER_GET_PER_NODE_PARALLEL_OPS = JniMethod("perNodeParallelOperations", "()I", false);
-            JniMethod M_PLATFORM_DATA_STREAMER_SET_PER_NODE_PARALLEL_OPS = JniMethod("perNodeParallelOperations", "(I)V", false);
-
             const char* C_PLATFORM_CALLBACK_UTILS = "org/apache/ignite/internal/processors/platform/callback/PlatformCallbackUtils";
 
             JniMethod M_PLATFORM_CALLBACK_UTILS_CACHE_STORE_CREATE = JniMethod("cacheStoreCreate", "(JJ)J", true);
