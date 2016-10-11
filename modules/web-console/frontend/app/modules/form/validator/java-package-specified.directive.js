@@ -17,13 +17,14 @@
 
 export default ['javaPackageSpecified', ['JavaTypes', (JavaTypes) => {
     const link = (scope, el, attrs, [ngModel]) => {
-        if (_.isUndefined(attrs.javaPackageSpecified))
+        if (_.isNil(attrs.javaPackageSpecified) || attrs.javaPackageSpecified === 'false')
             return;
 
         const allowBuiltIn = attrs.javaPackageSpecified === 'allow-built-in';
 
-        ngModel.$validators.javaPackageSpecified = (value) => !value || !JavaTypes.validIdentifier(value) || JavaTypes.packageSpecified(value) ||
-                (allowBuiltIn && !JavaTypes.nonBuiltInClass(value));
+        ngModel.$validators.javaPackageSpecified = (value) => _.isEmpty(value) ||
+            !JavaTypes.validClassName(value) || JavaTypes.packageSpecified(value) ||
+            (allowBuiltIn && !JavaTypes.nonBuiltInClass(value));
     };
 
     return {

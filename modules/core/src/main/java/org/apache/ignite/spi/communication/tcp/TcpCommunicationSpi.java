@@ -329,7 +329,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     private final GridNioServerListener<Message> srvLsnr =
         new GridNioServerListenerAdapter<Message>() {
             @Override public void onSessionWriteTimeout(GridNioSession ses) {
-                LT.warn(log, null, "Communication SPI Session write timed out (consider increasing " +
+                LT.warn(log, "Communication SPI Session write timed out (consider increasing " +
                     "'socketWriteTimeout' " + "configuration property) [remoteAddr=" + ses.remoteAddress() +
                     ", writeTimeout=" + sockWriteTimeout + ']');
 
@@ -2142,9 +2142,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             catch (IgniteCheckedException e) {
                 if (e.hasCause(IpcOutOfSystemResourcesException.class))
                     // Has cause or is itself the IpcOutOfSystemResourcesException.
-                    LT.warn(log, null, OUT_OF_RESOURCES_TCP_MSG);
+                    LT.warn(log, OUT_OF_RESOURCES_TCP_MSG);
                 else if (getSpiContext().node(node.id()) != null)
-                    LT.warn(log, null, e.getMessage());
+                    LT.warn(log, e.getMessage());
                 else if (log.isDebugEnabled())
                     log.debug("Failed to establish shared memory connection with local node (node has left): " +
                         node.id());
@@ -2505,11 +2505,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     boolean failureDetThrReached = timeoutHelper.checkFailureTimeoutReached(e);
 
                     if (failureDetThrReached)
-                        LT.warn(log, null, "Connect timed out (consider increasing 'failureDetectionTimeout' " +
+                        LT.warn(log, "Connect timed out (consider increasing 'failureDetectionTimeout' " +
                             "configuration property) [addr=" + addr + ", failureDetectionTimeout=" +
                             failureDetectionTimeout() + ']');
                     else if (X.hasCause(e, SocketTimeoutException.class))
-                        LT.warn(log, null, "Connect timed out (consider increasing 'connTimeout' " +
+                        LT.warn(log, "Connect timed out (consider increasing 'connTimeout' " +
                             "configuration property) [addr=" + addr + ", connTimeout=" + connTimeout + ']');
 
                     if (errs == null)
@@ -2540,7 +2540,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             assert errs != null;
 
             if (X.hasCause(errs, ConnectException.class))
-                LT.warn(log, null, "Failed to connect to a remote node " +
+                LT.warn(log, "Failed to connect to a remote node " +
                     "(make sure that destination node is alive and " +
                     "operating system firewall is disabled on local and remote hosts) " +
                     "[addrs=" + addrs + ']');

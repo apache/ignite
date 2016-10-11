@@ -163,6 +163,12 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public IClusterGroup ForDaemons()
+        {
+            return _ignite.GetCluster().ForDaemons();
+        }
+
+        /** <inheritdoc /> */
         public IClusterGroup ForHost(IClusterNode node)
         {
             return _ignite.GetCluster().ForHost(node);

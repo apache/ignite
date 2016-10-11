@@ -129,26 +129,28 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                 if (log.isTraceEnabled())
                     log.trace("Trying to remove expired entry from cache: " + e);
 
-                boolean touch = false;
+                boolean touch = e.ctx.isSwapOrOffheapEnabled();
 
-                GridCacheEntryEx entry = e.ctx.cache().entryEx(e.key);
+                GridCacheEntryEx entry = touch ? e.ctx.cache().entryEx(e.key) : e.ctx.cache().peekEx(e.key);
 
-                while (true) {
-                    try {
-                        if (entry.onTtlExpired(obsoleteVer))
-                            touch = false;
+                if (entry != null) {
+                    while (true) {
+                        try {
+                            if (entry.onTtlExpired(obsoleteVer))
+                                touch = false;
 
-                        break;
+                            break;
+                        }
+                        catch (GridCacheEntryRemovedException e0) {
+                            entry = entry.context().cache().entryEx(entry.key());
+
+                            touch = true;
+                        }
                     }
-                    catch (GridCacheEntryRemovedException e0) {
-                        entry = entry.context().cache().entryEx(entry.key());
 
-                        touch = true;
-                    }
+                    if (touch)
+                        entry.context().evicts().touch(entry, null);
                 }
-
-                if (touch)
-                    entry.context().evicts().touch(entry, null);
             }
         }
 
@@ -216,7 +218,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         private final GridCacheContext ctx;
 
         /** Cache Object Key */
-        private final CacheObject key;
+        private final KeyCacheObject key;
 
         /**
          * @param entry Cache entry to create wrapper for.

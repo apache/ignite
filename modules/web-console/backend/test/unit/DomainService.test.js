@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-
-import {assert} from 'chai';
-import injector from '../injector';
-import testDomains from '../data/domains.json';
-import testAccounts from '../data/accounts.json';
+const assert = require('chai').assert;
+const injector = require('../injector');
+const testDomains = require('../data/domains.json');
+const testAccounts = require('../data/accounts.json');
 
 let domainService;
 let mongo;
@@ -82,7 +81,7 @@ suite('DomainsServiceTestsSuite', () => {
             .then((results) => {
                 const domain = results.savedDomains[0];
 
-                const domainBeforeMerge = {...testDomains[0], _id: domain._id, valueType: newValType};
+                const domainBeforeMerge = Object.assign({}, testDomains[0], {_id: domain._id, valueType: newValType});
 
                 return domainService.batchMerge([domainBeforeMerge]);
             })
@@ -95,8 +94,10 @@ suite('DomainsServiceTestsSuite', () => {
     });
 
     test('Create duplicated domain', (done) => {
+        const dupleDomain = Object.assign({}, testDomains[0], {_id: null});
+
         domainService.batchMerge([testDomains[0]])
-            .then(() => domainService.batchMerge([testDomains[0]]))
+            .then(() => domainService.batchMerge([dupleDomain]))
             .catch((err) => {
                 assert.instanceOf(err, errors.DuplicateKeyException);
 
@@ -149,7 +150,7 @@ suite('DomainsServiceTestsSuite', () => {
         prepareUserSpaces()
             .then(([accounts, spaces]) => {
                 const currentUser = accounts[0];
-                const userDomain = {...testDomains[0], space: spaces[0][0]._id};
+                const userDomain = Object.assign({}, testDomains[0], {space: spaces[0][0]._id});
 
                 return domainService.batchMerge([userDomain])
                     .then(() => domainService.removeAll(currentUser._id, false));
@@ -164,7 +165,7 @@ suite('DomainsServiceTestsSuite', () => {
     test('Get all domains by space', (done) => {
         prepareUserSpaces()
             .then(([accounts, spaces]) => {
-                const userDomain = {...testDomains[0], space: spaces[0][0]._id};
+                const userDomain = Object.assign({}, testDomains[0], {space: spaces[0][0]._id});
 
                 return domainService.batchMerge([userDomain])
                     .then((results) => {

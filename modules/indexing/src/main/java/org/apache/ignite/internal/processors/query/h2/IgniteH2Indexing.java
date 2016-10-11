@@ -921,7 +921,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 String longMsg = "Query execution is too long [time=" + time + " ms, sql='" + sql + '\'' +
                     ", plan=" + U.nl() + plan.getString(1) + U.nl() + ", parameters=" + params + "]";
 
-                LT.warn(log, null, longMsg, msg);
+                LT.warn(log, longMsg, msg);
             }
 
             return rs;

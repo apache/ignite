@@ -67,7 +67,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
@@ -489,7 +488,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     if (timeout > 0 && (U.currentTimeMillis() - startTime) > timeout)
                         return null;
 
-                    LT.warn(log, null, "IP finder returned empty addresses list. " +
+                    LT.warn(log, "IP finder returned empty addresses list. " +
                             "Please check IP finder configuration" +
                             (spi.ipFinder instanceof TcpDiscoveryMulticastIpFinder ?
                                 " and make sure multicast works on your network. " : ". ") +
@@ -559,7 +558,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 if (timeout > 0 && (U.currentTimeMillis() - startTime) > timeout)
                     return null;
 
-                LT.warn(log, null, "Failed to connect to any address from IP finder (will retry to join topology " +
+                LT.warn(log, "Failed to connect to any address from IP finder (will retry to join topology " +
                     "every 2 secs): " + toOrderedList(addrs0), true);
 
                 Thread.sleep(2000);
@@ -954,7 +953,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                             ClassNotFoundException clsNotFoundEx = X.cause(e, ClassNotFoundException.class);
 
                             if (clsNotFoundEx != null)
-                                LT.warn(log, null, "Failed to read message due to ClassNotFoundException " +
+                                LT.warn(log, "Failed to read message due to ClassNotFoundException " +
                                     "(make sure same versions of all classes are available on all nodes) " +
                                     "[rmtNodeId=" + rmtNodeId + ", err=" + clsNotFoundEx.getMessage() + ']');
                             else

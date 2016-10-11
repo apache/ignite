@@ -1,19 +1,19 @@
-﻿﻿/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+﻿/*
+* Licensed to the Apache Software Foundation (ASF) under one or more
+* contributor license agreements.  See the NOTICE file distributed with
+* this work for additional information regarding copyright ownership.
+* The ASF licenses this file to You under the Apache License, Version 2.0
+* (the "License"); you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*      http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 
 namespace Apache.Ignite.Core.Impl.Unmanaged
 {
@@ -53,9 +53,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     /// Unmanaged callbacks.
     /// </summary>
     [SuppressMessage("ReSharper", "UnusedMember.Local")]
-    [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable", 
+    [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable",
         Justification = "This class instance usually lives as long as the app runs.")]
-    [SuppressMessage("Microsoft.Design", "CA1049:TypesThatOwnNativeResourcesShouldBeDisposable", 
+    [SuppressMessage("Microsoft.Design", "CA1049:TypesThatOwnNativeResourcesShouldBeDisposable",
         Justification = "This class instance usually lives as long as the app runs.")]
     internal unsafe class UnmanagedCallbacks
     {
@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         /** Handle registry. */
         private readonly HandleRegistry _handleRegistry = new HandleRegistry();
-        
+
         /** Grid. */
         private volatile Ignite _ignite;
 
@@ -155,7 +155,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate long MessagingFilterCreateCallbackDelegate(void* target, long memPtr);
         private delegate int MessagingFilterApplyCallbackDelegate(void* target, long ptr, long memPtr);
         private delegate void MessagingFilterDestroyCallbackDelegate(void* target, long ptr);
-        
+
         private delegate long EventFilterCreateCallbackDelegate(void* target, long memPtr);
         private delegate int EventFilterApplyCallbackDelegate(void* target, long ptr, long memPtr);
         private delegate void EventFilterDestroyCallbackDelegate(void* target, long ptr);
@@ -165,13 +165,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void ServiceCancelCallbackDelegate(void* target, long svcPtr, long memPtr);
         private delegate void ServiceInvokeMethodCallbackDelegate(void* target, long svcPtr, long inMemPtr, long outMemPtr);
 
-        private delegate int СlusterNodeFilterApplyCallbackDelegate(void* target, long memPtr);
+        private delegate int ClusterNodeFilterApplyCallbackDelegate(void* target, long memPtr);
 
         private delegate void NodeInfoCallbackDelegate(void* target, long memPtr);
 
         private delegate void OnStartCallbackDelegate(void* target, void* proc, long memPtr);
         private delegate void OnStopCallbackDelegate(void* target);
-        
+
         private delegate void ErrorCallbackDelegate(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars, int errMsgCharsLen, sbyte* stackTraceChars, int stackTraceCharsLen, void* errData, int errDataLen);
 
         private delegate long ExtensionCallbackInLongOutLongDelegate(void* target, int typ, long arg1);
@@ -209,7 +209,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 cacheStoreDestroy = CreateFunctionPointer((CacheStoreDestroyCallbackDelegate) CacheStoreDestroy),
 
                 cacheStoreSessionCreate = CreateFunctionPointer((CacheStoreSessionCreateCallbackDelegate) CacheStoreSessionCreate),
-                
+
                 cacheEntryFilterCreate = CreateFunctionPointer((CacheEntryFilterCreateCallbackDelegate)CacheEntryFilterCreate),
                 cacheEntryFilterApply = CreateFunctionPointer((CacheEntryFilterApplyCallbackDelegate)CacheEntryFilterApply),
                 cacheEntryFilterDestroy = CreateFunctionPointer((CacheEntryFilterDestroyCallbackDelegate)CacheEntryFilterDestroy),
@@ -238,7 +238,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     CreateFunctionPointer((DataStreamerTopologyUpdateCallbackDelegate) DataStreamerTopologyUpdate),
                 dataStreamerStreamReceiverInvoke =
                     CreateFunctionPointer((DataStreamerStreamReceiverInvokeCallbackDelegate) DataStreamerStreamReceiverInvoke),
-                
+
                 futureByteResult = CreateFunctionPointer((FutureByteResultCallbackDelegate) FutureByteResult),
                 futureBoolResult = CreateFunctionPointer((FutureBoolResultCallbackDelegate) FutureBoolResult),
                 futureShortResult = CreateFunctionPointer((FutureShortResultCallbackDelegate) FutureShortResult),
@@ -253,7 +253,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 lifecycleOnEvent = CreateFunctionPointer((LifecycleOnEventCallbackDelegate) LifecycleOnEvent),
                 memoryReallocate = CreateFunctionPointer((MemoryReallocateCallbackDelegate) MemoryReallocate),
                 nodeInfo = CreateFunctionPointer((NodeInfoCallbackDelegate) NodeInfo),
-                
+
                 messagingFilterCreate = CreateFunctionPointer((MessagingFilterCreateCallbackDelegate)MessagingFilterCreate),
                 messagingFilterApply = CreateFunctionPointer((MessagingFilterApplyCallbackDelegate)MessagingFilterApply),
                 messagingFilterDestroy = CreateFunctionPointer((MessagingFilterDestroyCallbackDelegate)MessagingFilterDestroy),
@@ -267,12 +267,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 serviceCancel = CreateFunctionPointer((ServiceCancelCallbackDelegate)ServiceCancel),
                 serviceInvokeMethod = CreateFunctionPointer((ServiceInvokeMethodCallbackDelegate)ServiceInvokeMethod),
 
-                clusterNodeFilterApply = CreateFunctionPointer((СlusterNodeFilterApplyCallbackDelegate)СlusterNodeFilterApply),
-                
+                clusterNodeFilterApply = CreateFunctionPointer((ClusterNodeFilterApplyCallbackDelegate)ClusterNodeFilterApply),
+
                 onStart = CreateFunctionPointer((OnStartCallbackDelegate)OnStart),
                 onStop = CreateFunctionPointer((OnStopCallbackDelegate)OnStop),
                 error = CreateFunctionPointer((ErrorCallbackDelegate)Error),
-                
+
                 extensionCbInLongOutLong = CreateFunctionPointer((ExtensionCallbackInLongOutLongDelegate)ExtensionCallbackInLongOutLong),
                 extensionCbInLongLongOutLong = CreateFunctionPointer((ExtensionCallbackInLongLongOutLongDelegate)ExtensionCallbackInLongLongOutLong),
 
@@ -339,7 +339,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 IUnmanagedTarget cb0 = null;
 
-                if ((long) cb != 0)
+                if ((long)cb != 0)
                     cb0 = new UnmanagedNonReleaseableTarget(_ctx, cb);
 
                 using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
@@ -461,7 +461,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 {
                     return task.JobResultLocal(Job(jobPtr));
                 }
-                
+
                 using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
                     return task.JobResultRemote(Job(jobPtr), stream);
@@ -605,7 +605,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     var filterHolder = reader.ReadObject<ContinuousQueryFilterHolder>();
 
                     // 2. Create real filter from it's holder.
-                    var filter = (IContinuousQueryFilter) DelegateTypeDescriptor.GetContinuousQueryFilterCtor(
+                    var filter = (IContinuousQueryFilter)DelegateTypeDescriptor.GetContinuousQueryFilterCtor(
                         filterHolder.Filter.GetType())(filterHolder.Filter, filterHolder.KeepBinary);
 
                     // 3. Inject grid.
@@ -639,7 +639,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 holder.Release();
             });
         }
-        
+
         #endregion
 
         #region IMPLEMENTATION: DATA STREAMER
@@ -685,7 +685,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         }
 
         #endregion
-        
+
         #region IMPLEMENTATION: FUTURES
 
         private void FutureByteResult(void* target, long futPtr, int res)
@@ -861,7 +861,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return SafeCall(() =>
             {
                 var holder = _ignite.HandleRegistry.Get<MessageListenerHolder>(ptr, false);
-                
+
                 if (holder == null)
                     return 0;
 
@@ -879,7 +879,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 _ignite.HandleRegistry.Release(ptr);
             });
         }
-        
+
         #endregion
 
         #region IMPLEMENTATION: EXTENSIONS
@@ -942,7 +942,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 _ignite.HandleRegistry.Release(ptr);
             });
         }
-        
+
         #endregion
 
         #region IMPLEMENTATION: SERVICES
@@ -1037,7 +1037,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private int СlusterNodeFilterApply(void* target, long memPtr)
+        private int ClusterNodeFilterApply(void* target, long memPtr)
         {
             return SafeCall(() =>
             {
@@ -1098,7 +1098,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             if (ignite != null)
                 ignite.AfterNodeStop();
         }
-        
+
         private void Error(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars,
             int errMsgCharsLen, sbyte* stackTraceChars, int stackTraceCharsLen, void* errData, int errDataLen)
         {
@@ -1402,7 +1402,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public void Cleanup()
         {
             _ignite = null;
-            
+
             _handleRegistry.Close();
         }
 

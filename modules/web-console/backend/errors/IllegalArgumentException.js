@@ -17,7 +17,7 @@
 
 'use strict';
 
-import AppErrorException from './AppErrorException';
+const AppErrorException = require('./AppErrorException');
 
 class IllegalArgumentException extends AppErrorException {
     constructor(message) {

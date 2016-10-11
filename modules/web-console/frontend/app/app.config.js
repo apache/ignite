@@ -46,7 +46,7 @@ igniteConsoleCfg.config(['$popoverProvider', ($popoverProvider) => {
 igniteConsoleCfg.config(['$tooltipProvider', ($tooltipProvider) => {
     angular.extend($tooltipProvider.defaults, {
         container: 'body',
-        delay: 150,
+        delay: {show: 150, hide: 150},
         placement: 'right',
         html: 'true',
         trigger: 'click hover'
