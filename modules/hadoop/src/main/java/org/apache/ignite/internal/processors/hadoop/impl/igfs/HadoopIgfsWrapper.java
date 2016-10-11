@@ -17,12 +17,21 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.configuration.Factory;
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
@@ -37,18 +46,14 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-
 import static org.apache.ignite.IgniteState.STARTED;
 import static org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsEndpoint.LOCALHOST;
+import static org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsUtils.PARAM_IGFS_ENDPOINT_IGNITE_CLI_CFG;
+import static org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsUtils.PARAM_IGFS_ENDPOINT_IGNITE_CLI_CFG_FACTORY;
 import static org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsUtils.PARAM_IGFS_ENDPOINT_NO_EMBED;
 import static org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsUtils.PARAM_IGFS_ENDPOINT_NO_LOCAL_SHMEM;
 import static org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsUtils.PARAM_IGFS_ENDPOINT_NO_LOCAL_TCP;
+import static org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsUtils.PARAM_IGFS_ENDPOINT_NO_REMOTE_TCP;
 import static org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsUtils.parameter;
 
 /**
@@ -83,6 +88,8 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
      * @param logDir Log directory for server.
      * @param conf Configuration.
      * @param log Current logger.
+     * @param user User name.
+     * @throws IOException If failed.
      */
     public HadoopIgfsWrapper(String authority, String logDir, Configuration conf, Log log, String user)
         throws IOException {
@@ -349,6 +356,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
      * Get delegate creating it if needed.
      *
      * @return Delegate.
+     * @throws HadoopIgfsCommunicationException If delegate creation is failed.
      */
     private Delegate delegate() throws HadoopIgfsCommunicationException {
         // These fields will contain possible exceptions from shmem and TCP endpoints.
@@ -433,7 +441,9 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
         }
 
         // 5. Try remote TCP connection.
-        if (curDelegate == null && (skipLocTcp || !F.eq(LOCALHOST, endpoint.host()))) {
+        boolean skipRemTcp = parameter(conf, PARAM_IGFS_ENDPOINT_NO_REMOTE_TCP, authority, false);
+
+        if (curDelegate == null && !skipRemTcp && (skipLocTcp || !F.eq(LOCALHOST, endpoint.host()))) {
             HadoopIgfsEx hadoop = null;
 
             try {
@@ -449,6 +459,78 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
                 if (log.isDebugEnabled())
                     log.debug("Failed to connect to IGFS using TCP [host=" + endpoint.host() +
                         ", port=" + endpoint.port() + ']', e);
+
+                errTcp = e;
+            }
+        }
+
+        // 6. Try Ignite client
+        String igniteCliCfgPath = parameter(conf, PARAM_IGFS_ENDPOINT_IGNITE_CLI_CFG, authority, null);
+
+        List<Factory> cfgFacts = conf.getInstances(
+            String.format(PARAM_IGFS_ENDPOINT_IGNITE_CLI_CFG_FACTORY, authority != null ? authority : ""),
+            Factory.class);
+
+        if (curDelegate == null && (!F.isEmpty(igniteCliCfgPath) || !F.isEmpty(cfgFacts))) {
+            HadoopIgfsEx hadoop = null;
+
+            try {
+                Ignite ignite0 = null;
+                if (!F.isEmpty(igniteCliCfgPath)) {
+                    Ignition.setClientMode(true);
+
+                    ignite0 = Ignition.start(igniteCliCfgPath);
+                }
+                else if (!F.isEmpty(cfgFacts)) {
+                    if (cfgFacts.size() > 1)
+                        throw new HadoopIgfsCommunicationException("Only one Ignite configuration factory is supported");
+
+                    IgniteConfiguration cfg = (IgniteConfiguration)F.first(cfgFacts).create();
+
+                    ignite0 = Ignition.start(cfg);
+                }
+
+                if (ignite0 == null)
+                    throw new HadoopIgfsCommunicationException("Cannot create Ignite client node. See the log");
+
+                IgfsEx igfs = (IgfsEx)ignite0.fileSystem(endpoint.igfs());
+
+                if (igfs != null) {
+
+                    try {
+                        final Ignite ignite = ignite0;
+
+                        hadoop = new HadoopIgfsInProc(igfs, log, userName) {
+                            @Override public void close(boolean force) {
+                                ignite.close();
+
+                                log.info("IGFS Ignite client is stopped.");
+                            }
+                        };
+
+                        curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
+                    }
+                    catch (IOException | IgniteCheckedException e) {
+                        if (e instanceof HadoopIgfsCommunicationException)
+                            if (hadoop != null)
+                                hadoop.close(true);
+
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to connect to in-process IGFS, fallback to IPC mode.", e);
+                    }
+                }
+
+                curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
+            }
+            catch (IOException | IgniteCheckedException e) {
+                if (e instanceof HadoopIgfsCommunicationException)
+                    hadoop.close(true);
+
+                if (log.isDebugEnabled())
+                    log.debug("Failed to connect to IGFS using Ignite client [host=" + endpoint.host() +
+                        ", port=" + endpoint.port() + ", igniteCfg=" + igniteCliCfgPath +
+                        "igniteCfgFactory=" +
+                        parameter(conf, PARAM_IGFS_ENDPOINT_IGNITE_CLI_CFG_FACTORY, authority, "") + ']', e);
 
                 errTcp = e;
             }
