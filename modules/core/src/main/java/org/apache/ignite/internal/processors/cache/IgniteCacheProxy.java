@@ -108,14 +108,14 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     };
 
     /** Context. */
-    private GridCacheContext<K, V> ctx;
+    private volatile GridCacheContext<K, V> ctx;
 
     /** Gateway. */
-    private GridCacheGateway<K, V> gate;
+    private volatile GridCacheGateway<K, V> gate;
 
     /** Delegate. */
     @GridToStringInclude
-    private IgniteInternalCache<K, V> delegate;
+    private volatile IgniteInternalCache<K, V> delegate;
 
     /** Operation context. */
     private CacheOperationContext opCtx;
@@ -131,6 +131,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** If {@code false} does not acquire read lock on gateway enter. */
     @GridToStringExclude
     private boolean lock;
+
+    private volatile boolean restarting;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -2281,6 +2283,24 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
+    }
+
+    public boolean isRestarting() {
+        return restarting;
+    }
+
+    public void restart() {
+        restarting = true;
+    }
+
+    public void onRestarted(GridCacheContext ctx, IgniteInternalCache delegate) {
+        this.ctx = ctx;
+        this.delegate = delegate;
+        this.gate = ctx.gate();
+
+        internalProxy = new GridCacheProxyImpl<>(ctx, delegate, opCtx);
+
+        restarting = false;
     }
 
     /** {@inheritDoc} */

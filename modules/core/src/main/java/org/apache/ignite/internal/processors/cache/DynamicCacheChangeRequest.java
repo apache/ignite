@@ -217,6 +217,10 @@ public class DynamicCacheChangeRequest implements Serializable {
         this.stop = stop;
     }
 
+    public boolean restart() {
+        return true;
+    }
+
     /**
      * @return Cache name.
      */
