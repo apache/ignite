@@ -19,7 +19,6 @@ package org.apache.ignite.loadtests.continuous;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
@@ -47,10 +46,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
- * Load Tests
+ * Yet another failover test for continuous queries.
  */
 public abstract class CacheContinuousQueryAbstractLoadTest extends GridCommonAbstractTest {
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -71,20 +69,28 @@ public abstract class CacheContinuousQueryAbstractLoadTest extends GridCommonAbs
         return cfg;
     }
 
-    /** */
+    /**
+     * @return Number of backups.
+     */
     protected abstract int backups();
 
-    /** */
+    /**
+     * @return Cache mode.
+     */
     protected abstract CacheMode cacheMode();
 
-    /** */
+    /**
+     * @return Atomicity mode.
+     */
     protected abstract CacheAtomicityMode atomicityMode();
 
-    /** */
+    /**
+     * @return Write order mode.
+     */
     protected abstract CacheAtomicWriteOrderMode writeOrderMode();
 
     /**
-     * This is load test detecting CQ event loss while topology changing.
+     * This is failover test detecting CQ event loss while topology changing.
      *
      * @throws Exception If failed.
      */
@@ -111,7 +117,7 @@ public abstract class CacheContinuousQueryAbstractLoadTest extends GridCommonAbs
 
         int ignoredDupEvents = 0;
 
-        Thread nodeRestartThread = getNodeRestartThread(stableNodeCnt, 5, 2_000, 2_000);
+        Thread nodeRestartThread = nodeRestartThread(stableNodeCnt, 5, 2_000, 2_000);
 
         try {
             nodeRestartThread.start();
@@ -184,7 +190,7 @@ public abstract class CacheContinuousQueryAbstractLoadTest extends GridCommonAbs
      * Start thread which restarts a node over and over again.
      */
     @SuppressWarnings("InfiniteLoopStatement")
-    public Thread getNodeRestartThread(final int no, final int restartCycles,
+    public Thread nodeRestartThread(final int no, final int restartCycles,
         final long initialDelay, final long restartDelay) {
 
         final IgniteLogger log = this.log;
@@ -200,7 +206,7 @@ public abstract class CacheContinuousQueryAbstractLoadTest extends GridCommonAbs
 
                         log.debug("Node restart cycle started: " + i);
 
-                        try (Ignite node = Ignition.start(cfg)) {
+                        try (Ignite ignored = Ignition.start(cfg)) {
                             sleep(restartDelay);
                         }
 
@@ -215,7 +221,7 @@ public abstract class CacheContinuousQueryAbstractLoadTest extends GridCommonAbs
             }
         });
 
-        t.setName("Flapping-node-thread");
+        t.setName("flapping-node-thread");
 
         t.setDaemon(true);
 
@@ -225,7 +231,7 @@ public abstract class CacheContinuousQueryAbstractLoadTest extends GridCommonAbs
     /**
      * Sleep quietly
      *
-     * @param sleepTime
+     * @param sleepTime Sleep time.
      */
     private void sleep(long sleepTime) {
         try {
@@ -243,17 +249,13 @@ public abstract class CacheContinuousQueryAbstractLoadTest extends GridCommonAbs
      * Listener.
      */
     private static class CacheEventListener implements CacheEntryUpdatedListener<Integer, Integer> {
-        /**
-         * Listener count.
-         */
+        /** Listener count. */
         private final AtomicLong counter = new AtomicLong();
 
-        /**
-         * Listener map.
-         */
+        /** Listener map. */
         private final Map<Integer, Integer> eventMap = new ConcurrentHashMap<>();
 
-        /** */
+        /** Atomicity mode flag. */
         private final boolean atomicModeFlag;
 
         /** Constructor */
@@ -261,11 +263,9 @@ public abstract class CacheContinuousQueryAbstractLoadTest extends GridCommonAbs
             this.atomicModeFlag = atomicModeFlag;
         }
 
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts)
+        /** {@inheritDoc} */
+        @SuppressWarnings("EqualsBetweenInconvertibleTypes")
+        @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts)
             throws CacheEntryListenerException {
             for (CacheEntryEvent<? extends Integer, ? extends Integer> evt : evts) {
                 Integer prev = eventMap.put(evt.getKey(), evt.getValue());
@@ -276,12 +276,16 @@ public abstract class CacheContinuousQueryAbstractLoadTest extends GridCommonAbs
             }
         }
 
-        /** */
+        /**
+         * @return Events count.
+         */
         public long count() {
             return counter.get();
         }
 
-        /** */
+        /**
+         * @return Event map.
+         */
         Map<Integer, Integer> eventMap() {
             return eventMap;
         }

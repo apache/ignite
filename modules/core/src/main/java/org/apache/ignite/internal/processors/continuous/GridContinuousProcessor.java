@@ -819,7 +819,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             if (!toSnd.isEmpty())
                 sendNotification(nodeId, routineId, null, toSnd, orderedTopic, true, null);
-        } else {
+        }
+        else {
             LocalRoutineInfo localRoutineInfo = locInfos.get(routineId);
 
             if (localRoutineInfo != null)

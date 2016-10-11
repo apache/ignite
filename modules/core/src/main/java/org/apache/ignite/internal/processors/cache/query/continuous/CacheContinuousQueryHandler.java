@@ -598,7 +598,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         if (objs.isEmpty())
             return;
 
-        final List<CacheContinuousQueryEntry> entries = objs instanceof List?(List)objs:new ArrayList(objs);
+        final List<CacheContinuousQueryEntry> entries = objs instanceof List ? (List)objs : new ArrayList(objs);
 
         if (asyncCallback) {
             IgniteStripedThreadPoolExecutor asyncPool = ctx.asyncCallbackPool();
