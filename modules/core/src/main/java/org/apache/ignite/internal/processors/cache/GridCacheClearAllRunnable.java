@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -79,10 +76,8 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
 
     /** {@inheritDoc} */
     @Override public void run() {
-        Iterator<? extends GridCacheEntryEx> iter = cache.entries().iterator();
-
-        while (iter.hasNext())
-            clearEntry(iter.next());
+        for (GridCacheEntryEx gridCacheEntryEx : cache.entries())
+            clearEntry(gridCacheEntryEx);
 
         if (!ctx.isNear()) {
             if (id == 0)
@@ -96,11 +91,16 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
      * @param e Entry.
      */
     protected void clearEntry(GridCacheEntryEx e) {
+        ctx.shared().database().checkpointReadLock();
+
         try {
             e.clear(obsoleteVer, readers);
         }
         catch (IgniteCheckedException ex) {
             U.error(log, "Failed to clearLocally entry from cache (will continue to clearLocally other entries): " + e, ex);
+        }
+        finally {
+            ctx.shared().database().checkpointReadUnlock();
         }
     }
 
