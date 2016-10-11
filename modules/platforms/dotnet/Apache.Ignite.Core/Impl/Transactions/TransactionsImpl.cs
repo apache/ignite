@@ -38,31 +38,31 @@ namespace Apache.Ignite.Core.Impl.Transactions
         private const int OpMetrics = 2;
 
         /** */
-        public const int OpStart = 3;
+        private const int OpStart = 3;
 
         /** */
-        public const int OpCommit = 4;
+        private const int OpCommit = 4;
 
         /** */
-        public const int OpRollback = 5;
+        private const int OpRollback = 5;
 
         /** */
-        public const int OpClose = 6;
+        private const int OpClose = 6;
 
         /** */
-        public const int OpState = 7;
+        private const int OpState = 7;
 
         /** */
-        public const int OpSetRollbackOnly = 8;
+        private const int OpSetRollbackOnly = 8;
 
         /** */
-        public const int OpCommitAsync = 9;
+        private const int OpCommitAsync = 9;
 
         /** */
-        public const int OpRollbackAsync = 10;
+        private const int OpRollbackAsync = 10;
 
         /** */
-        public const int OpResetMetrics = 11;
+        private const int OpResetMetrics = 11;
 
 
         /** */
@@ -196,7 +196,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <returns>Transaction current state.</returns>
         internal TransactionState TxState(TransactionImpl tx)
         {
-            return GetTransactionState(DoOutInOpLong(OpState, tx.Id));
+            return (TransactionState) DoOutInOpLong(OpState, tx.Id);
         }
 
         /// <summary>
@@ -231,14 +231,6 @@ namespace Apache.Ignite.Core.Impl.Transactions
                 s.WriteLong(tx.Id);
                 s.WriteLong(futId);
             })).Task;
-        }
- 
-        /// <summary>
-        /// Gets the state of the transaction from int.
-        /// </summary>
-        private static TransactionState GetTransactionState(long state)
-        {
-            return (TransactionState)state;
         }
     }
 }
