@@ -25,10 +25,14 @@ import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.igfs.IgfsUserContext;
 import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
+import org.apache.ignite.internal.util.lang.GridTuple;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,7 +49,11 @@ public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>
     /** Path for operation. */
     protected IgfsPath path;
 
+    /** User name. */
+    protected String user;
+
     /** Injected instance. */
+    @SuppressWarnings("UnusedDeclaration")
     @IgniteInstanceResource
     private transient Ignite ignite;
 
@@ -60,20 +68,42 @@ public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>
      * Constructor.
      *
      * @param igfsName IGFS name.
+     * @param user IGFS user name.
      * @param path Path.
      */
-    protected IgfsClientAbstractCallable(@Nullable String igfsName, @Nullable IgfsPath path) {
+    protected IgfsClientAbstractCallable(@Nullable String igfsName, @Nullable String user, @Nullable IgfsPath path) {
         this.igfsName = igfsName;
         this.path = path;
+        this.user = user;
     }
 
     /** {@inheritDoc} */
     @Override public final T call() throws Exception {
         assert ignite != null;
 
-        IgfsEx igfs = (IgfsEx)ignite.fileSystem(igfsName);
+        final IgfsEx igfs = (IgfsEx)ignite.fileSystem(igfsName);
 
-        return call0(igfs.context());
+        if (user != null) {
+            final GridTuple<Exception> ex = F.t(null);
+
+            T res = IgfsUserContext.doAs(user, new IgniteOutClosure<T>() {
+                @Override public T apply() {
+                    try {
+                        return call0(igfs.context());
+                    }
+                    catch (Exception e) {
+                        ex.set(e);
+                    }
+                    return null;
+                }
+            });
+
+            if (ex.get() != null)
+                throw ex.get();
+
+            return res;
+        } else
+            return call0(igfs.context());
     }
 
     /**
@@ -90,6 +120,7 @@ public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>
         BinaryRawWriter rawWriter = writer.rawWriter();
 
         rawWriter.writeString(igfsName);
+        rawWriter.writeString(user);
         IgfsUtils.writePath(rawWriter, path);
 
         writeBinary0(rawWriter);
@@ -100,6 +131,7 @@ public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>
         BinaryRawReader rawReader = reader.rawReader();
 
         igfsName = rawReader.readString();
+        user = rawReader.readString();
         path = IgfsUtils.readPath(rawReader);
 
         readBinary0(rawReader);
