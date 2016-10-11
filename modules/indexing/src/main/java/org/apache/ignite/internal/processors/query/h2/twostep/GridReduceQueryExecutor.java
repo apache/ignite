@@ -558,7 +558,7 @@ public class GridReduceQueryExecutor {
             runs.put(qryReqId, r);
 
             try {
-                cancel.checkCancelled();
+                cancel.stopIfCancelled();
 
                 if (ctx.clientDisconnected()) {
                     throw new CacheException("Query was cancelled, client node disconnected.",
@@ -594,7 +594,7 @@ public class GridReduceQueryExecutor {
                     new GridQueryRequest(qryReqId, r.pageSize, space, mapQrys, topVer, extraSpaces, null, timeoutMillis), partsMap)) {
                     awaitAllReplies(r, nodes);
 
-                    cancel.checkCancelled();
+                    cancel.stopIfCancelled();
 
                     Object state = r.state.get();
 
@@ -653,7 +653,7 @@ public class GridReduceQueryExecutor {
                         resIter = res.iterator();
                     }
                     else {
-                        cancel.checkCancelled();
+                        cancel.stopIfCancelled();
 
                         GridCacheSqlQuery rdc = qry.reduceQuery();
 

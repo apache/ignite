@@ -17,43 +17,36 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Contains cancellation closure.
+ * Holds query cancel state.
  */
 public class GridQueryCancel {
-    /**
-     * Cancel requested state.
-     */
+    /** */
     private volatile boolean cancelled;
 
-    /**
-     * Query completed state.
-     */
+    /** */
     private volatile boolean completed;
 
-    /**
-     * Cancel closure.
-     */
+    /** */
     private volatile Runnable clo;
 
     /**
+     * Sets a cancel closure. The closure must be idempotent to multiple invocations.
+     *
      * @param clo Clo.
      */
     public void set(Runnable clo) throws QueryCancelledException{
-        checkCancelled();
+        stopIfCancelled();
 
         this.clo = clo;
     }
 
     /**
-     * Spins until a query is completed by cancel or normal termination.
+     * Spins until a query is completed.
      * Only one thread can enter this method.
      * This is guaranteed by {@link org.apache.ignite.internal.processors.cache.QueryCursorImpl}
      */
@@ -61,32 +54,31 @@ public class GridQueryCancel {
         cancelled = true;
 
         int attempt = 0;
-        do {
-            int sleep = attempt++ * 10;
 
-            if (sleep != 0)
-                try {
-                    U.sleep(sleep);
-                } catch (IgniteInterruptedCheckedException ignored) {
-                    return;
-                }
-
+        while (!completed) {
             if (clo != null) clo.run();
-        } while(!completed);
+
+            try {
+                U.sleep(++attempt * 10);
+            } catch (IgniteInterruptedCheckedException ignored) {
+                return;
+            }
+        }
     }
 
     /**
-     * Check cancel state.
+     * Stops query execution if a user requested cancel.
      */
-    public void checkCancelled() throws QueryCancelledException{
+    public void stopIfCancelled() throws QueryCancelledException{
         if (cancelled)
             throw new QueryCancelledException();
     }
 
     /**
-     * Signals the spinner to stop because two things have been happened: query was completed or cancelled.
+     * Sets completed state.
+     * The method must be called then a query is completed by any reason, typically in final block.
      */
-    public void done() {
+    public void setCompleted() {
         completed = true;
     }
 }

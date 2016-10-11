@@ -67,7 +67,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -857,7 +856,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      *
      * @param conn Connection,.
      * @param stmt Statement.
-     * @param cancel Reference to query cancellation closure.
+     * @param cancel Cancel instance.
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
@@ -891,7 +890,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteCheckedException("Failed to execute SQL query.", e);
         } finally {
             if(cancel != null)
-                cancel.done();
+                cancel.setCompleted();
 
             if (timeoutMillis > 0)
                 ((Session)((JdbcConnection)conn).getSession()).setQueryTimeout(0);
@@ -906,7 +905,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param sql Sql query.
      * @param params Parameters.
      * @param useStmtCache If {@code true} uses statement cache.
-     * @param cancel Reference to cancellation closure.
+     * @param cancel Cancel instance.
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
@@ -929,7 +928,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param conn Connection.
      * @param sql Sql query.
      * @param params Parameters.
-     * @param cancel Reference to cancellation closure.
+     * @param cancel Cancel instance.
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
@@ -978,6 +977,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param qry Query.
      * @param params Query parameters.
      * @param tbl Target table of query to generate select.
+     * @param cancel Cancel instance.
      * @return Result set.
      * @throws IgniteCheckedException If failed.
      */
@@ -1052,7 +1052,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     return rdcQryExec.query(cctx, qry, keepCacheObj, timeoutMillis, cancel);
                 } finally {
                     if (cancel != null)
-                        cancel.done();
+                        cancel.setCompleted();
                 }
             }
         };
@@ -1152,7 +1152,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         try {
                             ctx.cache().createMissingCaches();
                         }
-                        catch (IgniteCheckedException e1) {
+                        catch (IgniteCheckedException ignored) {
                             throw new CacheException("Failed to create missing caches.", e);
                         }
 

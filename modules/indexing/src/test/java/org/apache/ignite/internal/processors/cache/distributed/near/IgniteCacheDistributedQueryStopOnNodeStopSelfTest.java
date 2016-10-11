@@ -34,14 +34,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Tests distributed fields query resources cleanup on executing node stops.
+ * Tests distributed SQL query cancel on grid shutdown.
  */
 public class IgniteCacheDistributedQueryStopOnNodeStopSelfTest extends GridCommonAbstractTest {
     /** Grids count. */
     private static final int GRIDS_COUNT = 3;
 
     /** IP finder. */
-    private static TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Cache size. */
     public static final int CACHE_SIZE = 10_000;
@@ -126,7 +126,7 @@ public class IgniteCacheDistributedQueryStopOnNodeStopSelfTest extends GridCommo
 
                 cursor.iterator();
             }
-            catch (CacheException ex) {
+            catch (CacheException ignored) {
                 // No-op.
             }
 
