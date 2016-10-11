@@ -146,10 +146,10 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         cfg.setCommunicationSpi(commSpi);
 
-        MemoryEventStorageSpi eventSpi = new MemoryEventStorageSpi();
-        eventSpi.setExpireCount(50);
+        MemoryEventStorageSpi evtSpi = new MemoryEventStorageSpi();
+        evtSpi.setExpireCount(50);
 
-        cfg.setEventStorageSpi(eventSpi);
+        cfg.setEventStorageSpi(evtSpi);
 
         CacheConfiguration ccfg = new CacheConfiguration();
 
@@ -2283,9 +2283,9 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         int putCnt = 0;
 
-        int ignoredDupEvents = 0;
+        int ignoredDupEvts = 0;
 
-        Thread nodeRestartThread = nodeRestartThread(getTestGridName(stableNodeCnt), restartCycles, 2_000, 1_000);
+        Thread nodeRestartThread = nodeRestartThread(restartCycles, 2_000, 1_000);
 
         try {
             nodeRestartThread.start();
@@ -2302,7 +2302,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
                 final long cnt = lsnr.count();
 
-                final long expCnt = putCnt * stableNodeCnt + ignoredDupEvents;
+                final long expCnt = putCnt * stableNodeCnt + ignoredDupEvts;
 
                 GridTestUtils.waitForCondition(new GridAbsPredicate() {
                     @Override public boolean apply() {
@@ -2336,7 +2336,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                     // In atomic mode CQ can receive duplicate update events if update retried after fails.
                     // E.g. topology change
                     if (atomicityMode() == CacheAtomicityMode.ATOMIC && msg.isEmpty() && cnt > expCnt)
-                        ignoredDupEvents += cnt - expCnt;
+                        ignoredDupEvts += cnt - expCnt;
                     else
                         fail("Unexpected event updates count: EXPECTED=" + expCnt + ", ACTUAL=" + cnt + ", " +
                             "ITERATION=" + iteration + msg);
@@ -2355,26 +2355,22 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     }
 
     /**
-     * Start thread which restarts a node over and over again.
+     * Starts thread which restarts a node over and over again.
      */
-    private Thread nodeRestartThread(final String gridName, final int restartCycles,
-        final long initialDelay, final long restartDelay) {
-
-        final IgniteLogger log = this.log;
-
+    private Thread nodeRestartThread(final int restartCycles, final long initDelay, final long restartDelay) {
         Thread t = new Thread(new Runnable() {
             public void run() {
-                sleep(initialDelay);
+                sleep(initDelay);
 
                 try {
                     for (int i = 1; i <= restartCycles && !Thread.interrupted(); i++) {
 
-                        IgniteConfiguration cfg = getConfiguration().setGridLogger(new NullLogger());
+                        IgniteConfiguration cfg = optimize(getConfiguration("restartNode")).
+                            setGridLogger(new NullLogger());
 
-                        log.debug("Node restart cycle started: " + i);
+                        log.info("Node restart cycle started: " + i);
 
                         try (Ignite ignored = Ignition.start(cfg)) {
-
                             awaitPartitionMapExchange();
 
                             sleep(restartDelay);
@@ -2610,10 +2606,10 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      */
     private static class CacheEventListener4 implements CacheEntryUpdatedListener<Integer, Integer> {
         /** Listener count. */
-        private final AtomicLong counter = new AtomicLong();
+        private final AtomicLong cntr = new AtomicLong();
 
         /** Listener map. */
-        private final Map<Integer, Integer> eventMap = new ConcurrentHashMap<>();
+        private final Map<Integer, Integer> evtMap = new ConcurrentHashMap<>();
 
         /** Atomicity mode flag. */
         private final boolean atomicModeFlag;
@@ -2628,11 +2624,11 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts)
             throws CacheEntryListenerException {
             for (CacheEntryEvent<? extends Integer, ? extends Integer> evt : evts) {
-                Integer prev = eventMap.put(evt.getKey(), evt.getValue());
+                Integer prev = evtMap.put(evt.getKey(), evt.getValue());
 
                 //Atomic cache allows duplicate events if cache update operation fails, e.g. due to topology change.
                 if (!atomicModeFlag || prev == null || !prev.equals(evt))
-                    counter.incrementAndGet();
+                    cntr.incrementAndGet();
             }
         }
 
@@ -2640,14 +2636,14 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
          * @return Events count.
          */
         public long count() {
-            return counter.get();
+            return cntr.get();
         }
 
         /**
          * @return Event map.
          */
         Map<Integer, Integer> eventMap() {
-            return eventMap;
+            return evtMap;
         }
     }
 
