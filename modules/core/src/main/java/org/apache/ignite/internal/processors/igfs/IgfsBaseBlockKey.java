@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
-import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
