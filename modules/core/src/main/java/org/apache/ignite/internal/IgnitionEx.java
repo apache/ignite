@@ -1477,6 +1477,9 @@ public class IgnitionEx {
         /** Marshaller cache executor service. */
         private ThreadPoolExecutor marshCacheExecSvc;
 
+        /** Affinity executor service. */
+        private ThreadPoolExecutor affExecSvc;
+
         /** Continuous query executor service. */
         private IgniteStripedThreadPoolExecutor callbackExecSvc;
 
@@ -1734,6 +1737,16 @@ public class IgnitionEx {
 
             marshCacheExecSvc.allowCoreThreadTimeOut(true);
 
+            affExecSvc = new IgniteThreadPoolExecutor(
+                "aff",
+                cfg.getGridName(),
+                1,
+                1,
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>());
+
+            affExecSvc.allowCoreThreadTimeOut(true);
+
             // Register Ignite MBean for current grid instance.
             registerFactoryMbean(myCfg.getMBeanServer());
 
@@ -1746,7 +1759,7 @@ public class IgnitionEx {
                 grid = grid0;
 
                 grid0.start(myCfg, utilityCacheExecSvc, marshCacheExecSvc, execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc,
-                    igfsExecSvc, restExecSvc, callbackExecSvc,
+                    igfsExecSvc, restExecSvc, affExecSvc, callbackExecSvc,
                     new CA() {
                         @Override public void apply() {
                             startLatch.countDown();
@@ -2380,6 +2393,10 @@ public class IgnitionEx {
             U.shutdownNow(getClass(), marshCacheExecSvc, log);
 
             marshCacheExecSvc = null;
+
+            U.shutdownNow(getClass(), affExecSvc, log);
+
+            affExecSvc = null;
 
             U.shutdownNow(getClass(), callbackExecSvc, log);
 
