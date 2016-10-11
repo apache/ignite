@@ -92,6 +92,9 @@ class WebSessionV2 implements HttpSession {
      * @param id Session ID.
      * @param ses Session.
      * @param isNew Is new flag.
+     * @param ctx Servlet context.
+     * @param entity Entity.
+     * @param marsh Marshaller.
      */
     WebSessionV2(final String id, final @Nullable HttpSession ses, final boolean isNew, final ServletContext ctx,
         @Nullable WebSessionEntity entity, final Marshaller marsh) {
