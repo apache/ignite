@@ -508,11 +508,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return JNI.ListenableCancel(target.Context, target.Target);
         }
 
-        internal static bool ListenableIsCancelled(IUnmanagedTarget target)
-        {
-            return JNI.ListenableIsCancelled(target.Context, target.Target);
-        }
-
         #endregion
     }
 }

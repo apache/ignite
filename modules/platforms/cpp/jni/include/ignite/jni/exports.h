@@ -82,7 +82,6 @@ extern "C" {
     void IGNITE_CALL IgniteDestroyJvm(gcj::JniContext* ctx);
 
     bool IGNITE_CALL IgniteListenableCancel(gcj::JniContext* ctx, void* obj);
-    bool IGNITE_CALL IgniteListenableIsCancelled(gcj::JniContext* ctx, void* obj);
 }
 
 #endif //_IGNITE_JNI_EXPORTS

@@ -38,7 +38,6 @@ IgniteTargetOutObject @91
 IgniteProcessorExtensions @97
 IgniteProcessorAtomicLong @98
 IgniteListenableCancel @110
-IgniteListenableIsCancelled @111
 IgniteTargetListenFutureAndGet @112
 IgniteTargetListenFutureForOperationAndGet @113
 IgniteProcessorCreateCacheFromConfig @114

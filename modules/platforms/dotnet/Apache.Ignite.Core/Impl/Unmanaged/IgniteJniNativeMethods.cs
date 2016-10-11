@@ -179,9 +179,5 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteListenableCancel")]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool ListenableCancel(void* ctx, void* target);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteListenableIsCancelled")]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool ListenableIsCancelled(void* ctx, void* target);
     }
 }

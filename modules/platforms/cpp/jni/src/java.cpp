@@ -320,7 +320,6 @@ namespace ignite
 
             const char* C_PLATFORM_LISTENABLE = "org/apache/ignite/internal/processors/platform/utils/PlatformListenable";
             JniMethod M_PLATFORM_LISTENABLE_CANCEL = JniMethod("cancel", "()Z", false);
-            JniMethod M_PLATFORM_LISTENABLE_IS_CANCELED = JniMethod("isCancelled", "()Z", false);
 
             /* STATIC STATE. */
             gcc::CriticalSection JVM_LOCK;
@@ -529,7 +528,6 @@ namespace ignite
 
                 c_PlatformListenable = FindClass(env, C_PLATFORM_LISTENABLE);
                 m_PlatformListenable_cancel = FindMethod(env, c_PlatformListenable, M_PLATFORM_LISTENABLE_CANCEL);                    
-                m_PlatformListenable_isCancelled = FindMethod(env, c_PlatformListenable, M_PLATFORM_LISTENABLE_IS_CANCELED);
 
                 // Find utility classes which are not used from context, but are still required in other places.
                 CheckClass(env, C_PLATFORM_NO_CALLBACK_EXCEPTION);
@@ -1408,17 +1406,6 @@ namespace ignite
                 JNIEnv* env = Attach();
 
                 jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformListenable_cancel);
-
-                ExceptionCheck(env);
-
-                return res != 0;;
-            }
-
-            bool JniContext::ListenableIsCancelled(jobject obj)
-            {
-                JNIEnv* env = Attach();
-
-                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformListenable_isCancelled);
 
                 ExceptionCheck(env);
 
