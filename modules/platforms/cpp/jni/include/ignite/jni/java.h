@@ -225,13 +225,6 @@ namespace ignite
             struct JniMembers {
                 jclass c_IgniteException;
 
-                jclass c_PlatformServices;  // TODO
-                jmethodID m_PlatformServices_withAsync;
-                jmethodID m_PlatformServices_withServerKeepPortable;
-                jmethodID m_PlatformServices_cancel;
-                jmethodID m_PlatformServices_cancelAll;
-                jmethodID m_PlatformServices_serviceProxy;
-
                 jclass c_PlatformIgnition;
                 jmethodID m_PlatformIgnition_start;
                 jmethodID m_PlatformIgnition_instance;
