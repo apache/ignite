@@ -26,7 +26,6 @@ import org.yardstickframework.BenchmarkConfiguration;
  * memory mode and with expiration policy set.
  */
 public class IgnitePutAllOffHeapWithExpiryBenchmark extends IgnitePutAllWithExpiryBenchmark {
-
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);

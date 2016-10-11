@@ -175,8 +175,7 @@
                         <list>
                             <bean class="org.apache.ignite.cache.CacheTypeMetadata">
                                 <property name="keyType" value="java.lang.Integer"/>
-                                <property name="valueType"
-                                          value="org.apache.ignite.yardstick.cache.model.Organization"/>
+                                <property name="valueType" value="org.apache.ignite.yardstick.cache.model.Organization"/>
 
                                 <property name="ascendingFields">
                                     <map>

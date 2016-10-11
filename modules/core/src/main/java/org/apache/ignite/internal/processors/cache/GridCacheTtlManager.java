@@ -40,7 +40,6 @@ import org.jetbrains.annotations.NotNull;
  */
 @SuppressWarnings("NakedNotify")
 public class GridCacheTtlManager extends GridCacheManagerAdapter {
-
     /** Pending entries pointer factory */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private PendingEntrySmartPointerFactory pointerFactory;

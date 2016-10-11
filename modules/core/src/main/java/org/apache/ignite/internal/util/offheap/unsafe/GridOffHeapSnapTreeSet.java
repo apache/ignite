@@ -17,21 +17,19 @@
 
 package org.apache.ignite.internal.util.offheap.unsafe;
 
-import org.jetbrains.annotations.Nullable;
-
 import java.util.AbstractSet;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentNavigableMap;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Sorted set based on {@link GridOffHeapSnapTreeMap}
  */
 public class GridOffHeapSnapTreeSet<E extends GridOffHeapSmartPointer> extends AbstractSet<E>
     implements SortedSet<E> {
-
     /** */
     private static final DummySmartPointer DUMMY_SMART_POINTER = new DummySmartPointer(Long.MAX_VALUE);
 
