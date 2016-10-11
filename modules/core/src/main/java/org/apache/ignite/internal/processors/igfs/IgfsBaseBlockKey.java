@@ -18,23 +18,21 @@
 package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
-import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * The base class to block key that is used by the {@link IgfsGroupDataBlocksKeyMapper}
  */
-@GridInternal
 public interface IgfsBaseBlockKey {
     /**
      * @return Block ID.
      */
-    public long getBlockId();
+    public long blockId();
 
     /**
      * @return Hash is based on a file identifier (path, ID, etc).
      */
-    public int getFileHash();
+    public int fileHash();
 
     /**
      * @return Block affinity key.

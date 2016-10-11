@@ -49,12 +49,12 @@ public final class IgfsLocalSecondaryBlockKey implements IgfsBaseBlockKey, Compa
     }
 
     /** {@inheritDoc} */
-    @Override public long getBlockId() {
+    @Override public long blockId() {
         return blockId;
     }
 
     /** {@inheritDoc} */
-    @Override public int getFileHash() {
+    @Override public int fileHash() {
         return path.hashCode();
     }
 

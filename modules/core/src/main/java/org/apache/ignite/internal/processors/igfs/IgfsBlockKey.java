@@ -99,12 +99,12 @@ public final class IgfsBlockKey implements IgfsBaseBlockKey, Message, Externaliz
     }
 
     /** {@inheritDoc} */
-    @Override public long getBlockId() {
+    @Override public long blockId() {
         return blockId;
     }
 
     /** {@inheritDoc} */
-    @Override public int getFileHash() {
+    @Override public int fileHash() {
         return fileId.hashCode();
     }
 

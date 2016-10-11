@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsLocalSecondaryBlockKey;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsBlockLocationImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsSecondaryFileSystemV2;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemIgfsFile;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemSizeVisitor;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemUtils;

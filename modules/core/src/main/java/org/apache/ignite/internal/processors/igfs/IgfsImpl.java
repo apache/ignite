@@ -1280,6 +1280,7 @@ public final class IgfsImpl implements IgfsEx {
                         return ((IgfsSecondaryFileSystemV2)secondaryFs).affinity(path, start, len, maxLen);
                     else {
                         IgfsFile info = info(path);
+
                         return (info != null) ?
                             Collections.<IgfsBlockLocation>singleton(
                                 new IgfsBlockLocationImpl(0, info.length(), Collections.singleton(igfsCtx.localNode())))
