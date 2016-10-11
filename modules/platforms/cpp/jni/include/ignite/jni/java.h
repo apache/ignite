@@ -276,7 +276,7 @@ namespace ignite
                 jmethodID m_PlatformUtils_reallocate;
                 jmethodID m_PlatformUtils_errData;
 
-                jclass c_PlatformListenable;  // TODO??
+                jclass c_PlatformListenable;
                 jmethodID m_PlatformListenable_cancel;
 
                 /**
