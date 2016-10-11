@@ -320,6 +320,7 @@ namespace ignite
 
             const char* C_PLATFORM_LISTENABLE = "org/apache/ignite/internal/processors/platform/utils/PlatformListenable";
             JniMethod M_PLATFORM_LISTENABLE_CANCEL = JniMethod("cancel", "()Z", false);
+            JniMethod M_PLATFORM_LISTENABLE_IS_CANCELED = JniMethod("isCancelled", "()Z", false);
 
             /* STATIC STATE. */
             gcc::CriticalSection JVM_LOCK;
@@ -1406,6 +1407,17 @@ namespace ignite
                 JNIEnv* env = Attach();
 
                 jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformListenable_cancel);
+
+                ExceptionCheck(env);
+
+                return res != 0;;
+            }
+
+            bool JniContext::ListenableIsCancelled(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformListenable_isCancelled);
 
                 ExceptionCheck(env);
 

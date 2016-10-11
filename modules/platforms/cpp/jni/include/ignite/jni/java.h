@@ -278,6 +278,7 @@ namespace ignite
 
                 jclass c_PlatformListenable;
                 jmethodID m_PlatformListenable_cancel;
+                jmethodID m_PlatformListenable_isCancelled;
 
                 /**
                  * Constructor.
@@ -454,6 +455,7 @@ namespace ignite
                 jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr);
 
                 bool ListenableCancel(jobject obj);
+                bool ListenableIsCancelled(jobject obj);
 
                 jobject Acquire(jobject obj);
 

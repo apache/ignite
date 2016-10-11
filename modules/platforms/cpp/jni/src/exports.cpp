@@ -221,4 +221,8 @@ extern "C" {
     bool IGNITE_CALL IgniteListenableCancel(gcj::JniContext* ctx, void* obj) {
         return ctx->ListenableCancel(static_cast<jobject>(obj));
     }
+
+    bool IGNITE_CALL IgniteListenableIsCancelled(gcj::JniContext* ctx, void* obj) {
+        return ctx->ListenableIsCancelled(static_cast<jobject>(obj));
+    }
 }
