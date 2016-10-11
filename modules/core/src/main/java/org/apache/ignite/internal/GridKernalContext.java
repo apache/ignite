@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.odbc.OdbcProcessor;
 import org.apache.ignite.internal.processors.offheap.GridOffHeapProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
+import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.port.GridPortProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
@@ -284,6 +285,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Hadoop processor.
      */
     public HadoopProcessorAdapter hadoop();
+
+    /**
+     * Gets pool processor.
+     *
+     * @return Pool processor.
+     */
+    public PoolProcessor pools();
 
     /**
      * Gets Hadoop helper.
@@ -531,6 +539,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *      messages.
      */
     public ExecutorService getRestExecutorService();
+
+    /**
+     * Get affinity executor service.
+     *
+     * @return Affinity executor service.
+     */
+    public ExecutorService getAffinityExecutorService();
 
     /**
      * Gets exception registry.
