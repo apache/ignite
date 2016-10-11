@@ -173,25 +173,36 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
                 switch (opType)
                 {
                     case OpLoadCache:
+                    {
                         var args = rawReader.ReadArray<object>();
 
                         stream.Seek(0, SeekOrigin.Begin);
 
                         int cnt = 0;
-                        stream.WriteInt(cnt);
+                        stream.WriteInt(cnt); // Reserve space for count.
+
+                        var writer = grid.Marshaller.StartMarshal(stream);
 
                         _store.LoadCache((k, v) =>
                         {
-                            lock (stream)  // TODO: How did it work before?
+                            lock (stream) // User-defined store can be multithreaded.
                             {
-                                WriteObjects(stream, grid, k, v);
+                                writer.WithDetach(w =>
+                                {
+                                    w.WriteObject(k);
+                                    w.WriteObject(v);
+                                });
+
                                 cnt++;
                             }
                         }, args);
 
                         stream.WriteInt(0, cnt);
 
+                        grid.Marshaller.FinishMarshal(writer);
+
                         break;
+                    }
 
                     case OpLoad:
                         object val = _store.Load(rawReader.ReadObject<object>());
@@ -204,17 +215,28 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
                         break;
 
                     case OpLoadAll:
+                    {
                         var keys = rawReader.ReadCollection();
 
                         var result = _store.LoadAll(keys);
 
                         stream.Seek(0, SeekOrigin.Begin);
 
-                        // TODO: Optimize?
+                        var writer = grid.Marshaller.StartMarshal(stream);
+
                         foreach (DictionaryEntry entry in result)
-                            WriteObjects(stream, grid, entry.Key, entry.Value);
+                        {
+                            writer.WithDetach(w =>
+                            {
+                                w.WriteObject(entry.Key);
+                                w.WriteObject(entry.Value);
+                            });
+                        }
+
+                        grid.Marshaller.FinishMarshal(writer);
 
                         break;
+                    }
 
                     case OpPut:
                         _store.Write(rawReader.ReadObject<object>(), rawReader.ReadObject<object>());
