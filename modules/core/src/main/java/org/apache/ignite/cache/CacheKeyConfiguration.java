@@ -19,11 +19,7 @@ package org.apache.ignite.cache;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
-import java.util.List;
-import org.apache.ignite.binary.BinaryKeyHashingMode;
-import org.apache.ignite.binary.BinaryObjectHashCodeResolver;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
-import org.apache.ignite.internal.binary.FieldsListHashCodeResolver;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -38,15 +34,6 @@ public class CacheKeyConfiguration implements Serializable {
 
     /** Affinity key field name. */
     private String affKeyFieldName;
-
-    /** Key hashing mode. */
-    private BinaryKeyHashingMode binHashingMode;
-
-    /** Fields to build binary objects' hash code upon. */
-    private List<String> binHashCodeFields;
-
-    /** Class name for hash code resolver to automatically compute hash codes for newly built binary objects. */
-    private String binHashCodeRslvrClsName;
 
     /**
      * Creates an empty cache key configuration that should be populated via setters.
@@ -115,74 +102,6 @@ public class CacheKeyConfiguration implements Serializable {
      */
     public void setAffinityKeyFieldName(String affKeyFieldName) {
         this.affKeyFieldName = affKeyFieldName;
-    }
-
-    /**
-     * Gets hashing mode for binary keys.
-     *
-     * @return Binary hashing mode.
-     * @see BinaryKeyHashingMode
-     */
-    public BinaryKeyHashingMode getBinaryHashingMode() {
-        return binHashingMode;
-    }
-
-    /**
-     * Sets hashing more for binary keys.
-     *
-     * @param binHashingMode Binary hashing mode.
-     * @see BinaryKeyHashingMode
-     */
-    public void setBinaryHashingMode(BinaryKeyHashingMode binHashingMode) {
-        this.binHashingMode = binHashingMode;
-    }
-
-    /**
-     * Gets list of fields for fields list hash code resolver.
-     *
-     * @return List of fields for fields list hash code resolver.
-     * @see #binHashingMode
-     * @see BinaryKeyHashingMode#FIELDS_HASH
-     * @see FieldsListHashCodeResolver
-     */
-    public List<String> getBinaryHashCodeFields() {
-        return binHashCodeFields;
-    }
-
-    /**
-     * Sets list of fields for fields list hash code resolver.
-     *
-     * @param binHashCodeFields List of fields for fields list hash code resolver.
-     * @see #binHashingMode
-     * @see BinaryKeyHashingMode#FIELDS_HASH
-     * @see FieldsListHashCodeResolver
-     */
-    public void setBinaryHashCodeFields(List<String> binHashCodeFields) {
-        this.binHashCodeFields = binHashCodeFields;
-    }
-
-    /**
-     * Gets binary objects hash code resolver class name.
-     *
-     * @return binary objects hash code resolver class name.
-     * @see #binHashingMode
-     * @see BinaryKeyHashingMode#CUSTOM
-     * @see BinaryObjectHashCodeResolver
-     */
-    public String getBinaryHashCodeResolverClassName() {
-        return binHashCodeRslvrClsName;
-    }
-
-    /**
-     * Sets binary objects hash code resolver class name.
-     *
-     * @param binHashCodeRslvrClsName resolver class name.
-     * @see #binHashingMode
-     * @see BinaryKeyHashingMode#CUSTOM
-     * @see BinaryObjectHashCodeResolver
-     */
-    public void setBinHashCodeResolverClassName(String binHashCodeRslvrClsName) {
-        this.binHashCodeRslvrClsName = binHashCodeRslvrClsName;
     }
 
     /** {@inheritDoc} */

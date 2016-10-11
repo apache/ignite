@@ -18,14 +18,14 @@
 package org.apache.ignite.internal.binary.builder;
 
 import org.apache.ignite.binary.BinaryInvalidTypeException;
-import org.apache.ignite.binary.BinaryKeyHashingMode;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryObjectHashCodeResolver;
+import org.apache.ignite.binary.BinaryTypeIdentity;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryPrimitives;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryContext;
@@ -38,7 +38,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -189,7 +188,23 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
             byte[] arr = writer.array();
 
-            return new BinaryObjectImpl(ctx, arr, 0);
+            BinaryObject res = new BinaryObjectImpl(ctx, arr, 0);
+
+            short flags = BinaryPrimitives.readShort(arr, GridBinaryMarshaller.FLAGS_POS);
+
+            if (BinaryUtils.isFlagSet(flags, BinaryUtils.FLAG_EMPTY_HASH_CODE)) {
+                BinaryTypeIdentity identity = ctx.identity(typeId());
+
+                if (identity != null) {
+                    // Reset missing hash code flag
+                    BinaryPrimitives.writeShort(arr, GridBinaryMarshaller.FLAGS_POS,
+                        (short) (flags & ~BinaryUtils.FLAG_EMPTY_HASH_CODE));
+
+                    BinaryPrimitives.writeInt(arr, GridBinaryMarshaller.HASH_CODE_POS, identity.hash(res));
+                }
+            }
+
+            return res;
         }
     }
 
@@ -336,41 +351,6 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
                 // Shift reader to the end of the object.
                 reader.position(start + BinaryUtils.length(reader, start));
-            }
-
-            // Let us not mess with hash codes of objects based on other objects, m'kay?
-            if (reader == null && !isHashCodeSet) {
-                BinaryKeyHashingMode hashingMode = ctx.keyHashingMode(typeId());
-
-                if (hashingMode != null) {
-                    switch (hashingMode) {
-                        case DEFAULT:
-                            // No-op.
-                            break;
-
-                        case BYTES_HASH:
-                            // Not considering #start as we're dealing only with #reader free cases.
-                            // At this point, no footer has been written yet, so we are looking at everything
-                            // past the header and down to the end of all data.
-                            byte[] data = Arrays.copyOfRange(writer.array(), hdrLen, writer.out().position());
-
-                            hashCode(Arrays.hashCode(data));
-                            break;
-
-                        case FIELDS_HASH:
-                        case CUSTOM:
-                            BinaryObjectHashCodeResolver rslvr = ctx.hashCodeResolver(typeId());
-
-                            assert rslvr != null;
-
-                            hashCode(rslvr.hash(this));
-                            break;
-
-                        default:
-                            throw new BinaryObjectException("Unexpected hashing mode [typeId=" + typeId() + ", typeName=" +
-                                typeName + ']');
-                    }
-                }
             }
 
             //noinspection NumberEquality

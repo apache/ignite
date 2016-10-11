@@ -38,12 +38,11 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.binary.BinaryKeyHashingMode;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryObjectHashCodeResolver;
+import org.apache.ignite.binary.BinaryTypeIdentity;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.binary.BinaryWriter;
@@ -60,9 +59,10 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryObjectExImpl;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
+import org.apache.ignite.internal.binary.FieldsListIdentity;
+import org.apache.ignite.internal.binary.FullIdentity;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -129,15 +129,28 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         List<BinaryTypeConfiguration> binTypes = new ArrayList<>();
 
         binTypes.add(new BinaryTypeConfiguration() {{
-            setTypeName("BytesHashedKey");
+            setTypeName("FullyHashedKey");
+            setIdentity(new FullIdentity());
+        }});
+
+        binTypes.add(new BinaryTypeConfiguration() {{
+            setTypeName("FullyHashedKeyField");
+            setIdentity(new FullIdentity());
         }});
 
         binTypes.add(new BinaryTypeConfiguration() {{
             setTypeName("FieldsHashedKey");
+
+            FieldsListIdentity id = new FieldsListIdentity();
+            id.setFieldNames(Arrays.asList("fld1", "fld3"));
+
+            setIdentity(id);
         }});
 
         binTypes.add(new BinaryTypeConfiguration() {{
             setTypeName("CustomHashedKey");
+
+            setIdentity(new Identity());
         }});
 
         BinaryConfiguration binCfg = new BinaryConfiguration();
@@ -145,21 +158,11 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
         cfg.setBinaryConfiguration(binCfg);
 
-        CacheKeyConfiguration arrHashConfiguration = new CacheKeyConfiguration("BytesHashedKey", "fld1") {{
-            setBinaryHashingMode(BinaryKeyHashingMode.BYTES_HASH);
-        }};
+        CacheKeyConfiguration arrHashConfiguration = new CacheKeyConfiguration("FullyHashedKey", "fld1");
 
-        CacheKeyConfiguration fieldsHashConfiguration = new CacheKeyConfiguration("FieldsHashedKey", "fld1") {{
-            setBinaryHashingMode(BinaryKeyHashingMode.FIELDS_HASH);
+        CacheKeyConfiguration fieldsHashConfiguration = new CacheKeyConfiguration("FieldsHashedKey", "fld1");
 
-            setBinaryHashCodeFields(Arrays.asList("fld1", "fld3"));
-        }};
-
-        CacheKeyConfiguration customHashConfiguration = new CacheKeyConfiguration("CustomHashedKey", "fld1") {{
-            setBinaryHashingMode(BinaryKeyHashingMode.CUSTOM);
-
-            setBinHashCodeResolverClassName(HashCodeResolver.class.getName());
-        }};
+        CacheKeyConfiguration customHashConfiguration = new CacheKeyConfiguration("CustomHashedKey", "fld1");
 
         cfg.setCacheKeyConfiguration(arrHashConfiguration, fieldsHashConfiguration, customHashConfiguration);
 
@@ -990,14 +993,21 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      *
      */
     @SuppressWarnings("unchecked")
-    public void testPutWithArrayHashing() {
+    public void testPutWithFullHashing() {
         IgniteCache c = binKeysCache();
 
         {
-            BinaryObjectBuilder bldr = grid(0).binary().builder("BytesHashedKey");
+            BinaryObjectBuilder bldr = grid(0).binary().builder("FullyHashedKey");
 
             bldr.setField("fld1", 5);
             bldr.setField("fld2", "abc");
+
+            BinaryObjectBuilder bldr2 = grid(0).binary().builder("FullyHashedKeyField");
+
+            bldr2.setField("a", "x");
+            bldr2.setField("b", 345L);
+
+            bldr.setField("fld3", bldr2.build());
 
             BinaryObject binKey = bldr.build();
 
@@ -1006,10 +1016,17 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
         // Now let's build an identical key for get
         {
-            BinaryObjectBuilder bldr = grid(0).binary().builder("BytesHashedKey");
+            BinaryObjectBuilder bldr = grid(0).binary().builder("FullyHashedKey");
 
             bldr.setField("fld1", 5);
             bldr.setField("fld2", "abc");
+
+            BinaryObjectBuilder bldr2 = grid(0).binary().builder("FullyHashedKeyField");
+
+            bldr2.setField("a", "x");
+            bldr2.setField("b", 345L);
+
+            bldr.setField("fld3", bldr2.build());
 
             BinaryObject binKey = bldr.build();
 
@@ -1390,14 +1407,14 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      *
      */
-    private final static class HashCodeResolver implements BinaryObjectHashCodeResolver {
+    private final static class Identity implements BinaryTypeIdentity {
         /** {@inheritDoc} */
-        @Override public int hash(BinaryObjectBuilder builder) {
-            return (Integer) builder.getField("fld1") * 31 / 5;
+        @Override public int hash(BinaryObject builder) {
+            return (Integer) builder.field("fld1") * 31 / 5;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean equals(BinaryObjectExImpl o1, BinaryObjectExImpl o2) {
+        @Override public boolean equals(BinaryObject o1, BinaryObject o2) {
             return o1 == o2 || (o1 != null && o2 != null && F.eq(o1.field("fld1"), o2.field("fld1")));
 
         }

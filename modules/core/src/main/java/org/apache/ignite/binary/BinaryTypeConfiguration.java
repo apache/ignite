@@ -42,6 +42,9 @@ public class BinaryTypeConfiguration {
     /** Serializer. */
     private BinarySerializer serializer;
 
+    /** Identity. */
+    private BinaryTypeIdentity identity;
+
     /** Enum flag. */
     private boolean isEnum;
 
@@ -143,6 +146,24 @@ public class BinaryTypeConfiguration {
      */
     public void setSerializer(BinarySerializer serializer) {
         this.serializer = serializer;
+    }
+
+    /**
+     * Gets identity.
+     *
+     * @return Identity.
+     */
+    public BinaryTypeIdentity getIdentity() {
+        return identity;
+    }
+
+    /**
+     * Sets type identity.
+     *
+     * @param identity Identity.
+     */
+    public void setIdentity(BinaryTypeIdentity identity) {
+        this.identity = identity;
     }
 
     /**

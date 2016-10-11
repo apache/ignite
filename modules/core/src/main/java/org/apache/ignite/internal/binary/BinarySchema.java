@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -51,6 +52,9 @@ public class BinarySchema implements Externalizable {
 
     /** IDs depending on order. */
     private int[] ids;
+
+    /** Sorted IDs to compute hash code. */
+    private int[] idsSorted;
 
     /** Interned names of associated fields. */
     private String[] names;
@@ -270,6 +274,15 @@ public class BinarySchema implements Externalizable {
     }
 
     /**
+     * Gets sorted field ids array to compute hash codes.
+     *
+     * @return Sorted field ids.
+     */
+    public int[] fieldIdsSorted() {
+        return idsSorted;
+    }
+
+    /**
      * Parse values.
      *
      * @param vals Values.
@@ -370,6 +383,12 @@ public class BinarySchema implements Externalizable {
 
         for (int i = 0; i < fieldIds.size(); i++)
             ids[i] = fieldIds.get(i);
+
+        idsSorted = new int[fieldIds.size()];
+
+        System.arraycopy(ids, 0, idsSorted, 0, ids.length);
+
+        Arrays.sort(idsSorted);
 
         names = new String[fieldIds.size()];
 

@@ -17,17 +17,15 @@
 
 package org.apache.ignite.binary;
 
-import org.apache.ignite.internal.binary.BinaryObjectExImpl;
-
 /**
  * Method to compute hash codes for new binary objects.
  */
-public interface BinaryObjectHashCodeResolver {
+public interface BinaryTypeIdentity {
     /**
-     * @param builder Binary object builder.
+     * @param obj Binary object builder.
      * @return Hash code value.
      */
-    public int hash(BinaryObjectBuilder builder);
+    public int hash(BinaryObject obj);
 
     /**
      * Compare binary objects for equality in consistence with how hash code is computed.
@@ -36,5 +34,5 @@ public interface BinaryObjectHashCodeResolver {
      * @param o2 Second object.
      * @return
      */
-    public boolean equals(BinaryObjectExImpl o1, BinaryObjectExImpl o2);
+    public boolean equals(BinaryObject o1, BinaryObject o2);
 }

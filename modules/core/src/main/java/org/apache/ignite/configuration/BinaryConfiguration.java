@@ -23,6 +23,7 @@ import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.binary.BinaryTypeIdentity;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -41,6 +42,9 @@ public class BinaryConfiguration {
 
     /** Serializer. */
     private BinarySerializer serializer;
+
+    /** Identity. */
+    private BinaryTypeIdentity identity;
 
     /** Types. */
     private Collection<BinaryTypeConfiguration> typeCfgs;
@@ -113,6 +117,24 @@ public class BinaryConfiguration {
      */
     public void setSerializer(BinarySerializer serializer) {
         this.serializer = serializer;
+    }
+
+    /**
+     * Gets identity.
+     *
+     * @return Identity.
+     */
+    public BinaryTypeIdentity getIdentity() {
+        return identity;
+    }
+
+    /**
+     * Sets type identity.
+     *
+     * @param identity Identity.
+     */
+    public void setIdentity(BinaryTypeIdentity identity) {
+        this.identity = identity;
     }
 
     /**

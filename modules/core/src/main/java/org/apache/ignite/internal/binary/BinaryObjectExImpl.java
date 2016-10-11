@@ -23,11 +23,10 @@ import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryKeyHashingMode;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryObjectHashCodeResolver;
+import org.apache.ignite.binary.BinaryTypeIdentity;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
@@ -137,15 +136,14 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
 
         BinaryObjectExImpl otherPo = (BinaryObjectExImpl)other;
 
-        BinaryKeyHashingMode hashingMode = context().keyHashingMode(typeId());
+        BinaryTypeIdentity identity = context().identity(typeId());
 
-        if (hashingMode == BinaryKeyHashingMode.FIELDS_HASH || hashingMode == BinaryKeyHashingMode.CUSTOM) {
-            BinaryObjectHashCodeResolver rslvr = context().hashCodeResolver(typeId());
+        // Equivalence relation has to be symmetrical, so it should not matter which identity we choose
+        if (identity == null)
+            identity = context().identity(otherPo.typeId());
 
-            assert rslvr != null;
-
-            return rslvr.equals(this, otherPo);
-        }
+        if (identity != null)
+            return identity.equals(this, otherPo);
 
         if (length() != otherPo.length() || typeId() != otherPo.typeId())
             return false;

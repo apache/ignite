@@ -24,11 +24,9 @@ import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
-import org.apache.ignite.binary.BinaryKeyHashingMode;
 import org.apache.ignite.binary.BinaryNameMapper;
-import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryObjectHashCodeResolver;
+import org.apache.ignite.binary.BinaryTypeIdentity;
 import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryType;
@@ -39,8 +37,6 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.igfs.IgfsPath;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
-import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataKey;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.datastructures.CollocatedQueueItemKey;
@@ -227,10 +223,7 @@ public class BinaryContext {
     private final ConcurrentMap<String, BinaryInternalMapper> cls2Mappers = new ConcurrentHashMap8<>(0);
 
     /** Affinity key field names. */
-    private final ConcurrentMap<Integer, BinaryKeyHashingMode> hashingModes = new ConcurrentHashMap8<>(0);
-
-    /** Affinity key field names. */
-    private final ConcurrentMap<Integer, BinaryObjectHashCodeResolver> hashCodeRslvrs = new ConcurrentHashMap8<>(0);
+    private final ConcurrentMap<Integer, BinaryTypeIdentity> typeIdentities = new ConcurrentHashMap8<>(0);
 
     /** */
     private BinaryMetadataHandler metaHnd;
@@ -407,6 +400,7 @@ public class BinaryContext {
             binaryCfg.getNameMapper(),
             binaryCfg.getIdMapper(),
             binaryCfg.getSerializer(),
+            binaryCfg.getIdentity(),
             binaryCfg.getTypeConfigurations()
         );
 
@@ -416,6 +410,7 @@ public class BinaryContext {
     /**
      * @param globalIdMapper ID mapper.
      * @param globalSerializer Serializer.
+     * @param globalIdentity Identity.
      * @param typeCfgs Type configurations.
      * @throws BinaryObjectException In case of error.
      */
@@ -423,24 +418,18 @@ public class BinaryContext {
         BinaryNameMapper globalNameMapper,
         BinaryIdMapper globalIdMapper,
         BinarySerializer globalSerializer,
+        BinaryTypeIdentity globalIdentity,
         Collection<BinaryTypeConfiguration> typeCfgs
     ) throws BinaryObjectException {
         TypeDescriptors descs = new TypeDescriptors();
 
         Map<String, String> affFields = new HashMap<>();
 
-        Map<String, BinaryKeyHashingMode> cfgHashingModes = new HashMap<>();
-
-        Map<String, CacheKeyConfiguration> keyCfgs = new HashMap<>();
+        Map<String, BinaryTypeIdentity> identities = new HashMap<>();
 
         if (!F.isEmpty(igniteCfg.getCacheKeyConfiguration())) {
-            for (CacheKeyConfiguration keyCfg : igniteCfg.getCacheKeyConfiguration()) {
+            for (CacheKeyConfiguration keyCfg : igniteCfg.getCacheKeyConfiguration())
                 affFields.put(keyCfg.getTypeName(), keyCfg.getAffinityKeyFieldName());
-
-                keyCfgs.put(keyCfg.getTypeName(), keyCfg);
-
-                cfgHashingModes.put(keyCfg.getTypeName(), keyCfg.getBinaryHashingMode());
-            }
         }
 
         if (typeCfgs != null) {
@@ -456,37 +445,31 @@ public class BinaryContext {
                 if (typeCfg.getIdMapper() != null)
                     idMapper = typeCfg.getIdMapper();
 
-                BinaryNameMapper nameMapper = globalNameMapper;
-
-                if (typeCfg.getNameMapper() != null)
-                    nameMapper = typeCfg.getNameMapper();
+                BinaryNameMapper nameMapper = U.firstNotNull(typeCfg.getNameMapper(), globalNameMapper);
 
                 BinaryInternalMapper mapper = resolveMapper(nameMapper, idMapper);
 
                 // Resolve serializer.
-                BinarySerializer serializer = globalSerializer;
+                BinarySerializer serializer = U.firstNotNull(typeCfg.getSerializer(), globalSerializer);
 
-                BinaryKeyHashingMode hashingMode = cfgHashingModes.get(clsName);
-
-                if (typeCfg.getSerializer() != null)
-                    serializer = typeCfg.getSerializer();
+                BinaryTypeIdentity identity = U.firstNotNull(typeCfg.getIdentity(), globalIdentity);
 
                 if (clsName.endsWith(".*")) {
                     String pkgName = clsName.substring(0, clsName.length() - 2);
 
                     for (String clsName0 : classesInPackage(pkgName))
-                        descs.add(clsName0, mapper, serializer, hashingMode, affFields.get(clsName0),
+                        descs.add(clsName0, mapper, serializer, identity, affFields.get(clsName0),
                             typeCfg.isEnum(), true);
                 }
                 else
-                    descs.add(clsName, mapper, serializer, hashingMode, affFields.get(clsName),
+                    descs.add(clsName, mapper, serializer, identity, affFields.get(clsName),
                         typeCfg.isEnum(), false);
             }
         }
 
         for (TypeDescriptor desc : descs.descriptors())
-            registerUserType(desc.clsName, desc.mapper, desc.serializer, desc.keyHashingMode, desc.affKeyFieldName,
-                desc.isEnum, keyCfgs.get(desc.clsName));
+            registerUserType(desc.clsName, desc.mapper, desc.serializer, desc.identity, desc.affKeyFieldName,
+                desc.isEnum);
 
         BinaryInternalMapper globalMapper = resolveMapper(globalNameMapper, globalIdMapper);
 
@@ -1110,20 +1093,18 @@ public class BinaryContext {
      * @param clsName Class name.
      * @param mapper ID mapper.
      * @param serializer Serializer.
-     * @param keyHashingMode Key hashing mode.
+     * @param identity Type identity.
      * @param affKeyFieldName Affinity key field name.
      * @param isEnum If enum.
-     * @param keyConfiguration Key configuration, if applicable.
      * @throws BinaryObjectException In case of error.
      */
     @SuppressWarnings("ErrorNotRethrown")
     public void registerUserType(String clsName,
         BinaryInternalMapper mapper,
         @Nullable BinarySerializer serializer,
-        @Nullable BinaryKeyHashingMode keyHashingMode,
+        @Nullable BinaryTypeIdentity identity,
         @Nullable String affKeyFieldName,
-        boolean isEnum,
-        @Nullable CacheKeyConfiguration keyConfiguration)
+        boolean isEnum)
         throws BinaryObjectException {
         assert mapper != null;
 
@@ -1147,18 +1128,9 @@ public class BinaryContext {
         if (typeId2Mapper.put(id, mapper) != null)
             dup(clsName, id);
 
-        if (keyHashingMode != null) {
-            if (hashingModes.put(id, keyHashingMode) != null)
+        if (identity != null) {
+            if (typeIdentities.put(id, identity) != null)
                 dup(clsName, id);
-
-            if (keyHashingMode.isConfigurable()) {
-                assert keyConfiguration != null;
-
-                BinaryObjectHashCodeResolver rslvr = keyHashingMode.createResolver(keyConfiguration);
-
-                if (hashCodeRslvrs.put(id, rslvr) != null)
-                    dup(clsName, id);
-            }
         }
 
         if (affKeyFieldName != null) {
@@ -1262,18 +1234,10 @@ public class BinaryContext {
 
     /**
      * @param typeId Type ID.
-     * @return Key hashing mode.
+     * @return Type identity.
      */
-    public BinaryKeyHashingMode keyHashingMode(int typeId) {
-        return hashingModes.get(typeId);
-    }
-
-    /**
-     * @param typeId Type ID.
-     * @return Key hashing mode.
-     */
-    public BinaryObjectHashCodeResolver hashCodeResolver(int typeId) {
-        return hashCodeRslvrs.get(typeId);
+    public BinaryTypeIdentity identity(int typeId) {
+        return typeIdentities.get(typeId);
     }
 
     /**
@@ -1385,7 +1349,7 @@ public class BinaryContext {
          * @param clsName Class name.
          * @param mapper Mapper.
          * @param serializer Serializer.
-         * @param hashingMode Key hashing mode.
+         * @param identity Key hashing mode.
          * @param affKeyFieldName Affinity key field name.
          * @param isEnum Enum flag.
          * @param canOverride Whether this descriptor can be override.
@@ -1394,7 +1358,7 @@ public class BinaryContext {
         private void add(String clsName,
             BinaryInternalMapper mapper,
             BinarySerializer serializer,
-            BinaryKeyHashingMode hashingMode,
+            BinaryTypeIdentity identity,
             String affKeyFieldName,
             boolean isEnum,
             boolean canOverride)
@@ -1402,7 +1366,7 @@ public class BinaryContext {
             TypeDescriptor desc = new TypeDescriptor(clsName,
                 mapper,
                 serializer,
-                hashingMode,
+                identity,
                 affKeyFieldName,
                 isEnum,
                 canOverride);
@@ -1438,8 +1402,8 @@ public class BinaryContext {
         /** Serializer. */
         private BinarySerializer serializer;
 
-        /** Key hashing mode. */
-        private BinaryKeyHashingMode keyHashingMode;
+        /** Type identity. */
+        private BinaryTypeIdentity identity;
 
         /** Affinity key field name. */
         private String affKeyFieldName;
@@ -1452,22 +1416,21 @@ public class BinaryContext {
 
         /**
          * Constructor.
-         *
          * @param clsName Class name.
          * @param mapper ID mapper.
          * @param serializer Serializer.
-         * @param keyHashingMode Key hashing mode.
+         * @param identity Key hashing mode.
          * @param affKeyFieldName Affinity key field name.
          * @param isEnum Enum type.
          * @param canOverride Whether this descriptor can be override.
          */
         private TypeDescriptor(String clsName, BinaryInternalMapper mapper,
-            BinarySerializer serializer, BinaryKeyHashingMode keyHashingMode, String affKeyFieldName, boolean isEnum,
+            BinarySerializer serializer, BinaryTypeIdentity identity, String affKeyFieldName, boolean isEnum,
             boolean canOverride) {
             this.clsName = clsName;
             this.mapper = mapper;
             this.serializer = serializer;
-            this.keyHashingMode = keyHashingMode;
+            this.identity = identity;
             this.affKeyFieldName = affKeyFieldName;
             this.isEnum = isEnum;
             this.canOverride = canOverride;
@@ -1485,7 +1448,7 @@ public class BinaryContext {
             if (canOverride) {
                 mapper = other.mapper;
                 serializer = other.serializer;
-                keyHashingMode = other.keyHashingMode;
+                identity = other.identity;
                 affKeyFieldName = other.affKeyFieldName;
                 isEnum = other.isEnum;
                 canOverride = other.canOverride;
