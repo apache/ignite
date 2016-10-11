@@ -5415,7 +5415,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      */
     private class ClientMessagePinger {
         /** */
-        protected final AtomicReference<GridFutureAdapter<Boolean>> pingFut = new AtomicReference<>();
+        final AtomicReference<GridFutureAdapter<Boolean>> pingFut = new AtomicReference<>();
 
         /** */
         private final ClientMessageProcessor proc;
@@ -5430,7 +5430,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          * @param timeoutHelper Time out helper.
          * @return {@code True} if ping sent.
-         * @throws InterruptedException
+         * @throws InterruptedException If fail.
          */
         public boolean ping(final IgniteSpiOperationTimeoutHelper timeoutHelper) throws InterruptedException {
             if (spi.isNodeStopping0())
@@ -5478,7 +5478,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          * @param res Ping result.
          */
-        public void pingResult(final boolean res) {
+        void pingResult(final boolean res) {
             final GridFutureAdapter<Boolean> fut = pingFut.getAndSet(null);
 
             if (fut != null)
@@ -5532,7 +5532,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param clientNodeId Client node ID.
          * @param sock Socket.
          */
-        public ClientNioMessageWorker(final UUID clientNodeId, final Socket sock) {
+        ClientNioMessageWorker(final UUID clientNodeId, final Socket sock) {
             this.clientNodeId = clientNodeId;
             this.sock = sock;
 
@@ -5542,7 +5542,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          * Open session and start listen for client messages.
          *
-         * @throws IgniteCheckedException
+         * @throws IgniteCheckedException If fail.
          */
         @SuppressWarnings("unchecked")
         public synchronized void start() throws IgniteCheckedException, SSLException {
@@ -5568,31 +5568,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Send all messages added before client join.
-         */
-        public void sendPendingMessages() {
-            if (msgQueue == null)
-                return;
-
-            synchronized (this) {
-                if (msgQueue == null)
-                    return;
-
-                // process all pending messages
-                while (!msgQueue.isEmpty()) {
-                    final T2<TcpDiscoveryAbstractMessage, byte[]> addedMsg = msgQueue.poll();
-
-                    sendMessage(addedMsg.get1(), addedMsg.get2());
-                }
-
-                msgQueue = null;
-            }
-        }
-
-        /**
          * Close connection to the client.
          *
-         * @throws IgniteCheckedException
+         * @throws IgniteCheckedException If fail.
          */
         public void stop() throws IgniteCheckedException {
             nonblockingStop().get();
@@ -5604,7 +5582,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          *
          * @return Operation future.
          */
-        public synchronized IgniteInternalFuture nonblockingStop() {
+        synchronized IgniteInternalFuture nonblockingStop() {
             if (state == WorkerState.NOT_STARTED)
                 state = WorkerState.STOPPED;
 
@@ -5633,7 +5611,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          * Change state to JOINED and send all pending messages.
          */
-        public void markJoinedAndSendPendingMessages() {
+        void markJoinedAndSendPendingMessages() {
             if (state == WorkerState.STARTED) {
                 synchronized (this) {
                     if (msgQueue != null) {
@@ -5656,11 +5634,11 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          * Add receipt to message queue.
          *
-         * @param recpt Receipt.
+         * @param receipt Receipt.
          * @return Send future.
          */
-        public GridNioFuture<?> addReceipt(final int recpt) {
-            return spi.sendMessage(ses, null, new byte[]{(byte) recpt});
+        GridNioFuture<?> addReceipt(final int receipt) {
+            return spi.sendMessage(ses, null, new byte[]{(byte) receipt});
         }
 
         /**
@@ -5670,7 +5648,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param clos Closure.
          * @return Future for chaining.
          */
-        public IgniteInternalFuture<?> addReceipt(final int receipt,
+        IgniteInternalFuture<?> addReceipt(final int receipt,
             final IgniteClosure<? super IgniteInternalFuture<?>, ?> clos) {
             return addReceipt(receipt).chain(clos);
         }
@@ -5795,13 +5773,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                 log.debug("Stopping message worker on disconnect [remoteAddr=" + ses.remoteAddress() +
                     ", remote node ID=" + clientNodeId + ']');
 
-            final ClientMessageProcessor proc = clientMsgWorkers.remove(clientNodeId);
+            final ClientMessageProcessor proc = clientMsgWorkers.get(clientNodeId);
 
-            if (proc instanceof ClientNioMessageWorker)
-                ((ClientNioMessageWorker) proc).nonblockingStop();
+            if (proc != null && proc instanceof ClientNioMessageWorker && ((ClientNioMessageWorker)proc).ses == ses) {
+                if (clientMsgWorkers.remove(clientNodeId, proc))
+                    ((ClientNioMessageWorker) proc).nonblockingStop();
+            }
             else if (log.isDebugEnabled())
                 log.error("Illegal ClientMessageProcessor: " + proc);
-
         }
 
         /** {@inheritDoc} */
@@ -5824,7 +5803,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             final ClientNioMessageWorker clientMsgWrk = (ClientNioMessageWorker) clientMsgWorkers.get(clientNodeId);
 
-            if (clientMsgWrk == null) {
+            if (clientMsgWrk == null || clientMsgWrk.ses != ses) {
                 if (log.isDebugEnabled())
                     log.debug("NIO Worker has been closed, drop message. [clientNodeId="
                         + clientNodeId + ", message=" + msg + "]");
@@ -6067,7 +6046,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          * @param name Name.
          */
-        public ClientNIOFilter(final String name) {
+        ClientNIOFilter(final String name) {
             super(name);
         }
 
@@ -7185,7 +7164,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param name Thread name.
          * @param pollingTimeout Messages polling timeout.
          */
-        protected MessageWorkerAdapter(String name, long pollingTimeout) {
+        MessageWorkerAdapter(String name, long pollingTimeout) {
             super(spi.ignite().name(), name, log);
 
             this.pollingTimeout = pollingTimeout;
@@ -7556,7 +7535,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param ch Socket channel.
          * @param sslHnd SSL handler.
          */
-        public SSLInputStream(final InputStream in, final SocketChannel ch, final BlockingSslHandler sslHnd) {
+        SSLInputStream(final InputStream in, final SocketChannel ch, final BlockingSslHandler sslHnd) {
             this.in = in;
             this.ch = ch;
             this.sslHnd = sslHnd;
@@ -7750,7 +7729,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param ch Socket channel.
          * @param sslHnd SSL handler.
          */
-        public SSLOutputStream(final OutputStream out, final SocketChannel ch,
+        SSLOutputStream(final OutputStream out, final SocketChannel ch,
             final BlockingSslHandler sslHnd) {
             this.out = out;
             this.ch = ch;
