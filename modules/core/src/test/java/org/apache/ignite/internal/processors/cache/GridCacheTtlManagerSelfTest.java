@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.TouchedExpiryPolicy;
+import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -46,6 +47,9 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
     /** Test cache mode. */
     protected CacheMode cacheMode;
 
+    /** Test cache memory mode. */
+    protected CacheMemoryMode cacheMemoryMode;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -59,7 +63,11 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setCacheMode(cacheMode);
+        ccfg.setMemoryMode(cacheMemoryMode);
         ccfg.setEagerTtl(true);
+
+        if (cacheMemoryMode == CacheMemoryMode.OFFHEAP_TIERED)
+            ccfg.setOffHeapMaxMemory(0L);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -70,29 +78,33 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLocalTtl() throws Exception {
-        checkTtl(LOCAL);
+        checkTtl(LOCAL, CacheMemoryMode.ONHEAP_TIERED);
+        checkTtl(LOCAL, CacheMemoryMode.OFFHEAP_TIERED);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPartitionedTtl() throws Exception {
-        checkTtl(PARTITIONED);
+        checkTtl(PARTITIONED, CacheMemoryMode.ONHEAP_TIERED);
+        checkTtl(PARTITIONED, CacheMemoryMode.OFFHEAP_TIERED);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testReplicatedTtl() throws Exception {
-        checkTtl(REPLICATED);
+        checkTtl(REPLICATED, CacheMemoryMode.ONHEAP_TIERED);
+        checkTtl(REPLICATED, CacheMemoryMode.OFFHEAP_TIERED);
     }
 
     /**
      * @param mode Cache mode.
      * @throws Exception If failed.
      */
-    private void checkTtl(CacheMode mode) throws Exception {
+    private void checkTtl(CacheMode mode, CacheMemoryMode memoryMode) throws Exception {
         cacheMode = mode;
+        cacheMemoryMode = memoryMode;
 
         final IgniteKernal g = (IgniteKernal)startGrid(0);
 
@@ -100,7 +112,7 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
             final String key = "key";
 
             g.cache(null).withExpiryPolicy(
-                    new TouchedExpiryPolicy(new Duration(MILLISECONDS, 1000))).put(key, 1);
+                new TouchedExpiryPolicy(new Duration(MILLISECONDS, 1000))).put(key, 1);
 
             assertEquals(1, g.cache(null).get(key));
 
