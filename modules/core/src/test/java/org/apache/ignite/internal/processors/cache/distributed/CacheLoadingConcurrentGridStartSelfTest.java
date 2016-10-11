@@ -95,16 +95,16 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
         loadCache(f);
     }
 
-//    /**
-//     * @throws Exception if failed
-//     */
-//    public void testLoadCacheFromStore() throws Exception {
-//        loadCache(new IgniteInClosure<Ignite>() {
-//            @Override public void apply(Ignite grid) {
-//                grid.cache(null).loadCache(null);
-//            }
-//        });
-//    }
+    /**
+     * @throws Exception if failed
+     */
+    public void testLoadCacheFromStore() throws Exception {
+        loadCache(new IgniteInClosure<Ignite>() {
+            @Override public void apply(Ignite grid) {
+                grid.cache(null).loadCache(null);
+            }
+        });
+    }
 
     /**
      * @throws Exception if failed
