@@ -895,7 +895,7 @@ public class GridCacheUtils {
             }
         }
 
-        return ctx.marshaller().marshal(obj);
+        return U.marshal(ctx, obj);
     }
 
     /**
