@@ -63,7 +63,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
         pointerFactory = new PendingEntrySmartPointerFactory(unsafeMemory);
 
-        pendingPointers = new GridOffHeapSnapTreeSet<EntryGridOffHeapSmartPointer>(pointerFactory, unsafeMemory, guard);
+        pendingPointers = new GridOffHeapSnapTreeSet<>(pointerFactory, unsafeMemory, guard);
 
         boolean cleanupDisabled = cctx.kernalContext().isDaemon() ||
             !cctx.config().isEagerTtl() ||
@@ -450,6 +450,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
                     entry = new PendingEntry(expireTime, hash, isNear, bytes);
                 }
+
                 return entry;
             }
 
@@ -464,8 +465,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             }
 
             /** {@inheritDoc} */
-            @Override
-            public int compareTo(@NotNull PendingEntrySmartPointer o) {
+            @Override public int compareTo(PendingEntrySmartPointer o) {
                 assert o != null;
 
                 if (ptr > 0 && ptr == o.ptr)
@@ -550,7 +550,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
             /** {@inheritDoc} */
             @Override public String toString() {
-                return "PendingEntrySmartPointer{ptr=" + ptr + '}';
+                return "PendingEntrySmartPointer [ptr=" + ptr + ']';
             }
         }
     }
