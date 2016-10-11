@@ -22,7 +22,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 
 /**
- * CQ Load Test with partitioned atomic cache
+ * CQ failover test with PARTITIONED TRANSACTIONAL cache.
  */
 public class CacheContinuousQueryFailoverTxPrimaryWriteOrderLoadTest extends CacheContinuousQueryAbstractLoadTest {
 

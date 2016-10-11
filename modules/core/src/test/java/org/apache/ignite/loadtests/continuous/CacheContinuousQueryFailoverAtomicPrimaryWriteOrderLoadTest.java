@@ -22,10 +22,9 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 
 /**
- * CQ Load Test with partitioned atomic cache
+ * CQ failover test with PARTITIONED ATOMIC cache.
  */
 public class CacheContinuousQueryFailoverAtomicPrimaryWriteOrderLoadTest extends CacheContinuousQueryAbstractLoadTest {
-
     /** {@inheritDoc} */
     @Override protected int backups() {
         return 1;
