@@ -24,6 +24,9 @@ import org.apache.ignite.IgniteException;
  * The exception is thrown if a query was cancelled or timed out while executing.
  */
 public class QueryCancelledException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Default constructor.
      */
