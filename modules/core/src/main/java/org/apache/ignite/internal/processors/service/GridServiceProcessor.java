@@ -662,9 +662,10 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
     /**
      * @param name Service name.
+     * @param timeout If greater than 0 limits task execution time. Cannot be negative.
      * @return Service topology.
      */
-    public Map<UUID, Integer> serviceTopology(String name) throws IgniteCheckedException {
+    public Map<UUID, Integer> serviceTopology(String name, long timeout) throws IgniteCheckedException {
         ClusterNode node = cache.affinity().mapKeyToNode(name);
 
         if (node.version().compareTo(ServiceTopologyCallable.SINCE_VER) >= 0) {
@@ -672,7 +673,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 GridClosureCallMode.BROADCAST,
                 new ServiceTopologyCallable(name),
                 Collections.singletonList(node),
-                false
+                false,
+                timeout
             ).get();
         }
         else
@@ -792,12 +794,13 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param name Service name.
      * @param svcItf Service class.
      * @param sticky Whether multi-node request should be done.
+     * @param timeout If greater than 0 limits service acquire time. Cannot be negative.
      * @param <T> Service interface type.
      * @return The proxy of a service by its name and class.
      * @throws IgniteException If failed to create proxy.
      */
     @SuppressWarnings("unchecked")
-    public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> svcItf, boolean sticky)
+    public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> svcItf, boolean sticky, long timeout)
         throws IgniteException {
         if (hasLocalNode(prj)) {
             ServiceContextImpl ctx = serviceContext(name);
@@ -815,7 +818,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             }
         }
 
-        return new GridServiceProxy<T>(prj, name, svcItf, sticky, ctx).proxy();
+        return new GridServiceProxy<T>(prj, name, svcItf, sticky, timeout, ctx).proxy();
     }
 
     /**
