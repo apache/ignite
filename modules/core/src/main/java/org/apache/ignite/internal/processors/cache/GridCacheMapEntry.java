@@ -29,6 +29,7 @@ import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorResult;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -4196,8 +4197,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                                 }
                             }
                         }
-                        else
+                        else {
+                            if (this.expireTimeUnlocked() > 0)
+                                cctx.ttl().removeTrackedEntry(this);
+
                             clearIndex(prev);
+                        }
 
                         // Nullify value after swap.
                         value(null);
@@ -4250,8 +4255,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                                     }
                                 }
                             }
-                            else
+                            else {
+                                if (this.expireTimeUnlocked() > 0)
+                                    cctx.ttl().removeTrackedEntry(this);
+
                                 clearIndex(prevVal);
+                            }
 
                             // Nullify value after swap.
                             value(null);

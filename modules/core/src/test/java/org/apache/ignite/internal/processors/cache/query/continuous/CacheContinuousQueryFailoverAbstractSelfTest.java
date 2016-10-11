@@ -2260,7 +2260,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      *
      * @throws Exception If failed.
      */
-    public void testLocalCQEventLossOnTopologyChanging() throws Exception {
+    public void testNoEventLossOnTopologyChange() throws Exception {
         final int stableNodeCnt = 1;
 
         final int batchLoadSize = 2000;
