@@ -205,14 +205,19 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
                     }
 
                     case OpLoad:
-                        object val = _store.Load(rawReader.ReadObject<object>());
+                    {
+                        var val = _store.Load(rawReader.ReadObject<object>());
 
                         stream.Seek(0, SeekOrigin.Begin);
 
-                        if (val != null)
-                            WriteObjects(stream, grid, val);
+                        var writer = grid.Marshaller.StartMarshal(stream);
+
+                        writer.WriteObject(val);
+
+                        grid.Marshaller.FinishMarshal(writer);
 
                         break;
+                    }
 
                     case OpLoadAll:
                     {
@@ -221,6 +226,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
                         var result = _store.LoadAll(keys);
 
                         stream.Seek(0, SeekOrigin.Begin);
+
+                        stream.WriteInt(result.Count);
 
                         var writer = grid.Marshaller.StartMarshal(stream);
 
@@ -281,31 +288,6 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
             finally
             {
                 _sesProxy.ClearSession();
-            }
-        }
-
-        /// <summary>
-        /// Writes objects to the marshaller.
-        /// </summary>
-        /// <param name="stream">Out stream.</param>
-        /// <param name="grid">Grid.</param>
-        /// <param name="objects">Objects.</param>
-        private static void WriteObjects(IBinaryStream stream, Ignite grid, params object[] objects)
-        {
-            var writer = grid.Marshaller.StartMarshal(stream);
-
-            try
-            {
-                foreach (var obj in objects)
-                {
-                    var obj0 = obj;
-
-                    writer.WithDetach(w => w.WriteObject(obj0));
-                }
-            }
-            finally
-            {
-                grid.Marshaller.FinishMarshal(writer);
             }
         }
     }
