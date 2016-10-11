@@ -38,13 +38,10 @@ public final class FieldsListIdentity implements BinaryTypeIdentity {
 
         BinaryObjectExImpl exObj = (BinaryObjectExImpl) obj;
 
-        // Let's create only one reader inside builder instead of new one on each call of field()
-        BinaryObjectBuilderImpl bldr = (BinaryObjectBuilderImpl) exObj.toBuilder();
-
         int hash = 0;
 
         for (String fieldName : fieldNames) {
-            Object val = bldr.getField(fieldName);
+            Object val = fieldValue(exObj, fieldName);
 
             hash = 31 * hash + (val != null ? val.hashCode() : 0);
         }
@@ -65,14 +62,10 @@ public final class FieldsListIdentity implements BinaryTypeIdentity {
 
         BinaryObjectExImpl exObj1 = (BinaryObjectExImpl) o1;
 
-        BinaryObjectBuilderImpl bldr1 = (BinaryObjectBuilderImpl) exObj1.toBuilder();
-
         BinaryObjectExImpl exObj2 = (BinaryObjectExImpl) o2;
 
-        BinaryObjectBuilderImpl bldr2 = (BinaryObjectBuilderImpl) exObj2.toBuilder();
-
         for (String fld : fieldNames) {
-            if (!F.eq(bldr1.getField(fld), bldr2.getField(fld)))
+            if (!F.eq(fieldValue(exObj1, fld), fieldValue(exObj2, fld)))
                 return false;
         }
 
@@ -91,5 +84,14 @@ public final class FieldsListIdentity implements BinaryTypeIdentity {
      */
     public void setFieldNames(List<String> fieldNames) {
         this.fieldNames = fieldNames;
+    }
+
+    /**
+     * @param exObj Object to get the field value from.
+     * @param fieldName Field id.
+     * @return Field value.
+     */
+    private static Object fieldValue(BinaryObjectExImpl exObj, String fieldName) {
+        return exObj.context().createField(exObj.typeId(), fieldName).value(exObj);
     }
 }

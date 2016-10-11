@@ -43,7 +43,7 @@ public class FullIdentity implements BinaryTypeIdentity {
         int hash = 0;
 
         for (int fieldId : schema.fieldIdsSorted()) {
-            Object val = exObj.field(fieldId);
+            Object val = exObj.context().createField(exObj.typeId(), fieldId).value(obj);
 
             hash = 31 * hash + (val != null ? val.hashCode() : 0);
         }
@@ -69,10 +69,19 @@ public class FullIdentity implements BinaryTypeIdentity {
         BinaryObjectExImpl exObj2 = (BinaryObjectExImpl) o2;
 
         for (int fldId : schema1.fieldIdsSorted()) {
-            if (!F.eq(exObj1.field(fldId), exObj2.field(fldId)))
+            if (!F.eq(fieldValue(exObj1, fldId), fieldValue(exObj2, fldId)))
                 return false;
         }
 
         return true;
+    }
+
+    /**
+     * @param exObj Object to get the field value from.
+     * @param fieldId Field id.
+     * @return Field value.
+     */
+    private static Object fieldValue(BinaryObjectExImpl exObj, int fieldId) {
+        return exObj.context().createField(exObj.typeId(), fieldId).value(exObj);
     }
 }

@@ -50,7 +50,6 @@ public class BinaryFieldImpl implements BinaryField {
     public BinaryFieldImpl(int typeId, BinarySchemaRegistry schemas, String fieldName, int fieldId) {
         assert typeId != 0;
         assert schemas != null;
-        assert fieldName != null;
         assert fieldId != 0;
 
         this.typeId = typeId;
