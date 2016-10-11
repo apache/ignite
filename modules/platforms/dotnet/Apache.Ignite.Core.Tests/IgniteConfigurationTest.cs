@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Discovery.Tcp.Multicast;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
 
@@ -298,6 +299,27 @@ namespace Apache.Ignite.Core.Tests
             TestIpFinders(
                 new TcpDiscoveryMulticastIpFinder {MulticastGroup = "228.111.111.222", MulticastPort = 54522},
                 new TcpDiscoveryMulticastIpFinder {MulticastGroup = "228.111.111.223", MulticastPort = 54522});
+        }
+
+        /// <summary>
+        /// Tests the work directory.
+        /// </summary>
+        [Test]
+        public void TestWorkDirectory()
+        {
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                WorkDirectory = IgniteUtils.GetTempDirectoryName()
+            };
+
+            using (Ignition.Start(cfg))
+            {
+                var marshDir = Path.Combine(cfg.WorkDirectory, "marshaller");
+
+                Assert.IsTrue(Directory.Exists(marshDir));
+            }
+
+            Directory.Delete(cfg.WorkDirectory, true);
         }
 
         /// <summary>
