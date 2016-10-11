@@ -19,14 +19,17 @@ package org.apache.ignite.hadoop.mapreduce;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.MRConfig;
 import org.apache.hadoop.mapreduce.protocol.ClientProtocol;
 import org.apache.hadoop.mapreduce.protocol.ClientProtocolProvider;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -64,7 +67,17 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
                 throw new IOException("Local execution mode is not supported, please point " +
                     MRConfig.MASTER_ADDRESS + " to real Ignite node/nodes.");
 
-            return createProtocol(conf.get(MRConfig.MASTER_ADDRESS), addrs, conf);
+            List<String> addrs0 = new ArrayList<>(addrs.size());
+
+            // Set up port by default if need
+            for (String addr : addrs) {
+                if (!addr.contains(":"))
+                    addrs0.add(addr + ':' + ConnectorConfiguration.DFLT_TCP_PORT);
+                else
+                    addrs0.add(addr);
+            }
+
+            return createProtocol(conf.get(MRConfig.MASTER_ADDRESS), addrs0, conf);
         }
 
         return null;
