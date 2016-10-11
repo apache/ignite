@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
-import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathAlreadyExistsException;
 import org.apache.ignite.igfs.IgfsPathIsNotDirectoryException;
@@ -31,6 +30,7 @@ import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.processors.igfs.IgfsDataManager;
 import org.apache.ignite.internal.processors.igfs.IgfsImpl;
+import org.apache.ignite.internal.processors.igfs.IgfsLocalSecondaryBlockKey;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsBlockLocationImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsSecondaryFileSystemV2;
@@ -415,19 +415,15 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystemV2, 
 
         IgfsDataManager data = igfs.context().data();
 
-        int pathHash = path.hashCode();
+        long blockIdx = start / blockSize;
 
-        long blockIdxBegin = start / blockSize;
-
-        for (long offset = blockSize * blockIdxBegin; offset < end; offset += blockSize) {
-            long grpId = blockIdxBegin / IgfsGroupDataBlocksKeyMapper.DFLT_GRP_SIZE;
-
+        for (long offset = blockSize * blockIdx; offset < end; offset += blockSize) {
             // Create fake affinity key to map blocks of secondary filesystem to nodes.
-            int affKey = pathHash + (int)(grpId ^ (grpId >>> 32));
+            IgfsLocalSecondaryBlockKey affKey = new IgfsLocalSecondaryBlockKey(path, blockIdx);
 
             blocks.add(new IgfsBlockLocationImpl(offset, blockSize, data.affinityNodes(affKey)));
 
-            ++blockIdxBegin;
+            ++blockIdx;
         }
 
         return blocks;

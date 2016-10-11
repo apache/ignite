@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
@@ -128,5 +127,4 @@ class IgfsSecondaryFileSystemImpl implements IgfsSecondaryFileSystemV2 {
         long maxLen) throws IgniteException {
         return igfs.affinity(path, start, len, maxLen);
     }
-
 }

@@ -24,28 +24,28 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotates a field or a setter method for injection of Ignite filesystem by specified filesystem name.
- * Name parameter is optional if filesystem is defined by context.
+ * Annotates a field or a setter method for injection of primary Ignite filesystem to a secondary
+ * filesystem implementation.
  *
  * <p>
  * Here is how injection would typically happen:
  * <pre name="code" class="java">
- * public class MyGridJob implements ComputeJob {
+ * public class MySecondaryFS implements IgfsSecondaryFileSystem {
  *      ...
- *      // Inject instance of 'myIgfs'.
- *      &#64;FilesystemResource(name = "myIgfs")
+ *      // Inject instance of primary filesystem.
+ *      &#64;FilesystemResource
  *      private IgniteFileSystem igfs;
  *      ...
  *  }
  * </pre>
  * or attach the same annotations to methods:
  * <pre name="code" class="java">
- * public class MyGridJob implements ComputeJob {
+ * public class MySecondaryFS implements IgfsSecondaryFileSystem {
  *     ...
  *     private IgniteFileSystem igfs;
  *     ...
- *      // Inject instance of 'myIgfs'.
- *      &#64;FilesystemResource(name = "myIgfs")
+ *      // Inject instance of primary filesystem.
+ *      &#64;FilesystemResource
  *     public void setMyIgfs(IgniteFileSystem igfs) {
  *          this.igfs = igfs;
  *     }
@@ -58,10 +58,4 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
 public @interface FilesystemResource {
-    /**
-     * IGFS name.
-     *
-     * @return Name of the injected services.
-     */
-    public String name() default "";
 }

@@ -329,7 +329,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
                 break;
 
             case FILESYSTEM_RESOURCE:
-                res = new GridResourceFilesystemInjector(ctx.grid(), (IgniteFileSystem)param);
+                res = new GridResourceBasicInjector<>(param);
                 break;
 
             default:

@@ -514,6 +514,7 @@ public class GridResourceIoc {
         /** */
         CACHE_STORE_SESSION(CacheStoreSessionResource.class),
 
+        /** */
         FILESYSTEM_RESOURCE(FilesystemResource.class);
 
         /** */
@@ -537,8 +538,7 @@ public class GridResourceIoc {
             ResourceAnnotation.SPRING,
             ResourceAnnotation.IGNITE_INSTANCE,
             ResourceAnnotation.LOGGER,
-            ResourceAnnotation.SERVICE,
-            ResourceAnnotation.FILESYSTEM_RESOURCE
+            ResourceAnnotation.SERVICE
         ),
 
         /** */
@@ -562,8 +562,7 @@ public class GridResourceIoc {
             ResourceAnnotation.SPRING,
             ResourceAnnotation.IGNITE_INSTANCE,
             ResourceAnnotation.LOGGER,
-            ResourceAnnotation.SERVICE,
-            ResourceAnnotation.FILESYSTEM_RESOURCE
+            ResourceAnnotation.SERVICE
         ),
 
         /** */
@@ -575,8 +574,7 @@ public class GridResourceIoc {
             ResourceAnnotation.SPRING,
             ResourceAnnotation.IGNITE_INSTANCE,
             ResourceAnnotation.LOGGER,
-            ResourceAnnotation.SERVICE,
-            ResourceAnnotation.FILESYSTEM_RESOURCE
+            ResourceAnnotation.SERVICE
         );
 
         /** Resource annotations bits for fast checks. */
