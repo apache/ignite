@@ -21,9 +21,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
- *
+ * Tests service proxy timeouts.
  */
-public class IgniteServiceNotInitializedTest extends GridCommonAbstractTest {
+public class IgniteServiceProxyTimeoutInitializedTest extends GridCommonAbstractTest {
     /** */
     private static Service srvc;
 

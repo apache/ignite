@@ -215,7 +215,7 @@ public class GridServiceProxy<T> implements Serializable {
                     throw new IgniteException(e);
                 }
 
-                if (U.currentTimeMillis() - startTime >= waitTimeout)
+                if (waitTimeout > 0 && U.currentTimeMillis() - startTime >= waitTimeout)
                     throw new IgniteException("Service acquire timeout was reached, stopping. [timeout=" + waitTimeout + "]");
             }
         }
