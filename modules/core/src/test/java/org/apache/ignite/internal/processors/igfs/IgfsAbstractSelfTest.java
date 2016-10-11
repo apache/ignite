@@ -61,6 +61,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
+import static org.apache.ignite.igfs.IgfsMode.PROXY;
+
 /**
  * Test fo regular igfs operations.
  */
@@ -265,7 +268,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
     public void testMoveFileDestinationRoot() throws Exception {
         create(igfs, paths(DIR, SUBDIR), paths(FILE));
 
-        igfs.rename(FILE, new IgfsPath());
+        igfs.rename(FILE, IgfsPath.ROOT);
 
         checkExist(igfs, igfsSecondary, new IgfsPath("/" + FILE.name()));
         checkNotExist(igfs, igfsSecondary, FILE);
@@ -357,7 +360,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
     public void testMoveDirectoryDestinationRoot() throws Exception {
         create(igfs, paths(DIR, SUBDIR, SUBSUBDIR), null);
 
-        igfs.rename(SUBSUBDIR, new IgfsPath());
+        igfs.rename(SUBSUBDIR, IgfsPath.ROOT);
 
         checkExist(igfs, igfsSecondary, new IgfsPath("/" + SUBSUBDIR.name()));
         checkNotExist(igfs, igfsSecondary, SUBSUBDIR);
@@ -657,6 +660,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     @SuppressWarnings("ConstantConditions")
     public void testFormat() throws Exception {
+        if (mode == PROXY)
+            return;
+
         final GridCacheAdapter<IgfsBlockKey, byte[]> dataCache = getDataCache(igfs);
 
         assert dataCache != null;
@@ -745,13 +751,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     private void checkRootPropertyUpdate(String prop, String setVal, String expGetVal) throws Exception {
-        final IgfsPath rootPath = new IgfsPath("/");
-
-        igfs.update(rootPath, Collections.singletonMap(prop, setVal));
+        igfs.update(IgfsPath.ROOT, Collections.singletonMap(prop, setVal));
 
         igfs.format();
 
-        IgfsFile file = igfs.info(rootPath);
+        IgfsFile file = igfs.info(IgfsPath.ROOT);
 
         assert file != null;
 
@@ -1012,7 +1016,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     public void testCreateNoClose() throws Exception {
-        if (dual)
+        if (mode != PRIMARY)
             return;
 
         create(igfs, paths(DIR, SUBDIR), null);
@@ -1091,7 +1095,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     public void testCreateDeleteNoClose() throws Exception {
-        if (dual)
+        if (mode != PRIMARY)
             return;
 
         create(igfs, paths(DIR, SUBDIR), null);
@@ -1145,7 +1149,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     public void testCreateDeleteParentNoClose() throws Exception {
-        if (dual)
+        if (mode != PRIMARY)
             return;
 
         create(igfs, paths(DIR, SUBDIR), null);
@@ -1543,7 +1547,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     public void testAppendNoClose() throws Exception {
-        if (dual)
+        if (mode != PRIMARY)
             return;
 
         if (appendSupported()) {
@@ -1633,7 +1637,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     public void testAppendDeleteNoClose() throws Exception {
-        if (dual)
+        if (mode != PRIMARY)
             return;
 
         if (appendSupported()) {
@@ -1688,7 +1692,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     public void testAppendDeleteParentNoClose() throws Exception {
-        if (dual)
+        if (mode != PRIMARY)
             return;
 
         if (appendSupported()) {
@@ -2156,9 +2160,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
                     U.awaitQuiet(barrier);
 
                     try {
-                        igfs.delete(SUBDIR, true);
-
-                        return true;
+                        return igfs.delete(SUBDIR, true);
                     }
                     catch (IgniteException ignored) {
                         return false;
@@ -2171,9 +2173,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
                     U.awaitQuiet(barrier);
 
                     try {
-                        igfs.delete(SUBSUBDIR, true);
-
-                        return true;
+                        return igfs.delete(SUBSUBDIR, true);
                     }
                     catch (IgniteException ignored) {
                         return false;
@@ -2290,22 +2290,21 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
     private void checkDeadlocksRepeat(final int lvlCnt, final int childrenDirPerLvl, final int childrenFilePerLvl,
         int primaryLvlCnt, int renCnt, int delCnt,
         int updateCnt, int mkdirsCnt, int createCnt) throws Exception {
-        // TODO: Enable.
-//        if (relaxedConsistency())
-//            return;
-//
-//        for (int i = 0; i < REPEAT_CNT; i++) {
-//            try {
-//                checkDeadlocks(lvlCnt, childrenDirPerLvl, childrenFilePerLvl, primaryLvlCnt, renCnt, delCnt,
-//                    updateCnt, mkdirsCnt, createCnt);
-//
-//                if (i % 10 == 0)
-//                    X.println(" - " + i);
-//            }
-//            finally {
-//                clear(igfs, igfsSecondary);
-//            }
-//        }
+        if (relaxedConsistency())
+            return;
+
+        for (int i = 0; i < REPEAT_CNT; i++) {
+            try {
+                checkDeadlocks(lvlCnt, childrenDirPerLvl, childrenFilePerLvl, primaryLvlCnt, renCnt, delCnt,
+                    updateCnt, mkdirsCnt, createCnt);
+
+                if (i % 10 == 0)
+                    X.println(" - " + i);
+            }
+            finally {
+                clear(igfs, igfsSecondary);
+            }
+        }
     }
 
     /**
@@ -2335,7 +2334,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
         Queue<IgniteBiTuple<Integer, IgfsPath>> queue = new ArrayDeque<>();
 
-        queue.add(F.t(0, new IgfsPath())); // Add root directory.
+        queue.add(F.t(0, IgfsPath.ROOT)); // Add root directory.
 
         while (!queue.isEmpty()) {
             IgniteBiTuple<Integer, IgfsPath> entry = queue.poll();

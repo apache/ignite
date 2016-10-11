@@ -20,14 +20,17 @@ package org.apache.ignite.internal.binary;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
+import java.util.Map;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -164,6 +167,20 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        try {
+            BinaryReaderHandles ctx = new BinaryReaderHandles();
+
+            ctx.put(start(), this);
+
+            return toString(ctx, new IdentityHashMap<BinaryObject, Integer>());
+        }
+        catch (BinaryObjectException e) {
+            throw new IgniteException("Failed to create string representation of binary object.", e);
+        }
+    }
+
     /**
      * @param ctx Reader context.
      * @param handles Handles for already traversed objects.
@@ -197,43 +214,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
 
                 buf.a(", ").a(name).a('=');
 
-                if (val instanceof byte[])
-                    buf.a(Arrays.toString((byte[]) val));
-                else if (val instanceof short[])
-                    buf.a(Arrays.toString((short[])val));
-                else if (val instanceof int[])
-                    buf.a(Arrays.toString((int[])val));
-                else if (val instanceof long[])
-                    buf.a(Arrays.toString((long[])val));
-                else if (val instanceof float[])
-                    buf.a(Arrays.toString((float[])val));
-                else if (val instanceof double[])
-                    buf.a(Arrays.toString((double[])val));
-                else if (val instanceof char[])
-                    buf.a(Arrays.toString((char[])val));
-                else if (val instanceof boolean[])
-                    buf.a(Arrays.toString((boolean[]) val));
-                else if (val instanceof BigDecimal[])
-                    buf.a(Arrays.toString((BigDecimal[])val));
-                else {
-                    if (val instanceof BinaryObjectExImpl) {
-                        BinaryObjectExImpl po = (BinaryObjectExImpl)val;
-
-                        Integer idHash0 = handles.get(val);
-
-                        if (idHash0 != null) {  // Circular reference.
-                            BinaryType meta0 = po.rawType();
-
-                            assert meta0 != null;
-
-                            buf.a(meta0.typeName()).a(" [hash=").a(idHash0).a(", ...]");
-                        }
-                        else
-                            buf.a(po.toString(ctx, handles));
-                    }
-                    else
-                        buf.a(val);
-                }
+                appendValue(val, buf, ctx, handles);
             }
 
             buf.a(']');
@@ -242,17 +223,104 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
         return buf.toString();
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        try {
-            BinaryReaderHandles ctx = new BinaryReaderHandles();
+    /**
+     * @param val Value to append.
+     * @param buf Buffer to append to.
+     * @param ctx Reader context.
+     * @param handles Handles for already traversed objects.
+     */
+    private void appendValue(Object val, SB buf, BinaryReaderHandles ctx,
+        IdentityHashMap<BinaryObject, Integer> handles) {
+        if (val instanceof byte[])
+            buf.a(Arrays.toString((byte[]) val));
+        else if (val instanceof short[])
+            buf.a(Arrays.toString((short[])val));
+        else if (val instanceof int[])
+            buf.a(Arrays.toString((int[])val));
+        else if (val instanceof long[])
+            buf.a(Arrays.toString((long[])val));
+        else if (val instanceof float[])
+            buf.a(Arrays.toString((float[])val));
+        else if (val instanceof double[])
+            buf.a(Arrays.toString((double[])val));
+        else if (val instanceof char[])
+            buf.a(Arrays.toString((char[])val));
+        else if (val instanceof boolean[])
+            buf.a(Arrays.toString((boolean[]) val));
+        else if (val instanceof BigDecimal[])
+            buf.a(Arrays.toString((BigDecimal[])val));
+        else if (val instanceof IgniteUuid)
+            buf.a(val);
+        else if (val instanceof BinaryObjectExImpl) {
+            BinaryObjectExImpl po = (BinaryObjectExImpl)val;
 
-            ctx.put(start(), this);
+            Integer idHash0 = handles.get(val);
 
-            return toString(ctx, new IdentityHashMap<BinaryObject, Integer>());
+            if (idHash0 != null) {  // Circular reference.
+                BinaryType meta0 = po.rawType();
+
+                assert meta0 != null;
+
+                buf.a(meta0.typeName()).a(" [hash=").a(idHash0).a(", ...]");
+            }
+            else
+                buf.a(po.toString(ctx, handles));
         }
-        catch (BinaryObjectException e) {
-            throw new IgniteException("Failed to create string representation of binary object.", e);
+        else if (val instanceof Object[]) {
+            Object[] arr = (Object[])val;
+
+            buf.a('[');
+
+            for (int i = 0; i < arr.length; i++) {
+                Object o = arr[i];
+
+                appendValue(o, buf, ctx, handles);
+
+                if (i < arr.length - 1)
+                    buf.a(", ");
+            }
         }
+        else if (val instanceof Iterable) {
+            Iterable<Object> col = (Iterable<Object>)val;
+
+            buf.a(col.getClass().getSimpleName()).a(" {");
+
+            Iterator it = col.iterator();
+
+            while (it.hasNext()) {
+                Object o = it.next();
+
+                appendValue(o, buf, ctx, handles);
+
+                if (it.hasNext())
+                    buf.a(", ");
+            }
+
+            buf.a('}');
+        }
+        else if (val instanceof Map) {
+            Map<Object, Object> map = (Map<Object, Object>)val;
+
+            buf.a(map.getClass().getSimpleName()).a(" {");
+
+            Iterator<Map.Entry<Object, Object>> it = map.entrySet().iterator();
+
+            while (it.hasNext()) {
+                Map.Entry<Object, Object> e = it.next();
+
+                appendValue(e.getKey(), buf, ctx, handles);
+
+                buf.a('=');
+
+                appendValue(e.getValue(), buf, ctx, handles);
+
+                if (it.hasNext())
+                    buf.a(", ");
+            }
+
+            buf.a('}');
+        }
+        else
+            buf.a(val);
     }
 }
