@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
 import javax.cache.expiry.ExpiryPolicy;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -102,7 +103,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.stream.StreamReceiver;
-import org.apache.ignite.stream.StreamReceiver2;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
@@ -121,7 +121,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private static final DefaultIoPolicyResolver DFLT_IO_PLC_RSLVR = new DefaultIoPolicyResolver();
 
     /** Isolated receiver. */
-    private static final StreamReceiver ISOLATED_UPDATER = new IsolatedUpdater2();
+    private static final StreamReceiver ISOLATED_UPDATER = new IsolatedUpdater();
 
     /** Amount of permissions should be available to continue new data processing. */
     private static final int REMAP_SEMAPHORE_PERMISSIONS_COUNT = Integer.MAX_VALUE;
@@ -136,7 +136,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private IgniteClosure<ClusterNode, Byte> ioPlcRslvr = DFLT_IO_PLC_RSLVR;
 
     /** Max remap count before issuing an error. */
-    private static final int DFLT_MAX_REMAP_CNT = 1024; //Todo decrease.
+    private static final int DFLT_MAX_REMAP_CNT = 32;
 
     /** Log reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
@@ -239,7 +239,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** Whether a warning at {@link DataStreamerImpl#allowOverwrite()} printed */
     private static boolean isWarningPrinted;
 
-    /** Allows to pause new data processing while failed data processing. */
+    /** Allows to pause new data processing while failed data processing in progress. */
     private final Semaphore remapSem = new Semaphore(REMAP_SEMAPHORE_PERMISSIONS_COUNT);
 
     /** */
@@ -663,13 +663,15 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     ) {
         assert entries != null;
 
-        boolean remap = remaps > 0;
+        final boolean remap = remaps > 0;
 
         if (!remap) // Failed data should be processed prior to new data.
             try {
-                // Wait until failed data processed.
-                if (remapSem.tryAcquire(REMAP_SEMAPHORE_PERMISSIONS_COUNT, Integer.MAX_VALUE, TimeUnit.SECONDS))
+                if (remapSem.availablePermits() != REMAP_SEMAPHORE_PERMISSIONS_COUNT) {
+                    remapSem.acquire(REMAP_SEMAPHORE_PERMISSIONS_COUNT); // Wait until failed data being processed.
+
                     remapSem.release(REMAP_SEMAPHORE_PERMISSIONS_COUNT);
+                }
             }
             catch (InterruptedException e) {
                 log.error("Failed to wait for failed data processing.",e);
@@ -690,7 +692,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         boolean initPda = ctx.deploy().enabled() && jobPda == null;
 
-        AffinityTopologyVersion topVer = ctx.cache().context().exchange().readyAffinityVersion();
+        GridCacheContext cctx = ctx.cache().internalCache(cacheName).context();
+
+        AffinityTopologyVersion topVer = cctx.topology().topologyVersion();
 
         for (DataStreamerEntry entry : entries) {
             List<ClusterNode> nodes;
@@ -711,7 +715,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     initPda = false;
                 }
 
-                nodes = nodes(key, topVer);
+                nodes = nodes(key, topVer, cctx);
             }
             catch (IgniteCheckedException e) {
                 resFut.onDone(e);
@@ -793,7 +797,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                             try {
                                 remapSem.acquire();
 
-                                Runnable r = new Runnable() {
+                                final Runnable r = new Runnable() {
                                     @Override public void run() {
                                         try {
                                             load0(entriesForNode, resFut, activeKeys, remaps + 1);
@@ -879,12 +883,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /**
      * @param key Key to map.
      * @param topVer Topology version.
+     * @param cctx Context.
      * @return Nodes to send requests to.
      * @throws IgniteCheckedException If failed.
      */
-    private List<ClusterNode> nodes(KeyCacheObject key, AffinityTopologyVersion topVer) throws IgniteCheckedException {
-        GridCacheContext cctx = ctx.cache().internalCache(cacheName).context();
-
+    private List<ClusterNode> nodes(KeyCacheObject key,
+        AffinityTopologyVersion topVer,
+        GridCacheContext cctx) throws IgniteCheckedException {
         GridDhtPartitionTopology top = cctx.topology();
 
         GridAffinityProcessor aff = ctx.affinity();
@@ -1224,8 +1229,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         /** */
         private final Semaphore sem;
 
-        /** Topology at batch preparation started. */
-        private volatile AffinityTopologyVersion batchTopVer;
+        /** Batch topology. */
+        private AffinityTopologyVersion batchTopVer;
 
         /** Closure to signal on task finish. */
         @GridToStringExclude
@@ -1257,9 +1262,23 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         }
 
         /**
+         * @param remap Remapping flag.
+         */
+        private void renewBatch(boolean remap) {
+            entries = newEntries();
+            curFut = new GridFutureAdapter<>();
+
+            batchTopVer = null;
+
+            if (!remap)
+                curFut.listen(signalC);
+        }
+
+        /**
          * @param newEntries Infos.
          * @param topVer Topology version.
          * @param lsnr Listener for the operation future.
+         * @param remap Remapping flag.
          * @throws IgniteInterruptedCheckedException If failed.
          * @return Future for operation.
          */
@@ -1268,12 +1287,20 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             IgniteInClosure<IgniteInternalFuture<?>> lsnr,
             boolean remap) throws IgniteInterruptedCheckedException {
             List<DataStreamerEntry> entries0 = null;
+
             GridFutureAdapter<Object> curFut0;
+
+            AffinityTopologyVersion curBatchTopVer;
 
             synchronized (this) {
                 curFut0 = curFut;
 
                 curFut0.listen(lsnr);
+
+                if (batchTopVer == null)
+                    batchTopVer = topVer;
+
+                curBatchTopVer = batchTopVer;
 
                 for (DataStreamerEntry entry : newEntries)
                     entries.add(entry);
@@ -1281,24 +1308,21 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 if (entries.size() >= bufSize) {
                     entries0 = entries;
 
-                    entries = newEntries();
-                    curFut = new GridFutureAdapter<>();
+                    renewBatch(remap);
+                }
 
-                    if (!remap)
-                        curFut.listen(signalC);
+                if (!topVer.equals(curBatchTopVer)) {
+                    entries0 = null;
 
-                    if (!topVer.equals(batchTopVer) || ctx.cache().context().exchange().hasPendingExchange()) {
-                        entries0 = null;
+                    renewBatch(remap);
 
-                        curFut0.onDone(null, new IgniteCheckedException("Topology changed during batch preparation."));
-                    }
-
-                    batchTopVer = topVer;
+                    curFut0.onDone(null, new IgniteCheckedException("Topology changed during batch preparation." +
+                        "[batchTopVer=" + curBatchTopVer + ", topVer=" + topVer + "]"));
                 }
             }
 
             if (entries0 != null) {
-                submit(entries0, topVer, curFut0, remap);
+                submit(entries0, curBatchTopVer, curFut0, remap);
 
                 if (cancelled)
                     curFut0.onDone(new IgniteCheckedException("Data streamer has been cancelled: " +
@@ -1338,10 +1362,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 }
             }
 
-            AffinityTopologyVersion topVer = ctx.cache().context().exchange().readyAffinityVersion();
-
             if (entries0 != null)
-                submit(entries0, topVer, curFut0, false);
+                submit(entries0, batchTopVer, curFut0, false);
 
             // Create compound future for this flush.
             GridCompoundFuture<Object, Object> res = null;
@@ -1409,18 +1431,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                 AffinityTopologyVersion topVer = fut.topologyVersion();
 
-                if (fut.isDone()) {
-                    if (!topVer.equals(reqTopVer)) {
-                        curFut.onDone(new IgniteCheckedException(
-                            "DataStreamer will retry data transfer at stable topology. " +
-                            "[reqTop=" + reqTopVer + " ,topVer=" + topVer + "]"));
-
-                        return;
-                    }
-
-                    IgniteInternalFuture<Object> callFut;
-
-                    callFut = ctx.closure().callLocalSafe(
+                if (!topVer.equals(reqTopVer)) {
+                    curFut.onDone(new IgniteCheckedException(
+                        "DataStreamer will retry data transfer at stable topology. " +
+                            "[reqTop=" + reqTopVer + " ,topVer=" + topVer + ", node=local]"));
+                }
+                else if (fut.isDone()) {
+                    IgniteInternalFuture<Object> callFut = ctx.closure().callLocalSafe(
                         new DataStreamerUpdateJob(
                             ctx,
                             log,
@@ -1429,8 +1446,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                             false,
                             skipStore,
                             keepBinary,
-                            rcvr,
-                            topVer),
+                            rcvr),
                         false);
 
                     locFuts.add(callFut);
@@ -1440,8 +1456,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     callFut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
                         @Override public void apply(IgniteInternalFuture<Object> t) {
                             try {
-                                waitFut.onDone();
-
                                 boolean rmv = locFuts.remove(t);
 
                                 assert rmv;
@@ -1450,6 +1464,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                             }
                             catch (IgniteCheckedException e) {
                                 curFut.onDone(e);
+                            }
+                            finally {
+                                waitFut.onDone();
                             }
                         }
                     });
@@ -1470,6 +1487,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
          * @param entries Entries to submit.
          * @param topVer Topology version.
          * @param curFut Current future.
+         * @param remap Remapping flag.
          * @throws IgniteInterruptedCheckedException If interrupted.
          */
         private void submit(final Collection<DataStreamerEntry> entries,
@@ -1774,15 +1792,14 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /**
      * Isolated receiver which only loads entry initial value.
      */
-    private static class IsolatedUpdater2 implements StreamReceiver2<KeyCacheObject, CacheObject>,
+    private static class IsolatedUpdater implements StreamReceiver<KeyCacheObject, CacheObject>,
         DataStreamerCacheUpdaters.InternalUpdater {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public void receive(final IgniteCache<KeyCacheObject, CacheObject> cache,
-            final Collection<Entry<KeyCacheObject, CacheObject>> entries,
-            final AffinityTopologyVersion reqTopVer) throws IgniteCheckedException {
+        @Override public void receive(IgniteCache<KeyCacheObject, CacheObject> cache,
+            Collection<Map.Entry<KeyCacheObject, CacheObject>> entries) {
             IgniteCacheProxy<KeyCacheObject, CacheObject> proxy = (IgniteCacheProxy<KeyCacheObject, CacheObject>)cache;
 
             GridCacheAdapter<KeyCacheObject, CacheObject> internalCache = proxy.context().cache();
@@ -1836,12 +1853,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 catch (GridDhtInvalidPartitionException | GridCacheEntryRemovedException ignored) {
                     // No-op.
                 }
-            }
-        }
+                catch (IgniteCheckedException ex) {
+                    IgniteLogger log = cache.unwrap(Ignite.class).log();
 
-        /** {@inheritDoc} */
-        @Override public void receive(IgniteCache cache, Collection collection) throws IgniteException {
-            throw new IgniteException("StreamReceiver2 should be used instead.");
+                    U.error(log, "Failed to set initial value for cache entry: " + e, ex);
+                }
+            }
         }
     }
 

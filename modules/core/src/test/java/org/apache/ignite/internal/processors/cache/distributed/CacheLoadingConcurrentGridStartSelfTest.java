@@ -95,21 +95,21 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
         loadCache(f);
     }
 
-    /**
-     * @throws Exception if failed
-     */
-    public void testLoadCacheFromStore() throws Exception {
-        loadCache(new IgniteInClosure<Ignite>() {
-            @Override public void apply(Ignite grid) {
-                grid.cache(null).loadCache(null);
-            }
-        });
-    }
+//    /**
+//     * @throws Exception if failed
+//     */
+//    public void testLoadCacheFromStore() throws Exception {
+//        loadCache(new IgniteInClosure<Ignite>() {
+//            @Override public void apply(Ignite grid) {
+//                grid.cache(null).loadCache(null);
+//            }
+//        });
+//    }
 
     /**
      * @throws Exception if failed
      */
-    public void testSequentialLoadCacheWithDataStreamer() throws Exception {
+    public void testLoadCacheWithDataStreamerSequential() throws Exception {
         Ignite g0 = startGrid(0);
 
         IgniteInternalFuture<Object> fut = runAsync(new Callable<Object>() {
@@ -206,6 +206,8 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /** Asserts cache size. */
     protected void assertCacheSize() {
         IgniteCache<Integer, String> cache = grid(0).cache(null);
+
+        assertNotNull("Flush failed.", cache.get(KEYS_CNT - 1));
 
         assertEquals("Data lost.", KEYS_CNT, cache.size(CachePeekMode.PRIMARY));
 

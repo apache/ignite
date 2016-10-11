@@ -311,68 +311,60 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         final Object topic) {
         GridCacheContext cctx = ctx.cache().internalCache(req.cacheName()).context();
 
-        Exception err = null;
-
-        GridFutureAdapter waitFut = null;
-
         cctx.topology().readLock();
 
         try {
-            try {
-                GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
+            GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
 
-                if (fut.isDone()) {
-                    AffinityTopologyVersion topVer = fut.topologyVersion();
+            AffinityTopologyVersion topVer = fut.topologyVersion();
 
-                    if (!topVer.equals(req.topologyVersion()))
-                        err = new IgniteCheckedException(
-                            "DataStreamer will retry data transfer at stable topology. " +
-                                "[reqTop=" + req.topologyVersion() + " ,topVer=" + topVer + "]");
-                    else
-                        waitFut = cctx.mvcc().addDataStreamerFuture();
-                }
-                else
-                    fut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                        @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> e) {
-                            localUpdate(nodeId, req, updater, topic);
+            if (!topVer.equals(req.topologyVersion())) {
+                Exception err = new IgniteCheckedException(
+                    "DataStreamer will retry data transfer at stable topology. " +
+                        "[reqTop=" + req.topologyVersion() + " ,topVer=" + topVer + ", node=remote]");
+
+                sendResponse(nodeId, topic, req.requestId(), err, req.forceLocalDeployment());
+            }
+            else if (fut.isDone()) {
+                IgniteInternalFuture<Object> callFut = ctx.closure().callLocalSafe(
+                    new DataStreamerUpdateJob(ctx,
+                        log,
+                        req.cacheName(),
+                        req.entries(),
+                        req.ignoreDeploymentOwnership(),
+                        req.skipStore(),
+                        req.keepBinary(),
+                        updater),
+                    false);
+
+                final GridFutureAdapter waitFut = cctx.mvcc().addDataStreamerFuture();
+
+                callFut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
+                    @Override public void apply(IgniteInternalFuture<Object> t) {
+                        try {
+                            t.get();
+
+                            sendResponse(nodeId, topic, req.requestId(), null, req.forceLocalDeployment());
                         }
-                    });
+                        catch (IgniteCheckedException e) {
+                            sendResponse(nodeId, topic, req.requestId(), e, req.forceLocalDeployment());
+                        }
+                        finally {
+                            waitFut.onDone();
+                        }
+                    }
+                });
             }
-            finally {
-                cctx.topology().readUnlock();
-            }
-
-            Collection<DataStreamerEntry> col = req.entries();
-
-            DataStreamerUpdateJob job = new DataStreamerUpdateJob(ctx,
-                log,
-                req.cacheName(),
-                col,
-                req.ignoreDeploymentOwnership(),
-                req.skipStore(),
-                req.keepBinary(),
-                updater,
-                req.topologyVersion());
-
-            if (err == null)
-                try {
-                    job.call();
-                }
-                catch (IgniteCheckedException e) {
-                    err = e;
-                }
-                catch (Exception e) {
-                    U.error(log, "Failed to finish update job.", e);
-
-                    err = e;
-                }
+            else
+                fut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> e) {
+                        localUpdate(nodeId, req, updater, topic);
+                    }
+                });
         }
         finally {
-            if (waitFut != null)
-                waitFut.onDone();
+            cctx.topology().readUnlock();
         }
-
-        sendResponse(nodeId, topic, req.requestId(), err, req.forceLocalDeployment());
     }
 
     /**

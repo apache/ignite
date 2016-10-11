@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -30,7 +29,6 @@ import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.stream.StreamReceiver;
-import org.apache.ignite.stream.StreamReceiver2;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -61,9 +59,6 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
     /** */
     private boolean keepBinary;
 
-    /** */
-    private AffinityTopologyVersion topVer;
-
     /**
      * @param ctx Context.
      * @param log Log.
@@ -81,8 +76,7 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
         boolean ignoreDepOwnership,
         boolean skipStore,
         boolean keepBinary,
-        StreamReceiver<?, ?> rcvr,
-        AffinityTopologyVersion topVer) {
+        StreamReceiver<?, ?> rcvr) {
         this.ctx = ctx;
         this.log = log;
 
@@ -95,7 +89,6 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
         this.rcvr = rcvr;
-        this.topVer = topVer;
     }
 
     /** {@inheritDoc} */
@@ -134,8 +127,6 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
                     checkSecurityPermission(SecurityPermission.CACHE_REMOVE);
             }
 
-            boolean streamerV2 = rcvr instanceof StreamReceiver2;
-
             if (unwrapEntries()) {
                 Collection<Map.Entry> col0 = F.viewReadOnly(col, new C1<DataStreamerEntry, Map.Entry>() {
                     @Override public Map.Entry apply(DataStreamerEntry e) {
@@ -143,13 +134,8 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
                     }
                 });
 
-                if (streamerV2)
-                    ((StreamReceiver2)rcvr).receive(cache, col0, topVer);
-                else
-                    rcvr.receive(cache, col0);
+                rcvr.receive(cache, col0);
             }
-            else if (streamerV2)
-                ((StreamReceiver2)rcvr).receive(cache, col, topVer);
             else
                 rcvr.receive(cache, col);
 
