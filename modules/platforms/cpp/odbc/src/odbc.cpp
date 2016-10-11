@@ -289,9 +289,7 @@ namespace ignite
         if (!diag.IsSuccessful())
             return diag.GetReturnCode();
 
-        std::string outConnectStr = connection->GetConfiguration().ToConnectString();
-
-        size_t reslen = CopyStringToBuffer(outConnectStr,
+        size_t reslen = CopyStringToBuffer(connectStr,
             reinterpret_cast<char*>(outConnectionString),
             static_cast<size_t>(outConnectionStringBufferLen));
 
@@ -753,7 +751,7 @@ namespace ignite
         LOG_MSG("columnSizeRes: %lld\n", columnSizeRes);
         LOG_MSG("decimalDigitsRes: %lld\n", decimalDigitsRes);
         LOG_MSG("nullableRes: %lld\n", nullableRes);
-        LOG_MSG("columnNameBuf: %s\n", columnNameBuf ? columnNameBuf : "<null>");
+        LOG_MSG("columnNameBuf: %s\n", columnNameBuf ? (const char*)columnNameBuf : "<null>");
         LOG_MSG("columnNameLen: %d\n", columnNameLen ? *columnNameLen : -1);
 
         if (dataType)

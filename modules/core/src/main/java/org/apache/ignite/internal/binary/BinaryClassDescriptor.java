@@ -25,6 +25,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -32,7 +33,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -269,9 +269,10 @@ public class BinaryClassDescriptor {
             case OBJECT:
                 // Must not use constructor to honor transient fields semantics.
                 ctor = null;
+                ArrayList<BinaryFieldAccessor> fields0 = new ArrayList<>();
                 stableFieldsMeta = metaDataEnabled ? new HashMap<String, Integer>() : null;
 
-                Map<String, BinaryFieldAccessor> fields0 = new TreeMap<>();
+                BinarySchema.Builder schemaBuilder = BinarySchema.Builder.newBuilder();
 
                 Set<String> duplicates = duplicateFields(cls);
 
@@ -299,7 +300,9 @@ public class BinaryClassDescriptor {
 
                             BinaryFieldAccessor fieldInfo = BinaryFieldAccessor.create(f, fieldId);
 
-                            fields0.put(name, fieldInfo);
+                            fields0.add(fieldInfo);
+
+                            schemaBuilder.addField(fieldId);
 
                             if (metaDataEnabled)
                                 stableFieldsMeta.put(name, fieldInfo.mode().typeId());
@@ -307,12 +310,7 @@ public class BinaryClassDescriptor {
                     }
                 }
 
-                fields = fields0.values().toArray(new BinaryFieldAccessor[fields0.size()]);
-
-                BinarySchema.Builder schemaBuilder = BinarySchema.Builder.newBuilder();
-
-                for (BinaryFieldAccessor field : fields)
-                    schemaBuilder.addField(field.id);
+                fields = fields0.toArray(new BinaryFieldAccessor[fields0.size()]);
 
                 stableSchema = schemaBuilder.build();
 

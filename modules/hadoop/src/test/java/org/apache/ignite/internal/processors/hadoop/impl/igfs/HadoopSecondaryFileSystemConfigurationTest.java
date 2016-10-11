@@ -580,4 +580,16 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
     static String mkUri(String scheme, String authority) {
         return scheme + "://" + authority + "/";
     }
+
+    /**
+     * Makes URI.
+     *
+     * @param scheme the scheme
+     * @param authority the authority
+     * @param path Path part of URI.
+     * @return URI String
+     */
+    static String mkUri(String scheme, String authority, String path) {
+        return scheme + "://" + authority + "/" + path;
+    }
 }

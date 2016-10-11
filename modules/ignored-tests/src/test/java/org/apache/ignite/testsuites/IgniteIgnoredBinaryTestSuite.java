@@ -15,37 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.closure;
+package org.apache.ignite.testsuites;
 
-import org.jetbrains.annotations.Nullable;
+import junit.framework.TestSuite;
+import org.apache.ignite.testframework.IgniteTestSuite;
 
 /**
- * This enumeration defines different types of closure
- * processing by the closure processor.
+ * Special test suite with ignored tests for Binary mode.
  */
-public enum GridClosurePolicy {
-    /** Public execution pool. */
-    PUBLIC_POOL,
-
-    /** P2P execution pool. */
-    P2P_POOL,
-
-    /** System execution pool. */
-    SYSTEM_POOL,
-
-    /** IGFS pool. */
-    IGFS_POOL;
-
-    /** Enum values. */
-    private static final GridClosurePolicy[] VALS = values();
-
+public class IgniteIgnoredBinaryTestSuite extends TestSuite {
     /**
-     * Efficiently gets enumerated value from its ordinal.
-     *
-     * @param ord Ordinal value.
-     * @return Enumerated value.
+     * @return IgniteCache test suite.
+     * @throws Exception Thrown in case of the failure.
      */
-    @Nullable public static GridClosurePolicy fromOrdinal(int ord) {
-        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    public static TestSuite suite() throws Exception {
+        IgniteTestSuite.ignoreDefault(true);
+
+        IgniteTestSuite suite = new IgniteTestSuite(null, "Ignite Ignored Binary Test Suite");
+
+        /* --- QUERY --- */
+        suite.addTest(IgniteBinaryCacheQueryTestSuite.suite());
+        suite.addTest(IgniteBinaryCacheQueryTestSuite2.suite());
+
+        return suite;
     }
 }
