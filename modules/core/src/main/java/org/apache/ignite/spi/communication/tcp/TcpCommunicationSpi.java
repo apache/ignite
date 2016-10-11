@@ -353,6 +353,15 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 UUID id = ses.meta(NODE_ID_META);
 
                 if (id != null) {
+                    GridCommunicationClient client = clients.get(id);
+
+                    if (client instanceof GridTcpNioCommunicationClient &&
+                        ((GridTcpNioCommunicationClient) client).session() == ses) {
+                        client.close();
+
+                        clients.remove(id, client);
+                    }
+
                     if (!stopping) {
                         boolean reconnect = false;
 
@@ -372,9 +381,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                                 recoveryData.onNodeLeft();
                         }
 
-                        DisconnectedSessionInfo disconnectData = new DisconnectedSessionInfo(id,
-                            ses,
-                            recoveryData,
+                        DisconnectedSessionInfo disconnectData = new DisconnectedSessionInfo(recoveryData,
                             reconnect);
 
                         commWorker.addProcessDisconnectRequest(disconnectData);
@@ -1400,6 +1407,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     .append(']').append(U.nl());
             }
 
+            sb.append("Communication SPI clients: ").append(U.nl());
+
+            for (Map.Entry<UUID, GridCommunicationClient> entry : clients.entrySet()) {
+                sb.append("    [node=").append(entry.getKey())
+                    .append(", client=").append(entry.getValue())
+                    .append(']').append(U.nl());
+            }
+
             U.warn(log, sb.toString());
         }
 
@@ -1764,8 +1779,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         // If configured TCP port is busy, find first available in range.
         for (int port = shmemPort; port < shmemPort + locPortRange; port++) {
             try {
+                IgniteConfiguration cfg = ignite.configuration();
+
                 IpcSharedMemoryServerEndpoint srv =
-                    new IpcSharedMemoryServerEndpoint(log, ignite.configuration().getNodeId(), gridName);
+                    new IpcSharedMemoryServerEndpoint(log, cfg.getNodeId(), gridName, cfg.getWorkDirectory());
 
                 srv.setPort(port);
 
@@ -1978,17 +1995,19 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     client.release();
 
-                    client = null;
-
                     if (!retry)
                         sentMsgsCnt.increment();
                     else {
+                        clients.remove(node.id(), client);
+
                         ClusterNode node0 = getSpiContext().node(node.id());
 
                         if (node0 == null)
                             throw new IgniteCheckedException("Failed to send message to remote node " +
                                 "(node has left the grid): " + node.id());
                     }
+
+                    client = null;
                 }
                 while (retry);
             }
@@ -3187,12 +3206,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          * @param sesInfo Disconnected session information.
          */
         private void processDisconnect(DisconnectedSessionInfo sesInfo) {
-            GridCommunicationClient client = clients.get(sesInfo.nodeId);
-
-            if (client instanceof GridTcpNioCommunicationClient &&
-                ((GridTcpNioCommunicationClient) client).session() == sesInfo.ses)
-                    clients.remove(sesInfo.nodeId, client);
-
             if (sesInfo.reconnect) {
                 GridNioRecoveryDescriptor recoveryDesc = sesInfo.recoveryDesc;
 
@@ -3205,7 +3218,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     if (log.isDebugEnabled())
                         log.debug("Recovery reconnect [rmtNode=" + recoveryDesc.node().id() + ']');
 
-                    client = reserveClient(node);
+                    GridCommunicationClient client = reserveClient(node);
 
                     client.release();
                 }
@@ -3756,29 +3769,17 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      */
     private static class DisconnectedSessionInfo {
         /** */
-        private final UUID nodeId;
-
-        /** */
-        private final GridNioSession ses;
-
-        /** */
         private final GridNioRecoveryDescriptor recoveryDesc;
 
         /** */
         private final boolean reconnect;
 
         /**
-         * @param nodeId Node ID.
-         * @param ses Session.
          * @param recoveryDesc Recovery descriptor.
          * @param reconnect Reconnect flag.
          */
-        public DisconnectedSessionInfo(UUID nodeId,
-            GridNioSession ses,
-            @Nullable GridNioRecoveryDescriptor recoveryDesc,
+        DisconnectedSessionInfo(@Nullable GridNioRecoveryDescriptor recoveryDesc,
             boolean reconnect) {
-            this.nodeId = nodeId;
-            this.ses = ses;
             this.recoveryDesc = recoveryDesc;
             this.reconnect = reconnect;
         }

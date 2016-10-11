@@ -52,6 +52,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CacheExtensions.cs" />
+    <Compile Include="CompiledQuery2.cs" />
     <Compile Include="CompiledQuery.cs" />
     <Compile Include="ICacheQueryable.cs" />
     <Compile Include="Impl\AliasDictionary.cs" />
@@ -64,7 +65,6 @@
     <Compile Include="Impl\CacheQueryModelVisitor.cs" />
     <Compile Include="Impl\CacheQueryParser.cs" />
     <Compile Include="Impl\ICacheQueryableInternal.cs" />
-    <Compile Include="Impl\ICacheQueryProxy.cs" />
     <Compile Include="Impl\MethodVisitor.cs" />
     <Compile Include="Impl\QueryData.cs" />
     <Compile Include="Impl\SqlTypes.cs" />

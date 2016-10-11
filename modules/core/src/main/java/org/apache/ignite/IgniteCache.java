@@ -56,6 +56,7 @@ import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.transactions.TransactionHeuristicException;
@@ -293,6 +294,20 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @see SpiQuery
      */
     public <R> QueryCursor<R> query(Query<R> qry);
+
+    /**
+     * Queries the cache transforming the entries on the server nodes. Can be used, for example,
+     * to avoid network overhead in case only one field out of the large is required by client.
+     * <p>
+     * Currently transformers are supported ONLY for {@link ScanQuery}. Passing any other
+     * subclass of {@link Query} interface to this method will end up with
+     * {@link UnsupportedOperationException}.
+     *
+     * @param qry Query.
+     * @param transformer Transformer.
+     * @return Cursor.
+     */
+    public <T, R> QueryCursor<R> query(Query<T> qry, IgniteClosure<T, R> transformer);
 
     /**
      * Allows for iteration over local cache entries.

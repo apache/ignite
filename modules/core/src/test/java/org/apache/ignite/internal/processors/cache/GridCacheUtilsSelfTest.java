@@ -18,7 +18,21 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -104,7 +118,8 @@ public class GridCacheUtilsSelfTest extends GridCommonAbstractTest {
 
     /**
      */
-    public void testCacheKeyValidation() {
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    public void testCacheKeyValidation() throws IgniteCheckedException {
         CU.validateCacheKey("key");
 
         CU.validateCacheKey(1);
@@ -124,6 +139,53 @@ public class GridCacheUtilsSelfTest extends GridCommonAbstractTest {
         assertThrowsForInvalidKey(new NoHashCode());
 
         assertThrowsForInvalidKey(new WrongEquals());
+
+        BinaryObjectBuilderImpl binBuilder = new BinaryObjectBuilderImpl(binaryContext(),
+            EqualsAndHashCode.class.getName());
+
+        assertThrowsForInvalidKey(binBuilder.build());
+
+        binBuilder.hashCode(0xFE12);
+
+        BinaryObject binObj = binBuilder.build();
+
+        CU.validateCacheKey(binObj);
+
+        BinaryObjectBuilderImpl binBuilder2 = new BinaryObjectBuilderImpl((BinaryObjectImpl) binObj);
+
+        CU.validateCacheKey(binBuilder2.build());
+    }
+
+    /**
+     * @return Binary marshaller.
+     * @throws IgniteCheckedException if failed.
+     */
+    private BinaryMarshaller binaryMarshaller() throws IgniteCheckedException {
+        IgniteConfiguration iCfg = new IgniteConfiguration();
+
+        BinaryConfiguration bCfg = new BinaryConfiguration();
+
+        iCfg.setBinaryConfiguration(bCfg);
+
+        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), iCfg, new NullLogger());
+
+        BinaryMarshaller marsh = new BinaryMarshaller();
+
+        marsh.setContext(new MarshallerContextTestImpl(null));
+
+        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, iCfg);
+
+        return marsh;
+    }
+
+    /**
+     * @return Binary context.
+     * @throws IgniteCheckedException if failed.
+     */
+    private BinaryContext binaryContext() throws IgniteCheckedException {
+        GridBinaryMarshaller impl = U.field(binaryMarshaller(), "impl");
+
+        return impl.context();
     }
 
     /**

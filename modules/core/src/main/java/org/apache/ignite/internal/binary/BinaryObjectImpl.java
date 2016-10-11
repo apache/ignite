@@ -98,6 +98,17 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
+    @Override public KeyCacheObject copy(int part) {
+        if (this.part == part)
+            return this;
+
+        BinaryObjectImpl cp = new BinaryObjectImpl(ctx, arr, start);
+        cp.part = part;
+
+        return cp;
+    }
+
+    /** {@inheritDoc} */
     @Override public int partition() {
         return part;
     }
@@ -232,6 +243,13 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     /** {@inheritDoc} */
     @Override protected boolean hasArray() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isFlagSet(short flag) {
+        short flags = BinaryPrimitives.readShort(arr, start + GridBinaryMarshaller.FLAGS_POS);
+
+        return BinaryUtils.isFlagSet(flags, flag);
     }
 
     /** {@inheritDoc} */

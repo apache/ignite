@@ -1387,15 +1387,15 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         long start = statsEnabled ? System.nanoTime() : 0L;
 
-        boolean keeyBinary = ctx.keepBinary();
+        boolean keepBinary = ctx.keepBinary();
 
-        if (keeyBinary)
+        if (keepBinary)
             key = (K)ctx.toCacheKeyObject(key);
 
-        V val = get(key, !keeyBinary, false);
+        V val = get(key, !keepBinary, false);
 
         if (ctx.config().getInterceptor() != null) {
-            key = keeyBinary ? (K) ctx.unwrapBinaryIfNeeded(key, true, false) : key;
+            key = keepBinary ? (K) ctx.unwrapBinaryIfNeeded(key, true, false) : key;
 
             val = (V)ctx.config().getInterceptor().onGet(key, val);
         }
@@ -4639,7 +4639,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         try {
             IgniteBiTuple<String, String> t = stash.get();
 
-            return IgnitionEx.gridx(t.get1()).cachex(t.get2());
+            return IgnitionEx.localIgnite().cachex(t.get2());
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
@@ -4888,6 +4888,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     public void onReconnected() {
         // No-op.
+    }
+
+    /**
+     * For tests only.
+     */
+    public void forceKeyCheck() {
+        keyCheck = true;
     }
 
     /**
