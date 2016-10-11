@@ -185,7 +185,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
 
                         _store.LoadCache((k, v) =>
                         {
-                            lock (stream) // User-defined store can be multithreaded.
+                            lock (writer) // User-defined store can be multithreaded.
                             {
                                 writer.WithDetach(w =>
                                 {
