@@ -46,8 +46,8 @@ public class GridIoPolicy {
     /** Marshaller cache execution pool. */
     public static final byte IGFS_POOL = 7;
 
-    /** DataStream cache execution pool. */
-    public static final byte DATA_STREAM_POOL = 8;
+    /** Data streamer execution pool. */
+    public static final byte DATA_STREAMER_POOL = 8;
 
     /**
      * Defines the range of reserved pools that are not available for plugins.

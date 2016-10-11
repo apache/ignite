@@ -29,7 +29,6 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.closure.GridClosurePolicy;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -218,13 +217,20 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                 IgniteInternalFuture<?> fut = ctx.cache().context().exchange().affinityReadyFuture(rmtAffVer);
 
                 if (fut != null && !fut.isDone()) {
+                    Byte currentPolicy = GridIoManager.currentPolicy();
+
+                    if (currentPolicy == null)
+                        currentPolicy = PUBLIC_POOL;
+
+                    final byte plc = currentPolicy;
+
                     fut.listen(new CI1<IgniteInternalFuture<?>>() {
                         @Override public void apply(IgniteInternalFuture<?> t) {
                             ctx.closure().runLocalSafe(new Runnable() {
                                 @Override public void run() {
                                     processRequest(nodeId, req);
                                 }
-                            }, GridClosurePolicy.DATA_STREAMER_POOL);
+                            }, plc);
                         }
                     });
 
