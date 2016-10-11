@@ -223,11 +223,10 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             Debug.Assert(items != null);
 
-            Action<BinaryWriter> action = writer =>
+            IUnmanagedTarget prj = DoOutOpObject(OpForNodeIds, writer =>
             {
                 WriteEnumerable(writer, items, func);
-            };
-            IUnmanagedTarget prj = DoOutOpObject(OpForNodeIds, action);
+            });
             
             return GetClusterGroup(prj);
         }
@@ -265,11 +264,10 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// </returns>
         private IClusterGroup ForCacheNodes(string name, int op)
         {
-            Action<BinaryWriter> action = writer =>
+            IUnmanagedTarget prj = DoOutOpObject(op, writer =>
             {
                 writer.WriteString(name);
-            };
-            IUnmanagedTarget prj = DoOutOpObject(op, action);
+            });
 
             return GetClusterGroup(prj);
         }
@@ -303,11 +301,10 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             IgniteArgumentCheck.NotNull(node, "node");
 
-            Action<BinaryWriter> action = writer =>
+            IUnmanagedTarget prj = DoOutOpObject(OpForHost, writer =>
             {
                 writer.WriteGuid(node.Id);
-            };
-            IUnmanagedTarget prj = DoOutOpObject(OpForHost, action);    
+            });    
                     
             return GetClusterGroup(prj);
         }
