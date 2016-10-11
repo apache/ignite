@@ -133,10 +133,10 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         super.prepareMarshal(ctx);
 
         if (parts != null && partsBytes == null)
-            partsBytes = ctx.marshaller().marshal(parts);
+            partsBytes = U.marshal(ctx, parts);
 
         if (partCntrs != null && partCntrsBytes == null)
-            partCntrsBytes = ctx.marshaller().marshal(partCntrs);
+            partCntrsBytes = U.marshal(ctx, partCntrs);
     }
 
     /**
@@ -158,13 +158,13 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         super.finishUnmarshal(ctx, ldr);
 
         if (partsBytes != null && parts == null)
-            parts = ctx.marshaller().unmarshal(partsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            parts = U.unmarshal(ctx, partsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         if (parts == null)
             parts = new HashMap<>();
 
         if (partCntrsBytes != null && partCntrs == null)
-            partCntrs = ctx.marshaller().unmarshal(partCntrsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            partCntrs = U.unmarshal(ctx, partCntrsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         if (partCntrs == null)
             partCntrs = new HashMap<>();

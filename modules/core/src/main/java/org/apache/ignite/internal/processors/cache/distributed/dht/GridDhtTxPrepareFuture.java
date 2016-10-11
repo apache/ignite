@@ -33,7 +33,6 @@ import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -1314,7 +1313,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     catch (ClusterTopologyCheckedException e) {
                         fut.onNodeLeft(e);
                     }
-                    catch (IgniteCheckedException | IgniteException e) {
+                    catch (IgniteCheckedException e) {
                         if (!cctx.kernalContext().isStopping()) {
                             if (msgLog.isDebugEnabled()) {
                                 msgLog.debug("DHT prepare fut, failed to send request dht [txId=" + tx.nearXidVersion() +
@@ -1397,7 +1396,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         catch (ClusterTopologyCheckedException e) {
                             fut.onNodeLeft(e);
                         }
-                        catch (IgniteCheckedException | IgniteException e) {
+                        catch (IgniteCheckedException e) {
                             if (!cctx.kernalContext().isStopping()) {
                                 if (msgLog.isDebugEnabled()) {
                                     msgLog.debug("DHT prepare fut, failed to send request near [txId=" + tx.nearXidVersion() +

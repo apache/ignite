@@ -1553,13 +1553,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     protected JavaObjectSerializer h2Serializer() {
         return new JavaObjectSerializer() {
                 @Override public byte[] serialize(Object obj) throws Exception {
-                    return marshaller.marshal(obj);
+                    return U.marshal(marshaller, obj);
                 }
 
                 @Override public Object deserialize(byte[] bytes) throws Exception {
                     ClassLoader clsLdr = ctx != null ? U.resolveClassLoader(ctx.config()) : null;
 
-                    return marshaller.unmarshal(bytes, clsLdr);
+                    return U.unmarshal(marshaller, bytes, clsLdr);
                 }
             };
     }
