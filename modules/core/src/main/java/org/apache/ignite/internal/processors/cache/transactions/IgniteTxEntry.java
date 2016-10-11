@@ -922,8 +922,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
         // Unmarshal transform closure anyway if it exists.
         if (transformClosBytes != null && entryProcessorsCol == null)
-            entryProcessorsCol = ctx.marshaller().unmarshal(transformClosBytes,
-                U.resolveClassLoader(clsLdr, ctx.gridConfig()));
+            entryProcessorsCol = U.unmarshal(ctx, transformClosBytes, U.resolveClassLoader(clsLdr, ctx.gridConfig()));
 
         if (filters == null)
             filters = CU.empty0();
@@ -941,7 +940,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         val.unmarshal(this.ctx, clsLdr);
 
         if (expiryPlcBytes != null && expiryPlc == null)
-            expiryPlc = ctx.marshaller().unmarshal(expiryPlcBytes, U.resolveClassLoader(clsLdr, ctx.gridConfig()));
+            expiryPlc = U.unmarshal(ctx, expiryPlcBytes, U.resolveClassLoader(clsLdr, ctx.gridConfig()));
     }
 
     /**

@@ -182,6 +182,7 @@ import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -213,6 +214,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -9632,6 +9634,203 @@ public abstract class IgniteUtils {
      */
     public static <T extends Comparable<? super T>> T max(T t0, T t1) {
         return t0.compareTo(t1) > 0 ? t0 : t1;
+    }
+
+
+    /**
+     * Unmarshals object from the input stream using given class loader.
+     * This method should not close given input stream.
+     * <p/>
+     * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
+     *
+     * @param <T> Type of unmarshalled object.
+     * @param in Input stream.
+     * @param clsLdr Class loader to use.
+     * @return Unmarshalled object.
+     * @throws IgniteCheckedException If unmarshalling failed.
+     */
+    public static <T> T unmarshal(Marshaller marsh, InputStream in, @Nullable ClassLoader clsLdr)
+        throws IgniteCheckedException {
+        assert marsh != null;
+        assert in != null;
+
+        try {
+            return marsh.unmarshal(in, clsLdr);
+        }
+        catch (IgniteCheckedException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
+     * Unmarshals object from the input stream using given class loader.
+     * This method should not close given input stream.
+     * <p/>
+     * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
+     *
+     * @param <T> Type of unmarshalled object.
+     * @param marsh Marshaller.
+     * @param arr Byte array.
+     * @param clsLdr Class loader to use.
+     * @return Unmarshalled object.
+     * @throws IgniteCheckedException If unmarshalling failed.
+     */
+    public static <T> T unmarshal(Marshaller marsh, byte[] arr, @Nullable ClassLoader clsLdr)
+        throws IgniteCheckedException {
+        assert marsh != null;
+        assert arr != null;
+
+        try {
+            return marsh.unmarshal(arr, clsLdr);
+        }
+        catch (IgniteCheckedException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
+     * Unmarshals object from the input stream using given class loader.
+     * This method should not close given input stream.
+     * <p/>
+     * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
+     *
+     * @param <T> Type of unmarshalled object.
+     * @param ctx Kernal contex.
+     * @param arr Byte array.
+     * @param clsLdr Class loader to use.
+     * @return Unmarshalled object.
+     * @throws IgniteCheckedException If unmarshalling failed.
+     */
+    public static <T> T unmarshal(GridKernalContext ctx, byte[] arr, @Nullable ClassLoader clsLdr)
+        throws IgniteCheckedException {
+        assert ctx != null;
+        assert arr != null;
+
+        try {
+            return U.unmarshal(ctx.config().getMarshaller(), arr, clsLdr);
+        }
+        catch (IgniteCheckedException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
+     * Unmarshals object from the input stream using given class loader.
+     * This method should not close given input stream.
+     * <p/>
+     * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
+     *
+     * @param <T> Type of unmarshalled object.
+     * @param ctx Kernal contex.
+     * @param arr Byte array.
+     * @param clsLdr Class loader to use.
+     * @return Unmarshalled object.
+     * @throws IgniteCheckedException If unmarshalling failed.
+     */
+    public static <T> T unmarshal(GridCacheSharedContext ctx, byte[] arr, @Nullable ClassLoader clsLdr)
+        throws IgniteCheckedException {
+        assert ctx != null;
+        assert arr != null;
+
+        try {
+            return U.unmarshal(ctx.marshaller(), arr, clsLdr);
+        }
+        catch (IgniteCheckedException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
+     * Marshals object to byte array.
+     * <p/>
+     * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
+     *
+     * @param marsh Marshaller.
+     * @param obj Object to marshal.
+     * @return Byte array.
+     * @throws IgniteCheckedException If marshalling failed.
+     */
+    public static byte[] marshal(Marshaller marsh, Object obj) throws IgniteCheckedException {
+        assert marsh != null;
+
+        try {
+            return marsh.marshal(obj);
+        }
+        catch (IgniteCheckedException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
+     * Marshals object to byte array.
+     * <p/>
+     * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
+     *
+     * @param marsh Marshaller.
+     * @param obj Object to marshal.
+     * @param out Output stream.
+     * @throws IgniteCheckedException If marshalling failed.
+     */
+    public static void marshal(Marshaller marsh, @Nullable Object obj, OutputStream out)
+        throws IgniteCheckedException {
+        assert marsh != null;
+
+        try {
+            marsh.marshal(obj, out);
+        }
+        catch (IgniteCheckedException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
+     * Marshals object to byte array. Wrap marshaller
+     * <p/>
+     * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
+     *
+     * @param ctx Kernal context.
+     * @param obj Object to marshal.
+     * @return Byte array.
+     * @throws IgniteCheckedException If marshalling failed.
+     */
+    public static byte[] marshal(GridKernalContext ctx, Object obj) throws IgniteCheckedException {
+        assert ctx != null;
+
+        return marshal(ctx.config().getMarshaller(), obj);
+    }
+
+    /**
+     * Marshals object to byte array. Wrap marshaller
+     * <p/>
+     * This method wraps marshaller invocations and guaranty throws {@link IgniteCheckedException} in fail case.
+     *
+     * @param ctx Cache context.
+     * @param obj Object to marshal.
+     * @return Byte array.
+     * @throws IgniteCheckedException If marshalling failed.
+     */
+    public static byte[] marshal(GridCacheSharedContext ctx, Object obj) throws IgniteCheckedException {
+        assert ctx != null;
+
+        return marshal(ctx.marshaller(), obj);
     }
 
     /**
