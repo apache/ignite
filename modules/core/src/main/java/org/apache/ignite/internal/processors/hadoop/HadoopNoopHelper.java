@@ -57,6 +57,11 @@ public class HadoopNoopHelper implements HadoopHelper {
         throw unsupported();
     }
 
+    /** {@inheritDoc} */
+    @Override public String workDirectory() {
+        throw unsupported();
+    }
+
     /**
      * @return Exception.
      */
