@@ -84,6 +84,11 @@ public class NewRootInitRecord<L> extends PageDeltaRecord {
         return RecordType.BTREE_INIT_NEW_ROOT;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean initNew() {
+        return true;
+    }
+
     public BPlusInnerIO<L> io() {
         return io;
     }

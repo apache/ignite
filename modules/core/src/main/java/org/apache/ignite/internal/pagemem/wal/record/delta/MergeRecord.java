@@ -23,15 +23,20 @@ import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Merge on remove.
  */
 public class MergeRecord<L> extends PageDeltaRecord {
     /** */
+    @GridToStringExclude
     private long prntId;
 
     /** */
+    @GridToStringExclude
     private long rightId;
 
     /** */
@@ -62,8 +67,8 @@ public class MergeRecord<L> extends PageDeltaRecord {
         BPlusIO<L> io = PageIO.getBPlusIO(leftBuf);
 
         try (
-            Page prnt = pageMem.page(cacheId(), prntId, true);
-            Page right = pageMem.page(cacheId(), rightId, true)
+            Page prnt = pageMem.page(cacheId(), prntId, true, null);
+            Page right = pageMem.page(cacheId(), rightId, true, null)
         ) {
             ByteBuffer prntBuf = prnt.getForRead();
 
@@ -105,5 +110,11 @@ public class MergeRecord<L> extends PageDeltaRecord {
 
     public boolean isEmptyBranch() {
         return emptyBranch;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MergeRecord.class, this, "prntId", U.hexLong(prntId), "rightId", U.hexLong(rightId),
+            "parent", super.toString());
     }
 }

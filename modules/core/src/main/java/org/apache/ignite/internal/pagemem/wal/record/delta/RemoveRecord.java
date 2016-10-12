@@ -51,7 +51,7 @@ public class RemoveRecord extends PageDeltaRecord {
         BPlusIO<?> io = PageIO.getBPlusIO(buf);
 
         if (io.getCount(buf) != cnt)
-            throw new DeltaApplicationException("Count in wrong: " + cnt);
+            throw new DeltaApplicationException("Count is wrong [expCnt=" + cnt + ", actual=" + io.getCount(buf) + ']');
 
         io.remove(buf, idx, cnt);
     }

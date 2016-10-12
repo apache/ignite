@@ -269,7 +269,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
-    @Override public Page page(int cacheId, long pageId, boolean restore) throws IgniteCheckedException {
+    @Override public Page page(int cacheId, long pageId, boolean restore, byte[] init) throws IgniteCheckedException {
         Segment seg = segment(pageId);
 
         return seg.acquirePage(cacheId, pageId, restore);

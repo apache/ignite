@@ -60,6 +60,13 @@ public abstract class PageDeltaRecord extends WALRecord {
     }
 
     /**
+     * @return Init new page record flag.
+     */
+    public boolean initNew() {
+        return false;
+    }
+
+    /**
      * Apply changes from this delta to the given page.
      * It is assumed that the given buffer represents page state right before this update.
      *
