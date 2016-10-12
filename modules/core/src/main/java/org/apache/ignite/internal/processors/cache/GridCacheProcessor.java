@@ -164,7 +164,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private final Map<String, GridCacheAdapter> stoppedCaches = new ConcurrentHashMap<>();
 
     /** Map of proxies. */
-    private final Map<String, IgniteCacheProxy<?, ?>> jCacheProxies;
+    private final ConcurrentMap<String, IgniteCacheProxy<?, ?>> jCacheProxies;
 
     /** Caches stop sequence. */
     private final Deque<String> stopSeq;
@@ -1743,13 +1743,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ClusterNode locNode = ctx.discovery().localNode();
 
+        IgniteCacheProxy<?, ?> proxy = jCacheProxies.get(maskNull(cfg.getName()));
+
         boolean affNodeStart = !clientStartOnly && CU.affinityNode(locNode, nodeFilter);
         boolean clientNodeStart = locNode.id().equals(initiatingNodeId);
+        boolean proxyRestart = proxy != null && proxy.isRestarting() && !caches.containsKey(maskNull(cfg.getName()));
 
         if (sharedCtx.cacheContext(CU.cacheId(cfg.getName())) != null)
             return;
 
-        if (affNodeStart || clientNodeStart) {
+        if (affNodeStart || clientNodeStart || proxyRestart) {
             if (clientNodeStart && !affNodeStart) {
                 if (nearCfg != null)
                     ccfg.setNearConfiguration(nearCfg);
@@ -1771,6 +1774,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             startCache(cacheCtx.cache());
             onKernalStart(cacheCtx.cache());
+
+            if (proxyRestart)
+                proxy.onRestarted(cacheCtx, cacheCtx.cache());
         }
     }
 
@@ -1861,12 +1867,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 String masked = maskNull(cacheCtx.name());
 
-                IgniteCacheProxy existing = jCacheProxies.get(masked);
-
-                if (existing != null && existing.isRestarting())
-                    existing.onRestarted(cache.context(), cache);
-                else
-                    jCacheProxies.put(masked, new IgniteCacheProxy(cache.context(), cache, null, false));
+                jCacheProxies.putIfAbsent(masked, new IgniteCacheProxy(cache.context(), cache, null, false));
             }
         }
 
@@ -1886,14 +1887,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         if (proxy.context().affinityNode()) {
                             GridCacheAdapter<?, ?> cache = caches.get(masked);
 
-                            if (cache != null) {
-                                IgniteCacheProxy<?, ?> existing = jCacheProxies.get(masked);
-
-                                if (existing != null && existing.isRestarting())
-                                    existing.onRestarted(cache.context(), cache);
-                                else
-                                    jCacheProxies.put(masked, new IgniteCacheProxy(cache.context(), cache, null, false));
-                            }
+                            if (cache != null)
+                                jCacheProxies.putIfAbsent(masked, new IgniteCacheProxy(cache.context(), cache, null, false));
                         }
                         else {
                             if (req.restart())

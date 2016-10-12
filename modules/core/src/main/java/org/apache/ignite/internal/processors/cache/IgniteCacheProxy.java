@@ -30,6 +30,8 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import javax.cache.Cache;
 import javax.cache.CacheException;
@@ -41,6 +43,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntry;
@@ -69,6 +72,7 @@ import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyIterator;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
@@ -132,7 +136,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     @GridToStringExclude
     private boolean lock;
 
-    private volatile boolean restarting;
+    private final AtomicReference<GridFutureAdapter<Void>> restartFut = new AtomicReference<>(null);
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -533,7 +537,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                             if (needToConvert) {
                                 Map.Entry<K, V> entry = (Map.Entry<K, V>)next;
 
-                                return (R) new CacheEntryImpl<>(entry.getKey(), entry.getValue());
+                                return (R)new CacheEntryImpl<>(entry.getKey(), entry.getValue());
                             }
 
                             return (R)next;
@@ -2157,6 +2161,11 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @return Previous projection set on this thread.
      */
     private CacheOperationContext onEnter(GridCacheGateway<K, V> gate, CacheOperationContext opCtx) {
+        GridFutureAdapter restartFut = this.restartFut.get();
+
+        if (restartFut != null && !restartFut.isDone())
+            throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(restartFut), "Cache is restarting: " + ctx.name());
+
         return lock ? gate.enter(opCtx) : gate.enterNoLock(opCtx);
     }
 
@@ -2286,21 +2295,29 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     public boolean isRestarting() {
-        return restarting;
+        return restartFut.get() != null;
     }
 
     public void restart() {
-        restarting = true;
+        GridFutureAdapter<Void> restartFut = new GridFutureAdapter<>();
+
+        GridFutureAdapter<Void> currentFut = this.restartFut.get();
+
+        this.restartFut.compareAndSet(currentFut, restartFut);
     }
 
     public void onRestarted(GridCacheContext ctx, IgniteInternalCache delegate) {
+        GridFutureAdapter<Void> restartFut = this.restartFut.get();
+
+        assert restartFut != null;
+
         this.ctx = ctx;
         this.delegate = delegate;
         this.gate = ctx.gate();
 
         internalProxy = new GridCacheProxyImpl<>(ctx, delegate, opCtx);
 
-        restarting = false;
+        restartFut.onDone();
     }
 
     /** {@inheritDoc} */
