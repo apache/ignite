@@ -221,7 +221,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
         //Here we need to assign appropriate context to entry
         if (e.isNear)
-            cache = !cache.isNear() ? ((GridDhtCacheAdapter)cache).near() : cache;
+            cache = cache.isDht() ? ((GridDhtCacheAdapter)cache).near() : cache;
         else
             cache = cache.isNear() ? ((GridNearCacheAdapter)cache).dht() : cache;
 
