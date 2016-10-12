@@ -233,10 +233,12 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
 
                         foreach (DictionaryEntry entry in result)
                         {
+                            var entry0 = entry;  // Copy modified closure.
+
                             writer.WithDetach(w =>
                             {
-                                w.WriteObject(entry.Key);
-                                w.WriteObject(entry.Value);
+                                w.WriteObject(entry0.Key);
+                                w.WriteObject(entry0.Value);
                             });
                         }
 
