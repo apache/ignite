@@ -116,7 +116,7 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
             node = Ignition.start(clientCfg);
         }
 
-        cache = node.cache(null);
+        cache = node.cache(null).withKeepBinary();
     }
 
     /**
