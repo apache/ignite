@@ -30,6 +30,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
@@ -128,6 +129,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         // Initialize cache extensions (if any).
         cacheExts = prepareCacheExtensions(interopCfg.cacheExtensions());
+
+        if (interopCfg.logger() != null)
+            interopCfg.logger().setContext(platformCtx);
     }
 
     /** {@inheritDoc} */
@@ -431,6 +435,58 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
      */
     private PlatformTarget createPlatformCache(IgniteCacheProxy cache) {
         return new PlatformCache(platformCtx, cache, false, cacheExts);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean loggerIsLevelEnabled(int level) {
+        IgniteLogger log = ctx.grid().log();
+
+        switch (level) {
+            case PlatformLogger.LVL_TRACE:
+                return log.isTraceEnabled();
+            case PlatformLogger.LVL_DEBUG:
+                return log.isDebugEnabled();
+            case PlatformLogger.LVL_INFO:
+                return log.isInfoEnabled();
+            case PlatformLogger.LVL_WARN:
+                return true;
+            case PlatformLogger.LVL_ERROR:
+                return true;
+            default:
+                assert false;
+        }
+
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void loggerLog(int level, String message, String category, String errorInfo) {
+        IgniteLogger log = ctx.grid().log();
+
+        if (category != null)
+            log = log.getLogger(category);
+
+        Throwable err = errorInfo == null ? null : new IgniteException("Platform error:" + errorInfo);
+
+        switch (level) {
+            case PlatformLogger.LVL_TRACE:
+                log.trace(message);
+                break;
+            case PlatformLogger.LVL_DEBUG:
+                log.debug(message);
+                break;
+            case PlatformLogger.LVL_INFO:
+                log.info(message);
+                break;
+            case PlatformLogger.LVL_WARN:
+                log.warning(message, err);
+                break;
+            case PlatformLogger.LVL_ERROR:
+                log.error(message, err);
+                break;
+            default:
+                assert false;
+        }
     }
 
     /**

@@ -37,9 +37,17 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="log4net, Version=1.2.15.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
+      <HintPath>..\packages\log4net.2.0.5\lib\net40-full\log4net.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="nunit-console-runner">
-      <HintPath>..\libs\nunit-console-runner.dll</HintPath>
+    <Reference Include="NLog">
+      <HintPath>..\packages\NLog.4.3.7\lib\net40\NLog.dll</HintPath>
+    </Reference>
+    <Reference Include="nunit-console-runner, Version=2.6.3.0, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\NUnit.Runners.2.6.3\tools\lib\nunit-console-runner.dll</HintPath>
     </Reference>
     <Reference Include="nunit.framework, Version=2.6.4.14350, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -53,6 +61,9 @@
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Log\DefaultLoggerTest.cs" />
+    <Compile Include="Log\Log4NetLoggerTest.cs" />
+    <Compile Include="Log\NLogLoggerTest.cs" />
     <Compile Include="TestAppConfig.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTestFullFooter.cs" />
     <Compile Include="Binary\BinaryCompactFooterInteropTest.cs" />
@@ -135,6 +146,7 @@
     <Compile Include="LifecycleTest.cs" />
     <Compile Include="LoadDllTest.cs" />
     <Compile Include="IgniteManagerTest.cs" />
+    <Compile Include="Log\CustomLoggerTest.cs" />
     <Compile Include="MarshallerTest.cs" />
     <Compile Include="MessagingTest.cs" />
     <Compile Include="BinaryConfigurationTest.cs" />
@@ -172,6 +184,14 @@
     <ProjectReference Include="..\Apache.Ignite.Linq\Apache.Ignite.Linq.csproj">
       <Project>{5b571661-17f4-4f29-8c7d-0edb38ca9b55}</Project>
       <Name>Apache.Ignite.Linq</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Apache.Ignite.log4net\Apache.Ignite.Log4Net.csproj">
+      <Project>{6F82D669-382E-4435-8092-68C4440146D8}</Project>
+      <Name>Apache.Ignite.Log4Net</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Apache.Ignite.NLog\Apache.Ignite.NLog.csproj">
+      <Project>{C6B58E4A-A2E9-4554-AD02-68CE6DA5CFB7}</Project>
+      <Name>Apache.Ignite.NLog</Name>
     </ProjectReference>
     <ProjectReference Include="..\Apache.Ignite\Apache.Ignite.csproj">
       <Project>{27F7F3C6-BDDE-43A9-B565-856F8395A04B}</Project>
@@ -239,6 +259,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Config\Lifecycle\lifecycle-no-beans.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\Log\dotnet-log4j.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\Log\custom-log.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Config\spring-test.xml">

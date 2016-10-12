@@ -357,6 +357,18 @@
                         <xs:attribute name="pessimisticTransactionLogLinger" type="xs:string" />
                     </xs:complexType>
                 </xs:element>
+                <xs:element name="logger" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>The logger. If no logger is set, logging is delegated to Java, which uses the logger defined in Spring XML (if present) or logs to console otherwise.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="type" type="xs:string" use="required">
+                            <xs:annotation>
+                                <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
             </xs:all>
             <xs:attribute name="gridName" type="xs:string" />
             <xs:attribute name="jvmDllPath" type="xs:string" />

@@ -43,8 +43,10 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
+    using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Tests.Binary;
     using Apache.Ignite.Core.Transactions;
+    using Apache.Ignite.NLog;
     using NUnit.Framework;
 
     /// <summary>
@@ -109,6 +111,7 @@ namespace Apache.Ignite.Core.Tests
                             <userAttributes><pair key='myNode' value='true' /></userAttributes>
                             <atomicConfiguration backups='2' cacheMode='Local' atomicSequenceReserveSize='250' />
                             <transactionConfiguration defaultTransactionConcurrency='Optimistic' defaultTransactionIsolation='RepeatableRead' defaultTimeout='0:1:2' pessimisticTransactionLogSize='15' pessimisticTransactionLogLinger='0:0:33' />
+                            <logger type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+TestLogger, Apache.Ignite.Core.Tests' />
                         </igniteConfig>";
             var reader = XmlReader.Create(new StringReader(xml));
 
@@ -193,6 +196,8 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsNotNull(comm);
             Assert.AreEqual(33, comm.AckSendThreshold);
             Assert.AreEqual(new TimeSpan(0, 1, 2), comm.IdleConnectionTimeout);
+
+            Assert.IsInstanceOf<TestLogger>(cfg.Logger);
         }
 
         /// <summary>
@@ -253,7 +258,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var document = new XmlDocument();
 
-            document.Schemas.Add("http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection", 
+            document.Schemas.Add("http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection",
                 XmlReader.Create("IgniteConfigurationSection.xsd"));
 
             document.Load(new StringReader(xml));
@@ -542,7 +547,10 @@ namespace Apache.Ignite.Core.Tests
                     SlowClientQueueLimit = 98,
                     SocketSendBufferSize = 2045,
                     UnacknowledgedMessagesBufferSize = 3450
-                }
+                },
+                IsLateAffinityAssignment = false,
+                SpringConfigUrl = "test",
+                Logger = new IgniteNLogLogger()
             };
         }
 
@@ -686,6 +694,25 @@ namespace Apache.Ignite.Core.Tests
             public ICacheStore CreateInstance()
             {
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// Test logger.
+        /// </summary>
+        public class TestLogger : ILogger
+        {
+            /** <inheritdoc /> */
+            public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider, string category,
+                string nativeErrorInfo, Exception ex)
+            {
+                throw new NotImplementedException();
+            }
+
+            /** <inheritdoc /> */
+            public bool IsEnabled(LogLevel level)
+            {
+                throw new NotImplementedException();
             }
         }
     }

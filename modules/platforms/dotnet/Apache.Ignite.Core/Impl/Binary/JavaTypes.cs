@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Log;
 
     /// <summary>
     /// Provides mapping between Java and .NET basic types.
@@ -67,26 +67,33 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         /// <summary>
         /// Gets the corresponding Java type name.
-        /// Logs a warning for indirectly mapped types.
         /// </summary>
-        public static string GetJavaTypeNameAndLogWarning(Type type)
+        public static string GetJavaTypeName(Type type)
         {
             if (type == null)
                 return null;
 
             string res;
 
-            if (!NetToJava.TryGetValue(type, out res))
-                return null;
+            return NetToJava.TryGetValue(type, out res) ? res : null;
+        }
+
+        /// <summary>
+        /// Logs a warning for indirectly mapped types.
+        /// </summary>
+        public static void LogIndirectMappingWarning(Type type, ILogger log, string logInfo)
+        {
+            if (type == null)
+                return;
 
             Type directType;
+            if (!IndirectMappingTypes.TryGetValue(type, out directType))
+                return;
 
-            if (IndirectMappingTypes.TryGetValue(type, out directType))
-                Logger.LogWarning("Type '{0}' maps to Java type '{1}' using unchecked conversion. " +
-                                  "This may cause issues in SQL queries. " +
-                                  "You can use '{2}' instead to achieve direct mapping.", type, res, directType);
-
-            return res;
+            log.Warn("{0}: Type '{1}' maps to Java type '{2}' using unchecked conversion. " +
+                     "This may cause issues in SQL queries. " +
+                     "You can use '{3}' instead to achieve direct mapping.",
+                logInfo, type, NetToJava[type], directType);
         }
 
         /// <summary>
