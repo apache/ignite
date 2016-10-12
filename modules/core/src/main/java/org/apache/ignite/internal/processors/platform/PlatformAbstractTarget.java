@@ -167,6 +167,51 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public Object inObjectStreamOutObjectStream(int type, Object arg, long inMemPtr, long outMemPtr) throws Exception {
+        PlatformMemory inMem = null;
+
+        PlatformMemory outMem = null;
+
+        try {
+            BinaryRawReaderEx reader = null;
+
+            if (inMemPtr != 0) {
+                inMem = platformCtx.memory().get(inMemPtr);
+                reader = platformCtx.reader(inMem);
+            }
+
+            PlatformOutputStream out = null;
+            BinaryRawWriterEx writer = null;
+
+            if (outMemPtr != 0) {
+                outMem = platformCtx.memory().get(outMemPtr);
+                out = outMem.output();
+                writer = platformCtx.writer(out);
+            }
+
+            Object res = processInObjectStreamOutObjectStream(type, arg, reader, writer);
+
+            if (out != null)
+                out.synchronize();
+
+            return res;
+        }
+        catch (Exception e) {
+            throw convertException(e);
+        }
+        finally {
+            try {
+                if (inMem != null)
+                    inMem.close();
+            }
+            finally {
+                if (outMem != null)
+                    outMem.close();
+            }
+        }
+    }
+
     /**
      * Convert caught exception.
      *
@@ -286,6 +331,21 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
     protected void processInObjectStreamOutStream(int type, @Nullable Object arg, BinaryRawReaderEx reader,
         BinaryRawWriterEx writer) throws IgniteCheckedException {
         throwUnsupported(type);
+    }
+
+    /**
+     * Process IN-OUT operation.
+     *
+     * @param type Type.
+     * @param arg Argument.
+     * @param reader Binary reader.
+     * @param writer Binary writer.
+     * @throws IgniteCheckedException In case of exception.
+     */
+    protected Object processInObjectStreamOutObjectStream(int type, @Nullable Object arg, BinaryRawReaderEx reader,
+        BinaryRawWriterEx writer) throws IgniteCheckedException {
+        throwUnsupported(type);
+        return null;
     }
 
     /**

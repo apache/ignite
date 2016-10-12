@@ -146,6 +146,10 @@ extern "C" {
         ctx->ProcessorLoggerLog(static_cast<jobject>(obj), level, message, category, errorInfo);
     }
 
+    void* IGNITE_CALL IgniteProcessorPluginTarget(gcj::JniContext* ctx, void* obj, char* name) {
+        return ctx->ProcessorPluginTarget(static_cast<jobject>(obj), name);
+    }
+
     long long IGNITE_CALL IgniteTargetInStreamOutLong(gcj::JniContext* ctx, void* obj, int opType, long long memPtr) {
         return ctx->TargetInStreamOutLong(static_cast<jobject>(obj), opType, memPtr);
     }
@@ -160,6 +164,10 @@ extern "C" {
 
     void IGNITE_CALL IgniteTargetInObjectStreamOutStream(gcj::JniContext* ctx, void* obj, int opType, void* arg, long long inMemPtr, long long outMemPtr) {
         ctx->TargetInObjectStreamOutStream(static_cast<jobject>(obj), opType, arg, inMemPtr, outMemPtr);
+    }
+    
+    void* IGNITE_CALL IgniteTargetInObjectStreamOutObjectStream(gcj::JniContext* ctx, void* obj, int opType, void* arg, long long inMemPtr, long long outMemPtr) {
+        return ctx->TargetInObjectStreamOutObjectStream(static_cast<jobject>(obj), opType, arg, inMemPtr, outMemPtr);
     }
     
     long long IGNITE_CALL IgniteTargetOutLong(gcj::JniContext* ctx, void* obj, int opType) {

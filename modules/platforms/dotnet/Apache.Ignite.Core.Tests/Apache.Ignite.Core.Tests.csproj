@@ -77,6 +77,8 @@
     <Compile Include="Log\DefaultLoggerTest.cs" />
     <Compile Include="Log\Log4NetLoggerTest.cs" />
     <Compile Include="Log\NLogLoggerTest.cs" />
+    <Compile Include="Plugin\PluginTest.cs" />
+    <Compile Include="Plugin\TestPlugin.cs" />
     <Compile Include="TestAppConfig.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTestFullFooter.cs" />
     <Compile Include="Binary\BinaryCompactFooterInteropTest.cs" />

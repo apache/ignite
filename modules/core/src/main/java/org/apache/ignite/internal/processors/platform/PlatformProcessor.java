@@ -271,4 +271,12 @@ public interface PlatformProcessor extends GridProcessor {
      * @param errorInfo Error info.
      */
     public void loggerLog(int level, String message, String category, String errorInfo);
+
+    /**
+     * Gets the plugin target object.
+     * @param name Plugin name.
+     *
+     * @return Plugin target.
+     */
+    public PlatformTarget pluginTarget(String name);
 }

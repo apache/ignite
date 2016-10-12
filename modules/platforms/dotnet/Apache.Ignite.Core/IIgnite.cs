@@ -32,6 +32,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Messaging;
+    using Apache.Ignite.Core.Plugin;
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Transactions;
 
@@ -307,5 +308,15 @@ namespace Apache.Ignite.Core
         /// runs in client mode (<see cref="IgniteConfiguration.ClientMode"/>).
         /// </summary>
         event EventHandler<ClientReconnectEventArgs> ClientReconnected;
+
+        /// <summary>
+        /// Gets the unmanaged plugin target with specified name.
+        /// <para />
+        /// This method should be called by plugin authors. 
+        /// Plugin users retrieve managed plugin instance via an extension method provided by plugin authors.
+        /// </summary>
+        /// <param name="name">The unmanaged plugin name.</param>
+        /// <returns>Unmanaged target for a plugin with specified name.</returns>
+        IPluginTarget GetPluginTarget(string name);
     }
 }

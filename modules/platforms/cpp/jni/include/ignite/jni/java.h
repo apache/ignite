@@ -343,6 +343,7 @@ namespace ignite
                 jmethodID m_PlatformProcessor_atomicReference;
                 jmethodID m_PlatformProcessor_loggerIsLevelEnabled;
                 jmethodID m_PlatformProcessor_loggerLog;
+                jmethodID m_PlatformProcessor_pluginTarget;
 
                 jclass c_PlatformTarget;
                 jmethodID m_PlatformTarget_inStreamOutLong;
@@ -352,6 +353,7 @@ namespace ignite
                 jmethodID m_PlatformTarget_outObject;
                 jmethodID m_PlatformTarget_inStreamOutStream;
                 jmethodID m_PlatformTarget_inObjectStreamOutStream;
+                jmethodID m_PlatformTarget_inObjectStreamOutObjectStream;
                 jmethodID m_PlatformTarget_listenFuture;
                 jmethodID m_PlatformTarget_listenFutureForOperation;
                 jmethodID m_PlatformTarget_listenFutureAndGet;
@@ -564,11 +566,13 @@ namespace ignite
 				void ProcessorGetCacheNames(jobject obj, long long memPtr);
 				bool ProcessorLoggerIsLevelEnabled(jobject obj, int level);
 				void ProcessorLoggerLog(jobject obj, int level, char* message, char* category, char* errorInfo);
+                jobject ProcessorPluginTarget(jobject obj, char* name);
 
                 long long TargetInStreamOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 void TargetInStreamOutStream(jobject obj, int opType, long long inMemPtr, long long outMemPtr, JniErrorInfo* errInfo = NULL);
                 jobject TargetInStreamOutObject(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 void TargetInObjectStreamOutStream(jobject obj, int opType, void* arg, long long inMemPtr, long long outMemPtr, JniErrorInfo* errInfo = NULL);
+                jobject TargetInObjectStreamOutObjectStream(jobject obj, int opType, void* arg, long long inMemPtr, long long outMemPtr, JniErrorInfo* errInfo = NULL);
                 long long TargetOutLong(jobject obj, int opType, JniErrorInfo* errInfo = NULL);
                 void TargetOutStream(jobject obj, int opType, long long memPtr, JniErrorInfo* errInfo = NULL);
                 jobject TargetOutObject(jobject obj, int opType, JniErrorInfo* errInfo = NULL);

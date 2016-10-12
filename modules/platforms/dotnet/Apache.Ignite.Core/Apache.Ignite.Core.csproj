@@ -404,6 +404,7 @@
     <Compile Include="Impl\Binary\Structure\BinaryStructureJumpTable.cs" />
     <Compile Include="Impl\Binary\Structure\BinaryStructureUpdate.cs" />
     <Compile Include="Impl\Binary\TypeResolver.cs" />
+    <Compile Include="Impl\Plugin\PluginTarget.cs" />
     <Compile Include="Impl\Resource\IResourceInjector.cs" />
     <Compile Include="Impl\Resource\ResourceFieldInjector.cs" />
     <Compile Include="Impl\Resource\ResourceMethodInjector.cs" />
@@ -458,6 +459,8 @@
     <Compile Include="Binary\BinaryObjectException.cs" />
     <Compile Include="Binary\BinaryTypeConfiguration.cs" />
     <Compile Include="Binary\BinaryTypeNames.cs" />
+    <Compile Include="Plugin\IPluginTarget.cs" />
+    <Compile Include="Plugin\PluginCallbackEventArgs.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Resource\InstanceResourceAttribute.cs" />
     <Compile Include="Resource\Package-Info.cs" />

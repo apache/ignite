@@ -52,6 +52,7 @@ namespace Apache.Ignite.Core.Impl
         public const int OpNone = -2;
 
         /** */
+
         private static readonly Dictionary<Type, FutureType> IgniteFutureTypeMap
             = new Dictionary<Type, FutureType>
             {
@@ -64,7 +65,7 @@ namespace Apache.Ignite.Core.Impl
                 {typeof(long), FutureType.Long},
                 {typeof(short), FutureType.Short}
             };
-        
+
         /** Unmanaged target. */
         private readonly IUnmanagedTarget _target;
 
@@ -176,7 +177,7 @@ namespace Apache.Ignite.Core.Impl
 
             if (col != null)
                 return WriteCollection(writer, col, selector);
-            
+
             var stream = writer.Stream;
 
             var pos = stream.Position;
@@ -205,7 +206,7 @@ namespace Apache.Ignite.Core.Impl
             }
 
             stream.WriteInt(pos, size);
-                
+
             return writer;
         }
 
@@ -215,7 +216,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="writer">Writer.</param>
         /// <param name="vals">Values.</param>
         /// <returns>The same writer.</returns>
-        protected static BinaryWriter WriteDictionary<T1, T2>(BinaryWriter writer, 
+        protected static BinaryWriter WriteDictionary<T1, T2>(BinaryWriter writer,
             IDictionary<T1, T2> vals)
         {
             writer.WriteInt(vals.Count);
@@ -373,7 +374,7 @@ namespace Apache.Ignite.Core.Impl
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
                 UU.TargetOutStream(_target, type, stream.MemoryPointer);
-                
+
                 stream.SynchronizeInput();
 
                 action(stream);
@@ -418,7 +419,7 @@ namespace Apache.Ignite.Core.Impl
         #endregion
 
         #region OUT-IN operations
-        
+
         /// <summary>
         /// Perform out-in operation.
         /// </summary>
@@ -501,7 +502,7 @@ namespace Apache.Ignite.Core.Impl
                 var res = UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
 
                 if (res != Error && inAction == null)
-                    return default(TR);  // quick path for void operations
+                    return default(TR); // quick path for void operations
 
                 stream.SynchronizeInput();
 
@@ -523,7 +524,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>
         /// Result.
         /// </returns>
-        protected bool DoOutInOpX(int type, Action<BinaryWriter> outAction, 
+        protected bool DoOutInOpX(int type, Action<BinaryWriter> outAction,
             Func<IBinaryStream, Exception> inErrorAction)
         {
             Debug.Assert(inErrorAction != null);
@@ -557,7 +558,8 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="inAction">In action.</param>
         /// <param name="arg">Argument.</param>
         /// <returns>Result.</returns>
-        protected unsafe TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, TR> inAction, void* arg)
+        protected unsafe TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, TR> inAction,
+            void* arg)
         {
             using (PlatformMemoryStream outStream = IgniteManager.Memory.Allocate().GetStream())
             {
@@ -569,7 +571,8 @@ namespace Apache.Ignite.Core.Impl
 
                     FinishMarshal(writer);
 
-                    UU.TargetInObjectStreamOutStream(_target, type, arg, outStream.SynchronizeOutput(), inStream.MemoryPointer);
+                    UU.TargetInObjectStreamOutStream(_target, type, arg, outStream.SynchronizeOutput(),
+                        inStream.MemoryPointer);
 
                     inStream.SynchronizeInput();
 
@@ -577,7 +580,67 @@ namespace Apache.Ignite.Core.Impl
                 }
             }
         }
-        
+
+        /// <summary>
+        /// Perform out-in operation.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
+        /// <param name="outAction">Out action.</param>
+        /// <param name="inAction">In action.</param>
+        /// <param name="arg">Argument.</param>
+        /// <returns>Result.</returns>
+        protected unsafe TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction,
+            Func<IBinaryStream, IUnmanagedTarget, TR> inAction, void* arg)
+        {
+            PlatformMemoryStream outStream = null;
+            long outPtr = 0;
+
+            PlatformMemoryStream inStream = null;
+            long inPtr = 0;
+
+            try
+            {
+                if (outAction != null)
+                {
+                    outStream = IgniteManager.Memory.Allocate().GetStream();
+                    var writer = _marsh.StartMarshal(outStream);
+                    outAction(writer);
+                    FinishMarshal(writer);
+                    outPtr = outStream.SynchronizeOutput();
+                }
+
+                if (inAction != null)
+                {
+                    inStream = IgniteManager.Memory.Allocate().GetStream();
+                    inPtr = inStream.MemoryPointer;
+                }
+
+                var res = UU.TargetInObjectStreamOutObjectStream(_target, type, arg, outPtr, inPtr);
+
+                if (inAction == null)
+                    return default(TR);
+
+                inStream.SynchronizeInput();
+
+                return inAction(inStream, res);
+
+            }
+            finally
+            {
+                try
+                {
+                    if (inStream != null)
+                        inStream.Dispose();
+
+                }
+                finally
+                {
+                    if (outStream != null)
+                        outStream.Dispose();
+                }
+            }
+        }
+
         /// <summary>
         /// Perform out-in operation.
         /// </summary>

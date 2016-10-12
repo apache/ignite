@@ -68,6 +68,18 @@ public interface PlatformTarget {
     public void inObjectStreamOutStream(int type, @Nullable Object arg, long inMemPtr, long outMemPtr) throws Exception;
 
     /**
+     * Operation accepting an object and a memory stream and returning result to another memory stream and an object.
+     *
+     * @param type Operation type.
+     * @param arg Argument (optional).
+     * @param inMemPtr Input memory pointer.
+     * @param outMemPtr Output memory pointer.
+     * @return Result.
+     * @throws Exception In case of failure.
+     */
+    public Object inObjectStreamOutObjectStream(int type, @Nullable Object arg, long inMemPtr, long outMemPtr) throws Exception;
+
+    /**
      * Operation returning long result.
      *
      * @param type Operation type.

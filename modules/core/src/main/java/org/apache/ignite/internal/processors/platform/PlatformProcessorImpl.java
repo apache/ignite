@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.platform.events.PlatformEvents;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.messaging.PlatformMessaging;
+import org.apache.ignite.internal.processors.platform.plugin.PlatformPluginTargetAdapter;
 import org.apache.ignite.internal.processors.platform.services.PlatformServices;
 import org.apache.ignite.internal.processors.platform.transactions.PlatformTransactions;
 import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
@@ -57,6 +58,8 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.plugin.IgnitePlatformPlugin;
+import org.apache.ignite.plugin.PlatformPluginTarget;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
@@ -487,6 +490,15 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
             default:
                 assert false;
         }
+    }
+
+    /** {@inheritDoc} */
+    public PlatformTarget pluginTarget(String name) {
+        final IgnitePlatformPlugin plugin = platformCtx.kernalContext().grid().plugin(name);
+
+        PlatformPluginTarget pluginTarget = plugin.platformTarget();
+
+        return new PlatformPluginTargetAdapter(platformCtx, pluginTarget, name);
     }
 
     /**

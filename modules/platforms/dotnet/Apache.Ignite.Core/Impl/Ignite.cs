@@ -22,12 +22,14 @@ namespace Apache.Ignite.Core.Impl
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.Linq;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.DataStructures;
@@ -40,11 +42,14 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Datastream;
     using Apache.Ignite.Core.Impl.DataStructures;
     using Apache.Ignite.Core.Impl.Handle;
+    using Apache.Ignite.Core.Impl.Memory;
+    using Apache.Ignite.Core.Impl.Plugin;
     using Apache.Ignite.Core.Impl.Transactions;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Messaging;
+    using Apache.Ignite.Core.Plugin;
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Transactions;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
@@ -94,6 +99,10 @@ namespace Apache.Ignite.Core.Impl
         /** Client reconnect task completion source. */
         private volatile TaskCompletionSource<bool> _clientReconnectTaskCompletionSource = 
             new TaskCompletionSource<bool>();
+
+        /** Plugin target cache. */
+        private readonly ConcurrentDictionary<string, PluginTarget> _pluginTargets = 
+            new ConcurrentDictionary<string, PluginTarget>();
 
         /// <summary>
         /// Constructor.
@@ -694,6 +703,13 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public event EventHandler<ClientReconnectEventArgs> ClientReconnected;
 
+        /** <inheritdoc /> */
+        public IPluginTarget GetPluginTarget(string name)
+        {
+            return _pluginTargets.GetOrAdd(name, 
+                n => new PluginTarget(UU.ProcessorPluginTarget(_proc, n), Marshaller));
+        }
+
         /// <summary>
         /// Gets or creates near cache.
         /// </summary>
@@ -820,6 +836,28 @@ namespace Apache.Ignite.Core.Impl
             var handler = ClientReconnected;
             if (handler != null)
                 handler.Invoke(this, new ClientReconnectEventArgs(clusterRestarted));
+        }
+
+        /// <summary>
+        /// Invokes plugin callback.
+        /// </summary>
+        /// <param name="inStream">The in stream.</param>
+        /// <param name="outStream">The out stream.</param>
+        internal void PluginCallback(PlatformMemoryStream inStream, PlatformMemoryStream outStream)
+        {
+            Debug.Assert(inStream != null);
+
+            var reader = Marshaller.StartUnmarshal(inStream);
+            var writer = outStream != null ? Marshaller.StartMarshal(outStream) : null;
+
+            var pluginName = reader.ReadString();
+
+            PluginTarget target;
+            if (!_pluginTargets.TryGetValue(pluginName, out target))
+                throw new IgniteException(string.Format(CultureInfo.InvariantCulture,
+                    "Failed to invoke plugin callback: plugin '{0}' not found", pluginName));
+
+            target.OnCallback(reader, writer);
         }
     }
 }

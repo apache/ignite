@@ -34,6 +34,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Messaging;
+    using Apache.Ignite.Core.Plugin;
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Transactions;
 
@@ -425,6 +426,12 @@ namespace Apache.Ignite.Core.Impl
         {
             add { _ignite.ClientReconnected += value; }
             remove { _ignite.ClientReconnected -= value; }
+        }
+
+        /** <inheritdoc /> */
+        public IPluginTarget GetPluginTarget(string name)
+        {
+            return _ignite.GetPluginTarget(name);
         }
 
         /** <inheritdoc /> */
