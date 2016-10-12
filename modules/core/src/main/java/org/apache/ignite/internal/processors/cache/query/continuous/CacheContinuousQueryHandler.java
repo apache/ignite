@@ -595,12 +595,12 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         assert objs != null;
         assert ctx != null;
 
-        final List<CacheContinuousQueryEntry> entries = (List<CacheContinuousQueryEntry>)objs;
-
-        if (entries.isEmpty())
+        if (objs.isEmpty())
             return;
 
         if (asyncCallback) {
+            final List<CacheContinuousQueryEntry> entries = objs instanceof List ? (List)objs : new ArrayList(objs);
+
             IgniteStripedThreadPoolExecutor asyncPool = ctx.asyncCallbackPool();
 
             int threadId = asyncPool.threadId(entries.get(0).partition());
@@ -639,7 +639,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             }, threadId);
         }
         else
-            notifyCallback0(nodeId, ctx, entries);
+            notifyCallback0(nodeId, ctx, (Collection)objs);
     }
 
     /**
