@@ -64,7 +64,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -349,7 +348,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         tcpSrvr = new TcpServer();
 
-        clientNioSrv = createClientNIOServer();
+        clientNioSrv = createClientNioServer();
         clientNioSrv.start();
 
         spi.initLocalNode(tcpSrvr.port, true);
@@ -394,12 +393,12 @@ class ServerImpl extends TcpDiscoveryImpl {
     /**
      * @return New NIO server.
      */
-    private GridNioServer createClientNIOServer() {
+    private GridNioServer createClientNioServer() {
         final GridNioServer srv;
 
         final ArrayList<GridNioFilter> filters = new ArrayList<>();
 
-        filters.add(new ClientNIOFilter("marshallerFilter"));
+        filters.add(new ClientNioFilter("marshallerFilter"));
 
         if (spi.isSslEnabled()) {
             if (spi.sslCtx != null) {
@@ -421,17 +420,17 @@ class ServerImpl extends TcpDiscoveryImpl {
             String gridName = "client";
 
             if (Thread.currentThread() instanceof IgniteThread)
-                gridName = ((IgniteThread) Thread.currentThread()).getGridName();
+                gridName = ((IgniteThread)Thread.currentThread()).getGridName();
 
             srv = GridNioServer.builder().address(U.getLocalHost())
                 .port(-1)
-                .listener(new ClientNIOListener<>(log, writeTimeout))
+                .listener(new ClientNioListener<>(log, writeTimeout))
                 .filters(filters.toArray(new GridNioFilter[filters.size()]))
                 .logger(log)
-                .selectorCount(Runtime.getRuntime().availableProcessors())
-                .sendQueueLimit(1024)
+                .selectorCount(spi.getClientNioThreads())
+                .sendQueueLimit(spi.getClientSendMessageQueueLimit())
                 .byteOrder(ByteOrder.nativeOrder())
-                .tcpNoDelay(true)
+                .tcpNoDelay(spi.getTcpNodelay())
                 .directBuffer(true)
                 .directMode(false)
                 .socketReceiveBufferSize(0)
@@ -605,12 +604,13 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         try {
             if (proc instanceof ClientMessageWorker) {
-                final ClientMessageWorker wrk = (ClientMessageWorker) proc;
+                final ClientMessageWorker wrk = (ClientMessageWorker)proc;
 
                 U.interrupt(wrk);
                 U.join(wrk);
-            } else if (proc instanceof ClientNioMessageWorker) {
-                final ClientNioMessageWorker nioWrk = (ClientNioMessageWorker) proc;
+            }
+            else if (proc instanceof ClientNioMessageWorker) {
+                final ClientNioMessageWorker nioWrk = (ClientNioMessageWorker)proc;
 
                 if (nioBlock)
                     nioWrk.stop();
@@ -5365,7 +5365,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
 
                         // Wrap raw connection into SSL.
-                        sock = new NioSSLSocket(sock, sslHnd);
+                        sock = new NioSslSocket(sock, sslHnd);
                     }
 
                     long tstamp = U.currentTimeMillis();
@@ -5536,7 +5536,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             this.clientNodeId = clientNodeId;
             this.sock = sock;
 
-            msgQueue = new LinkedList<>();
+            msgQueue = new ArrayDeque<>();
         }
 
         /**
@@ -5556,13 +5556,13 @@ class ServerImpl extends TcpDiscoveryImpl {
             final SocketChannel ch = sock.getChannel();
 
             if (spi.isSslEnabled()) {
-                assert sock instanceof NioSSLSocket;
+                assert sock instanceof NioSslSocket;
 
                 // Put the engine to the meta map to allow nio server to use it:
-                meta.put(GridNioSessionMetaKey.SSL_ENGINE.ordinal(), ((NioSSLSocket) sock).sslEngine);
+                meta.put(GridNioSessionMetaKey.SSL_ENGINE.ordinal(), ((NioSslSocket)sock).sslEngine);
             }
 
-            ses = (GridNioSession) clientNioSrv.createSession(ch, meta).get();
+            ses = (GridNioSession)clientNioSrv.createSession(ch, meta).get();
 
             state = WorkerState.STARTED;
         }
@@ -5744,7 +5744,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     /**
      * Listener for client messages.
      */
-    private class ClientNIOListener<T> implements GridNioServerListener<T> {
+    private class ClientNioListener<T> implements GridNioServerListener<T> {
         /** */
         private final IgniteLogger log;
 
@@ -5755,7 +5755,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param log Logger.
          * @param writeTimeout Socket write timeout.
          */
-        private ClientNIOListener(final IgniteLogger log, final long writeTimeout) {
+        private ClientNioListener(final IgniteLogger log, final long writeTimeout) {
             this.log = log;
             this.writeTimeout = writeTimeout;
         }
@@ -5777,7 +5777,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (proc != null && proc instanceof ClientNioMessageWorker && ((ClientNioMessageWorker)proc).ses == ses) {
                 if (clientMsgWorkers.remove(clientNodeId, proc))
-                    ((ClientNioMessageWorker) proc).nonblockingStop();
+                    ((ClientNioMessageWorker)proc).nonblockingStop();
             }
             else {
                 if (log.isDebugEnabled())
@@ -5792,7 +5792,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         @Override public void onMessage(final GridNioSession ses, final T msg0) {
             final UUID nodeId = getConfiguredNodeId();
 
-            final TcpDiscoveryAbstractMessage msg = (TcpDiscoveryAbstractMessage) msg0;
+            final TcpDiscoveryAbstractMessage msg = (TcpDiscoveryAbstractMessage)msg0;
 
             msg.senderNodeId(nodeId);
 
@@ -5806,7 +5806,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             final UUID clientNodeId = clientNodeId(ses);
 
-            final ClientNioMessageWorker clientMsgWrk = (ClientNioMessageWorker) clientMsgWorkers.get(clientNodeId);
+            final ClientNioMessageWorker clientMsgWrk = (ClientNioMessageWorker)clientMsgWorkers.get(clientNodeId);
 
             if (clientMsgWrk == null || clientMsgWrk.ses != ses) {
                 if (log.isDebugEnabled())
@@ -6050,11 +6050,11 @@ class ServerImpl extends TcpDiscoveryImpl {
     /**
      *
      */
-    private class ClientNIOFilter extends GridNioFilterAdapter {
+    private class ClientNioFilter extends GridNioFilterAdapter {
         /**
          * @param name Name.
          */
-        ClientNIOFilter(final String name) {
+        ClientNioFilter(final String name) {
             super(name);
         }
 
@@ -6087,7 +6087,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             final Object msg) throws IgniteCheckedException {
             ByteBuffer msgBuf = ses.meta(INCOMPLETE_MESSAGE_META);
 
-            final ByteBuffer buf = (ByteBuffer) msg;
+            final ByteBuffer buf = (ByteBuffer)msg;
 
             if (msgBuf == null) {
                 // first packet
@@ -6197,7 +6197,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          *
          * @param sock Socket to read data from.
          */
-        SocketReader(final Socket sock) {
+        SocketReader(Socket sock) {
             super(spi.ignite().name(), "tcp-disco-sock-reader", log);
 
             this.sock = sock;
@@ -6219,7 +6219,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 try {
                     // Set socket options.
                     sock.setKeepAlive(true);
-                    sock.setTcpNoDelay(true);
+                    sock.setTcpNoDelay(spi.getTcpNodelay());
 
                     int timeout = sock.getSoTimeout();
 
@@ -6346,7 +6346,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 break;
 
                             if (old instanceof ClientMessageWorker) {
-                                ClientMessageWorker oldWrk = (ClientMessageWorker) old;
+                                ClientMessageWorker oldWrk = (ClientMessageWorker)old;
 
                                 if (oldWrk.isInterrupted()) {
                                     clientMsgWorkers.remove(nodeId, old);
@@ -6371,7 +6371,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 return;
                             }
                             else if (old instanceof ClientNioMessageWorker) {
-                                final ClientNioMessageWorker nioOldWrk = (ClientNioMessageWorker) old;
+                                final ClientNioMessageWorker nioOldWrk = (ClientNioMessageWorker)old;
 
                                 if (nioOldWrk.state() == WorkerState.STOPPED)
                                     clientMsgWorkers.remove(nodeId, nioOldWrk);
@@ -6413,7 +6413,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
 
                     if (nioClient) {
-                        final ClientNioMessageWorker nioWrk = (ClientNioMessageWorker) clientMsgWrk;
+                        final ClientNioMessageWorker nioWrk = (ClientNioMessageWorker)clientMsgWrk;
 
                         nioWrk.start();
 
@@ -6490,7 +6490,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     spi.getSocketTimeout();
 
                 final ClientMessageWorker clientMsgWrk0 = clientMsgWrk == null ? null
-                    : (ClientMessageWorker) clientMsgWrk;
+                    : (ClientMessageWorker)clientMsgWrk;
 
                 while (!isInterrupted()) {
                     try {
@@ -6753,7 +6753,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (!nioClient) {
                         clientMsgWorkers.remove(nodeId, clientMsgWrk);
 
-                        U.interrupt((ClientMessageWorker) clientMsgWrk);
+                        U.interrupt((ClientMessageWorker)clientMsgWrk);
                     }
                 }
 
@@ -7261,7 +7261,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      * and {@link Socket#getOutputStream()} that return custom implementations which
      * use passed {@link SSLEngine}.
      */
-    static class NioSSLSocket extends Socket {
+    static class NioSslSocket extends Socket {
         /** Genuine socket. */
         private final Socket delegate;
 
@@ -7275,16 +7275,16 @@ class ServerImpl extends TcpDiscoveryImpl {
         private final BlockingSslHandler hnd;
 
         /** */
-        private volatile SSLInputStream sslIn;
+        private volatile SslInputStream sslIn;
 
         /** */
-        private volatile SSLOutputStream sslOut;
+        private volatile SslOutputStream sslOut;
 
         /**
          * @param delegate Delegate.
          * @param hnd SSL blocking handler.
          */
-        private NioSSLSocket(final Socket delegate, final BlockingSslHandler hnd) {
+        private NioSslSocket(final Socket delegate, final BlockingSslHandler hnd) {
             this.delegate = delegate;
             this.sslEngine = hnd.sslEngine();
             this.hnd = hnd;
@@ -7347,7 +7347,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (sslIn == null) {
                 synchronized (this) {
                     if (sslIn == null)
-                        sslIn = new SSLInputStream(delegate.getInputStream(), ch, hnd);
+                        sslIn = new SslInputStream(delegate.getInputStream(), ch, hnd);
                 }
             }
 
@@ -7359,7 +7359,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (sslOut == null) {
                 synchronized (this) {
                     if (sslOut == null)
-                        sslOut = new SSLOutputStream(delegate.getOutputStream(), ch, hnd);
+                        sslOut = new SslOutputStream(delegate.getOutputStream(), ch, hnd);
                 }
             }
 
@@ -7483,7 +7483,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(NioSSLSocket.class, this);
+            return S.toString(NioSslSocket.class, this);
         }
 
         /** {@inheritDoc} */
@@ -7522,7 +7522,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      * Stream decorator that does data decryption read from genuine input
      * stream.
      */
-    private static class SSLInputStream extends InputStream {
+    private static class SslInputStream extends InputStream {
         /** Genuine input stream. */
         private final InputStream in;
 
@@ -7543,7 +7543,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param ch Socket channel.
          * @param sslHnd SSL handler.
          */
-        SSLInputStream(final InputStream in, final SocketChannel ch, final BlockingSslHandler sslHnd) {
+        SslInputStream(final InputStream in, final SocketChannel ch, final BlockingSslHandler sslHnd) {
             this.in = in;
             this.ch = ch;
             this.sslHnd = sslHnd;
@@ -7711,7 +7711,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(SSLInputStream.class, this);
+            return S.toString(SslInputStream.class, this);
         }
     }
 
@@ -7719,7 +7719,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      * Stream decorator that does data encryption and writes to genuine socket
      * channel.
      */
-    private static class SSLOutputStream extends OutputStream {
+    private static class SslOutputStream extends OutputStream {
         /** Genuine output stream. */
         private final OutputStream out;
 
@@ -7737,7 +7737,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param ch Socket channel.
          * @param sslHnd SSL handler.
          */
-        SSLOutputStream(final OutputStream out, final SocketChannel ch,
+        SslOutputStream(final OutputStream out, final SocketChannel ch,
             final BlockingSslHandler sslHnd) {
             this.out = out;
             this.ch = ch;
@@ -7791,7 +7791,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(SSLOutputStream.class, this);
+            return S.toString(SslOutputStream.class, this);
         }
     }
 

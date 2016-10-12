@@ -276,6 +276,24 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
         return failedNodes;
     }
 
+    /**
+     * Set async mode flag.
+     *
+     * @param async Async mode flag.
+     */
+    public void asyncMode(boolean async) {
+        setFlag(ASYNC_MODE_POS, async);
+    }
+
+    /**
+     * Gets async mode flag.
+     *
+     * @return Async mode flag.
+     */
+    public boolean asyncMode() {
+        return getFlag(ASYNC_MODE_POS);
+    }
+
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
         if (this == obj)

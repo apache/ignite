@@ -285,6 +285,15 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     /** Maximum ack timeout value for receiving message acknowledgement in milliseconds (value is <tt>600,000ms</tt>). */
     public static final long DFLT_MAX_ACK_TIMEOUT = 10 * 60 * 1000;
 
+    /** Default value for TCP_NODELAY flag (value is <tt>true</tt>). */
+    public static final boolean DFLT_TCP_NODELAY = true;
+
+    /** Default number of threads for nio selector for client connections (value is <tt>1</tt>). */
+    public static final int DFLT_CLIENT_NIO_THREADS = 1;
+
+    /** Default max number of messages that could be queued to send to client. (value is <tt>0</tt>).  */
+    public static final int DFLT_CLIENT_SEND_MSG_QUEUE_LIMIT = 0;
+
     /** Local address. */
     protected String locAddr;
 
@@ -378,6 +387,15 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     /** IP finder clean frequency. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     protected long ipFinderCleanFreq = DFLT_IP_FINDER_CLEAN_FREQ;
+
+    /** TCP_NODELAY flag that is passed to each newly created socket. */
+    protected boolean tcpNoDelay = DFLT_TCP_NODELAY;
+
+    /** Number of threads for nio selector for client connections. */
+    protected int clientNioThreads = DFLT_CLIENT_NIO_THREADS;
+
+    /** Max number of messages that could be queued to send to client. */
+    protected int clientSndMsgQueueLimit = DFLT_CLIENT_SEND_MSG_QUEUE_LIMIT;
 
     /** Node authenticator. */
     protected DiscoverySpiNodeAuthenticator nodeAuth;
@@ -788,6 +806,88 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         this.ipFinderCleanFreq = ipFinderCleanFreq;
 
         return this;
+    }
+
+    /**
+     * Gets TCP_NODELAY flag.
+     * <p>
+     *     Defaults to {@link #DFLT_TCP_NODELAY}.
+     * </p>
+     *
+     * @return TCP_NODELAY flag.
+     */
+    public boolean getTcpNodelay() {
+        return tcpNoDelay;
+    }
+
+    /**
+     * Sets TCP_NODELAY flag.
+     * <p>
+     *     Defaults to {@link #DFLT_TCP_NODELAY}.
+     * </p>
+     *
+     * @param tcpNoDelay TCP_NODELAY flag.
+     * @return TCP_NODELAY flag.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public TcpDiscoverySpi setTcpNodelay(boolean tcpNoDelay) {
+        this.tcpNoDelay = tcpNoDelay;
+
+        return this;
+    }
+
+    /**
+     * Gets number of threads for nio selector for client connections.
+     * <p>
+     *     Defaults to {@link #DFLT_CLIENT_NIO_THREADS}
+     * </p>
+     *
+     * @return Number of threads for nio selector for client connections.
+     */
+    public int getClientNioThreads() {
+        return clientNioThreads;
+    }
+
+    /**
+     * Sets number of threads for nio selector for client connections.
+     * <p>
+     *     Defaults to {@link #DFLT_CLIENT_NIO_THREADS}
+     * </p>
+     *
+     * @param clientNioThreads Number of threads for nio selector for client connections.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public void setClientNioThreads(final int clientNioThreads) {
+        this.clientNioThreads = clientNioThreads;
+    }
+
+    /**
+     * Gets max number of messages that could be queued to send to client.
+     * When number of queued messages before send reaches that value no new messages will be sent.
+     * {@code 0} means unlimited.
+     * <p>
+     *     Defaults to {@link #DFLT_CLIENT_SEND_MSG_QUEUE_LIMIT}
+     * </p>
+     *
+     * @return max number of messages that could be queued to send to client.
+     */
+    public int getClientSendMessageQueueLimit() {
+        return clientSndMsgQueueLimit;
+    }
+
+    /**
+     * Sets max number of messages that could be queued to send to client.
+     * When number of queued messages before send reaches that value no new messages will be sent.
+     * {@code 0} means unlimited.
+     * <p>
+     *     Defaults to {@link #DFLT_CLIENT_SEND_MSG_QUEUE_LIMIT}
+     * </p>
+     *
+     * @param clientMsgQueueLimit max number of messages that could be queued to send to client.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public void setClientSendMessageQueueLimit(final int clientMsgQueueLimit) {
+        this.clientSndMsgQueueLimit = clientMsgQueueLimit;
     }
 
     /**
@@ -1327,7 +1427,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
             // Use channel directly as a workaround, because output stream
             // from NIO socket may block infinitely.
-            if (ch != null && !(sock instanceof ServerImpl.NioSSLSocket))
+            if (ch != null && !(sock instanceof ServerImpl.NioSslSocket))
                 ch.write(ByteBuffer.wrap(data));
             else {
                 OutputStream out = sock.getOutputStream();

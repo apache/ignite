@@ -21,8 +21,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
-import java.util.List;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -130,10 +128,6 @@ public class BlockingSslHandler {
 
         boolean loop = true;
 
-        final List<HandshakeStatus> hist = new ArrayList<>();
-
-        hist.add(handshakeStatus);
-
         while (loop) {
             switch (handshakeStatus) {
                 case NOT_HANDSHAKING:
@@ -190,8 +184,6 @@ public class BlockingSslHandler {
                         handshakeStatus + ']');
                 }
             }
-
-            hist.add(handshakeStatus);
         }
 
         if (log.isDebugEnabled())
@@ -403,7 +395,7 @@ public class BlockingSslHandler {
     }
 
     /**
-     * Try to unwrap data left in buffer. If that data was not enough
+     * Try to unwrap data left in buffer. If that data was not enough,
      * position must be restored after reading data from network.
      * <p>
      *     This method was made for cases when all required data already read and next reading

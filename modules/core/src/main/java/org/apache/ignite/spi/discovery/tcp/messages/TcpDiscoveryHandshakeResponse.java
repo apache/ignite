@@ -74,14 +74,6 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
         setFlag(CLIENT_ACK_FLAG_POS, clientAck);
     }
 
-    public void asyncMode(final boolean async) {
-        setFlag(ASYNC_MODE_POS, async);
-    }
-
-    public boolean asyncMode() {
-        return getFlag(ASYNC_MODE_POS);
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryHandshakeResponse.class, this, "super", super.toString());

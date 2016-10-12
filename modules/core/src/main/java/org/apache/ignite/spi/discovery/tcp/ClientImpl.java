@@ -23,8 +23,6 @@ import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -129,7 +127,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     private static final Object SPI_RECONNECT_FAILED = "SPI_RECONNECT_FAILED";
 
     /** */
-    private static int DEFAULT_BYTE_ARRAY_STREAM_SIZE = 512;
+    private static int DFLT_BYTE_ARR_STREAM_SIZE = 512;
 
     /** Remote nodes. */
     private final ConcurrentMap<UUID, TcpDiscoveryNode> rmtNodes = new ConcurrentHashMap8<>();
@@ -709,17 +707,16 @@ class ClientImpl extends TcpDiscoveryImpl {
      * @throws IgniteCheckedException
      * @throws IOException
      */
-    private void writeToSocketWithLength(final TcpDiscoveryAbstractMessage msg,
-        final Socket sock, final long sockTimeout) throws IgniteCheckedException, IOException {
+    private void writeToSocketWithLength(TcpDiscoveryAbstractMessage msg,
+        Socket sock, long sockTimeout) throws IgniteCheckedException, IOException {
         final GridByteArrayOutputStream bout =
-            new GridByteArrayOutputStream(DEFAULT_BYTE_ARRAY_STREAM_SIZE, MESSAGE_LEN_BYTES);
+            new GridByteArrayOutputStream(DFLT_BYTE_ARR_STREAM_SIZE, MESSAGE_LEN_BYTES);
 
         spi.marshaller().marshal(msg, bout);
 
         final byte[] data = bout.toByteArray();
 
-        // Write message length in leading bytes.
-        ByteBuffer.wrap(data).order(ByteOrder.BIG_ENDIAN).putInt(data.length - MESSAGE_LEN_BYTES);
+        U.intToBytes(data.length - MESSAGE_LEN_BYTES, data, 0);
 
         spi.writeToSocket(sock, msg, data, sockTimeout);
     }
@@ -931,7 +928,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     InputStream in = sockStream.stream();
 
                     sock.setKeepAlive(true);
-                    sock.setTcpNoDelay(true);
+                    sock.setTcpNoDelay(spi.getTcpNodelay());
 
                     while (!isInterrupted()) {
                         TcpDiscoveryAbstractMessage msg;
@@ -1020,7 +1017,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         private TcpDiscoveryAbstractMessage unackedMsg;
 
         /** */
-        private boolean writeLength;
+        private boolean writeLen;
 
         /**
          *
@@ -1046,15 +1043,15 @@ class ClientImpl extends TcpDiscoveryImpl {
         /**
          * @param sock Socket.
          * @param clientAck {@code True} is server supports client message acknowlede.
-         * @param writeLength Add message length if {@code true}.
+         * @param writeLen Add message length if {@code true}.
          */
-        private void setSocket(Socket sock, boolean clientAck, boolean writeLength) {
+        private void setSocket(Socket sock, boolean clientAck, boolean writeLen) {
             synchronized (mux) {
                 this.sock = sock;
 
                 this.clientAck = clientAck;
 
-                this.writeLength = writeLength;
+                this.writeLen = writeLen;
 
                 unackedMsg = null;
 
@@ -1126,12 +1123,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                         }
                     }
 
-                    if (!writeLength) {
-                        spi.writeToSocket(
-                            sock,
-                            msg,
-                            sockTimeout);
-                    }
+                    if (!writeLen)
+                        spi.writeToSocket(sock, msg, sockTimeout);
                     else
                         writeToSocketWithLength(msg, sock, sockTimeout);
 
@@ -1272,7 +1265,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         InputStream in = sockStream.stream();
 
                         sock.setKeepAlive(true);
-                        sock.setTcpNoDelay(true);
+                        sock.setTcpNoDelay(spi.getTcpNodelay());
 
                         List<TcpDiscoveryAbstractMessage> msgs = null;
 
@@ -1289,8 +1282,9 @@ class ClientImpl extends TcpDiscoveryImpl {
                                             ", msg=" + msg + ']');
 
                                     if (res.success()) {
-                                        msgWorker.addMessage(
-                                            new TcpDiscoveryClientReconnectMessageWrapper(res, joinRes.asyncMode));
+                                        res.asyncMode(joinRes.asyncMode);
+
+                                        msgWorker.addMessage(res);
 
                                         if (msgs != null) {
                                             for (TcpDiscoveryAbstractMessage msg0 : msgs)
@@ -1986,24 +1980,13 @@ class ClientImpl extends TcpDiscoveryImpl {
             if (spi.getSpiContext().isStopping())
                 return;
 
-            boolean async = false;
-
-            if (msg instanceof TcpDiscoveryClientReconnectMessageWrapper) {
-                final TcpDiscoveryClientReconnectMessageWrapper wrapper =
-                    (TcpDiscoveryClientReconnectMessageWrapper) msg;
-
-                async = wrapper.async;
-
-                msg = wrapper.msg;
-            }
-
             if (getLocalNodeId().equals(msg.creatorNodeId())) {
                 if (reconnector != null) {
                     assert msg.success() : msg;
 
                     currSock = reconnector.sockStream;
 
-                    sockWriter.setSocket(currSock.socket(), reconnector.clientAck, async);
+                    sockWriter.setSocket(currSock.socket(), reconnector.clientAck, msg.asyncMode());
                     sockReader.setSocket(currSock, locNode.clientRouterNodeId());
 
                     reconnector = null;
@@ -2279,32 +2262,6 @@ class ClientImpl extends TcpDiscoveryImpl {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(JoinResult.class, this);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class TcpDiscoveryClientReconnectMessageWrapper extends TcpDiscoveryClientReconnectMessage {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        final TcpDiscoveryClientReconnectMessage msg;
-
-        /** */
-        final boolean async;
-
-        /**
-         * @param msg Original message.
-         * @param async Async flag.
-         */
-        public TcpDiscoveryClientReconnectMessageWrapper(final TcpDiscoveryClientReconnectMessage msg,
-            final boolean async) {
-            super(msg.creatorNodeId(), msg.routerNodeId(), msg.lastMessageId());
-
-            this.msg = msg;
-            this.async = async;
         }
     }
 }
