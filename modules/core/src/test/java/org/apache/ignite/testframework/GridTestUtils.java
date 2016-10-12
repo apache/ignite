@@ -264,7 +264,7 @@ public final class GridTestUtils {
     }
 
     /**
-     * Checks whether callable throws an exception with specified cause .
+     * Checks whether callable throws an exception with specified cause.
      *
      * @param log Logger (optional).
      * @param call Callable.
@@ -283,9 +283,13 @@ public final class GridTestUtils {
         }
         catch (Throwable e) {
             Throwable t = e;
+
             while (t != null) {
-                if (cls == t.getClass() && (msg == null || (t.getMessage() != null || t.getMessage().contains(msg))))
+                if (cls == t.getClass() && (msg == null || (t.getMessage() != null || t.getMessage().contains(msg)))) {
+                    log.info("Caught expected exception: " + t.getMessage());
+
                     return t;
+                }
 
                 t = t.getCause();
             }

@@ -48,7 +48,7 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
     private static TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** REST port. */
-    protected static final int REST_PORT = 11212;
+    protected static final int REST_PORT = ConnectorConfiguration.DFLT_TCP_PORT;
 
     /** IGFS name. */
     protected static final String igfsName = null;

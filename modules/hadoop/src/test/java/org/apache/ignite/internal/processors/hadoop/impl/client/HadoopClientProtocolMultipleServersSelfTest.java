@@ -51,23 +51,15 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
- * Hadoop client protocol tests in external process mode.
+ * Hadoop client protocol configured with multiple ignite servers tests.
  */
 @SuppressWarnings("ResultOfMethodCallIgnored")
-public class HadoopClientProtocolFailoverSelfTest extends HadoopAbstractSelfTest {
+public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractSelfTest {
     /** Input path. */
     private static final String PATH_INPUT = "/input";
 
     /** Job name. */
     private static final String JOB_NAME = "myJob";
-
-    /** Flag to create configure with multiple ignite hosts. */
-    private static boolean isHA;
-
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 3;
-    }
 
     /** {@inheritDoc} */
     @Override protected boolean igfsEnabled() {
@@ -124,11 +116,10 @@ public class HadoopClientProtocolFailoverSelfTest extends HadoopAbstractSelfTest
     /**
      * Test job submission.
      *
+     * @param conf Hadoop configuration.
      * @throws Exception If failed.
      */
-    public void checkJobSubmit() throws Exception {
-        Configuration conf = config();
-
+    public void checkJobSubmit(Configuration conf) throws Exception {
         final Job job = Job.getInstance(conf);
 
         job.setJobName(JOB_NAME);
@@ -158,15 +149,13 @@ public class HadoopClientProtocolFailoverSelfTest extends HadoopAbstractSelfTest
      */
     @SuppressWarnings("ConstantConditions")
     public void testMultipleAddresses() throws Exception {
-        isHA = true;
-
         beforeJob();
 
         stopGrid(0);
 
         U.sleep(5000);
 
-        checkJobSubmit();
+        checkJobSubmit(configMultipleAddrs(gridCount()));
 
         startGrid(0);
     }
@@ -176,15 +165,13 @@ public class HadoopClientProtocolFailoverSelfTest extends HadoopAbstractSelfTest
      */
     @SuppressWarnings("ConstantConditions")
     public void testSingleAddress() throws Exception {
-        isHA = false;
-
         stopGrid(0);
 
         U.sleep(5000);
 
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    checkJobSubmit();
+                    checkJobSubmit(configSingleAddress());
                     return null;
                 }
             },
@@ -196,26 +183,33 @@ public class HadoopClientProtocolFailoverSelfTest extends HadoopAbstractSelfTest
     }
 
     /**
-     * @return Configuration.
+     * @throws Exception If failed.
      */
-    private Configuration config() {
-        if (isHA)
-            return configHA(REST_PORT, gridCount());
-        else
-            return configSingleAddress(REST_PORT);
+    @SuppressWarnings("ConstantConditions")
+    public void testMixedAddrs() throws Exception {
+        beforeJob();
+
+        stopGrid(1);
+
+        U.sleep(5000);
+
+        checkJobSubmit(configMixed());
+
+        startGrid(1);
+
+        awaitPartitionMapExchange();
     }
 
     /**
-     * @param port Port.
      * @return Configuration.
      */
-    private Configuration configSingleAddress(int port) {
+    private Configuration configSingleAddress() {
         Configuration conf = HadoopUtils.safeCreateConfiguration();
 
         setupFileSystems(conf);
 
         conf.set(MRConfig.FRAMEWORK_NAME, IgniteHadoopClientProtocolProvider.FRAMEWORK_NAME);
-        conf.set(MRConfig.MASTER_ADDRESS, "127.0.0.1:" + port);
+        conf.set(MRConfig.MASTER_ADDRESS, "127.0.0.1:" + REST_PORT);
 
         conf.set("fs.defaultFS", "igfs:///");
 
@@ -223,11 +217,10 @@ public class HadoopClientProtocolFailoverSelfTest extends HadoopAbstractSelfTest
     }
 
     /**
-     * @param beginPort Port.
      * @param serversCnt Count ov servers.
      * @return Configuration.
      */
-    private Configuration configHA(int beginPort, int serversCnt) {
+    private Configuration configMultipleAddrs(int serversCnt) {
         Configuration conf = HadoopUtils.safeCreateConfiguration();
 
         setupFileSystems(conf);
@@ -237,7 +230,29 @@ public class HadoopClientProtocolFailoverSelfTest extends HadoopAbstractSelfTest
         Collection<String> addrs = new ArrayList<>(serversCnt);
 
         for (int i = 0; i < serversCnt; ++i)
-            addrs.add("127.0.0.1:" + Integer.toString(beginPort + i));
+            addrs.add("127.0.0.1:" + Integer.toString(REST_PORT + i));
+
+        conf.set(MRConfig.MASTER_ADDRESS, F.concat(addrs, ","));
+
+        conf.set("fs.defaultFS", "igfs:///");
+
+        return conf;
+    }
+
+    /**
+     * @return Configuration.
+     */
+    private Configuration configMixed() {
+        Configuration conf = HadoopUtils.safeCreateConfiguration();
+
+        setupFileSystems(conf);
+
+        conf.set(MRConfig.FRAMEWORK_NAME, IgniteHadoopClientProtocolProvider.FRAMEWORK_NAME);
+
+        Collection<String> addrs = new ArrayList<>();
+
+        addrs.add("localhost");
+        addrs.add("127.0.0.1:" + Integer.toString(REST_PORT + 1));
 
         conf.set(MRConfig.MASTER_ADDRESS, F.concat(addrs, ","));
 
