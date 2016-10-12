@@ -51,8 +51,7 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
     public static final String FRAMEWORK_NAME = "ignite";
 
     /** Clients. */
-    private static final ConcurrentHashMap<String, IgniteInternalFuture<GridClient>>
-        cliMap = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, IgniteInternalFuture<GridClient>> cliMap = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override public ClientProtocol create(Configuration conf) throws IOException {
@@ -65,7 +64,7 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
 
             if (F.contains(addrs, "local"))
                 throw new IOException("Local execution mode is not supported, please point " +
-                    MRConfig.MASTER_ADDRESS + " to real Ignite node/nodes.");
+                    MRConfig.MASTER_ADDRESS + " to real Ignite nodes.");
 
             List<String> addrs0 = new ArrayList<>(addrs.size());
 
@@ -77,7 +76,7 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
                     addrs0.add(addr);
             }
 
-            return createProtocol(conf.get(MRConfig.MASTER_ADDRESS), addrs0, conf);
+            return new HadoopClientProtocol(conf, client(conf.get(MRConfig.MASTER_ADDRESS), addrs));
         }
 
         return null;
@@ -106,20 +105,6 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
      */
     private static ClientProtocol createProtocol(String addr, Configuration conf) throws IOException {
         return new HadoopClientProtocol(conf, client(addr, Collections.singletonList(addr)));
-    }
-
-    /**
-     * Internal protocol creation routine.
-     *
-     * @param clusterName Ignite cluster logical name.
-     * @param addrs Addresses.
-     * @param conf Configuration.
-     * @return Client protocol.
-     * @throws IOException If failed.
-     */
-    private static ClientProtocol createProtocol(String clusterName, Collection<String> addrs, Configuration conf)
-        throws IOException {
-        return new HadoopClientProtocol(conf, client(clusterName, addrs));
     }
 
     /**
