@@ -421,7 +421,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
         try {
             if (job == null) {
-                job = marsh.unmarshal(jobBytes, U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                job = U.unmarshal(marsh, jobBytes, U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
                 // No need to hold reference any more.
                 jobBytes = null;
@@ -804,11 +804,11 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                                 ctx.localNodeId(),
                                 ses.getId(),
                                 ses.getJobId(),
-                                loc ? null : marsh.marshal(ex),
+                                loc ? null : U.marshal(marsh, ex),
                                 loc ? ex : null,
-                                loc ? null: marsh.marshal(res),
+                                loc ? null: U.marshal(marsh, res),
                                 loc ? res : null,
-                                loc ? null : marsh.marshal(attrs),
+                                loc ? null : U.marshal(marsh, attrs),
                                 loc ? attrs : null,
                                 isCancelled(),
                                 retry ? ctx.cache().context().exchange().readyAffinityVersion() : null);
