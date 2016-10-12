@@ -64,7 +64,7 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
 
             if (F.contains(addrs, "local"))
                 throw new IOException("Local execution mode is not supported, please point " +
-                    MRConfig.MASTER_ADDRESS + " to real Ignite node/nodes.");
+                    MRConfig.MASTER_ADDRESS + " to real Ignite nodes.");
 
             List<String> addrs0 = new ArrayList<>(addrs.size());
 
