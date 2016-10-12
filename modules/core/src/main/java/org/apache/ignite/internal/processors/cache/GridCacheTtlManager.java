@@ -610,7 +610,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     /** */
     private static class OnHeapPendingEntriesQueue implements PendingEntriesQueue {
         /** */
-        private final ConcurrentNavigableMap<PendingEntry, Object> m;
+        private final ConcurrentNavigableMap<PendingEntry, Boolean> m;
 
         /** Size. */
         private final LongAdder8 size = new LongAdder8();
@@ -633,7 +633,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
         /** {@inheritDoc} */
         @Override public void add(PendingEntry e) {
-            boolean res = m.put(e, e) == null;
+            boolean res = m.put(e, Boolean.TRUE) == null;
 
             if (res)
                 size.increment();
@@ -649,14 +649,14 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
         /** {@inheritDoc} */
         @Override public boolean hasExpiredFor(long now) {
-            Map.Entry<PendingEntry, Object> entry = m.firstEntry();
+            Map.Entry<PendingEntry, Boolean> entry = m.firstEntry();
 
             return entry != null && entry.getKey().expireTime > now;
         }
 
         /** {@inheritDoc} */
         @Override public PendingEntry pollExpiredFor(long now) {
-            Map.Entry<PendingEntry, Object> firstEntry;
+            Map.Entry<PendingEntry, Boolean> firstEntry;
 
             while ((firstEntry = m.firstEntry()) != null) {
                 if (firstEntry.getValue() == null)
