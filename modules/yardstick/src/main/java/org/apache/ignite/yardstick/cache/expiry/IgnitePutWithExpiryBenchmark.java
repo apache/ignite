@@ -24,7 +24,6 @@ import org.apache.ignite.yardstick.cache.IgnitePutBenchmark;
  * Ignite benchmark that performs put operations with expiration policy set.
  */
 public class IgnitePutWithExpiryBenchmark extends IgnitePutBenchmark {
-
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
         return ignite().cache("atomic-with-expiry");
