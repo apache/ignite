@@ -95,7 +95,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.stream.StreamReceiver;
@@ -105,17 +104,12 @@ import org.jsr166.ConcurrentHashMap8;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.DATA_STREAMER_POOL;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 
 /**
  * Data streamer implementation.
  */
 @SuppressWarnings("unchecked")
 public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed {
-    /** Default policy reoslver. */
-    private static final DefaultIoPolicyResolver DFLT_IO_PLC_RSLVR = new DefaultIoPolicyResolver();
-
     /** Isolated receiver. */
     private static final StreamReceiver ISOLATED_UPDATER = new IsolatedUpdater();
 
@@ -126,7 +120,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private byte[] updaterBytes;
 
     /** IO policy resovler for data load request. */
-    private IgniteClosure<ClusterNode, Byte> ioPlcRslvr = DFLT_IO_PLC_RSLVR;
+    private IgniteClosure<ClusterNode, Byte> ioPlcRslvr;
 
     /** Max remap count before issuing an error. */
     private static final int DFLT_MAX_REMAP_CNT = 32;
@@ -1313,10 +1307,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             IgniteInternalFuture<Object> fut;
 
-            Byte plc = ioPlcRslvr.apply(node);
-
-            if (plc == null)
-                plc = PUBLIC_POOL;
+            byte plc = DataStreamProcessor.ioPolicy(ioPlcRslvr, node);
 
             if (isLocNode) {
                 fut = ctx.closure().callLocalSafe(
@@ -1681,36 +1672,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     U.error(log, "Failed to set initial value for cache entry: " + e, ex);
                 }
             }
-        }
-    }
-
-    /**
-     * Default IO policy resolver.
-     */
-    private static class DefaultIoPolicyResolver implements IgniteClosure<ClusterNode, Byte> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Data streamer separate pool feature major version. */
-        private static final int DATA_STREAMER_POOL_MAJOR_VER = 1;
-
-        /** Data streamer separate pool feature minor version. */
-        private static final int DATA_STREAMER_POOL_MINOR_VER = 6;
-
-        /** Data streamer separate pool feature maintenance version. */
-        private static final int DATA_STREAMER_POOL_MAINT_VER = 10;
-
-        /** {@inheritDoc} */
-        @Override public Byte apply(ClusterNode gridNode) {
-            assert gridNode != null;
-
-            IgniteProductVersion version = gridNode.version();
-
-            if (gridNode.isLocal() || version.greaterThanEqual(DATA_STREAMER_POOL_MAJOR_VER, DATA_STREAMER_POOL_MINOR_VER,
-                DATA_STREAMER_POOL_MAINT_VER))
-                return DATA_STREAMER_POOL;
-            else
-                return PUBLIC_POOL;
         }
     }
 

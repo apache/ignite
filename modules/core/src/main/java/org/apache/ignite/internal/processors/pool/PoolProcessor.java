@@ -124,8 +124,6 @@ public class PoolProcessor extends GridProcessorAdapter {
                 return ctx.getIgfsExecutorService();
 
             case GridIoPolicy.DATA_STREAMER_POOL:
-                assert ctx.getDataStreamerExecutorService() != null : "Data streamer pool is not configured.";
-
                 return ctx.getDataStreamerExecutorService();
 
             default: {
