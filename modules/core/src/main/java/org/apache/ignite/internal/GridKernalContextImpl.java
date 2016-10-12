@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.odbc.OdbcProcessor;
 import org.apache.ignite.internal.processors.offheap.GridOffHeapProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
+import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.port.GridPortProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
@@ -259,6 +260,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
+    private PoolProcessor poolProc;
+
+    /** */
+    @GridToStringExclude
     private IgnitePluginProcessor pluginProc;
 
     /** */
@@ -312,6 +317,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     protected ExecutorService restExecSvc;
+
+    /** */
+    @GridToStringExclude
+    protected ExecutorService affExecSvc;
 
     /** */
     @GridToStringExclude
@@ -377,6 +386,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param igfsExecSvc IGFS executor service.
      * @param dataStreamExecSvc data stream executor service.
      * @param restExecSvc REST executor service.
+     * @param affExecSvc Affinity executor service.
      * @param plugins Plugin providers.
      * @throws IgniteCheckedException In case of error.
      */
@@ -395,6 +405,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ExecutorService igfsExecSvc,
         ExecutorService dataStreamExecSvc,
         ExecutorService restExecSvc,
+        ExecutorService affExecSvc,
         IgniteStripedThreadPoolExecutor callbackExecSvc,
         List<PluginProvider> plugins) throws IgniteCheckedException {
         assert grid != null;
@@ -413,6 +424,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.igfsExecSvc = igfsExecSvc;
         this.dataStreamExecSvc = dataStreamExecSvc;
         this.restExecSvc = restExecSvc;
+        this.affExecSvc = affExecSvc;
         this.callbackExecSvc = callbackExecSvc;
 
         String workDir = U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome());
@@ -540,6 +552,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             cluster = (ClusterProcessor)comp;
         else if (comp instanceof PlatformProcessor)
             platformProc = (PlatformProcessor)comp;
+        else if (comp instanceof PoolProcessor)
+            poolProc = (PoolProcessor) comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
@@ -764,6 +778,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
+    @Override public PoolProcessor pools() {
+        return poolProc;
+    }
+
+    /** {@inheritDoc} */
     @Override public ExecutorService utilityCachePool() {
         return utilityCachePool;
     }
@@ -951,6 +970,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public ExecutorService getRestExecutorService() {
         return restExecSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService getAffinityExecutorService() {
+        return affExecSvc;
     }
 
     /** {@inheritDoc} */

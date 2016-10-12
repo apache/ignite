@@ -39,7 +39,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
 import javax.cache.expiry.ExpiryPolicy;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -60,7 +59,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
-import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
@@ -79,7 +77,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
-import org.apache.ignite.internal.processors.closure.GridClosurePolicy;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -108,7 +105,7 @@ import org.jsr166.ConcurrentHashMap8;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.DATA_STREAM_POOL;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.DATA_STREAMER_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 
 /**
@@ -1321,13 +1318,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             if (plc == null)
                 plc = PUBLIC_POOL;
 
-            if (isLocNode && (plc == GridIoPolicy.DATA_STREAM_POOL || plc == GridIoPolicy.PUBLIC_POOL)) {
-                GridClosurePolicy closurePolicy = (plc == GridIoPolicy.DATA_STREAM_POOL) ?
-                    GridClosurePolicy.DATA_STREAMER_POOL : GridClosurePolicy.PUBLIC_POOL;
-
+            if (isLocNode) {
                 fut = ctx.closure().callLocalSafe(
                     new DataStreamerUpdateJob(ctx, log, cacheName, entries, false, skipStore, keepBinary, rcvr),
-                    closurePolicy);
+                    plc);
 
                 locFuts.add(fut);
 
@@ -1360,11 +1354,11 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     if (updaterBytes == null) {
                         assert rcvr != null;
 
-                        updaterBytes = ctx.config().getMarshaller().marshal(rcvr);
+                        updaterBytes = U.marshal(ctx, rcvr);
                     }
 
                     if (topicBytes == null)
-                        topicBytes = ctx.config().getMarshaller().marshal(topic);
+                        topicBytes = U.marshal(ctx, topic);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to marshal (request will not be sent).", e);
@@ -1495,7 +1489,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 try {
                     GridPeerDeployAware jobPda0 = jobPda;
 
-                    err = ctx.config().getMarshaller().unmarshal(
+                    err = U.unmarshal(ctx,
                         errBytes,
                         U.resolveClassLoader(jobPda0 != null ? jobPda0.classLoader() : null, ctx.config()));
                 }
@@ -1714,7 +1708,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             if (gridNode.isLocal() || version.greaterThanEqual(DATA_STREAMER_POOL_MAJOR_VER, DATA_STREAMER_POOL_MINOR_VER,
                 DATA_STREAMER_POOL_MAINT_VER))
-                return DATA_STREAM_POOL;
+                return DATA_STREAMER_POOL;
             else
                 return PUBLIC_POOL;
         }
