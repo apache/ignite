@@ -5779,10 +5779,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (clientMsgWorkers.remove(clientNodeId, proc))
                     ((ClientNioMessageWorker) proc).nonblockingStop();
             }
-            else /*if (log.isDebugEnabled())*/ {
-                log.error("== Illegal ClientMessageProcessor: " + proc + ", " + (proc != null ? String.valueOf(((ClientNioMessageWorker) proc).ses) : "null") + " " + ses);
+            else {
+                if (log.isDebugEnabled())
+                    log.error("Illegal ClientMessageProcessor: " + proc);
 
-                ses.close();
+                if (ses.closeTime() == 0)
+                    ses.close();
             }
         }
 
@@ -5809,12 +5811,10 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (clientMsgWrk == null || clientMsgWrk.ses != ses) {
                 if (log.isDebugEnabled())
                     log.debug("NIO Worker has been closed, drop message. [clientNodeId="
-                        + clientNodeId + ", message=" + msg + "]");
+                        + clientNodeId + ", message=" + msg + ", clientMsgWrk=" + clientMsgWrk + "]");
 
-                log.warning("== NIO Worker has been closed, drop message. [clientNodeId="
-                    + clientNodeId + ", message=" + msg + ", clientMsgWrk" + clientMsgWrk + "]");
-
-                ses.close();
+                if (ses.closeTime() == 0)
+                    ses.close();
 
                 return;
             }
