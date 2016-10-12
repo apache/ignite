@@ -504,6 +504,9 @@ public abstract class PagesList extends DataStructure {
                 if (buf == null)
                     continue;
 
+                assert PageIO.getPageId(buf) == tailId;
+                assert PageIO.getType(buf) == PageIO.T_PAGE_LIST_NODE;
+
                 boolean ok = false;
 
                 try {
@@ -820,6 +823,9 @@ public abstract class PagesList extends DataStructure {
 
                 if (tailBuf == null)
                     continue;
+
+                assert PageIO.getPageId(tailBuf) == tailId;
+                assert PageIO.getType(tailBuf) == PageIO.T_PAGE_LIST_NODE;
 
                 boolean dirty = false;
                 long ret = 0L;

@@ -82,7 +82,7 @@ public class PageNoStoreImpl implements Page {
 
     /** {@inheritDoc} */
     @Override public ByteBuffer getForRead() {
-        if (pageMem.readLockPage(absPtr, PageIdUtils.itemId(pageId)))
+        if (pageMem.readLockPage(absPtr, PageIdUtils.tag(pageId)))
             return reset(buf.asReadOnlyBuffer());
 
         return null;
@@ -95,7 +95,7 @@ public class PageNoStoreImpl implements Page {
 
     /** {@inheritDoc} */
     @Override public ByteBuffer getForWrite() {
-        int tag =  noTagCheck ? OffheapReadWriteLock.TAG_LOCK_ALWAYS :  PageIdUtils.itemId(pageId);
+        int tag =  noTagCheck ? OffheapReadWriteLock.TAG_LOCK_ALWAYS :  PageIdUtils.tag(pageId);
         boolean locked = pageMem.writeLockPage(absPtr, tag);
 
         if (!locked && !noTagCheck)
@@ -108,7 +108,7 @@ public class PageNoStoreImpl implements Page {
 
     /** {@inheritDoc} */
     @Override public ByteBuffer tryGetForWrite() {
-        int tag =  noTagCheck ? OffheapReadWriteLock.TAG_LOCK_ALWAYS :  PageIdUtils.itemId(pageId);
+        int tag =  noTagCheck ? OffheapReadWriteLock.TAG_LOCK_ALWAYS :  PageIdUtils.tag(pageId);
 
         if (pageMem.tryWriteLockPage(absPtr, tag))
             return reset(buf);
@@ -120,7 +120,7 @@ public class PageNoStoreImpl implements Page {
     @Override public void releaseWrite(boolean markDirty) {
         long updatedPageId = PageIO.getPageId(buf);
 
-        pageMem.writeUnlockPage(absPtr, PageIdUtils.itemId(updatedPageId));
+        pageMem.writeUnlockPage(absPtr, PageIdUtils.tag(updatedPageId));
     }
 
     /** {@inheritDoc} */

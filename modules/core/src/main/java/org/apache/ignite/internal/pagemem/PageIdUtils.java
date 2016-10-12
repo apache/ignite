@@ -38,10 +38,16 @@ public final class PageIdUtils {
     public static final int OFFSET_SIZE = 8;
 
     /** */
+    public static final int TAG_SIZE = 16;
+
+    /** */
     public static final long PAGE_IDX_MASK = ~(-1L << PAGE_IDX_SIZE);
 
     /** */
     public static final long OFFSET_MASK = ~(-1L << OFFSET_SIZE);
+
+    /** */
+    public static final long TAG_MASK = ~(-1L << TAG_SIZE);
 
     /** */
     public static final long PART_ID_MASK = ~(-1L << PART_ID_SIZE);
@@ -122,6 +128,16 @@ public final class PageIdUtils {
      */
     public static int itemId(long link) {
         return (int)((link >> (PAGE_IDX_SIZE + PART_ID_SIZE + FLAG_SIZE)) & OFFSET_MASK);
+    }
+
+    /**
+     * Tag of pageId
+     *
+     * @param link Page link.
+     * @return tag - item id + flags
+     */
+    public static int tag(long link) {
+        return (int)((link >> (PAGE_IDX_SIZE + PART_ID_SIZE)) & TAG_MASK);
     }
 
     /**
