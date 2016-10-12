@@ -724,7 +724,6 @@ class ClientImpl extends TcpDiscoveryImpl {
         spi.writeToSocket(sock, msg, data, sockTimeout);
     }
 
-
     /**
      * Marshalls credentials with discovery SPI marshaller (will replace attribute value).
      *

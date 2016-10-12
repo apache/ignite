@@ -98,7 +98,6 @@ import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
@@ -112,7 +111,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
@@ -205,8 +203,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Not fully read message length. */
     private static final int MESSAGE_LEN_META = GridNioSessionMetaKey.nextUniqueKey();
 
-    /** Number of tries to reopen ServerSocketChannel on 'SocketException: Invalid argument'.
-     *  <p>This error may happen on simultaneous server nodes startup on the same JVM.</p>
+    /**
+     * Number of tries to reopen ServerSocketChannel on 'SocketException: Invalid argument'.
+     * <p>This error may happen on simultaneous server nodes startup on the same JVM.</p>
      */
     private static final int REOPEN_SERVER_SOCKET_CHANNEL_TRIES = 3;
 
@@ -4533,12 +4532,12 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     if (worker != null) {
                         if (worker instanceof ClientMessageWorker) {
-                            final ClientMessageWorker wrk = (ClientMessageWorker) worker;
+                            final ClientMessageWorker wrk = (ClientMessageWorker)worker;
 
                             wrk.interrupt();
                         }
                         else if (worker instanceof ClientNioMessageWorker)
-                            ((ClientNioMessageWorker) worker).nonblockingStop();
+                            ((ClientNioMessageWorker)worker).nonblockingStop();
                     }
                 }
 
@@ -4927,7 +4926,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         try {
                             res = pingNode(msg.nodeToPing());
-                        } catch (IgniteSpiException e) {
+                        }
+                        catch (IgniteSpiException e) {
                             log.error("Failed to ping node [nodeToPing=" + msg.nodeToPing() + ']', e);
 
                             res = false;
