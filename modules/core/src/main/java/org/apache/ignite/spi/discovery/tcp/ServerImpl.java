@@ -149,6 +149,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRedirectToClient;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessage;
 import org.apache.ignite.thread.IgniteThread;
+import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -210,7 +211,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** */
     private final ThreadPoolExecutor utilityPool = new ThreadPoolExecutor(0, 1, 2000, TimeUnit.MILLISECONDS,
-        new LinkedBlockingQueue<Runnable>());
+        new LinkedBlockingQueue<>());
+
+    /** */
+    private IgniteThreadPoolExecutor nioClientProcessingPool;
 
     /** Nodes ring. */
     @GridToStringExclude
@@ -350,6 +354,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         clientNioSrv = createClientNioServer();
         clientNioSrv.start();
+
+        nioClientProcessingPool = new IgniteThreadPoolExecutor(
+            "disco-client-nio-msg-processor", gridName, 0, 2, 60_000L, new LinkedBlockingQueue<>());
 
         spi.initLocalNode(tcpSrvr.port, true);
 
@@ -538,6 +545,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         clientMsgWorkers.clear();
 
         IgniteUtils.shutdownNow(ServerImpl.class, utilityPool, log);
+        IgniteUtils.shutdownNow(ServerImpl.class, nioClientProcessingPool, log);
 
         U.interrupt(statsPrinter);
         U.join(statsPrinter, log);
@@ -5751,6 +5759,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private final long writeTimeout;
 
+        /** */
+        private final ClientNioMessageProcessor<T> msgProc;
+
         /**
          * @param log Logger.
          * @param writeTimeout Socket write timeout.
@@ -5758,6 +5769,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         private ClientNioListener(final IgniteLogger log, final long writeTimeout) {
             this.log = log;
             this.writeTimeout = writeTimeout;
+
+            msgProc = new ClientNioMessageProcessor<>(log);
         }
 
         /** {@inheritDoc} */
@@ -5767,7 +5780,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override public void onDisconnected(final GridNioSession ses, @Nullable final Exception e) {
-            final UUID clientNodeId = clientNodeId(ses);
+            final UUID clientNodeId = msgProc.clientNodeId(ses);
 
             if (log.isDebugEnabled())
                 log.debug("Stopping message worker on disconnect [remoteAddr=" + ses.remoteAddress() +
@@ -5790,6 +5803,56 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override public void onMessage(final GridNioSession ses, final T msg0) {
+            // Release nio thread.
+            nioClientProcessingPool.submit(new Runnable() {
+                @Override public void run() {
+                    msgProc.processMessage(ses, msg0);
+                }
+            });
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onSessionWriteTimeout(final GridNioSession ses) {
+            final UUID clientNodeId = msgProc.clientNodeId(ses);
+
+            if (log.isDebugEnabled())
+                log.debug("Stopping message worker on write timeout [remoteAddr=" + ses.remoteAddress() +
+                    ", writeTimeout=" + writeTimeout + ", remote node ID=" + clientNodeId + ']');
+
+            final ClientMessageProcessor proc = clientMsgWorkers.remove(clientNodeId);
+
+            stopClientProcessor(proc, false);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onSessionIdleTimeout(final GridNioSession ses) {
+            // No-op.
+        }
+    }
+
+    /**
+     * Processes incoming nio client messages.
+     *
+     * @param <T> Message type.
+     */
+    private class ClientNioMessageProcessor<T> {
+        /** */
+        private final IgniteLogger log;
+
+        /**
+         * @param log Logger.
+         */
+        private ClientNioMessageProcessor(IgniteLogger log) {
+            this.log = log;
+        }
+
+        /**
+         * Process client message.
+         *
+         * @param ses Nio session.
+         * @param msg0 Incoming message.
+         */
+        void processMessage(GridNioSession ses, T msg0) {
             final UUID nodeId = getConfiguredNodeId();
 
             final TcpDiscoveryAbstractMessage msg = (TcpDiscoveryAbstractMessage)msg0;
@@ -6018,24 +6081,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return null;
                 }
             };
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onSessionWriteTimeout(final GridNioSession ses) {
-            final UUID clientNodeId = clientNodeId(ses);
-
-            if (log.isDebugEnabled())
-                log.debug("Stopping message worker on write timeout [remoteAddr=" + ses.remoteAddress() +
-                    ", writeTimeout=" + writeTimeout + ", remote node ID=" + clientNodeId + ']');
-
-            final ClientMessageProcessor proc = clientMsgWorkers.remove(clientNodeId);
-
-            stopClientProcessor(proc, false);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onSessionIdleTimeout(final GridNioSession ses) {
-            // No-op.
         }
 
         /**
