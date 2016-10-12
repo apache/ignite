@@ -66,7 +66,7 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
                 throw new IOException("Local execution mode is not supported, please point " +
                     MRConfig.MASTER_ADDRESS + " to real Ignite nodes.");
 
-            List<String> addrs0 = new ArrayList<>(addrs.size());
+            Collection<String> addrs0 = new ArrayList<>(addrs.size());
 
             // Set up port by default if need
             for (String addr : addrs) {
@@ -76,7 +76,7 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
                     addrs0.add(addr);
             }
 
-            return new HadoopClientProtocol(conf, client(conf.get(MRConfig.MASTER_ADDRESS), addrs));
+            return new HadoopClientProtocol(conf, client(conf.get(MRConfig.MASTER_ADDRESS), addrs0));
         }
 
         return null;
@@ -117,7 +117,7 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
      */
     private static GridClient client(String clusterName, Collection<String> addrs) throws IOException {
         try {
-            IgniteInternalFuture<GridClient> fut = cliMap.get(addrs);
+            IgniteInternalFuture<GridClient> fut = cliMap.get(clusterName);
 
             if (fut == null) {
                 GridFutureAdapter<GridClient> fut0 = new GridFutureAdapter<>();
