@@ -221,10 +221,9 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
     }
 
     /**
-     *
      * @throws Exception If failed.
      */
-    public void testAffinity() throws Exception {
+    public void testAffinityMaxLen() throws Exception {
         long fileSize = 32 * 1024 * 1024;
 
         IgfsPath filePath = new IgfsPath("/file");
@@ -234,18 +233,14 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
                 os.write(chunk);
         }
 
-        Collection<IgfsBlockLocation> affGolden = igfs.affinity(filePath, 0, igfs.info(filePath).length());
-
         int blockSize = igfs.configuration().getBlockSize();
 
-        int blocks = 1;
+        for (int maxLen = blockSize / 4; maxLen < blockSize; maxLen += blockSize / 4) {
+            Collection<IgfsBlockLocation> blocks = igfs.affinity(filePath, 0, igfs.info(filePath).length(), maxLen);
 
-        for (int maxLen = blockSize; maxLen < blockSize * 10; maxLen += blockSize ) {
-            Collection<IgfsBlockLocation> aff = igfs.affinity(filePath, 0, igfs.info(filePath).length(), maxLen);
-
-            assertEquals(affGolden.size() / blocks + (affGolden.size() % blocks != 0 ? 1 : 0), aff.size());
-
-            blocks++;
+            for (IgfsBlockLocation block : blocks)
+                assert block.length() <= maxLen : "block.length() <= maxLen. [block.length=" + block.length()
+                    + ", maxLen=" + maxLen +']';
         }
     }
 

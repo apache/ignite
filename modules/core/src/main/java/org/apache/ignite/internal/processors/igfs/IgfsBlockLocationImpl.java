@@ -105,6 +105,23 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable,
     /**
      * @param start Start.
      * @param len Length.
+     * @param nodes Affinity nodes.
+     */
+    public IgfsBlockLocationImpl(long start, long len, IgfsBlockLocation block) {
+        assert start >= 0;
+        assert len > 0;
+
+        this.start = start;
+        this.len = len;
+
+        nodeIds = block.nodeIds();
+        names = block.names();
+        hosts = block.hosts();
+    }
+
+    /**
+     * @param start Start.
+     * @param len Length.
      * @param names Collection of host:port addresses.
      * @param hosts Collection of host:port addresses.
      */
@@ -345,5 +362,58 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable,
         this.nodeIds = nodeIds;
         this.names = names;
         this.hosts = hosts;
+    }
+
+    /**
+     * Split blocks according to maximum split length.
+     *
+     * @param start Start position.
+     * @param len Length.
+     * @param maxLen Maximum allowed length.
+     * @param nodes Affinity nodes.
+     * @param res Where to put results.
+     */
+    public static void splitBlocks(long start, long len, long maxLen,
+        Collection<ClusterNode> nodes, Collection<IgfsBlockLocation> res) {
+        if (maxLen > 0) {
+            long end = start + len;
+
+            long start0 = start;
+
+            while (start0 < end) {
+                long len0 = Math.min(maxLen, end - start0);
+
+                res.add(new IgfsBlockLocationImpl(start0, len0, nodes));
+
+                start0 += len0;
+            }
+        }
+        else
+            res.add(new IgfsBlockLocationImpl(start, len, nodes));
+    }
+
+    /**
+     * Split blocks according to maximum split length.
+     *
+     * @param block Block to split.
+     * @param maxLen Maximum allowed length.
+     * @param res Where to put results.
+     */
+    public static void splitBlocks(IgfsBlockLocation block, long maxLen, Collection<IgfsBlockLocation> res) {
+        if (maxLen > 0) {
+            long end = block.start() + block.length();
+
+            long start0 = block.start();
+
+            while (start0 < end) {
+                long len0 = Math.min(maxLen, end - start0);
+
+                res.add(new IgfsBlockLocationImpl(start0, len0, block));
+
+                start0 += len0;
+            }
+        }
+        else
+            res.add(block);
     }
 }
