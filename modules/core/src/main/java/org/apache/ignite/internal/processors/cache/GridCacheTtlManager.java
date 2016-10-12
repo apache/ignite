@@ -155,7 +155,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             PendingEntry pendingEntry = pendingEntries.pollExpiredFor(now);
 
             if (pendingEntry == null)
-                break;
+                return false;
 
             // entryRemoved is true
             if (obsoleteVer == null)
@@ -221,7 +221,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
         //Here we need to assign appropriate context to entry
         if (e.isNear)
-            cache = cache.isDht() ? ((GridDhtCacheAdapter)cache).near() : cache;
+            cache = !cache.isNear() ? ((GridDhtCacheAdapter)cache).near() : cache;
         else
             cache = cache.isNear() ? ((GridNearCacheAdapter)cache).dht() : cache;
 
@@ -233,7 +233,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             throw new IgniteException(ex);
         }
 
-        return touch ? cctx.cache().entryEx(key) : cctx.cache().peekEx(key);
+        return touch ? cache.entryEx(key) : cache.peekEx(key);
     }
 
     /**
@@ -669,6 +669,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
                 if (m.remove(pendingEntry) == null)
                     continue; // Entry was polled by another thread
+
+                size.decrement();
 
                 return pendingEntry;
             }
