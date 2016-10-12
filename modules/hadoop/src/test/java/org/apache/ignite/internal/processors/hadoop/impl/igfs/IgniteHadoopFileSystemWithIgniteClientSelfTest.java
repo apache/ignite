@@ -177,7 +177,6 @@ public class IgniteHadoopFileSystemWithIgniteClientSelfTest extends GridCommonAb
             }
 
             for (int i = 1; i < nodeCount(); i++) {
-
                 try (FileSystem ignored = FileSystem.get(getFileSystemURI(), getFileSystemConfig())) {
                     for (IgniteBiTuple<String, Long> file : files) {
                         Path path = new Path(file.get1());
