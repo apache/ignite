@@ -52,11 +52,7 @@ public class HadoopIgfsUtils {
     public static final String PARAM_IGFS_ENDPOINT_NO_REMOTE_TCP = "fs.igfs.%s.endpoint.no_remote_tcp";
 
     /** Parameter name for endpoint path to Ignite client configuration. */
-    public static final String PARAM_IGFS_ENDPOINT_IGNITE_CLI_CFG = "fs.igfs.%s.ignite.client.cfg.path";
-
-    /** Parameter name for endpoint class of factory to create Ignite client configuration, the class must implement
-     * {@code javax.cache.configuration.Factory} */
-    public static final String PARAM_IGFS_ENDPOINT_IGNITE_CLI_CFG_FACTORY = "fs.igfs.%s.ignite.client.cfg.factory";
+    public static final String PARAM_IGFS_ENDPOINT_IGNITE_CFG_PATH = "fs.igfs.%s.config_path";
 
     /**
      * Get string parameter.

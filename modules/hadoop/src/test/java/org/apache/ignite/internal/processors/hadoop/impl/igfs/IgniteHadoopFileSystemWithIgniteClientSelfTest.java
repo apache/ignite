@@ -21,18 +21,15 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collection;
-import javax.cache.configuration.Factory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.AbstractFileSystem;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -43,35 +40,20 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
-import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
-import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 
 /**
  * Test hadoop file system implementation.
  */
 public class IgniteHadoopFileSystemWithIgniteClientSelfTest extends GridCommonAbstractTest {
-    /** Path to the default hadoop configuration. */
-    public static final String HADOOP_FS_CFG = "examples/config/filesystem/core-site.xml";
-
+    /** IGFS name */
     public static final String IGFS_NAME = "test";
-
-    /** Group size. */
-    public static final int GRP_SIZE = 128;
 
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** IP finder. */
-    private static IgniteHadoopFileSystemWithIgniteClientSelfTest test;
-
-    /** IP finder. */
-    private static int cliCnt = 0;
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(nodeCount());
-        test = this;
     }
 
     /** {@inheritDoc} */
@@ -84,21 +66,17 @@ public class IgniteHadoopFileSystemWithIgniteClientSelfTest extends GridCommonAb
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
+        cfg.setPeerClassLoadingEnabled(false);
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setDataCacheName("data");
         igfsCfg.setMetaCacheName("meta");
-
         igfsCfg.setName(IGFS_NAME);
-
-        igfsCfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
 
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setCacheConfiguration(cacheConfiguration(gridName, "data"), cacheConfiguration(gridName, "meta"));
-
-        cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 
         return cfg;
     }
@@ -120,8 +98,6 @@ public class IgniteHadoopFileSystemWithIgniteClientSelfTest extends GridCommonAb
 
         cacheCfg.setName(cacheName);
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(GRP_SIZE));
         cacheCfg.setBackups(1);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
@@ -151,26 +127,10 @@ public class IgniteHadoopFileSystemWithIgniteClientSelfTest extends GridCommonAb
         cfg.setBoolean(String.format(HadoopIgfsUtils.PARAM_IGFS_ENDPOINT_NO_LOCAL_TCP, igfsAuthority), true);
         cfg.setBoolean(String.format(HadoopIgfsUtils.PARAM_IGFS_ENDPOINT_NO_REMOTE_TCP, igfsAuthority), true);
 
-        cfg.setClass(String.format(HadoopIgfsUtils.PARAM_IGFS_ENDPOINT_IGNITE_CLI_CFG_FACTORY, igfsAuthority),
-            ConfigFactory.class, Factory.class);
+        cfg.setStrings(String.format(HadoopIgfsUtils.PARAM_IGFS_ENDPOINT_IGNITE_CFG_PATH, igfsAuthority),
+            "modules/hadoop/src/test/config/igfs-cli-config.xml");
 
         return cfg;
-    }
-
-    /**
-     *
-     */
-    public static class ConfigFactory implements Factory<IgniteConfiguration> {
-        @Override public IgniteConfiguration create() {
-            try {
-                IgniteConfiguration cfg = test.getConfiguration("igfsCli-" + cliCnt++);
-                cfg.setClientMode(true);
-                return cfg;
-            }
-            catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
     }
 
     /**
@@ -242,6 +202,5 @@ public class IgniteHadoopFileSystemWithIgniteClientSelfTest extends GridCommonAb
                 }
             }
         }
-        System.out.println("++++++ Close fs");
     }
 }
