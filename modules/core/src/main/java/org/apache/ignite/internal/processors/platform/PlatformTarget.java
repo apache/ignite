@@ -87,7 +87,8 @@ public interface PlatformTarget {
      * @return Result.
      * @throws Exception In case of failure.
      */
-    public Object inObjectStreamOutObjectStream(int type, @Nullable Object arg, long inMemPtr, long outMemPtr) throws Exception;
+    public Object inObjectStreamOutObjectStream(int type, @Nullable Object arg, long inMemPtr, long outMemPtr)
+        throws Exception;
 
     /**
      * Operation returning long result.

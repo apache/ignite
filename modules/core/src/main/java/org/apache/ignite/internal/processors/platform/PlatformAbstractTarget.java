@@ -175,9 +175,9 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public Object inObjectStreamOutObjectStream(int type, Object arg, long inMemPtr, long outMemPtr) throws Exception {
+    @Override public Object inObjectStreamOutObjectStream(int type, Object arg, long inMemPtr, long outMemPtr)
+        throws Exception {
         PlatformMemory inMem = null;
-
         PlatformMemory outMem = null;
 
         try {
@@ -185,6 +185,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
 
             if (inMemPtr != 0) {
                 inMem = platformCtx.memory().get(inMemPtr);
+
                 reader = platformCtx.reader(inMem);
             }
 
@@ -193,7 +194,9 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
 
             if (outMemPtr != 0) {
                 outMem = platformCtx.memory().get(outMemPtr);
+
                 out = outMem.output();
+
                 writer = platformCtx.writer(out);
             }
 
@@ -261,7 +264,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * When overridden in a derived class, gets future for the current operation.
      *
      * @return current future.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
         throw new IgniteCheckedException("Future listening is not supported in " + getClass());
@@ -351,8 +354,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      */
     protected Object processInObjectStreamOutObjectStream(int type, @Nullable Object arg, BinaryRawReaderEx reader,
         BinaryRawWriterEx writer) throws IgniteCheckedException {
-        throwUnsupported(type);
-        return null;
+        return throwUnsupported(type);
     }
 
     /**
