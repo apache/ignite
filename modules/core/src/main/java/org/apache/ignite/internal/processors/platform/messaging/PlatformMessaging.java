@@ -56,6 +56,9 @@ public class PlatformMessaging extends PlatformAbstractTarget {
     public static final int OP_STOP_REMOTE_LISTEN = 7;
 
     /** */
+    public static final int OP_WITH_ASYNC = 8;
+
+    /** */
     private final IgniteMessaging messaging;
 
     /**
@@ -70,18 +73,6 @@ public class PlatformMessaging extends PlatformAbstractTarget {
         assert messaging != null;
 
         this.messaging = messaging;
-    }
-
-    /**
-     * Gets messaging with asynchronous mode enabled.
-     *
-     * @return Messaging with asynchronous mode enabled.
-     */
-    public PlatformMessaging withAsync() {
-        if (messaging.isAsync())
-            return this;
-
-        return new PlatformMessaging (platformCtx, messaging.withAsync());
     }
 
     /** {@inheritDoc} */
@@ -160,8 +151,21 @@ public class PlatformMessaging extends PlatformAbstractTarget {
         }
     }
 
-    /** <inheritDoc /> */
+    /** {@inheritDoc} */
     @Override protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
         return ((IgniteFutureImpl)messaging.future()).internalFuture();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Object processOutObject(int type) throws IgniteCheckedException {
+        switch (type) {
+            case OP_WITH_ASYNC:
+                if (messaging.isAsync())
+                    return this;
+
+                return new PlatformMessaging (platformCtx, messaging.withAsync());
+        }
+
+        return super.processOutObject(type);
     }
 }
