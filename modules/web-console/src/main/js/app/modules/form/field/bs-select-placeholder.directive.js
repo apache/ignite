@@ -28,12 +28,13 @@ export default ['bsSelect', [() => {
 
             const value = ngModel.$viewValue;
 
-            if (value && (!attrs.multiple || value.length))
-                $element.removeClass('placeholder');
-            else {
+            if (_.isNil(value) || (attrs.multiple && !value.length)) {
                 $element.html(attrs.placeholder);
+
                 $element.addClass('placeholder');
             }
+            else
+                $element.removeClass('placeholder');
         };
     };
 

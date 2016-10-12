@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './marshaller.jade!';
+import templateUrl from './marshaller.jade';
 
 export default ['igniteConfigurationClustersMarshaller', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

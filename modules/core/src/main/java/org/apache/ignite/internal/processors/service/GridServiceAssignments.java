@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 
 /**
@@ -72,13 +71,6 @@ public class GridServiceAssignments implements Serializable, GridCacheInternal {
      */
     public String name() {
         return cfg.getName();
-    }
-
-    /**
-     * @return Service.
-     */
-    public Service service() {
-        return cfg.getService();
     }
 
     /**

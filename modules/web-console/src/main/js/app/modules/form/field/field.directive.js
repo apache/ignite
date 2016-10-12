@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-import template from './field.jade!';
-import './field.css!';
+import templateUrl from './field.jade';
+import './field.css';
 
 export default ['igniteFormField', [() => {
     const controller = [function() {
@@ -34,7 +34,7 @@ export default ['igniteFormField', [() => {
             type: '@',
             name: '@'
         },
-        template,
+        templateUrl,
         controller,
         controllerAs: 'field',
         replace: true,

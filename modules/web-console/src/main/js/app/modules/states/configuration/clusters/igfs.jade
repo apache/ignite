@@ -30,8 +30,8 @@ form.panel.panel-default(name=form novalidate)
         .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
             .col-sm-6
                 .settings-row
-                    +dropdown-multiple('<span>IGFS:</span><a ui-sref="base.configuration.igfs({id: ' + model + '._id})"> (add)</a>',
+                    +dropdown-multiple('<span>IGFS:</span><a ui-sref="base.configuration.igfs({linkId: linkId()})"> (add)</a>',
                         model + '.igfss', 'igfss', 'true', 'Choose IGFS', 'No IGFS configured', 'igfss',
                         'Select IGFS to start in cluster or add a new IGFS')
             .col-sm-6
-                +preview-xml-java(model, 'igfss')
+                +preview-xml-java(model, 'igfss', 'igfss')

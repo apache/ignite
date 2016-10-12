@@ -1461,11 +1461,7 @@ public class GridNioServer<T> {
 
                                     sb.append("    Connection info [")
                                         .append("rmtAddr=").append(ses.remoteAddress())
-                                        .append(", locAddr=").append(ses.localAddress())
-                                        .append(", msgWriter=").append(writer != null ? writer.toString() : "null")
-                                        .append(", msgReader=").append(reader != null ? reader.toString() : "null")
-                                        .append(", bytesRcvd=").append(ses.bytesReceived())
-                                        .append(", bytesSent=").append(ses.bytesSent());
+                                        .append(", locAddr=").append(ses.localAddress());
 
                                     GridNioRecoveryDescriptor desc = ses.recoveryDescriptor();
 
@@ -1477,6 +1473,28 @@ public class GridNioServer<T> {
                                     }
                                     else
                                         sb.append(", recoveryDesc=null");
+
+                                    sb.append(", bytesRcvd=").append(ses.bytesReceived())
+                                        .append(", bytesSent=").append(ses.bytesSent())
+                                        .append(", opQueueSize=").append(ses.writeQueueSize())
+                                        .append(", msgWriter=").append(writer != null ? writer.toString() : "null")
+                                        .append(", msgReader=").append(reader != null ? reader.toString() : "null");
+
+                                    int cnt = 0;
+
+                                    for (GridNioFuture<?> fut : ses.writeQueue()) {
+                                        if (cnt == 0)
+                                            sb.append(",\n opQueue=[").append(fut);
+                                        else
+                                            sb.append(',').append(fut);
+
+                                        if (++cnt == 5) {
+                                            sb.append(']');
+
+                                            break;
+                                        }
+                                    }
+
 
                                     sb.append("]").append(U.nl());
                                 }
@@ -1572,8 +1590,7 @@ public class GridNioServer<T> {
                     throw e;
                 }
                 catch (Exception e) {
-                    if (!closed)
-                        U.warn(log, "Failed to process selector key (will close): " + ses, e);
+                    U.warn(log, "Failed to process selector key (will close): " + ses, e);
 
                     close(ses, new GridNioException(e));
                 }
@@ -1640,9 +1657,10 @@ public class GridNioServer<T> {
                 try {
                     long writeTimeout0 = writeTimeout;
 
+                    boolean opWrite = key.isValid() && (key.interestOps() & SelectionKey.OP_WRITE) != 0;
+
                     // If we are writing and timeout passed.
-                    if (key.isValid() && (key.interestOps() & SelectionKey.OP_WRITE) != 0 &&
-                        now - ses.lastSendTime() > writeTimeout0) {
+                    if (opWrite && now - ses.lastSendTime() > writeTimeout0) {
                         filterChain.onSessionWriteTimeout(ses);
 
                         // Update timestamp to avoid multiple notifications within one timeout interval.
@@ -1653,7 +1671,7 @@ public class GridNioServer<T> {
 
                     long idleTimeout0 = idleTimeout;
 
-                    if (now - ses.lastReceiveTime() > idleTimeout0 && now - ses.lastSendScheduleTime() > idleTimeout0) {
+                    if (!opWrite && now - ses.lastReceiveTime() > idleTimeout0 && now - ses.lastSendScheduleTime() > idleTimeout0) {
                         filterChain.onSessionIdleTimeout(ses);
 
                         // Update timestamp to avoid multiple notifications within one timeout interval.
@@ -1803,13 +1821,6 @@ public class GridNioServer<T> {
                 if (e != null)
                     filterChain.onExceptionCaught(ses, e);
 
-                try {
-                    filterChain.onSessionClosed(ses);
-                }
-                catch (IgniteCheckedException e1) {
-                    filterChain.onExceptionCaught(ses, e1);
-                }
-
                 ses.removeMeta(BUF_META_KEY);
 
                 // Since ses is in closed state, no write requests will be added.
@@ -1835,6 +1846,13 @@ public class GridNioServer<T> {
 
                     while ((fut = (NioOperationFuture<?>)ses.pollFuture()) != null)
                         fut.connectionClosed();
+                }
+
+                try {
+                    filterChain.onSessionClosed(ses);
+                }
+                catch (IgniteCheckedException e1) {
+                    filterChain.onExceptionCaught(ses, e1);
                 }
 
                 return true;
@@ -2062,24 +2080,29 @@ public class GridNioServer<T> {
         private SocketChannel sockCh;
 
         /** Session to perform operation on. */
+        @GridToStringExclude
         private GridSelectorNioSessionImpl ses;
 
         /** Is it a close request or a write request. */
         private NioOperation op;
 
         /** Message. */
+        @GridToStringExclude
         private ByteBuffer msg;
 
         /** Direct message. */
         private Message commMsg;
 
         /** */
+        @GridToStringExclude
         private boolean accepted;
 
         /** */
+        @GridToStringExclude
         private Map<Integer, ?> meta;
 
         /** */
+        @GridToStringExclude
         private boolean skipRecovery;
 
         /**

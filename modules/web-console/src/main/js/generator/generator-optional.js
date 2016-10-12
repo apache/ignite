@@ -18,7 +18,7 @@
 // Optional content generation entry point.
 const $generatorOptional = {};
 
-$generatorOptional.optionalContent = function (zip, cluster) {
+$generatorOptional.optionalContent = function(zip, cluster) { // eslint-disable-line no-unused-vars
     // No-op.
 };
 

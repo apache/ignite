@@ -19,4 +19,4 @@ include ../../../../../../../../../app/helpers/jade/mixins.jade
 -var model = 'backupItem.discovery.ZooKeeper.retryPolicy.Forever'
 
 .details-row
-    +number('Interval:', model + '.retryIntervalMs', 'retryIntervalMs', 'true', '1000', '0', 'Time in ms between retry attempts')
+    +number('Interval:', model + '.retryIntervalMs', 'feRetryIntervalMs', 'true', '1000', '0', 'Time in ms between retry attempts')

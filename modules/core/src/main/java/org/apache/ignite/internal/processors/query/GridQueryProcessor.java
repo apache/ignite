@@ -17,6 +17,30 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Field;
+import java.lang.reflect.Member;
+import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import javax.cache.Cache;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -36,7 +60,9 @@ import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -65,31 +91,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
-
-import javax.cache.Cache;
-import javax.cache.CacheException;
-import java.lang.reflect.AccessibleObject;
-import java.lang.reflect.Field;
-import java.lang.reflect.Member;
-import java.lang.reflect.Method;
-import java.math.BigDecimal;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
@@ -143,6 +144,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** */
     private final GridQueryIndexing idx;
+
+    /** */
+    private static final ThreadLocal<AffinityTopologyVersion> requestTopVer = new ThreadLocal<>();
 
     /**
      * @param ctx Kernal context.
@@ -877,7 +881,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             sqlQry,
                             F.asList(params),
                             typeDesc,
-                            idx.backupFilter(null, null, null));
+                            idx.backupFilter(null, requestTopVer.get(), null));
 
                         sendQueryExecutedEvent(
                             sqlQry,
@@ -963,7 +967,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     Object[] args = qry.getArgs();
 
                     final GridQueryFieldsResult res = idx.queryFields(space, sql, F.asList(args),
-                        idx.backupFilter(null, null, null));
+                        idx.backupFilter(null, requestTopVer.get(), null));
 
                     sendQueryExecutedEvent(sql, args);
 
@@ -1681,14 +1685,30 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 // No-op.
             }
 
-            if (tmp == null) {
+            if (tmp == null) { // Boolean getter can be defined as is###().
+                bld = new StringBuilder("is");
+
+                bld.append(prop);
+
+                bld.setCharAt(2, Character.toUpperCase(bld.charAt(2)));
+
                 try {
-                    tmp = new ClassProperty(cls.getDeclaredField(prop), key, alias, coCtx);
+                    tmp = new ClassProperty(cls.getMethod(bld.toString()), key, alias, coCtx);
                 }
-                catch (NoSuchFieldException ignored) {
+                catch (NoSuchMethodException ignore) {
                     // No-op.
                 }
             }
+
+            Class cls0 = cls;
+
+            while (tmp == null && cls0 != null)
+                try {
+                    tmp = new ClassProperty(cls0.getDeclaredField(prop), key, alias, coCtx);
+                }
+                catch (NoSuchFieldException ignored) {
+                    cls0 = cls0.getSuperclass();
+                }
 
             if (tmp == null) {
                 try {
@@ -1811,6 +1831,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (log.isTraceEnabled())
             log.trace("Query execution completed [startTime=" + startTime +
                 ", duration=" + duration + ", fail=" + fail + ", res=" + res + ']');
+    }
+
+    /**
+     * @param ver Version.
+     */
+    public static void setRequestAffinityTopologyVersion(AffinityTopologyVersion ver) {
+        requestTopVer.set(ver);
+    }
+
+    /**
+     * @return Affinity topology version of the current request.
+     */
+    public static AffinityTopologyVersion getRequestAffinityTopologyVersion() {
+        return requestTopVer.get();
     }
 
     /**
@@ -2021,7 +2055,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             BinaryField field0 = field;
 
             if (field0 == null && !fieldTaken) {
-                BinaryType type = obj.type();
+                BinaryType type = obj instanceof BinaryObjectEx ? ((BinaryObjectEx)obj).rawType() : obj.type();
 
                 if (type != null) {
                     field0 = type.field(propName);

@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './jdbc.jade!';
+import templateUrl from './jdbc.jade';
 
 export default ['igniteConfigurationClustersGeneralDiscoveryJdbc', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];
