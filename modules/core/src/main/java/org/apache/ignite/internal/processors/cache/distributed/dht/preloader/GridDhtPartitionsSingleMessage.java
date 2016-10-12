@@ -137,10 +137,10 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         super.prepareMarshal(ctx);
 
         if (partsBytes == null && parts != null)
-            partsBytes = ctx.marshaller().marshal(parts);
+            partsBytes = U.marshal(ctx, parts);
 
         if (partCntrsBytes == null && partCntrs != null)
-            partCntrsBytes = ctx.marshaller().marshal(partCntrs);
+            partCntrsBytes = U.marshal(ctx, partCntrs);
     }
 
     /** {@inheritDoc} */
@@ -148,10 +148,10 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         super.finishUnmarshal(ctx, ldr);
 
         if (partsBytes != null && parts == null)
-            parts = ctx.marshaller().unmarshal(partsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            parts = U.unmarshal(ctx, partsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         if (partCntrsBytes != null && partCntrs == null)
-            partCntrs = ctx.marshaller().unmarshal(partCntrsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            partCntrs = U.unmarshal(ctx, partCntrsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /** {@inheritDoc} */
