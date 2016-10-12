@@ -21,8 +21,6 @@ namespace Apache.Ignite.Core.Impl.Cache
     using System.Diagnostics;
     using System.Threading;
     using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Impl.Unmanaged;
-    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Cache lock implementation.
