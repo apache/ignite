@@ -296,7 +296,6 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
             @Override public void run() {
                 Callable<Void> reserveCall = retryTopologySafe(new Callable<Void>() {
                     @Override public Void call() throws Exception {
-
                         // in some cases transaction can fail need restore previous state
                         long oldReservedBottomBound = reservedBottomBound;
 
@@ -348,7 +347,6 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
                             throw e;
 
                         }
-
 
                         return null;
                     }
