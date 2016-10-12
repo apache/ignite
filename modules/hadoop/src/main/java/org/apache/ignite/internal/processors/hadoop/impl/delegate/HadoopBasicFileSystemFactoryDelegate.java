@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.hadoop.impl.delegate;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.fs.BasicHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
@@ -51,6 +52,9 @@ public class HadoopBasicFileSystemFactoryDelegate implements HadoopFileSystemFac
 
     /** User name mapper. */
     private UserNameMapper usrNameMapper;
+
+    /** Work directory. */
+    protected Path workDir;
 
     /**
      * Constructor.
@@ -110,7 +114,12 @@ public class HadoopBasicFileSystemFactoryDelegate implements HadoopFileSystemFac
      * @throws InterruptedException if the current thread is interrupted.
      */
     protected FileSystem create(String usrName) throws IOException, InterruptedException {
-        return FileSystem.get(fullUri, cfg, usrName);
+        FileSystem fs = FileSystem.get(fullUri, cfg, usrName);
+
+        if (workDir != null)
+            fs.setWorkingDirectory(workDir);
+
+        return fs;
     }
 
     /** {@inheritDoc} */
@@ -149,6 +158,11 @@ public class HadoopBasicFileSystemFactoryDelegate implements HadoopFileSystemFac
                 throw new IgniteException("Failed to resolve secondary file system URI: " + proxy0.getUri());
             }
         }
+
+        String strWorkDir = fullUri.getPath();
+
+        if (!"/".equals(strWorkDir))
+            workDir = new Path(strWorkDir);
 
         usrNameMapper = proxy0.getUserNameMapper();
 

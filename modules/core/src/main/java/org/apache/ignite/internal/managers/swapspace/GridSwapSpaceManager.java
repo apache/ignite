@@ -400,18 +400,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
         if (swapBytes == null)
             return null;
 
-        return marsh.unmarshal(swapBytes, ldr != null ? ldr : U.gridClassLoader());
-    }
-
-    /**
-     * Marshals object.
-     *
-     * @param obj Object to marshal.
-     * @return Marshalled array.
-     * @throws IgniteCheckedException If failed.
-     */
-    private byte[] marshal(Object obj) throws IgniteCheckedException {
-        return ctx.config().getMarshaller().marshal(obj);
+        return U.unmarshal(marsh, swapBytes, ldr != null ? ldr : U.gridClassLoader());
     }
 
     /**
