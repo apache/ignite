@@ -163,7 +163,7 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ConstantConditions")
+    @SuppressWarnings({"ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
     public void testSingleAddress() throws Exception {
         stopGrid(0);
 
@@ -262,13 +262,6 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     }
 
     /**
-     * @return Protocol provider.
-     */
-    private IgniteHadoopClientProtocolProvider provider() {
-        return new IgniteHadoopClientProtocolProvider();
-    }
-
-    /**
      * Test mapper.
      */
     public static class TestMapper extends Mapper<Object, Text, Text, IntWritable> {
@@ -291,11 +284,12 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     }
 
     /**
-     *
+     * Test output formatter.
      */
     public static class OutFormat extends OutputFormat {
         /** {@inheritDoc} */
-        @Override public RecordWriter getRecordWriter(TaskAttemptContext context) throws IOException, InterruptedException {
+        @Override public RecordWriter getRecordWriter(TaskAttemptContext context) throws IOException,
+            InterruptedException {
             return null;
         }
 
@@ -305,7 +299,8 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
         }
 
         /** {@inheritDoc} */
-        @Override public OutputCommitter getOutputCommitter(TaskAttemptContext context) throws IOException, InterruptedException {
+        @Override public OutputCommitter getOutputCommitter(TaskAttemptContext context) throws IOException,
+            InterruptedException {
             return null;
         }
     }
