@@ -58,8 +58,8 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
             Collection<String> addrs = conf.getTrimmedStringCollection(MRConfig.MASTER_ADDRESS);
 
             if (F.isEmpty(addrs))
-                throw new IOException("Failed to create client protocol because server address is not specified (is " +
-                    MRConfig.MASTER_ADDRESS + " property set?).");
+                throw new IOException("Failed to create client protocol because Ignite node addresses are not " +
+                    "specified (did you set " + MRConfig.MASTER_ADDRESS + " property?).");
 
             if (F.contains(addrs, "local"))
                 throw new IOException("Local execution mode is not supported, please point " +
@@ -152,7 +152,7 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
                 return fut.get();
         }
         catch (IgniteCheckedException e) {
-            throw new IOException("Failed to establish connection with Ignite: " + addrs, e);
+            throw new IOException("Failed to establish connection with Ignite сдгые: " + addrs, e);
         }
     }
 }
