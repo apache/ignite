@@ -1,0 +1,120 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal;
+
+import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+/**
+ * Task execution test.
+ */
+public class IgniteRoundRobinErrorAfterClientReconnectTest extends GridCommonAbstractTest {
+    /** Grid client node instance. */
+    private Ignite cli;
+
+    /** */
+    public IgniteRoundRobinErrorAfterClientReconnectTest() {
+        super(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        if (gridName.endsWith("1"))
+            cfg.setClientMode(true);
+
+        return cfg;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void startServer() throws Exception {
+        startGrid(0);
+    }
+
+    /**
+     *
+     */
+    private void stopServer() {
+        stopGrid(0);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void startClient() throws Exception {
+        cli = startGrid(1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientReconnect() throws Exception {
+        startServer();
+        startClient();
+
+        final GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
+
+        cli.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event event) {
+                try {
+                    cli.compute().apply(new IgniteClosure<String, Void>() {
+                        @Override public Void apply(String arg) {
+                            System.out.println(">>> " + arg);
+
+                            return null;
+                        }
+                    }, "Hello!");
+
+                    fut.onDone(true);
+
+                    return true;
+                } catch (Exception e) {
+                    fut.onDone(e);
+
+                    return false;
+                }
+            }
+        }, EventType.EVT_CLIENT_NODE_RECONNECTED);
+
+        stopServer();
+
+        U.sleep(1000);
+
+        startServer();
+
+        U.sleep(1000);
+
+        assert fut.get();
+    }
+
+}
