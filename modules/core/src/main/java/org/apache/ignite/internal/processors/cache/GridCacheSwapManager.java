@@ -131,8 +131,8 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         offheap = cctx.offheap();
 
         swapEnabled = enabled && cctx.config().isSwapEnabled() && cctx.kernalContext().swap().enabled();
-        offheapEnabled = enabled && (cctx.config().getMemoryMode() == OFFHEAP_TIERED ||
-            (cctx.config().getMemoryMode() == ONHEAP_TIERED && cctx.config().getOffHeapMaxMemory() >= 0));
+        offheapEnabled = enabled && cctx.config().getOffHeapMaxMemory() >= 0 &&
+            (cctx.config().getMemoryMode() == ONHEAP_TIERED || cctx.config().getMemoryMode() == OFFHEAP_TIERED);
 
         if (offheapEnabled)
             initOffHeap();

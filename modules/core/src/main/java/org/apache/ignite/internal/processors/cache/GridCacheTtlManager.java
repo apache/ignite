@@ -52,7 +52,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
 
-        if (cctx.isOffHeapEnabled()) {
+        if (cctx.isSwapOrOffheapEnabled()) {
             unsafeMemory = new GridUnsafeMemory(0);
 
             pendingEntries = new OffHeapPendingEntriesSet(unsafeMemory, new GridUnsafeGuard());
