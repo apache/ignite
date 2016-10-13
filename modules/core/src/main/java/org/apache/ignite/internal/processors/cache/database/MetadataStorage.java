@@ -33,8 +33,6 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
-
 /**
  * Metadata storage.
  */
