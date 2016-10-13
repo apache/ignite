@@ -40,7 +40,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
 import javax.cache.expiry.ExpiryPolicy;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -78,7 +77,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheFutureImpl;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
@@ -694,7 +692,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         GridCacheContext cctx = ctx.cache().internalCache(cacheName).context();
 
-        AffinityTopologyVersion topVer = cctx.topology().topologyVersion();
+        AffinityTopologyVersion topVer = cctx.isLocal() ?
+            AffinityTopologyVersion.NONE :
+            cctx.topology().topologyVersion();
 
         for (DataStreamerEntry entry : entries) {
             List<ClusterNode> nodes;
@@ -890,14 +890,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private List<ClusterNode> nodes(KeyCacheObject key,
         AffinityTopologyVersion topVer,
         GridCacheContext cctx) throws IgniteCheckedException {
-        GridDhtPartitionTopology top = cctx.topology();
-
         GridAffinityProcessor aff = ctx.affinity();
 
         List<ClusterNode> res = null;
 
         if (!allowOverwrite())
-            res = top.nodes(cctx.affinity().partition(key), topVer);
+            res = cctx.topology().nodes(cctx.affinity().partition(key), topVer);
         else {
             ClusterNode node = aff.mapKeyToNode(cacheName, key, topVer);
 
@@ -1422,19 +1420,22 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             final GridFutureAdapter<Object> curFut) {
             GridCacheContext cctx = ctx.cache().internalCache(cacheName).context();
 
-            cctx.topology().readLock();
+            final boolean loc = cctx.isLocal();
+
+            if (!loc)
+                cctx.topology().readLock();
 
             try {
-                GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
+                GridDhtTopologyFuture fut = loc ? null : cctx.topologyVersionFuture();
 
-                AffinityTopologyVersion topVer = fut.topologyVersion();
+                AffinityTopologyVersion topVer = loc ? reqTopVer : fut.topologyVersion();
 
                 if (!topVer.equals(reqTopVer)) {
                     curFut.onDone(new IgniteCheckedException(
                         "DataStreamer will retry data transfer at stable topology. " +
                             "[reqTop=" + reqTopVer + " ,topVer=" + topVer + ", node=local]"));
                 }
-                else if (fut.isDone()) {
+                else if (loc || fut.isDone()) {
                     IgniteInternalFuture<Object> callFut = ctx.closure().callLocalSafe(
                         new DataStreamerUpdateJob(
                             ctx,
@@ -1449,7 +1450,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                     locFuts.add(callFut);
 
-                    final GridFutureAdapter waitFut = cctx.mvcc().addDataStreamerFuture();
+                    final GridFutureAdapter waitFut = loc ? null : cctx.mvcc().addDataStreamerFuture();
 
                     callFut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
                         @Override public void apply(IgniteInternalFuture<Object> t) {
@@ -1464,7 +1465,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                                 curFut.onDone(e);
                             }
                             finally {
-                                waitFut.onDone();
+                                if (!loc)
+                                    waitFut.onDone();
                             }
                         }
                     });
@@ -1477,7 +1479,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     });
             }
             finally {
-                cctx.topology().readUnlock();
+                if (!loc)
+                    cctx.topology().readUnlock();
             }
         }
 
