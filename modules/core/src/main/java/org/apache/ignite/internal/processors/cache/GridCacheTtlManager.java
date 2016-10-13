@@ -655,7 +655,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         @Override public boolean hasExpiredFor(long now) {
             Map.Entry<PendingEntry, Boolean> entry = m.firstEntry();
 
-            return entry != null && entry.getKey().expireTime > now;
+            return entry != null && now >= entry.getKey().expireTime;
         }
 
         /** {@inheritDoc} */
@@ -756,7 +756,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         @Override public boolean hasExpiredFor(long now) {
             Map.Entry<PendingEntrySmartPointer, DummySmartPointer> e = m.firstEntry();
 
-            return e != null && e.getValue() != DUMMY_SMART_POINTER && e.getKey().expireTime() > now;
+            return e != null && now >= e.getKey().expireTime();
         }
 
         /** {@inheritDoc} */
