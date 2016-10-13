@@ -205,7 +205,7 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected void processInObjectStreamOutStream(int type, Object arg, BinaryRawReaderEx reader,
+    @Override protected Object processInObjectStreamOutObjectStream(int type, Object arg, BinaryRawReaderEx reader,
         BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_INVOKE: {
@@ -234,12 +234,11 @@ public class PlatformServices extends PlatformAbstractTarget {
                     PlatformUtils.writeInvocationResult(writer, null, e);
                 }
 
-                return;
+                return null;
             }
-
-            default:
-                super.processInObjectStreamOutStream(type, arg, reader, writer);
         }
+
+        return super.processInObjectStreamOutObjectStream(type, arg, reader, writer);
     }
 
     /** {@inheritDoc} */

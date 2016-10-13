@@ -19,7 +19,6 @@ IgniteTargetInStreamOutObject @17
 IgniteTargetInStreamOutLong @18 
 IgniteTargetOutStream @19 
 IgniteTargetInStreamOutStream @20 
-IgniteTargetInObjectStreamOutStream @21 
 IgniteTargetListenFuture @22 
 IgniteTargetListenFutureForOperation @23 
 IgniteTargetInLongOutLong @24
