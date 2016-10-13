@@ -170,10 +170,10 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             // pendingEntry is deserialized here already
             GridCacheEntryEx entry = unwrapEntry(pendingEntry, touch);
 
-            if (log.isTraceEnabled())
-                log.trace("Trying to remove expired entry from cache: " + entry);
-
             if (entry != null) {
+                if (log.isTraceEnabled())
+                    log.trace("Trying to remove expired entry from cache: " + entry);
+
                 while (true) {
                     try {
                         if (entry.onTtlExpired(obsoleteVer))
