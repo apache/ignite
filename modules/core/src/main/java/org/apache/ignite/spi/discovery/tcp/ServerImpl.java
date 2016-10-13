@@ -211,7 +211,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** */
     private final ThreadPoolExecutor utilityPool = new ThreadPoolExecutor(0, 1, 2000, TimeUnit.MILLISECONDS,
-        new LinkedBlockingQueue<>());
+        new LinkedBlockingQueue<Runnable>());
 
     /** */
     private IgniteThreadPoolExecutor nioClientProcessingPool;
