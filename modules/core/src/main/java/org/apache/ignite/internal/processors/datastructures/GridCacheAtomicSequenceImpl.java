@@ -153,8 +153,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
         this.locVal = locVal;
         this.name = name;
         this.reservePercentage = reservePercentage;
-
-        newReservationLine = locVal + (batchSize * reservePercentage / 100);
+        this.newReservationLine = locVal + (batchSize * reservePercentage / 100);
 
         log = ctx.logger(getClass());
     }
