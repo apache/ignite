@@ -135,9 +135,6 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
 public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** */
-    public static int MAX_ITERATORS = 1000;
-
-    /** */
     protected GridQueryProcessor qryProc;
 
     /** */
@@ -176,7 +173,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     @Override public void start0() throws IgniteCheckedException {
         qryProc = cctx.kernalContext().query();
         space = cctx.name();
-        maxIterCnt = MAX_ITERATORS;
+        maxIterCnt = cctx.config().getMaxQueryIteratorsCount();
 
         lsnr = new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
@@ -557,7 +554,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             throw new IgniteCheckedException("Received next page request after iterator was removed. " +
                 "Consider increasing maximum number of stored iterators (see " +
-                "GridCacheConfiguration.getMaximumQueryIteratorCount() configuration property).");
+                "CacheConfiguration.getMaxQueryIteratorsCount() configuration property).");
         }
 
         QueryResult<K, V> res;
@@ -693,12 +690,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         T2<String, List<Object>> resKey = null;
 
-        if (qry.clause() == null) {
+        if (qry.clause() == null && qry.type() != SPI) {
             assert !loc;
 
             throw new IgniteCheckedException("Received next page request after iterator was removed. " +
                 "Consider increasing maximum number of stored iterators (see " +
-                "GridCacheConfiguration.getMaximumQueryIteratorCount() configuration property).");
+                "CacheConfiguration.getMaxQueryIteratorsCount() configuration property).");
         }
 
         if (qry.type() == SQL_FIELDS) {
@@ -1654,7 +1651,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     else
                         data.add(!loc ? new GridCacheQueryResponseEntry<>(key, val) : F.t(key, val));
 
-
                     if (!loc) {
                         if (++cnt == pageSize || !iter.hasNext()) {
                             boolean finished = !iter.hasNext();
@@ -1815,9 +1811,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                     if (qry.keepBinary())
                         entry = cctx.cache().keepBinary().getEntry(next.getKey());
-                     else
+                    else
                         entry = cctx.cache().getEntry(next.getKey());
-
 
                     return transform.apply(entry);
                 }

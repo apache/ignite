@@ -131,7 +131,7 @@ namespace ignite
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         ret = SQLFetch(stmt);
-        BOOST_CHECK(ret == SQL_NO_DATA) ;
+        BOOST_CHECK(ret == SQL_NO_DATA);
     }
 
     template<>

@@ -898,7 +898,7 @@ public class GridCacheUtils {
             }
         }
 
-        return ctx.marshaller().marshal(obj);
+        return U.marshal(ctx, obj);
     }
 
     /**
@@ -1173,6 +1173,7 @@ public class GridCacheUtils {
 
     /**
      * Validates that cache key object has overridden equals and hashCode methods.
+     * Will also check that a BinaryObject has a hash code set.
      *
      * @param key Key.
      * @throws IllegalArgumentException If equals or hashCode is not implemented.
@@ -1184,6 +1185,10 @@ public class GridCacheUtils {
         if (!U.overridesEqualsAndHashCode(key))
             throw new IllegalArgumentException("Cache key must override hashCode() and equals() methods: " +
                 key.getClass().getName());
+
+        if (U.isHashCodeEmpty(key))
+            throw new IllegalArgumentException("Cache key created with BinaryBuilder is missing hash code - " +
+                "please set it explicitly during building by using BinaryBuilder.hashCode(int)");
     }
 
     /**

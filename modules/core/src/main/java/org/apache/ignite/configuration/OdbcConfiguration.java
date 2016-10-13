@@ -38,6 +38,9 @@ public class OdbcConfiguration {
     /** Default max number of open cursors per connection. */
     public static final int DFLT_MAX_OPEN_CURSORS = 128;
 
+    /** Default size of thread pool. */
+    public static final int DFLT_THREAD_POOL_SIZE = IgniteConfiguration.DFLT_PUBLIC_THREAD_CNT;
+
     /** Endpoint address. */
     private String endpointAddr;
 
@@ -50,6 +53,9 @@ public class OdbcConfiguration {
     /** Max number of opened cursors per connection. */
     private int maxOpenCursors = DFLT_MAX_OPEN_CURSORS;
 
+    /** Thread pool size. */
+    private int threadPoolSize = DFLT_THREAD_POOL_SIZE;
+
     /**
      * Creates ODBC server configuration with all default values.
      */
@@ -58,8 +64,7 @@ public class OdbcConfiguration {
     }
 
     /**
-     * Creates ODBC server configuration by copying all properties from
-     * given configuration.
+     * Creates ODBC server configuration by copying all properties from given configuration.
      *
      * @param cfg ODBC server configuration.
      */
@@ -70,6 +75,7 @@ public class OdbcConfiguration {
         maxOpenCursors = cfg.getMaxOpenCursors();
         sockRcvBufSize = cfg.getSocketReceiveBufferSize();
         sockSndBufSize = cfg.getSocketSendBufferSize();
+        threadPoolSize = cfg.getThreadPoolSize();
     }
 
     /**
@@ -171,6 +177,30 @@ public class OdbcConfiguration {
      */
     public OdbcConfiguration setSocketReceiveBufferSize(int sockRcvBufSize) {
         this.sockRcvBufSize = sockRcvBufSize;
+
+        return this;
+    }
+
+    /**
+     * Size of thread pool that is in charge of processing ODBC tasks.
+     * <p>
+     * Defaults {@link #DFLT_THREAD_POOL_SIZE}.
+     *
+     * @return Thread pool that is in charge of processing ODBC tasks.
+     */
+    public int getThreadPoolSize() {
+        return threadPoolSize;
+    }
+
+    /**
+     * Sets thread pool that is in charge of processing ODBC tasks. See {@link #getThreadPoolSize()} for more
+     * information.
+     *
+     * @param threadPoolSize Thread pool that is in charge of processing ODBC tasks.
+     * @return This instance for chaining.
+     */
+    public OdbcConfiguration setThreadPoolSize(int threadPoolSize) {
+        this.threadPoolSize = threadPoolSize;
 
         return this;
     }

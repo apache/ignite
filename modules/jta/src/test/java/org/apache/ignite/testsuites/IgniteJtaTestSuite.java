@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.GridReplicatedCacheJtaFactory
 import org.apache.ignite.internal.processors.cache.GridReplicatedCacheJtaFactoryUseSyncSelfTest;
 import org.apache.ignite.internal.processors.cache.GridReplicatedCacheJtaLookupClassNameSelfTest;
 import org.apache.ignite.internal.processors.cache.GridJtaLifecycleAwareSelfTest;
+import org.apache.ignite.testframework.IgniteTestSuite;
 
 /**
  * JTA integration tests.
@@ -38,7 +39,7 @@ public class IgniteJtaTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("JTA Integration Test Suite");
+        TestSuite suite = new IgniteTestSuite("JTA Integration Test Suite");
 
         suite.addTestSuite(GridPartitionedCacheJtaFactorySelfTest.class);
         suite.addTestSuite(GridReplicatedCacheJtaFactorySelfTest.class);

@@ -559,11 +559,11 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     @SuppressWarnings("unchecked")
     private QueryCursor<Cache.Entry<K, V>> query(final Query filter, @Nullable ClusterGroup grp)
         throws IgniteCheckedException {
-        final CacheQuery<Map.Entry<K, V>> qry;
+        final CacheQuery qry;
 
         boolean isKeepBinary = opCtx != null && opCtx.isKeepBinary();
 
-        final CacheQueryFuture<Map.Entry<K, V>> fut;
+        final CacheQueryFuture fut;
 
         if (filter instanceof TextQuery) {
             TextQuery p = (TextQuery)filter;
@@ -587,8 +587,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 qry.projection(grp);
 
             fut = ctx.kernalContext().query().executeQuery(ctx,
-                new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
-                    @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() throws IgniteCheckedException {
+                new IgniteOutClosureX<CacheQueryFuture<Cache.Entry<K, V>>>() {
+                    @Override public CacheQueryFuture<Cache.Entry<K, V>> applyx() throws IgniteCheckedException {
                         return qry.execute(((SpiQuery)filter).getArgs());
                     }
                 }, false);
@@ -603,21 +603,39 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         return new QueryCursorImpl<>(new GridCloseableIteratorAdapter<Entry<K, V>>() {
             /** */
-            private Map.Entry<K, V> cur;
+            private Cache.Entry<K, V> cur;
 
             @Override protected Entry<K, V> onNext() throws IgniteCheckedException {
                 if (!onHasNext())
                     throw new NoSuchElementException();
 
-                Map.Entry<K, V> e = cur;
+                Cache.Entry<K, V> e = cur;
 
                 cur = null;
 
-                return new CacheEntryImpl<>(e.getKey(), e.getValue());
+                return e;
             }
 
             @Override protected boolean onHasNext() throws IgniteCheckedException {
-                return cur != null || (cur = fut.next()) != null;
+                if (cur != null)
+                    return true;
+
+                Object next = fut.next();
+
+                // Workaround a bug: if IndexingSpi is configured future represents Iterator<Cache.Entry>
+                // instead of Iterator<Map.Entry> due to IndexingSpi interface.
+                if (next == null)
+                    return false;
+
+                if (next instanceof Cache.Entry)
+                    cur = (Cache.Entry)next;
+                else {
+                    Map.Entry e = (Map.Entry)next;
+
+                    cur = new CacheEntryImpl(e.getKey(), e.getValue());
+                }
+
+                return true;
             }
 
             @Override protected void onClose() throws IgniteCheckedException {
@@ -803,11 +821,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 final SqlQuery sqlQry = (SqlQuery) qry;
 
                 convertToBinary(sqlQry.getArgs());
-            } else if (qry instanceof SpiQuery) {
+            }
+            else if (qry instanceof SpiQuery) {
                 final SpiQuery spiQry = (SpiQuery) qry;
 
                 convertToBinary(spiQry.getArgs());
-            } else if (qry instanceof SqlFieldsQuery) {
+            }
+            else if (qry instanceof SqlFieldsQuery) {
                 final SqlFieldsQuery fieldsQry = (SqlFieldsQuery) qry;
 
                 convertToBinary(fieldsQry.getArgs());
@@ -824,10 +844,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         if (args == null)
             return;
 
-        for (int i = 0; i < args.length; i++) {
-            if (args[i] != null && !BinaryUtils.isBinaryType(args[i].getClass()))
-                args[i] = ctx.toCacheObject(args[i]);
-        }
+        for (int i = 0; i < args.length; i++)
+            args[i] = ctx.cacheObjects().binary().toBinary(args[i]);
     }
 
     /**
