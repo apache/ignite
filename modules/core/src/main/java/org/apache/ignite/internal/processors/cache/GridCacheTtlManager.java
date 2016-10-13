@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import org.apache.ignite.IgniteCheckedException;
@@ -161,7 +162,6 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             if (pendingEntry == null)
                 return false;
 
-            // entryRemoved is true
             if (obsoleteVer == null)
                 obsoleteVer = cctx.versions().next();
 
@@ -614,7 +614,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     /** */
     private static class OnHeapPendingEntriesQueue implements PendingEntriesQueue {
         /** */
-        private final ConcurrentNavigableMap<PendingEntry, Boolean> m;
+        private final NavigableMap<PendingEntry, Boolean> m;
 
         /** Size. */
         private final LongAdder8 size = new LongAdder8();
