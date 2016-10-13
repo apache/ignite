@@ -402,11 +402,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return target.ChangeTarget(res);
         }
 
-        internal static long TargetOutLong(IUnmanagedTarget target, int opType)
-        {
-            return JNI.TargetOutLong(target.Context, target.Target, opType);
-        }
-
         internal static void TargetOutStream(IUnmanagedTarget target, int opType, long memPtr)
         {
             JNI.TargetOutStream(target.Context, target.Target, opType, memPtr);

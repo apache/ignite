@@ -273,7 +273,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public void CancelAll()
         {
-            DoOutOp(OpCancelAll);
+            DoOutInOp(OpCancelAll);
         }
 
         /** <inheritDoc /> */
