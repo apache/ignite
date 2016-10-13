@@ -114,7 +114,7 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader,
+    @Override protected Object processInObjectStreamOutObjectStream(int type, Object arg, BinaryRawReaderEx reader,
         BinaryRawWriterEx writer) throws IgniteCheckedException {
         if (type == OP_COMPARE_AND_SET_AND_GET) {
             Object val = reader.readObjectDetached();
@@ -128,9 +128,11 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
                 writer.writeBoolean(false);
                 writer.writeObject(res);
             }
+
+            return null;
         }
-        else
-            super.processInStreamOutStream(type, reader, writer);
+
+        return super.processInObjectStreamOutObjectStream(type, arg, reader, writer);
     }
 
     /** {@inheritDoc} */

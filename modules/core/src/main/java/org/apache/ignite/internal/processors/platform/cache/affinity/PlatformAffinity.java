@@ -108,7 +108,7 @@ public class PlatformAffinity extends PlatformAbstractTarget {
         throws IgniteCheckedException {
         super(platformCtx);
 
-        this.aff = igniteCtx.grid().affinity(name);
+        aff = igniteCtx.grid().affinity(name);
 
         if (aff == null)
             throw new IgniteCheckedException("Cache with the given name doesn't exist: " + name);
