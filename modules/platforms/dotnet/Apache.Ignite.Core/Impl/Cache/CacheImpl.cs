@@ -482,6 +482,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task PutAsync(TK key, TV val)
         {
+            // TODO: Execute operation and subscribe in one go
+            // So there will be PutAsync operation or something like this..
+            // Or in async mode there will be a flag on Java side which reads futId additionally.
             AsyncInstance.Put(key, val);
 
             return AsyncInstance.GetTask(CacheOp.Put);
