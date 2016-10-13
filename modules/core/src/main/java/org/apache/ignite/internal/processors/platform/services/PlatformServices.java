@@ -177,34 +177,6 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
-        throws IgniteCheckedException {
-        switch (type) {
-            case OP_DOTNET_SERVICES: {
-                Collection<Service> svcs = services.services(reader.readString());
-
-                PlatformUtils.writeNullableCollection(writer, svcs,
-                    new PlatformWriterClosure<Service>() {
-                        @Override public void write(BinaryRawWriterEx writer, Service svc) {
-                            writer.writeLong(((PlatformService) svc).pointer());
-                        }
-                    },
-                    new IgnitePredicate<Service>() {
-                        @Override public boolean apply(Service svc) {
-                            return svc instanceof PlatformDotNetService;
-                        }
-                    }
-                );
-
-                return;
-            }
-
-            default:
-                super.processInStreamOutStream(type, reader, writer);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override protected Object processInObjectStreamOutObjectStream(int type, Object arg, BinaryRawReaderEx reader,
         BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
@@ -233,6 +205,25 @@ public class PlatformServices extends PlatformAbstractTarget {
                 catch (Exception e) {
                     PlatformUtils.writeInvocationResult(writer, null, e);
                 }
+
+                return null;
+            }
+
+            case OP_DOTNET_SERVICES: {
+                Collection<Service> svcs = services.services(reader.readString());
+
+                PlatformUtils.writeNullableCollection(writer, svcs,
+                    new PlatformWriterClosure<Service>() {
+                        @Override public void write(BinaryRawWriterEx writer, Service svc) {
+                            writer.writeLong(((PlatformService) svc).pointer());
+                        }
+                    },
+                    new IgnitePredicate<Service>() {
+                        @Override public boolean apply(Service svc) {
+                            return svc instanceof PlatformDotNetService;
+                        }
+                    }
+                );
 
                 return null;
             }

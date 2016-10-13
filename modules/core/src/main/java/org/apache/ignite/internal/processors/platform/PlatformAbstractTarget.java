@@ -255,19 +255,6 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
     }
 
     /**
-     * Process IN-OUT operation.
-     *
-     * @param type Type.
-     * @param reader Binary reader.
-     * @param writer Binary writer.
-     * @throws IgniteCheckedException In case of exception.
-     */
-    protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
-        throws IgniteCheckedException {
-        throwUnsupported(type);
-    }
-
-    /**
      * Process IN operation with managed object as result.
      *
      * @param type Type.
