@@ -65,66 +65,138 @@ public class OptimizedMessageWriterImpl implements OptimizedMessageWriter {
 
     /** {@inheritDoc} */
     @Override public void writeByte(byte val) {
-        buf.put(val);
-
-        if (buf.remaining() == 0)
+        if (remaining() == 0)
             pushBuffer();
+
+        buf.put(val);
     }
 
     /** {@inheritDoc} */
     @Override public void writeShort(short val) {
-        int remaining = remaining();
-
-        if (remaining >= 2) {
-            int pos = buf.position();
-
-            long off = baseOff + pos;
-
-            if (BIG_ENDIAN)
-                GridUnsafe.putShortLE(heapArr, off, val);
-            else
-                GridUnsafe.putShort(heapArr, off, val);
-
-            buf.position(pos + 2);
-        }
-
-        if (remaining == 2)
+        if (remaining() < 2)
             pushBuffer();
+
+        int pos = buf.position();
+
+        long off = baseOff + pos;
+
+        if (BIG_ENDIAN)
+            GridUnsafe.putShortLE(heapArr, off, val);
+        else
+            GridUnsafe.putShort(heapArr, off, val);
+
+        buf.position(pos + 2);
     }
 
     /** {@inheritDoc} */
     @Override public void writeInt(int val) {
-        // TODO
+        if (remaining() < 5)
+            pushBuffer();
+
+        if (val == Integer.MAX_VALUE)
+            val = Integer.MIN_VALUE;
+        else
+            val++;
+
+        int pos = buf.position();
+
+        while ((val & 0xFFFF_FF80) != 0) {
+            byte b = (byte)(val | 0x80);
+
+            GridUnsafe.putByte(heapArr, baseOff + pos++, b);
+
+            val >>>= 7;
+        }
+
+        GridUnsafe.putByte(heapArr, baseOff + pos++, (byte)val);
+
+        buf.position(pos);
     }
 
     /** {@inheritDoc} */
     @Override public void writeLong(long val) {
-        // TODO
+        if (remaining() < 10)
+            pushBuffer();
+
+        if (val == Long.MAX_VALUE)
+            val = Long.MIN_VALUE;
+        else
+            val++;
+
+        int pos = buf.position();
+
+        while ((val & 0xFFFF_FFFF_FFFF_FF80L) != 0) {
+            byte b = (byte)(val | 0x80);
+
+            GridUnsafe.putByte(heapArr, baseOff + pos++, b);
+
+            val >>>= 7;
+        }
+
+        GridUnsafe.putByte(heapArr, baseOff + pos++, (byte)val);
+
+        buf.position(pos);
     }
 
     /** {@inheritDoc} */
     @Override public void writeFloat(float val) {
-        // TODO
+        if (remaining() < 4)
+            pushBuffer();
+
+        int pos = buf.position();
+
+        long off = baseOff + pos;
+
+        if (BIG_ENDIAN)
+            GridUnsafe.putFloatLE(heapArr, off, val);
+        else
+            GridUnsafe.putFloat(heapArr, off, val);
+
+        buf.position(pos + 4);
     }
 
     /** {@inheritDoc} */
     @Override public void writeDouble(double val) {
-        // TODO
+        if (remaining() < 8)
+            pushBuffer();
+
+        int pos = buf.position();
+
+        long off = baseOff + pos;
+
+        if (BIG_ENDIAN)
+            GridUnsafe.putDoubleLE(heapArr, off, val);
+        else
+            GridUnsafe.putDouble(heapArr, off, val);
+
+        buf.position(pos + 8);
     }
 
     /** {@inheritDoc} */
     @Override public void writeChar(char val) {
-        // TODO
+        if (remaining() < 8)
+            pushBuffer();
+
+        int pos = buf.position();
+
+        long off = baseOff + pos;
+
+        if (BIG_ENDIAN)
+            GridUnsafe.putCharLE(heapArr, off, val);
+        else
+            GridUnsafe.putChar(heapArr, off, val);
+
+        buf.position(pos + 2);
     }
 
     /** {@inheritDoc} */
     @Override public void writeBoolean(boolean val) {
-        // TODO
+        writeByte(val ? (byte)1 : (byte)0);
     }
 
     /** {@inheritDoc} */
     @Override public void writeByteArray(byte[] val) {
-        // TODO
+        writeByteArray(val, 0, val.length);
     }
 
     /** {@inheritDoc} */
@@ -169,22 +241,41 @@ public class OptimizedMessageWriterImpl implements OptimizedMessageWriter {
 
     /** {@inheritDoc} */
     @Override public void writeString(String val) {
-        // TODO
+        writeByteArray(val != null ? val.getBytes() : null);
     }
 
     /** {@inheritDoc} */
     @Override public void writeBitSet(BitSet val) {
-        // TODO
+        writeLongArray(val != null ? val.toLongArray() : null);
     }
 
     /** {@inheritDoc} */
     @Override public void writeUuid(UUID val) {
-        // TODO
+        if (remaining() < 1 + 10 + 10)
+            pushBuffer();
+
+        if (val == null)
+            writeBoolean(true);
+        else {
+            writeBoolean(false);
+            writeLong(val.getMostSignificantBits());
+            writeLong(val.getLeastSignificantBits());
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void writeIgniteUuid(IgniteUuid val) {
-        // TODO
+        if (remaining() < 1 + 10 + 10 + 10)
+            pushBuffer();
+
+        if (val == null)
+            writeBoolean(true);
+        else {
+            writeBoolean(false);
+            writeLong(val.globalId().getMostSignificantBits());
+            writeLong(val.globalId().getLeastSignificantBits());
+            writeLong(val.localId());
+        }
     }
 
     /** {@inheritDoc} */
