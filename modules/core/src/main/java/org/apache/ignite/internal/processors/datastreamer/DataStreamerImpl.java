@@ -690,11 +690,18 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         boolean initPda = ctx.deploy().enabled() && jobPda == null;
 
-        GridCacheContext cctx = ctx.cache().internalCache(cacheName).context();
+        boolean client = ctx.config().isClientMode();
 
-        AffinityTopologyVersion topVer = cctx.isLocal() ?
-            AffinityTopologyVersion.NONE :
-            cctx.topology().topologyVersion();
+        assert !client || allowOverwrite();
+
+        GridCacheContext cctx = client ? null : ctx.cache().internalCache(cacheName).context();
+
+        AffinityTopologyVersion topVer =
+            client ?
+                ctx.cache().context().exchange().readyAffinityVersion() :
+                cctx.isLocal() ?
+                    AffinityTopologyVersion.NONE :
+                    cctx.topology().topologyVersion();
 
         for (DataStreamerEntry entry : entries) {
             List<ClusterNode> nodes;
