@@ -18,7 +18,6 @@
 package org.apache.ignite.plugin.extensions.communication.opto;
 
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 
 import java.util.BitSet;
@@ -193,7 +192,7 @@ public interface OptimizedMessageWriter {
      *
      * @param val Message.
      */
-    public void writeMessage(Message val);
+    public void writeMessage(OptimizedMessage val);
 
     /**
      * Writes array of objects.

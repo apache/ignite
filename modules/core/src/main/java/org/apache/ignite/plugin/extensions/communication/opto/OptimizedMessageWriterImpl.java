@@ -19,7 +19,6 @@ package org.apache.ignite.plugin.extensions.communication.opto;
 
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import sun.nio.ch.DirectBuffer;
 
@@ -332,8 +331,11 @@ public class OptimizedMessageWriterImpl implements OptimizedMessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeMessage(Message val) {
-        // TODO
+    @Override public void writeMessage(OptimizedMessage msg) {
+        if (msg != null)
+            msg.writeTo(this);
+        else
+            writeByte(Byte.MIN_VALUE);
     }
 
     /** {@inheritDoc} */
@@ -482,7 +484,7 @@ public class OptimizedMessageWriterImpl implements OptimizedMessageWriter {
                 break;
 
             case MSG:
-                writeMessage((Message)val);
+                writeMessage((OptimizedMessage) val);
 
                 break;
 
