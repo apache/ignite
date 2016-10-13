@@ -17,6 +17,35 @@
 
 package org.apache.ignite.internal.util.nio;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageStateImpl;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriterImpl;
+import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.Nullable;
+import sun.nio.ch.DirectBuffer;
+
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.InetAddress;
@@ -44,35 +73,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.configuration.ConnectorConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.LT;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.thread.IgniteThread;
-import org.jetbrains.annotations.Nullable;
-import sun.nio.ch.DirectBuffer;
 
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.ACK_CLOSURE;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_WRITER;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.NIO_OPERATION;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.OPTO_STATE;
 
 /**
  * TCP NIO server. Due to asynchronous nature of connections processing
@@ -1144,11 +1149,11 @@ public class GridNioServer<T> {
         @SuppressWarnings("ForLoopReplaceableByForEach")
         private void processWrite0(SelectionKey key) throws IOException {
             WritableByteChannel sockCh = (WritableByteChannel)key.channel();
-
             GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
             ByteBuffer buf = ses.writeBuffer();
-            NioOperationFuture<?> req = ses.removeMeta(NIO_OPERATION.ordinal());
 
+
+            // Initialize metadata.
             MessageWriter writer = ses.meta(MSG_WRITER.ordinal());
 
             if (writer == null) {
@@ -1160,60 +1165,137 @@ public class GridNioServer<T> {
                 }
             }
 
-            if (req == null) {
-                req = (NioOperationFuture<?>)ses.pollFuture();
+            OptimizedMessageStateImpl optoState = ses.meta(OPTO_STATE.ordinal());
 
-                if (req == null && buf.position() == 0) {
+            if (optoState == null) {
+                ses.addMeta(OPTO_STATE.ordinal(), optoState =
+                    new OptimizedMessageStateImpl(sockCh, buf, ses, metricsLsnr, log));
+            }
+
+            optoState.resetChannelWrite();
+
+            // Process old data if any.
+            boolean finished;
+
+            NioOperationFuture<?> oldReq = ses.removeMeta(NIO_OPERATION.ordinal());
+
+            if (oldReq != null) {
+                // Process previous request if any.
+                Message msg = oldReq.directMessage();
+
+                assert msg != null;
+
+                if (writer != null)
+                    writer.setCurrentWriteClass(msg.getClass());
+
+                finished = msg.writeTo(buf, writer);
+
+                if (finished && writer != null)
+                    writer.reset();
+
+                if (!finished) {
+                    buf.flip();
+
+                    assert buf.hasRemaining();
+
+                    int cnt = sockCh.write(buf);
+
+                    if (log.isTraceEnabled())
+                        log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
+
+                    if (metricsLsnr != null)
+                        metricsLsnr.onBytesSent(cnt);
+
+                    ses.bytesSent(cnt);
+
+                    buf.compact();
+
+                    ses.addMeta(NIO_OPERATION.ordinal(), oldReq);
+                }
+                else
+                    oldReq.onDone();
+            }
+            else {
+                // Process optimized data if any.
+                optoState.transferData();
+
+                finished = !optoState.channelWritten();
+            }
+
+            // Still not finished after reading previous data -> return.
+            if (!finished)
+                return;
+
+            // Process messages from the queue.
+            NioOperationFuture<?> req = (NioOperationFuture<?>)ses.pollFuture();
+
+            if (req == null) {
+                if (buf.position() == 0) {
                     key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
 
                     return;
                 }
             }
-
-            Message msg;
-            boolean finished = false;
-
-            if (req != null) {
-                msg = req.directMessage();
+            else {
+                Message msg = req.directMessage();
 
                 assert msg != null;
 
-                if (writer != null)
-                    writer.setCurrentWriteClass(msg.getClass());
+                if (msg instanceof GridIoMessage && ((GridIoMessage)msg).isOptimized()) {
+                    OptimizedMessageWriterImpl optoWriter = new OptimizedMessageWriterImpl(optoState);
 
-                finished = msg.writeTo(buf, writer);
+                    optoWriter.writeMessage((GridIoMessage)msg);
 
-                if (finished && writer != null)
-                    writer.reset();
+                    finished = !optoState.channelWritten();
+                }
+                else {
+                    if (writer != null)
+                        writer.setCurrentWriteClass(msg.getClass());
+
+                    finished = msg.writeTo(buf, writer);
+
+                    if (finished && writer != null)
+                        writer.reset();
+                }
+
+                // Fill up as many messages as possible to write buffer.
+                while (finished) {
+                    req.onDone();
+
+                    req = (NioOperationFuture<?>)ses.pollFuture();
+
+                    if (req == null)
+                        break;
+
+                    msg = req.directMessage();
+
+                    assert msg != null;
+
+                    if (msg instanceof GridIoMessage && ((GridIoMessage)msg).isOptimized()) {
+                        OptimizedMessageWriterImpl optoWriter = new OptimizedMessageWriterImpl(optoState);
+
+                        optoWriter.writeMessage((GridIoMessage)msg);
+
+                        finished = !optoState.channelWritten();
+                    }
+                    else {
+                        if (writer != null)
+                            writer.setCurrentWriteClass(msg.getClass());
+
+                        finished = msg.writeTo(buf, writer);
+
+                        if (finished && writer != null)
+                            writer.reset();
+                    }
+                }
             }
 
-            // Fill up as many messages as possible to write buffer.
-            while (finished) {
-                req.onDone();
+            // Write to channel if it hasn't been done yet.
+            if (!optoState.channelWritten()) {
+                buf.flip();
 
-                req = (NioOperationFuture<?>)ses.pollFuture();
+                assert buf.hasRemaining();
 
-                if (req == null)
-                    break;
-
-                msg = req.directMessage();
-
-                assert msg != null;
-
-                if (writer != null)
-                    writer.setCurrentWriteClass(msg.getClass());
-
-                finished = msg.writeTo(buf, writer);
-
-                if (finished && writer != null)
-                    writer.reset();
-            }
-
-            buf.flip();
-
-            assert buf.hasRemaining();
-
-            if (!skipWrite) {
                 int cnt = sockCh.write(buf);
 
                 if (log.isTraceEnabled())
@@ -1223,24 +1305,16 @@ public class GridNioServer<T> {
                     metricsLsnr.onBytesSent(cnt);
 
                 ses.bytesSent(cnt);
-            }
-            else {
-                // For test purposes only (skipWrite is set to true in tests only).
-                try {
-                    U.sleep(50);
-                }
-                catch (IgniteInterruptedCheckedException e) {
-                    throw new IOException("Thread has been interrupted.", e);
-                }
-            }
 
-            if (buf.hasRemaining() || !finished) {
-                buf.compact();
+                // Optimize buffer if it was hasn't been done yet.
+                if (buf.hasRemaining() || !finished) {
+                    buf.compact();
 
-                ses.addMeta(NIO_OPERATION.ordinal(), req);
+                    ses.addMeta(NIO_OPERATION.ordinal(), req);
+                }
+                else
+                    buf.clear();
             }
-            else
-                buf.clear();
         }
     }
 

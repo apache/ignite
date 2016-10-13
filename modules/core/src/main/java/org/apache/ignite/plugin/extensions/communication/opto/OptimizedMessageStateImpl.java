@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.nio.GridSelectorNioSessionImpl;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.WritableByteChannel;
 import java.util.LinkedList;
 
 /**
@@ -32,7 +32,7 @@ import java.util.LinkedList;
  */
 public class OptimizedMessageStateImpl implements OptimizedMessageState {
     /** Socket channel. */
-    private final SocketChannel sockCh;
+    private final WritableByteChannel sockCh;
 
     /** First buffer. */
     private final ByteBuffer sockChBuf;
@@ -61,7 +61,7 @@ public class OptimizedMessageStateImpl implements OptimizedMessageState {
      * @param metricsLsnr Metrics listener.
      * @param log Logger.
      */
-    public OptimizedMessageStateImpl(SocketChannel sockCh, ByteBuffer sockChBuf, GridSelectorNioSessionImpl ses,
+    public OptimizedMessageStateImpl(WritableByteChannel sockCh, ByteBuffer sockChBuf, GridSelectorNioSessionImpl ses,
         GridNioMetricsListener metricsLsnr, IgniteLogger log) {
         this.sockCh = sockCh;
         this.sockChBuf = sockChBuf;
@@ -84,30 +84,7 @@ public class OptimizedMessageStateImpl implements OptimizedMessageState {
                 // We already written something to the socket before. Hence, the only option is to use new buffer.
                 return newByteBuffer();
             else {
-                // Socket write attempt. Try to re-use the buffer.
-                int cnt;
-
-                try {
-                    cnt = sockCh.write(sockChBuf);
-                }
-                catch (IOException e) {
-                    throw new IgniteException("Failed to write to socket channel.", e);
-                }
-
-                if (log.isTraceEnabled())
-                    log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
-
-                if (metricsLsnr != null)
-                    metricsLsnr.onBytesSent(cnt);
-
-                ses.bytesSent(cnt);
-
-                if (sockChBuf.hasRemaining())
-                    sockChBuf.compact();
-                else
-                    sockChBuf.clear();
-
-                chWritten = true;
+                writeToChannel();
 
                 return sockChBuf;
             }
@@ -117,6 +94,80 @@ public class OptimizedMessageStateImpl implements OptimizedMessageState {
 
             return newByteBuffer();
         }
+    }
+
+    /**
+     * Transfer data from byte buffers to socket buffer (if any).
+     */
+    public void transferData() {
+        if (bufs != null) {
+            ByteBuffer buf = bufs.get(0);
+
+            int sockRemaining = sockChBuf.remaining();
+            int bufRemaining = buf.remaining();
+
+            byte[] bufBytes = buf.array();
+
+            if (bufRemaining <= sockRemaining) {
+                // Can write buffer fully.
+                sockChBuf.put(bufBytes, buf.position(), bufRemaining);
+
+                bufs.remove(0);
+
+                if (sockChBuf.remaining() == 0)
+                    writeToChannel();
+            }
+            else {
+                // Partial write.
+                sockChBuf.put(bufBytes, buf.position(), sockRemaining);
+
+                writeToChannel();
+            }
+        }
+    }
+
+    /**
+     * Write socket buffer to the channel.
+     */
+    private void writeToChannel() {
+        // Socket write attempt. Try to re-use the buffer.
+        int cnt;
+
+        try {
+            cnt = sockCh.write(sockChBuf);
+        }
+        catch (IOException e) {
+            throw new IgniteException("Failed to write to socket channel.", e);
+        }
+
+        if (log.isTraceEnabled())
+            log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
+
+        if (metricsLsnr != null)
+            metricsLsnr.onBytesSent(cnt);
+
+        ses.bytesSent(cnt);
+
+        if (sockChBuf.hasRemaining())
+            sockChBuf.compact();
+        else
+            sockChBuf.clear();
+
+        chWritten = true;
+    }
+
+    /**
+     * @return Channel written flag.
+     */
+    public boolean channelWritten() {
+        return chWritten;
+    }
+
+    /**
+     * Reset channel written flag.
+     */
+    public void resetChannelWrite() {
+        chWritten = false;
     }
 
     /**

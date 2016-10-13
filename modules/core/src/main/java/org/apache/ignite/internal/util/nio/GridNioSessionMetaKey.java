@@ -44,6 +44,9 @@ public enum GridNioSessionMetaKey {
     /** Message writer. */
     MSG_WRITER,
 
+    /** Optimized state. */
+    OPTO_STATE,
+
     /** SSL engine. */
     SSL_ENGINE,
 
