@@ -356,7 +356,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         clientNioSrv.start();
 
         nioClientProcessingPool = new IgniteThreadPoolExecutor(
-            "disco-client-nio-msg-processor", gridName, 0, 2, 60_000L, new LinkedBlockingQueue<>());
+            "disco-client-nio-msg-processor", gridName, 0, 2, 60_000L, new LinkedBlockingQueue<Runnable>());
 
         spi.initLocalNode(tcpSrvr.port, true);
 
