@@ -97,9 +97,6 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
         ccfg.setEagerTtl(true);
         ccfg.setName(name);
 
-        if (memoryMode == CacheMemoryMode.OFFHEAP_TIERED)
-            ccfg.setOffHeapMaxMemory(0);
-
         return ccfg;
     }
 

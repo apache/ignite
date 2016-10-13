@@ -66,9 +66,6 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
         ccfg.setMemoryMode(cacheMemoryMode);
         ccfg.setEagerTtl(true);
 
-        if (cacheMemoryMode == CacheMemoryMode.OFFHEAP_TIERED)
-            ccfg.setOffHeapMaxMemory(0L);
-
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
