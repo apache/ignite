@@ -165,14 +165,14 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             if (obsoleteVer == null)
                 obsoleteVer = cctx.versions().next();
 
-            boolean touch = cctx.isSwapOrOffheapEnabled();
-
-            // pendingEntry is deserialized here already
-            GridCacheEntryEx entry = unwrapEntry(pendingEntry, touch);
+            // Offheap pendingEntry is deserialized already
+            GridCacheEntryEx entry = unwrapEntry(pendingEntry);
 
             if (entry != null) {
                 if (log.isTraceEnabled())
                     log.trace("Trying to remove expired entry from cache: " + entry);
+
+                boolean touch = entry.context().isSwapOrOffheapEnabled();
 
                 while (true) {
                     try {
@@ -220,7 +220,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     /**
      * @return GridCacheEntry
      */
-    private GridCacheEntryEx unwrapEntry(PendingEntry e, boolean touch) {
+    private GridCacheEntryEx unwrapEntry(PendingEntry e) {
         GridCacheAdapter cache = cctx.cache();
 
         //Here we need to assign appropriate context to entry
@@ -237,8 +237,9 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             throw new IgniteException(ex);
         }
 
-        return touch ? cache.entryEx(key) : cache.peekEx(key);
+        return cache.ctx.isSwapOrOffheapEnabled() ? cache.entryEx(key) : cache.peekEx(key);
     }
+
 
     /**
      * Pending entry.
