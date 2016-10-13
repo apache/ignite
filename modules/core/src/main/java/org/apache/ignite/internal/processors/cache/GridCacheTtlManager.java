@@ -96,6 +96,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     public void addTrackedEntry(GridCacheMapEntry entry) {
         assert Thread.holdsLock(entry);
 
+        assert pendingEntries != null;
+
         PendingEntry e = new PendingEntry(entry);
 
         pendingEntries.add(e);
@@ -106,6 +108,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
      */
     public void removeTrackedEntry(GridCacheMapEntry entry) {
         assert Thread.holdsLock(entry);
+
+        assert pendingEntries != null;
 
         PendingEntry e = new PendingEntry(entry);
 
@@ -698,7 +702,9 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
          */
         OffHeapPendingEntriesSet(GridUnsafeMemory mem, GridUnsafeGuard guard) {
             this.pointerFactory = new PendingEntrySmartPointerFactory(mem);
+
             this.guard = guard;
+
             m = new GridOffHeapSnapTreeMap<>(this.pointerFactory, new ValueSmartPointerFactory(), mem, this.guard);
         }
 
@@ -712,7 +718,10 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             guard.begin();
 
             try {
-                m.clear();
+                /* GridOffHeapSnapTreeMap does not support clear operation */
+
+                for (PendingEntrySmartPointer ptr : m.keySet())
+                    m.remove(ptr);
             }
             finally {
                 guard.end();
