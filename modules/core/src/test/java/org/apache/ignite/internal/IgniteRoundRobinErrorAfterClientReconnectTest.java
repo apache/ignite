@@ -28,7 +28,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Task to reproduce IGNITE-4060.
+ * Test to reproduce IGNITE-4060.
  */
 public class IgniteRoundRobinErrorAfterClientReconnectTest extends GridCommonAbstractTest {
     /** Grid client node instance. */
