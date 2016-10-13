@@ -36,9 +36,8 @@ public interface OptimizedMessageWriter {
      * Writes message header.
      *
      * @param type Message type.
-     * @param fieldCnt Fields count.ß
      */
-    public void writeHeader(byte type, byte fieldCnt);
+    public void writeHeader(byte type);
 
     /**
      * Writes {@code byte} value.

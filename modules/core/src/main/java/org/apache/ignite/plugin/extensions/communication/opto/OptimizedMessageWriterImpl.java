@@ -17,15 +17,19 @@
 
 package org.apache.ignite.plugin.extensions.communication.opto;
 
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import sun.nio.ch.DirectBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+
+import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 
 /**
  * Optimized message writer implementation.
@@ -37,6 +41,12 @@ public class OptimizedMessageWriterImpl implements OptimizedMessageWriter {
     /** Current buffer. */
     private ByteBuffer buf;
 
+    /** */
+    private byte[] heapArr;
+
+    /** */
+    private long baseOff;
+
     /**
      * Constructor.
      *
@@ -45,22 +55,41 @@ public class OptimizedMessageWriterImpl implements OptimizedMessageWriter {
     public OptimizedMessageWriterImpl(OptimizedMessageState state) {
         this.state = state;
 
-        buf = state.buffer();
+        nextBuffer();
     }
 
     /** {@inheritDoc} */
-    @Override public void writeHeader(byte type, byte fieldCnt) {
-        // TODO
+    @Override public void writeHeader(byte type) {
+        writeByte(type);
     }
 
     /** {@inheritDoc} */
     @Override public void writeByte(byte val) {
-        // TODO
+        buf.put(val);
+
+        if (buf.remaining() == 0)
+            pushBuffer();
     }
 
     /** {@inheritDoc} */
     @Override public void writeShort(short val) {
-        // TODO
+        int remaining = remaining();
+
+        if (remaining >= 2) {
+            int pos = buf.position();
+
+            long off = baseOff + pos;
+
+            if (BIG_ENDIAN)
+                GridUnsafe.putShortLE(heapArr, off, val);
+            else
+                GridUnsafe.putShort(heapArr, off, val);
+
+            buf.position(pos + 2);
+        }
+
+        if (remaining == 2)
+            pushBuffer();
     }
 
     /** {@inheritDoc} */
@@ -177,5 +206,36 @@ public class OptimizedMessageWriterImpl implements OptimizedMessageWriter {
     @Override public <K, V> void writeMap(Map<K, V> map, MessageCollectionItemType keyType,
         MessageCollectionItemType valType) {
         // TODO
+    }
+
+    /**
+     * Push buffer.
+     */
+    private void pushBuffer() {
+        assert buf.remaining() == 0;
+
+        state.pushBuffer();
+
+        nextBuffer();
+    }
+
+    /**
+     * Set next buffer.
+     */
+    private void nextBuffer() {
+        if (buf == null)
+            buf = state.buffer();
+        else
+            buf = state.pushBuffer();
+
+        heapArr = buf.isDirect() ? null : buf.array();
+        baseOff = buf.isDirect() ? ((DirectBuffer)buf).address() : GridUnsafe.BYTE_ARR_OFF;
+    }
+
+    /**
+     * @return Number of remaining bytes.
+     */
+    private int remaining() {
+        return buf.remaining();
     }
 }
