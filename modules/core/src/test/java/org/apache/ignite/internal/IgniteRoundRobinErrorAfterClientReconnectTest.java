@@ -41,8 +41,10 @@ public class IgniteRoundRobinErrorAfterClientReconnectTest extends GridCommonAbs
 
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
-        cli = startGrid(1);
+
         startServer();
+
+        cli = startGrid(1);
     }
 
     /** {@inheritDoc} */
