@@ -39,6 +39,12 @@ public class IgniteRoundRobinErrorAfterClientReconnectTest extends GridCommonAbs
         super(false);
     }
 
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+        cli = startGrid(1);
+        startServer();
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
@@ -71,16 +77,8 @@ public class IgniteRoundRobinErrorAfterClientReconnectTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
-    private void startClient() throws Exception {
-        cli = startGrid(1);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testClientReconnect() throws Exception {
         startServer();
-        startClient();
 
         final GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
 
