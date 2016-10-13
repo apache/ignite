@@ -5854,6 +5854,20 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         void processMessage(GridNioSession ses, T msg0) {
             final UUID nodeId = getConfiguredNodeId();
+            final UUID clientNodeId = clientNodeId(ses);
+
+            final ClientNioMessageWorker clientMsgWrk = (ClientNioMessageWorker)clientMsgWorkers.get(clientNodeId);
+
+            if (clientMsgWrk == null || clientMsgWrk.ses != ses) {
+                if (log.isDebugEnabled())
+                    log.debug("NIO Worker has been closed, drop message. [clientNodeId="
+                        + clientNodeId + ", message=" + msg0 + ", clientMsgWrk=" + clientMsgWrk + "]");
+
+                if (ses.closeTime() == 0)
+                    ses.close();
+
+                return;
+            }
 
             final TcpDiscoveryAbstractMessage msg = (TcpDiscoveryAbstractMessage)msg0;
 
@@ -5866,21 +5880,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (debugMode && recordable(msg))
                 debugLog(msg, "Message has been received: " + msg);
-
-            final UUID clientNodeId = clientNodeId(ses);
-
-            final ClientNioMessageWorker clientMsgWrk = (ClientNioMessageWorker)clientMsgWorkers.get(clientNodeId);
-
-            if (clientMsgWrk == null || clientMsgWrk.ses != ses) {
-                if (log.isDebugEnabled())
-                    log.debug("NIO Worker has been closed, drop message. [clientNodeId="
-                        + clientNodeId + ", message=" + msg + ", clientMsgWrk=" + clientMsgWrk + "]");
-
-                if (ses.closeTime() == 0)
-                    ses.close();
-
-                return;
-            }
 
             if (msg instanceof TcpDiscoveryConnectionCheckMessage) {
                 clientMsgWrk.addReceipt(RES_OK);
@@ -6110,6 +6109,15 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override public void onSessionClosed(final GridNioSession ses) throws IgniteCheckedException {
+            final UUID clientId = ses.meta(NODE_ID_META);
+
+            if (clientId != null) {
+                final ClientNioMessageWorker proc = (ClientNioMessageWorker)clientMsgWorkers.get(clientId);
+
+                if (proc != null && proc.ses == ses && clientMsgWorkers.remove(clientId, proc))
+                    proc.nonblockingStop();
+            }
+
             proceedSessionClosed(ses);
         }
 
