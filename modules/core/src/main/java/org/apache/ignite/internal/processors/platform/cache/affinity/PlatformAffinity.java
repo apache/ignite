@@ -168,7 +168,8 @@ public class PlatformAffinity extends PlatformAbstractTarget {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "ConstantConditions"})
-    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
+    @Override protected Object processInObjectStreamOutObjectStream(int type, Object arg, BinaryRawReaderEx reader,
+        BinaryRawWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {
             case OP_PRIMARY_PARTITIONS: {
@@ -287,8 +288,10 @@ public class PlatformAffinity extends PlatformAbstractTarget {
             }
 
             default:
-                super.processInStreamOutStream(type, reader, writer);
+                super.processInObjectStreamOutObjectStream(type, arg, reader, writer);
         }
+
+        return null;
     }
 
     /** {@inheritDoc} */
