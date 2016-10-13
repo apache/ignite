@@ -30,6 +30,13 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
+import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
+import static org.apache.ignite.internal.util.GridUnsafe.CHAR_ARR_OFF;
+import static org.apache.ignite.internal.util.GridUnsafe.DOUBLE_ARR_OFF;
+import static org.apache.ignite.internal.util.GridUnsafe.FLOAT_ARR_OFF;
+import static org.apache.ignite.internal.util.GridUnsafe.INT_ARR_OFF;
+import static org.apache.ignite.internal.util.GridUnsafe.LONG_ARR_OFF;
+import static org.apache.ignite.internal.util.GridUnsafe.SHORT_ARR_OFF;
 
 /**
  * Optimized message writer implementation.
@@ -196,47 +203,93 @@ public class OptimizedMessageWriterImpl implements OptimizedMessageWriter {
 
     /** {@inheritDoc} */
     @Override public void writeByteArray(byte[] val) {
-        writeByteArray(val, 0, val.length);
+        if (val != null)
+            writeByteArray(val, 0, val.length);
+        else
+            writeInt(-1);
     }
 
     /** {@inheritDoc} */
     @Override public void writeByteArray(byte[] val, long off, int len) {
-        // TODO
+        if (val != null)
+            writeArray(val, BYTE_ARR_OFF + off, len, len);
+        else
+            writeInt(-1);
     }
 
     /** {@inheritDoc} */
     @Override public void writeShortArray(short[] val) {
-        // TODO
+        if (val != null)
+            if (BIG_ENDIAN)
+                throw new UnsupportedOperationException(); // TODO
+            else
+                writeArray(val, SHORT_ARR_OFF, val.length, val.length << 1);
+        else
+            writeInt(-1);
     }
 
     /** {@inheritDoc} */
     @Override public void writeIntArray(int[] val) {
-        // TODO
+        if (val != null)
+            if (BIG_ENDIAN)
+                throw new UnsupportedOperationException(); // TODO
+            else
+                writeArray(val, INT_ARR_OFF, val.length, val.length << 2);
+        else
+            writeInt(-1);
     }
 
     /** {@inheritDoc} */
     @Override public void writeLongArray(long[] val) {
-        // TODO
+        if (val != null)
+            if (BIG_ENDIAN)
+                throw new UnsupportedOperationException(); // TODO
+            else
+                writeArray(val, LONG_ARR_OFF, val.length, val.length << 3);
+        else
+            writeInt(-1);
     }
 
     /** {@inheritDoc} */
     @Override public void writeFloatArray(float[] val) {
-        // TODO
+        if (val != null)
+            if (BIG_ENDIAN)
+                throw new UnsupportedOperationException(); // TODO
+            else
+                writeArray(val, FLOAT_ARR_OFF, val.length, val.length << 2);
+        else
+            writeInt(-1);
     }
 
     /** {@inheritDoc} */
     @Override public void writeDoubleArray(double[] val) {
-        // TODO
+        if (val != null)
+            if (BIG_ENDIAN)
+                throw new UnsupportedOperationException(); // TODO
+            else
+                writeArray(val, DOUBLE_ARR_OFF, val.length, val.length << 3);
+        else
+            writeInt(-1);
     }
 
     /** {@inheritDoc} */
     @Override public void writeCharArray(char[] val) {
-        // TODO
+        if (val != null) {
+            if (BIG_ENDIAN)
+                throw new UnsupportedOperationException(); // TODO
+            else
+                writeArray(val, CHAR_ARR_OFF, val.length, val.length << 1);
+        }
+        else
+            writeInt(-1);
     }
 
     /** {@inheritDoc} */
     @Override public void writeBooleanArray(boolean[] val) {
-        // TODO
+        if (val != null)
+            writeArray(val, GridUnsafe.BOOLEAN_ARR_OFF, val.length, val.length);
+        else
+            writeInt(-1);
     }
 
     /** {@inheritDoc} */
@@ -328,5 +381,72 @@ public class OptimizedMessageWriterImpl implements OptimizedMessageWriter {
      */
     private int remaining() {
         return buf.remaining();
+    }
+
+    /**
+     * Write array.
+     *
+     * @param arr Array.
+     * @param off Offset.
+     * @param len Length.
+     * @param lenBytes Length in bytes.
+     */
+    private void writeArray(Object arr, long off, int len, int lenBytes) {
+        writeInt(len);
+
+        writeArray0(arr, off, lenBytes);
+    }
+
+    /**
+     * Write array.
+     *
+     * @param arr Array.
+     * @param off Offset.
+     * @param lenBytes Length in bytes.
+     */
+    private void writeArray0(Object arr, long off, int lenBytes) {
+        if (lenBytes == 0)
+            return;
+
+        int remaining = remaining();
+
+        if (remaining == 0) {
+            nextBuffer();
+
+            remaining = remaining();
+        }
+
+        if (lenBytes <= remaining) {
+            // Full write in one hop.
+            int pos = buf.position();
+
+            GridUnsafe.copyMemory(arr, off, heapArr, baseOff + pos, lenBytes);
+
+            buf.position(pos + lenBytes);
+        }
+        else {
+            // Need several writes.
+            int written = 0;
+
+            while (written < lenBytes) {
+                int cnt = Math.min(lenBytes - written, remaining); // How many bytes to write.
+
+                int pos = buf.position();
+
+                GridUnsafe.copyMemory(arr, off + written, heapArr, baseOff + pos, cnt);
+
+                buf.position(pos + cnt);
+
+                written += cnt;
+
+                remaining = remaining();
+
+                if (remaining == 0) {
+                    nextBuffer();
+
+                    remaining = remaining();
+                }
+            }
+        }
     }
 }
