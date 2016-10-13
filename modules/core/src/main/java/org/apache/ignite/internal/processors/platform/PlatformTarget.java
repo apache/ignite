@@ -91,15 +91,6 @@ public interface PlatformTarget {
         throws Exception;
 
     /**
-     * Operation returning long result.
-     *
-     * @param type Operation type.
-     * @return Result.
-     * @throws Exception In case of failure.
-     */
-    public long outLong(int type) throws Exception;
-
-    /**
      * Operation returning result to memory stream.
      *
      * @param type Operation type.

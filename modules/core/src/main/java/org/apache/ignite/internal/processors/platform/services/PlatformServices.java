@@ -298,7 +298,7 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processOutLong(int type) throws IgniteCheckedException {
+    @Override protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         switch (type) {
             case OP_CANCEL_ALL:
                 services.cancelAll();
@@ -306,7 +306,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                 return TRUE;
         }
 
-        return super.processOutLong(type);
+        return super.processInLongOutLong(type, val);
     }
 
     /** {@inheritDoc} */
