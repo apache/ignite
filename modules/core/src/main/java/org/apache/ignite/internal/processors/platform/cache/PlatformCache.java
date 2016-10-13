@@ -238,6 +238,9 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_SIZE_LOC = 56;
 
+    /** */
+    public static final int OP_PUT_ASYNC = 57;
+
     /** Underlying JCache. */
     private final IgniteCacheProxy cache;
 
@@ -297,6 +300,14 @@ public class PlatformCache extends PlatformAbstractTarget {
                 cache.put(reader.readObjectDetached(), reader.readObjectDetached());
 
                 return TRUE;
+
+            case OP_PUT_ASYNC: {
+                cache.put(reader.readObjectDetached(), reader.readObjectDetached());
+
+                long futId = reader.readLong();
+
+                PlatformFutureUtils.listen(platformCtx, currentFuture(), futId, PlatformFutureUtils.TYP_OBJ, null, this);
+            }
 
             case OP_REMOVE_BOOL:
                 return cache.remove(reader.readObjectDetached(), reader.readObjectDetached()) ? TRUE : FALSE;
