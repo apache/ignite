@@ -244,6 +244,9 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** Underlying JCache. */
     private final IgniteCacheProxy cache;
 
+    /** Underlying JCache in async mode. */
+    private final IgniteCache asyncCache;
+
     /** Whether this cache is created with "keepBinary" flag on the other side. */
     private final boolean keepBinary;
 
@@ -273,6 +276,9 @@ public class PlatformCache extends PlatformAbstractTarget {
         super(platformCtx);
 
         this.cache = (IgniteCacheProxy)cache;
+
+        asyncCache = cache.isAsync() ? cache : cache.withAsync();
+
         this.keepBinary = keepBinary;
     }
 
@@ -302,11 +308,13 @@ public class PlatformCache extends PlatformAbstractTarget {
                 return TRUE;
 
             case OP_PUT_ASYNC: {
-                cache.put(reader.readObjectDetached(), reader.readObjectDetached());
+                asyncCache.put(reader.readObjectDetached(), reader.readObjectDetached());
 
                 long futId = reader.readLong();
 
                 PlatformFutureUtils.listen(platformCtx, currentFuture(), futId, PlatformFutureUtils.TYP_OBJ, null, this);
+
+                return TRUE;
             }
 
             case OP_REMOVE_BOOL:
@@ -866,7 +874,7 @@ public class PlatformCache extends PlatformAbstractTarget {
 
     /** <inheritDoc /> */
     @Override protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
-        return ((IgniteFutureImpl)cache.future()).internalFuture();
+        return ((IgniteFutureImpl)asyncCache.future()).internalFuture();
     }
 
     /** <inheritDoc /> */

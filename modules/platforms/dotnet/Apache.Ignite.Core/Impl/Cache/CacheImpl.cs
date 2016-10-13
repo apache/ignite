@@ -485,14 +485,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
 
-            // TODO: Provide convenient overloads.
+            // TODO: Provide convenient overloads (DoOutOpAsync?).
             Action<long, int> listenAction = (futId, futTyp) =>
             {
                 DoOutOp((int) CacheOp.PutAsync, w =>
                 {
                     w.WriteObject(key);
                     w.WriteObject(val);
-                    w.WriteLong(0);
+                    w.WriteLong(futId);
                 });
             };
 
