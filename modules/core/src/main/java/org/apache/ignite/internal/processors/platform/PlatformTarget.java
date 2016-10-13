@@ -57,6 +57,16 @@ public interface PlatformTarget {
     public Object inStreamOutObject(int type, long memPtr) throws Exception;
 
     /**
+     * Operation accepting one memory stream and returning result to another memory stream.
+     *
+     * @param type Operation type.
+     * @param inMemPtr Input memory pointer.
+     * @param outMemPtr Output memory pointer.
+     * @throws Exception In case of failure.
+     */
+    public void inStreamOutStream(int type, long inMemPtr, long outMemPtr) throws Exception;
+
+    /**
      * Operation accepting an object and a memory stream and returning result to another memory stream and an object.
      *
      * @param type Operation type.

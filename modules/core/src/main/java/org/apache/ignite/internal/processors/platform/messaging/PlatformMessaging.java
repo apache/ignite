@@ -127,8 +127,7 @@ public class PlatformMessaging extends PlatformAbstractTarget {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "ConstantConditions", "unchecked"})
-    @Override protected Object processInObjectStreamOutObjectStream(int type, Object arg, BinaryRawReaderEx reader,
-        BinaryRawWriterEx writer)
+    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {
             case OP_REMOTE_LISTEN:{
@@ -144,11 +143,12 @@ public class PlatformMessaging extends PlatformAbstractTarget {
 
                 writer.writeUuid(listenId);
 
-                return null;
+                break;
             }
-        }
 
-        return super.processInObjectStreamOutObjectStream(type, arg, reader, writer);
+            default:
+                super.processInStreamOutStream(type, reader, writer);
+        }
     }
 
     /** {@inheritDoc} */

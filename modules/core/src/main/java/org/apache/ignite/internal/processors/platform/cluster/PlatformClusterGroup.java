@@ -29,7 +29,6 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -138,73 +137,10 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+    @SuppressWarnings({"ConstantConditions", "deprecation"})
+    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
+        throws IgniteCheckedException {
         switch (type) {
-            case OP_PING_NODE:
-                return pingNode(reader.readUuid()) ? TRUE : FALSE;
-
-            default:
-                return super.processInStreamOutLong(type, reader);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Object processInStreamOutObject(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
-        switch (type) {
-            case OP_FOR_NODE_IDS: {
-                Collection<UUID> ids = PlatformUtils.readCollection(reader);
-
-                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forNodeIds(ids));
-            }
-
-            case OP_FOR_ATTRIBUTE:
-                return new PlatformClusterGroup(platformCtx,
-                    (ClusterGroupEx)prj.forAttribute(reader.readString(), reader.readString()));
-
-            case OP_FOR_CACHE: {
-                String cacheName = reader.readString();
-
-                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forCacheNodes(cacheName));
-            }
-
-            case OP_FOR_CLIENT: {
-                String cacheName = reader.readString();
-
-                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forClientNodes(cacheName));
-            }
-
-            case OP_FOR_DATA: {
-                String cacheName = reader.readString();
-
-                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forDataNodes(cacheName));
-            }
-
-            case OP_FOR_HOST: {
-                UUID nodeId = reader.readUuid();
-
-                ClusterNode node = prj.node(nodeId);
-
-                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx) prj.forHost(node));
-            }
-
-            default:
-                return super.processInStreamOutObject(type, reader);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Object processInObjectStreamOutObjectStream(
-            int type, @Nullable Object arg, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
-            throws IgniteCheckedException {
-        switch (type) {
-            case OP_FOR_OTHERS: {
-                PlatformClusterGroup exclude = (PlatformClusterGroup) arg;
-
-                assert exclude != null;
-
-                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forOthers(exclude.prj));
-            }
-
             case OP_METRICS_FILTERED: {
                 Collection<UUID> ids = PlatformUtils.readCollection(reader);
 
@@ -287,10 +223,80 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
             }
 
             default:
-                return super.processInObjectStreamOutObjectStream(type, arg, reader, writer);
+                super.processInStreamOutStream(type, reader, writer);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+        switch (type) {
+            case OP_PING_NODE:
+                return pingNode(reader.readUuid()) ? TRUE : FALSE;
+
+            default:
+                return super.processInStreamOutLong(type, reader);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Object processInStreamOutObject(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+        switch (type) {
+            case OP_FOR_NODE_IDS: {
+                Collection<UUID> ids = PlatformUtils.readCollection(reader);
+
+                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forNodeIds(ids));
+            }
+
+            case OP_FOR_ATTRIBUTE:
+                return new PlatformClusterGroup(platformCtx,
+                    (ClusterGroupEx)prj.forAttribute(reader.readString(), reader.readString()));
+
+            case OP_FOR_CACHE: {
+                String cacheName = reader.readString();
+
+                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forCacheNodes(cacheName));
+            }
+
+            case OP_FOR_CLIENT: {
+                String cacheName = reader.readString();
+
+                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forClientNodes(cacheName));
+            }
+
+            case OP_FOR_DATA: {
+                String cacheName = reader.readString();
+
+                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forDataNodes(cacheName));
+            }
+
+            case OP_FOR_HOST: {
+                UUID nodeId = reader.readUuid();
+
+                ClusterNode node = prj.node(nodeId);
+
+                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx) prj.forHost(node));
+            }
+
+            default:
+                return super.processInStreamOutObject(type, reader);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Object processInObjectStreamOutObjectStream(
+            int type, @Nullable Object arg, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
+            throws IgniteCheckedException {
+        switch (type) {
+            case OP_FOR_OTHERS: {
+                PlatformClusterGroup exclude = (PlatformClusterGroup) arg;
+
+                assert exclude != null;
+
+                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forOthers(exclude.prj));
+            }
         }
 
-        return null;
+        return super.processInObjectStreamOutObjectStream(type, arg, reader, writer);
     }
 
     /** {@inheritDoc} */
@@ -354,7 +360,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
      * @return Collection of grid nodes which represented by specified topology version,
      * if it is present in history storage, {@code null} otherwise.
      * @throws UnsupportedOperationException If underlying SPI implementation does not support
-     *      topology history. Currently only {@link TcpDiscoverySpi}
+     *      topology history. Currently only {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}
      *      supports topology history.
      */
     private Collection<ClusterNode> topology(long topVer) {

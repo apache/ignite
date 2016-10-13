@@ -220,8 +220,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected Object processInObjectStreamOutObjectStream(int type, Object arg, BinaryRawReaderEx reader,
-        BinaryRawWriterEx writer)
+    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {
             case OP_EXEC:
@@ -235,10 +234,8 @@ public class PlatformCompute extends PlatformAbstractTarget {
                 break;
 
             default:
-                return super.processInObjectStreamOutObjectStream(type, arg, reader, writer);
+                super.processInStreamOutStream(type, reader, writer);
         }
-
-        return null;
     }
 
     /** <inheritDoc /> */

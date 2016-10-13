@@ -228,8 +228,7 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected Object processInObjectStreamOutObjectStream(int type, Object arg, BinaryRawReaderEx reader,
-        BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_START: {
                 TransactionConcurrency txConcurrency = TransactionConcurrency.fromOrdinal(reader.readInt());
@@ -246,11 +245,11 @@ public class PlatformTransactions extends PlatformAbstractTarget {
 
                 writer.writeLong(id);
 
-                return null;
+                return;
             }
         }
 
-        return super.processInObjectStreamOutObjectStream(type, arg, reader, writer);
+        super.processInStreamOutStream(type, reader, writer);
     }
 
     /** {@inheritDoc} */
