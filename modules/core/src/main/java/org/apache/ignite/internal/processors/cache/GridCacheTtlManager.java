@@ -276,7 +276,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
             GridCacheContext ctx = entry.context();
 
-            isNear = ctx.isNear();
+            isNear = entry.isNear();
 
             CacheObject key = entry.key();
 
