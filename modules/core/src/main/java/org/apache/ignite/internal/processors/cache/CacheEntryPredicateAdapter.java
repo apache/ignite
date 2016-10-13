@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.Nullable;
+
+import java.nio.ByteBuffer;
 
 /**
  *
@@ -69,6 +71,11 @@ public abstract class CacheEntryPredicateAdapter implements CacheEntryPredicate 
             return false;
 
         return reader.afterMessageRead(CacheEntryPredicateAdapter.class);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
     }
 
     /** {@inheritDoc} */

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -25,6 +24,9 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
+
+import java.nio.ByteBuffer;
 
 /**
  *
@@ -74,6 +76,13 @@ public class CacheEntryPredicateContainsValue extends CacheEntryPredicateAdapter
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
         val.prepareMarshal(ctx.cacheObjectContext());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeMessage(val);
     }
 
     /** {@inheritDoc} */

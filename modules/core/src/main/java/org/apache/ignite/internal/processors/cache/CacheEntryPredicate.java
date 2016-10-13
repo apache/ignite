@@ -20,11 +20,12 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessage;
 
 /**
  *
  */
-public interface CacheEntryPredicate extends IgnitePredicate<GridCacheEntryEx>, Message {
+public interface CacheEntryPredicate extends IgnitePredicate<GridCacheEntryEx>, Message, OptimizedMessage {
     /**
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
