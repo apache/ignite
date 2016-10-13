@@ -17,14 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.io.Externalizable;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
-import javax.cache.expiry.ExpiryPolicy;
-import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -49,8 +41,19 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessage;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.processor.EntryProcessor;
+import java.io.Externalizable;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
@@ -59,7 +62,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
 /**
  * Lite DHT cache update request sent from near node to primary node.
  */
-public class GridNearAtomicUpdateRequest extends GridCacheMessage implements GridCacheDeployable {
+public class GridNearAtomicUpdateRequest extends GridCacheMessage implements GridCacheDeployable, OptimizedMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -677,6 +680,36 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
         return ctx.atomicMessageLogger();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeBoolean(clientReq);
+        writer.writeMessage(conflictExpireTimes);
+        writer.writeMessage(conflictTtls);
+        writer.writeCollection(conflictVers, MessageCollectionItemType.MSG);
+        writer.writeCollection(entryProcessorsBytes, MessageCollectionItemType.BYTE_ARR);
+        writer.writeByteArray(expiryPlcBytes);
+        writer.writeBoolean(fastMap);
+        writer.writeObjectArray(filter, MessageCollectionItemType.MSG);
+        writer.writeMessage(futVer);
+        writer.writeBoolean(hasPrimary);
+        writer.writeObjectArray(invokeArgsBytes, MessageCollectionItemType.BYTE_ARR);
+        writer.writeBoolean(keepBinary);
+        writer.writeCollection(keys, MessageCollectionItemType.MSG);
+        writer.writeByte(op != null ? (byte)op.ordinal() : -1);
+        writer.writeBoolean(retval);
+        writer.writeBoolean(skipStore);
+        writer.writeUuid(subjId);
+        writer.writeByte(syncMode != null ? (byte)syncMode.ordinal() : -1);
+        writer.writeInt(taskNameHash);
+        writer.writeBoolean(topLocked);
+        writer.writeMessage(topVer);
+        writer.writeMessage(updateVer);
+        writer.writeCollection(vals, MessageCollectionItemType.MSG);
+        writer.writeCollection(partIds, MessageCollectionItemType.INT);
     }
 
     /** {@inheritDoc} */

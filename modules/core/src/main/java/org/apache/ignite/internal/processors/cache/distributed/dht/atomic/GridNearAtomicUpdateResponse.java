@@ -17,13 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.io.Externalizable;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectCollection;
@@ -43,12 +36,22 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessage;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.Externalizable;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * DHT atomic cache near update response.
  */
-public class GridNearAtomicUpdateResponse extends GridCacheMessage implements GridCacheDeployable {
+public class GridNearAtomicUpdateResponse extends GridCacheMessage implements GridCacheDeployable, OptimizedMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -438,6 +441,23 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
         return ctx.atomicMessageLogger();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeByteArray(errBytes);
+        writer.writeCollection(failedKeys, MessageCollectionItemType.MSG);
+        writer.writeMessage(futVer);
+        writer.writeMessage(nearExpireTimes);
+        writer.writeCollection(nearSkipIdxs, MessageCollectionItemType.INT);
+        writer.writeMessage(nearTtls);
+        writer.writeCollection(nearVals, MessageCollectionItemType.MSG);
+        writer.writeCollection(nearValsIdxs, MessageCollectionItemType.INT);
+        writer.writeMessage(nearVer);
+        writer.writeCollection(remapKeys, MessageCollectionItemType.MSG);
+        writer.writeMessage(ret);
     }
 
     /** {@inheritDoc} */

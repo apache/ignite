@@ -17,12 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -40,12 +34,21 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessage;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.Nullable;
+
+import javax.cache.processor.EntryProcessor;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Parent of all cache messages.
  */
-public abstract class GridCacheMessage implements Message {
+public abstract class GridCacheMessage implements Message, OptimizedMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -620,6 +623,14 @@ public abstract class GridCacheMessage implements Message {
      */
     public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
         return ctx.messageLogger();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
+        writer.writeInt(cacheId);
+        writer.writeMessage(depInfo);
+        writer.writeLong(msgId);
     }
 
     /** {@inheritDoc} */

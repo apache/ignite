@@ -17,21 +17,24 @@
 
 package org.apache.ignite.internal.processors.cache.version;
 
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessage;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
+
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import java.util.UUID;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Grid unique version.
  */
-public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, Externalizable {
+public class GridCacheVersion implements Message, OptimizedMessage, Comparable<GridCacheVersion>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -249,6 +252,15 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
             return res;
 
         return Integer.compare(nodeOrder(), other.nodeOrder());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
+        writer.writeLong(globalTime);
+        writer.writeInt(nodeOrderDrId);
+        writer.writeLong(order);
+        writer.writeInt(topVer);
     }
 
     /** {@inheritDoc} */

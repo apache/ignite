@@ -17,6 +17,16 @@
 
 package org.apache.ignite.internal.util;
 
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessage;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.Externalizable;
@@ -26,19 +36,12 @@ import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Minimal list API to work with primitive longs. This list exists
  * to avoid boxing/unboxing when using standard list from Java.
  */
-public class GridLongList implements Message, Externalizable {
+public class GridLongList implements Message, OptimizedMessage, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -515,6 +518,13 @@ public class GridLongList implements Message, Externalizable {
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
+        writer.writeLongArray(arr);
+        writer.writeInt(idx);
     }
 
     /** {@inheritDoc} */

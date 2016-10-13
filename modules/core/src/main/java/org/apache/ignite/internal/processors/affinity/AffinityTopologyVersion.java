@@ -17,20 +17,24 @@
 
 package org.apache.ignite.internal.processors.affinity;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessage;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
+
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
-public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersion>, Externalizable, Message {
+public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersion>, Externalizable, Message,
+    OptimizedMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -129,6 +133,13 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         topVer = in.readLong();
         minorTopVer = in.readInt();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
+        writer.writeInt(minorTopVer);
+        writer.writeLong(topVer);
     }
 
     /** {@inheritDoc} */

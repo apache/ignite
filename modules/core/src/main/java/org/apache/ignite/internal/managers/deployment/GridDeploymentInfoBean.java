@@ -17,13 +17,6 @@
 
 package org.apache.ignite.internal.managers.deployment;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.nio.ByteBuffer;
-import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -34,11 +27,21 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessage;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
+
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.nio.ByteBuffer;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Deployment info bean.
  */
-public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Externalizable {
+public class GridDeploymentInfoBean implements Message, OptimizedMessage, GridDeploymentInfo, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -146,6 +149,17 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
     @Override public boolean equals(Object o) {
         return o == this || o instanceof GridDeploymentInfoBean &&
             clsLdrId.equals(((GridDeploymentInfoBean)o).clsLdrId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
+
+        writer.writeIgniteUuid(clsLdrId);
+        writer.writeByte(depMode != null ? (byte)depMode.ordinal() : -1);
+        writer.writeBoolean(locDepOwner);
+        writer.writeMap(participants, MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID);
+        writer.writeString(userVer);
     }
 
     /** {@inheritDoc} */

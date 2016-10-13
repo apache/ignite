@@ -17,16 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.GridDirectCollection;
@@ -39,12 +29,25 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessage;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.Nullable;
+
+import javax.cache.processor.EntryProcessorResult;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Return value for cases where both, value and success flag need to be returned.
  */
-public class GridCacheReturn implements Externalizable, Message {
+public class GridCacheReturn implements Externalizable, Message, OptimizedMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -355,6 +358,16 @@ public class GridCacheReturn implements Externalizable, Message {
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 88;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
+        writer.writeInt(cacheId);
+        writer.writeMessage(cacheObj);
+        writer.writeBoolean(invokeRes);
+        writer.writeCollection(invokeResCol, MessageCollectionItemType.MSG);
+        writer.writeBoolean(success);
     }
 
     /** {@inheritDoc} */
