@@ -840,7 +840,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                                             return true;
                                         }
-                                    }, false);
+                                    }, true);
                                 }
                             }
                             catch (InterruptedException e2) {
