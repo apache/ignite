@@ -195,7 +195,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                futs.add(kernal.context().cache().dynamicDestroyCache(DYNAMIC_CACHE_NAME, true));
+                futs.add(kernal.context().cache().dynamicDestroyCache(DYNAMIC_CACHE_NAME, true, false));
 
                 return null;
             }
@@ -262,7 +262,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
             @Override public Object call() throws Exception {
                 IgniteEx kernal = grid(ThreadLocalRandom.current().nextInt(nodeCount()));
 
-                futs.add(kernal.context().cache().dynamicDestroyCache(DYNAMIC_CACHE_NAME, true));
+                futs.add(kernal.context().cache().dynamicDestroyCache(DYNAMIC_CACHE_NAME, true, false));
 
                 return null;
             }
@@ -325,7 +325,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         for (int g = 0; g < nodeCount(); g++)
             caches[g] = grid(g).cache(DYNAMIC_CACHE_NAME);
 
-        kernal.context().cache().dynamicDestroyCache(DYNAMIC_CACHE_NAME, true).get();
+        kernal.context().cache().dynamicDestroyCache(DYNAMIC_CACHE_NAME, true, false).get();
 
         for (int g = 0; g < nodeCount(); g++) {
             final IgniteKernal kernal0 = (IgniteKernal) grid(g);
@@ -378,7 +378,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
             }
 
             // Undeploy cache.
-            kernal.context().cache().dynamicDestroyCache(DYNAMIC_CACHE_NAME, true).get();
+            kernal.context().cache().dynamicDestroyCache(DYNAMIC_CACHE_NAME, true, false).get();
 
             startGrid(nodeCount() + 1);
 
@@ -455,7 +455,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
                     }, IllegalArgumentException.class, null);
             }
 
-            kernal.context().cache().dynamicDestroyCache(DYNAMIC_CACHE_NAME, true).get();
+            kernal.context().cache().dynamicDestroyCache(DYNAMIC_CACHE_NAME, true, false).get();
 
             stopGrid(nodeCount() + 1);
             stopGrid(nodeCount());
@@ -522,7 +522,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
             for (int g = 0; g < nodeCount() + 1; g++)
                 assertEquals("1", ignite(g).cache(DYNAMIC_CACHE_NAME).get("1"));
 
-            kernal.context().cache().dynamicDestroyCache(DYNAMIC_CACHE_NAME, true).get();
+            kernal.context().cache().dynamicDestroyCache(DYNAMIC_CACHE_NAME, true, false).get();
         }
         finally {
             stopGrid(nodeCount());
@@ -564,7 +564,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
             for (int g = 0; g < nodeCount() + 1; g++)
                 assertEquals("1", ignite(g).cache(DYNAMIC_CACHE_NAME).get("1"));
 
-            kernal.context().cache().dynamicDestroyCache(DYNAMIC_CACHE_NAME, true).get();
+            kernal.context().cache().dynamicDestroyCache(DYNAMIC_CACHE_NAME, true, false).get();
         }
         finally {
             stopGrid(nodeCount());
@@ -610,7 +610,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
             for (int g = 0; g < nodeCount() + 1; g++)
                 assertEquals("1", ignite(g).cache(DYNAMIC_CACHE_NAME).get("1"));
 
-            kernal.context().cache().dynamicDestroyCache(DYNAMIC_CACHE_NAME, true).get();
+            kernal.context().cache().dynamicDestroyCache(DYNAMIC_CACHE_NAME, true, false).get();
         }
         finally {
             stopGrid(nodeCount());

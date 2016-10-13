@@ -2469,13 +2469,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @return Future that will be completed when cache is destroyed.
      */
-    public IgniteInternalFuture<?> dynamicDestroyCache(String cacheName, boolean checkThreadTx) {
+    public IgniteInternalFuture<?> dynamicDestroyCache(String cacheName, boolean checkThreadTx, boolean restart) {
         if (checkThreadTx)
             checkEmptyTransactions();
 
         DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
 
         t.stop(true);
+
+        t.restart(restart);
 
         return F.first(initiateCacheChanges(F.asList(t), false));
     }

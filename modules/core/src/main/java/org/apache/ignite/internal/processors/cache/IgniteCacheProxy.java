@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import javax.cache.Cache;
@@ -136,6 +135,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     @GridToStringExclude
     private boolean lock;
 
+    /** */
     private final AtomicReference<GridFutureAdapter<Void>> restartFut = new AtomicReference<>(null);
 
     /**
@@ -1827,7 +1827,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         IgniteInternalFuture<?> fut;
 
         try {
-            fut = ctx.kernalContext().cache().dynamicDestroyCache(ctx.name(), true);
+            fut = ctx.kernalContext().cache().dynamicDestroyCache(ctx.name(), true, false);
         }
         finally {
             onLeave(gate);
@@ -2294,10 +2294,16 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         }
     }
 
+    /**
+     * @return Restart future.
+     */
     public boolean isRestarting() {
         return restartFut.get() != null;
     }
 
+    /**
+     * Restarts this cache proxy.
+     */
     public void restart() {
         GridFutureAdapter<Void> restartFut = new GridFutureAdapter<>();
 
@@ -2306,6 +2312,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         this.restartFut.compareAndSet(currentFut, restartFut);
     }
 
+    /**
+     * Mark this proxy as restarted.
+     *
+     * @param ctx New cache context.
+     * @param delegate New delegate.
+     */
     public void onRestarted(GridCacheContext ctx, IgniteInternalCache delegate) {
         GridFutureAdapter<Void> restartFut = this.restartFut.get();
 

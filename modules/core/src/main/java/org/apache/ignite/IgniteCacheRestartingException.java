@@ -21,6 +21,9 @@ package org.apache.ignite;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * Exception thrown from ignite cache API if cache is restarting.
+ */
 public class IgniteCacheRestartingException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
