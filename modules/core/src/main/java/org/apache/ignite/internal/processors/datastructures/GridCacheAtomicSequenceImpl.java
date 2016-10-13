@@ -99,7 +99,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     /** Whether reserveFuture already processed or not. */
     private boolean isReserveFutResultsProcessed = true;
 
-    /** */
+    /** Reservation percentage.*/
     private volatile int reservePercentage;
 
     /** Sequence batch size */

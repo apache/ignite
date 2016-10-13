@@ -41,6 +41,11 @@ import java.io.Closeable;
  * </li>
  * <li>
  * Method {@link #batchSize()} gets current batch size of atomic sequence.
+ * <li>
+ * Method {@link #reservePercentage(int percentage)} set reserve percentage of current atomic sequence.
+ * </li>
+ * <li>
+ * Method {@link #reservePercentage()} gets current reserve percentage of atomic sequence.
  * </li>
  * <li>
  * Method {@link #name()} gets name of atomic sequence.
