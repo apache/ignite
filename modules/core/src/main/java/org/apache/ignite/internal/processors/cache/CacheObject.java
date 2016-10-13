@@ -19,12 +19,13 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public interface CacheObject extends Message {
+public interface CacheObject extends Message, OptimizedMessage {
     /** */
     public static final byte TYPE_REGULAR = 1;
 

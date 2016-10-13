@@ -17,11 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -35,14 +30,22 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessage;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.nio.ByteBuffer;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Binary enum object.
  */
-public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObject {
+public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObject, OptimizedMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -289,6 +292,14 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 3;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
+        writer.writeString(clsName);
+        writer.writeInt(ord);
+        writer.writeInt(typeId);
     }
 
     /** {@inheritDoc} */

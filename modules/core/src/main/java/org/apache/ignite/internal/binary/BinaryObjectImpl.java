@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Externalizable;
@@ -506,6 +507,20 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         in.readFully(arr);
 
         start = in.readInt();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
+
+        if (detachAllowed) {
+            writer.writeByteArray(arr, start, length());
+            writer.writeInt(0);
+        }
+        else {
+            writer.writeByteArray(arr, 0, arr.length);
+            writer.writeInt(start);
+        }
     }
 
     /** {@inheritDoc} */

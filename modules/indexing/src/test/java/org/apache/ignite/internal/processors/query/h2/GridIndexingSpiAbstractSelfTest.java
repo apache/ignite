@@ -17,14 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -40,12 +32,22 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.util.Utils;
 import org.jetbrains.annotations.Nullable;
+
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Tests for all SQL based indexing SPI implementations.
@@ -646,6 +648,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         /** {@inheritDoc} */
         @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeTo(OptimizedMessageWriter writer) {
             throw new UnsupportedOperationException();
         }
 

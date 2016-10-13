@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -30,9 +27,14 @@ import org.apache.ignite.internal.processors.cache.affinity.GridCacheAffinityImp
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+
+import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.concurrent.Callable;
 
 /**
  * Tests usage of affinity in case when cache doesn't exist.
@@ -268,6 +270,11 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeTo(OptimizedMessageWriter writer) {
             throw new UnsupportedOperationException();
         }
 
