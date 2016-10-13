@@ -18,7 +18,7 @@
 package org.apache.ignite.binary;
 
 /**
- * Method to compute hash codes for new binary objects.
+ * Method to compute hash codes for new binary objects and compare them for equality.
  */
 public interface BinaryTypeIdentity {
     /**
