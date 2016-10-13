@@ -88,13 +88,13 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     private long upBound;
 
     /** Reserved bottom bound of local counter (included). */
-    private long reservedBottomBound;
+    private volatile long reservedBottomBound;
 
     /** Reserved upper bound of local counter (not included). */
-    private long reservedUpBound;
+    private volatile long reservedUpBound;
 
     /** A limit after which a new reservation should be done. */
-    private long newReservationLine;
+    private volatile long newReservationLine;
 
     /** Whether reserveFuture already processed or not. */
     private boolean isReserveFutResultsProcessed = true;
@@ -273,13 +273,12 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
                         reservationFut = runAsyncReservation(off);
                     }
                 }
+                // If reserved range is exhausted.
+                reservationFut.get();
             }
             finally {
                 lock.unlock();
             }
-
-            // If reserved range is exhausted.
-            reservationFut.get();
         }
     }
 
@@ -310,23 +309,17 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
 
                             assert seq != null;
 
-                            lock.lock();
+                            assert isReserveFutResultsProcessed;
 
-                            try {
-                                assert isReserveFutResultsProcessed;
+                            long curGlobalVal = seq.get();
 
-                                isReserveFutResultsProcessed = false;
+                            reservedBottomBound = curGlobalVal + off;
 
-                                long curGlobalVal = seq.get();
+                            reservedUpBound = reservedBottomBound + batchSize;
 
-                                reservedBottomBound = curGlobalVal + off;
+                            newReservationLine = reservedBottomBound + (batchSize * reservePercentage / 100);
 
-                                reservedUpBound = reservedBottomBound + batchSize;
-
-                                newReservationLine = reservedBottomBound + (batchSize * reservePercentage / 100);
-                            } finally {
-                                lock.unlock();
-                            }
+                            isReserveFutResultsProcessed = false;
 
                             seq.set(reservedUpBound);
 
