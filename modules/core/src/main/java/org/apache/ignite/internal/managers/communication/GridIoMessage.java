@@ -25,11 +25,13 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessage;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  * Wrapper for all grid messages.
  */
-public class GridIoMessage implements Message {
+public class GridIoMessage implements Message, OptimizedMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -181,6 +183,21 @@ public class GridIoMessage implements Message {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         throw new AssertionError();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        if (!(msg instanceof OptimizedMessage))
+            throw new UnsupportedOperationException();
+
+        writer.writeHeader(directType());
+        writer.writeMessage((OptimizedMessage)msg);
+        writer.writeBoolean(ordered);
+        writer.writeByte(plc);
+        writer.writeBoolean(skipOnTimeout);
+        writer.writeLong(timeout);
+        writer.writeByteArray(topicBytes);
+        writer.writeInt(topicOrd);
     }
 
     /** {@inheritDoc} */

@@ -25,7 +25,6 @@ public interface OptimizedMessage {
      * Writes this message to provided writer.
      *
      * @param writer Writer.
-     * @return Whether message was fully written.
      */
-    public boolean writeTo(OptimizedMessageWriter writer);
+    public void writeTo(OptimizedMessageWriter writer);
 }
