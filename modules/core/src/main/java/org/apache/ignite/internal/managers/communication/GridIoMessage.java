@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.io.Externalizable;
-import java.nio.ByteBuffer;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -27,6 +25,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessage;
 import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
+
+import java.io.Externalizable;
+import java.nio.ByteBuffer;
 
 /**
  * Wrapper for all grid messages.
@@ -183,6 +184,13 @@ public class GridIoMessage implements Message, OptimizedMessage {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         throw new AssertionError();
+    }
+
+    /**
+     * @return Whether message is "optimized".
+     */
+    public boolean isOptimized() {
+        return msg instanceof OptimizedMessage;
     }
 
     /** {@inheritDoc} */
