@@ -119,10 +119,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetInStreamOutLong")]
         public static extern long TargetInStreamOutLong(void* ctx, void* target, int opType, long memPtr);
 
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetInStreamOutStream")]
-        public static extern void TargetInStreamOutStream(void* ctx, void* target, int opType, long inMemPtr,
-            long outMemPtr);
-
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetInStreamOutObject")]
         public static extern void* TargetInStreamOutObject(void* ctx, void* target, int opType, long memPtr);
 

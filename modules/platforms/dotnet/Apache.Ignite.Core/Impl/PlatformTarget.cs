@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Impl
     /// Base class for interop targets.
     /// </summary>
     [SuppressMessage("ReSharper", "LocalVariableHidesMember")]
-    internal abstract class PlatformTarget
+    internal abstract unsafe class PlatformTarget
     {
         /** */
         protected const int False = 0;
@@ -447,7 +447,8 @@ namespace Apache.Ignite.Core.Impl
 
                     FinishMarshal(writer);
 
-                    UU.TargetInStreamOutStream(_target, type, outStream.SynchronizeOutput(), inStream.MemoryPointer);
+                    UU.TargetInObjectStreamOutObjectStream(_target, type, null, outStream.SynchronizeOutput(), 
+                        inStream.MemoryPointer);
 
                     inStream.SynchronizeInput();
 
@@ -475,7 +476,8 @@ namespace Apache.Ignite.Core.Impl
 
                     FinishMarshal(writer);
 
-                    UU.TargetInStreamOutStream(_target, type, outStream.SynchronizeOutput(), inStream.MemoryPointer);
+                    UU.TargetInObjectStreamOutObjectStream(_target, type, null, outStream.SynchronizeOutput(), 
+                        inStream.MemoryPointer);
 
                     inStream.SynchronizeInput();
 
@@ -492,7 +494,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="inAction">In action.</param>
         /// <param name="arg">Argument.</param>
         /// <returns>Result.</returns>
-        protected unsafe TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction,
+        protected TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction,
             Func<IBinaryStream, IUnmanagedTarget, TR> inAction, void* arg)
         {
             PlatformMemoryStream outStream = null;
@@ -562,7 +564,8 @@ namespace Apache.Ignite.Core.Impl
 
                     FinishMarshal(writer);
 
-                    UU.TargetInStreamOutStream(_target, type, outStream.SynchronizeOutput(), inStream.MemoryPointer);
+                    UU.TargetInObjectStreamOutObjectStream(_target, type, null,
+                        outStream.SynchronizeOutput(), inStream.MemoryPointer);
 
                     inStream.SynchronizeInput();
 
@@ -589,7 +592,8 @@ namespace Apache.Ignite.Core.Impl
 
                     FinishMarshal(writer);
 
-                    UU.TargetInStreamOutStream(_target, type, outStream.SynchronizeOutput(), inStream.MemoryPointer);
+                    UU.TargetInObjectStreamOutObjectStream(_target, type, null, outStream.SynchronizeOutput(), 
+                        inStream.MemoryPointer);
 
                     inStream.SynchronizeInput();
 
@@ -618,7 +622,8 @@ namespace Apache.Ignite.Core.Impl
 
                     FinishMarshal(writer);
 
-                    UU.TargetInStreamOutStream(_target, type, outStream.SynchronizeOutput(), inStream.MemoryPointer);
+                    UU.TargetInObjectStreamOutObjectStream(_target, type, null, 
+                        outStream.SynchronizeOutput(), inStream.MemoryPointer);
 
                     inStream.SynchronizeInput();
 

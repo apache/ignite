@@ -263,7 +263,6 @@ namespace ignite
                 jmethodID m_PlatformTarget_inStreamOutObject;
                 jmethodID m_PlatformTarget_outStream;
                 jmethodID m_PlatformTarget_outObject;
-                jmethodID m_PlatformTarget_inStreamOutStream;
                 jmethodID m_PlatformTarget_inObjectStreamOutObjectStream;
                 jmethodID m_PlatformTarget_listenFuture;
                 jmethodID m_PlatformTarget_listenFutureForOperation;
@@ -437,7 +436,6 @@ namespace ignite
 
                 long long TargetInLongOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 long long TargetInStreamOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
-                void TargetInStreamOutStream(jobject obj, int opType, long long inMemPtr, long long outMemPtr, JniErrorInfo* errInfo = NULL);
                 jobject TargetInStreamOutObject(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 jobject TargetInObjectStreamOutObjectStream(jobject obj, int opType, void* arg, long long inMemPtr, long long outMemPtr, JniErrorInfo* errInfo = NULL);
                 void TargetOutStream(jobject obj, int opType, long long memPtr, JniErrorInfo* errInfo = NULL);

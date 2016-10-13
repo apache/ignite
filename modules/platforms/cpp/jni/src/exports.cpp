@@ -146,10 +146,6 @@ extern "C" {
         return ctx->TargetInStreamOutLong(static_cast<jobject>(obj), opType, memPtr);
     }
 
-    void IGNITE_CALL IgniteTargetInStreamOutStream(gcj::JniContext* ctx, void* obj, int opType, long long inMemPtr, long long outMemPtr) {
-        ctx->TargetInStreamOutStream(static_cast<jobject>(obj), opType, inMemPtr, outMemPtr);
-    }
-
     void* IGNITE_CALL IgniteTargetInStreamOutObject(gcj::JniContext* ctx, void* obj, int opType, long long memPtr) {
         return ctx->TargetInStreamOutObject(static_cast<jobject>(obj), opType, memPtr);
     }
