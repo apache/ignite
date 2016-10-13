@@ -109,6 +109,10 @@ public class GridNioServer<T> {
     private static final boolean DISABLE_KEYSET_OPTIMIZATION =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_NO_SELECTOR_OPTS);
 
+    /** */
+    private static final int SPIN_COUNT =
+        IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_SELECTOR_SPINS, 32);
+
     /**
      *
      */
@@ -1599,18 +1603,35 @@ public class GridNioServer<T> {
                         }
                     }
 
+                    int res = 0;
+
+                    for (int i = 0; i < SPIN_COUNT && res == 0; i++)
+                        res = selector.selectNow();
+
+                    if (res > 0) {
+                        // Walk through the ready keys collection and process network events.
+                        if (selectedKeys == null)
+                            processSelectedKeys(selector.selectedKeys());
+                        else
+                            processSelectedKeysOptimized(selectedKeys.flip());
+                    }
+
+                    if (!changeReqs.isEmpty())
+                        continue;
+
                     select = true;
 
                     try {
-                        if (changeReqs.isEmpty()) {
-                            // Wake up every 2 seconds to check if closed.
-                            if (selector.select(2000) > 0) {
-                                // Walk through the ready keys collection and process network events.
-                                if (selectedKeys == null)
-                                    processSelectedKeys(selector.selectedKeys());
-                                else
-                                    processSelectedKeysOptimized(selectedKeys.flip());
-                            }
+                        if (!changeReqs.isEmpty())
+                            continue;
+
+                        // Wake up every 2 seconds to check if closed.
+                        if (selector.select(2000) > 0) {
+                            // Walk through the ready keys collection and process network events.
+                            if (selectedKeys == null)
+                                processSelectedKeys(selector.selectedKeys());
+                            else
+                                processSelectedKeysOptimized(selectedKeys.flip());
                         }
                     }
                     finally {
