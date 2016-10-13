@@ -338,18 +338,157 @@ public class OptimizedMessageWriterImpl implements OptimizedMessageWriter {
 
     /** {@inheritDoc} */
     @Override public <T> void writeObjectArray(T[] arr, MessageCollectionItemType itemType) {
-        // TODO
+        if (arr != null) {
+            writeInt(arr.length);
+
+            for (T obj : arr)
+                write(itemType, obj);
+        }
+        else
+            writeInt(-1);
     }
 
     /** {@inheritDoc} */
     @Override public <T> void writeCollection(Collection<T> col, MessageCollectionItemType itemType) {
-        // TODO
+        if (col != null) {
+            writeInt(col.size());
+
+            for (T obj : col)
+                write(itemType, obj);
+        }
+        else
+            writeInt(-1);
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> void writeMap(Map<K, V> map, MessageCollectionItemType keyType,
         MessageCollectionItemType valType) {
-        // TODO
+        if (map != null) {
+            writeInt(map.size());
+
+            for (Map.Entry<K, V> entry : map.entrySet()) {
+                write(keyType, entry.getKey());
+                write(valType, entry.getValue());
+            }
+        }
+        else
+            writeInt(-1);
+    }
+
+    /**
+     * @param type Type.
+     * @param val Value.
+     */
+    private void write(MessageCollectionItemType type, Object val) {
+        switch (type) {
+            case BYTE:
+                writeByte((Byte)val);
+
+                break;
+
+            case SHORT:
+                writeShort((Short)val);
+
+                break;
+
+            case INT:
+                writeInt((Integer)val);
+
+                break;
+
+            case LONG:
+                writeLong((Long)val);
+
+                break;
+
+            case FLOAT:
+                writeFloat((Float)val);
+
+                break;
+
+            case DOUBLE:
+                writeDouble((Double)val);
+
+                break;
+
+            case CHAR:
+                writeChar((Character)val);
+
+                break;
+
+            case BOOLEAN:
+                writeBoolean((Boolean)val);
+
+                break;
+
+            case BYTE_ARR:
+                writeByteArray((byte[])val);
+
+                break;
+
+            case SHORT_ARR:
+                writeShortArray((short[])val);
+
+                break;
+
+            case INT_ARR:
+                writeIntArray((int[])val);
+
+                break;
+
+            case LONG_ARR:
+                writeLongArray((long[])val);
+
+                break;
+
+            case FLOAT_ARR:
+                writeFloatArray((float[])val);
+
+                break;
+
+            case DOUBLE_ARR:
+                writeDoubleArray((double[])val);
+
+                break;
+
+            case CHAR_ARR:
+                writeCharArray((char[])val);
+
+                break;
+
+            case BOOLEAN_ARR:
+                writeBooleanArray((boolean[])val);
+
+                break;
+
+            case STRING:
+                writeString((String)val);
+
+                break;
+
+            case BIT_SET:
+                writeBitSet((BitSet)val);
+
+                break;
+
+            case UUID:
+                writeUuid((UUID)val);
+
+                break;
+
+            case IGNITE_UUID:
+                writeIgniteUuid((IgniteUuid)val);
+
+                break;
+
+            case MSG:
+                writeMessage((Message)val);
+
+                break;
+
+            default:
+                throw new IllegalArgumentException("Unknown type: " + type);
+        }
     }
 
     /**
