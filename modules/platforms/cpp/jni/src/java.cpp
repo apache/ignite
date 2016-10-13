@@ -220,7 +220,6 @@ namespace ignite
             JniMethod M_PLATFORM_TARGET_IN_STREAM_OUT_STREAM = JniMethod("inStreamOutStream", "(IJJ)V", false);
             JniMethod M_PLATFORM_TARGET_IN_OBJECT_STREAM_OUT_STREAM = JniMethod("inObjectStreamOutStream", "(ILjava/lang/Object;JJ)V", false);
             JniMethod M_PLATFORM_TARGET_IN_OBJECT_STREAM_OUT_OBJECT_STREAM = JniMethod("inObjectStreamOutObjectStream", "(ILjava/lang/Object;JJ)Ljava/lang/Object;", false);
-            JniMethod M_PLATFORM_TARGET_OUT_LONG = JniMethod("outLong", "(I)J", false);
             JniMethod M_PLATFORM_TARGET_OUT_STREAM = JniMethod("outStream", "(IJ)V", false);
             JniMethod M_PLATFORM_TARGET_OUT_OBJECT = JniMethod("outObject", "(I)Ljava/lang/Object;", false);
             JniMethod M_PLATFORM_TARGET_LISTEN_FUTURE = JniMethod("listenFuture", "(JI)V", false);
@@ -512,7 +511,6 @@ namespace ignite
                 m_PlatformTarget_inLongOutLong = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_IN_LONG_OUT_LONG);
                 m_PlatformTarget_inStreamOutLong = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_IN_STREAM_OUT_LONG);
                 m_PlatformTarget_inStreamOutObject = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_IN_STREAM_OUT_OBJECT);
-                m_PlatformTarget_outLong = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_OUT_LONG);
                 m_PlatformTarget_outStream = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_OUT_STREAM);
                 m_PlatformTarget_outObject = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_OUT_OBJECT);
                 m_PlatformTarget_inStreamOutStream = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_IN_STREAM_OUT_STREAM);
@@ -1311,17 +1309,6 @@ namespace ignite
                 ExceptionCheck(env, err);
 
                 return LocalToGlobal(env, res);
-            }
-
-            long long JniContext::TargetOutLong(jobject obj, int opType, JniErrorInfo* err)
-            {
-                JNIEnv* env = Attach();
-
-                jlong res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformTarget_outLong, opType);
-
-                ExceptionCheck(env, err);
-
-                return res;
             }
 
             void JniContext::TargetOutStream(jobject obj, int opType, long long memPtr, JniErrorInfo* err) {
