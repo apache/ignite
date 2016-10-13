@@ -42,7 +42,7 @@ public class IgniteRoundRobinErrorAfterClientReconnectTest extends GridCommonAbs
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startServer();
+        startGrid(0);
 
         cli = startGrid(1);
     }
@@ -65,15 +65,12 @@ public class IgniteRoundRobinErrorAfterClientReconnectTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
-    private void startServer() throws Exception {
-        startGrid(0);
-    }
-
-    /**
-     *
-     */
-    private void stopServer() {
+    private void restartServer() throws Exception {
         stopGrid(0);
+
+        U.sleep(1000);
+
+        startGrid(0);
     }
 
     /**
@@ -104,13 +101,7 @@ public class IgniteRoundRobinErrorAfterClientReconnectTest extends GridCommonAbs
             }
         }, EventType.EVT_CLIENT_NODE_RECONNECTED);
 
-        stopServer();
-
-        U.sleep(1000);
-
-        startServer();
-
-        U.sleep(1000);
+        restartServer();
 
         assert fut.get();
     }
