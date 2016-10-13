@@ -35,7 +35,7 @@ import org.jsr166.ConcurrentLinkedDeque8;
  * Note that this implementation requires non-null values for local and remote
  * socket addresses.
  */
-class GridSelectorNioSessionImpl extends GridNioSessionImpl {
+public class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     /** Pending write requests. */
     private final ConcurrentLinkedDeque8<GridNioFuture<?>> queue = new ConcurrentLinkedDeque8<>();
 
@@ -78,7 +78,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      * @param writeBuf Write buffer.
      * @param readBuf Read buffer.
      */
-    GridSelectorNioSessionImpl(
+    public GridSelectorNioSessionImpl(
         IgniteLogger log,
         int selectorIdx,
         GridNioFilterChain filterChain,
