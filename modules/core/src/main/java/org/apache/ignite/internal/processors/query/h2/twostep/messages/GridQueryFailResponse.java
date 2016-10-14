@@ -29,9 +29,10 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class GridQueryFailResponse implements Message {
     /** General error failure type. */
-    public static final byte GENERAL_ERROR = Byte.MIN_VALUE;
+    public static final byte GENERAL_ERROR = 0;
+
     /** Cancelled by originator failure type. */
-    public static final byte CANCELLED_BY_ORIGINATOR = 0;
+    public static final byte CANCELLED_BY_ORIGINATOR = 1;
 
     /** */
     private static final long serialVersionUID = 0L;

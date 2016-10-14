@@ -169,7 +169,7 @@ public class GridQueryRequest implements Message {
     }
 
     /**
-     * Timeout.
+     * @return Timeout.
      */
     public int timeout() {
         return this.timeout;

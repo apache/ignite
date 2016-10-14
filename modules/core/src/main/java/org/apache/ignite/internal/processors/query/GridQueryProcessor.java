@@ -557,11 +557,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         try {
             return rebuildIndexes(
-                    space,
-                    typesByName.get(
-                            new TypeName(
-                                    space,
-                                    valTypeName)));
+                space,
+                typesByName.get(
+                    new TypeName(
+                        space,
+                        valTypeName)));
         }
         finally {
             busyLock.leaveBusy();
@@ -927,12 +927,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * @param timeout Timeout.
      * @param timeUnit Time unit.
+     * @return Converted time.
      */
     public static int validateTimeout(int timeout, TimeUnit timeUnit) {
         A.ensure(timeUnit != TimeUnit.MICROSECONDS && timeUnit != TimeUnit.NANOSECONDS,
                 "timeUnit minimal resolution is millisecond.");
 
-        A.ensure(timeout > 0, "timeout value should be positive.");
+        A.ensure(timeout >= 0, "timeout value should be non-negative.");
 
         long tmp = TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
 
@@ -965,7 +966,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     final String space = cctx.name();
                     final String sql = qry.getSql();
                     final Object[] args = qry.getArgs();
-
                     final GridQueryCancel cancel = new GridQueryCancel();
 
                     final GridQueryFieldsResult res = idx.execute(space, sql, F.asList(args),
@@ -1531,7 +1531,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     U.classForName(entry.getValue(), Object.class),
                     aliases,
                     coCtx);
-
 
             d.addProperty(prop, false);
         }

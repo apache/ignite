@@ -22,9 +22,12 @@ import java.util.List;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -34,9 +37,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Tests distributed SQL query cancel on grid shutdown.
+ * Tests distributed SQL query cancel related scenarios.
  */
-public class IgniteCacheDistributedQueryStopOnNodeStopSelfTest extends GridCommonAbstractTest {
+public class IgniteCacheDistributedQueryCancelSelfTest extends GridCommonAbstractTest {
     /** Grids count. */
     private static final int GRIDS_COUNT = 3;
 
@@ -53,8 +56,8 @@ public class IgniteCacheDistributedQueryStopOnNodeStopSelfTest extends GridCommo
     private static final String QUERY = "select a._val, b._val from String a, String b";
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
 
         startGridsMultiThreaded(GRIDS_COUNT);
     }
@@ -84,7 +87,7 @@ public class IgniteCacheDistributedQueryStopOnNodeStopSelfTest extends GridCommo
     }
 
     /** */
-    public void test() throws Exception {
+    public void testQueryCancelsOnGridShutdown() throws Exception {
         try (Ignite client = startGrid("client")) {
 
             IgniteCache<Object, Object> cache = client.cache(null);
@@ -133,6 +136,41 @@ public class IgniteCacheDistributedQueryStopOnNodeStopSelfTest extends GridCommo
             fut.get();
 
             // Test must exit gracefully.
+        }
+    }
+
+    /** */
+    public void testQueryResponseFailCode() throws Exception {
+        try (Ignite client = startGrid("client")) {
+
+            CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>();
+            cfg.setSqlFunctionClasses(Functions.class);
+            cfg.setIndexedTypes(Integer.class, Integer.class);
+            cfg.setName("test");
+
+            IgniteCache<Integer, Integer> cache = client.getOrCreateCache(cfg);
+
+            cache.put(1, 1);
+
+            QueryCursor<List<?>> qry = cache.query(new SqlFieldsQuery("select fail() from Integer"));
+
+            try {
+                qry.getAll();
+
+                fail();
+            }
+            catch (Exception e) {
+                assertTrue(e.getCause() instanceof CacheException);
+            }
+        }
+    }
+
+    /** */
+    public static class Functions {
+        /** */
+        @QuerySqlFunction
+        public static int fail() {
+            throw new IllegalArgumentException();
         }
     }
 }

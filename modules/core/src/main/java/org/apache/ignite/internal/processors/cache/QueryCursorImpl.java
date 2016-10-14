@@ -126,15 +126,14 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
             return;
         }
 
-        if (stateUpdater.compareAndSet(this, IDLE, CLOSED))
-            return;
-
         if (stateUpdater.compareAndSet(this, EXECUTION, CLOSED)) {
             if (cancel != null)
                 cancel.cancel();
 
             return;
         }
+
+        stateUpdater.compareAndSet(this, IDLE, CLOSED);
     }
 
     /**

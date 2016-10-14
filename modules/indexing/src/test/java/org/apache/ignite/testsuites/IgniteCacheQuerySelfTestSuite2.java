@@ -34,7 +34,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingQu
 import org.apache.ignite.internal.processors.cache.SqlFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheAtomicFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheAtomicNearEnabledFieldsQuerySelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheDistributedQueryStopOnNodeStopSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheDistributedQueryCancelSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCachePartitionedFieldsQueryP2PEnabledSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCachePartitionedFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest;
@@ -108,7 +108,7 @@ public class IgniteCacheQuerySelfTestSuite2 extends TestSuite {
 
         // Cancellation.
         suite.addTestSuite(IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest.class);
-        suite.addTestSuite(IgniteCacheDistributedQueryStopOnNodeStopSelfTest.class);
+        suite.addTestSuite(IgniteCacheDistributedQueryCancelSelfTest.class);
         suite.addTestSuite(IgniteCacheLocalQueryCancelOrTimeoutSelfTest.class);
 
         // Other.

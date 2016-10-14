@@ -745,6 +745,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             final PreparedStatement stmt = preparedStatementWithParams(conn, qry, params, true);
 
             List<GridQueryFieldMetadata> meta;
+
             try {
                 meta = meta(stmt.getMetaData());
             }
@@ -823,7 +824,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param conn Connection.
      * @param sql Sql.
      * @param params Params.
-     * @param useStmtCache Use stmt cache.
+     * @param useStmtCache If {@code true} use stmt cache.
+     * @return Prepared statement with set parameters.
+     * @throws IgniteCheckedException If failed.
      */
     private PreparedStatement preparedStatementWithParams(Connection conn, String sql, Collection<Object> params,
         boolean useStmtCache) throws IgniteCheckedException {
@@ -856,7 +859,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      *
      * @param conn Connection,.
      * @param stmt Statement.
-     * @param cancel Cancel instance.
+     * @param cancel Query cancel.
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
@@ -904,8 +907,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param conn Connection,.
      * @param sql Sql query.
      * @param params Parameters.
-     * @param useStmtCache If {@code true} uses statement cache.
-     * @param cancel Cancel instance.
+     * @param useStmtCache If {@code true} uses stmt cache.
+     * @param cancel Query cancel.
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
@@ -928,7 +931,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param conn Connection.
      * @param sql Sql query.
      * @param params Parameters.
-     * @param cancel Cancel instance.
+     * @param cancel Query cancel.
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
@@ -977,7 +980,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param qry Query.
      * @param params Query parameters.
      * @param tbl Target table of query to generate select.
-     * @param cancel Cancel instance.
+     * @param cancel Query cancel.
      * @return Result set.
      * @throws IgniteCheckedException If failed.
      */

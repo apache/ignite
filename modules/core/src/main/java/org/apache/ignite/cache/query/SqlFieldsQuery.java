@@ -127,6 +127,8 @@ public final class SqlFieldsQuery extends Query<List<?>> {
 
     /**
      * Gets the query execution timeout in milliseconds.
+     *
+     * @return Timeout value.
      */
     public int getTimeout() {
         return timeout;
@@ -134,11 +136,14 @@ public final class SqlFieldsQuery extends Query<List<?>> {
 
     /**
      * Sets the query execution timeout. Query will be automatically cancelled if the execution timeout is exceeded.
-     * @param timeout Timeout value.
+     * @param timeout Timeout value. Zero value disables timeout.
      * @param timeUnit Time unit.
+     * @return {@code this} For chaining.
      */
-    public void setTimeout(int timeout, TimeUnit timeUnit) {
+    public SqlFieldsQuery setTimeout(int timeout, TimeUnit timeUnit) {
         this.timeout = GridQueryProcessor.validateTimeout(timeout, timeUnit);
+
+        return this;
     }
 
     /**

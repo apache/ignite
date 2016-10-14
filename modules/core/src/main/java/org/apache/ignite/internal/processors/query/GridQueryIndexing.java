@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.sql.PreparedStatement;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -84,7 +82,7 @@ public interface GridQueryIndexing {
      * @param params Query parameters.
      * @param filters Space name and key filters.
      * @param timeout Query timeout in milliseconds.
-     * @param cancel Cancellation closure.
+     * @param cancel Cancel.
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
