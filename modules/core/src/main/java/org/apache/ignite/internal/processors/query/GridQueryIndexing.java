@@ -82,7 +82,7 @@ public interface GridQueryIndexing {
      * @param params Query parameters.
      * @param filters Space name and key filters.
      * @param timeout Query timeout in milliseconds.
-     * @param cancel Cancel.
+     * @param cancel Query cancel.
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
