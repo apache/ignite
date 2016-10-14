@@ -17,13 +17,15 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessage;
+
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 
 /**
  * Base class for all communication messages.
  */
-public interface Message extends Serializable {
+public interface Message extends Serializable, OptimizedMessage {
     /**
      * Writes this message to provided byte buffer.
      *
