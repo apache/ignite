@@ -81,7 +81,16 @@ public class PlatformEvents extends PlatformAbstractTarget {
     private static final int OP_STOP_LOCAL_LISTEN = 14;
 
     /** */
+    private static final int OP_REMOTE_QUERY_ASYNC = 15;
+
+    /** */
+    private static final int OP_WAIT_FOR_LOCAL_ASYNC = 16;
+
+    /** */
     private final IgniteEvents events;
+
+    /** */
+    private final IgniteEvents eventsAsync;
 
     /** */
     private final EventResultWriter eventResWriter;
@@ -101,6 +110,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
         assert events != null;
 
         this.events = events;
+        eventsAsync = events.isAsync() ? events : events.withAsync();
 
         eventResWriter = new EventResultWriter(platformCtx);
         eventColResWriter = new EventCollectionResultWriter(platformCtx);
@@ -203,24 +213,9 @@ public class PlatformEvents extends PlatformAbstractTarget {
             }
 
             case OP_REMOTE_QUERY: {
-                Object pred = reader.readObjectDetached();
+                Collection<Event> result = startRemoteQuery(reader);
 
-                long timeout = reader.readLong();
-
-                int[] types = readEventTypes(reader);
-
-                PlatformEventFilterListener filter = platformCtx.createRemoteEventFilter(pred, types);
-
-                Collection<Event> result = events.remoteQuery(filter, timeout);
-
-                if (result == null)
-                    writer.writeInt(-1);
-                else {
-                    writer.writeInt(result.size());
-
-                    for (Event e : result)
-                        platformCtx.writeEvent(writer, e);
-                }
+                eventColResWriter.write(writer, result, null);
 
                 break;
             }
@@ -228,6 +223,24 @@ public class PlatformEvents extends PlatformAbstractTarget {
             default:
                 super.processInStreamOutStream(type, reader, writer);
         }
+    }
+
+    /**
+     * Starts the remote query.
+     *
+     * @param reader Reader.
+     * @return Result.
+     */
+    private Collection<Event> startRemoteQuery(BinaryRawReaderEx reader) {
+        Object pred = reader.readObjectDetached();
+
+        long timeout = reader.readLong();
+
+        int[] types = readEventTypes(reader);
+
+        PlatformEventFilterListener filter = platformCtx.createRemoteEventFilter(pred, types);
+
+        return events.remoteQuery(filter, timeout);
     }
 
     /** {@inheritDoc} */
@@ -381,12 +394,17 @@ public class PlatformEvents extends PlatformAbstractTarget {
         /** <inheritDoc /> */
         @SuppressWarnings("unchecked")
         @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
-            Collection<EventAdapter> events = (Collection<EventAdapter>)obj;
+            Collection<Event> events = (Collection<Event>)obj;
 
-            writer.writeInt(events.size());
+            if (obj != null) {
+                writer.writeInt(events.size());
 
-            for (EventAdapter e : events)
-                platformCtx.writeEvent(writer, e);
+                for (Event e : events)
+                    platformCtx.writeEvent(writer, e);
+            }
+            else {
+                writer.writeInt(-1);
+            }
         }
 
         /** <inheritDoc /> */
