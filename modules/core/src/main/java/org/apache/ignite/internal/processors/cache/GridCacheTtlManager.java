@@ -260,7 +260,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         /**
          * Constructor
          */
-        private PendingEntry(long expireTime, int hashCode, boolean isNear, byte[] keyBytes) {
+        PendingEntry(long expireTime, int hashCode, boolean isNear, byte[] keyBytes) {
             this.expireTime = expireTime;
             this.keyBytes = keyBytes;
             this.hashCode = hashCode;
@@ -270,7 +270,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         /**
          * @param entry Cache entry to create wrapper for.
          */
-        private PendingEntry(GridCacheEntryEx entry) {
+        PendingEntry(GridCacheEntryEx entry) {
             expireTime = entry.expireTimeUnlocked();
 
             assert expireTime != 0;
@@ -615,7 +615,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     /** */
     private static class OnHeapPendingEntriesQueue implements PendingEntriesQueue {
         /** */
-        private final NavigableMap<PendingEntry, Boolean> m;
+        private final ConcurrentSkipListMap<PendingEntry, Boolean> m;
 
         /** Size. */
         private final LongAdder8 size = new LongAdder8();
@@ -690,7 +690,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         private static final DummySmartPointer DUMMY_SMART_POINTER = new DummySmartPointer(Long.MAX_VALUE);
 
         /** */
-        private final ConcurrentNavigableMap<PendingEntrySmartPointer, DummySmartPointer> m;
+        private final GridOffHeapSnapTreeMap<PendingEntrySmartPointer, DummySmartPointer> m;
 
         /** */
         private PendingEntrySmartPointerFactory pointerFactory;
