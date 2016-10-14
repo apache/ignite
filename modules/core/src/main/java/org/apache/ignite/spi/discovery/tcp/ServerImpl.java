@@ -1252,14 +1252,15 @@ class ServerImpl extends TcpDiscoveryImpl {
      * Marshalls credentials with discovery SPI marshaller (will replace attribute value).
      *
      * @param node Node to marshall credentials for.
+     * @param cred Credentials for marshall.
      * @throws IgniteSpiException If marshalling failed.
      */
-    private void marshalCredentials(TcpDiscoveryNode node, SecurityCredentials locCred) throws IgniteSpiException {
+    private void marshalCredentials(TcpDiscoveryNode node, SecurityCredentials cred) throws IgniteSpiException {
         try {
             // Use security-unsafe getter.
             Map<String, Object> attrs = new HashMap<>(node.getAttributes());
 
-            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, spi.marshaller().marshal(locCred));
+            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, spi.marshaller().marshal(cred));
 
             node.setAttributes(attrs);
         }
