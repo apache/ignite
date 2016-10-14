@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.h2.value.Value;
 import org.h2.value.ValueTimestamp;
 
@@ -56,6 +57,14 @@ public class GridH2Timestamp extends GridH2ValueMessage {
     /** {@inheritDoc} */
     @Override public Value value(GridKernalContext ctx) {
         return ValueTimestamp.fromDateValueAndNanos(date, nanos);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeLong(date);
+        writer.writeLong(nanos);
     }
 
     /** {@inheritDoc} */

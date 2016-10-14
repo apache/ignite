@@ -27,6 +27,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.h2.value.Value;
 import org.h2.value.ValueArray;
 
@@ -66,6 +67,13 @@ public class GridH2Array extends GridH2ValueMessage {
     /** {@inheritDoc} */
     @Override public Value value(GridKernalContext ctx) throws IgniteCheckedException {
         return ValueArray.get(fillArray(x.iterator(), new Value[x.size()], ctx));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeCollection(x, MessageCollectionItemType.MSG);
     }
 
     /** {@inheritDoc} */
