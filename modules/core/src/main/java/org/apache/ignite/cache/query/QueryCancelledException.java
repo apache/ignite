@@ -15,28 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query;
+package org.apache.ignite.cache.query;
 
-import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 
 /**
- * Field query result. It is composed of
- * fields metadata and iterator over queried fields.
+ * The exception is thrown if a query was cancelled or timed out while executing.
  */
-public interface GridQueryFieldsResult {
-    /**
-     * Gets metadata for queried fields.
-     *
-     * @return Meta data for queried fields.
-     */
-    List<GridQueryFieldMetadata> metaData();
+public class QueryCancelledException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /**
-     * Gets iterator over queried fields.
-     *
-     * @return Iterator over queried fields.
+     * Default constructor.
      */
-    IgniteSpiCloseableIterator<List<?>> iterator() throws IgniteCheckedException;
+    public QueryCancelledException() {
+        super("The query was cancelled while executing.");
+    }
 }
