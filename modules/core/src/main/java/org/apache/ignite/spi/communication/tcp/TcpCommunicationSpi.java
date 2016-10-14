@@ -110,6 +110,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriterImpl;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgnitePortProtocol;
@@ -3489,6 +3491,28 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
+        @Override public void writeTo(OptimizedMessageWriter writer) {
+            OptimizedMessageWriterImpl writer0 = (OptimizedMessageWriterImpl)writer;
+
+            if (writer0.remaining() < 33)
+                writer0.pushBuffer();
+
+            ByteBuffer buf = writer0.buffer();
+
+            buf.put(HANDSHAKE_MSG_TYPE);
+
+            byte[] bytes = U.uuidToBytes(nodeId);
+
+            assert bytes.length == 16 : bytes.length;
+
+            buf.put(bytes);
+
+            buf.putLong(rcvCnt);
+
+            buf.putLong(connectCnt);
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             if (buf.remaining() < 33)
                 return false;
@@ -3580,6 +3604,20 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
+        @Override public void writeTo(OptimizedMessageWriter writer) {
+            OptimizedMessageWriterImpl writer0 = (OptimizedMessageWriterImpl)writer;
+
+            if (writer0.remaining() < 9)
+                writer0.pushBuffer();
+
+            ByteBuffer buf = writer0.buffer();
+
+            buf.put(RECOVERY_LAST_ID_MSG_TYPE);
+
+            buf.putLong(rcvCnt);
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             if (buf.remaining() < 9)
                 return false;
@@ -3654,6 +3692,19 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         /** {@inheritDoc} */
         @Override public void onAckReceived() {
             // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeTo(OptimizedMessageWriter writer) {
+            OptimizedMessageWriterImpl writer0 = (OptimizedMessageWriterImpl)writer;
+
+            if (writer0.remaining() < 17)
+                writer0.pushBuffer();
+
+            ByteBuffer buf = writer0.buffer();
+
+            buf.put(NODE_ID_MSG_TYPE);
+            buf.put(nodeIdBytes);
         }
 
         /** {@inheritDoc} */

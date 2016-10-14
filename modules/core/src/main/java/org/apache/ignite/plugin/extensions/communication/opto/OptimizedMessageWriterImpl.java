@@ -496,7 +496,7 @@ public class OptimizedMessageWriterImpl implements OptimizedMessageWriter {
     /**
      * Push buffer.
      */
-    private void pushBuffer() {
+    public void pushBuffer() {
         assert buf.remaining() == 0;
 
         state.pushBuffer();
@@ -518,9 +518,16 @@ public class OptimizedMessageWriterImpl implements OptimizedMessageWriter {
     }
 
     /**
+     * @return Current buffer.
+     */
+    public ByteBuffer buffer() {
+        return buf;
+    }
+
+    /**
      * @return Number of remaining bytes.
      */
-    private int remaining() {
+    public int remaining() {
         return buf.remaining();
     }
 
