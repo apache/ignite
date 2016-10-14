@@ -393,14 +393,27 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      *
      * @param reader Reader.
      * @param fut Future.
+     * @param writer Writer.
      * @throws IgniteCheckedException In case of error.
      */
-    protected PlatformListenable readAndListenFuture(BinaryRawReaderEx reader, IgniteInternalFuture fut)
+    protected PlatformListenable readAndListenFuture(BinaryRawReaderEx reader, IgniteInternalFuture fut,
+                                                     PlatformFutureUtils.Writer writer)
             throws IgniteCheckedException {
         long futId = reader.readLong();
         int futTyp = reader.readInt();
 
-        return PlatformFutureUtils.listen(platformCtx, fut, futId, futTyp, null, this);
+        return PlatformFutureUtils.listen(platformCtx, fut, futId, futTyp, writer, this);
+    }
+
+    /**
+     * Reads future information and listens.
+     *
+     * @param reader Reader.
+     * @param fut Future.
+     * @throws IgniteCheckedException In case of error.
+     */
+    protected PlatformListenable readAndListenFuture(BinaryRawReaderEx reader, IgniteInternalFuture fut) throws IgniteCheckedException {
+        return readAndListenFuture(reader, fut, null);
     }
 
     /**
@@ -409,7 +422,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @param reader Reader.
      * @throws IgniteCheckedException In case of error.
      */
-    protected void readAndListenFuture(BinaryRawReaderEx reader) throws IgniteCheckedException {
-        readAndListenFuture(reader, currentFuture());
+    protected PlatformListenable readAndListenFuture(BinaryRawReaderEx reader) throws IgniteCheckedException {
+        return readAndListenFuture(reader, currentFuture(), null);
     }
 }

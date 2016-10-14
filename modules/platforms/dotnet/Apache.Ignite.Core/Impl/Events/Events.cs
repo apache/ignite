@@ -56,7 +56,9 @@ namespace Apache.Ignite.Core.Impl.Events
             WithAsync = 11,
             IsEnabled = 12,
             LocalListen = 13,
-            StopLocalListen = 14
+            StopLocalListen = 14,
+            RemoteQueryAsync = 15,
+            WaitForLocalAsync = 16
         }
 
         /** Map from user func to local wrapper, needed for invoke/unsubscribe. */
@@ -121,14 +123,7 @@ namespace Apache.Ignite.Core.Impl.Events
             IgniteArgumentCheck.NotNull(filter, "filter");
 
             return DoOutInOp((int) Op.RemoteQuery,
-                writer =>
-                {
-                    writer.Write(filter);
-
-                    writer.WriteLong((long) (timeout == null ? 0 : timeout.Value.TotalMilliseconds));
-
-                    WriteEventTypes(types, writer);
-                },
+                writer => WriteRemoteQuery(filter, timeout, types, writer),
                 reader => ReadEvents<T>(reader));
         }
 
@@ -136,11 +131,8 @@ namespace Apache.Ignite.Core.Impl.Events
         public Task<ICollection<T>> RemoteQueryAsync<T>(IEventFilter<T> filter, TimeSpan? timeout = null, 
             params int[] types) where T : IEvent
         {
-            AsyncInstance.RemoteQuery(filter, timeout, types);
-
-            // ReSharper disable once RedundantTypeArgumentsOfMethod (won't compile in VS2010)
-            return GetFuture<ICollection<T>>((futId, futTyp) => UU.TargetListenFutureForOperation(AsyncInstance.Target, 
-                futId, futTyp, (int) Op.RemoteQuery), convertFunc: ReadEvents<T>).Task;
+            return DoOutOpAsync<ICollection<T>>((int) Op.RemoteQueryAsync,
+                w => WriteRemoteQuery(filter, timeout, types, w)).Task;
         }
 
         /** <inheritDoc /> */
@@ -611,6 +603,24 @@ namespace Apache.Ignite.Core.Impl.Events
                 return null;
 
             return types as int[] ?? types.ToArray();
+        }
+
+        /// <summary>
+        /// Writes the remote query.
+        /// </summary>
+        /// <param name="filter">The filter.</param>
+        /// <param name="timeout">The timeout.</param>
+        /// <param name="types">The types.</param>
+        /// <param name="writer">The writer.</param>
+        private static void WriteRemoteQuery<T>(IEventFilter<T> filter, TimeSpan? timeout, int[] types, 
+            IBinaryRawWriter writer)
+            where T : IEvent
+        {
+            writer.WriteObject(filter);
+
+            writer.WriteLong((long)(timeout == null ? 0 : timeout.Value.TotalMilliseconds));
+
+            WriteEventTypes(types, writer);
         }
 
         /// <summary>

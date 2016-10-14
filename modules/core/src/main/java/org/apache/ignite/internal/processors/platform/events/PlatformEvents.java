@@ -146,6 +146,13 @@ public class PlatformEvents extends PlatformAbstractTarget {
 
                 return TRUE;
 
+            case OP_REMOTE_QUERY_ASYNC:
+                startRemoteQuery(reader, eventsAsync);
+
+                readAndListenFuture(reader, currentFuture(), eventColResWriter);
+
+                return TRUE;
+
             default:
                 return super.processInStreamOutLong(type, reader);
         }
@@ -213,7 +220,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
             }
 
             case OP_REMOTE_QUERY: {
-                Collection<Event> result = startRemoteQuery(reader);
+                Collection<Event> result = startRemoteQuery(reader, events);
 
                 eventColResWriter.write(writer, result, null);
 
@@ -231,7 +238,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
      * @param reader Reader.
      * @return Result.
      */
-    private Collection<Event> startRemoteQuery(BinaryRawReaderEx reader) {
+    private Collection<Event> startRemoteQuery(BinaryRawReaderEx reader, IgniteEvents events) {
         Object pred = reader.readObjectDetached();
 
         long timeout = reader.readLong();
