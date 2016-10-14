@@ -227,43 +227,45 @@ namespace Apache.Ignite.Core.Impl.Events
         /** <inheritDoc /> */
         public T WaitForLocal<T>(IEventFilter<T> filter, params int[] types) where T : IEvent
         {
-            long hnd = 0;
+            var hnd = GetFilterHandle(filter);
 
             try
             {
-                return WaitForLocal0(filter, ref hnd, types);
+                return WaitForLocal0<T>(hnd, types);
             }
             finally
             {
-                if (filter != null)
-                    Ignite.HandleRegistry.Release(hnd);
+                if (hnd != null)
+                    Ignite.HandleRegistry.Release(hnd.Value);
             }
         }
 
         /** <inheritDoc /> */
         public Task<T> WaitForLocalAsync<T>(IEventFilter<T> filter, params int[] types) where T : IEvent
         {
-            long hnd = 0;
+            var hnd = GetFilterHandle(filter);
 
             try
             {
-                AsyncInstance.WaitForLocal0(filter, ref hnd, types);
+                AsyncInstance.WaitForLocal0<T>(hnd, types);
 
                 // ReSharper disable once RedundantTypeArgumentsOfMethod (won't compile in VS2010)
                 var fut = GetFuture<T>((futId, futTyp) => UU.TargetListenFutureForOperation(AsyncInstance.Target, futId,
                     futTyp, (int) Op.WaitForLocal), convertFunc: reader => (T) EventReader.Read<IEvent>(reader));
 
-                if (filter != null)
+                if (hnd != null)
                 {
                     // Dispose handle as soon as future ends.
-                    fut.Task.ContinueWith(x => Ignite.HandleRegistry.Release(hnd));
+                    fut.Task.ContinueWith(x => Ignite.HandleRegistry.Release(hnd.Value));
                 }
 
                 return fut.Task;
             }
             catch (Exception)
             {
-                Ignite.HandleRegistry.Release(hnd);
+                if (hnd != null)
+                    Ignite.HandleRegistry.Release(hnd.Value);
+
                 throw;
             }
 
@@ -388,29 +390,31 @@ namespace Apache.Ignite.Core.Impl.Events
         /// Waits for the specified events.
         /// </summary>
         /// <typeparam name="T">Type of events.</typeparam>
-        /// <param name="filter">Optional filtering predicate. Event wait will end as soon as it returns false.</param>
-        /// <param name="handle">The filter handle, if applicable.</param>
+        /// <param name="filterHandle">Optional filtering predicate. 
+        /// Event wait will end as soon as it returns false.</param>
         /// <param name="types">Types of the events to wait for. 
         /// If not provided, all events will be passed to the filter.</param>
         /// <returns>Ignite event.</returns>
-        private T WaitForLocal0<T>(IEventFilter<T> filter, ref long handle, params int[] types) where T : IEvent
+        private T WaitForLocal0<T>(long? filterHandle, params int[] types) where T : IEvent
         {
-            long? hnd = null;
-
-            if (filter != null)
-            {
-                handle = Ignite.HandleRegistry.Allocate(new LocalEventFilter<T>(Marshaller, filter));
-                hnd = handle;
-            }
-
-            return DoOutInOp((int)Op.WaitForLocal,
+            return DoOutInOp((int) Op.WaitForLocal,
                 writer =>
                 {
-                    writer.WriteObject(hnd);
+                    writer.WriteObject(filterHandle);
 
                     WriteEventTypes(types, writer);
                 },
                 reader => EventReader.Read<T>(Marshaller.StartUnmarshal(reader)));
+        }
+
+        /// <summary>
+        /// Gets the filter handle.
+        /// </summary>
+        private long? GetFilterHandle<T>(IEventFilter<T> filter) where T : IEvent
+        {
+            return filter != null 
+                ? Ignite.HandleRegistry.Allocate(new LocalEventFilter<T>(Marshaller, filter)) 
+                : (long?) null;
         }
 
         /// <summary>
