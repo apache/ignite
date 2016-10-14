@@ -154,6 +154,14 @@ public class PlatformEvents extends PlatformAbstractTarget {
 
                 return TRUE;
 
+            case OP_WAIT_FOR_LOCAL_ASYNC: {
+                startWaitForLocal(reader, eventsAsync);
+
+                readAndListenFuture(reader, ((IgniteFutureImpl)eventsAsync.future()).internalFuture(), eventResWriter);
+
+                return TRUE;
+            }
+
             default:
                 return super.processInStreamOutLong(type, reader);
         }
@@ -177,13 +185,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
             }
 
             case OP_WAIT_FOR_LOCAL: {
-                boolean hasFilter = reader.readBoolean();
-
-                IgnitePredicate pred = hasFilter ? localFilter(reader.readLong()) : null;
-
-                int[] eventTypes = readEventTypes(reader);
-
-                EventAdapter result = (EventAdapter) events.waitForLocal(pred, eventTypes);
+                EventAdapter result = startWaitForLocal(reader, events);
 
                 platformCtx.writeEvent(writer, result);
 
@@ -234,9 +236,27 @@ public class PlatformEvents extends PlatformAbstractTarget {
     }
 
     /**
+     * Starts the waitForLocal.
+     *
+     * @param reader Reader
+     * @param events Events.
+     * @return Result.
+     */
+    private EventAdapter startWaitForLocal(BinaryRawReaderEx reader, IgniteEvents events) {
+        Long filterHnd = reader.readObject();
+
+        IgnitePredicate filter = filterHnd != null ? localFilter(filterHnd) : null;
+
+        int[] eventTypes = readEventTypes(reader);
+
+        return (EventAdapter) events.waitForLocal(filter, eventTypes);
+    }
+
+    /**
      * Starts the remote query.
      *
      * @param reader Reader.
+     * @param events Events.
      * @return Result.
      */
     private Collection<Event> startRemoteQuery(BinaryRawReaderEx reader, IgniteEvents events) {
