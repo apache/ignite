@@ -163,8 +163,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             try
             {
-
-                return DoOutOpAsync<TReduceRes>(OpExecAsync, w => WriteTask(w, taskName, taskArg, nodes));
+                return DoOutOpObjectAsync<TReduceRes>(OpExecAsync, w => WriteTask(w, taskName, taskArg, nodes));
             }
             finally
             {

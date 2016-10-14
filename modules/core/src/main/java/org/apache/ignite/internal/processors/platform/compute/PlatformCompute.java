@@ -119,6 +119,9 @@ public class PlatformCompute extends PlatformAbstractTarget {
                 return executeNative0(task);
             }
 
+            case OP_EXEC_ASYNC:
+                return executeJavaTask(reader, true);
+
             default:
                 return super.processInStreamOutObject(type, reader);
         }
@@ -238,18 +241,6 @@ public class PlatformCompute extends PlatformAbstractTarget {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
-        switch (type) {
-            case OP_EXEC_ASYNC:
-                executeJavaTask(reader, true);
-
-                return TRUE;
-        }
-
-        return super.processInStreamOutLong(type, reader);
-    }
-
     /**
      * Execute task.
      *
@@ -299,11 +290,8 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
         Object res = compute0.execute(taskName, arg);
 
-        if (async) {
-            readAndListenFuture(reader, new ComputeConvertingFuture(compute0.future()));
-
-            return null;
-        }
+        if (async)
+            return readAndListenFuture(reader, new ComputeConvertingFuture(compute0.future()));
         else
             return toBinary(res);
     }

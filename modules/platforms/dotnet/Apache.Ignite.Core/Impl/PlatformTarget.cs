@@ -703,6 +703,23 @@ namespace Apache.Ignite.Core.Impl
         /// Performs async operation.
         /// </summary>
         /// <typeparam name="T">Type of the result.</typeparam>
+        /// <param name="type">The type code.</param>
+        /// <param name="writeAction">The write action.</param>
+        /// <returns>Future for async operation</returns>
+        protected Future<T> DoOutOpObjectAsync<T>(int type, Action<IBinaryRawWriter> writeAction)
+        {
+            return GetFuture<T>((futId, futType) => DoOutOpObject(type, w =>
+            {
+                writeAction(w);
+                w.WriteLong(futId);
+                w.WriteInt(futType);
+            }));
+        }
+
+        /// <summary>
+        /// Performs async operation.
+        /// </summary>
+        /// <typeparam name="T">Type of the result.</typeparam>
         /// <typeparam name="T1">The type of the first arg.</typeparam>
         /// <typeparam name="T2">The type of the second arg.</typeparam>
         /// <param name="type">The type code.</param>

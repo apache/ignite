@@ -406,12 +406,12 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @param fut Future.
      * @throws IgniteCheckedException In case of error.
      */
-    protected void readAndListenFuture(BinaryRawReaderEx reader, IgniteInternalFuture fut)
+    protected PlatformListenable readAndListenFuture(BinaryRawReaderEx reader, IgniteInternalFuture fut)
             throws IgniteCheckedException {
         long futId = reader.readLong();
         int futTyp = reader.readInt();
 
-        PlatformFutureUtils.listen(platformCtx, fut, futId, futTyp, null, this);
+        return PlatformFutureUtils.listen(platformCtx, fut, futId, futTyp, null, this);
     }
 
     /**
