@@ -78,8 +78,6 @@ public class PlatformCompute extends PlatformAbstractTarget {
     /** Compute instance for platform-only nodes. */
     private final IgniteComputeImpl computeForPlatform;
 
-    /** Future for previous asynchronous operation. */
-    protected ThreadLocal<IgniteInternalFuture> curFut = new ThreadLocal<>();
     /**
      * Constructor.
      *
@@ -245,16 +243,6 @@ public class PlatformCompute extends PlatformAbstractTarget {
         }
     }
 
-    /** <inheritDoc /> */
-    @Override protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
-        IgniteInternalFuture fut = curFut.get();
-
-        if (fut == null)
-            throw new IllegalStateException("Asynchronous operation not started.");
-
-        return fut;
-    }
-
     /**
      * Execute task.
      *
@@ -287,7 +275,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * @param reader Reader.
      * @return Task result.
      */
-    protected Object executeJavaTask(BinaryRawReaderEx reader, boolean async) {
+    protected Object executeJavaTask(BinaryRawReaderEx reader, boolean async) throws IgniteCheckedException {
         String taskName = reader.readString();
         boolean keepBinary = reader.readBoolean();
         Object arg = reader.readObjectDetached();
@@ -305,7 +293,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
         Object res = compute0.execute(taskName, arg);
 
         if (async) {
-            curFut.set(new ComputeConvertingFuture(compute0.future()));
+            readAndListenFuture(reader, new ComputeConvertingFuture(compute0.future()));
 
             return null;
         }

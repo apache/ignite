@@ -403,12 +403,24 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * Reads future information and listens.
      *
      * @param reader Reader.
+     * @param fut Future.
      * @throws IgniteCheckedException In case of error.
      */
-    protected void readAndListenFuture(BinaryRawReaderEx reader) throws IgniteCheckedException {
+    protected void readAndListenFuture(BinaryRawReaderEx reader, IgniteInternalFuture fut)
+            throws IgniteCheckedException {
         long futId = reader.readLong();
         int futTyp = reader.readInt();
 
-        PlatformFutureUtils.listen(platformCtx, currentFuture(), futId, futTyp, null, this);
+        PlatformFutureUtils.listen(platformCtx, fut, futId, futTyp, null, this);
+    }
+
+    /**
+     * Reads future information and listens.
+     *
+     * @param reader Reader.
+     * @throws IgniteCheckedException In case of error.
+     */
+    protected void readAndListenFuture(BinaryRawReaderEx reader) throws IgniteCheckedException {
+        readAndListenFuture(reader, currentFuture());
     }
 }
