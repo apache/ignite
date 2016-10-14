@@ -26,8 +26,8 @@ public enum GridNioSessionMetaKey {
     /** NIO parser state. */
     PARSER_STATE,
 
-    /** SSL handler. */
-    SSL_HANDLER,
+    /** SSL Meta. */
+    SSL_META,
 
     /** NIO operation (request type). */
     NIO_OPERATION,
@@ -46,9 +46,6 @@ public enum GridNioSessionMetaKey {
 
     /** Optimized state. */
     OPTO_STATE,
-
-    /** SSL engine. */
-    SSL_ENGINE,
 
     /** Ack closure. */
     ACK_CLOSURE;
