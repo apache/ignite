@@ -19,8 +19,10 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Insert into inner or leaf page.
@@ -36,6 +38,7 @@ public class InsertRecord<L> extends PageDeltaRecord {
     private byte[] rowBytes;
 
     /** */
+    @GridToStringExclude
     private long rightId;
 
     /** */
@@ -69,7 +72,7 @@ public class InsertRecord<L> extends PageDeltaRecord {
     }
 
     /** {@inheritDoc} */
-    @Override public void applyDelta(PageMemory pageMem, ByteBuffer buf) throws IgniteCheckedException {
+    @Override public void applyDelta(ByteBuffer buf) throws IgniteCheckedException {
         io.insert(buf, idx, row, rowBytes, rightId);
     }
 
@@ -92,5 +95,10 @@ public class InsertRecord<L> extends PageDeltaRecord {
 
     public L row() {
         return row;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(InsertRecord.class, this, "rightId", U.hexLong(rightId), "parent", super.toString());
     }
 }

@@ -586,6 +586,11 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     }
 
     /** {@inheritDoc} */
+    @Override public void dropRootPageForIndex(String idxName) throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public ReuseList reuseListForIndex(String idxName) {
         return cctx.shared().database().globalReuseList();
     }

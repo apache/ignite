@@ -42,7 +42,7 @@ public interface PageMemory extends LifecycleAware, PageIdAllocator {
      * @param pageId Page id.
      * @param restore Get page for memory restore
      */
-    public Page page(int cacheId, long pageId, boolean restore, byte[] initPage) throws IgniteCheckedException;
+    public Page page(int cacheId, long pageId, boolean restore) throws IgniteCheckedException;
 
     /**
      * @param page Page to release.
