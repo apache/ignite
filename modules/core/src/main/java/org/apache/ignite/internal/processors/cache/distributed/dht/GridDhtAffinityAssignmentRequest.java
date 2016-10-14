@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -76,6 +77,13 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 4;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeMessage(topVer);
     }
 
     /** {@inheritDoc} */

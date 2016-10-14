@@ -41,6 +41,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  * DHT transaction prepare response.
@@ -239,6 +240,18 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtTxPrepareResponse.class, this, "super", super.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeIgniteUuid(futId);
+        writer.writeCollection(invalidParts, MessageCollectionItemType.INT);
+        writer.writeMap(invalidPartsByCacheId, MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR);
+        writer.writeIgniteUuid(miniId);
+        writer.writeCollection(nearEvicted, MessageCollectionItemType.MSG);
+        writer.writeCollection(preloadEntries, MessageCollectionItemType.MSG);
     }
 
     /** {@inheritDoc} */

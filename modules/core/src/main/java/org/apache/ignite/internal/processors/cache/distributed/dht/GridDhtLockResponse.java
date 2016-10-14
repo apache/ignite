@@ -38,6 +38,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  * DHT cache lock response.
@@ -187,6 +188,16 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
 
         if (preloadEntries != null)
             unmarshalInfos(preloadEntries, ctx.cacheContext(cacheId), ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeCollection(invalidParts, MessageCollectionItemType.INT);
+        writer.writeIgniteUuid(miniId);
+        writer.writeCollection(nearEvicted, MessageCollectionItemType.MSG);
+        writer.writeCollection(preloadEntries, MessageCollectionItemType.MSG);
     }
 
     /** {@inheritDoc} */

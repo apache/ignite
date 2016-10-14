@@ -42,6 +42,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -342,6 +343,23 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
             ownedKeys = null;
             ownedValues = null;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeLong(accessTtl);
+        writer.writeBitSet(invalidateEntries);
+        writer.writeIgniteUuid(miniId);
+        writer.writeCollection(nearKeys, MessageCollectionItemType.MSG);
+        writer.writeObjectArray(ownedKeys, MessageCollectionItemType.MSG);
+        writer.writeObjectArray(ownedValues, MessageCollectionItemType.MSG);
+        writer.writeBitSet(preloadKeys);
+        writer.writeUuid(subjId);
+        writer.writeInt(taskNameHash);
+        writer.writeMessage(topVer);
+        writer.writeCollection(partIds, MessageCollectionItemType.INT);
     }
 
     /** {@inheritDoc} */

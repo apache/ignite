@@ -30,6 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  * DHT cache unlock request.
@@ -97,6 +98,14 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtUnlockRequest.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeCollection(nearKeys, MessageCollectionItemType.MSG);
+        writer.writeCollection(partIds, MessageCollectionItemType.INT);
     }
 
     /** {@inheritDoc} */

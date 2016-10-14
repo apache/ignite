@@ -31,6 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  * DHT transaction finish response.
@@ -160,6 +161,16 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtTxFinishResponse.class, this, super.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeBoolean(checkCommitted);
+        writer.writeByteArray(checkCommittedErrBytes);
+        writer.writeIgniteUuid(miniId);
+        writer.writeMessage(retVal);
     }
 
     /** {@inheritDoc} */

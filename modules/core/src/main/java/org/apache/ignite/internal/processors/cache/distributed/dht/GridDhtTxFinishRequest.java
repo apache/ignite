@@ -32,6 +32,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -369,6 +370,24 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtTxFinishRequest.class, this, super.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeBoolean(checkCommitted);
+        writer.writeByte(flags);
+        writer.writeByte(isolation != null ? (byte)isolation.ordinal() : -1);
+        writer.writeIgniteUuid(miniId);
+        writer.writeUuid(nearNodeId);
+        writer.writeMessage(partUpdateCnt);
+        writer.writeCollection(pendingVers, MessageCollectionItemType.MSG);
+        writer.writeUuid(subjId);
+        writer.writeBoolean(sysInvalidate);
+        writer.writeInt(taskNameHash);
+        writer.writeMessage(topVer);
+        writer.writeMessage(writeVer);
     }
 
     /** {@inheritDoc} */

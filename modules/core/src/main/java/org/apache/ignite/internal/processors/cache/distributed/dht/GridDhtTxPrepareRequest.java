@@ -43,6 +43,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -357,6 +358,26 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtTxPrepareRequest.class, this, "super", super.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeByte(flags);
+        writer.writeIgniteUuid(futId);
+        writer.writeBitSet(invalidateNearEntries);
+        writer.writeBoolean(last);
+        writer.writeIgniteUuid(miniId);
+        writer.writeUuid(nearNodeId);
+        writer.writeCollection(nearWrites, MessageCollectionItemType.MSG);
+        writer.writeMessage(nearXidVer);
+        writer.writeCollection(ownedKeys, MessageCollectionItemType.MSG);
+        writer.writeCollection(ownedVals, MessageCollectionItemType.MSG);
+        writer.writeBitSet(preloadKeys);
+        writer.writeUuid(subjId);
+        writer.writeInt(taskNameHash);
+        writer.writeMessage(topVer);
     }
 
     /** {@inheritDoc} */
