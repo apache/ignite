@@ -15,35 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query.continuous;
+package org.apache.ignite.internal.processors.platform.cache.query;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
+import org.apache.ignite.internal.processors.platform.PlatformContext;
 
 /**
- *
+ * Proxy that implements PlatformTarget.
  */
-public class CacheContinuousQueryAsyncFailoverTxSelfTest extends CacheContinuousQueryFailoverAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
+public class PlatformContinuousQueryProxy extends PlatformAbstractTarget  {
+    private final PlatformContinuousQuery qry;
+
+    /**
+     * Constructor.
+     *
+     * @param platformCtx Context.
+     */
+    public PlatformContinuousQueryProxy(PlatformContext platformCtx, PlatformContinuousQuery qry) {
+        super(platformCtx);
+
+        assert qry != null;
+
+        this.qry = qry;
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return TRANSACTIONAL;
+    @Override public Object outObject(int type) throws Exception {
+        return qry.getInitialQueryCursor();
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean asyncCallback() {
-        return true;
-    }
+    @Override public long outLong(int type) throws Exception {
+        qry.close();
 
-    /** {@inheritDoc} */
-    public void testNoEventLossOnTopologyChange() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-4015");
+        return 0;
     }
 }

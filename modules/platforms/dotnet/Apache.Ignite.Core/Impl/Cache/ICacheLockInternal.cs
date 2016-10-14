@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,30 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query.continuous;
+namespace Apache.Ignite.Core.Impl.Cache
+{
+    using System;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
+    /// <summary>
+    /// Internal cache locking interface.
+    /// </summary>
+    internal interface ICacheLockInternal
+    {
+        /// <summary>
+        /// Enters the lock.
+        /// </summary>
+        void Enter(long id);
 
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+        /// <summary>
+        /// Tries to enter the lock.
+        /// </summary>
+        bool TryEnter(long id, TimeSpan timeout);
 
-/**
- *
- */
-public class CacheContinuousQueryFailoverTxSelfTest extends CacheContinuousQueryFailoverAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
-    }
+        /// <summary>
+        /// Exits the lock.
+        /// </summary>
+        void Exit(long id);
 
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return TRANSACTIONAL;
-    }
-
-    /** {@inheritDoc} */
-    public void testNoEventLossOnTopologyChange() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-4015");
+        /// <summary>
+        /// Closes the lock.
+        /// </summary>
+        void Close(long id);
     }
 }
