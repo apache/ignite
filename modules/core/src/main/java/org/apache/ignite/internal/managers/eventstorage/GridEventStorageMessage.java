@@ -33,6 +33,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -269,6 +270,21 @@ public class GridEventStorageMessage implements Message {
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
+
+        writer.writeIgniteUuid(clsLdrId);
+        writer.writeByte(depMode != null ? (byte)depMode.ordinal() : -1);
+        writer.writeByteArray(evtsBytes);
+        writer.writeByteArray(exBytes);
+        writer.writeByteArray(filter);
+        writer.writeString(filterClsName);
+        writer.writeMap(ldrParties, MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID);
+        writer.writeByteArray(resTopicBytes);
+        writer.writeString(userVer);
     }
 
     /** {@inheritDoc} */

@@ -138,6 +138,7 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
     /** {@inheritDoc} */
     @Override public void writeTo(OptimizedMessageWriter writer) {
         writer.writeHeader(directType());
+
         writer.writeInt(minorTopVer);
         writer.writeLong(topVer);
     }

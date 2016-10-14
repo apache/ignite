@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -146,6 +147,11 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
 
     /** */
     private static class TestMessage implements Message {
+        /** {@inheritDoc} */
+        @Override public void writeTo(OptimizedMessageWriter writer) {
+            writer.writeByte(directType());
+        }
+
         /** {@inheritDoc} */
         @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             writer.setBuffer(buf);

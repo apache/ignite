@@ -198,11 +198,9 @@ public class GridIoMessage implements Message, OptimizedMessage {
 
     /** {@inheritDoc} */
     @Override public void writeTo(OptimizedMessageWriter writer) {
-        if (!(msg instanceof OptimizedMessage))
-            throw new UnsupportedOperationException();
-
         writer.writeHeader(directType());
-        writer.writeMessage((OptimizedMessage)msg);
+
+        writer.writeMessage(msg);
         writer.writeBoolean(ordered);
         writer.writeByte(plc);
         writer.writeBoolean(skipOnTimeout);
