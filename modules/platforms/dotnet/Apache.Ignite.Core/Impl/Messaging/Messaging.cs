@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
     using System.Diagnostics;
     using System.Linq;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Collections;
@@ -187,56 +188,16 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /** <inheritdoc /> */
         public Guid RemoteListen<T>(IMessageListener<T> listener, object topic = null)
         {
-            IgniteArgumentCheck.NotNull(listener, "filter");
-
-            var filter0 = MessageListenerHolder.CreateLocal(_ignite, listener);
-            var filterHnd = _ignite.HandleRegistry.AllocateSafe(filter0);
-
-            try
-            {
-                var id = DoOutInOp((int) Op.RemoteListen,
-                    writer =>
-                    {
-                        writer.Write(filter0);
-                        writer.WriteLong(filterHnd);
-                        writer.Write(topic);
-                    },
-                    input => Marshaller.StartUnmarshal(input).GetRawReader().ReadGuid());
-
-                return id ?? Guid.Empty;
-            }
-            catch (Exception)
-            {
-                _ignite.HandleRegistry.Release(filterHnd);
-
-                throw;
-            }
+            return RemoteListen(listener, topic,
+                (writeAct, readAct) => DoOutInOp((int) Op.RemoteListen, writeAct,
+                    stream => readAct(Marshaller.StartUnmarshal(stream))));
         }
 
         /** <inheritdoc /> */
         public Task<Guid> RemoteListenAsync<T>(IMessageListener<T> listener, object topic = null)
         {
-            IgniteArgumentCheck.NotNull(listener, "filter");
-
-            var filter0 = MessageListenerHolder.CreateLocal(_ignite, listener);
-            var filterHnd = _ignite.HandleRegistry.AllocateSafe(filter0);
-
-            try
-            {
-                return DoOutOpAsync((int) Op.RemoteListenAsync,
-                    writer =>
-                    {
-                        writer.WriteObject(filter0);
-                        writer.WriteLong(filterHnd);
-                        writer.WriteObject(topic);
-                    }, convertFunc: input => input.ReadGuid() ?? Guid.Empty).Task;
-            }
-            catch (Exception)
-            {
-                _ignite.HandleRegistry.Release(filterHnd);
-
-                throw;
-            }
+            return RemoteListen(listener, topic,
+                (writeAct, readAct) => DoOutOpAsync((int) Op.RemoteListenAsync, writeAct, convertFunc: readAct)).Task;
         }
 
         /** <inheritdoc /> */
@@ -260,6 +221,34 @@ namespace Apache.Ignite.Core.Impl.Messaging
         private static KeyValuePair<object, object> GetKey(object filter, object topic)
         {
             return new KeyValuePair<object, object>(filter, topic);
+        }
+
+        /// <summary>
+        /// Remotes listen.
+        /// </summary>
+        private TRes RemoteListen<T, TRes>(IMessageListener<T> filter, object topic,
+            Func<Action<IBinaryRawWriter>, Func<BinaryReader, Guid>, TRes> invoker)
+        {
+            IgniteArgumentCheck.NotNull(filter, "filter");
+
+            var filter0 = MessageListenerHolder.CreateLocal(_ignite, filter);
+            var filterHnd = _ignite.HandleRegistry.AllocateSafe(filter0);
+
+            try
+            {
+                return invoker(writer =>
+                {
+                    writer.WriteObject(filter0);
+                    writer.WriteLong(filterHnd);
+                    writer.WriteObject(topic);
+                }, input => input.ReadGuid() ?? Guid.Empty);
+            }
+            catch (Exception)
+            {
+                _ignite.HandleRegistry.Release(filterHnd);
+
+                throw;
+            }
         }
     }
 }
