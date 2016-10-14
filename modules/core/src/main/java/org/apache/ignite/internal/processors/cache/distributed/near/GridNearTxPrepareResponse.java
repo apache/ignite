@@ -43,6 +43,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -338,6 +339,23 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 key.finishUnmarshal(cctx, ldr);
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeMessage(clientRemapVer);
+        writer.writeMessage(dhtVer);
+        writer.writeCollection(filterFailedKeys, MessageCollectionItemType.MSG);
+        writer.writeIgniteUuid(futId);
+        writer.writeCollection(invalidParts, MessageCollectionItemType.INT);
+        writer.writeIgniteUuid(miniId);
+        writer.writeCollection(ownedValKeys, MessageCollectionItemType.MSG);
+        writer.writeCollection(ownedValVals, MessageCollectionItemType.MSG);
+        writer.writeCollection(pending, MessageCollectionItemType.MSG);
+        writer.writeMessage(retVal);
+        writer.writeMessage(writeVer);
     }
 
     /** {@inheritDoc} */

@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -186,6 +187,19 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
      */
     @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeBoolean(explicitLock);
+        writer.writeIgniteUuid(miniId);
+        writer.writeBoolean(storeEnabled);
+        writer.writeUuid(subjId);
+        writer.writeByte(syncMode != null ? (byte)syncMode.ordinal() : -1);
+        writer.writeInt(taskNameHash);
+        writer.writeMessage(topVer);
     }
 
     /** {@inheritDoc} */

@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -110,6 +111,15 @@ public class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
 
         if (errBytes != null && err == null)
             err = U.unmarshal(ctx, errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeByteArray(errBytes);
+        writer.writeIgniteUuid(miniId);
+        writer.writeLong(nearThreadId);
     }
 
     /** {@inheritDoc} */

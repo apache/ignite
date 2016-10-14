@@ -31,6 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.SKIP_STORE_FLAG_MASK;
@@ -324,6 +325,20 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
         }
 
         return reader.afterMessageRead(GridNearSingleGetRequest.class);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeLong(accessTtl);
+        writer.writeByte(flags);
+        writer.writeLong(futId);
+        writer.writeMessage(key);
+        writer.writeUuid(subjId);
+        writer.writeInt(taskNameHash);
+        writer.writeMessage(topVer);
+        writer.writeInt(partId);
     }
 
     /** {@inheritDoc} */

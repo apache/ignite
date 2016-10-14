@@ -24,6 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  * Near cache unlock request.
@@ -46,6 +47,13 @@ public class GridNearUnlockRequest extends GridDistributedUnlockRequest {
      */
     public GridNearUnlockRequest(int cacheId, int keyCnt, boolean addDepInfo) {
         super(cacheId, keyCnt, addDepInfo);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeCollection(partIds, MessageCollectionItemType.INT);
     }
 
     /** {@inheritDoc} */

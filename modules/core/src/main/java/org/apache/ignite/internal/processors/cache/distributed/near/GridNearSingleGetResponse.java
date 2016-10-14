@@ -32,6 +32,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -189,6 +190,17 @@ public class GridNearSingleGetResponse extends GridCacheMessage implements GridC
 
         if (errBytes != null && err == null)
             err = U.unmarshal(ctx, errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeByteArray(errBytes);
+        writer.writeByte(flags);
+        writer.writeLong(futId);
+        writer.writeMessage(res);
+        writer.writeMessage(topVer);
     }
 
     /** {@inheritDoc} */

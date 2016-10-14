@@ -40,6 +40,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -211,6 +212,19 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeCollection(entries, MessageCollectionItemType.MSG);
+        writer.writeByteArray(errBytes);
+        writer.writeIgniteUuid(futId);
+        writer.writeCollection(invalidParts, MessageCollectionItemType.INT);
+        writer.writeIgniteUuid(miniId);
+        writer.writeMessage(topVer);
+        writer.writeMessage(ver);
     }
 
     /** {@inheritDoc} */

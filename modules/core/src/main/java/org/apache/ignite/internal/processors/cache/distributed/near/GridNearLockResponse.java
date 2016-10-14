@@ -32,6 +32,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -191,6 +192,18 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
 
         // Delegate to super.
         addValue(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeMessage(clientRemapVer);
+        writer.writeObjectArray(dhtVers, MessageCollectionItemType.MSG);
+        writer.writeBooleanArray(filterRes);
+        writer.writeObjectArray(mappedVers, MessageCollectionItemType.MSG);
+        writer.writeIgniteUuid(miniId);
+        writer.writeCollection(pending, MessageCollectionItemType.MSG);
     }
 
     /** {@inheritDoc} */

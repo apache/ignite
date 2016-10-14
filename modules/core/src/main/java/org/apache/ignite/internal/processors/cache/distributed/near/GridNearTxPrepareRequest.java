@@ -36,6 +36,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -267,6 +268,24 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** {@inheritDoc} */
     @Override protected boolean transferExpiryPolicy() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeBoolean(explicitLock);
+        writer.writeBoolean(firstClientReq);
+        writer.writeIgniteUuid(futId);
+        writer.writeBoolean(implicitSingle);
+        writer.writeBoolean(last);
+        writer.writeCollection(lastBackups, MessageCollectionItemType.UUID);
+        writer.writeIgniteUuid(miniId);
+        writer.writeBoolean(near);
+        writer.writeBoolean(retVal);
+        writer.writeUuid(subjId);
+        writer.writeInt(taskNameHash);
+        writer.writeMessage(topVer);
     }
 
     /** {@inheritDoc} */

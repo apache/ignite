@@ -35,6 +35,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -344,6 +345,27 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                     p.finishUnmarshal(cctx, ldr);
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeLong(accessTtl);
+        writer.writeObjectArray(dhtVers, MessageCollectionItemType.MSG);
+        writer.writeObjectArray(filter, MessageCollectionItemType.MSG);
+        writer.writeBoolean(firstClientReq);
+        writer.writeBoolean(hasTransforms);
+        writer.writeBoolean(implicitSingleTx);
+        writer.writeBoolean(implicitTx);
+        writer.writeIgniteUuid(miniId);
+        writer.writeBoolean(onePhaseCommit);
+        writer.writeBoolean(retVal);
+        writer.writeUuid(subjId);
+        writer.writeBoolean(syncCommit);
+        writer.writeInt(taskNameHash);
+        writer.writeMessage(topVer);
+        writer.writeCollection(partIds, MessageCollectionItemType.INT);
     }
 
     /** {@inheritDoc} */
