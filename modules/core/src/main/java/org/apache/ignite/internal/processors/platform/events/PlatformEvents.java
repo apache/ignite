@@ -110,7 +110,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
         assert events != null;
 
         this.events = events;
-        eventsAsync = events.isAsync() ? events : events.withAsync();
+        eventsAsync = events.withAsync();
 
         eventResWriter = new EventResultWriter(platformCtx);
         eventColResWriter = new EventCollectionResultWriter(platformCtx);
@@ -312,7 +312,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
 
     /** {@inheritDoc} */
     @Override protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
-        return ((IgniteFutureImpl)events.future()).internalFuture();
+        return ((IgniteFutureImpl)eventsAsync.future()).internalFuture();
     }
 
     /** {@inheritDoc} */
