@@ -41,6 +41,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  * Partition supply message.
@@ -256,6 +257,17 @@ public class GridDhtPartitionSupplyMessageV2 extends GridCacheMessage implements
      */
     public int size() {
         return infos().size();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeMap(infos, MessageCollectionItemType.INT, MessageCollectionItemType.MSG);
+        writer.writeCollection(last, MessageCollectionItemType.INT);
+        writer.writeCollection(missed, MessageCollectionItemType.INT);
+        writer.writeMessage(topVer);
+        writer.writeLong(updateSeq);
     }
 
     /** {@inheritDoc} */

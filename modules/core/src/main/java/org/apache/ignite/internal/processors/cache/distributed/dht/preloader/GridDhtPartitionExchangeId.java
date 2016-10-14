@@ -30,6 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -158,6 +159,15 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
         GridDhtPartitionExchangeId id = (GridDhtPartitionExchangeId)o;
 
         return evt == id.evt && topVer.equals(id.topVer) && nodeId.equals(id.nodeId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
+
+        writer.writeInt(evt);
+        writer.writeUuid(nodeId);
+        writer.writeMessage(topVer);
     }
 
     /** {@inheritDoc} */

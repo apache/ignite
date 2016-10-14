@@ -39,6 +39,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  * Force keys response. Contains absent keys.
@@ -196,6 +197,17 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeByteArray(errBytes);
+        writer.writeIgniteUuid(futId);
+        writer.writeCollection(infos, MessageCollectionItemType.MSG);
+        writer.writeIgniteUuid(miniId);
+        writer.writeCollection(missedKeys, MessageCollectionItemType.MSG);
     }
 
     /** {@inheritDoc} */

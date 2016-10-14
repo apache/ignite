@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -77,6 +78,14 @@ abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage {
      */
     @Nullable public GridCacheVersion lastVersion() {
         return lastVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeMessage(exchId);
+        writer.writeMessage(lastVer);
     }
 
     /** {@inheritDoc} */

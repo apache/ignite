@@ -32,6 +32,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -199,6 +200,18 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeCollection(parts, MessageCollectionItemType.INT);
+        writer.writeLong(timeout);
+        writer.writeMessage(topVer);
+        writer.writeByteArray(topicBytes);
+        writer.writeLong(updateSeq);
+        writer.writeInt(workerId);
     }
 
     /** {@inheritDoc} */

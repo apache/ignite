@@ -35,6 +35,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  * Force keys request. This message is sent by node while preloading to force
@@ -150,6 +151,16 @@ public class GridDhtForceKeysRequest extends GridCacheMessage implements GridCac
      */
     private int keyCount() {
         return keys.size();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeIgniteUuid(futId);
+        writer.writeCollection(keys, MessageCollectionItemType.MSG);
+        writer.writeIgniteUuid(miniId);
+        writer.writeMessage(topVer);
     }
 
     /** {@inheritDoc} */

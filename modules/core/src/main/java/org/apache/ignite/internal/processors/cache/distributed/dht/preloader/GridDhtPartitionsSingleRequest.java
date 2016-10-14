@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  * Request for single partition info.
@@ -42,6 +43,11 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
      */
     GridDhtPartitionsSingleRequest(GridDhtPartitionExchangeId id) {
         super(id, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
     }
 
     /** {@inheritDoc} */
