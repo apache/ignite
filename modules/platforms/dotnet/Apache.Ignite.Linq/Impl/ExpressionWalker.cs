@@ -135,6 +135,7 @@ namespace Apache.Ignite.Linq.Impl
             }
 
             // Case for compiled queries: return unchanged.
+            // ReSharper disable once CanBeReplacedWithTryCastAndCheckForNull
             if (expr is ParameterExpression)
                 return (T) (object) expr;
 

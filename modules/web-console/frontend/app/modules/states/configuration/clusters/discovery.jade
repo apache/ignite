@@ -1,0 +1,87 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include ../../../../../app/helpers/jade/mixins.jade
+
+-var form = 'discovery'
+-var model = 'backupItem.discovery'
+
+.panel.panel-default(ng-form=form novalidate)
+    .panel-heading(bs-collapse-toggle ng-click='ui.loadPanel("#{form}")')
+        ignite-form-panel-chevron
+        label Discovery
+        ignite-form-field-tooltip.tipLabel
+            | TCP/IP discovery configuration
+        ignite-form-revert
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
+        .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
+            .col-sm-6
+                .settings-row
+                    +text-ip-address('Local address:', model + '.localAddress', '"discoLocalAddress"', 'true', '228.1.2.4',
+                        'Local host IP address that discovery SPI uses<br/>\
+                        If not provided a first found non-loopback address will be used')
+                .settings-row
+                    +number-min-max('Local port:', model + '.localPort', '"discoLocalPort"', 'true', '47500', '1024', '65535', 'Local port which node uses')
+                .settings-row
+                    +number('Local port range:', model + '.localPortRange', '"discoLocalPortRange"', 'true', '100', '1', 'Local port range')
+                .settings-row
+                    +java-class('Address resolver:', model + '.addressResolver', '"discoAddressResolver"', 'true', 'false',
+                        'Provides resolution between external and internal addresses')
+                .settings-row
+                    +number('Socket timeout:', model + '.socketTimeout', '"socketTimeout"', 'true', '5000', '0', 'Socket operations timeout')
+                .settings-row
+                    +number('Acknowledgement timeout:', model + '.ackTimeout', '"ackTimeout"', 'true', '5000', '0', 'Message acknowledgement timeout')
+                .settings-row
+                    +number('Max acknowledgement timeout:', model + '.maxAckTimeout', '"maxAckTimeout"', 'true', '600000', '0', 'Maximum message acknowledgement timeout')
+                .settings-row
+                    +number('Network timeout:', model + '.networkTimeout', '"discoNetworkTimeout"', 'true', '5000', '1', 'Timeout to use for network operations')
+                .settings-row
+                    +number('Join timeout:', model + '.joinTimeout', '"joinTimeout"', 'true', '0', '0',
+                        'Join timeout<br/>' +
+                        '0 means wait forever')
+                .settings-row
+                    +number('Thread priority:', model + '.threadPriority', '"threadPriority"', 'true', '10', '1', 'Thread priority for all threads started by SPI')
+                .settings-row
+                    +number('Heartbeat frequency:', model + '.heartbeatFrequency', '"heartbeatFrequency"', 'true', '2000', '1', 'Heartbeat messages issuing frequency')
+                .settings-row
+                    +number('Max heartbeats miss w/o init:', model + '.maxMissedHeartbeats', '"maxMissedHeartbeats"', 'true', '1', '1',
+                        'Max heartbeats count node can miss without initiating status check')
+                .settings-row
+                    +number('Max missed client heartbeats:', model + '.maxMissedClientHeartbeats', '"maxMissedClientHeartbeats"', 'true', '5', '1',
+                        'Max heartbeats count node can miss without failing client node')
+                .settings-row
+                    +number('Topology history:', model + '.topHistorySize', '"topHistorySize"', 'true', '1000', '0', 'Size of topology snapshots history')
+                .settings-row
+                    +java-class('Discovery listener:', model + '.listener', '"discoListener"', 'true', 'false', 'Listener for grid node discovery events')
+                .settings-row
+                    +java-class('Data exchange:', model + '.dataExchange', '"dataExchange"', 'true', 'false', 'Class name of handler for initial data exchange between Ignite nodes')
+                .settings-row
+                    +java-class('Metrics provider:', model + '.metricsProvider', '"metricsProvider"', 'true', 'false', 'Class name of metric provider to discovery SPI')
+                .settings-row
+                    +number('Reconnect count:', model + '.reconnectCount', '"discoReconnectCount"', 'true', '10', '1', 'Reconnect attempts count')
+                .settings-row
+                    +number('Statistics frequency:', model + '.statisticsPrintFrequency', '"statisticsPrintFrequency"', 'true', '0', '1', 'Statistics print frequency')
+                .settings-row
+                    +number('IP finder clean frequency:', model + '.ipFinderCleanFrequency', '"ipFinderCleanFrequency"', 'true', '60000', '1', 'IP finder clean frequency')
+                .settings-row
+                    +java-class('Node authenticator:', model + '.authenticator', '"authenticator"', 'true', 'false', 'Class name of node authenticator implementation')
+                .settings-row
+                    +checkbox('Force server mode', model + '.forceServerMode', '"forceServerMode"', 'Force start TCP/IP discovery in server mode')
+                .settings-row
+                    +checkbox('Client reconnect disabled', model + '.clientReconnectDisabled', '"clientReconnectDisabled"',
+                        'Disable try of client to reconnect after server detected client node failure')
+            .col-sm-6
+                +preview-xml-java(model, 'clusterDiscovery')

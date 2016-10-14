@@ -27,13 +27,13 @@ import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemIgfsFile;
+import org.apache.ignite.internal.processors.igfs.secondary.local.LocalFileSystemSizeVisitor;
 import org.apache.ignite.internal.processors.igfs.secondary.local.LocalIgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -41,6 +41,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -49,9 +52,6 @@ import java.util.Map;
  * Secondary file system which delegates to local file system.
  */
 public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, LifecycleAware {
-    /** Default buffer size. */
-    private static final int DFLT_BUF_SIZE = 8 * 1024;
-
     /** Path that will be added to each passed path. */
     private String workDir;
 
@@ -108,35 +108,44 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     @Override public boolean delete(IgfsPath path, boolean recursive) {
         File f = fileForPath(path);
 
-        if (!recursive || !f.isDirectory())
+        if (!recursive)
             return f.delete();
         else
-            return deleteDirectory(f);
+            return deleteRecursive(f, false);
     }
 
     /**
      * Delete directory recursively.
      *
-     * @param dir Directory.
+     * @param f Directory.
+     * @param deleteIfExists Ignore delete errors if the file doesn't exist.
      * @return {@code true} if successful.
      */
-    private boolean deleteDirectory(File dir) {
-        File[] entries = dir.listFiles();
+    private boolean deleteRecursive(File f, boolean deleteIfExists) {
+        BasicFileAttributes attrs;
+
+        try {
+            attrs = Files.readAttributes(f.toPath(), BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+        }
+        catch (IOException ignore) {
+            return deleteIfExists && !f.exists();
+        }
+
+        if (!attrs.isDirectory() || attrs.isSymbolicLink())
+            return f.delete() || (deleteIfExists && !f.exists());
+
+        File[] entries = f.listFiles();
 
         if (entries != null) {
             for (File entry : entries) {
-                if (entry.isDirectory())
-                    deleteDirectory(entry);
-                else if (entry.isFile()) {
-                    if (!entry.delete())
-                        return false;
-                }
-                else
-                    throw new UnsupportedOperationException("Symlink deletion is not yet supported: " + entry);
+                boolean res = deleteRecursive(entry, true);
+
+                if (!res)
+                    return false;
             }
         }
 
-        return dir.delete();
+        return f.delete() || (deleteIfExists && !f.exists());
     }
 
     /** {@inheritDoc} */
@@ -243,13 +252,13 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Override public OutputStream create(IgfsPath path, boolean overwrite) {
-        return create0(path, overwrite, DFLT_BUF_SIZE);
+        return create0(path, overwrite);
     }
 
     /** {@inheritDoc} */
     @Override public OutputStream create(IgfsPath path, int bufSize, boolean overwrite, int replication,
         long blockSize, @Nullable Map<String, String> props) {
-        return create0(path, overwrite, bufSize);
+        return create0(path, overwrite);
     }
 
     /** {@inheritDoc} */
@@ -261,10 +270,10 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
             boolean exists = file.exists();
 
             if (exists)
-                return new BufferedOutputStream(new FileOutputStream(file, true), bufSize);
+                return new FileOutputStream(file, true);
             else {
                 if (create)
-                    return create0(path, false, bufSize);
+                    return create0(path, false);
                 else
                     throw new IgfsPathNotFoundException("Failed to append to file because it doesn't exist: " + path);
             }
@@ -291,7 +300,18 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
     /** {@inheritDoc} */
     @Override public long usedSpaceSize() {
-        throw new UnsupportedOperationException("usedSpaceSize operation is not yet supported.");
+        Path p = fileForPath(IgfsPath.ROOT).toPath();
+
+        try {
+            LocalFileSystemSizeVisitor visitor = new LocalFileSystemSizeVisitor();
+
+            Files.walkFileTree(p, visitor);
+
+            return visitor.size();
+        }
+        catch (IOException e) {
+            throw new IgfsException("Failed to calculate used space size.", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -365,11 +385,10 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
      * Internal create routine.
      *
      * @param path Path.
-     * @param overwrite Overwirte flag.
-     * @param bufSize Buffer size.
+     * @param overwrite Overwrite flag.
      * @return Output stream.
      */
-    private OutputStream create0(IgfsPath path, boolean overwrite, int bufSize) {
+    private OutputStream create0(IgfsPath path, boolean overwrite) {
         File file = fileForPath(path);
 
         boolean exists = file.exists();
@@ -387,7 +406,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         }
 
         try {
-            return new BufferedOutputStream(new FileOutputStream(file), bufSize);
+            return new FileOutputStream(file);
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to create file [path=" + path + ", overwrite=" + overwrite + ']');

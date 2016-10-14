@@ -1,0 +1,53 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include ../../../../../app/helpers/jade/mixins.jade
+
+-var form = 'cacheKeyCfg'
+-var model = 'backupItem.cacheKeyConfiguration'
+-var items = model;
+
+.panel.panel-default(ng-form=form novalidate)
+    .panel-heading(bs-collapse-toggle ng-click='ui.loadPanel("#{form}")')
+        ignite-form-panel-chevron
+        label Cache key configuration
+        ignite-form-field-tooltip.tipLabel
+            | Cache key configuration allows to collocate objects in a partitioned cache based on field in cache key without explicit usage of annotations on user classes
+        ignite-form-revert
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
+        .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
+            .col-sm-6
+                .settings-row
+                    -var form = form + 'TypeConfigurations'
+
+                    +ignite-form-group(ng-form=form ng-model=model)
+                        ignite-form-field-label
+                            | Cache key configuration
+                        ignite-form-group-tooltip
+                            | Cache key configuration
+                        ignite-form-group-add(ng-click='#{model}.push({})')
+                            | Add new cache key configuration
+                        .group-content-empty(ng-if='!#{model}.length')
+                            | Not defined
+                        .group-content(ng-repeat='model in #{model} track by $index')
+                            hr(ng-if='$index !== 0')
+                            .settings-row
+                                +java-class('Type name:', 'model.typeName', '"cacheKeyTypeName" + $index', 'true', 'true', 'Type name')
+                                    +table-remove-button(items, 'Remove cache key configuration')
+                            .settings-row
+                                +text('Affinity key field name:', 'model.affinityKeyFieldName', '"affinityKeyFieldName" + $index', true, 'Enter field name', 'Affinity key field name')
+            .col-sm-6
+                +preview-xml-java(model, 'clusterCacheKeyConfiguration')

@@ -598,7 +598,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                                 addrRes = new AddressResponse(data);
                             }
                             catch (IgniteCheckedException e) {
-                                LT.warn(log, e, "Failed to deserialize multicast response.");
+                                LT.error(log, e, "Failed to deserialize multicast response.");
 
                                 continue;
                             }
@@ -617,9 +617,6 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                 finally {
                     U.close(sock);
                 }
-
-                if (rmtAddrs.size() > locNodeAddrs.size())
-                    break;
 
                 if (i < addrReqAttempts - 1) // Wait some time before re-sending address request.
                     U.sleep(200);
@@ -879,7 +876,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                 }
                 catch (IOException e) {
                     if (!isInterrupted()) {
-                        LT.warn(log, e, "Failed to send/receive address message (will try to reconnect).");
+                        LT.error(log, e, "Failed to send/receive address message (will try to reconnect).");
 
                         synchronized (this) {
                             U.close(sock);

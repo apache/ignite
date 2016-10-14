@@ -52,7 +52,7 @@ namespace ignite
         {
             // No-op.
         }
-        
+
         const config::ConnectionInfo& Connection::GetInfo() const
         {
             // Connection info is constant and the same for all connections now.
@@ -117,7 +117,7 @@ namespace ignite
                 return SQL_RESULT_ERROR;
             }
 
-            connected = socket.Connect(cfg.GetHost().c_str(), cfg.GetPort());
+            connected = socket.Connect(cfg.GetHost().c_str(), cfg.GetTcpPort());
 
             if (!connected)
             {

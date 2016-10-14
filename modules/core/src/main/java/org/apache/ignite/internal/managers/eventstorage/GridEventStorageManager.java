@@ -278,7 +278,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             int type = evt.type();
 
             if (!isRecordable(type)) {
-                LT.warn(log, null, "Trying to record event without checking if it is recordable: " +
+                LT.warn(log, "Trying to record event without checking if it is recordable: " +
                     U.gridEventName(type));
             }
 

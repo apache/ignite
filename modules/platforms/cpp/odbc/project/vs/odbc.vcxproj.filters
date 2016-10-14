@@ -26,6 +26,9 @@
     <Filter Include="Code\diagnostic">
       <UniqueIdentifier>{df33e506-b5d8-423f-bcc5-1825242a3e28}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Code\system\ui">
+      <UniqueIdentifier>{ff144e89-0a10-42c3-97dd-d22bfdbc7abb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\odbc.cpp">
@@ -113,6 +116,21 @@
       <Filter>Code\query</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\entry_points.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\system\ui\window.cpp">
+      <Filter>Code\system\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\system\ui\custom_window.cpp">
+      <Filter>Code\system\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\system\ui\dsn_configuration_window.cpp">
+      <Filter>Code\system\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\system_dsn.cpp">
+      <Filter>Code\system</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dsn_config.cpp">
       <Filter>Code</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\protocol_version.cpp">
@@ -225,6 +243,18 @@
       <Filter>Code\query</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\os\win\include\ignite\odbc\system\ui\window.h">
+      <Filter>Code\system\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\os\win\include\ignite\odbc\system\ui\custom_window.h">
+      <Filter>Code\system\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\system\ui\dsn_configuration_window.h">
+      <Filter>Code\system\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\dsn_config.h">
       <Filter>Code</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\protocol_version.h">

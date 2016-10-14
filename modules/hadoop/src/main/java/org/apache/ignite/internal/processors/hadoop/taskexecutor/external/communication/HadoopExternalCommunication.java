@@ -850,7 +850,7 @@ public class HadoopExternalCommunication {
             catch (IgniteCheckedException e) {
                 if (e.hasCause(IpcOutOfSystemResourcesException.class))
                     // Has cause or is itself the IpcOutOfSystemResourcesException.
-                    LT.warn(log, null, OUT_OF_RESOURCES_TCP_MSG);
+                    LT.warn(log, OUT_OF_RESOURCES_TCP_MSG);
                 else if (log.isDebugEnabled())
                     log.debug("Failed to establish shared memory connection with local hadoop process: " +
                         desc);
@@ -1053,7 +1053,7 @@ public class HadoopExternalCommunication {
                         ", err=" + e + ']');
 
                 if (X.hasCause(e, SocketTimeoutException.class))
-                    LT.warn(log, null, "Connect timed out (consider increasing 'connTimeout' " +
+                    LT.warn(log, "Connect timed out (consider increasing 'connTimeout' " +
                         "configuration property) [addr=" + addr + ", port=" + port + ']');
 
                 if (errs == null)
@@ -1078,7 +1078,7 @@ public class HadoopExternalCommunication {
             assert errs != null;
 
             if (X.hasCause(errs, ConnectException.class))
-                LT.warn(log, null, "Failed to connect to a remote Hadoop process (is process still running?). " +
+                LT.warn(log, "Failed to connect to a remote Hadoop process (is process still running?). " +
                     "Make sure operating system firewall is disabled on local and remote host) " +
                     "[addrs=" + addr + ", port=" + port + ']');
 

@@ -32,8 +32,8 @@
         <!-- Enabling ODBC. -->
         <property name="odbcConfiguration">
             <bean class="org.apache.ignite.configuration.OdbcConfiguration">
-				<property name="endpointAddress" value="127.0.0.1:11110"/>
-			</bean>
+                <property name="endpointAddress" value="127.0.0.1:11110"/>
+            </bean>
         </property>
 
         <property name="cacheConfiguration">
@@ -43,16 +43,16 @@
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-            
-                    <!-- Configure type metadata to enable queries. -->
-					<property name="queryEntities">
-						<list>
-							<bean class="org.apache.ignite.cache.QueryEntity">
-								<property name="keyType" value="java.lang.Long"/>
-								<property name="valueType" value="TestType"/>
 
-								<property name="fields">
-									<map>
+                    <!-- Configure type metadata to enable queries. -->
+                    <property name="queryEntities">
+                        <list>
+                            <bean class="org.apache.ignite.cache.QueryEntity">
+                                <property name="keyType" value="java.lang.Long"/>
+                                <property name="valueType" value="TestType"/>
+
+                                <property name="fields">
+                                    <map>
                                         <entry key="i8Field" value="java.lang.Byte"/>
                                         <entry key="i16Field" value="java.lang.Short"/>
                                         <entry key="i32Field" value="java.lang.Integer"/>
@@ -64,22 +64,22 @@
                                         <entry key="guidField" value="java.util.UUID"/>
                                         <entry key="dateField" value="java.util.Date"/>
                                         <entry key="timestampField" value="java.sql.Timestamp"/>
-									</map>
-								</property>
+                                    </map>
+                                </property>
 
-								<property name="indexes">
-									<list>
-										<bean class="org.apache.ignite.cache.QueryIndex">
-											<constructor-arg value="i32Field"/>
-										</bean>
-										<bean class="org.apache.ignite.cache.QueryIndex">
-											<constructor-arg value="i64Field"/>
-										</bean>
-									</list>
-								</property>
-							</bean>
-						</list>
-					</property>
+                                <property name="indexes">
+                                    <list>
+                                        <bean class="org.apache.ignite.cache.QueryIndex">
+                                            <constructor-arg value="i32Field"/>
+                                        </bean>
+                                        <bean class="org.apache.ignite.cache.QueryIndex">
+                                            <constructor-arg value="i64Field"/>
+                                        </bean>
+                                    </list>
+                                </property>
+                            </bean>
+                        </list>
+                    </property>
                 </bean>
             </list>
         </property>

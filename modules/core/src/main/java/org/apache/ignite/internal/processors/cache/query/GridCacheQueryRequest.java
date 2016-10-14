@@ -84,7 +84,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
 
     /** */
     @GridDirectTransient
-    private IgniteClosure<Object, Object> trans;
+    private IgniteClosure<?, ?> trans;
 
     /** */
     private byte[] transBytes;
@@ -233,7 +233,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         IgniteBiPredicate<Object, Object> keyValFilter,
         @Nullable Integer part,
         IgniteReducer<Object, Object> rdc,
-        IgniteClosure<Object, Object> trans,
+        IgniteClosure<?, ?> trans,
         int pageSize,
         boolean incBackups,
         Object[] args,
@@ -422,7 +422,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     /**
      * @return Transformer.
      */
-    public IgniteClosure<Object, Object> transformer() {
+    public IgniteClosure<?, ?> transformer() {
         return trans;
     }
 

@@ -88,15 +88,15 @@ public abstract class GridDiscoveryManagerSelfTest extends GridCommonAbstractTes
     public void testHasNearCache() throws Exception {
         IgniteKernal g0 = (IgniteKernal)startGrid(0); // PARTITIONED_ONLY cache.
 
-        AffinityTopologyVersion zero = new AffinityTopologyVersion(0);
+        AffinityTopologyVersion none = new AffinityTopologyVersion(-1);
         AffinityTopologyVersion one = new AffinityTopologyVersion(1);
         AffinityTopologyVersion two = new AffinityTopologyVersion(2, 2);
         AffinityTopologyVersion three = new AffinityTopologyVersion(3);
         AffinityTopologyVersion four = new AffinityTopologyVersion(4);
         AffinityTopologyVersion five = new AffinityTopologyVersion(5);
 
-        assertFalse(g0.context().discovery().hasNearCache(CACHE_NAME, zero));
-        assertFalse(g0.context().discovery().hasNearCache(null, zero));
+        assertFalse(g0.context().discovery().hasNearCache(CACHE_NAME, none));
+        assertFalse(g0.context().discovery().hasNearCache(null, none));
 
         assertFalse(g0.context().discovery().hasNearCache(CACHE_NAME, one));
         assertFalse(g0.context().discovery().hasNearCache(null, one));

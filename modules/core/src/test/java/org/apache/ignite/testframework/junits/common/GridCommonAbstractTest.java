@@ -486,7 +486,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                                 if (affNodes.size() != owners.size() || !affNodes.containsAll(owners) ||
                                     (waitEvicts && loc != null && loc.state() != GridDhtPartitionState.OWNING)) {
-                                    LT.warn(log(), null, "Waiting for topology map update [" +
+                                    LT.warn(log(), "Waiting for topology map update [" +
                                         "grid=" + g.name() +
                                         ", cache=" + cfg.getName() +
                                         ", cacheId=" + dht.context().cacheId() +
@@ -503,7 +503,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                     match = true;
                             }
                             else {
-                                LT.warn(log(), null, "Waiting for topology map update [" +
+                                LT.warn(log(), "Waiting for topology map update [" +
                                     "grid=" + g.name() +
                                     ", cache=" + cfg.getName() +
                                     ", cacheId=" + dht.context().cacheId() +
@@ -569,7 +569,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                     }
 
                                     if (entry.getValue() != GridDhtPartitionState.OWNING) {
-                                        LT.warn(log(), null,
+                                        LT.warn(log(),
                                             "Waiting for correct partition state, should be OWNING [state=" +
                                                 entry.getValue() + "]");
 

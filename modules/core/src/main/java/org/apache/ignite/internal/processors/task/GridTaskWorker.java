@@ -490,7 +490,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 }
             }
 
-            internal = dep.internalTask(task, taskCls);
+            internal = ses.isInternal();
 
             recordTaskEvent(EVT_TASK_STARTED, "Task started.");
 
@@ -626,7 +626,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 res.setOccupied(true);
 
                 if (resCache && jobRes.size() > ctx.discovery().size() && jobRes.size() % SPLIT_WARN_THRESHOLD == 0)
-                    LT.warn(log, null, "Number of jobs in task is too large for task: " + ses.getTaskName() +
+                    LT.warn(log, "Number of jobs in task is too large for task: " + ses.getTaskName() +
                         ". Consider reducing number of jobs or disabling job result cache with " +
                         "@ComputeTaskNoResultCache annotation.");
             }
@@ -1500,7 +1500,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * @param msg Event message.
      */
     private void recordJobEvent(int evtType, IgniteUuid jobId, ClusterNode evtNode, String msg) {
-        if (ctx.event().isRecordable(evtType)) {
+        if (!internal && ctx.event().isRecordable(evtType)) {
             JobEvent evt = new JobEvent();
 
             evt.message(msg);

@@ -1,0 +1,113 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include ../../../../../app/helpers/jade/mixins.jade
+
+-var form = 'deployment'
+-var model = 'backupItem'
+-var exclude = model + '.peerClassLoadingLocalClassPathExclude'
+-var enabled = 'backupItem.peerClassLoadingEnabled'
+
+.panel.panel-default(ng-form=form novalidate)
+    .panel-heading(bs-collapse-toggle ng-click='ui.loadPanel("#{form}")')
+        ignite-form-panel-chevron
+        label Class deployment
+        ignite-form-field-tooltip.tipLabel
+            | Task and resources deployment in cluster
+        ignite-form-revert
+    .panel-collapse(role='tabpanel' bs-collapse-target id='deployment')
+        .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
+            .col-sm-6
+                .settings-row
+                    +dropdown('Deployment mode:', model + '.deploymentMode', '"deploymentMode"', 'true', 'SHARED',
+                        '[\
+                            {value: "PRIVATE", label: "PRIVATE"},\
+                            {value: "ISOLATED", label: "ISOLATED"}, \
+                            {value: "SHARED", label: "SHARED"},\
+                            {value: "CONTINUOUS", label: "CONTINUOUS"}\
+                        ]',
+                        'Task classes and resources sharing mode<br/>\
+                        The following deployment modes are supported:\
+                        <ul>\
+                            <li>PRIVATE - in this mode deployed classes do not share resources</li>\
+                            <li>ISOLATED - in this mode tasks or classes deployed within the same class loader will share the same instances of resources</li>\
+                            <li>SHARED - same as ISOLATED, but now tasks from different master nodes with the same user version and same class loader will share the same class loader on remote nodes</li>\
+                            <li>CONTINUOUS - same as SHARED deployment mode, but resources will not be undeployed even after all master nodes left grid</li>\
+                        </ul>')
+                .settings-row
+                    +checkbox('Enable peer class loading', model + '.peerClassLoadingEnabled', '"peerClassLoadingEnabled"', 'Enables/disables peer class loading')
+                .settings-row
+                    +number('Missed resources cache size:', model + '.peerClassLoadingMissedResourcesCacheSize', '"peerClassLoadingMissedResourcesCacheSize"', enabled, '100', '0',
+                        'If size greater than 0, missed resources will be cached and next resource request ignored<br/>\
+                        If size is 0, then request for the resource will be sent to the remote node every time this resource is requested')
+                .settings-row
+                    +number('Pool size:', model + '.peerClassLoadingThreadPoolSize', '"peerClassLoadingThreadPoolSize"', enabled, '2', '1', 'Thread pool size to use for peer class loading')
+                .settings-row
+                    +ignite-form-group(ng-model=exclude ng-form=form)
+                        -var uniqueTip = 'Such package already exists'
+
+                        ignite-form-field-label
+                            | Local class path exclude
+                        ignite-form-group-tooltip
+                            | List of packages from the system classpath that need to be peer-to-peer loaded from task originating node<br/>
+                            | '*' is supported at the end of the package name which means that all sub-packages and their classes are included like in Java package import clause
+                        ignite-form-group-add(ng-show='#{enabled}' ng-click='(group.add = [{}])')
+                            | Add package name.
+
+                        .group-content(ng-if=exclude + '.length')
+                            -var model = 'obj.model';
+                            -var name = '"edit" + $index'
+                            -var valid = form + '[' + name + '].$valid'
+                            -var save = exclude + '[$index] = ' + model
+
+                            div(ng-show=enabled)
+                                div(ng-repeat='model in #{exclude} track by $index' ng-init='obj = {}')
+                                    label.col-xs-12.col-sm-12.col-md-12
+                                        .indexField
+                                            | {{ $index+1 }})
+                                        +table-remove-button(exclude, 'Remove package name')
+                                        span(ng-hide='field.edit')
+                                            a.labelFormField(ng-click='#{enabled} && (field.edit = true) && (#{model} = model)') {{ model }}
+                                        span(ng-if='field.edit')
+                                            +table-java-package-field(name, model, exclude, valid, save, false)
+                                                +table-save-button(valid, save, false)
+                                                +unique-feedback(name, uniqueTip)
+
+                            div(ng-hide=enabled)
+                                div(ng-repeat='model in #{exclude} track by $index')
+                                    label.col-xs-12.col-sm-12.col-md-12
+                                        .labelFormField.labelField
+                                            | {{ $index+1 }})
+                                        span.labelFormField
+                                            | {{ model }}
+
+                        .group-content(ng-repeat='field in group.add')
+                            -var model = 'new';
+                            -var name = '"new"'
+                            -var valid = form + '[' + name + '].$valid'
+                            -var save = exclude + '.push(' + model + ')'
+
+                            div(type='internal' name='Package name')
+                                label.col-xs-12.col-sm-12.col-md-12
+                                    +table-java-package-field(name, model, exclude, valid, save, true)
+                                        +table-save-button(valid, save, true)
+                                        +unique-feedback(name, uniqueTip)
+
+
+                        .group-content-empty(ng-if='!(#{exclude}.length) && !group.add.length')
+                            | Not defined
+            .col-sm-6
+                +preview-xml-java(model, 'clusterDeployment')

@@ -574,26 +574,26 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private void AddSystemTypes()
         {
-            AddSystemType(BinaryUtils.TypeNativeJobHolder, w => new ComputeJobHolder(w));
-            AddSystemType(BinaryUtils.TypeComputeJobWrapper, w => new ComputeJobWrapper(w));
-            AddSystemType(BinaryUtils.TypeIgniteProxy, w => new IgniteProxy());
-            AddSystemType(BinaryUtils.TypeComputeOutFuncJob, w => new ComputeOutFuncJob(w));
-            AddSystemType(BinaryUtils.TypeComputeOutFuncWrapper, w => new ComputeOutFuncWrapper(w));
-            AddSystemType(BinaryUtils.TypeComputeFuncWrapper, w => new ComputeFuncWrapper(w));
-            AddSystemType(BinaryUtils.TypeComputeFuncJob, w => new ComputeFuncJob(w));
-            AddSystemType(BinaryUtils.TypeComputeActionJob, w => new ComputeActionJob(w));
-            AddSystemType(BinaryUtils.TypeContinuousQueryRemoteFilterHolder, w => new ContinuousQueryFilterHolder(w));
-            AddSystemType(BinaryUtils.TypeSerializableHolder, w => new SerializableObjectHolder(w),
+            AddSystemType(BinaryUtils.TypeNativeJobHolder, r => new ComputeJobHolder(r));
+            AddSystemType(BinaryUtils.TypeComputeJobWrapper, r => new ComputeJobWrapper(r));
+            AddSystemType(BinaryUtils.TypeIgniteProxy, r => new IgniteProxy());
+            AddSystemType(BinaryUtils.TypeComputeOutFuncJob, r => new ComputeOutFuncJob(r));
+            AddSystemType(BinaryUtils.TypeComputeOutFuncWrapper, r => new ComputeOutFuncWrapper(r));
+            AddSystemType(BinaryUtils.TypeComputeFuncWrapper, r => new ComputeFuncWrapper(r));
+            AddSystemType(BinaryUtils.TypeComputeFuncJob, r => new ComputeFuncJob(r));
+            AddSystemType(BinaryUtils.TypeComputeActionJob, r => new ComputeActionJob(r));
+            AddSystemType(BinaryUtils.TypeContinuousQueryRemoteFilterHolder, r => new ContinuousQueryFilterHolder(r));
+            AddSystemType(BinaryUtils.TypeSerializableHolder, r => new SerializableObjectHolder(r),
                 serializer: new SerializableSerializer());
-            AddSystemType(BinaryUtils.TypeDateTimeHolder, w => new DateTimeHolder(w),
+            AddSystemType(BinaryUtils.TypeDateTimeHolder, r => new DateTimeHolder(r),
                 serializer: new DateTimeSerializer());
-            AddSystemType(BinaryUtils.TypeCacheEntryProcessorHolder, w => new CacheEntryProcessorHolder(w));
-            AddSystemType(BinaryUtils.TypeCacheEntryPredicateHolder, w => new CacheEntryFilterHolder(w));
-            AddSystemType(BinaryUtils.TypeMessageListenerHolder, w => new MessageListenerHolder(w));
-            AddSystemType(BinaryUtils.TypeStreamReceiverHolder, w => new StreamReceiverHolder(w));
-            AddSystemType(0, w => new AffinityKey(w), "affKey");
-            AddSystemType(BinaryUtils.TypePlatformJavaObjectFactoryProxy, w => new PlatformJavaObjectFactoryProxy());
-            AddSystemType(0, w => new ObjectInfoHolder(w));
+            AddSystemType(BinaryUtils.TypeCacheEntryProcessorHolder, r => new CacheEntryProcessorHolder(r));
+            AddSystemType(BinaryUtils.TypeCacheEntryPredicateHolder, r => new CacheEntryFilterHolder(r));
+            AddSystemType(BinaryUtils.TypeMessageListenerHolder, r => new MessageListenerHolder(r));
+            AddSystemType(BinaryUtils.TypeStreamReceiverHolder, r => new StreamReceiverHolder(r));
+            AddSystemType(0, r => new AffinityKey(r), "affKey");
+            AddSystemType(BinaryUtils.TypePlatformJavaObjectFactoryProxy, r => new PlatformJavaObjectFactoryProxy());
+            AddSystemType(0, r => new ObjectInfoHolder(r));
         }
     }
 }

@@ -236,4 +236,9 @@ public class GridBoundedConcurrentOrderedMap<K, V> extends ConcurrentSkipListMap
 
         return rmvd;
     }
+
+    /** {@inheritDoc} */
+    @Override public void clear() {
+        throw new UnsupportedOperationException();
+    }
 }
