@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -32,6 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -71,6 +73,11 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
 
     /** */
     private boolean ignoreInterrupts;
+
+    /** */
+    @SuppressWarnings({"UnusedDeclaration"})
+    @LoggerResource
+    private IgniteLogger log;
 
     /** */
     @GridToStringExclude
@@ -263,11 +270,11 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
             lsnr.apply(this);
         }
         catch (IllegalStateException e) {
-            U.error(null, "Failed to notify listener (is grid stopped?) [fut=" + this +
+            U.error(log, "Failed to notify listener (is grid stopped?) [fut=" + this +
                 ", lsnr=" + lsnr + ", err=" + e.getMessage() + ']', e);
         }
         catch (RuntimeException | Error e) {
-            U.error(null, "Failed to notify listener: " + lsnr, e);
+            U.error(log, "Failed to notify listener: " + lsnr, e);
 
             throw e;
         }

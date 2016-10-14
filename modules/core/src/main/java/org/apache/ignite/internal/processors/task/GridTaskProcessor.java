@@ -626,6 +626,13 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
         ComputeTaskInternalFuture<R> fut = new ComputeTaskInternalFuture<>(ses, ctx);
 
+        try {
+            ctx.resource().injectGeneric(fut);
+        }
+        catch (IgniteCheckedException e) {
+            U.warn(log, "Future resource injection failed", e);
+        }
+
         IgniteCheckedException securityEx = null;
 
         if (ctx.security().enabled() && deployEx == null) {
