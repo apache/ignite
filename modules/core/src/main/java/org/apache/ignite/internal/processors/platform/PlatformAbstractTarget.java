@@ -241,23 +241,12 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
 
     /** {@inheritDoc} */
     @Override public void listenFuture(final long futId, int typ) throws Exception {
-        listenFutureAndGet(futId, typ);
+        PlatformFutureUtils.listen(platformCtx, currentFuture(), futId, typ, null, this);
     }
 
     /** {@inheritDoc} */
     @Override public void listenFutureForOperation(final long futId, int typ, int opId) throws Exception {
-        listenFutureForOperationAndGet(futId, typ, opId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformListenable listenFutureAndGet(final long futId, int typ) throws Exception {
-        return PlatformFutureUtils.listen(platformCtx, currentFuture(), futId, typ, null, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformListenable listenFutureForOperationAndGet(final long futId, int typ, int opId)
-            throws Exception {
-        return PlatformFutureUtils.listen(platformCtx, currentFuture(), futId, typ, futureWriter(opId), this);
+        PlatformFutureUtils.listen(platformCtx, currentFuture(), futId, typ, futureWriter(opId), this);
     }
 
     /**
