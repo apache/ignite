@@ -149,7 +149,8 @@ public class PlatformEvents extends PlatformAbstractTarget {
             case OP_REMOTE_QUERY_ASYNC:
                 startRemoteQuery(reader, eventsAsync);
 
-                readAndListenFuture(reader, currentFuture(), eventColResWriter);
+                readAndListenFuture(reader, ((IgniteFutureImpl)eventsAsync.future()).internalFuture(),
+                        eventColResWriter);
 
                 return TRUE;
 

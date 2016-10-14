@@ -132,7 +132,7 @@ namespace Apache.Ignite.Core.Impl.Events
             params int[] types) where T : IEvent
         {
             return DoOutOpAsync<ICollection<T>>((int) Op.RemoteQueryAsync,
-                w => WriteRemoteQuery(filter, timeout, types, w)).Task;
+                w => WriteRemoteQuery(filter, timeout, types, w), convertFunc: ReadEvents<T>).Task;
         }
 
         /** <inheritDoc /> */
