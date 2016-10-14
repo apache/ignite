@@ -233,14 +233,21 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
                 break;
 
-            case OP_EXEC_ASYNC:
-                writer.writeObjectDetached(executeJavaTask(reader, true));
-
-                break;
-
             default:
                 super.processInStreamOutStream(type, reader, writer);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+        switch (type) {
+            case OP_EXEC_ASYNC:
+                executeJavaTask(reader, true);
+
+                return TRUE;
+        }
+
+        return super.processInStreamOutLong(type, reader);
     }
 
     /**

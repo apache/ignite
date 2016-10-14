@@ -688,15 +688,15 @@ namespace Apache.Ignite.Core.Impl
         /// <typeparam name="T">Type of the result.</typeparam>
         /// <param name="type">The type code.</param>
         /// <param name="writeAction">The write action.</param>
-        /// <returns>Task for async operation</returns>
-        protected Task<T> DoOutOpAsync<T>(int type, Action<IBinaryRawWriter> writeAction)
+        /// <returns>Future for async operation</returns>
+        protected Future<T> DoOutOpAsync<T>(int type, Action<IBinaryRawWriter> writeAction)
         {
             return GetFuture<T>((futId, futType) => DoOutOp(type, w =>
             {
                 writeAction(w);
                 w.WriteLong(futId);
                 w.WriteInt(futType);
-            })).Task;
+            }));
         }
 
         /// <summary>
