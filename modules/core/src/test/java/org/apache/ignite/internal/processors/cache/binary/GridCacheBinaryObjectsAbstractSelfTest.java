@@ -153,6 +153,15 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             setIdentity(new Identity());
         }});
 
+        binTypes.add(new BinaryTypeConfiguration() {{
+            setTypeName("ComplexBinaryFieldsListHashedKey");
+
+            FieldsListIdentity id = new FieldsListIdentity();
+            id.setFieldNames(Arrays.asList("secondField", "thirdField"));
+
+            setIdentity(id);
+        }});
+
         BinaryConfiguration binCfg = new BinaryConfiguration();
         binCfg.setTypeConfigurations(binTypes);
 
@@ -1038,6 +1047,27 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      *
      */
     @SuppressWarnings("unchecked")
+    public void testCrossFormatObjectsIdentity() {
+        IgniteCache c = binKeysCache();
+
+        c.put(new ComplexKey(), "zzz");
+
+        // Now let's build an identical key for get
+        BinaryObjectBuilder bldr = grid(0).binary().builder("ComplexBinaryFieldsListHashedKey");
+
+        bldr.setField("firstField", 365);
+        bldr.setField("secondField", "value");
+        bldr.setField("thirdField", 0x1020304050607080L);
+
+        BinaryObject binKey = bldr.build();
+
+        assertEquals("zzz", c.get(binKey));
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("unchecked")
     public void testPutWithFieldsHashing() {
         IgniteCache c = binKeysCache();
 
@@ -1417,6 +1447,39 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         @Override public boolean equals(BinaryObject o1, BinaryObject o2) {
             return o1 == o2 || (o1 != null && o2 != null && F.eq(o1.field("fld1"), o2.field("fld1")));
 
+        }
+    }
+
+    /**
+     * Key to test puts and gets with
+     */
+    @SuppressWarnings({"ConstantConditions", "unused"})
+    private final static class ComplexKey {
+        /** */
+        private final Integer firstField = 1;
+
+        /** */
+        private final String secondField = "value";
+
+        /** */
+        private final Long thirdField = 0x1020304050607080L;
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            ComplexKey that = (ComplexKey) o;
+
+            return secondField.equals(that.secondField) &&
+                thirdField.equals(that.thirdField);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int res = secondField.hashCode();
+            res = 31 * res + thirdField.hashCode();
+            return res;
         }
     }
 }
