@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  *
@@ -196,6 +197,18 @@ public class GridCacheTtlUpdateRequest extends GridCacheMessage {
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeCollection(keys, MessageCollectionItemType.MSG);
+        writer.writeCollection(nearKeys, MessageCollectionItemType.MSG);
+        writer.writeCollection(nearVers, MessageCollectionItemType.MSG);
+        writer.writeMessage(topVer);
+        writer.writeLong(ttl);
+        writer.writeCollection(vers, MessageCollectionItemType.MSG);
     }
 
     /** {@inheritDoc} */

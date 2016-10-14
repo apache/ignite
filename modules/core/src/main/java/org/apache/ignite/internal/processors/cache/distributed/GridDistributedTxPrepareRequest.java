@@ -46,6 +46,7 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
@@ -385,6 +386,28 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
         return ctx.txPrepareMessageLogger();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeByte(concurrency != null ? (byte)concurrency.ordinal() : -1);
+        writer.writeCollection(dhtVerKeys, MessageCollectionItemType.MSG);
+        writer.writeCollection(dhtVerVals, MessageCollectionItemType.MSG);
+        writer.writeBoolean(invalidate);
+        writer.writeByte(isolation != null ? (byte)isolation.ordinal() : -1);
+        writer.writeBoolean(onePhaseCommit);
+        writer.writeByte(plc);
+        writer.writeCollection(reads, MessageCollectionItemType.MSG);
+        writer.writeBoolean(sys);
+        writer.writeLong(threadId);
+        writer.writeLong(timeout);
+        writer.writeByteArray(txNodesBytes);
+        writer.writeMap(txNodesMsg, MessageCollectionItemType.UUID, MessageCollectionItemType.MSG);
+        writer.writeInt(txSize);
+        writer.writeMessage(writeVer);
+        writer.writeCollection(writes, MessageCollectionItemType.MSG);
     }
 
     /** {@inheritDoc} */

@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -226,6 +227,23 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
     /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
         return ctx.txFinishMessageLogger();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeMessage(baseVer);
+        writer.writeBoolean(commit);
+        writer.writeMessage(commitVer);
+        writer.writeIgniteUuid(futId);
+        writer.writeBoolean(invalidate);
+        writer.writeByte(plc);
+        writer.writeBoolean(syncCommit);
+        writer.writeBoolean(syncRollback);
+        writer.writeBoolean(sys);
+        writer.writeLong(threadId);
+        writer.writeInt(txSize);
     }
 
     /** {@inheritDoc} */

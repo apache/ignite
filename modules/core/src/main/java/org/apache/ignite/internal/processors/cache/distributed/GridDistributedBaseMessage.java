@@ -33,6 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  * Base for all messages in replicated cache.
@@ -144,6 +145,16 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
      */
     public int keysCount() {
         return cnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeByteArray(candsByIdxBytes);
+        writer.writeCollection(committedVers, MessageCollectionItemType.MSG);
+        writer.writeCollection(rolledbackVers, MessageCollectionItemType.MSG);
+        writer.writeMessage(ver);
     }
 
     /** {@inheritDoc} */

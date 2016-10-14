@@ -35,6 +35,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
@@ -346,6 +347,25 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
             for (int i = 0; i < keys.size(); i++)
                 keys.get(i).partition(partIds.get(i));
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeByte(flags);
+        writer.writeIgniteUuid(futId);
+        writer.writeBoolean(isInTx);
+        writer.writeBoolean(isInvalidate);
+        writer.writeBoolean(isRead);
+        writer.writeByte(isolation != null ? (byte)isolation.ordinal() : -1);
+        writer.writeCollection(keys, MessageCollectionItemType.MSG);
+        writer.writeMessage(nearXidVer);
+        writer.writeUuid(nodeId);
+        writer.writeBooleanArray(retVals);
+        writer.writeLong(threadId);
+        writer.writeLong(timeout);
+        writer.writeInt(txSize);
     }
 
     /** {@inheritDoc} */

@@ -37,6 +37,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -205,6 +206,15 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
 
         if (errBytes != null)
             err = U.unmarshal(ctx, errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeByteArray(errBytes);
+        writer.writeIgniteUuid(futId);
+        writer.writeCollection(vals, MessageCollectionItemType.MSG);
     }
 
     /** {@inheritDoc} */

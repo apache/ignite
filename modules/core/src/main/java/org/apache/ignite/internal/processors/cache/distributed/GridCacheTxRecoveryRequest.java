@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  * Message sent to check that transactions related to transaction were prepared on remote node.
@@ -132,6 +133,18 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
     /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
         return ctx.txRecoveryMessageLogger();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeIgniteUuid(futId);
+        writer.writeIgniteUuid(miniId);
+        writer.writeBoolean(nearTxCheck);
+        writer.writeMessage(nearXidVer);
+        writer.writeBoolean(sys);
+        writer.writeInt(txNum);
     }
 
     /** {@inheritDoc} */
