@@ -38,6 +38,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -238,6 +239,11 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public void writeTo(OptimizedMessageWriter writer) {
+            writer.writeCollection(entries, MessageCollectionItemType.MSG);
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             writer.setBuffer(buf);
 
@@ -337,6 +343,12 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public byte fieldsCount() {
             return 5;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeTo(OptimizedMessageWriter writer) {
+            writer.writeString(body);
+            writer.writeMessage(msg);
         }
 
         /** {@inheritDoc} */
@@ -474,6 +486,14 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public byte fieldsCount() {
             return 7;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeTo(OptimizedMessageWriter writer) {
+            writer.writeUuid(nodeId);
+            writer.writeInt(id);
+            writer.writeString(body);
+            writer.writeMessage(msg);
         }
 
         /** {@inheritDoc} */
