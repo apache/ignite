@@ -223,7 +223,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
                 Segment seg = segments[idx];
 
-                relPtr = seg.allocateFreePage();
+                relPtr = seg.allocateFreePage(flags);
 
                 if (relPtr != INVALID_REL_PTR) {
                     absPtr = seg.absolute(relPtr);
@@ -680,8 +680,9 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         /**
          * @return Relative pointer of the allocated page.
          * @throws GridOffHeapOutOfMemoryException
+         * @param tag
          */
-        private long allocateFreePage() throws GridOffHeapOutOfMemoryException {
+        private long allocateFreePage(int tag) throws GridOffHeapOutOfMemoryException {
             long limit = region.address() + region.size();
 
             while (true) {
@@ -704,7 +705,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
                     GridUnsafe.putLong(absPtr, PAGE_MARKER);
 
-                    rwLock.init(absPtr + LOCK_OFFSET, 0);
+                    rwLock.init(absPtr + LOCK_OFFSET, tag);
 
                     allocatedPages.incrementAndGet();
 
