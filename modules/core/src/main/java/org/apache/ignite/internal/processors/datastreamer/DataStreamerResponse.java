@@ -22,6 +22,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  *
@@ -86,6 +87,15 @@ public class DataStreamerResponse implements Message {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DataStreamerResponse.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
+
+        writer.writeByteArray(errBytes);
+        writer.writeBoolean(forceLocDep);
+        writer.writeLong(reqId);
     }
 
     /** {@inheritDoc} */

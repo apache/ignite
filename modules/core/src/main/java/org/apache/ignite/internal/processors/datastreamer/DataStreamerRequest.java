@@ -32,6 +32,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -261,6 +262,27 @@ public class DataStreamerRequest implements Message {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DataStreamerRequest.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
+
+        writer.writeString(cacheName);
+        writer.writeIgniteUuid(clsLdrId);
+        writer.writeByte(depMode != null ? (byte)depMode.ordinal() : -1);
+        writer.writeCollection(entries, MessageCollectionItemType.MSG);
+        writer.writeBoolean(forceLocDep);
+        writer.writeBoolean(ignoreDepOwnership);
+        writer.writeBoolean(keepBinary);
+        writer.writeMap(ldrParticipants, MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID);
+        writer.writeLong(reqId);
+        writer.writeByteArray(resTopicBytes);
+        writer.writeString(sampleClsName);
+        writer.writeBoolean(skipStore);
+        writer.writeMessage(topVer);
+        writer.writeByteArray(updaterBytes);
+        writer.writeString(userVer);
     }
 
     /** {@inheritDoc} */

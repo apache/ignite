@@ -30,6 +30,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.continuous.GridContinuousMessageType.MSG_EVT_ACK;
@@ -154,6 +155,17 @@ public class GridContinuousMessage implements Message {
      */
     @Nullable public IgniteUuid futureId() {
         return futId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
+
+        writer.writeByteArray(dataBytes);
+        writer.writeIgniteUuid(futId);
+        writer.writeCollection(msgs, MessageCollectionItemType.MSG);
+        writer.writeUuid(routineId);
+        writer.writeByte(type != null ? (byte)type.ordinal() : -1);
     }
 
     /** {@inheritDoc} */
