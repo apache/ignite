@@ -53,6 +53,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
@@ -1003,6 +1004,26 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
+
+        writer.writeInt(cacheId);
+        writer.writeLong(conflictExpireTime);
+        writer.writeMessage(conflictVer);
+        writer.writeByteArray(expiryPlcBytes);
+        writer.writeMessage(explicitVer);
+        writer.writeObjectArray(!F.isEmptyOrNulls(filters) ? filters : null, MessageCollectionItemType.MSG);
+        writer.writeByte(flags);
+        writer.writeMessage(key);
+        writer.writeMessage(serReadVer);
+        writer.writeByteArray(transformClosBytes);
+        writer.writeLong(ttl);
+        writer.writeMessage(val);
+        writer.writeInt(partId);
+        writer.writeMessage(oldVal);
     }
 
     /** {@inheritDoc} */

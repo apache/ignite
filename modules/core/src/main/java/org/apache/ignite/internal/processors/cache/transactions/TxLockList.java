@@ -27,6 +27,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  * List of transaction locks for particular key.
@@ -71,6 +72,13 @@ public class TxLockList implements Message {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TxLockList.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
+
+        writer.writeCollection(txLocks, MessageCollectionItemType.MSG);
     }
 
     /** {@inheritDoc} */

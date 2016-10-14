@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  * Cache transaction key. This wrapper is needed because same keys may be enlisted in the same transaction
@@ -117,6 +118,14 @@ public class IgniteTxKey implements Message {
         res = 31 * res + cacheId;
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
+
+        writer.writeInt(cacheId);
+        writer.writeMessage(key);
     }
 
     /** {@inheritDoc} */

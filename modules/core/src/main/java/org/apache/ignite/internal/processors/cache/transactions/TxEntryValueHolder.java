@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
@@ -161,6 +162,15 @@ public class TxEntryValueHolder implements Message {
     /** {@inheritDoc} */
     @Override public String toString() {
         return "[op=" + op +", val=" + val + ']';
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
+
+        writer.writeBoolean(hasWriteVal);
+        writer.writeByte(op != null ? (byte)op.ordinal() : -1);
+        writer.writeMessage(hasWriteVal ? val : null);
     }
 
     /** {@inheritDoc} */
