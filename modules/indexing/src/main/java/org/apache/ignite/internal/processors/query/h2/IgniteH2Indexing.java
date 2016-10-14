@@ -750,7 +750,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 meta = meta(stmt.getMetaData());
             }
             catch (SQLException e) {
-                throw new IgniteCheckedException("Cannot prepare query metadata");
+                throw new IgniteCheckedException("Cannot prepare query metadata", e);
             }
 
             return new GridQueryFieldsResultAdapter(meta, null) {
@@ -891,7 +891,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 throw new QueryCancelledException();
 
             throw new IgniteCheckedException("Failed to execute SQL query.", e);
-        } finally {
+        }
+        finally {
             if(cancel != null)
                 cancel.setCompleted();
 
@@ -953,7 +954,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (time > longQryExecTimeout) {
                 String msg = "Query execution is too long (" + time + " ms): " + sql;
 
-                ResultSet plan = executeSqlQuery(conn, preparedStatementWithParams(conn, "EXPLAIN " + sql, params, false), 0, null);
+                ResultSet plan = executeSqlQuery(conn, preparedStatementWithParams(conn, "EXPLAIN " + sql,
+                    params, false), 0, null);
 
                 plan.next();
 
@@ -1053,7 +1055,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             @Override public Iterator<List<?>> iterator() {
                 try {
                     return rdcQryExec.query(cctx, qry, keepCacheObj, timeoutMillis, cancel);
-                } finally {
+                }
+                finally {
                     if (cancel != null)
                         cancel.setCompleted();
                 }

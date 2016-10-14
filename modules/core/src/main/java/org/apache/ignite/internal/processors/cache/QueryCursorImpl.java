@@ -120,20 +120,23 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        if (stateUpdater.compareAndSet(this, RESULT_READY, CLOSED)) {
-            closeIter();
+        while(state != CLOSED) {
+            if (stateUpdater.compareAndSet(this, RESULT_READY, CLOSED)) {
+                closeIter();
 
-            return;
+                return;
+            }
+
+            if (stateUpdater.compareAndSet(this, EXECUTION, CLOSED)) {
+                if (cancel != null)
+                    cancel.cancel();
+
+                return;
+            }
+
+            if (stateUpdater.compareAndSet(this, IDLE, CLOSED))
+                return;
         }
-
-        if (stateUpdater.compareAndSet(this, EXECUTION, CLOSED)) {
-            if (cancel != null)
-                cancel.cancel();
-
-            return;
-        }
-
-        stateUpdater.compareAndSet(this, IDLE, CLOSED);
     }
 
     /**

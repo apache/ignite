@@ -87,7 +87,8 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     public GridQueryFieldsResult execute(@Nullable String spaceName, String qry,
-        Collection<Object> params, IndexingQueryFilter filters, int timeout, GridQueryCancel cancel) throws IgniteCheckedException;
+        Collection<Object> params, IndexingQueryFilter filters, int timeout, GridQueryCancel cancel)
+        throws IgniteCheckedException;
 
     /**
      * Executes regular query.
