@@ -22,6 +22,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  * Cancel request.
@@ -62,6 +63,13 @@ public class GridQueryCancelRequest implements Message {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridQueryCancelRequest.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
+
+        writer.writeLong(qryReqId);
     }
 
     /** {@inheritDoc} */

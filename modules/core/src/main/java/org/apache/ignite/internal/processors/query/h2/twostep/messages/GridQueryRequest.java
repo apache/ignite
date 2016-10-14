@@ -31,6 +31,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  * Query request.
@@ -177,6 +178,19 @@ public class GridQueryRequest implements Message {
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
+
+        writer.writeInt(pageSize);
+        writer.writeCollection(qrys, MessageCollectionItemType.MSG);
+        writer.writeLong(reqId);
+        writer.writeString(space);
+        writer.writeMessage(topVer);
+        writer.writeCollection(extraSpaces, MessageCollectionItemType.STRING);
+        writer.writeIntArray(parts);
     }
 
     /** {@inheritDoc} */
