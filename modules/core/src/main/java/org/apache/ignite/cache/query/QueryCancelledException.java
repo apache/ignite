@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.query;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 
 /**
  * The exception is thrown if a query was cancelled or timed out while executing.

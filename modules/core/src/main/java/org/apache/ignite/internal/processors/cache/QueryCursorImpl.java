@@ -38,13 +38,9 @@ import static org.apache.ignite.internal.processors.cache.QueryCursorImpl.State.
  * Query cursor implementation.
  */
 public class QueryCursorImpl<T> implements QueryCursorEx<T> {
-    /** Query cursor state */
-    protected enum State {
-        /** Idle. */IDLE,
-        /** Executing. */EXECUTION,
-        /** Result ready. */RESULT_READY,
-        /** Closed. */CLOSED,
-    }
+    /** */
+    private final static AtomicReferenceFieldUpdater<QueryCursorImpl, State> stateUpdater =
+            AtomicReferenceFieldUpdater.newUpdater(QueryCursorImpl.class, State.class, "state");
 
     /** Query executor. */
     private Iterable<T> iterExec;
@@ -60,10 +56,6 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
 
     /** */
     private final GridQueryCancel cancel;
-
-    /** */
-    private final AtomicReferenceFieldUpdater<QueryCursorImpl, State> stateUpdater =
-        AtomicReferenceFieldUpdater.newUpdater(QueryCursorImpl.class, State.class, "state");
 
     /**
      * @param iterExec Query executor.
@@ -128,8 +120,14 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        if (state == IDLE)
-            throw new IllegalStateException("Query execution is not started yet.");
+        if (stateUpdater.compareAndSet(this, RESULT_READY, CLOSED)) {
+            closeIter();
+
+            return;
+        }
+
+        if (stateUpdater.compareAndSet(this, IDLE, CLOSED))
+            return;
 
         if (stateUpdater.compareAndSet(this, EXECUTION, CLOSED)) {
             if (cancel != null)
@@ -137,9 +135,6 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
 
             return;
         }
-
-        if (stateUpdater.compareAndSet(this, RESULT_READY, CLOSED))
-            closeIter();
     }
 
     /**
@@ -168,5 +163,13 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
      */
     @Override public List<GridQueryFieldMetadata> fieldsMeta() {
         return fieldsMeta;
+    }
+
+    /** Query cursor state */
+    protected enum State {
+        /** Idle. */IDLE,
+        /** Executing. */EXECUTION,
+        /** Result ready. */RESULT_READY,
+        /** Closed. */CLOSED,
     }
 }

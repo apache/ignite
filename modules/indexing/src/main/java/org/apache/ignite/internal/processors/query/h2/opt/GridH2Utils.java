@@ -20,9 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
-import java.util.concurrent.atomic.AtomicReference;
-import org.apache.ignite.internal.util.lang.GridAbsClosure;
-import org.apache.ignite.internal.util.typedef.F;
 import org.h2.value.ValueTimestamp;
 
 /**
