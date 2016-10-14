@@ -131,7 +131,11 @@ public class PlatformMessaging extends PlatformAbstractTarget {
             }
 
             case OP_REMOTE_LISTEN_ASYNC: {
+                startRemoteListen(reader, messagingAsync);
 
+                readAndListenFuture(reader);
+
+                return TRUE;
             }
 
             case OP_STOP_REMOTE_LISTEN_ASYNC: {
@@ -153,7 +157,7 @@ public class PlatformMessaging extends PlatformAbstractTarget {
         throws IgniteCheckedException {
         switch (type) {
             case OP_REMOTE_LISTEN:{
-                writer.writeUuid(startRemoteListen(reader));
+                writer.writeUuid(startRemoteListen(reader, messaging));
 
                 break;
             }
@@ -168,7 +172,7 @@ public class PlatformMessaging extends PlatformAbstractTarget {
      * @param reader Reader.
      * @return Listen id.
      */
-    private UUID startRemoteListen(BinaryRawReaderEx reader) {
+    private UUID startRemoteListen(BinaryRawReaderEx reader, IgniteMessaging messaging) {
         Object nativeFilter = reader.readObjectDetached();
 
         long ptr = reader.readLong();  // interop pointer
