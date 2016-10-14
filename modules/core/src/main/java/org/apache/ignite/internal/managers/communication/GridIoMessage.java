@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -191,7 +192,7 @@ public class GridIoMessage implements Message, OptimizedMessage {
      * @return Whether message is "optimized".
      */
     public boolean isOptimized() {
-        return msg instanceof GridNearAtomicUpdateRequest;
+        return msg instanceof GridNearAtomicUpdateRequest || msg instanceof GridNearAtomicUpdateResponse;
         //return false;
     }
 
@@ -227,7 +228,6 @@ public class GridIoMessage implements Message, OptimizedMessage {
                     return false;
 
                 writer.incrementState();
-
             case 1:
                 if (!writer.writeBoolean("ordered", ordered))
                     return false;
