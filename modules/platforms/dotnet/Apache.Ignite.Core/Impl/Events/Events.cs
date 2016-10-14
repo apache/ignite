@@ -53,7 +53,6 @@ namespace Apache.Ignite.Core.Impl.Events
             EnableLocal = 8,
             DisableLocal = 9,
             GetEnabledEvents = 10,
-            WithAsync = 11,
             IsEnabled = 12,
             LocalListen = 13,
             StopLocalListen = 14,
@@ -68,9 +67,6 @@ namespace Apache.Ignite.Core.Impl.Events
         /** Cluster group. */
         private readonly IClusterGroup _clusterGroup;
         
-        /** Async instance. */
-        private readonly Lazy<Events> _asyncInstance;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="Events" /> class.
         /// </summary>
@@ -83,17 +79,6 @@ namespace Apache.Ignite.Core.Impl.Events
             Debug.Assert(clusterGroup != null);
 
             _clusterGroup = clusterGroup;
-
-            _asyncInstance = new Lazy<Events>(() => new Events(this));
-        }
-
-        /// <summary>
-        /// Initializes a new async instance.
-        /// </summary>
-        /// <param name="events">The events.</param>
-        private Events(Events events) : base(UU.TargetOutObject(events.Target, (int) Op.WithAsync), events.Marshaller)
-        {
-            _clusterGroup = events.ClusterGroup;
         }
 
         /** <inheritDoc /> */
@@ -106,14 +91,6 @@ namespace Apache.Ignite.Core.Impl.Events
         private Ignite Ignite
         {
             get { return (Ignite) ClusterGroup.Ignite; }
-        }
-
-        /// <summary>
-        /// Gets the asynchronous instance.
-        /// </summary>
-        private Events AsyncInstance
-        {
-            get { return _asyncInstance.Value; }
         }
 
         /** <inheritDoc /> */
@@ -231,7 +208,13 @@ namespace Apache.Ignite.Core.Impl.Events
 
             try
             {
-                return WaitForLocal0<T>(hnd, types);
+                return DoOutInOp((int) Op.WaitForLocal,
+                    writer =>
+                    {
+                        writer.WriteObject(hnd);
+                        WriteEventTypes(types, writer);
+                    },
+                    reader => EventReader.Read<T>(Marshaller.StartUnmarshal(reader)));
             }
             finally
             {
@@ -247,11 +230,11 @@ namespace Apache.Ignite.Core.Impl.Events
 
             try
             {
-                AsyncInstance.WaitForLocal0<T>(hnd, types);
-
-                // ReSharper disable once RedundantTypeArgumentsOfMethod (won't compile in VS2010)
-                var fut = GetFuture<T>((futId, futTyp) => UU.TargetListenFutureForOperation(AsyncInstance.Target, futId,
-                    futTyp, (int) Op.WaitForLocal), convertFunc: reader => (T) EventReader.Read<IEvent>(reader));
+                var fut = DoOutOpAsync((int) Op.WaitForLocalAsync, writer =>
+                {
+                    writer.WriteObject(hnd);
+                    WriteEventTypes(types, writer);
+                }, convertFunc: EventReader.Read<T>);
 
                 if (hnd != null)
                 {
@@ -268,7 +251,6 @@ namespace Apache.Ignite.Core.Impl.Events
 
                 throw;
             }
-
         }
 
         /** <inheritDoc /> */
@@ -384,27 +366,6 @@ namespace Apache.Ignite.Core.Impl.Events
         public bool IsEnabled(int type)
         {
             return DoOutInOpLong((int) Op.IsEnabled, type) == True;
-        }
-
-        /// <summary>
-        /// Waits for the specified events.
-        /// </summary>
-        /// <typeparam name="T">Type of events.</typeparam>
-        /// <param name="filterHandle">Optional filtering predicate. 
-        /// Event wait will end as soon as it returns false.</param>
-        /// <param name="types">Types of the events to wait for. 
-        /// If not provided, all events will be passed to the filter.</param>
-        /// <returns>Ignite event.</returns>
-        private T WaitForLocal0<T>(long? filterHandle, params int[] types) where T : IEvent
-        {
-            return DoOutInOp((int) Op.WaitForLocal,
-                writer =>
-                {
-                    writer.WriteObject(filterHandle);
-
-                    WriteEventTypes(types, writer);
-                },
-                reader => EventReader.Read<T>(Marshaller.StartUnmarshal(reader)));
         }
 
         /// <summary>
