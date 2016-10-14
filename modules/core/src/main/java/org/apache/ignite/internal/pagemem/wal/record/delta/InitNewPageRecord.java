@@ -65,11 +65,6 @@ public class InitNewPageRecord extends PageDeltaRecord {
         return RecordType.INIT_NEW_PAGE_RECORD;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean initNew() {
-        return true;
-    }
-
     /**
      * @return IO Version.
      */

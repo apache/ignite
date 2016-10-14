@@ -88,11 +88,6 @@ public class SplitForwardPageRecord extends PageDeltaRecord {
         return RecordType.BTREE_FORWARD_PAGE_SPLIT;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean initNew() {
-        return true;
-    }
-
     public long forwardId() {
         return fwdId;
     }
