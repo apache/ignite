@@ -30,7 +30,6 @@ namespace Apache.Ignite.Core.Impl.Messaging
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Messaging;
-    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Messaging functionality.
@@ -49,7 +48,8 @@ namespace Apache.Ignite.Core.Impl.Messaging
             SendOrdered = 5,
             StopLocalListen = 6,
             StopRemoteListen = 7,
-            WithAsync = 8
+            RemoteListenAsync = 9,
+            StopRemoteListenAsync = 10
         }
 
         /** Map from user (func+topic) -> id, needed for unsubscription. */
@@ -59,12 +59,6 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /** Grid */
         private readonly Ignite _ignite;
         
-        /** Async instance. */
-        private readonly Lazy<Messaging> _asyncInstance;
-
-        /** Async flag. */
-        private readonly bool _isAsync;
-
         /** Cluster group. */
         private readonly IClusterGroup _clusterGroup;
 
@@ -82,20 +76,6 @@ namespace Apache.Ignite.Core.Impl.Messaging
             _clusterGroup = prj;
 
             _ignite = (Ignite) prj.Ignite;
-
-            _asyncInstance = new Lazy<Messaging>(() => new Messaging(this));
-        }
-
-        /// <summary>
-        /// Initializes a new async instance.
-        /// </summary>
-        /// <param name="messaging">The messaging.</param>
-        private Messaging(Messaging messaging) : base(
-            UU.TargetOutObject(messaging.Target, (int) Op.WithAsync), messaging.Marshaller)
-        {
-            _isAsync = true;
-            _ignite = messaging._ignite;
-            _clusterGroup = messaging.ClusterGroup;
         }
 
         /** <inheritdoc /> */
@@ -104,16 +84,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
             get { return _clusterGroup; }
         }
 
-        /// <summary>
-        /// Gets the asynchronous instance.
-        /// </summary>
-        private Messaging AsyncInstance
-        {
-            get { return _asyncInstance.Value; }
-        }
-
         /** <inheritdoc /> */
-
         public void Send(object message, object topic = null)
         {
             IgniteArgumentCheck.NotNull(message, "message");
@@ -223,26 +194,16 @@ namespace Apache.Ignite.Core.Impl.Messaging
 
             try
             {
-                Guid id = Guid.Empty;
-
-                DoOutInOp((int) Op.RemoteListen,
+                var id = DoOutInOp((int) Op.RemoteListen,
                     writer =>
                     {
                         writer.Write(filter0);
                         writer.WriteLong(filterHnd);
                         writer.Write(topic);
                     },
-                    input =>
-                    {
-                        var id0 = Marshaller.StartUnmarshal(input).GetRawReader().ReadGuid();
+                    input => Marshaller.StartUnmarshal(input).GetRawReader().ReadGuid());
 
-                        Debug.Assert(_isAsync || id0.HasValue);
-
-                        if (id0.HasValue)
-                            id = id0.Value;
-                    });
-
-                return id;
+                return id ?? Guid.Empty;
             }
             catch (Exception)
             {
@@ -255,26 +216,39 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /** <inheritdoc /> */
         public Task<Guid> RemoteListenAsync<T>(IMessageListener<T> listener, object topic = null)
         {
-            AsyncInstance.RemoteListen(listener, topic);
+            IgniteArgumentCheck.NotNull(listener, "filter");
 
-            return AsyncInstance.GetTask<Guid>();
+            var filter0 = MessageListenerHolder.CreateLocal(_ignite, listener);
+            var filterHnd = _ignite.HandleRegistry.AllocateSafe(filter0);
+
+            try
+            {
+                return DoOutOpAsync((int) Op.RemoteListenAsync,
+                    writer =>
+                    {
+                        writer.WriteObject(filter0);
+                        writer.WriteLong(filterHnd);
+                        writer.WriteObject(topic);
+                    }, convertFunc: input => input.ReadGuid() ?? Guid.Empty).Task;
+            }
+            catch (Exception)
+            {
+                _ignite.HandleRegistry.Release(filterHnd);
+
+                throw;
+            }
         }
 
         /** <inheritdoc /> */
         public void StopRemoteListen(Guid opId)
         {
-            DoOutOp((int) Op.StopRemoteListen, writer =>
-            {
-                writer.WriteGuid(opId);
-            });
+            DoOutOp((int) Op.StopRemoteListen, writer => writer.WriteGuid(opId));
         }
 
         /** <inheritdoc /> */
         public Task StopRemoteListenAsync(Guid opId)
         {
-            AsyncInstance.StopRemoteListen(opId);
-
-            return AsyncInstance.GetTask();
+            return DoOutOpAsync<object>((int) Op.StopRemoteListenAsync, writer => writer.WriteGuid(opId)).Task;
         }
 
         /// <summary>
