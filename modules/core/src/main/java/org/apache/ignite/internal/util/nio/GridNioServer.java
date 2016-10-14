@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequest;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -1256,6 +1257,33 @@ public class GridNioServer<T> {
 
                     if (finished && writer != null)
                         writer.reset();
+
+//                    if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridNearAtomicUpdateRequest) {
+//                        ByteBuffer buf2 = ByteBuffer.allocate(1024);
+//
+//                        OptimizedMessageStateImpl optoState2 = new OptimizedMessageStateImpl(sockCh, buf2, ses, metricsLsnr, log);
+//
+//                        OptimizedMessageWriterImpl optoWriter2 = new OptimizedMessageWriterImpl(optoState2);
+//
+//                        optoWriter2.writeMessage((GridIoMessage)msg);
+//
+//                        buf2.flip();
+//
+//                        byte[] resBuf2 = new byte[buf2.limit()];
+//
+//                        buf2.get(resBuf2, 0, buf2.limit());
+//
+//                        buf.flip();
+//
+//                        byte[] resBuf = new byte[buf.limit()];
+//
+//                        buf.get(resBuf, 0, buf.limit());
+//
+//                        System.out.println(Arrays.equals(resBuf, resBuf2));
+//
+//                        System.out.println(Arrays.toString(resBuf));
+//                        System.out.println(Arrays.toString(resBuf2));
+//                    }
                 }
 
                 // Fill up as many messages as possible to write buffer.
