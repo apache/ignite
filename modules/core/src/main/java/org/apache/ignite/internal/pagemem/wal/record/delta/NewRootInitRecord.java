@@ -19,7 +19,6 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
 
 /**
@@ -75,13 +74,18 @@ public class NewRootInitRecord<L> extends PageDeltaRecord {
     }
 
     /** {@inheritDoc} */
-    @Override public void applyDelta(PageMemory pageMem, ByteBuffer buf) throws IgniteCheckedException {
+    @Override public void applyDelta(ByteBuffer buf) throws IgniteCheckedException {
         io.initNewRoot(buf, newRootId, leftChildId, row, rowBytes, rightChildId);
     }
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.BTREE_INIT_NEW_ROOT;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean initNew() {
+        return true;
     }
 
     public BPlusInnerIO<L> io() {

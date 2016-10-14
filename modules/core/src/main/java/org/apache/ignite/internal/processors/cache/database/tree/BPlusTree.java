@@ -36,9 +36,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.FixCountRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.FixLeftmostChildRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.FixRemoveId;
-import org.apache.ignite.internal.pagemem.wal.record.delta.InnerReplaceRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InsertRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.MergeRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageAddRootRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageCutRootRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRootRecord;
@@ -47,7 +45,6 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.RecycleRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ReplaceRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.SplitExistingPageRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.SplitForwardPageRecord;
 import org.apache.ignite.internal.processors.cache.database.DataStructure;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
@@ -1719,11 +1716,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
         // Update forward page.
         io.splitForwardPage(buf, fwdId, fwdBuf, mid, cnt);
 
-        // Here the order of records for pages is important because forward split requires
-        // that existing page is still in initial state.
-        if (needWalDeltaRecord(fwd))
-            wal.log(new SplitForwardPageRecord(cacheId, fwd.id(), fwdId,
-                io.getType(), io.getVersion(), page.id(), mid, cnt));
+        // TODO GG-11640 log a correct forward page record.
+        fwd.fullPageWalRecordPolicy(Boolean.TRUE);
 
         // Update existing page.
         io.splitExistingPage(buf, mid, fwdId);
@@ -2931,9 +2925,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
             prnt.idx = Short.MIN_VALUE;
             left.idx = Short.MIN_VALUE;
 
-            if (needWalDeltaRecord(left.page))
-                wal.log(new MergeRecord<>(cacheId, left.page.id(), prnt.page.id(), prntIdx,
-                    right.page.id(), emptyBranch));
+            // TODO GG-11640 log a correct merge record.
+            left.page.fullPageWalRecordPolicy(Boolean.TRUE);
 
             // Remove split key from parent. If we are merging empty branch then remove only on the top iteration.
             if (needMergeEmptyBranch != READY)
@@ -3032,9 +3025,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
             inner.io.store(inner.buf, innerIdx, leaf.io, leaf.buf, leafIdx);
             inner.io.setRemoveId(inner.buf, rmvId);
 
-            if (needWalDeltaRecord(inner.page))
-                wal.log(new InnerReplaceRecord<>(cacheId, inner.page.id(),
-                    innerIdx, leaf.page.id(), leafIdx, rmvId));
+            // TODO GG-11640 log a correct inner replace record.
+            inner.page.fullPageWalRecordPolicy(Boolean.TRUE);
 
             // Update remove ID for the leaf page.
             leaf.io.setRemoveId(leaf.buf, rmvId);
