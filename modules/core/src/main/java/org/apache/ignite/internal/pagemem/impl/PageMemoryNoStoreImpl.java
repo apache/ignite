@@ -680,7 +680,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         /**
          * @return Relative pointer of the allocated page.
          * @throws GridOffHeapOutOfMemoryException
-         * @param tag
+         * @param tag Tag to initialize RW lock.
          */
         private long allocateFreePage(int tag) throws GridOffHeapOutOfMemoryException {
             long limit = region.address() + region.size();
