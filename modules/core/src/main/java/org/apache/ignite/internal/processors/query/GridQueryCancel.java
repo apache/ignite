@@ -40,7 +40,7 @@ public class GridQueryCancel {
      * @param clo Clo.
      */
     public void set(Runnable clo) throws QueryCancelledException{
-        stopIfCancelled();
+        checkCancelled();
 
         this.clo = clo;
     }
@@ -69,7 +69,7 @@ public class GridQueryCancel {
     /**
      * Stops query execution if a user requested cancel.
      */
-    public void stopIfCancelled() throws QueryCancelledException{
+    public void checkCancelled() throws QueryCancelledException{
         if (cancelled)
             throw new QueryCancelledException();
     }
