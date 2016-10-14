@@ -812,7 +812,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         boolean auth = false;
 
         if (spi.nodeAuth != null && spi.nodeAuth.isGlobalNodeAuthentication())
-            auth = authentication(locCred);
+            auth = localAuthentication(locCred);
 
         // Marshal credentials for backward compatibility and security.
         marshalCredentials(locNode, locCred);
@@ -823,7 +823,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     log.debug("Join request message has not been sent (local node is the first in the topology).");
 
                 if (!auth)
-                    authentication(locCred);
+                    localAuthentication(locCred);
 
                 locNode.order(1);
                 locNode.internalOrder(1);
@@ -913,9 +913,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /**
      * Authenticate local node.
+     *
+     * @param locCred Local security credentials for authentication.
      * @throws IgniteSpiException If any error occurs.
      */
-    private boolean authentication(SecurityCredentials locCred){
+    private boolean localAuthentication(SecurityCredentials locCred){
         if (spi.nodeAuth != null) {
             try {
                 SecurityContext subj = spi.nodeAuth.authenticateNode(locNode, locCred);
