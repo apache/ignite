@@ -30,6 +30,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  * Deferred dht atomic update response.
@@ -87,6 +88,13 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
     /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
         return ctx.atomicMessageLogger();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeCollection(futVers, MessageCollectionItemType.MSG);
     }
 
     /** {@inheritDoc} */

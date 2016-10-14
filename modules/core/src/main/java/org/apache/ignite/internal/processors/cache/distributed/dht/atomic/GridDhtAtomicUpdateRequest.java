@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -718,6 +719,35 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
         return ctx.atomicMessageLogger();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeMessage(conflictExpireTimes);
+        writer.writeCollection(conflictVers, MessageCollectionItemType.MSG);
+        writer.writeCollection(entryProcessorsBytes, MessageCollectionItemType.BYTE_ARR);
+        writer.writeByte(flags);
+        writer.writeBoolean(forceTransformBackups);
+        writer.writeMessage(futVer);
+        writer.writeObjectArray(invokeArgsBytes, MessageCollectionItemType.BYTE_ARR);
+        writer.writeBoolean(keepBinary);
+        writer.writeCollection(keys, MessageCollectionItemType.MSG);
+        writer.writeCollection(nearEntryProcessorsBytes, MessageCollectionItemType.BYTE_ARR);
+        writer.writeMessage(nearExpireTimes);
+        writer.writeCollection(nearKeys, MessageCollectionItemType.MSG);
+        writer.writeMessage(nearTtls);
+        writer.writeCollection(nearVals, MessageCollectionItemType.MSG);
+        writer.writeCollection(prevVals, MessageCollectionItemType.MSG);
+        writer.writeUuid(subjId);
+        writer.writeByte(syncMode != null ? (byte)syncMode.ordinal() : -1);
+        writer.writeInt(taskNameHash);
+        writer.writeMessage(topVer);
+        writer.writeMessage(ttls);
+        writer.writeMessage(updateCntrs);
+        writer.writeCollection(vals, MessageCollectionItemType.MSG);
+        writer.writeMessage(writeVer);
     }
 
     /** {@inheritDoc} */
