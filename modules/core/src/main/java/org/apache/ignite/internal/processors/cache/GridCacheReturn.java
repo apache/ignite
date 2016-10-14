@@ -363,6 +363,7 @@ public class GridCacheReturn implements Externalizable, Message, OptimizedMessag
     /** {@inheritDoc} */
     @Override public void writeTo(OptimizedMessageWriter writer) {
         writer.writeHeader(directType());
+
         writer.writeInt(cacheId);
         writer.writeMessage(cacheObj);
         writer.writeBoolean(invokeRes);

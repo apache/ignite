@@ -628,6 +628,7 @@ public abstract class GridCacheMessage implements Message, OptimizedMessage {
     /** {@inheritDoc} */
     @Override public void writeTo(OptimizedMessageWriter writer) {
         writer.writeHeader(directType());
+
         writer.writeInt(cacheId);
         writer.writeMessage(depInfo);
         writer.writeLong(msgId);

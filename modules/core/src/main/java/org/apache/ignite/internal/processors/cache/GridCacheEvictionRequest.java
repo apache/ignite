@@ -30,6 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -151,6 +152,15 @@ public class GridCacheEvictionRequest extends GridCacheMessage implements GridCa
     /** {@inheritDoc} */
     @Override public boolean ignoreClassErrors() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeCollection(entries, MessageCollectionItemType.MSG);
+        writer.writeLong(futId);
+        writer.writeMessage(topVer);
     }
 
     /** {@inheritDoc} */

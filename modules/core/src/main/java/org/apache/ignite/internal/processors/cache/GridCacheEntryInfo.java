@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  * Entry information that gets passed over wire.
@@ -197,6 +198,19 @@ public class GridCacheEntryInfo implements Message {
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
+
+        writer.writeInt(cacheId);
+        writer.writeLong(expireTime);
+        writer.writeMessage(key);
+        writer.writeByteArray(keyBytes);
+        writer.writeLong(ttl);
+        writer.writeMessage(val);
+        writer.writeMessage(ver);
     }
 
     /** {@inheritDoc} */

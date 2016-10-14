@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  * Cache eviction response.
@@ -128,6 +129,15 @@ public class GridCacheEvictionResponse extends GridCacheMessage {
     /** {@inheritDoc} */
     @Override public boolean ignoreClassErrors() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeBoolean(err);
+        writer.writeLong(futId);
+        writer.writeCollection(rejectedKeys, MessageCollectionItemType.MSG);
     }
 
     /** {@inheritDoc} */
