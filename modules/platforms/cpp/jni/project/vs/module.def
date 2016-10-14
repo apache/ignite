@@ -39,8 +39,6 @@ IgniteProcessorExtensions @97
 IgniteProcessorAtomicLong @98
 IgniteListenableCancel @110
 IgniteListenableIsCancelled @111
-IgniteTargetListenFutureAndGet @112
-IgniteTargetListenFutureForOperationAndGet @113
 IgniteProcessorCreateCacheFromConfig @114
 IgniteProcessorGetOrCreateCacheFromConfig @115
 IgniteProcessorGetIgniteConfiguration @116
