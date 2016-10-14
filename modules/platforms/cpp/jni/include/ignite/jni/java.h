@@ -269,8 +269,6 @@ namespace ignite
                 jmethodID m_PlatformTarget_inObjectStreamOutObjectStream;
                 jmethodID m_PlatformTarget_listenFuture;
                 jmethodID m_PlatformTarget_listenFutureForOperation;
-                jmethodID m_PlatformTarget_listenFutureAndGet;
-                jmethodID m_PlatformTarget_listenFutureForOperationAndGet;
 
                 jclass c_PlatformUtils;
                 jmethodID m_PlatformUtils_reallocate;
@@ -448,8 +446,6 @@ namespace ignite
                 jobject TargetOutObject(jobject obj, int opType, JniErrorInfo* errInfo = NULL);
                 void TargetListenFuture(jobject obj, long long futId, int typ);
                 void TargetListenFutureForOperation(jobject obj, long long futId, int typ, int opId);
-                void* TargetListenFutureAndGet(jobject obj, long long futId, int typ);
-                void* TargetListenFutureForOperationAndGet(jobject obj, long long futId, int typ, int opId);
                 
                 jobject CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr);
