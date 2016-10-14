@@ -38,6 +38,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -194,6 +195,16 @@ public final class IgfsBlockKey implements Message, Externalizable, Binarylizabl
 
         return blockId == that.blockId && fileId.equals(that.fileId) && F.eq(affKey, that.affKey) &&
             evictExclude == that.evictExclude;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
+
+        writer.writeIgniteUuid(affKey);
+        writer.writeLong(blockId);
+        writer.writeBoolean(evictExclude);
+        writer.writeIgniteUuid(fileId);
     }
 
     /** {@inheritDoc} */

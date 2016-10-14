@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  * Basic sync message.
@@ -74,6 +75,12 @@ public class IgfsSyncMessage extends IgfsCommunicationMessage {
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeLong(order);
+        writer.writeBoolean(res);
     }
 
     /** {@inheritDoc} */

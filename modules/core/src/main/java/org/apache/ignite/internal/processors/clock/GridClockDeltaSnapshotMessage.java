@@ -28,6 +28,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  * Message containing time delta map for all nodes.
@@ -77,6 +78,14 @@ public class GridClockDeltaSnapshotMessage implements Message {
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
+
+        writer.writeMap(deltas, MessageCollectionItemType.UUID, MessageCollectionItemType.LONG);
+        writer.writeMessage(snapVer);
     }
 
     /** {@inheritDoc} */

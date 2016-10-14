@@ -27,6 +27,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  * Fragmentizer request. Sent from coordinator to other IGFS nodes when colocated part of file
@@ -82,6 +83,12 @@ public class IgfsFragmentizerRequest extends IgfsCommunicationMessage {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgfsFragmentizerRequest.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeIgniteUuid(fileId);
+        writer.writeCollection(fragmentRanges, MessageCollectionItemType.MSG);
     }
 
     /** {@inheritDoc} */

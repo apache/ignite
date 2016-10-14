@@ -27,6 +27,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -105,6 +106,12 @@ public class IgfsDeleteMessage extends IgfsCommunicationMessage {
 
         if (errBytes != null)
             err = U.unmarshal(marsh, errBytes, ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeByteArray(errBytes);
+        writer.writeIgniteUuid(id);
     }
 
     /** {@inheritDoc} */

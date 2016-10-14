@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  * Version for time delta snapshot.
@@ -117,6 +118,14 @@ public class GridClockDeltaVersion implements Message, Comparable<GridClockDelta
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         ver = in.readLong();
         topVer = in.readLong();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
+
+        writer.writeLong(topVer);
+        writer.writeLong(ver);
     }
 
     /** {@inheritDoc} */

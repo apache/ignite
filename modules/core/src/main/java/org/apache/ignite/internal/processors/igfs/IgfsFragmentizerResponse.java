@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  * Fragmentizer response.
@@ -57,6 +58,11 @@ public class IgfsFragmentizerResponse extends IgfsCommunicationMessage {
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeIgniteUuid(fileId);
     }
 
     /** {@inheritDoc} */

@@ -25,6 +25,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  * IGFS write blocks message.
@@ -87,6 +88,13 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeMap(blocks, MessageCollectionItemType.MSG, MessageCollectionItemType.BYTE_ARR);
+        writer.writeIgniteUuid(fileId);
+        writer.writeLong(id);
     }
 
     /** {@inheritDoc} */
