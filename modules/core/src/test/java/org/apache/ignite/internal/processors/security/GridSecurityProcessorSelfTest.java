@@ -1,6 +1,16 @@
 package org.apache.ignite.internal.processors.security;
 
-import com.google.common.collect.Lists;
+import java.util.Map;
+import java.util.UUID;
+import java.util.List;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.io.Serializable;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.net.InetSocketAddress;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -10,10 +20,6 @@ import org.apache.ignite.internal.processors.security.os.GridOsSecurityProcessor
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import java.io.Serializable;
-import java.net.InetSocketAddress;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  */
@@ -61,7 +67,7 @@ public class GridSecurityProcessorSelfTest extends GridCommonAbstractTest {
         UUID ig3Id = nodeId(ig3);
         UUID ig4Id = nodeId(ig4);
 
-        List<UUID> exp1 = Lists.newArrayList(ig2Id, ig3Id, ig4Id);
+        List<UUID> exp1 = Arrays.asList(ig2Id, ig3Id, ig4Id);
 
         assertEquals(exp1, rmAuth.get(ig1Id));
         assertEquals(null, rmAuth.get(ig2Id));
@@ -106,9 +112,9 @@ public class GridSecurityProcessorSelfTest extends GridCommonAbstractTest {
         UUID ig3Id = nodeId(ig3);
         UUID ig4Id = nodeId(ig4);
 
-        List<UUID> exp1 = Lists.newArrayList(ig2Id, ig3Id, ig4Id);
-        List<UUID> exp2 = Lists.newArrayList(ig3Id, ig4Id);
-        List<UUID> exp3 = Lists.newArrayList(ig4Id);
+        List<UUID> exp1 = Arrays.asList(ig2Id, ig3Id, ig4Id);
+        List<UUID> exp2 = Arrays.asList(ig3Id, ig4Id);
+        List<UUID> exp3 = Arrays.asList(ig4Id);
 
         assertEquals(exp1, rmAuth.get(ig1Id));
         assertEquals(exp2, rmAuth.get(ig2Id));

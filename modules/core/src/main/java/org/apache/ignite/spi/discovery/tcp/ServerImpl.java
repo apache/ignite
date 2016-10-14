@@ -807,17 +807,23 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         SecurityCredentials locCred = (SecurityCredentials)locNode.getAttributes()
-            .get(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
+                .get(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
+
+        boolean auth = false;
+
+        if (spi.nodeAuth != null && spi.nodeAuth.isGlobalNodeAuthentication())
+            auth = authentication(locCred);
 
         // Marshal credentials for backward compatibility and security.
-        marshalCredentials(locNode);
+        marshalCredentials(locNode, locCred);
 
         while (true) {
             if (!sendJoinRequestMessage()) {
                 if (log.isDebugEnabled())
                     log.debug("Join request message has not been sent (local node is the first in the topology).");
 
-                authentication(locCred);
+                if (!auth)
+                    authentication(locCred);
 
                 locNode.order(1);
                 locNode.internalOrder(1);
@@ -864,12 +870,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                if (spiState == CONNECTED){
-                    if (spi.nodeAuth != null && spi.nodeAuth.isGlobalNodeAuthentication())
-                        authentication(locCred);
-
+                if (spiState == CONNECTED)
                     break;
-                }
                 else if (spiState == DUPLICATE_ID)
                     throw spi.duplicateIdError((TcpDiscoveryDuplicateIdMessage)joinRes.get());
                 else if (spiState == AUTH_FAILED)
@@ -900,6 +902,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
         }
 
+        locNode.attributes().remove(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
+
         assert locNode.order() != 0;
         assert locNode.internalOrder() != 0;
 
@@ -911,7 +915,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      * Authenticate local node.
      * @throws IgniteSpiException If any error occurs.
      */
-    private void authentication(SecurityCredentials locCred){
+    private boolean authentication(SecurityCredentials locCred){
         if (spi.nodeAuth != null) {
             try {
                 SecurityContext subj = spi.nodeAuth.authenticateNode(locNode, locCred);
@@ -922,14 +926,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                 Map<String, Object> attrs = new HashMap<>(locNode.attributes());
 
                 attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT, spi.marshaller().marshal(subj));
-                attrs.remove(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
 
                 locNode.setAttributes(attrs);
+
+                return true;
             }
             catch (IgniteException | IgniteCheckedException e) {
                 throw new IgniteSpiException("Failed to authenticate local node (will shutdown local node).", e);
             }
-        }
+        }else
+            return false;
     }
 
     /**
@@ -1248,13 +1254,12 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @param node Node to marshall credentials for.
      * @throws IgniteSpiException If marshalling failed.
      */
-    private void marshalCredentials(TcpDiscoveryNode node) throws IgniteSpiException {
+    private void marshalCredentials(TcpDiscoveryNode node, SecurityCredentials locCred) throws IgniteSpiException {
         try {
             // Use security-unsafe getter.
             Map<String, Object> attrs = new HashMap<>(node.getAttributes());
 
-            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS,
-                spi.marshaller().marshal(attrs.get(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS)));
+            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, spi.marshaller().marshal(locCred));
 
             node.setAttributes(attrs);
         }
