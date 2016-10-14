@@ -29,6 +29,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -231,6 +232,20 @@ public class GridJobExecuteResponse implements Message {
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
+
+        writer.writeByteArray(gridExBytes);
+        writer.writeBoolean(isCancelled);
+        writer.writeByteArray(jobAttrsBytes);
+        writer.writeIgniteUuid(jobId);
+        writer.writeUuid(nodeId);
+        writer.writeByteArray(resBytes);
+        writer.writeMessage(retry);
+        writer.writeIgniteUuid(sesId);
     }
 
     /** {@inheritDoc} */

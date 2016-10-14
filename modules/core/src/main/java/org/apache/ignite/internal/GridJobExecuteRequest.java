@@ -36,6 +36,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -464,6 +465,36 @@ public class GridJobExecuteRequest implements Message {
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
+
+        writer.writeIgniteUuid(clsLdrId);
+        writer.writeString(cpSpi);
+        writer.writeByte(depMode != null ? (byte)depMode.ordinal() : -1);
+        writer.writeBoolean(dynamicSiblings);
+        writer.writeBoolean(forceLocDep);
+        writer.writeIntArray(idsOfCaches);
+        writer.writeBoolean(internal);
+        writer.writeByteArray(jobAttrsBytes);
+        writer.writeByteArray(jobBytes);
+        writer.writeIgniteUuid(jobId);
+        writer.writeMap(ldrParticipants, MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID);
+        writer.writeInt(part);
+        writer.writeByteArray(sesAttrsBytes);
+        writer.writeBoolean(sesFullSup);
+        writer.writeIgniteUuid(sesId);
+        writer.writeByteArray(siblingsBytes);
+        writer.writeLong(startTaskTime);
+        writer.writeUuid(subjId);
+        writer.writeString(taskClsName);
+        writer.writeString(taskName);
+        writer.writeLong(timeout);
+        writer.writeCollection(top, MessageCollectionItemType.UUID);
+        writer.writeMessage(topVer);
+        writer.writeString(userVer);
     }
 
     /** {@inheritDoc} */

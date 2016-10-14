@@ -24,6 +24,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -113,6 +114,15 @@ public class GridJobCancelRequest implements Message {
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
+
+        writer.writeIgniteUuid(jobId);
+        writer.writeIgniteUuid(sesId);
+        writer.writeBoolean(sys);
     }
 
     /** {@inheritDoc} */
