@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -336,6 +337,23 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 96;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
+
+        writer.writeInt(cacheId);
+        writer.writeByte(evtType != null ? (byte)evtType.ordinal() : -1);
+        writer.writeMessage(filteredEvts);
+        writer.writeByte(flags);
+        writer.writeBoolean(keepBinary);
+        writer.writeMessage(isFiltered() ? null : key);
+        writer.writeMessage(isFiltered() ? null : newVal);
+        writer.writeMessage(isFiltered() ? null : oldVal);
+        writer.writeInt(part);
+        writer.writeMessage(topVer);
+        writer.writeLong(updateCntr);
     }
 
     /** {@inheritDoc} */

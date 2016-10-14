@@ -28,6 +28,7 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  * Batch acknowledgement.
@@ -77,6 +78,14 @@ public class CacheContinuousQueryBatchAck extends GridCacheMessage {
      */
     Map<Integer, Long> updateCntrs() {
         return updateCntrs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeUuid(routineId);
+        writer.writeMap(updateCntrs, MessageCollectionItemType.INT, MessageCollectionItemType.LONG);
     }
 
     /** {@inheritDoc} */

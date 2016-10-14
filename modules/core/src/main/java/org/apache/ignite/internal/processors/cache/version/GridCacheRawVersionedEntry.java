@@ -33,6 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -314,6 +315,16 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
         assert !(val != null && valBytes != null);
 
         return reader.afterMessageRead(GridCacheRawVersionedEntry.class);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeLong(expireTime);
+        writer.writeLong(ttl);
+        writer.writeByteArray(valBytes);
+        writer.writeMessage(ver);
     }
 
     /** {@inheritDoc} */

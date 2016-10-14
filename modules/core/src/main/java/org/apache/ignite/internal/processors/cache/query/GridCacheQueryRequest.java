@@ -37,6 +37,7 @@ import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
@@ -480,6 +481,32 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
      */
     @Nullable public Integer partition() {
         return part == -1 ? null : part;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeBoolean(all);
+        writer.writeByteArray(argsBytes);
+        writer.writeString(cacheName);
+        writer.writeBoolean(cancel);
+        writer.writeString(clause);
+        writer.writeString(clsName);
+        writer.writeBoolean(fields);
+        writer.writeLong(id);
+        writer.writeBoolean(incBackups);
+        writer.writeBoolean(incMeta);
+        writer.writeBoolean(keepPortable);
+        writer.writeByteArray(keyValFilterBytes);
+        writer.writeInt(pageSize);
+        writer.writeInt(part);
+        writer.writeByteArray(rdcBytes);
+        writer.writeUuid(subjId);
+        writer.writeInt(taskHash);
+        writer.writeMessage(topVer);
+        writer.writeByteArray(transBytes);
+        writer.writeByte(type != null ? (byte)type.ordinal() : -1);
     }
 
     /** {@inheritDoc} */

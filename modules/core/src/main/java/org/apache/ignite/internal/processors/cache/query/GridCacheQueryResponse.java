@@ -37,6 +37,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -223,6 +224,18 @@ public class GridCacheQueryResponse extends GridCacheMessage implements GridCach
      */
     public boolean fields() {
         return fields;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
+        writer.writeCollection(dataBytes, MessageCollectionItemType.BYTE_ARR);
+        writer.writeByteArray(errBytes);
+        writer.writeBoolean(fields);
+        writer.writeBoolean(finished);
+        writer.writeCollection(metaDataBytes, MessageCollectionItemType.BYTE_ARR);
+        writer.writeLong(reqId);
     }
 
     /** {@inheritDoc} */

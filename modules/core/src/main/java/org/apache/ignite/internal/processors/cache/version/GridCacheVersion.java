@@ -257,6 +257,7 @@ public class GridCacheVersion implements Message, OptimizedMessage, Comparable<G
     /** {@inheritDoc} */
     @Override public void writeTo(OptimizedMessageWriter writer) {
         writer.writeHeader(directType());
+
         writer.writeLong(globalTime);
         writer.writeInt(nodeOrderDrId);
         writer.writeLong(order);
