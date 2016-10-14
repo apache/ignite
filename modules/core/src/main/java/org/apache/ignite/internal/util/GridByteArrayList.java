@@ -31,8 +31,10 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  * Re-sizable array implementation of the byte list (eliminating auto-boxing of primitive byte type).
@@ -417,6 +419,14 @@ public class GridByteArrayList implements Message, Externalizable {
         data = new byte[size];
 
         in.readFully(data, 0, size);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        writer.writeHeader(directType());
+
+        writer.writeByteArray(data);
+        writer.writeInt(size);
     }
 
     /** {@inheritDoc} */

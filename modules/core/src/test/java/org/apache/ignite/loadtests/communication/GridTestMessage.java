@@ -27,6 +27,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.opto.OptimizedMessageWriter;
 
 /**
  *
@@ -114,6 +115,11 @@ class GridTestMessage implements Message, Externalizable {
         field2 = in.readLong();
         str = U.readString(in);
         bytes = U.readByteArray(in);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTo(OptimizedMessageWriter writer) {
+        // No-op.
     }
 
     /** {@inheritDoc} */

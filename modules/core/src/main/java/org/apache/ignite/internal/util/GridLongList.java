@@ -523,6 +523,7 @@ public class GridLongList implements Message, OptimizedMessage, Externalizable {
     /** {@inheritDoc} */
     @Override public void writeTo(OptimizedMessageWriter writer) {
         writer.writeHeader(directType());
+
         writer.writeLongArray(arr);
         writer.writeInt(idx);
     }
