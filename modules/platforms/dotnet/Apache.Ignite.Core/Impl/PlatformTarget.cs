@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
@@ -675,6 +676,50 @@ namespace Apache.Ignite.Core.Impl
         protected long DoOutInOpLong(int type, long val)
         {
             return UU.TargetInLongOutLong(_target, type, val);
+        }
+
+        #endregion
+
+        #region Async operations
+
+        /// <summary>
+        /// Performs async operation.
+        /// </summary>
+        /// <typeparam name="T">Type of the result.</typeparam>
+        /// <param name="type">The type code.</param>
+        /// <param name="writeAction">The write action.</param>
+        /// <returns>Task for async operation</returns>
+        protected Task<T> DoOutOpAsync<T>(int type, Action<IBinaryRawWriter> writeAction)
+        {
+            return GetFuture<T>((futId, futType) => DoOutOp(type, w =>
+            {
+                writeAction(w);
+                w.WriteLong(futId);
+                w.WriteInt(futType);
+            })).Task;
+        }
+
+        /// <summary>
+        /// Performs async operation.
+        /// </summary>
+        /// <typeparam name="T">Type of the result.</typeparam>
+        /// <typeparam name="T1">The type of the first arg.</typeparam>
+        /// <typeparam name="T2">The type of the second arg.</typeparam>
+        /// <param name="type">The type code.</param>
+        /// <param name="val1">First arg.</param>
+        /// <param name="val2">Second arg.</param>
+        /// <returns>
+        /// Task for async operation
+        /// </returns>
+        protected Task<T> DoOutOpAsync<T, T1, T2>(int type, T1 val1, T2 val2)
+        {
+            return GetFuture<T>((futId, futType) => DoOutOp(type, w =>
+            {
+                w.WriteObject(val1);
+                w.WriteObject(val2);
+                w.WriteLong(futId);
+                w.WriteInt(futType);
+            })).Task;
         }
 
         #endregion

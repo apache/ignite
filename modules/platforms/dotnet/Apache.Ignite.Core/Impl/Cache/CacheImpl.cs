@@ -485,18 +485,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
 
-            // TODO: Provide convenient overloads (DoOutOpAsync?).
-            Action<long, int> listenAction = (futId, futTyp) =>
-            {
-                DoOutOp((int) CacheOp.PutAsync, w =>
-                {
-                    w.WriteObject(key);
-                    w.WriteObject(val);
-                    w.WriteLong(futId);
-                });
-            };
-
-            return GetFuture<object>(listenAction).Task;
+            return DoOutOpAsync<object, TK, TV>((int) CacheOp.PutAsync, key, val);
         }
 
         /** <inheritDoc /> */

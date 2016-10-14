@@ -398,4 +398,17 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
     protected <T> T throwUnsupported(int type) throws IgniteCheckedException {
         throw new IgniteCheckedException("Unsupported operation type: " + type);
     }
+
+    /**
+     * Reads future information and listens.
+     *
+     * @param reader Reader.
+     * @throws IgniteCheckedException In case of error.
+     */
+    protected void readAndListenFuture(BinaryRawReaderEx reader) throws IgniteCheckedException {
+        long futId = reader.readLong();
+        int futTyp = reader.readInt();
+
+        PlatformFutureUtils.listen(platformCtx, currentFuture(), futId, futTyp, null, this);
+    }
 }

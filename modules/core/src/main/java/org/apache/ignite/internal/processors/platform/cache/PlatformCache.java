@@ -310,10 +310,7 @@ public class PlatformCache extends PlatformAbstractTarget {
             case OP_PUT_ASYNC: {
                 asyncCache.put(reader.readObjectDetached(), reader.readObjectDetached());
 
-                // TODO: readAndListenFuture or something
-                long futId = reader.readLong();
-
-                PlatformFutureUtils.listen(platformCtx, currentFuture(), futId, PlatformFutureUtils.TYP_OBJ, null, this);
+                readAndListenFuture(reader);
 
                 return TRUE;
             }
@@ -432,8 +429,6 @@ public class PlatformCache extends PlatformAbstractTarget {
 
         return TRUE;
     }
-
-
 
     /**
      * Loads cache via localLoadCache or loadCache.
