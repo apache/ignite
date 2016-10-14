@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.processors.cache.QueryCursorImpl.State.
  */
 public class QueryCursorImpl<T> implements QueryCursorEx<T> {
     /** */
-    private final static AtomicReferenceFieldUpdater<QueryCursorImpl, State> stateUpdater =
+    private final static AtomicReferenceFieldUpdater<QueryCursorImpl, State> STATE_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(QueryCursorImpl.class, State.class, "state");
 
     /** Query executor. */
@@ -75,12 +75,12 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
 
     /** {@inheritDoc} */
     @Override public Iterator<T> iterator() {
-        if (!stateUpdater.compareAndSet(this, IDLE, EXECUTION))
+        if (!STATE_UPDATER.compareAndSet(this, IDLE, EXECUTION))
             throw new IgniteException("Iterator is already fetched or query was cancelled.");
 
         iter = iterExec.iterator();
 
-        if (!stateUpdater.compareAndSet(this, EXECUTION, RESULT_READY)) {
+        if (!STATE_UPDATER.compareAndSet(this, EXECUTION, RESULT_READY)) {
             // Handle race with cancel and make sure the iterator resources are freed correctly.
             closeIter();
 
@@ -121,20 +121,20 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
     /** {@inheritDoc} */
     @Override public void close() {
         while(state != CLOSED) {
-            if (stateUpdater.compareAndSet(this, RESULT_READY, CLOSED)) {
+            if (STATE_UPDATER.compareAndSet(this, RESULT_READY, CLOSED)) {
                 closeIter();
 
                 return;
             }
 
-            if (stateUpdater.compareAndSet(this, EXECUTION, CLOSED)) {
+            if (STATE_UPDATER.compareAndSet(this, EXECUTION, CLOSED)) {
                 if (cancel != null)
                     cancel.cancel();
 
                 return;
             }
 
-            if (stateUpdater.compareAndSet(this, IDLE, CLOSED))
+            if (STATE_UPDATER.compareAndSet(this, IDLE, CLOSED))
                 return;
         }
     }
