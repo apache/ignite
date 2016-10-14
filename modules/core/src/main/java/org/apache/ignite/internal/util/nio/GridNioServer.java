@@ -1244,12 +1244,12 @@ public class GridNioServer<T> {
 
                 optoWriter.writeMessage(msg);
 
+                req.onDone();
+
                 finished = !optoState.channelWritten();
 
                 // Fill up as many messages as possible to write buffer.
                 while (finished) {
-                    req.onDone();
-
                     req = (NioOperationFuture<?>)ses.pollFuture();
 
                     if (req == null)
@@ -1262,6 +1262,8 @@ public class GridNioServer<T> {
                     optoWriter = new OptimizedMessageWriterImpl(optoState);
 
                     optoWriter.writeMessage(msg);
+
+                    req.onDone();
 
                     finished = !optoState.channelWritten();
                 }
