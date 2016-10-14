@@ -240,6 +240,8 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void writeTo(OptimizedMessageWriter writer) {
+            super.writeTo(writer);
+
             writer.writeCollection(entries, MessageCollectionItemType.MSG);
         }
 
@@ -347,6 +349,8 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void writeTo(OptimizedMessageWriter writer) {
+            super.writeTo(writer);
+
             writer.writeString(body);
             writer.writeMessage(msg);
         }
@@ -490,6 +494,8 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void writeTo(OptimizedMessageWriter writer) {
+            super.writeTo(writer);
+
             writer.writeUuid(nodeId);
             writer.writeInt(id);
             writer.writeString(body);

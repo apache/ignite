@@ -92,6 +92,8 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
         writer.writeMap(blocks, MessageCollectionItemType.MSG, MessageCollectionItemType.BYTE_ARR);
         writer.writeIgniteUuid(fileId);
         writer.writeLong(id);

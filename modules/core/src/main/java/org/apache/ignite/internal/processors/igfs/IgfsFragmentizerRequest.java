@@ -87,6 +87,8 @@ public class IgfsFragmentizerRequest extends IgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
         writer.writeIgniteUuid(fileId);
         writer.writeCollection(fragmentRanges, MessageCollectionItemType.MSG);
     }

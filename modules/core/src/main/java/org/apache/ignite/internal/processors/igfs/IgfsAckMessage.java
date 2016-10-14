@@ -111,6 +111,8 @@ public class IgfsAckMessage extends IgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
         writer.writeByteArray(errBytes);
         writer.writeIgniteUuid(fileId);
         writer.writeLong(id);

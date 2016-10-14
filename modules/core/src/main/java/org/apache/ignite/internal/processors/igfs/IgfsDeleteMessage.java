@@ -110,6 +110,8 @@ public class IgfsDeleteMessage extends IgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
         writer.writeByteArray(errBytes);
         writer.writeIgniteUuid(id);
     }

@@ -79,6 +79,8 @@ public class IgfsSyncMessage extends IgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @Override public void writeTo(OptimizedMessageWriter writer) {
+        super.writeTo(writer);
+
         writer.writeLong(order);
         writer.writeBoolean(res);
     }
