@@ -3495,7 +3495,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             OptimizedMessageWriterImpl writer0 = (OptimizedMessageWriterImpl)writer;
 
             if (writer0.remaining() < 33)
-                writer0.pushBuffer();
+                writer0.nextBuffer();
 
             ByteBuffer buf = writer0.buffer();
 
@@ -3608,7 +3608,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             OptimizedMessageWriterImpl writer0 = (OptimizedMessageWriterImpl)writer;
 
             if (writer0.remaining() < 9)
-                writer0.pushBuffer();
+                writer0.nextBuffer();
 
             ByteBuffer buf = writer0.buffer();
 
@@ -3699,7 +3699,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             OptimizedMessageWriterImpl writer0 = (OptimizedMessageWriterImpl)writer;
 
             if (writer0.remaining() < 17)
-                writer0.pushBuffer();
+                writer0.nextBuffer();
 
             ByteBuffer buf = writer0.buffer();
 

@@ -72,7 +72,7 @@ public class OptimizedMessageWriterImpl implements OptimizedMessageWriter {
     /** {@inheritDoc} */
     @Override public void writeByte(byte val) {
         if (remaining() == 0)
-            pushBuffer();
+            nextBuffer();
 
         buf.put(val);
     }
@@ -80,7 +80,7 @@ public class OptimizedMessageWriterImpl implements OptimizedMessageWriter {
     /** {@inheritDoc} */
     @Override public void writeShort(short val) {
         if (remaining() < 2)
-            pushBuffer();
+            nextBuffer();
 
         int pos = buf.position();
 
@@ -97,7 +97,7 @@ public class OptimizedMessageWriterImpl implements OptimizedMessageWriter {
     /** {@inheritDoc} */
     @Override public void writeInt(int val) {
         if (remaining() < 5)
-            pushBuffer();
+            nextBuffer();
 
         if (val == Integer.MAX_VALUE)
             val = Integer.MIN_VALUE;
@@ -122,7 +122,7 @@ public class OptimizedMessageWriterImpl implements OptimizedMessageWriter {
     /** {@inheritDoc} */
     @Override public void writeLong(long val) {
         if (remaining() < 10)
-            pushBuffer();
+            nextBuffer();
 
         if (val == Long.MAX_VALUE)
             val = Long.MIN_VALUE;
@@ -147,7 +147,7 @@ public class OptimizedMessageWriterImpl implements OptimizedMessageWriter {
     /** {@inheritDoc} */
     @Override public void writeFloat(float val) {
         if (remaining() < 4)
-            pushBuffer();
+            nextBuffer();
 
         int pos = buf.position();
 
@@ -164,7 +164,7 @@ public class OptimizedMessageWriterImpl implements OptimizedMessageWriter {
     /** {@inheritDoc} */
     @Override public void writeDouble(double val) {
         if (remaining() < 8)
-            pushBuffer();
+            nextBuffer();
 
         int pos = buf.position();
 
@@ -181,7 +181,7 @@ public class OptimizedMessageWriterImpl implements OptimizedMessageWriter {
     /** {@inheritDoc} */
     @Override public void writeChar(char val) {
         if (remaining() < 8)
-            pushBuffer();
+            nextBuffer();
 
         int pos = buf.position();
 
@@ -304,7 +304,7 @@ public class OptimizedMessageWriterImpl implements OptimizedMessageWriter {
     /** {@inheritDoc} */
     @Override public void writeUuid(UUID val) {
         if (remaining() < 1 + 10 + 10)
-            pushBuffer();
+            nextBuffer();
 
         if (val == null)
             writeBoolean(true);
@@ -318,7 +318,7 @@ public class OptimizedMessageWriterImpl implements OptimizedMessageWriter {
     /** {@inheritDoc} */
     @Override public void writeIgniteUuid(IgniteUuid val) {
         if (remaining() < 1 + 10 + 10 + 10)
-            pushBuffer();
+            nextBuffer();
 
         if (val == null)
             writeBoolean(true);
@@ -494,18 +494,9 @@ public class OptimizedMessageWriterImpl implements OptimizedMessageWriter {
     }
 
     /**
-     * Push buffer.
-     */
-    public void pushBuffer() {
-        state.pushBuffer();
-
-        nextBuffer();
-    }
-
-    /**
      * Set next buffer.
      */
-    private void nextBuffer() {
+    public void nextBuffer() {
         if (buf == null)
             buf = state.buffer();
         else

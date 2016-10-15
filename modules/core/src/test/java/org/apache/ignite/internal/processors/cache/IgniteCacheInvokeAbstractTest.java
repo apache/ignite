@@ -209,13 +209,12 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
     public void testInvokeAll() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache();
 
-        invokeAll(cache, null);
+        Set<Integer> keys = new HashSet<>();
 
-        if (atomicityMode() == TRANSACTIONAL) {
-            invokeAll(cache, PESSIMISTIC);
+        for (int i = 0; i < 1000; i++)
+            keys.add(i);
 
-            invokeAll(cache, OPTIMISTIC);
-        }
+        invokeAll(cache, keys, null);
     }
 
     /**
@@ -224,28 +223,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
      * @throws Exception If failed.
      */
     private void invokeAll(IgniteCache<Integer, Integer> cache, @Nullable TransactionConcurrency txMode) throws Exception {
-        invokeAll(cache, new HashSet<>(primaryKeys(cache, 3, 0)), txMode);
 
-        if (gridCount() > 1) {
-            invokeAll(cache, new HashSet<>(backupKeys(cache, 3, 0)), txMode);
-
-            invokeAll(cache, new HashSet<>(nearKeys(cache, 3, 0)), txMode);
-
-            Set<Integer> keys = new HashSet<>();
-
-            keys.addAll(primaryKeys(jcache(0), 3, 0));
-            keys.addAll(primaryKeys(jcache(1), 3, 0));
-            keys.addAll(primaryKeys(jcache(2), 3, 0));
-
-            invokeAll(cache, keys, txMode);
-        }
-
-        Set<Integer> keys = new HashSet<>();
-
-        for (int i = 0; i < 1000; i++)
-            keys.add(i);
-
-        invokeAll(cache, keys, txMode);
     }
 
     /**
