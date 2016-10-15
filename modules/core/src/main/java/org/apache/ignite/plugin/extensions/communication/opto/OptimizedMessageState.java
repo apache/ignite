@@ -28,12 +28,10 @@ public interface OptimizedMessageState {
      *
      * @return Current buffer.
      */
-    public ByteBuffer buffer();
+    public ByteBuffer currentBuffer();
 
     /**
      * Push current buffer to stack and returns the new one.
-     *
-     * @return New buffer.
      */
-    public ByteBuffer pushBuffer();
+    public void pushBuffer();
 }

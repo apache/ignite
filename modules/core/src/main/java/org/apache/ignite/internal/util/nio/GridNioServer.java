@@ -1151,19 +1151,6 @@ public class GridNioServer<T> {
             GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
             ByteBuffer buf = ses.writeBuffer();
 
-
-            // Initialize metadata.
-            MessageWriter writer = ses.meta(MSG_WRITER.ordinal());
-
-            if (writer == null) {
-                try {
-                    ses.addMeta(MSG_WRITER.ordinal(), writer = writerFactory.writer(ses));
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IOException("Failed to create message writer.", e);
-                }
-            }
-
             OptimizedMessageStateImpl optoState = ses.meta(OPTO_STATE.ordinal());
 
             if (optoState == null) {
@@ -1171,58 +1158,13 @@ public class GridNioServer<T> {
                     new OptimizedMessageStateImpl(sockCh, buf, ses, metricsLsnr, log));
             }
 
-            optoState.resetChannelWrite();
+            // Process pending data if any.
+            optoState.onBeforeWrite();
 
-            // Process old data if any.
-            boolean finished;
-
-            NioOperationFuture<?> oldReq = ses.removeMeta(NIO_OPERATION.ordinal());
-
-            if (oldReq != null) {
-                // Process previous request if any.
-                Message msg = oldReq.directMessage();
-
-                assert msg != null;
-
-                if (writer != null)
-                    writer.setCurrentWriteClass(msg.getClass());
-
-                finished = msg.writeTo(buf, writer);
-
-                if (finished && writer != null)
-                    writer.reset();
-
-                if (!finished) {
-                    buf.flip();
-
-                    assert buf.hasRemaining();
-
-                    int cnt = sockCh.write(buf);
-
-                    if (log.isTraceEnabled())
-                        log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
-
-                    if (metricsLsnr != null)
-                        metricsLsnr.onBytesSent(cnt);
-
-                    ses.bytesSent(cnt);
-
-                    buf.compact();
-
-                    ses.addMeta(NIO_OPERATION.ordinal(), oldReq);
-                }
-                else
-                    oldReq.onDone();
-            }
-            else {
-                // Process optimized data if any.
-                optoState.transferData();
-
-                finished = !optoState.channelWritten();
-            }
+            boolean finished = optoState.finished();
 
             // Still not finished after reading previous data -> return.
-            if (!finished)
+            if (finished)
                 return;
 
             // Process messages from the queue.
@@ -1240,16 +1182,14 @@ public class GridNioServer<T> {
 
                 assert msg != null;
 
-                OptimizedMessageWriterImpl optoWriter = new OptimizedMessageWriterImpl(optoState);
-
-                optoWriter.writeMessage(msg);
+                new OptimizedMessageWriterImpl(optoState).writeMessage(msg);
 
                 req.onDone();
 
-                finished = !optoState.channelWritten();
+                finished = optoState.finished();
 
                 // Fill up as many messages as possible to write buffer.
-                while (finished) {
+                while (!finished) {
                     req = (NioOperationFuture<?>)ses.pollFuture();
 
                     if (req == null)
@@ -1259,41 +1199,16 @@ public class GridNioServer<T> {
 
                     assert msg != null;
 
-                    optoWriter = new OptimizedMessageWriterImpl(optoState);
-
-                    optoWriter.writeMessage(msg);
+                    new OptimizedMessageWriterImpl(optoState).writeMessage(msg);
 
                     req.onDone();
 
-                    finished = !optoState.channelWritten();
+                    finished = optoState.finished();
                 }
             }
 
-            // Write to channel if it hasn't been done yet.
-            if (!optoState.channelWritten()) {
-                buf.flip();
-
-                assert buf.hasRemaining();
-
-                int cnt = sockCh.write(buf);
-
-                if (log.isTraceEnabled())
-                    log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
-
-                if (metricsLsnr != null)
-                    metricsLsnr.onBytesSent(cnt);
-
-                ses.bytesSent(cnt);
-
-                // Optimize buffer if it was hasn't been done yet.
-                if (buf.hasRemaining() || !finished) {
-                    buf.compact();
-
-                    ses.addMeta(NIO_OPERATION.ordinal(), req);
-                }
-                else
-                    buf.clear();
-            }
+            // Write data if needed.
+            optoState.onAfterWrite();
         }
     }
 

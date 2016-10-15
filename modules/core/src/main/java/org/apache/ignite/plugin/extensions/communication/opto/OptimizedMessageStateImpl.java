@@ -47,7 +47,7 @@ public class OptimizedMessageStateImpl implements OptimizedMessageState {
     private final IgniteLogger log;
 
     /** Additional buffers. */
-    private LinkedList<Buf> bufs;
+    private LinkedList<ByteBuffer> bufs;
 
     /** Whether channel write was performed. */
     private boolean chWritten;
@@ -71,66 +71,49 @@ public class OptimizedMessageStateImpl implements OptimizedMessageState {
     }
 
     /** {@inheritDoc} */
-    @Override public ByteBuffer buffer() {
-        return bufs == null ? sockChBuf : bufs.getLast().buf;
+    @Override public ByteBuffer currentBuffer() {
+        return bufs == null ? sockChBuf : bufs.getLast();
     }
 
     /** {@inheritDoc} */
-    @Override public ByteBuffer pushBuffer() {
-        if (bufs == null) {
-            sockChBuf.flip();
-
-            if (chWritten)
-                // We already written something to the socket before. Hence, the only option is to use new buffer.
-                return newByteBuffer();
-            else {
-                writeToChannel();
-
-                return sockChBuf;
-            }
-        }
-        else {
-            bufs.getLast().buf.flip();
-
-            bufs.getLast().flipped = true;
-
-            return newByteBuffer();
-        }
+    @Override public void pushBuffer() {
+        if (currentBuffer() == sockChBuf && !finished())
+            writeToChannel();
+        else
+            addHeapBuffer();
     }
 
     /**
-     * Transfer data from byte buffers to socket buffer (if any).
+     * Callback invoked on write cycle start.
      */
-    public void transferData() {
-        if (bufs != null) {
-            Buf buf = bufs.get(0);
+    public void onBeforeWrite() {
+        chWritten = false;
 
-            if (!buf.flipped) {
-                buf.buf.flip();
-
-                buf.flipped = true;
-            }
+        while (bufs != null && sockChBuf.hasRemaining()) {
+            ByteBuffer buf = bufs.getFirst();
 
             int sockRemaining = sockChBuf.remaining();
-            int bufRemaining = buf.buf.remaining();
+            int bufRemaining = buf.remaining();
 
-            byte[] bufBytes = buf.buf.array();
+            sockChBuf.put(buf.array(), buf.position(), Math.min(sockRemaining, bufRemaining));
 
-            sockChBuf.put(bufBytes, buf.buf.position(), Math.min(sockRemaining, bufRemaining));
+            if (buf.hasRemaining()) {
+                // Buffer is written partially, compact and stop.
+                buf.compact();
 
-            if (!buf.buf.hasRemaining()) {
-                if (bufs.size() == 1)
+                break;
+            }
+            else {
+                // Buffer is written completely.
+                bufs.removeFirst();
+
+                if (bufs.size() == 0)
                     bufs = null;
-                else
-                    bufs.remove(0);
             }
 
-            sockChBuf.flip();
-
-            writeToChannel();
-
-            if (bufs.isEmpty())
-                bufs = null;
+            if (!sockChBuf.hasRemaining()) {
+                writeToChannel();
+            }
         }
     }
 
@@ -138,7 +121,8 @@ public class OptimizedMessageStateImpl implements OptimizedMessageState {
      * Write socket buffer to the channel.
      */
     private void writeToChannel() {
-        // Socket write attempt. Try to re-use the buffer.
+        sockChBuf.flip();
+
         int cnt;
 
         try {
@@ -165,17 +149,23 @@ public class OptimizedMessageStateImpl implements OptimizedMessageState {
     }
 
     /**
-     * @return Channel written flag.
+     * Callback invoked on write cycle finish.
      */
-    public boolean channelWritten() {
-        return chWritten;
+    public void onAfterWrite() {
+        if (chWritten) {
+            if (bufs != null)
+                bufs.getLast().flip();
+        }
+        else {
+            writeToChannel();
+        }
     }
 
     /**
-     * Reset channel written flag.
+     * @return Channel written flag.
      */
-    public void resetChannelWrite() {
-        chWritten = false;
+    public boolean finished() {
+        return chWritten;
     }
 
     /**
@@ -183,23 +173,16 @@ public class OptimizedMessageStateImpl implements OptimizedMessageState {
      *
      * @return New byte buffer.
      */
-    private ByteBuffer newByteBuffer() {
+    private ByteBuffer addHeapBuffer() {
         ByteBuffer newBuf = ByteBuffer.allocate(sockChBuf.capacity());
 
         if (bufs == null)
             bufs = new LinkedList<>();
+        else
+            bufs.getLast().flip();
 
-        bufs.add(new Buf(newBuf));
+        bufs.add(newBuf);
 
         return newBuf;
-    }
-
-    private static class Buf {
-        private final ByteBuffer buf;
-        private boolean flipped;
-
-        public Buf(ByteBuffer buf) {
-            this.buf = buf;
-        }
     }
 }

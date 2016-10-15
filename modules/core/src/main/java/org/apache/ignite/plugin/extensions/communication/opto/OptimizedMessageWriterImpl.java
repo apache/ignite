@@ -497,10 +497,10 @@ public class OptimizedMessageWriterImpl implements OptimizedMessageWriter {
      * Set next buffer.
      */
     public void nextBuffer() {
-        if (buf == null)
-            buf = state.buffer();
-        else
-            buf = state.pushBuffer();
+        if (buf != null)
+            state.pushBuffer();
+
+        buf = state.currentBuffer();
 
         heapArr = buf.isDirect() ? null : buf.array();
         baseOff = buf.isDirect() ? ((DirectBuffer)buf).address() : GridUnsafe.BYTE_ARR_OFF;
