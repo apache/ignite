@@ -47,7 +47,7 @@ public class OptimizedMessageStateImpl implements OptimizedMessageState {
     private final IgniteLogger log;
 
     /** Additional buffers. */
-    private LinkedList<ByteBuffer> bufs;
+    private LinkedList<Buf> bufs;
 
     /** Whether channel write was performed. */
     private boolean chWritten;
@@ -72,7 +72,7 @@ public class OptimizedMessageStateImpl implements OptimizedMessageState {
 
     /** {@inheritDoc} */
     @Override public ByteBuffer buffer() {
-        return bufs == null ? sockChBuf : bufs.getLast();
+        return bufs == null ? sockChBuf : bufs.getLast().buf;
     }
 
     /** {@inheritDoc} */
@@ -90,7 +90,9 @@ public class OptimizedMessageStateImpl implements OptimizedMessageState {
             }
         }
         else {
-            bufs.getLast().flip();
+            bufs.getLast().buf.flip();
+
+            bufs.getLast().flipped = true;
 
             return newByteBuffer();
         }
@@ -101,21 +103,29 @@ public class OptimizedMessageStateImpl implements OptimizedMessageState {
      */
     public void transferData() {
         if (bufs != null) {
-            ByteBuffer buf = bufs.get(0);
+            Buf buf = bufs.get(0);
+
+            if (!buf.flipped) {
+                buf.buf.flip();
+
+                buf.flipped = true;
+            }
 
             int sockRemaining = sockChBuf.remaining();
-            int bufRemaining = buf.remaining();
+            int bufRemaining = buf.buf.remaining();
 
-            byte[] bufBytes = buf.array();
+            byte[] bufBytes = buf.buf.array();
 
-            sockChBuf.put(bufBytes, buf.position(), Math.min(sockRemaining, bufRemaining));
+            sockChBuf.put(bufBytes, buf.buf.position(), Math.min(sockRemaining, bufRemaining));
 
-            if (!buf.hasRemaining()) {
+            if (!buf.buf.hasRemaining()) {
                 if (bufs.size() == 1)
                     bufs = null;
                 else
                     bufs.remove(0);
             }
+
+            sockChBuf.flip();
 
             writeToChannel();
 
@@ -179,8 +189,17 @@ public class OptimizedMessageStateImpl implements OptimizedMessageState {
         if (bufs == null)
             bufs = new LinkedList<>();
 
-        bufs.add(newBuf);
+        bufs.add(new Buf(newBuf));
 
         return newBuf;
+    }
+
+    private static class Buf {
+        private final ByteBuffer buf;
+        private boolean flipped;
+
+        public Buf(ByteBuffer buf) {
+            this.buf = buf;
+        }
     }
 }
