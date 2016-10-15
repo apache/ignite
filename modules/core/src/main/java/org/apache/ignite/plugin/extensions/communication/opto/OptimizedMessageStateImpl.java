@@ -123,6 +123,9 @@ public class OptimizedMessageStateImpl implements OptimizedMessageState {
 
                 writeToChannel();
             }
+
+            if (bufs.isEmpty())
+                bufs = null;
         }
     }
 

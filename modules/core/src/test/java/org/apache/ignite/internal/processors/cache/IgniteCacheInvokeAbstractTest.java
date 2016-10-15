@@ -211,7 +211,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
         Set<Integer> keys = new HashSet<>();
 
-        for (int i = 0; i < 1000; i++)
+        for (int i = 0; i < 100; i++)
             keys.add(i);
 
         invokeAll(cache, keys, null);
