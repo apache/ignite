@@ -3,7 +3,6 @@ package org.apache.ignite.plugin.security;
 import java.util.Map;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteException;
@@ -40,12 +39,7 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
 
         exp.setTaskPermissions(permTask);
 
-        Collection<SecurityPermission> permSys = new ArrayList<>();
-
-        permSys.add(ADMIN_VIEW);
-        permSys.add(EVENTS_ENABLE);
-
-        exp.setSysPermissions(permSys);
+        exp.setSysPermissions(Arrays.asList(ADMIN_VIEW, EVENTS_ENABLE));
 
         final SecurityPermissionSetBuilder permsBuilder = new SecurityPermissionSetBuilder();
 

@@ -25,7 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import org.apache.ignite.IgniteException;
 
-import static java.util.Collections.unmodifiableCollection;
+import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableMap;
 
 /**
@@ -61,7 +61,7 @@ public class SecurityPermissionSetBuilder {
     private Map<String, Collection<SecurityPermission>> taskPerms = new HashMap<>();
 
     /** System permissions.*/
-    private Collection<SecurityPermission> sysPerms = new ArrayList<>();
+    private List<SecurityPermission> sysPerms = new ArrayList<>();
 
     /** Default allow all.*/
     private boolean dfltAllowAll;
@@ -185,7 +185,6 @@ public class SecurityPermissionSetBuilder {
         return col;
     }
 
-
     /**
      * @param permsMap Permissions map.
      * @param name     Name.
@@ -219,7 +218,7 @@ public class SecurityPermissionSetBuilder {
         permSet.setDefaultAllowAll(dfltAllowAll);
         permSet.setCachePermissions(unmodifiableMap(cachePerms));
         permSet.setTaskPermissions(unmodifiableMap(taskPerms));
-        permSet.setSysPermissions(unmodifiableCollection(sysPerms));
+        permSet.setSysPermissions(unmodifiableList(sysPerms));
 
         return permSet;
     }
