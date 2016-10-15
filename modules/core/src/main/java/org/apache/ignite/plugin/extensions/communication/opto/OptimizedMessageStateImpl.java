@@ -108,21 +108,16 @@ public class OptimizedMessageStateImpl implements OptimizedMessageState {
 
             byte[] bufBytes = buf.array();
 
-            if (bufRemaining <= sockRemaining) {
-                // Can write buffer fully.
-                sockChBuf.put(bufBytes, buf.position(), bufRemaining);
+            sockChBuf.put(bufBytes, buf.position(), Math.min(sockRemaining, bufRemaining));
 
-                bufs.remove(0);
-
-                if (sockChBuf.remaining() == 0)
-                    writeToChannel();
+            if (!buf.hasRemaining()) {
+                if (bufs.size() == 1)
+                    bufs = null;
+                else
+                    bufs.remove(0);
             }
-            else {
-                // Partial write.
-                sockChBuf.put(bufBytes, buf.position(), sockRemaining);
 
-                writeToChannel();
-            }
+            writeToChannel();
 
             if (bufs.isEmpty())
                 bufs = null;
