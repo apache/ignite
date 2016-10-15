@@ -1164,38 +1164,19 @@ public class GridNioServer<T> {
             boolean finished = optoState.finished();
 
             // Still not finished after reading previous data -> return.
-            if (finished)
-                return;
+            if (!finished) {
+                // Process messages from the queue.
+                NioOperationFuture<?> req = (NioOperationFuture<?>)ses.pollFuture();
 
-            // Process messages from the queue.
-            NioOperationFuture<?> req = (NioOperationFuture<?>)ses.pollFuture();
+                if (req == null) {
+                    if (buf.position() == 0) {
+                        key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
 
-            if (req == null) {
-                if (buf.position() == 0) {
-                    key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
-
-                    return;
+                        return;
+                    }
                 }
-            }
-            else {
-                Message msg = req.directMessage();
-
-                assert msg != null;
-
-                new OptimizedMessageWriterImpl(optoState).writeMessage(msg);
-
-                req.onDone();
-
-                finished = optoState.finished();
-
-                // Fill up as many messages as possible to write buffer.
-                while (!finished) {
-                    req = (NioOperationFuture<?>)ses.pollFuture();
-
-                    if (req == null)
-                        break;
-
-                    msg = req.directMessage();
+                else {
+                    Message msg = req.directMessage();
 
                     assert msg != null;
 
@@ -1204,6 +1185,24 @@ public class GridNioServer<T> {
                     req.onDone();
 
                     finished = optoState.finished();
+
+                    // Fill up as many messages as possible to write buffer.
+                    while (!finished) {
+                        req = (NioOperationFuture<?>)ses.pollFuture();
+
+                        if (req == null)
+                            break;
+
+                        msg = req.directMessage();
+
+                        assert msg != null;
+
+                        new OptimizedMessageWriterImpl(optoState).writeMessage(msg);
+
+                        req.onDone();
+
+                        finished = optoState.finished();
+                    }
                 }
             }
 

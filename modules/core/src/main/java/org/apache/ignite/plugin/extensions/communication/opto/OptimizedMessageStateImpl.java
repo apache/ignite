@@ -25,7 +25,6 @@ import org.apache.ignite.internal.util.nio.GridSelectorNioSessionImpl;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
-import java.util.LinkedList;
 
 /**
  * Message state implementation.
@@ -37,6 +36,16 @@ public class OptimizedMessageStateImpl implements OptimizedMessageState {
     /** First buffer. */
     private final ByteBuffer sockChBuf;
 
+    /** Backup buffer. */
+    // TODO: Use direct buffer.
+    private ByteBuffer backupBuf = ByteBuffer.allocate(1024 * 1024);
+
+    /** Whether to use backup buffer. */
+    private boolean useBackupBuf;
+
+    /** Whether to flip backup buffer. */
+    private boolean flipBackupBuf;
+
     /** Session. */
     private final GridSelectorNioSessionImpl ses;
 
@@ -45,9 +54,6 @@ public class OptimizedMessageStateImpl implements OptimizedMessageState {
 
     /** Logger. */
     private final IgniteLogger log;
-
-    /** Additional buffers. */
-    private LinkedList<ByteBuffer> bufs;
 
     /** Whether channel write was performed. */
     private boolean chWritten;
@@ -72,15 +78,29 @@ public class OptimizedMessageStateImpl implements OptimizedMessageState {
 
     /** {@inheritDoc} */
     @Override public ByteBuffer currentBuffer() {
-        return bufs == null ? sockChBuf : bufs.getLast();
+        return useBackupBuf ? backupBuf : sockChBuf;
     }
 
     /** {@inheritDoc} */
     @Override public void pushBuffer() {
-        if (currentBuffer() == sockChBuf && !finished())
-            writeToChannel();
-        else
-            addHeapBuffer();
+        if (currentBuffer() == sockChBuf) {
+            if (chWritten) {
+                useBackupBuf = true;
+                flipBackupBuf = true;
+            }
+            else
+                writeToChannel();
+        }
+        else {
+            // Double buffer size.
+            ByteBuffer newBackupBuf = ByteBuffer.allocate(backupBuf.capacity() * 2);
+
+            backupBuf.flip();
+
+            newBackupBuf.put(backupBuf);
+
+            backupBuf = newBackupBuf;
+        }
     }
 
     /**
@@ -89,32 +109,19 @@ public class OptimizedMessageStateImpl implements OptimizedMessageState {
     public void onBeforeWrite() {
         chWritten = false;
 
-        while (bufs != null && sockChBuf.hasRemaining()) {
-            ByteBuffer buf = bufs.getFirst();
-
+        if (useBackupBuf) {
             int sockRemaining = sockChBuf.remaining();
-            int bufRemaining = buf.remaining();
+            int backupBufRemaining = backupBuf.remaining();
 
-            sockChBuf.put(buf.array(), buf.position(), Math.min(sockRemaining, bufRemaining));
+            // TODO: Write directly if possible.
+            sockChBuf.put(backupBuf.array(), backupBuf.position(), Math.min(sockRemaining, backupBufRemaining));
 
-            if (buf.hasRemaining()) {
-                // Buffer is written partially, compact and stop.
-                buf.compact();
-
-                break;
-            }
-            else {
-                // Buffer is written completely.
-                bufs.removeFirst();
-
-                if (bufs.size() == 0)
-                    bufs = null;
-            }
-
-            if (!sockChBuf.hasRemaining()) {
-                writeToChannel();
-            }
+            if (!backupBuf.hasRemaining())
+                backupBuf.clear();
         }
+
+        if (!sockChBuf.hasRemaining())
+            writeToChannel();
     }
 
     /**
@@ -152,13 +159,14 @@ public class OptimizedMessageStateImpl implements OptimizedMessageState {
      * Callback invoked on write cycle finish.
      */
     public void onAfterWrite() {
-        if (chWritten) {
-            if (bufs != null)
-                bufs.getLast().flip();
+        if (flipBackupBuf) {
+            backupBuf.flip();
+
+            flipBackupBuf = false;
         }
-        else {
+
+        if (!chWritten)
             writeToChannel();
-        }
     }
 
     /**
@@ -166,23 +174,5 @@ public class OptimizedMessageStateImpl implements OptimizedMessageState {
      */
     public boolean finished() {
         return chWritten;
-    }
-
-    /**
-     * Create new byte buffer.
-     *
-     * @return New byte buffer.
-     */
-    private ByteBuffer addHeapBuffer() {
-        ByteBuffer newBuf = ByteBuffer.allocate(sockChBuf.capacity());
-
-        if (bufs == null)
-            bufs = new LinkedList<>();
-        else
-            bufs.getLast().flip();
-
-        bufs.add(newBuf);
-
-        return newBuf;
     }
 }
