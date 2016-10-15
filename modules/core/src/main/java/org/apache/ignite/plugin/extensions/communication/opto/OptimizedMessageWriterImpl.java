@@ -497,8 +497,6 @@ public class OptimizedMessageWriterImpl implements OptimizedMessageWriter {
      * Push buffer.
      */
     public void pushBuffer() {
-        assert buf.remaining() == 0;
-
         state.pushBuffer();
 
         nextBuffer();
