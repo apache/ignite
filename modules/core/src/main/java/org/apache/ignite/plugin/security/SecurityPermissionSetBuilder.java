@@ -17,41 +17,37 @@
 
 package org.apache.ignite.plugin.security;
 
-import java.util.Map;
-import java.util.List;
-import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.IgniteException;
 
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableMap;
 
 /**
- * Class for provide ability construct you permission set use
- * patter builder, you can create permission set inline.
+ * Provides a convenient way to create a permission set.
+ * <p>
  * Here is example:
  * <pre>
  *      SecurityPermissionSet permsSet = new SecurityPermissionSetBuilder()
- *              .appendCachePermissions("cache1", CACHE_PUT, CACHE_REMOVE)
- *              .appendCachePermissions("cache2", CACHE_READ)
- *              .appendTaskPermissions("task1", TASK_CANCEL)
- *              .appendTaskPermissions("task2", TASK_EXECUTE)
- *              .appendSystemPermissions(ADMIN_VIEW, EVENTS_ENABLE)
- *              .toSecurityPermissionSet();
+ *          .appendCachePermissions("cache1", CACHE_PUT, CACHE_REMOVE)
+ *          .appendCachePermissions("cache2", CACHE_READ)
+ *          .appendTaskPermissions("task1", TASK_CANCEL)
+ *          .appendTaskPermissions("task2", TASK_EXECUTE)
+ *          .appendSystemPermissions(ADMIN_VIEW, EVENTS_ENABLE)
+ *          .build();
  * </pre>
- *
- * if you will try append permission to inconsistent set, you get {@link IgniteException}.
- * Here is example:
+ * <p>
+ * The builder also does additional validation. For example, if you try to
+ * append {@code EVENTS_ENABLE} permission for a cache, exception will be thrown:
  * <pre>
  *      SecurityPermissionSet permsSet = new SecurityPermissionSetBuilder()
- *          .appendCachePermissions("cache1", EVENTS_ENABLE, CACHE_REMOVE)
- *          .toSecurityPermissionSet();
+ *          .appendCachePermissions("cache1", EVENTS_ENABLE)
+ *          .build();
  * </pre>
- *
- * will be {@link IgniteException} because you can't add EVENTS_ENABLE to cache permission.
- *
  */
 public class SecurityPermissionSetBuilder {
     /** Cache permissions.*/
@@ -164,9 +160,7 @@ public class SecurityPermissionSetBuilder {
         }
 
         if (ex)
-            throw new IgniteException(
-                    "you can assign permission only start with " + ptrns + ", but you try " + name
-            );
+            throw new IgniteException("you can assign permission only start with " + ptrns + ", but you try " + name);
     }
 
     /**
@@ -178,7 +172,7 @@ public class SecurityPermissionSetBuilder {
     private final <T> Collection<T> toCollection(T... perms) {
         assert perms != null;
 
-        List<T> col = new ArrayList<>();
+        Collection<T> col = new ArrayList<>(perms.length);
 
         Collections.addAll(col, perms);
 
@@ -187,13 +181,13 @@ public class SecurityPermissionSetBuilder {
 
     /**
      * @param permsMap Permissions map.
-     * @param name     Name.
-     * @param perms    Permission.
+     * @param name Name.
+     * @param perms Permission.
      */
     private void append(
-            Map<String, Collection<SecurityPermission>> permsMap,
-            String name,
-            Collection<SecurityPermission> perms
+        Map<String, Collection<SecurityPermission>> permsMap,
+        String name,
+        Collection<SecurityPermission> perms
     ) {
         assert permsMap != null;
         assert name != null;
@@ -208,11 +202,11 @@ public class SecurityPermissionSetBuilder {
     }
 
     /**
-     * Convert internal state of {@link SecurityPermissionSetBuilder} to {@link SecurityPermissionSet}.
+     * Builds the {@link SecurityPermissionSet}.
      *
-     * @return {@link SecurityPermissionSet}
+     * @return {@link SecurityPermissionSet} instance.
      */
-    public SecurityPermissionSet toSecurityPermissionSet() {
+    public SecurityPermissionSet build() {
         SecurityBasicPermissionSet permSet = new SecurityBasicPermissionSet();
 
         permSet.setDefaultAllowAll(dfltAllowAll);
