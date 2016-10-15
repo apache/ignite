@@ -89,7 +89,7 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
                 "task2", TASK_EXECUTE
         ).appendSystemPermissions(ADMIN_VIEW, EVENTS_ENABLE);
 
-        SecurityPermissionSet actual = permsBuilder.toSecurityPermissionSet();
+        SecurityPermissionSet actual = permsBuilder.build();
 
         assertEquals(exp.cachePermissions(), actual.cachePermissions());
         assertEquals(exp.taskPermissions(), actual.taskPermissions());

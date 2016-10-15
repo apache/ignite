@@ -24,7 +24,8 @@ import java.util.Collection;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Simple implementation of {@code interface} {@link SecurityPermissionSet}
+ * Simple implementation of {@link SecurityPermissionSet} interface. Provides
+ * convenient way to specify permission set in the XML configuration.
  */
 public class SecurityBasicPermissionSet implements SecurityPermissionSet {
     /** Serial version uid. */
