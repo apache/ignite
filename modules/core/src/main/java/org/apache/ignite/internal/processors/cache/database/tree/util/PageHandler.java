@@ -35,7 +35,7 @@ import static java.lang.Boolean.TRUE;
 public abstract class PageHandler<X, R> {
     /** */
     private static final PageHandler<Void, Boolean> NOOP = new PageHandler<Void, Boolean>() {
-        @Override public Boolean run( Page page, PageIO io, ByteBuffer buf, Void arg, int intArg)
+        @Override public Boolean run(Page page, PageIO io, ByteBuffer buf, Void arg, int intArg)
             throws IgniteCheckedException {
             return TRUE;
         }
@@ -68,7 +68,7 @@ public abstract class PageHandler<X, R> {
      * @param h Handler.
      * @param arg Argument.
      * @param intArg Argument of type {@code int}.
-     * @param lockFailed  Result in case of lock failure due to page recycling.
+     * @param lockFailed Result in case of lock failure due to page recycling.
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
@@ -129,7 +129,7 @@ public abstract class PageHandler<X, R> {
     ) throws IgniteCheckedException {
         Boolean res = writePage(page, lockListener, NOOP, init, wal, null, 0, FALSE);
 
-        assert res == TRUE: res; // It must be newly allocated page, can't be recycled.
+        assert res == TRUE : res; // It must be newly allocated page, can't be recycled.
     }
 
     /**
@@ -292,5 +292,16 @@ public abstract class PageHandler<X, R> {
         long dstPtr = dst.isDirect() ? ((DirectBuffer)dst).address() : 0;
 
         GridUnsafe.copyMemory(srcArr, srcPtr + srcArrOff + srcOff, dstArr, dstPtr + dstArrOff + dstOff, cnt);
+    }
+
+    public static void zeroMemory(ByteBuffer buf, int off, int length) {
+        if (buf.isDirect())
+            GridUnsafe.setMemory(((DirectBuffer)buf).address() + off, length, (byte)0);
+
+        else {
+            for (int i = off; i < off + length; i++)
+                buf.put(i, (byte)0);
+
+        }
     }
 }
