@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.igfs.IgfsPath;
-import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
@@ -26,7 +25,6 @@ import org.jetbrains.annotations.NotNull;
 /**
  * File's binary data block key.
  */
-@GridInternal
 public final class IgfsLocalSecondaryBlockKey implements IgfsBaseBlockKey, Comparable<IgfsLocalSecondaryBlockKey> {
     /** IGFS path. */
     private IgfsPath path;
@@ -89,7 +87,7 @@ public final class IgfsLocalSecondaryBlockKey implements IgfsBaseBlockKey, Compa
         if (o == this)
             return true;
 
-        if (o == null || o.getClass() != getClass())
+        if (o == null || !(o instanceof IgfsLocalSecondaryBlockKey))
             return false;
 
         IgfsLocalSecondaryBlockKey that = (IgfsLocalSecondaryBlockKey)o;

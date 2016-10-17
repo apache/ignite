@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * The base class to block key that is used by the {@link IgfsGroupDataBlocksKeyMapper}
@@ -30,12 +31,12 @@ public interface IgfsBaseBlockKey {
     public long blockId();
 
     /**
-     * @return Hash is based on a file identifier (path, ID, etc).
+     * @return Hash based on a file identifier (path, ID, etc).
      */
     public int fileHash();
 
     /**
-     * @return Block affinity key.
+     * @return Block affinity key (if any).
      */
-    public IgniteUuid affinityKey();
+    @Nullable public IgniteUuid affinityKey();
 }

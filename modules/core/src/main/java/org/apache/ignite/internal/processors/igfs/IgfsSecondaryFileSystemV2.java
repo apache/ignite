@@ -55,6 +55,6 @@ public interface IgfsSecondaryFileSystemV2 extends IgfsSecondaryFileSystem {
      * @throws IgniteException In case of error.
      * @throws IgfsPathNotFoundException If path doesn't exist.
      */
-    public Collection<IgfsBlockLocation> affinity(final IgfsPath path, final long start, final long len,
-        final long maxLen) throws IgniteException;
+    public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len, long maxLen)
+        throws IgniteException;
 }

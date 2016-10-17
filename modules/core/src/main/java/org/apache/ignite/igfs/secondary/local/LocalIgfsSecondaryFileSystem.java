@@ -63,16 +63,17 @@ import java.util.Map;
 /**
  * Secondary file system which delegates to local file system.
  */
-@SuppressWarnings({"UnusedDeclaration"})
 public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystemV2, LifecycleAware {
     /** Path that will be added to each passed path. */
     private String workDir;
 
     /** Logger. */
+    @SuppressWarnings("unused")
     @LoggerResource
     private IgniteLogger log;
 
     /** IGFS instance. */
+    @SuppressWarnings("unused")
     @FileSystemResource
     private IgfsImpl igfs;
 

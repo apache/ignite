@@ -135,6 +135,7 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable,
         this.len = len;
 
         nodeIds = Collections.emptySet();
+
         this.names = names;
         this.hosts = hosts;
     }

@@ -21,6 +21,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMa
 import org.apache.ignite.internal.processors.igfs.IgfsBaseBlockKey;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * {@code IGFS} class providing ability to group file's data blocks together on one node.
@@ -87,8 +88,10 @@ public class IgfsGroupDataBlocksKeyMapper extends GridCacheDefaultAffinityKeyMap
         if (key instanceof IgfsBaseBlockKey) {
             IgfsBaseBlockKey blockKey = (IgfsBaseBlockKey)key;
 
-            if (blockKey.affinityKey() != null)
-                return blockKey.affinityKey();
+            IgniteUuid affKey = blockKey.affinityKey();
+
+            if (affKey != null)
+                return affKey;
 
             long grpId = blockKey.blockId() / grpSize;
 
