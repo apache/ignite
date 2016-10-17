@@ -3913,10 +3913,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     byte[] rmSubj = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT);
                                     byte[] locSubj = locNode.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT);
 
-                                    SecurityContext fromCrd = spi.marshaller().unmarshal(rmSubj, cl);
+                                    SecurityContext rmCrd = spi.marshaller().unmarshal(rmSubj, cl);
                                     SecurityContext locCrd = spi.marshaller().unmarshal(locSubj, cl);
 
-                                    if (!permissionsEqual(locCrd.subject().permissions(), fromCrd.subject().permissions())) {
+                                    if (!permissionsEqual(locCrd.subject().permissions(), rmCrd.subject().permissions())) {
                                         // Node has not pass authentication.
                                         LT.warn(log, null, "Authentication failed, local authentication is different of " +
                                                         "coordinator and other nodes [nodeId=" + node.id() + ", addrs=" + U.addressesAsString(node) + ']',
