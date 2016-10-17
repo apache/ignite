@@ -100,10 +100,13 @@ public class IgniteSecurityPluginProvider implements PluginProvider {
             Map<UUID,List<UUID>> rmAuth = (Map<UUID, List<UUID>>) attr.get("rmAuth");
             Boolean global= (Boolean) attr.get("global");
 
+            Map<SecurityCredentials, GridSecurityProcessorSelfTest.TestSecurityPermissionSet> permsMap =
+                    (Map<SecurityCredentials, GridSecurityProcessorSelfTest.TestSecurityPermissionSet>) attr.get("permsMap");
+
             grid.context().addNodeAttribute(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, sc);
 
             return new GridSecurityProcessorSelfTest.GridTestSecurityProcessor(
-                    grid.context(), authCnt, rmAuth, global
+                    grid.context(), authCnt, rmAuth, global, permsMap
             );
         }
         return null;

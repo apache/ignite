@@ -38,27 +38,33 @@ public class GridSecurityProcessorSelfTest extends GridCommonAbstractTest {
 
         AtomicInteger selfAuth = new AtomicInteger();
 
+        Map<SecurityCredentials, TestSecurityPermissionSet> permsMap = new HashMap<>();
+
+        SecurityCredentials cred = credentials("ignite", "best");
+
+        permsMap.put(cred, new TestSecurityPermissionSet());
+
         String name1 = "ignite1";
 
-        Ignite ig1 = startGrid(name1, config(name1, selfAuth, rmAuth, false));
+        Ignite ig1 = startGrid(name1, config(cred, selfAuth, rmAuth, false, permsMap));
 
         assertEquals(1, selfAuth.get());
 
         String name2 = "ignite2";
 
-        Ignite ig2 = startGrid(name2, config(name2, selfAuth, rmAuth, false));
+        Ignite ig2 = startGrid(name2, config(cred, selfAuth, rmAuth, false, permsMap));
 
         assertEquals(1, selfAuth.get());
 
         String name3 = "ignite3";
 
-        Ignite ig3 = startGrid(name3, config(name3, selfAuth, rmAuth, false));
+        Ignite ig3 = startGrid(name3, config(cred, selfAuth, rmAuth, false, permsMap));
 
         assertEquals(1, selfAuth.get());
 
         String name4 = "ignite4";
 
-        Ignite ig4 = startGrid(name4, config(name4, selfAuth, rmAuth, false));
+        Ignite ig4 = startGrid(name4, config(cred, selfAuth, rmAuth, false, permsMap));
 
         assertEquals(1, selfAuth.get());
 
@@ -83,27 +89,33 @@ public class GridSecurityProcessorSelfTest extends GridCommonAbstractTest {
 
         AtomicInteger selfAuth = new AtomicInteger();
 
+        Map<SecurityCredentials, TestSecurityPermissionSet> permsMap = new HashMap<>();
+
+        SecurityCredentials cred = credentials("ignite", "best");
+
+        permsMap.put(cred, new TestSecurityPermissionSet());
+
         String name1 = "ignite1";
 
-        Ignite ig1 = startGrid(name1, config(name1, selfAuth, rmAuth, true));
+        Ignite ig1 = startGrid(name1, config(cred, selfAuth, rmAuth, true, permsMap));
 
         assertEquals(1, selfAuth.get());
 
         String name2 = "ignite2";
 
-        Ignite ig2 = startGrid(name2, config(name2, selfAuth, rmAuth, true));
+        Ignite ig2 = startGrid(name2, config(cred, selfAuth, rmAuth, true, permsMap));
 
         assertEquals(2, selfAuth.get());
 
         String name3 = "ignite3";
 
-        Ignite ig3 = startGrid(name3, config(name3, selfAuth, rmAuth, true));
+        Ignite ig3 = startGrid(name3, config(cred, selfAuth, rmAuth, true, permsMap));
 
         assertEquals(3, selfAuth.get());
 
         String name4 = "ignite4";
 
-        Ignite ig4 = startGrid(name4, config(name4, selfAuth, rmAuth, true));
+        Ignite ig4 = startGrid(name4, config(cred, selfAuth, rmAuth, true, permsMap));
 
         assertEquals(4, selfAuth.get());
 
@@ -135,19 +147,21 @@ public class GridSecurityProcessorSelfTest extends GridCommonAbstractTest {
      *
      */
     private IgniteConfiguration config(
-            String name,
+            SecurityCredentials crd,
             AtomicInteger authCnt,
             Map<UUID,List<UUID>> authMap,
-            Boolean global
+            Boolean global,
+            Map<SecurityCredentials, TestSecurityPermissionSet> permsMap
     ) throws Exception {
         IgniteConfiguration cfg = getConfiguration();
 
         Map<String, Object> attr = new HashMap<>();
 
-        attr.put("crd", credentials(name));
+        attr.put("crd", crd);
         attr.put("selfCnt", authCnt);
         attr.put("rmAuth", authMap);
         attr.put("global", global);
+        attr.put("permsMap", permsMap);
 
         cfg.setUserAttributes(attr);
 
@@ -157,13 +171,14 @@ public class GridSecurityProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * Create security credentials.
      *
-     * @param name Name.
+     * @param login Name.
+     * @param pass Password.
      */
-    private SecurityCredentials credentials(String name){
+    private SecurityCredentials credentials(String login, String pass) {
         SecurityCredentials sc = new SecurityCredentials();
 
-        sc.setLogin("login" + name);
-        sc.setPassword("pass" + name);
+        sc.setLogin(login);
+        sc.setPassword(pass);
 
         return sc;
     }
@@ -181,22 +196,26 @@ public class GridSecurityProcessorSelfTest extends GridCommonAbstractTest {
         /** Is global. */
         private final boolean global;
 
+        /** Permissions map. */
+        private Map<SecurityCredentials, TestSecurityPermissionSet> permsMap;
+
         /**
          * @param ctx Kernal context.
          * @param authCnt
-         * @param global
          * @param rmAuth
          */
         protected GridTestSecurityProcessor(
                 GridKernalContext ctx,
                 AtomicInteger authCnt,
                 Map<UUID, List<UUID>> rmAuth,
-                boolean global
+                boolean global,
+                Map<SecurityCredentials, TestSecurityPermissionSet> permsMap
         ) {
             super(ctx);
             this.selfAuth = authCnt;
             this.global = global;
             this.rmAuth = rmAuth;
+            this.permsMap = permsMap;
         }
 
         /** {@inheritDoc} */
@@ -206,6 +225,22 @@ public class GridSecurityProcessorSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) throws IgniteCheckedException {
+            checkAuth(node);
+
+            TestSecurityPermissionSet permsSet = permsMap.get(cred);
+
+            return new TestSecurityContext(new TestSecuritySubject((String) cred.getLogin(), permsSet));
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean enabled() {
+            return true;
+        }
+
+        /**
+         * @param node Node.
+         */
+        private void checkAuth(ClusterNode node){
             UUID locId = ctx.discovery().localNode().id();
             UUID rmId = node.id();
 
@@ -222,13 +257,6 @@ public class GridSecurityProcessorSelfTest extends GridCommonAbstractTest {
                 } else
                     auth.add(rmId);
             }
-
-            return new TestSecurityContext(new TestSecuritySubject());
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean enabled() {
-            return true;
         }
     }
 
@@ -279,6 +307,21 @@ public class GridSecurityProcessorSelfTest extends GridCommonAbstractTest {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
+        /** Login. */
+        private String login;
+
+        /** Permissions set. */
+        private SecurityPermissionSet permsSet;
+
+        /**
+         * @param login Login.
+         * @param permsSet Permissions set.
+         */
+        private TestSecuritySubject(String login, SecurityPermissionSet permsSet) {
+            this.login = login;
+            this.permsSet = permsSet;
+        }
+
         /** {@inheritDoc} */
         @Override public UUID id() {
             return UUID.fromString("test uuid");
@@ -291,7 +334,7 @@ public class GridSecurityProcessorSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Object login() {
-            return "login";
+            return login;
         }
 
         /** {@inheritDoc} */
@@ -301,25 +344,47 @@ public class GridSecurityProcessorSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public SecurityPermissionSet permissions() {
-            return new SecurityPermissionSet() {
-                private static final long serialVersionUID = 0L;
+            return permsSet;
+        }
+    }
 
-                @Override public boolean defaultAllowAll() {
-                    return true;
-                }
+    /**
+     *
+     */
+     static class TestSecurityPermissionSet implements SecurityPermissionSet{
+        /** */
+        private boolean defaultAllowAll;
 
-                @Override public Map<String, Collection<SecurityPermission>> taskPermissions() {
-                    return Collections.emptyMap();
-                }
+        /** Task permissions. */
+        private final Map<String, Collection<SecurityPermission>> taskPerms = new HashMap<>();
 
-                @Override public Map<String, Collection<SecurityPermission>> cachePermissions() {
-                    return Collections.emptyMap();
-                }
+        /** Cache permissions. */
+        private final Map<String, Collection<SecurityPermission>> cachePerms = new HashMap<>();
 
-                @Nullable @Override public Collection<SecurityPermission> systemPermissions() {
-                    return Collections.emptyList();
-                }
-            };
+        /** System permissions. */
+        private final List<SecurityPermission> sysPerms = new ArrayList<>();
+
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override public boolean defaultAllowAll() {
+            return defaultAllowAll;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Collection<SecurityPermission>> taskPermissions() {
+            return taskPerms;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Collection<SecurityPermission>> cachePermissions() {
+            return cachePerms;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Collection<SecurityPermission> systemPermissions() {
+            return sysPerms;
         }
     }
 
