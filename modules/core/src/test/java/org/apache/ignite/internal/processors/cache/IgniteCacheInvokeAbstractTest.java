@@ -204,14 +204,6 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
         }
     }
 
-    public void testPut() throws Exception {
-        IgniteCache<Integer, byte[]> cache = jcache();
-
-        GridNioServer.TRACE = true;
-
-        cache.put(1, new byte[200000]);
-    }
-
     /**
      * @throws Exception If failed.
      */

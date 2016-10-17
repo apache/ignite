@@ -1209,8 +1209,6 @@ public class GridNioServer<T> {
         }
     }
 
-    public static volatile boolean TRACE = false;
-
     /**
      * Thread performing only read operations from the channel.
      */
