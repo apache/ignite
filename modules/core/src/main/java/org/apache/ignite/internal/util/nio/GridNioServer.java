@@ -1169,11 +1169,8 @@ public class GridNioServer<T> {
                 NioOperationFuture<?> req = (NioOperationFuture<?>)ses.pollFuture();
 
                 if (req == null) {
-                    if (buf.position() == 0) {
+                    if (buf.position() == 0)
                         key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
-
-                        return;
-                    }
                 }
                 else {
                     Message msg = req.directMessage();
@@ -1210,6 +1207,8 @@ public class GridNioServer<T> {
             optoState.onAfterWrite();
         }
     }
+
+    public static volatile boolean TRACE = false;
 
     /**
      * Thread performing only read operations from the channel.

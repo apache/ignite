@@ -34,6 +34,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -203,6 +204,14 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
         }
     }
 
+    public void testPut() throws Exception {
+        IgniteCache<Integer, byte[]> cache = jcache();
+
+        GridNioServer.TRACE = true;
+
+        cache.put(1, new byte[200000]);
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -211,7 +220,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
         Set<Integer> keys = new HashSet<>();
 
-        for (int i = 0; i < 75; i++)
+        for (int i = 0; i < 100; i++)
             keys.add(i);
 
         invokeAll(cache, keys, null);

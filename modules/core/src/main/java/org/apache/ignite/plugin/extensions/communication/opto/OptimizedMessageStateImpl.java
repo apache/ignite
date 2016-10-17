@@ -113,11 +113,21 @@ public class OptimizedMessageStateImpl implements OptimizedMessageState {
             int sockRemaining = sockChBuf.remaining();
             int backupBufRemaining = backupBuf.remaining();
 
-            // TODO: Write directly if possible.
-            sockChBuf.put(backupBuf.array(), backupBuf.position(), Math.min(sockRemaining, backupBufRemaining));
+            int cnt = Math.min(sockRemaining, backupBufRemaining);
 
-            if (!backupBuf.hasRemaining())
-                backupBuf.clear();
+            // TODO: Write directly if possible.
+
+            if (cnt > 0) {
+                sockChBuf.put(backupBuf.array(), backupBuf.position(), cnt);
+
+                backupBuf.position(backupBuf.position() + cnt);
+
+                if (!backupBuf.hasRemaining())
+                    backupBuf.clear();
+                else {
+                    System.out.println("Still something in buf!");
+                }
+            }
         }
 
         if (!sockChBuf.hasRemaining())
