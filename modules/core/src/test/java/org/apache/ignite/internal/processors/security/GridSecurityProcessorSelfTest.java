@@ -280,7 +280,7 @@ public class GridSecurityProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * Test security processor.
      */
-     static class GridTestSecurityProcessor extends GridOsSecurityProcessor {
+    public static class GridTestSecurityProcessor extends GridOsSecurityProcessor {
         /** Auth count. */
         private final AtomicInteger selfAuth;
 
@@ -447,7 +447,7 @@ public class GridSecurityProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * Test permission set.
      */
-     static class TestSecurityPermissionSet implements SecurityPermissionSet{
+    public static class TestSecurityPermissionSet implements SecurityPermissionSet{
         /** */
         private boolean defaultAllowAll;
 
