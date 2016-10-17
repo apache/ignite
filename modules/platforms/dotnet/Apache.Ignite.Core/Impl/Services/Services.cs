@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Services
 {
-    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
@@ -52,9 +51,6 @@ namespace Apache.Ignite.Core.Impl.Services
         private const int OpDescriptors = 5;
 
         /** */
-        private const int OpWithAsync = 6;
-
-        /** */
         private const int OpWithServerKeepBinary = 7;
 
         /** */
@@ -87,9 +83,6 @@ namespace Apache.Ignite.Core.Impl.Services
         /** Server binary flag. */
         private readonly bool _srvKeepBinary;
 
-        /** Async instance. */
-        private readonly Lazy<Services> _asyncInstance;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="Services" /> class.
         /// </summary>
@@ -107,20 +100,6 @@ namespace Apache.Ignite.Core.Impl.Services
             _clusterGroup = clusterGroup;
             _keepBinary = keepBinary;
             _srvKeepBinary = srvKeepBinary;
-
-            _asyncInstance = new Lazy<Services>(() => new Services(this));
-        }
-
-        /// <summary>
-        /// Initializes a new async instance.
-        /// </summary>
-        /// <param name="services">The services.</param>
-        private Services(Services services) : base(UU.TargetOutObject(services.Target, OpWithAsync), 
-            services.Marshaller)
-        {
-            _clusterGroup = services.ClusterGroup;
-            _keepBinary = services._keepBinary;
-            _srvKeepBinary = services._srvKeepBinary;
         }
 
         /** <inheritDoc /> */
@@ -147,14 +126,6 @@ namespace Apache.Ignite.Core.Impl.Services
             get { return _clusterGroup; }
         }
 
-        /// <summary>
-        /// Gets the asynchronous instance.
-        /// </summary>
-        private Services AsyncInstance
-        {
-            get { return _asyncInstance.Value; }
-        }
-
         /** <inheritDoc /> */
         public void DeployClusterSingleton(string name, IService service)
         {
@@ -167,9 +138,10 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task DeployClusterSingletonAsync(string name, IService service)
         {
-            AsyncInstance.DeployClusterSingleton(name, service);
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+            IgniteArgumentCheck.NotNull(service, "service");
 
-            return AsyncInstance.GetTask();
+            return DeployMultipleAsync(name, service, 1, 1);
         }
 
         /** <inheritDoc /> */
@@ -184,9 +156,10 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task DeployNodeSingletonAsync(string name, IService service)
         {
-            AsyncInstance.DeployNodeSingleton(name, service);
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+            IgniteArgumentCheck.NotNull(service, "service");
 
-            return AsyncInstance.GetTask();
+            return DeployMultipleAsync(name, service, 0, 1);
         }
 
         /** <inheritDoc /> */
@@ -210,9 +183,19 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task DeployKeyAffinitySingletonAsync<TK>(string name, IService service, string cacheName, TK affinityKey)
         {
-            AsyncInstance.DeployKeyAffinitySingleton(name, service, cacheName, affinityKey);
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+            IgniteArgumentCheck.NotNull(service, "service");
+            IgniteArgumentCheck.NotNull(affinityKey, "affinityKey");
 
-            return AsyncInstance.GetTask();
+            return DeployAsync(new ServiceConfiguration
+            {
+                Name = name,
+                Service = service,
+                CacheName = cacheName,
+                AffinityKey = affinityKey,
+                TotalCount = 1,
+                MaxPerNodeCount = 1
+            });
         }
 
         /** <inheritDoc /> */
