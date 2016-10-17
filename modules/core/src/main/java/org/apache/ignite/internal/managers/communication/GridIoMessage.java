@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.io.Externalizable;
-import java.nio.ByteBuffer;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequest;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+
+import java.io.Externalizable;
+import java.nio.ByteBuffer;
 
 /**
  * Wrapper for all grid messages.
@@ -319,6 +321,18 @@ public class GridIoMessage implements Message {
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 7;
+    }
+
+    /**
+     * Get single partition for this message (if applicable).
+     *
+     * @return Partition.
+     */
+    public int partition() {
+        if (msg instanceof GridNearAtomicUpdateRequest)
+            return ((GridNearAtomicUpdateRequest) msg).partition();
+        else
+            return -1;
     }
 
     /** {@inheritDoc} */

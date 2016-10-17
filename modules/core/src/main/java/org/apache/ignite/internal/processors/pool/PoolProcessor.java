@@ -23,6 +23,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
+import org.apache.ignite.internal.processors.pool.striped.StripedExecutor;
 import org.apache.ignite.plugin.extensions.communication.IoPool;
 
 import java.util.Arrays;
@@ -34,6 +35,9 @@ import java.util.concurrent.Executor;
 public class PoolProcessor extends GridProcessorAdapter {
     /** Map of {@link IoPool}-s injected by Ignite plugins. */
     private final IoPool[] extPools = new IoPool[128];
+
+    /** Striped executor. */
+    private final StripedExecutor striped = new StripedExecutor(Runtime.getRuntime().availableProcessors());
 
     /**
      * Constructor.
@@ -77,8 +81,17 @@ public class PoolProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
+        striped.stop();
+
         // Avoid external thread pools GC retention.
         Arrays.fill(extPools, null);
+    }
+
+    /**
+     * @return Striped executor.
+     */
+    public StripedExecutor striped() {
+        return striped;
     }
 
     /**
