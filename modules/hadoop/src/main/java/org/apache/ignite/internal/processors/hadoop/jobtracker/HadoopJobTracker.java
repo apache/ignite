@@ -1055,7 +1055,7 @@ public class HadoopJobTracker extends HadoopComponent {
             job = jobInfo.createJob(jobCls, jobId, log, ctx.configuration().getNativeLibraryNames(),
                 ctx.kernalContext().hadoopHelper());
 
-            job.initialize(false, ctx.localNodeId());
+            job.initialize(false, ctx.localNodeId(),ctx.kernalContext().config().getWorkDirectory());
 
             fut.onDone(job);
 

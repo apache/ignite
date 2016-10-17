@@ -64,9 +64,10 @@ public interface HadoopJob {
      *
      * @param external If {@code true} then this job instance resides in external process.
      * @param locNodeId Local node ID.
+     * @param workDir Working directory.
      * @throws IgniteCheckedException If failed.
      */
-    public void initialize(boolean external, UUID locNodeId) throws IgniteCheckedException;
+    public void initialize(boolean external, UUID locNodeId, String workDir) throws IgniteCheckedException;
 
     /**
      * Release all the resources.

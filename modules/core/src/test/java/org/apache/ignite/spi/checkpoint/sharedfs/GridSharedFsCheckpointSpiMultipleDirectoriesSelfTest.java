@@ -17,9 +17,6 @@
 
 package org.apache.ignite.spi.checkpoint.sharedfs;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
 import org.apache.ignite.GridTestIoUtils;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -27,6 +24,10 @@ import org.apache.ignite.spi.checkpoint.GridCheckpointTestState;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
 
 /**
  * Tests multiple shared directories.
@@ -70,7 +71,9 @@ public class GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest extends
 
         String curSpiPath1 = getSpi().getCurrentDirectoryPath();
 
-        File folder1 = U.resolveWorkDirectory(curSpiPath1, false);
+        String workDir = getConfiguration().getWorkDirectory();
+
+        File folder1 = U.resolveWorkDirectory(workDir, curSpiPath1, false);
 
         assert folder1.exists() : "Checkpoint folder doesn't exist.";
 
@@ -83,7 +86,7 @@ public class GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest extends
 
         String curSpiPath2 = getSpi().getCurrentDirectoryPath();
 
-        File folder2 = U.resolveWorkDirectory(curSpiPath2, false);
+        File folder2 = U.resolveWorkDirectory(workDir, curSpiPath2, false);
 
         assert folder2.exists() : "Check point folder doesn't exist.";
 
@@ -97,7 +100,7 @@ public class GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest extends
 
         String newCurSpiPath = getSpi().getCurrentDirectoryPath();
 
-        File changedFolder = U.resolveWorkDirectory(newCurSpiPath, false);
+        File changedFolder = U.resolveWorkDirectory(workDir, newCurSpiPath, false);
 
         assert changedFolder.exists() : "Check point folder doesn't exist.";
 

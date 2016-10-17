@@ -21,6 +21,7 @@ import java.io.File;
 import java.util.UUID;
 import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -34,7 +35,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
 import static org.apache.ignite.internal.util.IgniteUtils.nullifyHomeDirectory;
-import static org.apache.ignite.internal.util.IgniteUtils.nullifyWorkDirectory;
 
 /**
  * Checks creation of work folder.
@@ -53,28 +53,25 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
     @Override protected void setUp() throws Exception {
         // Protection against previously cached values.
         nullifyHomeDirectory();
-        nullifyWorkDirectory();
     }
 
     /** {@inheritDoc} */
     @Override protected void tearDown() throws Exception {
         // Next grid in the same VM shouldn't use cached values produced by these tests.
         nullifyHomeDirectory();
-        nullifyWorkDirectory();
-
-        U.setWorkDirectory(null, U.getIgniteHome());
     }
 
     /**
      * @param log Grid logger.
      * @return Grid configuration.
      */
-    private IgniteConfiguration getConfiguration(IgniteLogger log) {
+    private IgniteConfiguration getConfiguration(IgniteLogger log) throws IgniteCheckedException {
         // We can't use U.getIgniteHome() here because
         // it will initialize cached value which is forbidden to override.
         String ggHome = IgniteSystemProperties.getString(IGNITE_HOME);
 
-        assert ggHome != null;
+        if(ggHome != null)
+            U.nullifyHomeDirectory();
 
         U.setIgniteHome(null);
 
@@ -87,6 +84,10 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
         disc.setIpFinder(IP_FINDER);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
+
+        String workDir = U.getValidWorkDir(null, null);
+
+        cfg.setWorkDirectory(workDir);
 
         cfg.setGridLogger(log);
         cfg.setDiscoverySpi(disc);
@@ -107,10 +108,12 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
 
         try {
             for (int i = 0; i < GRID_COUNT; i++) {
-                try (Ignite g = G.start(getConfiguration(log))) {
+                IgniteConfiguration cfg = getConfiguration(log);
+
+                try (Ignite g = G.start(cfg)) {
                     assert g != null;
 
-                    testWorkDir = U.resolveWorkDirectory(getName(), true);
+                    testWorkDir = U.resolveWorkDirectory(cfg.getWorkDirectory(), getName(), true);
 
                     assertTrue("Work directory wasn't created", testWorkDir.exists());
 
@@ -149,7 +152,7 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
                 try (Ignite g = G.start(cfg)) {
                     assert g != null;
 
-                    File testWorkDir = U.resolveWorkDirectory(getName(), true);
+                    File testWorkDir = U.resolveWorkDirectory(cfg.getWorkDirectory(), getName(), true);
 
                     assertTrue("Work directory wasn't created", testWorkDir.exists());
 
@@ -159,7 +162,8 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
                     X.println("Stopping grid " + g.cluster().localNode().id());
                 }
             }
-        } finally {
+        }
+        finally {
             U.delete(new File(tmpWorkDir));
         }
     }

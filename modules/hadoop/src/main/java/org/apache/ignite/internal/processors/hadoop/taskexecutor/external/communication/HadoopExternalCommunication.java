@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -177,6 +178,9 @@ public class HadoopExternalCommunication {
     /** Grid name. */
     private String gridName;
 
+    /** Work directory. */
+    private String workDir;
+
     /** Complex variable that represents this node IP address. */
     private volatile InetAddress locHost;
 
@@ -254,6 +258,7 @@ public class HadoopExternalCommunication {
      * @param log Logger.
      * @param execSvc Executor service for message notification.
      * @param gridName Grid name.
+     * @param workDir WorkDirectory
      */
     public HadoopExternalCommunication(
         UUID parentNodeId,
@@ -261,7 +266,8 @@ public class HadoopExternalCommunication {
         Marshaller marsh,
         IgniteLogger log,
         ExecutorService execSvc,
-        String gridName
+        String gridName,
+        String workDir
     ) {
         locProcDesc = new HadoopProcessDescriptor(parentNodeId, procId);
 
@@ -269,6 +275,7 @@ public class HadoopExternalCommunication {
         this.log = log.getLogger(HadoopExternalCommunication.class);
         this.execSvc = execSvc;
         this.gridName = gridName;
+        this.workDir = workDir;
     }
 
     /**
@@ -668,6 +675,7 @@ public class HadoopExternalCommunication {
 
     /**
      * Creates new shared memory communication server.
+     *
      * @return Server.
      * @throws IgniteCheckedException If failed.
      */
@@ -683,8 +691,9 @@ public class HadoopExternalCommunication {
         // If configured TCP port is busy, find first available in range.
         for (int port = shmemPort; port < shmemPort + locPortRange; port++) {
             try {
+                //TODO: Must pass correct work dir here. See IGNITE-3597
                 IpcSharedMemoryServerEndpoint srv = new IpcSharedMemoryServerEndpoint(
-                    log.getLogger(IpcSharedMemoryServerEndpoint.class),
+                    log.getLogger(IpcSharedMemoryServerEndpoint.class), workDir,
                     locProcDesc.processId(), gridName);
 
                 srv.setPort(port);
@@ -836,7 +845,7 @@ public class HadoopExternalCommunication {
      * @throws IgniteCheckedException If failed.
      */
     @Nullable protected HadoopCommunicationClient createNioClient(HadoopProcessDescriptor desc)
-        throws  IgniteCheckedException {
+        throws IgniteCheckedException {
         assert desc != null;
 
         int shmemPort = desc.sharedMemoryPort();
@@ -1294,7 +1303,8 @@ public class HadoopExternalCommunication {
         }
 
         /** {@inheritDoc} */
-        @Override public void onExceptionCaught(GridNioSession ses, IgniteCheckedException ex) throws IgniteCheckedException {
+        @Override public void onExceptionCaught(GridNioSession ses,
+            IgniteCheckedException ex) throws IgniteCheckedException {
             proceedExceptionCaught(ses, ex);
         }
 

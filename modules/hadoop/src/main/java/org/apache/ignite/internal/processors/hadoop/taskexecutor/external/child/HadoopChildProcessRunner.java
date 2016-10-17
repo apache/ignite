@@ -148,7 +148,8 @@ public class HadoopChildProcessRunner {
 
                 job = req.jobInfo().createJob(jobCls, req.jobId(), log, null, new HadoopHelperImpl());
 
-                job.initialize(true, nodeDesc.processId());
+                //TODO: Must pass correct work dir here. See IGNITE-3597.
+                job.initialize(true, nodeDesc.processId(),null);
 
                 shuffleJob = new HadoopShuffleJob<>(comm.localProcessDescriptor(), log, job, mem,
                     req.totalReducerCount(), req.localReducers());

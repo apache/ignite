@@ -305,9 +305,6 @@ public abstract class IgniteUtils {
     /** Project home directory. */
     private static volatile GridTuple<String> ggHome;
 
-    /** Project work directory. */
-    private static volatile String igniteWork;
-
     /** OS JDK string. */
     private static String osJdkStr;
 
@@ -5144,7 +5141,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     *
      * @param in Input.
      * @return Read map.
      * @throws IOException If de-serialization failed.
@@ -5309,7 +5305,7 @@ public abstract class IgniteUtils {
         Set<E> set = new HashSet(size, 1.0f);
 
         for (int i = 0; i < size; i++)
-            set.add((E) in.readObject());
+            set.add((E)in.readObject());
 
         return set;
     }
@@ -5476,8 +5472,7 @@ public abstract class IgniteUtils {
      *
      * @param base Base map.
      * @param map Map to check.
-     * @return {@code True} if all entries within map are contained in base map,
-     *      {@code false} otherwise.
+     * @return {@code True} if all entries within map are contained in base map, {@code false} otherwise.
      */
     @SuppressWarnings({"SuspiciousMethodCalls"})
     public static boolean containsAll(Map<?, ?> base, Map<?, ?> map) {
@@ -5506,8 +5501,8 @@ public abstract class IgniteUtils {
      * Gets task name for the given task class.
      *
      * @param taskCls Task class.
-     * @return Either task name from class annotation (see {@link org.apache.ignite.compute.ComputeTaskName}})
-     *      or task class name if there is no annotation.
+     * @return Either task name from class annotation (see {@link org.apache.ignite.compute.ComputeTaskName}}) or task
+     * class name if there is no annotation.
      */
     public static String getTaskName(Class<? extends ComputeTask<?, ?>> taskCls) {
         ComputeTaskName nameAnn = getAnnotation(taskCls, ComputeTaskName.class);
@@ -5560,6 +5555,7 @@ public abstract class IgniteUtils {
 
     /**
      * Gets OS MBean.
+     *
      * @return OS MBean.
      */
     public static OperatingSystemMXBean getOsMx() {
@@ -5674,8 +5670,8 @@ public abstract class IgniteUtils {
      * Tests whether or not given class is loadable provided class loader.
      *
      * @param clsName Class name to test.
-     * @param ldr Class loader to test with. If {@code null} - we'll use system class loader instead.
-     *      If System class loader is not set - this method will return {@code false}.
+     * @param ldr Class loader to test with. If {@code null} - we'll use system class loader instead. If System class
+     * loader is not set - this method will return {@code false}.
      * @return {@code True} if class is loadable, {@code false} otherwise.
      */
     public static boolean isLoadableBy(String clsName, @Nullable ClassLoader ldr) {
@@ -5703,9 +5699,8 @@ public abstract class IgniteUtils {
      *
      * @param c Collection.
      * @return Peer deploy aware object from this collection with the widest class loader.
-     * @throws IllegalArgumentException Thrown in case when common class loader for all
-     *      elements in this collection cannot be found. In such case - peer deployment
-     *      is not possible.
+     * @throws IllegalArgumentException Thrown in case when common class loader for all elements in this collection
+     * cannot be found. In such case - peer deployment is not possible.
      */
     public static GridPeerDeployAware peerDeployAware0(@Nullable Iterable<?> c) {
         if (!F.isEmpty(c)) {
@@ -5714,7 +5709,7 @@ public abstract class IgniteUtils {
             // We need to find common classloader for all elements AND the collection itself
             Collection<Object> tmpC = new ArrayList<>();
 
-            for (Object e: c)
+            for (Object e : c)
                 tmpC.add(e);
 
             tmpC.add(c);
@@ -5780,9 +5775,8 @@ public abstract class IgniteUtils {
      *
      * @param c Objects.
      * @return Peer deploy aware object from this array with the widest class loader.
-     * @throws IllegalArgumentException Thrown in case when common class loader for all
-     *      elements in this array cannot be found. In such case - peer deployment
-     *      is not possible.
+     * @throws IllegalArgumentException Thrown in case when common class loader for all elements in this array cannot be
+     * found. In such case - peer deployment is not possible.
      */
     @SuppressWarnings({"ZeroLengthArrayAllocation"})
     public static GridPeerDeployAware peerDeployAware0(@Nullable Object... c) {
@@ -6151,6 +6145,7 @@ public abstract class IgniteUtils {
 
     /**
      * Gets JDK name.
+     *
      * @return JDK name.
      */
     public static String jdkName() {
@@ -6423,9 +6418,8 @@ public abstract class IgniteUtils {
      *
      * @param v1 - java implementation version
      * @param v2 - java implementation version
-     * @return the value {@code 0} if {@code v1 == v2};
-     *         a value less than {@code 0} if {@code v1 < v2}; and
-     *         a value greater than {@code 0} if {@code v1 > v2}
+     * @return the value {@code 0} if {@code v1 == v2}; a value less than {@code 0} if {@code v1 < v2}; and a value
+     * greater than {@code 0} if {@code v1 > v2}
      */
     public static int compareVersionNumbers(@Nullable String v1, @Nullable String v2) {
         if (v1 == null && v2 == null)
@@ -6446,7 +6440,7 @@ public abstract class IgniteUtils {
             String p2 = part2[idx];
 
             int cmp = (p1.matches("\\d+") && p2.matches("\\d+"))
-                        ? Integer.valueOf(p1).compareTo(Integer.valueOf(p2)) : p1.compareTo(p2);
+                ? Integer.valueOf(p1).compareTo(Integer.valueOf(p2)) : p1.compareTo(p2);
 
             if (cmp != 0)
                 return cmp;
@@ -6882,8 +6876,7 @@ public abstract class IgniteUtils {
      *
      * @param arr Array.
      * @param len Prefix length.
-     * @return Old array if length of {@code arr} is equals to {@code len},
-     *      otherwise copy of array.
+     * @return Old array if length of {@code arr} is equals to {@code len}, otherwise copy of array.
      */
     public static int[] copyIfExceeded(int[] arr, int len) {
         assert arr != null;
@@ -6893,7 +6886,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     *
      * @param t Tokenizer.
      * @param str Input string.
      * @param date Date.
@@ -6913,7 +6905,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     *
      * @param str ISO date.
      * @return Calendar instance.
      * @throws IgniteCheckedException Thrown in case of any errors.
@@ -7225,7 +7216,6 @@ public abstract class IgniteUtils {
      * Dumps stack for given thread.
      *
      * @param t Thread to dump stack for.
-     *
      * @deprecated Calls to this method should never be committed to master.
      */
     @SuppressWarnings("deprecation")
@@ -7239,7 +7229,6 @@ public abstract class IgniteUtils {
      *
      * @param t Thread to dump stack for.
      * @param s {@code PrintStream} to use for output.
-     *
      * @deprecated Calls to this method should never be committed to master.
      */
     @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
@@ -7268,7 +7257,6 @@ public abstract class IgniteUtils {
     /**
      * @param cls Class.
      * @return {@code True} if given class represents a primitive or a primitive wrapper class.
-     *
      */
     public static boolean isPrimitiveOrWrapper(Class<?> cls) {
         return cls.isPrimitive() ||
@@ -7344,8 +7332,8 @@ public abstract class IgniteUtils {
      * @param latch Latch to wait for.
      * @param timeout Maximum time to wait.
      * @param unit Time unit for timeout.
-     * @return {@code True} if the count reached zero and {@code false}
-     *      if the waiting time elapsed before the count reached zero.
+     * @return {@code True} if the count reached zero and {@code false} if the waiting time elapsed before the count
+     * reached zero.
      * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
     public static boolean await(CountDownLatch latch, long timeout, TimeUnit unit)
@@ -7515,8 +7503,8 @@ public abstract class IgniteUtils {
      * @param sem Semaphore.
      * @param timeout The maximum time to wait.
      * @param unit The unit of the {@code time} argument.
-     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      * @return {@code True} if acquires a permit, {@code false} another.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
     public static boolean tryAcquire(Semaphore sem, long timeout, TimeUnit unit)
         throws IgniteInterruptedCheckedException {
@@ -7546,8 +7534,7 @@ public abstract class IgniteUtils {
      *
      * @param n Node.
      * @param cacheName Cache name.
-     * @return {@code true} if given node has near cache enabled for the
-     *      specified partitioned cache.
+     * @return {@code true} if given node has near cache enabled for the specified partitioned cache.
      */
     public static boolean hasNearCache(ClusterNode n, String cacheName) {
         GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
@@ -7654,7 +7641,7 @@ public abstract class IgniteUtils {
                 }
                 catch (IllegalStateException ignored) {
                     error(log, "Failed to add cause to the end of cause chain (cause is printed here but will " +
-                        "not be propagated to callee): " + e,
+                            "not be propagated to callee): " + e,
                         "Failed to add cause to the end of cause chain: " + e, cause);
                 }
 
@@ -7718,11 +7705,11 @@ public abstract class IgniteUtils {
      * @return Segment index.
      */
     public static int concurrentMapSegment(int hash, int concurLvl) {
-        hash += (hash <<  15) ^ 0xffffcd7d;
+        hash += (hash << 15) ^ 0xffffcd7d;
         hash ^= (hash >>> 10);
-        hash += (hash <<   3);
-        hash ^= (hash >>>  6);
-        hash += (hash <<   2) + (hash << 14);
+        hash += (hash << 3);
+        hash ^= (hash >>> 6);
+        hash += (hash << 2) + (hash << 14);
 
         int shift = 0;
         int size = 1;
@@ -8130,8 +8117,8 @@ public abstract class IgniteUtils {
     /**
      * Adds no-op logger to remove no-appender warning.
      *
-     * @return Tuple with root log and no-op appender instances. No-op appender can be {@code null}
-     *      if it did not found in classpath. Notice that in this case logging is not suppressed.
+     * @return Tuple with root log and no-op appender instances. No-op appender can be {@code null} if it did not found
+     * in classpath. Notice that in this case logging is not suppressed.
      * @throws IgniteCheckedException In case of failure to add no-op logger for Log4j.
      */
     public static IgniteBiTuple<Object, Object> addLog4jNoOpLogger() throws IgniteCheckedException {
@@ -8273,8 +8260,7 @@ public abstract class IgniteUtils {
      * Creates string for log output.
      *
      * @param msg Message to start string.
-     * @param args Even length array where the odd elements are parameter names
-     *      and even elements are parameter values.
+     * @param args Even length array where the odd elements are parameter names and even elements are parameter values.
      * @return Log message, formatted as recommended by Ignite guidelines.
      */
     public static String fl(String msg, Object... args) {
@@ -8286,7 +8272,7 @@ public abstract class IgniteUtils {
             sb.append(" [");
 
             for (int i = 0; i < args.length / 2; i++) {
-                sb.append(args[ i * 2]).append('=').append(args[i * 2 + 1]);
+                sb.append(args[i * 2]).append('=').append(args[i * 2 + 1]);
                 sb.append(", ");
             }
 
@@ -8401,11 +8387,11 @@ public abstract class IgniteUtils {
     public static int hash(int h) {
         // Spread bits to regularize both segment and index locations,
         // using variant of single-word Wang/Jenkins hash.
-        h += (h <<  15) ^ 0xffffcd7d;
+        h += (h << 15) ^ 0xffffcd7d;
         h ^= (h >>> 10);
-        h += (h <<   3);
-        h ^= (h >>>  6);
-        h += (h <<   2) + (h << 14);
+        h += (h << 3);
+        h ^= (h >>> 6);
+        h += (h << 2) + (h << 14);
 
         return h ^ (h >>> 16);
     }
@@ -8456,8 +8442,7 @@ public abstract class IgniteUtils {
      * to be available on all JVM, this method should be called to ensure
      * logic could work properly.
      *
-     * @return {@code True} if unsafe copying can work on the current JVM or
-     *      {@code false} if it can't.
+     * @return {@code True} if unsafe copying can work on the current JVM or {@code false} if it can't.
      */
     @SuppressWarnings("TypeParameterExtendsFinalClass")
     private static boolean unsafeByteArrayCopyAvailable() {
@@ -8559,8 +8544,7 @@ public abstract class IgniteUtils {
      * Returns a first non-null value in a given array, if such is present.
      *
      * @param vals Input array.
-     * @return First non-null value, or {@code null}, if array is empty or contains
-     *      only nulls.
+     * @return First non-null value, or {@code null}, if array is empty or contains only nulls.
      */
     @Nullable public static <T> T firstNotNull(@Nullable T... vals) {
         if (vals == null)
@@ -8594,8 +8578,9 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * For each object provided by the given {@link Iterable} checks if it implements
-     * {@link org.apache.ignite.lifecycle.LifecycleAware} interface and executes {@link org.apache.ignite.lifecycle.LifecycleAware#stop} method.
+     * For each object provided by the given {@link Iterable} checks if it implements {@link
+     * org.apache.ignite.lifecycle.LifecycleAware} interface and executes {@link org.apache.ignite.lifecycle.LifecycleAware#stop}
+     * method.
      *
      * @param log Logger used to log error message in case of stop failure.
      * @param objs Object passed to Ignite configuration.
@@ -8621,8 +8606,8 @@ public abstract class IgniteUtils {
      * physical computer.
      *
      * @param nodes Nodes.
-     * @return Collection of projections where each projection represents all nodes (in this projection)
-     *      from a single physical computer. Result collection can be empty if this projection is empty.
+     * @return Collection of projections where each projection represents all nodes (in this projection) from a single
+     * physical computer. Result collection can be empty if this projection is empty.
      */
     public static Map<String, Collection<ClusterNode>> neighborhood(Iterable<ClusterNode> nodes) {
         Map<String, Collection<ClusterNode>> map = new HashMap<>();
@@ -8793,7 +8778,7 @@ public abstract class IgniteUtils {
 
         Collection<InetSocketAddress> resolved = new HashSet<>();
 
-        for (InetSocketAddress address :sockAddr)
+        for (InetSocketAddress address : sockAddr)
             resolved.addAll(resolveAddress(addrRslvr, address));
 
         return resolved;
@@ -8861,54 +8846,51 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * @param userWorkDir Ignite work folder provided by user.
-     * @param userIgniteHome Ignite home folder provided by user.
+     * Default work directory return if not provided.
+     * Creates subdirectories and ensures read-write operations permitted
+     *
+     * @param workDir Ignite work folder.
+     * @param igniteHome Ignite home folder.
+     * @return actual Work directory
      */
-    public static void setWorkDirectory(@Nullable String userWorkDir, @Nullable String userIgniteHome)
+    public static String getValidWorkDir(@Nullable String igniteHome, @Nullable String workDir)
         throws IgniteCheckedException {
-        String igniteWork0 = igniteWork;
+        File igniteWork;
 
-        if (igniteWork0 == null) {
-            synchronized (IgniteUtils.class) {
-                // Double check.
-                igniteWork0 = igniteWork;
+        if (!F.isEmpty(workDir))
+            igniteWork = new File(workDir);
+        else if (!F.isEmpty(IGNITE_WORK_DIR))
+            igniteWork = new File(IGNITE_WORK_DIR);
+        else {
+            if (F.isEmpty(igniteHome))
+                igniteHome = getIgniteHome();
 
-                if (igniteWork0 != null)
-                    return;
+            if (!F.isEmpty(igniteHome))
+                igniteWork = new File(igniteHome, "work");
+            else {
+                String tmpDirPath = System.getProperty("java.io.tmpdir");
 
-                File workDir;
+                if (tmpDirPath == null)
+                    throw new IgniteCheckedException("Failed to create work directory in OS temp " +
+                        "(property 'java.io.tmpdir' is null).");
 
-                if (!F.isEmpty(userWorkDir))
-                    workDir = new File(userWorkDir);
-                else if (!F.isEmpty(IGNITE_WORK_DIR))
-                    workDir = new File(IGNITE_WORK_DIR);
-                else if (!F.isEmpty(userIgniteHome))
-                    workDir = new File(userIgniteHome, "work");
-                else {
-                    String tmpDirPath = System.getProperty("java.io.tmpdir");
-
-                    if (tmpDirPath == null)
-                        throw new IgniteCheckedException("Failed to create work directory in OS temp " +
-                            "(property 'java.io.tmpdir' is null).");
-
-                    workDir = new File(tmpDirPath, "ignite" + File.separator + "work");
-                }
-
-                if (!workDir.isAbsolute())
-                    throw new IgniteCheckedException("Work directory path must be absolute: " + workDir);
-
-                if (!mkdirs(workDir))
-                    throw new IgniteCheckedException("Work directory does not exist and cannot be created: " + workDir);
-
-                if (!workDir.canRead())
-                    throw new IgniteCheckedException("Cannot read from work directory: " + workDir);
-
-                if (!workDir.canWrite())
-                    throw new IgniteCheckedException("Cannot write to work directory: " + workDir);
-
-                igniteWork = workDir.getAbsolutePath();
+                igniteWork = new File(tmpDirPath, "ignite" + File.separator + "work");
             }
         }
+
+        if (!igniteWork.isAbsolute())
+            throw new IgniteCheckedException("Work directory path must be absolute: " + igniteWork);
+
+        if (!mkdirs(igniteWork))
+            throw new IgniteCheckedException("Work directory does not exist and cannot be created: " + igniteWork);
+
+        if (!igniteWork.canRead())
+            throw new IgniteCheckedException("Cannot read from work directory: " + igniteWork);
+
+        if (!igniteWork.canWrite())
+            throw new IgniteCheckedException("Cannot write to work directory: " + igniteWork);
+
+        return igniteWork.getAbsolutePath();
     }
 
     /**
@@ -8919,30 +8901,26 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Nullifies work directory. For test purposes only.
-     */
-    public static void nullifyWorkDirectory() {
-        igniteWork = null;
-    }
-
-    /**
      * Resolves work directory.
      *
+     * @param workDir Work directory
      * @param path Path to resolve.
      * @param delIfExist Flag indicating whether to delete the specify directory or not.
      * @return Resolved work directory.
      * @throws IgniteCheckedException If failed.
      */
-    public static File resolveWorkDirectory(String path, boolean delIfExist) throws IgniteCheckedException {
+    public static File resolveWorkDirectory(String workDir, String path,
+        boolean delIfExist) throws IgniteCheckedException {
         File dir = new File(path);
 
         if (!dir.isAbsolute()) {
-            String ggWork0 = igniteWork;
+            if (F.isEmpty(workDir))
+                throw new IgniteCheckedException("Failed to resolve path (work directory has not been set): " + workDir);
 
-            if (F.isEmpty(ggWork0))
-                throw new IgniteCheckedException("Failed to resolve path (work directory has not been set): " + path);
+            if (!new File(workDir).isAbsolute())
+                throw new IgniteCheckedException("Work directory path must be absolute: " + workDir);
 
-            dir = new File(ggWork0, dir.getPath());
+            dir = new File(workDir, dir.getPath());
         }
 
         if (delIfExist && dir.exists()) {
@@ -8969,7 +8947,8 @@ public abstract class IgniteUtils {
      * @param suppressed The collections of suppressed exceptions.
      * @return {@code IgniteCheckedException}.
      */
-    public static IgniteCheckedException exceptionWithSuppressed(String msg, @Nullable Collection<Throwable> suppressed) {
+    public static IgniteCheckedException exceptionWithSuppressed(String msg,
+        @Nullable Collection<Throwable> suppressed) {
         IgniteCheckedException e = new IgniteCheckedException(msg);
 
         if (suppressed != null) {
@@ -8984,8 +8963,8 @@ public abstract class IgniteUtils {
      * Extracts full name of enclosing class from JDK8 lambda class name.
      *
      * @param clsName JDK8 lambda class name.
-     * @return Full name of enclosing class for JDK8 lambda class name or
-     *      {@code null} if passed in name is not related to lambda.
+     * @return Full name of enclosing class for JDK8 lambda class name or {@code null} if passed in name is not related
+     * to lambda.
      */
     @Nullable public static String lambdaEnclosingClassName(String clsName) {
         int idx = clsName.indexOf("$$Lambda$");

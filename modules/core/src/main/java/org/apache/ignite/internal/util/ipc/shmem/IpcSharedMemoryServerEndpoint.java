@@ -114,6 +114,9 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
     @LoggerResource
     private IgniteLogger log;
 
+    /** Working directory */
+    private String workDir;
+
     /** Local node ID. */
     private UUID locNodeId;
 
@@ -148,13 +151,15 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
      * Constructor to set dependencies explicitly.
      *
      * @param log Log.
+     * @param workDir Working directory.
      * @param locNodeId Node id.
      * @param gridName Grid name.
      */
-    public IpcSharedMemoryServerEndpoint(IgniteLogger log, UUID locNodeId, String gridName) {
+    public IpcSharedMemoryServerEndpoint(IgniteLogger log, String workDir, UUID locNodeId, String gridName) {
         this.log = log;
         this.locNodeId = locNodeId;
         this.gridName = gridName;
+        this.workDir = workDir;
     }
 
     /** @param omitOutOfResourcesWarn If {@code true}, out of resources warning will not be printed by server. */
@@ -181,7 +186,7 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
 
         tokDirPath = tokDirPath + '/' + locNodeId.toString() + '-' + IpcSharedMemoryUtils.pid();
 
-        tokDir = U.resolveWorkDirectory(tokDirPath, false);
+        tokDir = U.resolveWorkDirectory(workDir, tokDirPath, false);
 
         if (port <= 0 || port >= 0xffff)
             throw new IpcEndpointBindException("Port value is illegal: " + port);
@@ -350,11 +355,13 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
             // Inject resources.
             gridName = ignite.name();
             locNodeId = ignite.configuration().getNodeId();
+            workDir = ignite.configuration().getWorkDirectory();
         }
         else {
             // Cleanup resources.
             gridName = null;
             locNodeId = null;
+            workDir = null;
         }
     }
 

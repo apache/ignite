@@ -382,8 +382,8 @@ public abstract class GridAbstractTest extends TestCase {
      *
      * @param r Runnable.
      * @param threadNum Thread number.
-     * @throws Exception If failed.
      * @return Future.
+     * @throws Exception If failed.
      */
     protected IgniteInternalFuture<?> multithreadedAsync(Runnable r, int threadNum) throws Exception {
         return multithreadedAsync(r, threadNum, getTestGridName());
@@ -397,10 +397,11 @@ public abstract class GridAbstractTest extends TestCase {
      * @param r Runnable.
      * @param threadNum Thread number.
      * @param threadName Thread name.
-     * @throws Exception If failed.
      * @return Future.
+     * @throws Exception If failed.
      */
-    protected IgniteInternalFuture<?> multithreadedAsync(Runnable r, int threadNum, String threadName) throws Exception {
+    protected IgniteInternalFuture<?> multithreadedAsync(Runnable r, int threadNum,
+        String threadName) throws Exception {
         return GridTestUtils.runMultiThreadedAsync(r, threadNum, threadName);
     }
 
@@ -435,8 +436,8 @@ public abstract class GridAbstractTest extends TestCase {
      *
      * @param c Callable.
      * @param threadNum Thread number.
-     * @throws Exception If failed.
      * @return Future.
+     * @throws Exception If failed.
      */
     protected IgniteInternalFuture<?> multithreadedAsync(Callable<?> c, int threadNum) throws Exception {
         return multithreadedAsync(c, threadNum, getTestGridName());
@@ -449,10 +450,11 @@ public abstract class GridAbstractTest extends TestCase {
      * @param c Callable.
      * @param threadNum Thread number.
      * @param threadName Thread name.
-     * @throws Exception If failed.
      * @return Future.
+     * @throws Exception If failed.
      */
-    protected IgniteInternalFuture<?> multithreadedAsync(Callable<?> c, int threadNum, String threadName) throws Exception {
+    protected IgniteInternalFuture<?> multithreadedAsync(Callable<?> c, int threadNum,
+        String threadName) throws Exception {
         return GridTestUtils.runMultiThreadedAsync(c, threadNum, threadName);
     }
 
@@ -497,7 +499,9 @@ public abstract class GridAbstractTest extends TestCase {
      */
     protected void beforeTestsStarted() throws Exception {
         // Will clean and re-create marshaller directory from scratch.
-        U.resolveWorkDirectory("marshaller", true);
+        String workDir = U.getValidWorkDir(null, null);
+
+        U.resolveWorkDirectory(workDir, "marshaller", true);
     }
 
     /**
@@ -767,6 +771,7 @@ public abstract class GridAbstractTest extends TestCase {
     protected Ignite startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
         return startGrid(gridName, optimize(getConfiguration(gridName)), ctx);
     }
+
     /**
      * Starts new grid with given name.
      *
@@ -1313,9 +1318,9 @@ public abstract class GridAbstractTest extends TestCase {
     /**
      * This method should be overridden by subclasses to change configuration parameters.
      *
-     * @return Grid configuration used for starting of grid.
      * @param gridName Grid name.
      * @param rsrcs Resources.
+     * @return Grid configuration used for starting of grid.
      * @throws Exception If failed.
      */
     @SuppressWarnings("deprecation")
@@ -1332,6 +1337,8 @@ public abstract class GridAbstractTest extends TestCase {
         cfg.setMetricsLogFrequency(0);
 
         cfg.setConnectorConfiguration(null);
+
+        cfg.setWorkDirectory(rsrcs.getWorkDir());
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
@@ -1560,8 +1567,8 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * @return <code>True</code> if current JVM contains remote started node
-     * (It differs from JVM where tests executing).
+     * @return <code>True</code> if current JVM contains remote started node (It differs from JVM where tests
+     * executing).
      */
     protected boolean isRemoteJvm() {
         return IgniteNodeRunner.hasStartedInstance();
@@ -1629,7 +1636,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param cache Cache.
      * @param job Job.
      */
-    public static <K,V,R> R executeOnLocalOrRemoteJvm(IgniteCache<K,V> cache, TestCacheCallable<K,V,R> job) {
+    public static <K, V, R> R executeOnLocalOrRemoteJvm(IgniteCache<K, V> cache, TestCacheCallable<K, V, R> job) {
         Ignite ignite = cache.unwrap(Ignite.class);
 
         if (!isMultiJvmObject(ignite))
@@ -1688,7 +1695,7 @@ public abstract class GridAbstractTest extends TestCase {
 
             @Override public R call() throws Exception {
                 Ignite ignite = Ignition.ignite(id);
-                IgniteCache<K,V> cache = ignite.cache(cacheName);
+                IgniteCache<K, V> cache = ignite.cache(cacheName);
 
                 return job.call(ignite, cache);
             }
@@ -1732,7 +1739,7 @@ public abstract class GridAbstractTest extends TestCase {
         if (runner.isAlive()) {
             U.error(log,
                 "Test has been timed out and will be interrupted (threads dump will be taken before interruption) [" +
-                "test=" + getName() + ", timeout=" + getTestTimeout() + ']');
+                    "test=" + getName() + ", timeout=" + getTestTimeout() + ']');
 
             List<Ignite> nodes = IgnitionEx.allGridsx();
 
@@ -1750,7 +1757,7 @@ public abstract class GridAbstractTest extends TestCase {
             U.join(runner, log);
 
             throw new TimeoutException("Test has been timed out [test=" + getName() + ", timeout=" +
-                getTestTimeout() + ']' );
+                getTestTimeout() + ']');
         }
 
         Throwable t = ex.get();
@@ -1765,8 +1772,7 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * @return Error handler to process all uncaught exceptions of the test run
-     *      ({@code null} by default).
+     * @return Error handler to process all uncaught exceptions of the test run ({@code null} by default).
      */
     protected IgniteClosure<Throwable, Throwable> errorHandler() {
         return null;
@@ -1851,7 +1857,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param itfClses Interfaces that should be implemented by proxy (vararg parameter)
      * @return Created proxy.
      */
-    protected <T> T notSerializableProxy(final T obj, Class<? super T> itfCls, Class<? super T> ... itfClses) {
+    protected <T> T notSerializableProxy(final T obj, Class<? super T> itfCls, Class<? super T>... itfClses) {
         Class<?>[] itfs = Arrays.copyOf(itfClses, itfClses.length + 3);
 
         itfs[itfClses.length] = itfCls;

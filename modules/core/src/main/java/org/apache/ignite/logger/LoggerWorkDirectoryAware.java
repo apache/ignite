@@ -15,30 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
-
-import org.apache.ignite.Ignite;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.internal.U;
+package org.apache.ignite.logger;
 
 /**
- *
+ * Interface for Ignite file appenders to change work directory path.
  */
-public class CacheConfigurationP2PTestServer {
+public interface LoggerWorkDirectoryAware {
+
     /**
-     * @param args Arguments.
-     * @throws Exception If failed.
+     * Sets work directory.
+     *
+     * @param workDir Work directory.
      */
-    public static void main(String[] args) throws Exception {
-        System.out.println("Starting test server node.");
+    void setWorkDirectory(String workDir);
 
-        IgniteConfiguration cfg = CacheConfigurationP2PTest.createConfiguration();
-
-        try (Ignite ignite = Ignition.start(cfg)) {
-            System.out.println(CacheConfigurationP2PTest.NODE_START_MSG);
-
-            U.sleep(Long.MAX_VALUE);
-        }
-    }
+    /**
+     * Gets work directory.
+     *
+     * @return Work directory.
+     */
+    String getWorkDirectory();
 }

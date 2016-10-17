@@ -35,8 +35,6 @@ public class IgfsSharedMemoryTestServer {
     public static void main(String[] args) throws IgniteCheckedException {
         System.out.println("Starting server ...");
 
-        U.setWorkDirectory(null, U.getIgniteHome());
-
         // Tell our process PID to the wrapper.
         X.println(GridJavaProcess.PID_MSG_PREFIX + U.jvmPid());
 

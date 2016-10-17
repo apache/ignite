@@ -75,6 +75,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.LoggerNodeIdAware;
+import org.apache.ignite.logger.LoggerWorkDirectoryAware;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
@@ -1823,7 +1824,19 @@ public class IgnitionEx {
                 // If user provided IGNITE_HOME - set it as a system property.
                 U.setIgniteHome(ggHome);
 
-            U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
+            // Check Ignite home folder (after log is available).
+            if (ggHome != null) {
+                File ggHomeFile = new File(ggHome);
+
+                if (!ggHomeFile.exists() || !ggHomeFile.isDirectory())
+                    throw new IgniteCheckedException("Invalid Ignite installation home folder: " + ggHome);
+            }
+
+            myCfg.setIgniteHome(ggHome);
+
+            String workDir = U.getValidWorkDir(ggHome, cfg.getWorkDirectory());
+
+            myCfg.setWorkDirectory(workDir);
 
             // Ensure invariant.
             // It's a bit dirty - but this is a result of late refactoring
@@ -1834,7 +1847,7 @@ public class IgnitionEx {
 
             myCfg.setNodeId(nodeId);
 
-            IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), nodeId);
+            IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), workDir, nodeId);
 
             assert cfgLog != null;
 
@@ -1844,16 +1857,6 @@ public class IgnitionEx {
             log = cfgLog.getLogger(G.class);
 
             myCfg.setGridLogger(cfgLog);
-
-            // Check Ignite home folder (after log is available).
-            if (ggHome != null) {
-                File ggHomeFile = new File(ggHome);
-
-                if (!ggHomeFile.exists() || !ggHomeFile.isDirectory())
-                    throw new IgniteCheckedException("Invalid Ignite installation home folder: " + ggHome);
-            }
-
-            myCfg.setIgniteHome(ggHome);
 
             // Validate segmentation configuration.
             SegmentationPolicy segPlc = cfg.getSegmentationPolicy();
@@ -2099,7 +2102,7 @@ public class IgnitionEx {
          * @throws IgniteCheckedException If failed.
          */
         @SuppressWarnings("ErrorNotRethrown")
-        private IgniteLogger initLogger(@Nullable IgniteLogger cfgLog, UUID nodeId) throws IgniteCheckedException {
+        private IgniteLogger initLogger(@Nullable IgniteLogger cfgLog, String workDir, UUID nodeId) throws IgniteCheckedException {
             try {
                 Exception log4jInitErr = null;
 
@@ -2160,6 +2163,9 @@ public class IgnitionEx {
                 // Set node IDs for all file appenders.
                 if (cfgLog instanceof LoggerNodeIdAware)
                     ((LoggerNodeIdAware)cfgLog).setNodeId(nodeId);
+
+                if (cfgLog instanceof LoggerWorkDirectoryAware)
+                    ((LoggerWorkDirectoryAware)cfgLog).setWorkDirectory(workDir);
 
                 if (log4jInitErr != null)
                     U.warn(cfgLog, "Failed to initialize Log4JLogger (falling back to standard java logging): "

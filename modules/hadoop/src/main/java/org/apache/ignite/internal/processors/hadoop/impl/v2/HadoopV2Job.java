@@ -124,6 +124,9 @@ public class HadoopV2Job implements HadoopJob {
     /** Local node ID */
     private volatile UUID locNodeId;
 
+    /** Working directory */
+    private volatile String workDir;
+
     /** Serialized JobConf. */
     private volatile byte[] jobConfData;
 
@@ -270,7 +273,7 @@ public class HadoopV2Job implements HadoopJob {
             }
 
             Constructor<?> ctr = cls.getConstructor(HadoopTaskInfo.class, HadoopJob.class,
-                HadoopJobId.class, UUID.class, DataInput.class);
+                HadoopJobId.class, UUID.class, String.class, DataInput.class);
 
             if (jobConfData == null)
                 synchronized(jobConf) {
@@ -283,7 +286,7 @@ public class HadoopV2Job implements HadoopJob {
                     }
                 }
 
-            HadoopTaskContext res = (HadoopTaskContext)ctr.newInstance(info, this, jobId, locNodeId,
+            HadoopTaskContext res = (HadoopTaskContext)ctr.newInstance(info, this, jobId, locNodeId, workDir,
                 new DataInputStream(new ByteArrayInputStream(jobConfData)));
 
             fut.onDone(res);
@@ -303,15 +306,16 @@ public class HadoopV2Job implements HadoopJob {
     }
 
     /** {@inheritDoc} */
-    @Override public void initialize(boolean external, UUID locNodeId) throws IgniteCheckedException {
+    @Override public void initialize(boolean external, UUID locNodeId, String workDir) throws IgniteCheckedException {
         assert locNodeId != null;
 
         this.locNodeId = locNodeId;
+        this.workDir = workDir;
 
         ClassLoader oldLdr = HadoopCommonUtils.setContextClassLoader(getClass().getClassLoader());
 
         try {
-            rsrcMgr.prepareJobEnvironment(!external, jobLocalDir(locNodeId, jobId));
+            rsrcMgr.prepareJobEnvironment(!external, jobLocalDir(workDir, locNodeId, jobId));
         }
         finally {
             HadoopCommonUtils.restoreContextClassLoader(oldLdr);
@@ -323,7 +327,7 @@ public class HadoopV2Job implements HadoopJob {
     @Override public void dispose(boolean external) throws IgniteCheckedException {
         try {
             if (rsrcMgr != null && !external) {
-                File jobLocDir = jobLocalDir(locNodeId, jobId);
+                File jobLocDir = jobLocalDir(workDir, locNodeId, jobId);
 
                 if (jobLocDir.exists())
                     U.delete(jobLocDir);
@@ -411,7 +415,7 @@ public class HadoopV2Job implements HadoopJob {
 
     /** {@inheritDoc} */
     @Override public void prepareTaskEnvironment(HadoopTaskInfo info) throws IgniteCheckedException {
-        rsrcMgr.prepareTaskWorkDir(taskLocalDir(locNodeId, info));
+        rsrcMgr.prepareTaskWorkDir(taskLocalDir(workDir, locNodeId, info));
     }
 
     /** {@inheritDoc} */
@@ -420,7 +424,7 @@ public class HadoopV2Job implements HadoopJob {
 
         taskCtxClsPool.add(ctx.getClass());
 
-        File locDir = taskLocalDir(locNodeId, info);
+        File locDir = taskLocalDir(workDir, locNodeId, info);
 
         if (locDir.exists())
             U.delete(locDir);

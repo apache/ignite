@@ -17,12 +17,6 @@
 
 package org.apache.ignite.testframework.junits.logger;
 
-import java.io.File;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -34,6 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.logger.LoggerNodeIdAware;
+import org.apache.ignite.logger.LoggerWorkDirectoryAware;
 import org.apache.log4j.Appender;
 import org.apache.log4j.Category;
 import org.apache.log4j.ConsoleAppender;
@@ -44,6 +39,13 @@ import org.apache.log4j.PatternLayout;
 import org.apache.log4j.varia.LevelRangeFilter;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.File;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Enumeration;
+import java.util.UUID;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSOLE_APPENDER;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
@@ -77,7 +79,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  * logger in your task/job code. See {@link org.apache.ignite.resources.LoggerResource} annotation about logger
  * injection.
  */
-public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
+public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware, LoggerWorkDirectoryAware {
     /** Appenders. */
     private static Collection<FileAppender> fileAppenders = new GridConcurrentHashSet<>();
 
@@ -103,6 +105,9 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
 
     /** Node ID. */
     private UUID nodeId;
+
+    /** Work directory. */
+    private String workDir;
 
     /**
      * Creates new logger and automatically detects if root logger already
@@ -422,6 +427,25 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
     /** {@inheritDoc} */
     @Override public UUID getNodeId() {
         return nodeId;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public void setWorkDirectory(String workDir) {
+        this.workDir = workDir;
+
+        for (FileAppender a : fileAppenders) {
+            if (a instanceof LoggerWorkDirectoryAware) {
+                ((LoggerWorkDirectoryAware)a).setWorkDirectory(workDir);
+
+                a.activateOptions();
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getWorkDirectory() {
+        return workDir;
     }
 
     /**

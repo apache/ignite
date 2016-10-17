@@ -35,8 +35,6 @@ public class GridLog4j2LoggingFileTest extends TestCase {
     /** {@inheritDoc} */
     @Override
     protected void setUp() throws Exception {
-        
-
         File xml = GridTestUtils
                 .resolveIgnitePath("modules/core/src/test/config/log4j2-test.xml");
 
@@ -45,7 +43,6 @@ public class GridLog4j2LoggingFileTest extends TestCase {
 
         log = new Log4J2Logger(xml).getLogger(getClass());
         ((LoggerNodeIdAware) log).setNodeId(UUID.randomUUID());
-
     }
 
     /**

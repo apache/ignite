@@ -17,20 +17,10 @@
 
 package org.apache.ignite.internal.processors.hadoop.taskexecutor.external;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.hadoop.HadoopContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopJob;
@@ -59,6 +49,19 @@ import org.apache.ignite.spi.IgnitePortProtocol;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopTaskState.CRASHED;
 import static org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopTaskState.FAILED;
@@ -104,9 +107,11 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
     @Override public void start(HadoopContext ctx) throws IgniteCheckedException {
         this.ctx = ctx;
 
-        log = ctx.kernalContext().log(HadoopExternalTaskExecutor.class);
+        GridKernalContext kernalCtx = ctx.kernalContext();
 
-        outputBase = U.resolveWorkDirectory("hadoop", false);
+        log = kernalCtx.log(HadoopExternalTaskExecutor.class);
+
+        outputBase = U.resolveWorkDirectory(kernalCtx.config().getWorkDirectory(), "hadoop", false);
 
         pathSep = System.getProperty("path.separator", U.isWindows() ? ";" : ":");
 
@@ -115,10 +120,11 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
         comm = new HadoopExternalCommunication(
             ctx.localNodeId(),
             UUID.randomUUID(),
-            ctx.kernalContext().config().getMarshaller(),
+            kernalCtx.config().getMarshaller(),
             log,
-            ctx.kernalContext().getSystemExecutorService(),
-            ctx.kernalContext().gridName());
+            kernalCtx.getSystemExecutorService(),
+            kernalCtx.gridName(),
+            kernalCtx.config().getWorkDirectory());
 
         comm.setListener(new MessageListener());
 
@@ -126,11 +132,11 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
 
         nodeDesc = comm.localProcessDescriptor();
 
-        ctx.kernalContext().ports().registerPort(nodeDesc.tcpPort(), IgnitePortProtocol.TCP,
+        kernalCtx.ports().registerPort(nodeDesc.tcpPort(), IgnitePortProtocol.TCP,
             HadoopExternalTaskExecutor.class);
 
         if (nodeDesc.sharedMemoryPort() != -1)
-            ctx.kernalContext().ports().registerPort(nodeDesc.sharedMemoryPort(), IgnitePortProtocol.TCP,
+            kernalCtx.ports().registerPort(nodeDesc.sharedMemoryPort(), IgnitePortProtocol.TCP,
                 HadoopExternalTaskExecutor.class);
 
         jobTracker = ctx.jobTracker();
@@ -528,7 +534,9 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
 
         List<String> cmd = new ArrayList<>();
 
-        File workDir = U.resolveWorkDirectory("", false);
+        IgniteConfiguration cfg = ctx.kernalContext().config();
+
+        File workDir = U.resolveWorkDirectory(cfg.getWorkDirectory(), "", false);
 
         cmd.add(javaCmd);
         cmd.addAll(startMeta.jvmOptions());

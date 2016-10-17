@@ -80,8 +80,9 @@ public class HadoopExternalCommunicationSelfTest extends GridCommonAbstractTest 
             int msgs = 10;
 
             for (int i = 0; i < comms.length; i++) {
+                //TODO: Must pass correct work dir here. See IGNITE-3597
                 comms[i] = new HadoopExternalCommunication(parentNodeId, UUID.randomUUID(), marsh, log,
-                    Executors.newFixedThreadPool(1), name + i);
+                    Executors.newFixedThreadPool(1), name + i,null);
 
                 if (useShmem)
                     comms[i].setSharedMemoryPort(14000);

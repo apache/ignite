@@ -58,7 +58,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     private final CountDownLatch latch = new CountDownLatch(1);
 
     /** */
-    private final File workDir;
+    private volatile File workDir;
 
     /** */
     private IgniteLogger log;
@@ -76,10 +76,10 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
      * @param plugins Plugins.
      * @throws IgniteCheckedException In case of error.
      */
-    public MarshallerContextImpl(List<PluginProvider> plugins) throws IgniteCheckedException {
+    public MarshallerContextImpl(List<PluginProvider> plugins,String workDir) throws IgniteCheckedException {
         super(plugins);
 
-        workDir = U.resolveWorkDirectory("marshaller", false);
+        this.workDir = U.resolveWorkDirectory(workDir, "marshaller", false);
     }
 
     /**

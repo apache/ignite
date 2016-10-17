@@ -57,7 +57,11 @@ public class MarshallerCacheJobRunNodeRestartTest extends GridCommonAbstractTest
      */
     public void testJobRun() throws Exception {
         for (int i = 0; i < 5; i++) {
-            U.resolveWorkDirectory("marshaller", true);
+            IgniteConfiguration cfg = getConfiguration();
+
+            String workDir = U.getValidWorkDir(cfg.getIgniteHome(), cfg.getWorkDirectory());
+
+            U.resolveWorkDirectory(workDir, "marshaller", true);
 
             log.info("Iteration: " + i);
 

@@ -17,17 +17,10 @@
 
 package org.apache.ignite.spi.checkpoint.sharedfs;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Queue;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -47,6 +40,15 @@ import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.checkpoint.CheckpointListener;
 import org.apache.ignite.spi.checkpoint.CheckpointSpi;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Queue;
 
 /**
  * This class defines shared file system {@link org.apache.ignite.spi.checkpoint.CheckpointSpi} implementation for
@@ -291,7 +293,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
                 folder = new File(curDirPath);
             else {
                 try {
-                    folder = U.resolveWorkDirectory(curDirPath, false);
+                    folder = U.resolveWorkDirectory(ignite.configuration().getWorkDirectory(), curDirPath, false);
                 }
                 catch (IgniteCheckedException e) {
                     if (log.isDebugEnabled())

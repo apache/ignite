@@ -77,7 +77,7 @@ public class HadoopPlannerMockJob implements HadoopJob {
     }
 
     /** {@inheritDoc} */
-    @Override public void initialize(boolean external, UUID nodeId) throws IgniteCheckedException {
+    @Override public void initialize(boolean external, UUID nodeId, String workDir) throws IgniteCheckedException {
         throwUnsupported();
     }
 
