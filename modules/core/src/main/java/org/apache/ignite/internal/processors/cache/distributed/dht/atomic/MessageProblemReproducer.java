@@ -19,7 +19,7 @@ public class MessageProblemReproducer {
      *
      * @param args
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         Ignite node1 = Ignition.start(config("1"));
         Ignite node2 = Ignition.start(config("2"));
 
@@ -32,6 +32,8 @@ public class MessageProblemReproducer {
         });
 
         node2.message().send("topic", new byte[70000]);
+
+        Thread.sleep(Long.MAX_VALUE);
     }
 
     /**

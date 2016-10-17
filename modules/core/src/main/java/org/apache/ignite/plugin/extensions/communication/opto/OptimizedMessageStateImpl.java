@@ -122,10 +122,10 @@ public class OptimizedMessageStateImpl implements OptimizedMessageState {
 
                 backupBuf.position(backupBuf.position() + cnt);
 
-                if (!backupBuf.hasRemaining())
+                if (!backupBuf.hasRemaining()) {
+                    useBackupBuf = false;
+
                     backupBuf.clear();
-                else {
-                    System.out.println("Still something in buf!");
                 }
             }
         }
