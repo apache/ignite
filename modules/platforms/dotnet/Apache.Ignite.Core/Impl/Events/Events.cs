@@ -52,7 +52,11 @@ namespace Apache.Ignite.Core.Impl.Events
             RecordLocal = 6,
             EnableLocal = 8,
             DisableLocal = 9,
-            GetEnabledEvents = 10
+            GetEnabledEvents = 10,
+            WithAsync = 11,
+            IsEnabled = 12,
+            LocalListen = 13,
+            StopLocalListen = 14
         }
 
         /** Map from user func to local wrapper, needed for invoke/unsubscribe. */
@@ -85,7 +89,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// Initializes a new async instance.
         /// </summary>
         /// <param name="events">The events.</param>
-        private Events(Events events) : base(UU.EventsWithAsync(events.Target), events.Marshaller)
+        private Events(Events events) : base(UU.TargetOutObject(events.Target, (int) Op.WithAsync), events.Marshaller)
         {
             _clusterGroup = events.ClusterGroup;
         }
@@ -335,7 +339,7 @@ namespace Apache.Ignite.Core.Impl.Events
                 // Should do this inside lock to avoid race with subscription
                 // ToArray is required because we are going to modify underlying dictionary during enumeration
                 foreach (var filter in GetLocalFilters(listener, types).ToArray())
-                    success |= UU.EventsStopLocalListen(Target, filter.Handle);
+                    success |= (DoOutInOpLong((int) Op.StopLocalListen, filter.Handle) == True);
 
                 return success;
             }
@@ -384,7 +388,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /** <inheritDoc /> */
         public bool IsEnabled(int type)
         {
-            return UU.EventsIsEnabled(Target, type);
+            return DoOutInOpLong((int) Op.IsEnabled, type) == True;
         }
 
         /// <summary>
@@ -508,7 +512,11 @@ namespace Apache.Ignite.Core.Impl.Events
                     filters[type] = localFilter;
                 }
 
-                UU.EventsLocalListen(Target, localFilter.Handle, type);
+                DoOutOp((int) Op.LocalListen, (IBinaryStream s) =>
+                {
+                    s.WriteLong(localFilter.Handle);
+                    s.WriteInt(type);
+                });
             }
         }
 

@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -38,6 +37,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiContext;
 
+import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -101,6 +101,16 @@ class RoundRobinGlobalLoadBalancer {
                                 nodeList = new GridNodeList(0, newNodes);
                             }
                         }
+                        else if (evt.type() == EVT_CLIENT_NODE_RECONNECTED) {
+                            Collection<ClusterNode> nodes = ((DiscoveryEvent)evt).topologyNodes();
+
+                            List<UUID> newNodes = new ArrayList<>(nodes.size());
+
+                            for (ClusterNode node : nodes)
+                                newNodes.add(node.id());
+
+                            nodeList = new GridNodeList(0, newNodes);
+                        }
                         else {
                             assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
@@ -119,7 +129,7 @@ class RoundRobinGlobalLoadBalancer {
                     }
                 }
             },
-            EVT_NODE_FAILED, EVT_NODE_JOINED, EVT_NODE_LEFT
+            EVT_NODE_FAILED, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_CLIENT_NODE_RECONNECTED
         );
 
         synchronized (mux) {
@@ -147,7 +157,7 @@ class RoundRobinGlobalLoadBalancer {
      *
      * @param top Topology to pick from.
      * @return Best balanced node.
-     * @throws IgniteCheckedException Thrown in case of any error.
+     * @throws IgniteException Thrown in case of any error.
      */
     ClusterNode getBalancedNode(Collection<ClusterNode> top) throws IgniteException {
         assert !F.isEmpty(top);
