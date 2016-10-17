@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
-import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -63,6 +62,15 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
     /** */
     private static final int OP_UNICAST = 5;
+
+    /** */
+    private static final int OP_WITH_NO_FAILOVER = 6;
+
+    /** */
+    private static final int OP_WITH_TIMEOUT = 7;
+
+    /** */
+    private static final int OP_EXEC_NATIVE = 8;
 
     /** Compute instance. */
     private final IgniteComputeImpl compute;
@@ -104,9 +112,46 @@ public class PlatformCompute extends PlatformAbstractTarget {
             case OP_AFFINITY:
                 return processClosures(reader.readLong(), reader, false, true);
 
+            case OP_EXEC_NATIVE: {
+                long taskPtr = reader.readLong();
+                long topVer = reader.readLong();
+
+                final PlatformFullTask task = new PlatformFullTask(platformCtx, computeForPlatform, taskPtr, topVer);
+
+                return executeNative0(task);
+            }
+
             default:
                 return super.processInStreamOutObject(type, reader);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        switch (type) {
+            case OP_WITH_TIMEOUT: {
+                compute.withTimeout(val);
+                computeForPlatform.withTimeout(val);
+
+                return TRUE;
+            }
+        }
+
+        return super.processInLongOutLong(type, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long processOutLong(int type) throws IgniteCheckedException {
+        switch (type) {
+            case OP_WITH_NO_FAILOVER: {
+                compute.withNoFailover();
+                computeForPlatform.withNoFailover();
+
+                return TRUE;
+            }
+        }
+
+        return super.processOutLong(type);
     }
 
     /**
@@ -198,36 +243,6 @@ public class PlatformCompute extends PlatformAbstractTarget {
             default:
                 super.processInStreamOutStream(type, reader, writer);
         }
-    }
-
-    /**
-     * Execute native full-fledged task.
-     *
-     * @param taskPtr Pointer to the task.
-     * @param topVer Topology version.
-     */
-    public PlatformListenable executeNative(long taskPtr, long topVer) {
-        final PlatformFullTask task = new PlatformFullTask(platformCtx, computeForPlatform, taskPtr, topVer);
-
-        return executeNative0(task);
-    }
-
-    /**
-     * Set "withTimeout" state.
-     *
-     * @param timeout Timeout (milliseconds).
-     */
-    public void withTimeout(long timeout) {
-        compute.withTimeout(timeout);
-        computeForPlatform.withTimeout(timeout);
-    }
-
-    /**
-     * Set "withNoFailover" state.
-     */
-    public void withNoFailover() {
-        compute.withNoFailover();
-        computeForPlatform.withNoFailover();
     }
 
     /** <inheritDoc /> */
