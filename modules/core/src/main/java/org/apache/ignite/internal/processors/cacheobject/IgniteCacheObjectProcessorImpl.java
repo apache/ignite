@@ -66,9 +66,6 @@ import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
  *
  */
 public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter implements IgniteCacheObjectProcessor {
-    /** Version which cache key configuration was introduced in. */
-    public static final IgniteProductVersion CACHE_KEY_CFG_CHECK_SINCE = IgniteProductVersion.fromString("1.8.0");
-
     /** Immutable classes. */
     private static final Collection<Class<?>> IMMUTABLE_CLS = new HashSet<>();
 
@@ -157,21 +154,33 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         if (getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK))
             return null;
 
-        if (!remoteCacheKeyConfigurationValidationEnabled() || (rmtNode.version().compareTo(CACHE_KEY_CFG_CHECK_SINCE) < 0))
-            return null;
-
         Object rmtCacheKeyCfgs = rmtNode.attribute(IgniteNodeAttributes.ATTR_CACHE_KEYS);
 
         ClusterNode locNode = ctx.discovery().localNode();
         Object locCacheKeyCfgs = locNode.attribute(IgniteNodeAttributes.ATTR_CACHE_KEYS);
 
-        if (!F.eq(locCacheKeyCfgs, rmtCacheKeyCfgs)) {
-            String msg = "Local node's cache keys configuration is not equal to remote node's cache keys configuration " +
-                    "[locNodeId=%s, rmtNodeId=%s, locCacheKeysCfg=%s, rmtCacheKeysCfg=%s]";
+        if ((rmtCacheKeyCfgs != null) && (null != locCacheKeyCfgs)) {
+            String msg = "Local node's cache keys configuration is not compatible with remote node's cache keys configuration%s " +
+                "[locNodeId=%s, rmtNodeId=%s, locCacheKeysCfg=%s, rmtCacheKeysCfg=%s]";
 
-            return new IgniteNodeValidationResult(rmtNode.id(),
-                    String.format(msg, locNode.id(), rmtNode.id(), locCacheKeyCfgs, rmtCacheKeyCfgs),
-                    String.format(msg, rmtNode.id(), locNode.id(), rmtCacheKeyCfgs, locCacheKeyCfgs));
+            if (!(rmtCacheKeyCfgs instanceof Map)) {
+                return new IgniteNodeValidationResult(rmtNode.id(),
+                    String.format(msg, "", locNode.id(), rmtNode.id(), locCacheKeyCfgs, rmtCacheKeyCfgs),
+                    String.format(msg, "", rmtNode.id(), locNode.id(), rmtCacheKeyCfgs, locCacheKeyCfgs));
+            }
+
+            Map<Object, Object> locAffKeyMap = (Map<Object, Object>) locCacheKeyCfgs;
+            Map<Object, Object> rmtAffKeyMap = (Map<Object, Object>) rmtCacheKeyCfgs;
+
+            for (Map.Entry<Object, Object> entry: locAffKeyMap.entrySet()) {
+                Object rmtVal = rmtAffKeyMap.get(entry.getKey());
+                if (null != rmtVal && !entry.getValue().equals(rmtVal)) {
+                    String details = ": different affinity key fields for " + entry.getValue();
+                    return new IgniteNodeValidationResult(rmtNode.id(),
+                        String.format(msg, details, locNode.id(), rmtNode.id(), locCacheKeyCfgs, rmtCacheKeyCfgs),
+                        String.format(msg, details, rmtNode.id(), locNode.id(), rmtCacheKeyCfgs, locCacheKeyCfgs));
+                }
+            }
         }
 
         return null;

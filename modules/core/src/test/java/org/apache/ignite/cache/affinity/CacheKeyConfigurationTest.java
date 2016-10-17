@@ -56,7 +56,7 @@ public class CacheKeyConfigurationTest extends GridCommonAbstractTest {
 
     /** Exception message of cache key configuration mismatch in case of non-binary marshaller. */
     private static final String NON_BINARY_MARSH_CONF_MISMATCH_ERROR =
-        "Local node's cache keys configuration is not equal to remote node's cache keys configuration";
+        "Local node's cache keys configuration is not compatible with remote node's cache keys configuration";
 
     /** Exception message of cache key configuration mismatch in case of binary marshaller. */
     private static final String BINARY_MARSH_CONF_MISMATCH_ERROR = "Binary type has different affinity key fields";
@@ -262,38 +262,9 @@ public class CacheKeyConfigurationTest extends GridCommonAbstractTest {
             GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     IgniteConfiguration cfg = getConfiguration(getTestGridName(1));
-
-                    cfg.setCacheKeyConfiguration(
-                            new CacheKeyConfiguration(AffinityKeyAnnotatedField.class.getName(), "baseAffinityKey"));
-
-                    try (Ignite g2 = startGrid(getTestGridName(1), cfg)) {
-                        // No-op.
-                    }
-                    return null;
-                }
-            }, IgniteSpiException.class, NON_BINARY_MARSH_CONF_MISMATCH_ERROR);
-
-            GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    IgniteConfiguration cfg = getConfiguration(getTestGridName(1));
                     cfg.setCacheKeyConfiguration(
                         new CacheKeyConfiguration(AffinityKeyAnnotatedField.class.getName(), "baseAffinityKey"),
                         new CacheKeyConfiguration(AffinityKeyAnnotatedMethod.class.getName(), "affinityKey"));
-                    try (Ignite g2 = startGrid(getTestGridName(1), cfg)) {
-                        // No-op.
-                    }
-                    return null;
-                }
-            }, IgniteSpiException.class, NON_BINARY_MARSH_CONF_MISMATCH_ERROR);
-
-
-            GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    IgniteConfiguration cfg = getConfiguration(getTestGridName(1));
-                    cfg.setCacheKeyConfiguration(
-                            new CacheKeyConfiguration(AffinityKey.class.getName(), "baseAffinityKey"),
-                            new CacheKeyConfiguration(AffinityKeyAnnotatedField.class.getName(), "baseAffinityKey"),
-                            new CacheKeyConfiguration(AffinityKeyAnnotatedMethod.class.getName(), "baseAffinityKey"));
                     try (Ignite g2 = startGrid(getTestGridName(1), cfg)) {
                         // No-op.
                     }
@@ -312,27 +283,7 @@ public class CacheKeyConfigurationTest extends GridCommonAbstractTest {
     public void testBinaryMarshallerCacheKeyConfigurationMismatch() throws Exception {
         marshaller = new BinaryMarshaller();
 
-        IgniteConfiguration cfg1 = getConfiguration(getTestGridName(0));
-        cfg1.setCacheKeyConfiguration(new CacheKeyConfiguration(AffinityKey.class.getName(), "affinityKey"));
-
-        try (final Ignite g1 = startGrid(getTestGridName(0), cfg1)) {
-            GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    IgniteConfiguration cfg = getConfiguration(getTestGridName(1));
-
-                    cfg.setCacheKeyConfiguration(new CacheKeyConfiguration(AffinityKey.class.getName(), "baseAffinityKey"));
-
-                    try (Ignite g2 = startGrid(getTestGridName(1), cfg)) {
-                        AffinityKey key = new AffinityKey(0, 1, 2);
-
-                        g1.cache(CACHE_WITH_CACHE_KEY_NAME).put(key, "value");
-                        g2.cache(CACHE_WITH_CACHE_KEY_NAME).get(key);
-
-                    }
-                    return null;
-                }
-            }, BinaryObjectException.class, BINARY_MARSH_CONF_MISMATCH_ERROR);
-        }
+        checkGridStartupFailedIfCacheKeyConfigurationMismatch();
     }
 
     /**

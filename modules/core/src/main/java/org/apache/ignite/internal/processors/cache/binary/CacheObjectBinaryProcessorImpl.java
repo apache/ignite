@@ -918,11 +918,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean remoteCacheKeyConfigurationValidationEnabled() {
-        return !(marsh instanceof BinaryMarshaller);
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode rmtNode) {
         IgniteNodeValidationResult res = super.validateNode(rmtNode);
 
