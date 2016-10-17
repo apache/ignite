@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Services
     using System.Linq;
     using System.Reflection;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
@@ -232,9 +233,16 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task DeployMultipleAsync(string name, IService service, int totalCount, int maxPerNodeCount)
         {
-            AsyncInstance.DeployMultiple(name, service, totalCount, maxPerNodeCount);
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+            IgniteArgumentCheck.NotNull(service, "service");
 
-            return AsyncInstance.GetTask();
+            return DoOutOpAsync<object>(OpDeployMultipleAsync, w =>
+            {
+                w.WriteString(name);
+                w.WriteObject(service);
+                w.WriteInt(totalCount);
+                w.WriteInt(maxPerNodeCount);
+            }).Task;
         }
 
         /** <inheritDoc /> */
@@ -242,28 +250,15 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
-            DoOutOp(OpDeploy, w =>
-            {
-                w.WriteString(configuration.Name);
-                w.WriteObject(configuration.Service);
-                w.WriteInt(configuration.TotalCount);
-                w.WriteInt(configuration.MaxPerNodeCount);
-                w.WriteString(configuration.CacheName);
-                w.WriteObject(configuration.AffinityKey);
-
-                if (configuration.NodeFilter != null)
-                    w.WriteObject(configuration.NodeFilter);
-                else
-                    w.WriteObject<object>(null);
-            });
+            DoOutOp(OpDeploy, w => WriteServiceConfiguration(configuration, w));
         }
 
         /** <inheritDoc /> */
         public Task DeployAsync(ServiceConfiguration configuration)
         {
-            AsyncInstance.Deploy(configuration);
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
 
-            return AsyncInstance.GetTask();
+            return DoOutOpAsync<object>(OpDeployAsync, w => WriteServiceConfiguration(configuration, w)).Task;
         }
 
         /** <inheritDoc /> */
@@ -277,9 +272,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task CancelAsync(string name)
         {
-            AsyncInstance.Cancel(name);
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
-            return AsyncInstance.GetTask();
+            return DoOutOpAsync<object>(OpCancelAsync, w => w.WriteString(name)).Task;
         }
 
         /** <inheritDoc /> */
@@ -291,9 +286,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task CancelAllAsync()
         {
-            AsyncInstance.CancelAll();
-
-            return AsyncInstance.GetTask();
+            return DoOutOpAsync<object>(OpCancelAllAsync, _ => { }).Task;
         }
 
         /** <inheritDoc /> */
@@ -403,6 +396,27 @@ namespace Apache.Ignite.Core.Impl.Services
             return DoOutInOp(OpInvokeMethod,
                 writer => ServiceProxySerializer.WriteProxyMethod(writer, method, args, platform),
                 stream => ServiceProxySerializer.ReadInvocationResult(stream, Marshaller, _keepBinary), proxy.Target);
+        }
+
+        /// <summary>
+        /// Writes the service configuration.
+        /// </summary>
+        private static void WriteServiceConfiguration(ServiceConfiguration configuration, IBinaryRawWriter w)
+        {
+            Debug.Assert(configuration != null);
+            Debug.Assert(w != null);
+
+            w.WriteString(configuration.Name);
+            w.WriteObject(configuration.Service);
+            w.WriteInt(configuration.TotalCount);
+            w.WriteInt(configuration.MaxPerNodeCount);
+            w.WriteString(configuration.CacheName);
+            w.WriteObject(configuration.AffinityKey);
+
+            if (configuration.NodeFilter != null)
+                w.WriteObject(configuration.NodeFilter);
+            else
+                w.WriteObject<object>(null);
         }
     }
 }
