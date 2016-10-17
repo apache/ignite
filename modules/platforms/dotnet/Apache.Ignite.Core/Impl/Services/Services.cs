@@ -66,6 +66,18 @@ namespace Apache.Ignite.Core.Impl.Services
         private const int OpCancelAll = 10;
 
         /** */
+        private const int OpDeployAsync = 11;
+
+        /** */
+        private const int OpDeployMultipleAsync = 12;
+
+        /** */
+        private const int OpCancelAsync = 13;
+
+        /** */
+        private const int OpCancelAllAsync = 14;
+
+        /** */
         private readonly IClusterGroup _clusterGroup;
 
         /** Invoker binary flag. */

@@ -82,6 +82,18 @@ public class PlatformServices extends PlatformAbstractTarget {
     private static final int OP_CANCEL_ALL = 10;
 
     /** */
+    private static final int OP_DOTNET_DEPLOY_ASYNC = 11;
+
+    /** */
+    private static final int OP_DOTNET_DEPLOY_MULTIPLE_ASYNC = 12;
+
+    /** */
+    private static final int OP_CANCEL_ASYNC = 13;
+
+    /** */
+    private static final int OP_CANCEL_ALL_ASYNC = 14;
+
+    /** */
     private static final byte PLATFORM_JAVA = 0;
 
     /** */
@@ -132,41 +144,51 @@ public class PlatformServices extends PlatformAbstractTarget {
         throws IgniteCheckedException {
         switch (type) {
             case OP_DOTNET_DEPLOY: {
-                ServiceConfiguration cfg = new ServiceConfiguration();
+                dotnetDeploy(reader);
 
-                cfg.setName(reader.readString());
-                cfg.setService(new PlatformDotNetServiceImpl(reader.readObjectDetached(), platformCtx, srvKeepBinary));
-                cfg.setTotalCount(reader.readInt());
-                cfg.setMaxPerNodeCount(reader.readInt());
-                cfg.setCacheName(reader.readString());
-                cfg.setAffinityKey(reader.readObjectDetached());
+                return TRUE;
+            }
 
-                Object filter = reader.readObjectDetached();
+            case OP_DOTNET_DEPLOY_ASYNC: {
+                dotnetDeploy(reader);
 
-                if (filter != null)
-                    cfg.setNodeFilter(platformCtx.createClusterNodeFilter(filter));
-
-                services.deploy(cfg);
+                readAndListenFuture(reader);
 
                 return TRUE;
             }
 
             case OP_DOTNET_DEPLOY_MULTIPLE: {
-                String name = reader.readString();
-                Object svc = reader.readObjectDetached();
-                int totalCnt = reader.readInt();
-                int maxPerNodeCnt = reader.readInt();
+                dotnetDeployMultiple(reader);
 
-                services.deployMultiple(name, new PlatformDotNetServiceImpl(svc, platformCtx, srvKeepBinary),
-                    totalCnt, maxPerNodeCnt);
+                return TRUE;
+            }
+
+            case OP_DOTNET_DEPLOY_MULTIPLE_ASYNC: {
+                dotnetDeployMultiple(reader);
+
+                readAndListenFuture(reader);
 
                 return TRUE;
             }
 
             case OP_CANCEL: {
-                String name = reader.readString();
+                services.cancel(reader.readString());
 
-                services.cancel(name);
+                return TRUE;
+            }
+
+            case OP_CANCEL_ASYNC: {
+                services.cancel(reader.readString());
+
+                readAndListenFuture(reader);
+
+                return TRUE;
+            }
+
+            case OP_CANCEL_ALL_ASYNC: {
+                services.cancelAll();
+
+                readAndListenFuture(reader);
 
                 return TRUE;
             }
@@ -335,6 +357,40 @@ public class PlatformServices extends PlatformAbstractTarget {
     /** {@inheritDoc} */
     @Override protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
         return ((IgniteFutureImpl)services.future()).internalFuture();
+    }
+
+    /**
+     * Deploys multiple dotnet services.
+     */
+    private void dotnetDeployMultiple(BinaryRawReaderEx reader) {
+        String name = reader.readString();
+        Object svc = reader.readObjectDetached();
+        int totalCnt = reader.readInt();
+        int maxPerNodeCnt = reader.readInt();
+
+        services.deployMultiple(name, new PlatformDotNetServiceImpl(svc, platformCtx, srvKeepBinary),
+                totalCnt, maxPerNodeCnt);
+    }
+
+    /**
+     * Deploys dotnet service.
+     */
+    private void dotnetDeploy(BinaryRawReaderEx reader) {
+        ServiceConfiguration cfg = new ServiceConfiguration();
+
+        cfg.setName(reader.readString());
+        cfg.setService(new PlatformDotNetServiceImpl(reader.readObjectDetached(), platformCtx, srvKeepBinary));
+        cfg.setTotalCount(reader.readInt());
+        cfg.setMaxPerNodeCount(reader.readInt());
+        cfg.setCacheName(reader.readString());
+        cfg.setAffinityKey(reader.readObjectDetached());
+
+        Object filter = reader.readObjectDetached();
+
+        if (filter != null)
+            cfg.setNodeFilter(platformCtx.createClusterNodeFilter(filter));
+
+        services.deploy(cfg);
     }
 
     /**
