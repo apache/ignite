@@ -378,14 +378,19 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
     @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len,
         long maxLen) throws IgniteException {
         try {
-            BlockLocation[] hadoopBlks = fileSystemForUser().getFileBlockLocations(convert(path), start, len);
+            BlockLocation[] hadoopBlocks = fileSystemForUser().getFileBlockLocations(convert(path), start, len);
 
-            Collection<IgfsBlockLocation> blks = new ArrayList<>(hadoopBlks.length);
+            Collection<IgfsBlockLocation> blocks = new ArrayList<>(hadoopBlocks.length);
 
-            for (int i = 0; i < hadoopBlks.length; ++i)
-                blks.add(convertBlockLocation(hadoopBlks[i]));
+            for (int i = 0; i < hadoopBlocks.length; ++i) {
+                IgfsBlockLocation blk = convertBlockLocation(hadoopBlocks[i]);
 
-            return blks;
+                IgfsBlockLocationImpl.splitBlocks(blk, maxLen, blocks);
+
+                blocks.add(convertBlockLocation(hadoopBlocks[i]));
+            }
+
+            return blocks;
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed affinity for path: " + path);

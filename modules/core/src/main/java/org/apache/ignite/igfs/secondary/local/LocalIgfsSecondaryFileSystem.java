@@ -423,44 +423,16 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystemV2, 
             // Create fake affinity key to map blocks of secondary filesystem to nodes.
             IgfsLocalSecondaryBlockKey affKey = new IgfsLocalSecondaryBlockKey(path, blockIdx);
 
-            blocks.add(new IgfsBlockLocationImpl(offset, blockSize, data.affinityNodes(affKey)));
+            IgfsBlockLocationImpl.splitBlocks(offset,
+                offset + blockSize < end ? blockSize : end - offset,
+                maxLen,
+                data.affinityNodes(affKey),
+                blocks);
 
             ++blockIdx;
         }
 
-        int maxBlocks = (int)(maxLen / blockSize);
-
-        // Not need to join blocks
-        if (maxBlocks <= 1)
-            return blocks;
-
-        Collection<IgfsBlockLocation> joinBlocks = new ArrayList<>(blocks.size() / maxBlocks);
-
-        IgfsBlockLocationImpl curBlk = null;
-
-        int cnt = 0;
-
-        // Join block by maxLen
-        for (IgfsBlockLocation blk : blocks) {
-            if (curBlk != null && cnt < maxBlocks && curBlk.hosts().equals(blk.hosts())) {
-                curBlk.length(curBlk.length() + blk.length());
-
-                ++cnt;
-            }
-            else {
-                if (curBlk != null)
-                    joinBlocks.add(curBlk);
-
-                curBlk = (IgfsBlockLocationImpl)blk;
-
-                cnt = 1;
-            }
-        }
-
-        if (curBlk != null)
-            joinBlocks.add(curBlk);
-
-        return joinBlocks;
+        return blocks;
     }
 
     /**
