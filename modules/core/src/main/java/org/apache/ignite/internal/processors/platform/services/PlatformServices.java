@@ -67,6 +67,21 @@ public class PlatformServices extends PlatformAbstractTarget {
     private static final int OP_DESCRIPTORS = 5;
 
     /** */
+    private static final int OP_WITH_ASYNC = 6;
+
+    /** */
+    private static final int OP_WITH_SERVER_KEEP_BINARY = 7;
+
+    /** */
+    private static final int OP_SERVICE_PROXY = 8;
+
+    /** */
+    private static final int OP_CANCEL = 9;
+
+    /** */
+    private static final int OP_CANCEL_ALL = 10;
+
+    /** */
     private static final byte PLATFORM_JAVA = 0;
 
     /** */
@@ -96,63 +111,6 @@ public class PlatformServices extends PlatformAbstractTarget {
 
         this.services = services;
         this.srvKeepBinary = srvKeepBinary;
-    }
-
-    /**
-     * Gets services with asynchronous mode enabled.
-     *
-     * @return Services with asynchronous mode enabled.
-     */
-    public PlatformServices withAsync() {
-        if (services.isAsync())
-            return this;
-
-        return new PlatformServices(platformCtx, services.withAsync(), srvKeepBinary);
-    }
-
-    /**
-     * Gets services with server "keep binary" mode enabled.
-     *
-     * @return Services with server "keep binary" mode enabled.
-     */
-    public PlatformServices withServerKeepBinary() {
-        return srvKeepBinary ? this : new PlatformServices(platformCtx, services, true);
-    }
-
-    /**
-     * Cancels service deployment.
-     *
-     * @param name Name of service to cancel.
-     */
-    public void cancel(String name) {
-        services.cancel(name);
-    }
-
-    /**
-     * Cancels all deployed services.
-     */
-    public void cancelAll() {
-        services.cancelAll();
-    }
-
-    /**
-     * Gets a remote handle on the service.
-     *
-     * @param name Service name.
-     * @param sticky Whether or not Ignite should always contact the same remote service.
-     * @return Either proxy over remote service or local service if it is deployed locally.
-     */
-    public Object serviceProxy(String name, boolean sticky) {
-        ServiceDescriptor d = findDescriptor(name);
-
-        if (d == null)
-            throw new IgniteException("Failed to find deployed service: " + name);
-
-        Object proxy = PlatformService.class.isAssignableFrom(d.serviceClass())
-            ? services.serviceProxy(name, PlatformService.class, sticky)
-            : new GridServiceProxy<>(services.clusterGroup(), name, Service.class, sticky, platformCtx.kernalContext());
-
-        return new ServiceProxyHolder(proxy, d.serviceClass());
     }
 
     /**
@@ -201,6 +159,14 @@ public class PlatformServices extends PlatformAbstractTarget {
 
                 services.deployMultiple(name, new PlatformDotNetServiceImpl(svc, platformCtx, srvKeepBinary),
                     totalCnt, maxPerNodeCnt);
+
+                return TRUE;
+            }
+
+            case OP_CANCEL: {
+                String name = reader.readString();
+
+                services.cancel(name);
 
                 return TRUE;
             }
@@ -315,7 +281,58 @@ public class PlatformServices extends PlatformAbstractTarget {
         }
     }
 
-    /** <inheritDoc /> */
+    /** {@inheritDoc} */
+    @Override protected Object processOutObject(int type) throws IgniteCheckedException {
+        switch (type) {
+            case OP_WITH_ASYNC:
+                if (services.isAsync())
+                    return this;
+
+                return new PlatformServices(platformCtx, services.withAsync(), srvKeepBinary);
+
+            case OP_WITH_SERVER_KEEP_BINARY:
+                return srvKeepBinary ? this : new PlatformServices(platformCtx, services, true);
+        }
+
+        return super.processOutObject(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long processOutLong(int type) throws IgniteCheckedException {
+        switch (type) {
+            case OP_CANCEL_ALL:
+                services.cancelAll();
+
+                return TRUE;
+        }
+
+        return super.processOutLong(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Object processInStreamOutObject(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+        switch (type) {
+            case OP_SERVICE_PROXY: {
+                String name = reader.readString();
+                boolean sticky = reader.readBoolean();
+
+                ServiceDescriptor d = findDescriptor(name);
+
+                if (d == null)
+                    throw new IgniteException("Failed to find deployed service: " + name);
+
+                Object proxy = PlatformService.class.isAssignableFrom(d.serviceClass())
+                    ? services.serviceProxy(name, PlatformService.class, sticky)
+                    : new GridServiceProxy<>(services.clusterGroup(), name, Service.class, sticky,
+                        platformCtx.kernalContext());
+
+                return new ServiceProxyHolder(proxy, d.serviceClass());
+            }
+        }
+        return super.processInStreamOutObject(type, reader);
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
         return ((IgniteFutureImpl)services.future()).internalFuture();
     }
