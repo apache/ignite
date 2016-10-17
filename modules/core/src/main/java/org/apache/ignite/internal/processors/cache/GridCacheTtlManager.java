@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Map;
-import java.util.NavigableMap;
-import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
