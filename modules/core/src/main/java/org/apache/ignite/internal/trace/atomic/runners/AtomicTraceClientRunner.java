@@ -33,7 +33,7 @@ import static org.apache.ignite.internal.trace.atomic.AtomicTraceUtils.CACHE_NAM
  */
 public class AtomicTraceClientRunner {
     /** Cache load threads count. */
-    private static final int CACHE_LOAD_THREAD_CNT = 8;
+    private static final int CACHE_LOAD_THREAD_CNT = 64;
 
     /** Cache size. */
     private static final int CACHE_SIZE = 1000;
