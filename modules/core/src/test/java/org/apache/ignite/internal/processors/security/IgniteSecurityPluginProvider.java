@@ -34,6 +34,8 @@ import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.security.GridSecurityProcessorSelfTest.TEST_SECURITY;
+
 /**
  * Ignite mock security plugin, only for {@link GridSecurityProcessorSelfTest}
  */
@@ -95,7 +97,9 @@ public class IgniteSecurityPluginProvider implements PluginProvider {
 
     /** {@inheritDoc} */
     @Nullable @Override public Object createComponent(PluginContext ctx, Class cls) {
-        if (cls.equals(GridSecurityProcessor.class)) {
+        String enable = System.getProperty(TEST_SECURITY);
+
+        if (cls.equals(GridSecurityProcessor.class) && (enable != null && Boolean.valueOf(enable))) {
             IgniteEx grid = (IgniteEx) ctx.grid();
 
             Map<String, ?> attr = grid.configuration().getUserAttributes();

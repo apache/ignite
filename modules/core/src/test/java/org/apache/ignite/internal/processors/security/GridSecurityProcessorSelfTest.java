@@ -5,36 +5,34 @@ import java.util.UUID;
 import java.util.List;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.io.Serializable;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.net.InetSocketAddress;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.security.os.GridOsSecurityProcessor;
 import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.plugin.security.SecurityPermission;
-import org.apache.ignite.plugin.security.SecurityPermissionSet;
-import org.apache.ignite.plugin.security.SecuritySubjectType;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Test for check correct work {@link GridSecurityProcessor}
  */
 public class GridSecurityProcessorSelfTest extends GridCommonAbstractTest {
+
+    public final static String TEST_SECURITY = "test.security";
+
+    static {
+        System.setProperty(TEST_SECURITY, String.valueOf(true));
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+
         super.afterTest();
+
+        System.clearProperty(TEST_SECURITY);
     }
 
     /**
