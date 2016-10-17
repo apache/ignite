@@ -46,7 +46,7 @@ import java.lang.annotation.Target;
  *     ...
  *      // Inject instance of primary filesystem.
  *      &#64;FileSystemResource
- *     public void setMyIgfs(IgniteFileSystem igfs) {
+ *     public void setIgfs(IgniteFileSystem igfs) {
  *          this.igfs = igfs;
  *     }
  *     ...
@@ -58,4 +58,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
 public @interface FileSystemResource {
+    // No-op.
 }

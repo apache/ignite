@@ -44,8 +44,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * File's binary data block key.
  */
-@GridInternal
-public final class IgfsBlockKey implements IgfsBaseBlockKey, Message, Externalizable, Binarylizable, Comparable<IgfsBlockKey> {
+public final class IgfsBlockKey implements IgfsBaseBlockKey, Message, Externalizable, Binarylizable,
+    Comparable<IgfsBlockKey> {
     /** */
     private static final long serialVersionUID = 0L;
 
