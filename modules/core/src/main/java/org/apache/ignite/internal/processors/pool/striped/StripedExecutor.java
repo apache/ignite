@@ -175,8 +175,11 @@ public class StripedExecutor {
 
                                     if (cmd == null)
                                         cond.await();
-                                    else
+                                    else {
                                         active.set(true);
+
+                                        break;
+                                    }
                                 }
                             }
                             finally {
@@ -222,8 +225,7 @@ public class StripedExecutor {
                 lock.lock();
 
                 try {
-                    if (!active.get() && active.compareAndSet(false, true))
-                        cond.signalAll();
+                    cond.signalAll();
                 }
                 finally {
                     lock.unlock();
