@@ -300,7 +300,7 @@ public class GridSecurityProcessorSelfTest extends GridCommonAbstractTest {
          * @param global Is global authentication.
          * @param permsMap Permission map.
          */
-        GridTestSecurityProcessor(
+        public GridTestSecurityProcessor(
                 GridKernalContext ctx,
                 AtomicInteger selfAuth,
                 Map<UUID, List<UUID>> rmAuth,
