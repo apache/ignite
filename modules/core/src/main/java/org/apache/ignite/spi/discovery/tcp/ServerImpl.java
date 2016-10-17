@@ -3906,6 +3906,39 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (top != null && !top.isEmpty()) {
                             spi.gridStartTime = msg.gridStartTime();
 
+                            if (spi.nodeAuth != null && spi.nodeAuth.isGlobalNodeAuthentication()) {
+                                try {
+                                    ClassLoader cl = U.resolveClassLoader(spi.ignite().configuration());
+
+                                    byte[] rmSubj = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT);
+                                    byte[] locSubj = locNode.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT);
+
+                                    SecurityContext fromCrd = spi.marshaller().unmarshal(rmSubj, cl);
+                                    SecurityContext locCrd = spi.marshaller().unmarshal(locSubj, cl);
+
+                                    if (!permissionsEqual(locCrd.subject().permissions(), fromCrd.subject().permissions())) {
+                                        // Node has not pass authentication.
+                                        LT.warn(log, null, "Authentication failed, local authentication is different of " +
+                                                        "coordinator and other nodes [nodeId=" + node.id() + ", addrs=" + U.addressesAsString(node) + ']',
+                                                "Authentication failed [nodeId=" + U.id8(node.id()) + ", addrs=" + U.addressesAsString(node) + ']');
+
+                                        TcpDiscoveryAbstractMessage authFail = new TcpDiscoveryAuthFailedMessage(locNodeId, spi.locHost);
+
+                                        synchronized (mux) {
+                                            if (spiState == CONNECTING) {
+                                                joinRes.set(authFail);
+
+                                                spiState = AUTH_FAILED;
+
+                                                mux.notifyAll();
+                                            }
+                                        }
+                                    }
+                                } catch (IgniteCheckedException e) {
+                                    U.error(log, "Failed to verify node permissions consistency (will drop the node): " + node, e);
+                                }
+                            }
+
                             for (TcpDiscoveryNode n : top) {
                                 assert n.internalOrder() < node.internalOrder() :
                                     "Invalid node [topNode=" + n + ", added=" + node + ']';

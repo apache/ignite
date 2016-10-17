@@ -31,6 +31,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * Ignite mock security plugin, only for {@link GridSecurityProcessorSelfTest}
  */
 public class IgniteSecurityPluginProvider implements PluginProvider {
     /** {@inheritDoc} */
@@ -95,7 +96,7 @@ public class IgniteSecurityPluginProvider implements PluginProvider {
 
             Map<String, ?> attr = grid.configuration().getUserAttributes();
 
-            SecurityCredentials sc = (SecurityCredentials) attr.get("crd");
+            SecurityCredentials crd = (SecurityCredentials) attr.get("crd");
             AtomicInteger authCnt = (AtomicInteger) attr.get("selfCnt");
             Map<UUID,List<UUID>> rmAuth = (Map<UUID, List<UUID>>) attr.get("rmAuth");
             Boolean global= (Boolean) attr.get("global");
@@ -103,19 +104,18 @@ public class IgniteSecurityPluginProvider implements PluginProvider {
             Map<SecurityCredentials, GridSecurityProcessorSelfTest.TestSecurityPermissionSet> permsMap =
                     (Map<SecurityCredentials, GridSecurityProcessorSelfTest.TestSecurityPermissionSet>) attr.get("permsMap");
 
-            grid.context().addNodeAttribute(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, sc);
+            grid.context().addNodeAttribute(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, crd);
 
             return new GridSecurityProcessorSelfTest.GridTestSecurityProcessor(
                     grid.context(), authCnt, rmAuth, global, permsMap
             );
         }
+
         return null;
     }
 
     /** {@inheritDoc} */
     @Override public IgnitePlugin plugin() {
-        return new IgnitePlugin() {
-
-        };
+        return new IgnitePlugin() { };
     }
 }
