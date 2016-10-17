@@ -17,18 +17,22 @@
 
 package org.apache.ignite.internal.processors.security;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.plugin.*;
-import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.jetbrains.annotations.Nullable;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.plugin.ExtensionRegistry;
+import org.apache.ignite.plugin.PluginValidationException;
+import org.apache.ignite.plugin.IgnitePlugin;
+import org.apache.ignite.plugin.security.SecurityCredentials;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Ignite mock security plugin, only for {@link GridSecurityProcessorSelfTest}
@@ -101,14 +105,12 @@ public class IgniteSecurityPluginProvider implements PluginProvider {
             Map<UUID,List<UUID>> rmAuth = (Map<UUID, List<UUID>>) attr.get("rmAuth");
             Boolean global= (Boolean) attr.get("global");
 
-            Map<SecurityCredentials, GridSecurityProcessorSelfTest.TestSecurityPermissionSet> permsMap =
-                    (Map<SecurityCredentials, GridSecurityProcessorSelfTest.TestSecurityPermissionSet>) attr.get("permsMap");
+            Map<SecurityCredentials, TestSecurityPermissionSet> permsMap =
+                    (Map<SecurityCredentials, TestSecurityPermissionSet>) attr.get("permsMap");
 
             grid.context().addNodeAttribute(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, crd);
 
-            return new GridSecurityProcessorSelfTest.GridTestSecurityProcessor(
-                    grid.context(), authCnt, rmAuth, global, permsMap
-            );
+            return new GridTestSecurityProcessor(grid.context(), authCnt, rmAuth, global, permsMap);
         }
 
         return null;
