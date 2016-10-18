@@ -39,6 +39,8 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2Collocati
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.AVG;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.CAST;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.COUNT;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.MAX;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.MIN;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.SUM;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlPlaceholder.EMPTY;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.prepared;
@@ -298,10 +300,18 @@ public class GridSqlQuerySplitter {
 
         Set<String> colNames = new HashSet<>();
 
-        boolean aggregateFound = false;
+        boolean hasDistinctAggregate = false;
+
+        if (!collocatedGroupBy) {
+            for (int i = 0, len = mapExps.size(); i < len; i++)
+                hasDistinctAggregate |= hasAggregates(mapExps.get(i), true);
+        }
+
+        boolean aggregateFound = hasDistinctAggregate;
 
         for (int i = 0, len = mapExps.size(); i < len; i++) // Remember len because mapExps list can grow.
-            aggregateFound |= splitSelectExpression(mapExps, rdcExps, colNames, i, collocatedGroupBy, i == havingCol);
+            aggregateFound |= splitSelectExpression(mapExps, rdcExps, colNames, i, collocatedGroupBy, i == havingCol,
+                hasDistinctAggregate);
 
         // -- SELECT
         mapQry.clearColumns();
@@ -325,8 +335,13 @@ public class GridSqlQuerySplitter {
         findAffinityColumnConditions(mapQry.where());
 
         // -- GROUP BY
-        if (mapQry.groupColumns() != null && !collocatedGroupBy)
+        if (mapQry.groupColumns() != null && !collocatedGroupBy) {
             rdcQry.groupColumns(mapQry.groupColumns());
+
+            // Grouping with distinct aggregates can be performed locally only
+            if (hasDistinctAggregate)
+                mapQry.groupColumns(null);
+        }
 
         // -- HAVING
         if (havingCol >= 0 && !collocatedGroupBy) {
@@ -638,10 +653,11 @@ public class GridSqlQuerySplitter {
      * @param idx Index.
      * @param collocated If it is a collocated query.
      * @param isHaving If it is a HAVING expression.
+     * @param hasDistinctAggregate If query has distinct aggregate expression.
      * @return {@code true} If aggregate was found.
      */
     private static boolean splitSelectExpression(List<GridSqlElement> mapSelect, List<GridSqlElement> rdcSelect,
-        Set<String> colNames, final int idx, boolean collocated, boolean isHaving) {
+        Set<String> colNames, final int idx, boolean collocated, boolean isHaving, boolean hasDistinctAggregate) {
         GridSqlElement el = mapSelect.get(idx);
 
         GridSqlAlias alias = null;
@@ -653,14 +669,14 @@ public class GridSqlQuerySplitter {
             el = alias.child();
         }
 
-        if (!collocated && hasAggregates(el)) {
+        if (!collocated && hasAggregates(el, false)) {
             aggregateFound = true;
 
             if (alias == null)
                 alias = alias(isHaving ? HAVING_COLUMN : columnName(idx), el);
 
             // We can update original alias here as well since it will be dropped from mapSelect.
-            splitAggregates(alias, 0, mapSelect, idx, true);
+            splitAggregates(alias, 0, mapSelect, idx, hasDistinctAggregate /* && !collocated*/, true);
 
             set(rdcSelect, idx, alias);
         }
@@ -702,12 +718,15 @@ public class GridSqlQuerySplitter {
      * @param el Expression.
      * @return {@code true} If expression contains aggregates.
      */
-    private static boolean hasAggregates(GridSqlElement el) {
-        if (el instanceof GridSqlAggregateFunction)
+    private static boolean hasAggregates(GridSqlElement el, boolean distinct) {
+        if (el instanceof GridSqlAggregateFunction && (!distinct ||
+            ((GridSqlAggregateFunction)el).distinct()
+                // Distinct flag in MIN\MAX functions has no effect
+                && ((GridSqlAggregateFunction)el).type != MIN && ((GridSqlAggregateFunction)el).type != MAX))
             return true;
 
         for (GridSqlElement child : el) {
-            if (hasAggregates(child))
+            if (hasAggregates(child, distinct))
                 return true;
         }
 
@@ -719,6 +738,7 @@ public class GridSqlQuerySplitter {
      * @param childIdx Child index to try to split.
      * @param mapSelect List of expressions in map SELECT clause.
      * @param exprIdx Index of the original expression in map SELECT clause.
+     * @param hasDistinctAggregate If query has distinct aggregate expression.
      * @param first If the first aggregate is already found in this expression.
      * @return {@code true} If the first aggregate is already found.
      */
@@ -727,17 +747,18 @@ public class GridSqlQuerySplitter {
         final int childIdx,
         final List<GridSqlElement> mapSelect,
         final int exprIdx,
+        boolean hasDistinctAggregate,
         boolean first) {
         GridSqlElement el = parentExpr.child(childIdx);
 
         if (el instanceof GridSqlAggregateFunction) {
-            splitAggregate(parentExpr, childIdx, mapSelect, exprIdx, first);
+            splitAggregate(parentExpr, childIdx, mapSelect, exprIdx, hasDistinctAggregate, first);
 
             return true;
         }
 
         for (int i = 0; i < el.size(); i++) {
-            if (splitAggregates(el, i, mapSelect, exprIdx, first))
+            if (splitAggregates(el, i, mapSelect, exprIdx, hasDistinctAggregate, first))
                 first = false;
         }
 
@@ -749,6 +770,7 @@ public class GridSqlQuerySplitter {
      * @param aggIdx Index of the aggregate to split in this expression.
      * @param mapSelect List of expressions in map SELECT clause.
      * @param exprIdx Index of the original expression in map SELECT clause.
+     * @param hasDistinctAggregate If query has distinct aggregate expression.
      * @param first If this is the first aggregate found in this expression.
      */
     private static void splitAggregate(
@@ -756,6 +778,7 @@ public class GridSqlQuerySplitter {
         int aggIdx,
         List<GridSqlElement> mapSelect,
         int exprIdx,
+        boolean hasDistinctAggregate,
         boolean first
     ) {
         GridSqlAggregateFunction agg = parentExpr.child(aggIdx);
@@ -773,53 +796,81 @@ public class GridSqlQuerySplitter {
         else
             mapSelect.add(mapAggAlias);
 
+        // Aggregate with distinct can be performed only locally, so
+        // if query contains aggregate with distinct then other aggregates must be processed the same way.
         switch (agg.type()) {
-            case AVG: // SUM( AVG(CAST(x AS DOUBLE))*COUNT(x) )/SUM( COUNT(x) ).
-                //-- COUNT(x) map
-                GridSqlElement cntMapAgg = aggregate(agg.distinct(), COUNT)
-                    .resultType(GridSqlType.BIGINT).addChild(agg.child());
+            case AVG: // SUM( AVG(CAST(x AS DOUBLE))*COUNT(x) )/SUM( COUNT(x) )  or  AVG(CAST( x AS DOUBLE))
+                if (hasDistinctAggregate) /* and has no collocated group by */ {
+                    mapAgg = agg.child();
 
-                // Add generated alias to COUNT(x).
-                // Using size as index since COUNT will be added as the last select element to the map query.
-                String cntMapAggAlias = columnName(mapSelect.size());
+                    rdcAgg = aggregate(agg.distinct(), agg.type()).resultType(GridSqlType.DOUBLE)
+                        .addChild(function(CAST).resultType(GridSqlType.DOUBLE).addChild(column(mapAggAlias.alias())));
+                }
+                else {
+                    //-- COUNT(x) map
+                    GridSqlElement cntMapAgg = aggregate(agg.distinct(), COUNT)
+                        .resultType(GridSqlType.BIGINT).addChild(agg.child());
 
-                cntMapAgg = alias(cntMapAggAlias, cntMapAgg);
+                    // Add generated alias to COUNT(x).
+                    // Using size as index since COUNT will be added as the last select element to the map query.
+                    String cntMapAggAlias = columnName(mapSelect.size());
 
-                mapSelect.add(cntMapAgg);
+                    cntMapAgg = alias(cntMapAggAlias, cntMapAgg);
 
-                //-- AVG(CAST(x AS DOUBLE)) map
-                mapAgg = aggregate(agg.distinct(), AVG).resultType(GridSqlType.DOUBLE).addChild(
-                    function(CAST).resultType(GridSqlType.DOUBLE).addChild(agg.child()));
+                    mapSelect.add(cntMapAgg);
 
-                //-- SUM( AVG(x)*COUNT(x) )/SUM( COUNT(x) ) reduce
-                GridSqlElement sumUpRdc = aggregate(false, SUM).addChild(
-                    op(GridSqlOperationType.MULTIPLY,
-                        column(mapAggAlias.alias()),
-                        column(cntMapAggAlias)));
+                    //-- AVG(CAST(x AS DOUBLE)) map
+                    mapAgg = aggregate(agg.distinct(), AVG).resultType(GridSqlType.DOUBLE).addChild(
+                        function(CAST).resultType(GridSqlType.DOUBLE).addChild(agg.child()));
 
-                GridSqlElement sumDownRdc = aggregate(false, SUM).addChild(column(cntMapAggAlias));
+                    //-- SUM( AVG(x)*COUNT(x) )/SUM( COUNT(x) ) reduce
+                    GridSqlElement sumUpRdc = aggregate(false, SUM).addChild(
+                        op(GridSqlOperationType.MULTIPLY,
+                            column(mapAggAlias.alias()),
+                            column(cntMapAggAlias)));
 
-                rdcAgg = op(GridSqlOperationType.DIVIDE, sumUpRdc, sumDownRdc);
+                    GridSqlElement sumDownRdc = aggregate(false, SUM).addChild(column(cntMapAggAlias));
+
+                    rdcAgg = op(GridSqlOperationType.DIVIDE, sumUpRdc, sumDownRdc);
+                }
 
                 break;
 
-            case SUM: // SUM( SUM(x) )
-            case MAX: // MAX( MAX(x) )
-            case MIN: // MIN( MIN(x) )
-                mapAgg = aggregate(agg.distinct(), agg.type()).resultType(agg.resultType()).addChild(agg.child());
-                rdcAgg = aggregate(agg.distinct(), agg.type()).addChild(column(mapAggAlias.alias()));
+            case SUM: // SUM( SUM(x) ) or SUM(DISTINCT x)
+            case MAX: // MAX( MAX(x) ) or MAX(DISTINCT x)
+            case MIN: // MIN( MIN(x) ) or MIN(DISTINCT x)
+                if (hasDistinctAggregate) /* and has no collocated group by */ {
+                    mapAgg = agg.child();
+
+                    rdcAgg = aggregate(agg.distinct(), agg.type()).addChild(column(mapAggAlias.alias()));
+                }
+                else {
+                    mapAgg = aggregate(agg.distinct(), agg.type()).resultType(agg.resultType()).addChild(agg.child());
+                    rdcAgg = aggregate(agg.distinct(), agg.type()).addChild(column(mapAggAlias.alias()));
+                }
 
                 break;
 
             case COUNT_ALL: // CAST(SUM( COUNT(*) ) AS BIGINT)
-            case COUNT: // CAST(SUM( COUNT(x) ) AS BIGINT)
-                mapAgg = aggregate(agg.distinct(), agg.type()).resultType(GridSqlType.BIGINT);
+            case COUNT: // CAST(SUM( COUNT(x) ) AS BIGINT) or CAST(COUNT(DISTINCT x) AS BIGINT)
 
-                if (agg.type() == COUNT)
-                    mapAgg.addChild(agg.child());
+                if (hasDistinctAggregate) /* and has no collocated group by */ {
+                    assert agg.type == COUNT;
 
-                rdcAgg = aggregate(false, SUM).addChild(column(mapAggAlias.alias()));
-                rdcAgg = function(CAST).resultType(GridSqlType.BIGINT).addChild(rdcAgg);
+                    mapAgg = agg.child();
+
+                    rdcAgg = aggregate(agg.distinct(), agg.type()).resultType(GridSqlType.BIGINT)
+                        .addChild(column(mapAggAlias.alias()));
+                }
+                else {
+                    mapAgg = aggregate(agg.distinct(), agg.type()).resultType(GridSqlType.BIGINT);
+
+                    if (agg.type() == COUNT)
+                        mapAgg.addChild(agg.child());
+
+                    rdcAgg = aggregate(false, SUM).addChild(column(mapAggAlias.alias()));
+                    rdcAgg = function(CAST).resultType(GridSqlType.BIGINT).addChild(rdcAgg);
+                }
 
                 break;
 
