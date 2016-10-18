@@ -19,7 +19,6 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -63,12 +62,10 @@ public abstract class PageDeltaRecord extends WALRecord {
      * Apply changes from this delta to the given page.
      * It is assumed that the given buffer represents page state right before this update.
      *
-     *
-     * @param pageMem Page memory to apply this record.
      * @param buf Page buffer.
      * @throws IgniteCheckedException If failed.
      */
-    public abstract void applyDelta(PageMemory pageMem, ByteBuffer buf) throws IgniteCheckedException;
+    public abstract void applyDelta(ByteBuffer buf) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
     @Override public String toString() {

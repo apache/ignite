@@ -49,17 +49,23 @@ public class PageNoStoreImpl implements Page {
     /** */
     private final ByteBuffer buf;
 
+    /** Page for memory restore */
+    private final boolean noTagCheck;
+
     /**
      * @param segIdx Segment index.
      * @param absPtr Absolute pointer.
      */
-    public PageNoStoreImpl(PageMemoryNoStoreImpl pageMem, int segIdx, long absPtr, int cacheId, long pageId) {
+    public PageNoStoreImpl(
+        PageMemoryNoStoreImpl pageMem, int segIdx, long absPtr, int cacheId, long pageId, boolean noTagCheck
+    ) {
         this.pageMem = pageMem;
         this.segIdx = segIdx;
         this.absPtr = absPtr;
 
         this.cacheId = cacheId;
         this.pageId = pageId;
+        this.noTagCheck = noTagCheck;
 
         buf = pageMem.wrapPointer(absPtr + PageMemoryNoStoreImpl.PAGE_OVERHEAD, pageMem.pageSize());
     }
@@ -76,7 +82,7 @@ public class PageNoStoreImpl implements Page {
 
     /** {@inheritDoc} */
     @Override public ByteBuffer getForRead() {
-        if (pageMem.readLockPage(absPtr, PageIdUtils.itemId(pageId)))
+        if (pageMem.readLockPage(absPtr, PageIdUtils.tag(pageId)))
             return reset(buf.asReadOnlyBuffer());
 
         return null;
@@ -89,15 +95,11 @@ public class PageNoStoreImpl implements Page {
 
     /** {@inheritDoc} */
     @Override public ByteBuffer getForWrite() {
-        if (pageMem.writeLockPage(absPtr, PageIdUtils.itemId(pageId)))
-            return reset(buf);
+        int tag =  noTagCheck ? OffheapReadWriteLock.TAG_LOCK_ALWAYS :  PageIdUtils.tag(pageId);
+        boolean locked = pageMem.writeLockPage(absPtr, tag);
 
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ByteBuffer getForWriteNoTagCheck() {
-        boolean locked = pageMem.writeLockPage(absPtr, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
+        if (!locked && !noTagCheck)
+            return null;
 
         assert locked;
 
@@ -106,7 +108,9 @@ public class PageNoStoreImpl implements Page {
 
     /** {@inheritDoc} */
     @Override public ByteBuffer tryGetForWrite() {
-        if (pageMem.tryWriteLockPage(absPtr, PageIdUtils.itemId(pageId)))
+        int tag =  noTagCheck ? OffheapReadWriteLock.TAG_LOCK_ALWAYS :  PageIdUtils.tag(pageId);
+
+        if (pageMem.tryWriteLockPage(absPtr, tag))
             return reset(buf);
 
         return null;
@@ -116,7 +120,7 @@ public class PageNoStoreImpl implements Page {
     @Override public void releaseWrite(boolean markDirty) {
         long updatedPageId = PageIO.getPageId(buf);
 
-        pageMem.writeUnlockPage(absPtr, PageIdUtils.itemId(updatedPageId));
+        pageMem.writeUnlockPage(absPtr, PageIdUtils.tag(updatedPageId));
     }
 
     /** {@inheritDoc} */

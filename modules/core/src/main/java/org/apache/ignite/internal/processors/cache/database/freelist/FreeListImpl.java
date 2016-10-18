@@ -67,7 +67,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     private final AtomicReferenceArray<Stripe[]> buckets = new AtomicReferenceArray<>(BUCKETS);
 
     /** */
-    private final int MIN_SIZE_FOR_BUCKET;
+    private final int MIN_SIZE_FOR_DATA_PAGE;
 
     /** */
     private final PageHandler<CacheDataRow, Integer> writeRow =
@@ -249,7 +249,9 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         assert U.isPow2(BUCKETS);
         assert BUCKETS <= pageSize : pageSize;
 
-        MIN_SIZE_FOR_BUCKET = pageSize - 1;
+        // TODO this constant is used because currently we cannot reuse data pages as index pages
+        // TODO and vice-versa. It should be removed when data storage format is finalized.
+        MIN_SIZE_FOR_DATA_PAGE = pageSize - DataPageIO.MIN_DATA_PAGE_OVERHEAD;
 
         int shift = 0;
 
@@ -302,7 +304,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         int written = 0;
 
         do {
-            int freeSpace = Math.min(MIN_SIZE_FOR_BUCKET, rowSize - written);
+            int freeSpace = Math.min(MIN_SIZE_FOR_DATA_PAGE, rowSize - written);
 
             int bucket = bucket(freeSpace, false);
 

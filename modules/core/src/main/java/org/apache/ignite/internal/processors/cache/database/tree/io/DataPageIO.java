@@ -77,6 +77,9 @@ public class DataPageIO extends PageIO {
     /** */
     private static final int FRAGMENTED_FLAG = 0b10000000_00000000;
 
+    /** */
+    public static final int MIN_DATA_PAGE_OVERHEAD = ITEMS_OFF + ITEM_SIZE + PAYLOAD_LEN_SIZE + LINK_SIZE;
+
     /**
      * @param ver Page format version.
      */

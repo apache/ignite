@@ -19,10 +19,7 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.Page;
-import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.IgniteException;
 
 /**
  * Split forward page record.
@@ -76,22 +73,14 @@ public class SplitForwardPageRecord extends PageDeltaRecord {
         this.srcPageId = srcPageId;
         this.mid = mid;
         this.cnt = cnt;
+
+        throw new IgniteException("Split forward page record should not be used directly (see GG-11640). " +
+            "Clear the database directory and restart the node.");
     }
 
     /** {@inheritDoc} */
-    @Override public void applyDelta(PageMemory pageMem, ByteBuffer fwdBuf) throws IgniteCheckedException {
-        BPlusIO<?> io = PageIO.getBPlusIO(ioType, ioVer);
-
-        try (Page src = pageMem.page(cacheId(), srcPageId)) {
-            ByteBuffer srcBuf = src.getForRead();
-
-            try {
-                io.splitForwardPage(srcBuf, fwdId, fwdBuf, mid, cnt);
-            }
-            finally {
-                src.releaseRead();
-            }
-        }
+    @Override public void applyDelta(ByteBuffer fwdBuf) throws IgniteCheckedException {
+        throw new IgniteCheckedException("Split forward page record should not be logged.");
     }
 
     /** {@inheritDoc} */

@@ -19,9 +19,9 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Remove.
@@ -47,11 +47,11 @@ public class RemoveRecord extends PageDeltaRecord {
     }
 
     /** {@inheritDoc} */
-    @Override public void applyDelta(PageMemory pageMem, ByteBuffer buf) throws IgniteCheckedException {
+    @Override public void applyDelta(ByteBuffer buf) throws IgniteCheckedException {
         BPlusIO<?> io = PageIO.getBPlusIO(buf);
 
         if (io.getCount(buf) != cnt)
-            throw new DeltaApplicationException("Count in wrong: " + cnt);
+            throw new DeltaApplicationException("Count is wrong [expCnt=" + cnt + ", actual=" + io.getCount(buf) + ']');
 
         io.remove(buf, idx, cnt);
     }
@@ -61,11 +61,22 @@ public class RemoveRecord extends PageDeltaRecord {
         return RecordType.BTREE_PAGE_REMOVE;
     }
 
+    /**
+     * @return Index.
+     */
     public int index() {
         return idx;
     }
 
+    /**
+     * @return Count.
+     */
     public int count() {
         return cnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(RemoveRecord.class, this, super.toString());
     }
 }

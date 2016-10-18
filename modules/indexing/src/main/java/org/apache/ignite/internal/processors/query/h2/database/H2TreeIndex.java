@@ -51,6 +51,9 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** */
     private final H2Tree tree;
 
+    /** Cache context. */
+    private GridCacheContext<?, ?> cctx;
+
     /**
      * @param cctx Cache context.
      * @param tbl Table.
@@ -66,6 +69,7 @@ public class H2TreeIndex extends GridH2IndexBase {
         boolean pk,
         List<IndexColumn> colsList
     ) throws IgniteCheckedException {
+        this.cctx = cctx;
         IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
 
         IndexColumn.mapColumns(cols, tbl);
@@ -193,6 +197,8 @@ public class H2TreeIndex extends GridH2IndexBase {
     @Override public void destroy() {
         try {
             tree.destroy();
+
+            cctx.offheap().dropRootPageForIndex(tree.getName());
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

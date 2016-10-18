@@ -19,10 +19,7 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.Page;
-import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.IgniteException;
 
 /**
  * Inner replace on remove.
@@ -54,25 +51,14 @@ public class InnerReplaceRecord<L> extends PageDeltaRecord {
         this.srcPageId = srcPageId;
         this.srcIdx = srcIdx;
         this.rmvId = rmvId;
+
+        throw new IgniteException("Inner replace record should not be used directly (see GG-11640). " +
+            "Clear the database directory and restart the node.");
     }
 
     /** {@inheritDoc} */
-    @Override public void applyDelta(PageMemory pageMem, ByteBuffer dstBuf) throws IgniteCheckedException {
-        BPlusIO<L> io = PageIO.getBPlusIO(dstBuf);
-
-        try (Page src = pageMem.page(cacheId(), srcPageId)) {
-            ByteBuffer srcBuf = src.getForRead();
-
-            try {
-                BPlusIO<L> srcIo = PageIO.getBPlusIO(srcBuf);
-
-                io.store(dstBuf, dstIdx, srcIo, srcBuf, srcIdx);
-                io.setRemoveId(dstBuf, rmvId);
-            }
-            finally {
-                src.releaseRead();
-            }
-        }
+    @Override public void applyDelta(ByteBuffer dstBuf) throws IgniteCheckedException {
+        throw new IgniteCheckedException("Inner replace record should not be logged.");
     }
 
     /** {@inheritDoc} */

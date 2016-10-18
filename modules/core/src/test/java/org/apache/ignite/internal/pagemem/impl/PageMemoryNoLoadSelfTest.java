@@ -285,6 +285,8 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
         ByteBuffer bytes = page.getForWrite();
 
         try {
+            PageIO.setPageId(bytes, page.id());
+
             for (int i = PageIO.COMMON_HEADER_END; i < PAGE_SIZE; i++)
                 bytes.put(i, (byte)val);
         }
@@ -301,6 +303,8 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
         expVal &= 0xFF;
 
         ByteBuffer bytes = page.getForRead();
+
+        assertNotNull(bytes);
 
         try {
             for (int i = PageIO.COMMON_HEADER_END; i < PAGE_SIZE; i++) {

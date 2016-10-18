@@ -493,9 +493,7 @@ public abstract class PagesList extends DataStructure {
         throws IgniteCheckedException {
         assert bag == null ^ dataPageBuf == null;
 
-        int lockAttempt = 0;
-
-        for (;;) {
+        for (int lockAttempt = 0; ;) {
             Stripe stripe = getPageForPut(bucket);
 
             long tailId = stripe.tailId;
@@ -505,6 +503,9 @@ public abstract class PagesList extends DataStructure {
 
                 if (buf == null)
                     continue;
+
+                assert PageIO.getPageId(buf) == tailId;
+                assert PageIO.getType(buf) == PageIO.T_PAGE_LIST_NODE;
 
                 boolean ok = false;
 
@@ -809,9 +810,7 @@ public abstract class PagesList extends DataStructure {
      * @throws IgniteCheckedException If failed.
      */
     protected final long takeEmptyPage(int bucket, @Nullable IOVersions initIoVers) throws IgniteCheckedException {
-        int lockAttempt = 0;
-
-        for (;;) {
+        for (int lockAttempt = 0; ;) {
             Stripe stripe = getPageForTake(bucket);
 
             if (stripe == null)
@@ -825,7 +824,12 @@ public abstract class PagesList extends DataStructure {
                 if (tailBuf == null)
                     continue;
 
+                assert PageIO.getPageId(tailBuf) == tailId;
+                assert PageIO.getType(tailBuf) == PageIO.T_PAGE_LIST_NODE;
+
                 boolean dirty = false;
+                long ret = 0L;
+                long recycleId = 0L;
 
                 try {
                     PagesListNodeIO io = PagesListNodeIO.VERSIONS.forPage(tailBuf);
@@ -841,56 +845,78 @@ public abstract class PagesList extends DataStructure {
 
                         dirty = true;
 
-                        return pageId;
-                    }
+                        ret = pageId;
 
-                    // The tail page is empty, we can unlink and return it if we have a previous page.
-                    long prevId = io.getPreviousId(tailBuf);
+                        // If we got an empty page in non-reuse bucket, move it back to reuse list
+                        // to prevent empty page leak to data pages.
+                        if (io.isEmpty(tailBuf) && !isReuseBucket(bucket)) {
+                            long prevId = io.getPreviousId(tailBuf);
 
-                    if (prevId != 0L) {
-                        try (Page prev = page(prevId)) {
-                            // Lock pages from next to previous.
-                            Boolean ok = writePage(prev, this, cutTail, null, bucket, FALSE);
+                            if (prevId != 0L) {
+                                try (Page prev = page(prevId)) {
+                                    // Lock pages from next to previous.
+                                    Boolean ok = writePage(prev, this, cutTail, null, bucket, FALSE);
 
-                            assert ok == TRUE: ok;
-                        }
+                                    assert ok == TRUE : ok;
+                                }
 
-                        if (initIoVers != null) {
-                            tailId = PageIdUtils.changeType(tailId, FLAG_DATA);
-
-                            PageIO initIo = initIoVers.latest();
-
-                            initIo.initNewPage(tailBuf, tailId);
-
-                            if (isWalDeltaRecordNeeded(wal, tail)) {
-                                wal.log(new InitNewPageRecord(cacheId, tail.id(), initIo.getType(),
-                                    initIo.getVersion(), tailId));
+                                recycleId = recyclePage(tailId, tail, tailBuf);
                             }
                         }
-                        else {
-                            tailId = PageIdUtils.rotatePageId(tailId);
+                    }
+                    else {
+                        // The tail page is empty. We can unlink and return it if we have a previous page.
+                        long prevId = io.getPreviousId(tailBuf);
 
-                            PageIO.setPageId(tailBuf, tailId);
+                        if (prevId != 0L) {
+                            // This can only happen if we are in the reuse bucket.
+                            assert isReuseBucket(bucket);
 
-                            if (isWalDeltaRecordNeeded(wal, tail))
-                                wal.log(new RecycleRecord(cacheId, tail.id(), tailId));
+                            try (Page prev = page(prevId)) {
+                                // Lock pages from next to previous.
+                                Boolean ok = writePage(prev, this, cutTail, null, bucket, FALSE);
+
+                                assert ok == TRUE : ok;
+                            }
+
+                            if (initIoVers != null) {
+                                tailId = PageIdUtils.changeType(tailId, FLAG_DATA);
+
+                                PageIO initIo = initIoVers.latest();
+
+                                initIo.initNewPage(tailBuf, tailId);
+
+                                if (isWalDeltaRecordNeeded(wal, tail)) {
+                                    wal.log(new InitNewPageRecord(cacheId, tail.id(), initIo.getType(),
+                                        initIo.getVersion(), tailId));
+                                }
+                            }
+                            else
+                                tailId = recyclePage(tailId, tail, tailBuf);
+
+                            dirty = true;
+
+                            ret = tailId;
                         }
-
-                        dirty = true;
-
-                        return tailId;
                     }
 
                     // If we do not have a previous page (we are at head), then we still can return
                     // current page but we have to drop the whole stripe. Since it is a reuse bucket,
                     // we will not do that, but just return 0L, because this may produce contention on
                     // meta page.
-
-                    return 0L;
                 }
                 finally {
                     writeUnlock(tail, tailBuf, dirty);
                 }
+
+                // Put recycled page (if any) to the reuse bucket after tail is unlocked.
+                if (recycleId != 0L) {
+                    assert !isReuseBucket(bucket);
+
+                    reuseList.addForRecycle(new SingletonReuseBag(recycleId));
+                }
+
+                return ret;
             }
         }
     }
@@ -1192,7 +1218,7 @@ public abstract class PagesList extends DataStructure {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(SingletonReuseBag.class, this);
+            return S.toString(SingletonReuseBag.class, this, "pageId", U.hexLong(pageId));
         }
     }
 
