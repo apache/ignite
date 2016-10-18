@@ -22,17 +22,16 @@ import org.apache.ignite.igfs.IgfsMode;
 /**
  * IGFS Hadoop file system IPC self test.
  */
-public class IgniteHadoopFileSystemClientBasedPrimarySelfTest
-    extends IgniteHadoopFileSystemClientBasedAbstractSelfTest {
+public class IgniteHadoopFileSystemClientBasedDualSyncSelfTest extends IgniteHadoopFileSystemClientBasedAbstractSelfTest {
     /**
      * Constructor.
      */
-    public IgniteHadoopFileSystemClientBasedPrimarySelfTest() {
-        super(IgfsMode.PRIMARY);
+    public IgniteHadoopFileSystemClientBasedDualSyncSelfTest() {
+        super(IgfsMode.DUAL_SYNC);
     }
 
     /** {@inheritDoc} */
     @Override protected String getClientConfig() {
-        return "modules/hadoop/src/test/config/igfs-cli-config-primary.xml";
+        return "modules/hadoop/src/test/config/igfs-cli-config-dual-sync.xml";
     }
 }

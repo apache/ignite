@@ -17,10 +17,22 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
+import java.io.IOException;
+import java.util.concurrent.Callable;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.Path;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
+import org.apache.ignite.igfs.IgfsIpcEndpointType;
 import org.apache.ignite.igfs.IgfsMode;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT;
 
 /**
  * IGFS Hadoop file system Ignite client based IPC self test.
@@ -37,7 +49,21 @@ public abstract class IgniteHadoopFileSystemClientBasedAbstractSelfTest extends 
 
     /** {@inheritDoc} */
     @Override protected IgfsIpcEndpointConfiguration primaryIpcEndpointConfiguration(final String gridName) {
+//        IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
+//
+//        endpointCfg.setType(IgfsIpcEndpointType.SHMEM);
+//        endpointCfg.setPort(DFLT_IPC_PORT + getTestGridIndex(gridName));
+//
+//        return endpointCfg;
         return null;
+    }
+
+    @Override protected FileSystemConfiguration igfsConfiguration(String gridName) throws IgniteCheckedException {
+        FileSystemConfiguration cfg = super.igfsConfiguration(gridName);
+
+        cfg.setIpcEndpointEnabled(false);
+
+        return cfg;
     }
 
     /**
@@ -69,6 +95,43 @@ public abstract class IgniteHadoopFileSystemClientBasedAbstractSelfTest extends 
 
         return cfg;
     }
+
+    /** {@inheritDoc} */
+    @Override public void testClientReconnect() throws Exception {
+        Path filePath = new Path(PRIMARY_URI, "file1");
+
+        final FSDataOutputStream s = fs.create(filePath); // Open the stream before stopping IGFS.
+
+        try {
+            stopNodes();
+
+            startNodes(); // Start server again.
+
+//            Thread.sleep(20000);
+
+            // Check that client is again operational.
+            assertTrue(fs.mkdirs(new Path(PRIMARY_URI, "dir1/dir2")));
+
+//            // However, the streams, opened before disconnect, should not be valid.
+//            GridTestUtils.assertThrows(log, new Callable<Object>() {
+//                @Nullable @Override public Object call() throws Exception {
+                    s.write("test".getBytes());
+
+                    s.flush(); // Flush data to the broken output stream.
+
+//                    return null;
+//                }
+//            }, IOException.class, null);
+
+            assertTrue(fs.exists(filePath));
+
+            System.out.println("+++ OKKK");
+        }
+        finally {
+            U.closeQuiet(s); // Safety.
+        }
+    }
+
 
 //    /** {@inheritDoc} */
 //    @Override public void testInitialize() throws Exception {

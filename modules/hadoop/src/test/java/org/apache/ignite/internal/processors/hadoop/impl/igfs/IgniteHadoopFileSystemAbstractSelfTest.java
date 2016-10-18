@@ -101,7 +101,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     private static final String PRIMARY_AUTHORITY = "igfs:grid0@";
 
     /** Primary file systme URI. */
-    private static final String PRIMARY_URI = "igfs://" + PRIMARY_AUTHORITY + "/";
+    protected static final String PRIMARY_URI = "igfs://" + PRIMARY_AUTHORITY + "/";
 
     /** Secondary file system authority. */
     private static final String SECONDARY_AUTHORITY = "igfs_secondary:grid_secondary@127.0.0.1:11500";
@@ -137,7 +137,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     private static CyclicBarrier barrier;
 
     /** File system. */
-    private static FileSystem fs;
+    protected static FileSystem fs;
 
     /** Default IGFS mode. */
     protected final IgfsMode mode;
@@ -221,7 +221,10 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         return 10 * 60 * 1000;
     }
 
-    private void stopNodes() throws Exception {
+    /**
+     * @throws Exception
+     */
+    protected void stopNodes() throws Exception {
         for (int i = 0; i < GRID_COUNT; ++i)
             stopGrid(i);
 
@@ -229,12 +232,12 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         Thread.sleep(500);
     }
-        /**
-         * Starts the nodes for this test.
-         *
-         * @throws Exception If failed.
-         */
-    private void startNodes() throws Exception {
+    /**
+     * Starts the nodes for this test.
+     *
+     * @throws Exception If failed.
+     */
+    protected void startNodes() throws Exception {
         if (mode != PRIMARY) {
             // Start secondary IGFS.
             FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
@@ -281,7 +284,10 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
             G.start(cfg);
         }
 
-        startGrids(GRID_COUNT);
+        for (int i = 0; i < GRID_COUNT; ++i)
+            startGrid(i);
+
+//        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */
@@ -2086,6 +2092,12 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         }
     }
 
+    public void testRRRR() throws Exception {
+            stopNodes();
+
+            startNodes(); // Start server again.
+    }
+
     /**
      * Verifies that client reconnects after connection to the server has been lost (multithreaded mode).
      *
@@ -2108,8 +2120,6 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
             q.add(FileSystem.get(primaryFsUri, cfg));
 
         stopNodes();
-
-//        G.stopAll(true); // Stop the server.
 
         startNodes(); // Start server again.
 

@@ -52,6 +52,8 @@
     -->
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="clientMode" value="true"/>
+        <property name="gridName" value="test-IGFS-cli"/>
+
         <property name="marshaller">
             <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
             </bean>
@@ -113,6 +115,7 @@
                     <property name="dataCacheName" value="partitioned"/>
                     <property name="blockSize" value="524288"/>
                     <property name="defaultMode" value="PRIMARY"/>
+                    <property name="ipcEndpointEnabled" value="false"/>
 
                 </bean>
             </list>
