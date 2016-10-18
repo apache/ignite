@@ -33,7 +33,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -50,7 +49,6 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -61,7 +59,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.stream.StreamReceiver;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -945,100 +942,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                 assertNotNull(val);
                 assertEquals(i + 1, val.val);
             }
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testLocalDataStreamerDedicatedThreadPool() throws Exception {
-        try {
-            useCache = true;
-
-            Ignite ignite = startGrid(1);
-
-            final IgniteCache<String, String> cache = ignite.cache(null);
-
-            IgniteDataStreamer<String, String> ldr = ignite.dataStreamer(null);
-            try {
-                ldr.receiver(new StreamReceiver<String, String>() {
-                    @Override public void receive(IgniteCache<String, String> cache,
-                        Collection<Map.Entry<String, String>> entries) throws IgniteException {
-                        String threadName = Thread.currentThread().getName();
-
-                        cache.put("key", threadName);
-                    }
-                });
-                ldr.addData("key", "value");
-
-                ldr.tryFlush();
-
-                GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                    @Override public boolean apply() {
-                        return cache.get("key") != null;
-                    }
-                }, 3_000);
-            }
-            finally {
-                ldr.close(true);
-            }
-
-            assertNotNull(cache.get("key"));
-
-            assertTrue(cache.get("key").startsWith("data-streamer"));
-
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testRemoteDataStreamerDedicatedThreadPool() throws Exception {
-        try {
-            useCache = true;
-
-            Ignite ignite = startGrid(1);
-
-            useCache = false;
-
-            Ignite client = startGrid(0);
-
-            final IgniteCache<String, String> cache = ignite.cache(null);
-
-            IgniteDataStreamer<String, String> ldr = client.dataStreamer(null);
-            try {
-                ldr.receiver(new StreamReceiver<String, String>() {
-                    @Override public void receive(IgniteCache<String, String> cache,
-                        Collection<Map.Entry<String, String>> entries) throws IgniteException {
-                        String threadName = Thread.currentThread().getName();
-
-                        cache.put("key", threadName);
-                    }
-                });
-
-                ldr.addData("key", "value");
-
-                ldr.tryFlush();
-
-                GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                    @Override public boolean apply() {
-                        return cache.get("key") != null;
-                    }
-                }, 3_000);
-            }
-            finally {
-                ldr.close(true);
-            }
-
-            assertNotNull(cache.get("key"));
-
-            assertTrue(cache.get("key").startsWith("data-streamer"));
         }
         finally {
             stopAllGrids();
