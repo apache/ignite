@@ -312,10 +312,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private ExecutorService dataStreamExecSvc;
-
-    /** */
-    @GridToStringExclude
     protected ExecutorService restExecSvc;
 
     /** */
@@ -384,7 +380,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param p2pExecSvc P2P executor service.
      * @param mgmtExecSvc Management executor service.
      * @param igfsExecSvc IGFS executor service.
-     * @param dataStreamExecSvc data stream executor service.
      * @param restExecSvc REST executor service.
      * @param affExecSvc Affinity executor service.
      * @param plugins Plugin providers.
@@ -403,7 +398,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ExecutorService p2pExecSvc,
         ExecutorService mgmtExecSvc,
         ExecutorService igfsExecSvc,
-        ExecutorService dataStreamExecSvc,
         ExecutorService restExecSvc,
         ExecutorService affExecSvc,
         IgniteStripedThreadPoolExecutor callbackExecSvc,
@@ -422,7 +416,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.p2pExecSvc = p2pExecSvc;
         this.mgmtExecSvc = mgmtExecSvc;
         this.igfsExecSvc = igfsExecSvc;
-        this.dataStreamExecSvc = dataStreamExecSvc;
         this.restExecSvc = restExecSvc;
         this.affExecSvc = affExecSvc;
         this.callbackExecSvc = callbackExecSvc;
@@ -960,11 +953,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public ExecutorService getIgfsExecutorService() {
         return igfsExecSvc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService getDataStreamerExecutorService() {
-        return dataStreamExecSvc;
     }
 
     /** {@inheritDoc} */
