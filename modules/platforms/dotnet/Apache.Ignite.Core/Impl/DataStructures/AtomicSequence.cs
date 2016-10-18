@@ -65,38 +65,38 @@ namespace Apache.Ignite.Core.Impl.DataStructures
         /** <inheritDoc /> */
         public long Read()
         {
-            return DoOutOp((int) Op.Get);
+            return DoOutInOp((int) Op.Get);
         }
 
         /** <inheritDoc /> */
         public long Increment()
         {
-            return DoOutOp((int) Op.IncrementAndGet);
+            return DoOutInOp((int) Op.IncrementAndGet);
         }
 
         /** <inheritDoc /> */
         public long Add(long value)
         {
-            return DoOutInOpLong((int) Op.AddAndGet, value);
+            return DoOutInOp((int) Op.AddAndGet, value);
         }
 
         /** <inheritDoc /> */
         public int BatchSize
         {
-            get { return (int) DoOutOp((int) Op.GetBatchSize); }
-            set { DoOutInOpLong((int) Op.SetBatchSize, value); }
+            get { return (int) DoOutInOp((int) Op.GetBatchSize); }
+            set { DoOutInOp((int) Op.SetBatchSize, value); }
         }
 
         /** <inheritDoc /> */
         public bool IsClosed
         {
-            get { return DoOutOp((int) Op.IsClosed) == True; }
+            get { return DoOutInOp((int) Op.IsClosed) == True; }
         }
 
         /** <inheritDoc /> */
         public void Close()
         {
-            DoOutOp((int) Op.Close);
+            DoOutInOp((int) Op.Close);
         }
     }
 }

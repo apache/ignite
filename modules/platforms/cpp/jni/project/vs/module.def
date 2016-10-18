@@ -6,7 +6,6 @@ IgniteIgnitionInstance @3
 IgniteIgnitionEnvironmentPointer @4 
 IgniteIgnitionStop @5 
 IgniteIgnitionStopAll @6 
-IgniteTargetOutLong @7
 IgniteProcessorReleaseStart @8 
 IgniteProcessorProjection @9 
 IgniteProcessorCache @10 
@@ -20,7 +19,7 @@ IgniteTargetInStreamOutObject @17
 IgniteTargetInStreamOutLong @18 
 IgniteTargetOutStream @19 
 IgniteTargetInStreamOutStream @20 
-IgniteTargetInObjectStreamOutStream @21 
+IgniteTargetInObjectStreamOutObjectStream @21
 IgniteTargetListenFuture @22 
 IgniteTargetListenFutureForOperation @23 
 IgniteTargetInLongOutLong @24

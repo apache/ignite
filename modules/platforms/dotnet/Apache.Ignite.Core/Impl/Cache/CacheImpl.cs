@@ -632,7 +632,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public void Clear()
         {
-            DoOutOp((int) CacheOp.ClearCache);
+            DoOutInOp((int) CacheOp.ClearCache);
         }
 
         /** <inheritDoc /> */
@@ -742,7 +742,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public void RemoveAll()
         {
-            DoOutOp((int) CacheOp.RemoveAll2);
+            DoOutInOp((int) CacheOp.RemoveAll2);
         }
 
         /** <inheritDoc /> */
@@ -783,7 +783,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             var op = loc ? CacheOp.SizeLoc : CacheOp.Size;
 
-            return (int) DoOutInOpLong((int) op, modes0);
+            return (int) DoOutInOp((int) op, modes0);
         }
 
         /** <inheritDoc /> */
@@ -1312,7 +1312,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public void Enter(long id)
         {
-            DoOutInOpLong((int) CacheOp.EnterLock, id);
+            DoOutInOp((int) CacheOp.EnterLock, id);
         }
 
         /** <inheritdoc /> */
@@ -1328,13 +1328,13 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public void Exit(long id)
         {
-            DoOutInOpLong((int) CacheOp.ExitLock, id);
+            DoOutInOp((int) CacheOp.ExitLock, id);
         }
 
         /** <inheritdoc /> */
         public void Close(long id)
         {
-            DoOutInOpLong((int) CacheOp.CloseLock, id);
+            DoOutInOp((int) CacheOp.CloseLock, id);
         }
     }
 }
