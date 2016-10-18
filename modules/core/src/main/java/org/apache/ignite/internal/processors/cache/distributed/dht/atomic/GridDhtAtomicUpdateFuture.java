@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -50,6 +52,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_MAX_CONCURRENT_DHT_UPDATES;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
@@ -59,6 +62,10 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
     implements GridCacheAtomicFuture<Void> {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Max concurrent updates. */
+    private static final int MAX_CONCURRENT_UPDATES =
+        IgniteSystemProperties.getInteger(IGNITE_ATOMIC_CACHE_MAX_CONCURRENT_DHT_UPDATES, 100);
 
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
@@ -80,6 +87,9 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
 
     /** Force transform backup flag. */
     private boolean forceTransformBackups;
+
+    /** Force full sync. */
+    private volatile boolean forceFullSync;
 
     /** Completion callback. */
     @GridToStringExclude
@@ -384,8 +394,17 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
                     clsr.apply(suc);
             }
 
-            if (updateReq.writeSynchronizationMode() == FULL_SYNC)
+            GridCacheSharedContext ctx = cctx.shared();
+
+            boolean backPressureEnabled = MAX_CONCURRENT_UPDATES > 0 && ctx.database().persistenceEnabled();
+
+            boolean fullSync = backPressureEnabled && forceFullSync;
+
+            if (updateReq.writeSynchronizationMode() == FULL_SYNC || fullSync)
                 completionCb.apply(updateReq, updateRes);
+
+            if (updateReq.writeSynchronizationMode() != FULL_SYNC && backPressureEnabled)
+                ctx.finishDhtAtomicUpdate(futVer);
 
             return true;
         }
@@ -428,8 +447,18 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
 
         // Send response right away if no ACKs from backup is required.
         // Backups will send ACKs anyway, future will be completed after all backups have replied.
-        if (updateReq.writeSynchronizationMode() != FULL_SYNC)
-            completionCb.apply(updateReq, updateRes);
+        GridCacheSharedContext ctx = cctx.shared();
+
+        if (updateReq.writeSynchronizationMode() != FULL_SYNC) {
+            if (ctx.database().persistenceEnabled() && MAX_CONCURRENT_UPDATES > 0) {
+                if (ctx.startDhtAtomicUpdate(futVer) <= MAX_CONCURRENT_UPDATES)
+                    completionCb.apply(updateReq, updateRes);
+                else
+                    forceFullSync = true;
+            }
+            else
+                completionCb.apply(updateReq, updateRes);
+        }
     }
 
     /**

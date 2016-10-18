@@ -1464,7 +1464,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
                                     null,
                                     null,
-                                    /**update-metrics*/false,
+                                    /*update-metrics*/false,
                                     /*event*/!skipVals,
                                     subjId,
                                     null,
@@ -1482,7 +1482,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                     null,
                                     null,
                                     /*read-through*/false,
-                                    /**update-metrics*/false,
+                                    /*update-metrics*/false,
                                     /*event*/!skipVals,
                                     subjId,
                                     null,
@@ -3063,22 +3063,18 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param nodeId Sender node ID.
      * @param res Near atomic update response.
      */
-    @SuppressWarnings("unchecked")
     private void processNearAtomicUpdateResponse(UUID nodeId, GridNearAtomicUpdateResponse res) {
         if (msgLog.isDebugEnabled())
-            msgLog.debug("Received near atomic update response [futId" + res.futureVersion() + ", node=" + nodeId + ']');
+            msgLog.debug("Received near atomic update response [futId" + res.futureVersion() +
+                ", node=" + nodeId + ']');
 
         res.nodeId(ctx.localNodeId());
 
         GridNearAtomicAbstractUpdateFuture fut =
             (GridNearAtomicAbstractUpdateFuture)ctx.mvcc().atomicFuture(res.futureVersion());
 
-        if (fut != null) {
-            if (fut instanceof GridNearAtomicSingleUpdateFuture)
-                ((GridNearAtomicSingleUpdateFuture)fut).onResult(nodeId, res, false);
-            else
-                ((GridNearAtomicUpdateFuture)fut).onResult(nodeId, res, false);
-        }
+        if (fut != null)
+            fut.onResult(nodeId, res, false);
         else
             U.warn(msgLog, "Failed to find near update future for update response (will ignore) " +
                 "[futId" + res.futureVersion() + ", node=" + nodeId + ", res=" + res + ']');
