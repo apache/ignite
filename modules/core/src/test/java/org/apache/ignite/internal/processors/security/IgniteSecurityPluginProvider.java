@@ -98,40 +98,22 @@ public class IgniteSecurityPluginProvider implements PluginProvider {
 
     /** {@inheritDoc} */
     @Nullable @Override public Object createComponent(PluginContext ctx, Class cls) {
-        String enable = System.getProperty(TEST_SECURITY);
+        IgniteEx grid = (IgniteEx) ctx.grid();
 
-        if (cls.equals(GridSecurityProcessor.class) && (enable != null && Boolean.valueOf(enable))) {
-            IgniteEx grid = (IgniteEx) ctx.grid();
+        Map<String, ?> attr = grid.configuration().getUserAttributes();
 
-            Map<String, ?> attr = grid.configuration().getUserAttributes();
+        SecurityCredentials crd = (SecurityCredentials) attr.get("crd");
+        AtomicInteger authCnt = (AtomicInteger) attr.get("selfCnt");
+        Map<UUID,List<UUID>> rmAuth = (Map<UUID, List<UUID>>) attr.get("rmAuth");
+        Boolean global= (Boolean) attr.get("global");
 
-            SecurityCredentials crd = (SecurityCredentials) attr.get("crd");
-            AtomicInteger authCnt = (AtomicInteger) attr.get("selfCnt");
-            Map<UUID,List<UUID>> rmAuth = (Map<UUID, List<UUID>>) attr.get("rmAuth");
-            Boolean global= (Boolean) attr.get("global");
+        Map<SecurityCredentials, TestSecurityPermissionSet> permsMap =
+                (Map<SecurityCredentials, TestSecurityPermissionSet>) attr.get("permsMap");
 
-            Map<SecurityCredentials, TestSecurityPermissionSet> permsMap =
-                    (Map<SecurityCredentials, TestSecurityPermissionSet>) attr.get("permsMap");
-
+        if (crd != null && authCnt != null && rmAuth != null && global != null){
             grid.context().addNodeAttribute(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, crd);
 
-            GridTestSecurityProcessor proc;
-            try {
-                GridKernalContext kctx = grid.context();
-                assert kctx != null : "context can't be null";
-                assert authCnt != null : "authCnt can't be null";
-                assert rmAuth != null : "rmAuth can't be null";
-                assert global != null : "global can't be null";
-                assert permsMap != null : "permsMap can't be null";
-                proc = new GridTestSecurityProcessor(kctx, authCnt, rmAuth, global, permsMap);
-            }catch (Throwable e){
-                System.out.println(e.getMessage());
-                e.printStackTrace();
-
-                throw e;
-            }
-
-            return proc;
+            return new GridTestSecurityProcessor(grid.context(), authCnt, rmAuth, global, permsMap);
         }
 
         return null;

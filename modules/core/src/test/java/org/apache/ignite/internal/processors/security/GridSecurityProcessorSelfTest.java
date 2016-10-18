@@ -19,20 +19,11 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Test for check correct work {@link GridSecurityProcessor}
  */
 public class GridSecurityProcessorSelfTest extends GridCommonAbstractTest {
-
-    public final static String TEST_SECURITY = "test.security";
-
-    static {
-        System.setProperty(TEST_SECURITY, String.valueOf(true));
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
         super.afterTest();
-
-        System.clearProperty(TEST_SECURITY);
     }
 
     /**
