@@ -118,6 +118,11 @@ public class IgniteSecurityPluginProvider implements PluginProvider {
             GridTestSecurityProcessor proc;
             try {
                 GridKernalContext kctx = grid.context();
+                assert kctx != null : "context can't be null";
+                assert authCnt != null : "authCnt can't be null";
+                assert rmAuth != null : "rmAuth can't be null";
+                assert global != null : "global can't be null";
+                assert permsMap != null : "permsMap can't be null";
                 proc = new GridTestSecurityProcessor(kctx, authCnt, rmAuth, global, permsMap);
             }catch (Throwable e){
                 System.out.println(e.getMessage());
