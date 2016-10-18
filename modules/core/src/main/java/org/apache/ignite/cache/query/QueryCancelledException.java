@@ -15,26 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop;
+package org.apache.ignite.cache.query;
 
-import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Map-reduce execution planner.
+ * The exception is thrown if a query was cancelled or timed out while executing.
  */
-public interface HadoopMapReducePlanner {
+public class QueryCancelledException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
-     * Prepares map-reduce execution plan for the given job and topology.
-     *
-     * @param job Job.
-     * @param top Topology.
-     * @param oldPlan Old plan in case of partial failure.
-     * @return Map reduce plan.
-     * @throws IgniteCheckedException If an error occurs.
+     * Default constructor.
      */
-    public HadoopMapReducePlan preparePlan(HadoopJob job, Collection<ClusterNode> top,
-        @Nullable HadoopMapReducePlan oldPlan) throws IgniteCheckedException;
+    public QueryCancelledException() {
+        super("The query was cancelled while executing.");
+    }
 }

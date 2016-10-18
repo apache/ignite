@@ -15,26 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop;
-
-import java.util.Collection;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
-import org.jetbrains.annotations.Nullable;
+package org.apache.ignite.spi.communication.tcp;
 
 /**
- * Map-reduce execution planner.
+ *
  */
-public interface HadoopMapReducePlanner {
+public class GridTcpCommunicationSpiRecoverySslSelfTest extends GridTcpCommunicationSpiRecoverySelfTest {
     /**
-     * Prepares map-reduce execution plan for the given job and topology.
-     *
-     * @param job Job.
-     * @param top Topology.
-     * @param oldPlan Old plan in case of partial failure.
-     * @return Map reduce plan.
-     * @throws IgniteCheckedException If an error occurs.
+     * Default constructor.
      */
-    public HadoopMapReducePlan preparePlan(HadoopJob job, Collection<ClusterNode> top,
-        @Nullable HadoopMapReducePlan oldPlan) throws IgniteCheckedException;
+    public GridTcpCommunicationSpiRecoverySslSelfTest() {
+        useSsl = true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return super.getTestTimeout() * 2;
+    }
 }
