@@ -472,8 +472,6 @@ public class BlockingSslHandler {
      */
     private void readFromNet() throws IgniteCheckedException {
         try {
-            inNetBuf.clear();
-
             int read = ch.read(inNetBuf);
 
             if (read == -1)
