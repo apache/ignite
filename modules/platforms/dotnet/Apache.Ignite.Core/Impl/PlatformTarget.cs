@@ -866,22 +866,6 @@ namespace Apache.Ignite.Core.Impl
             return fut;
         }
 
-        /// <summary>
-        /// Creates a task to listen for the last async op.
-        /// </summary>
-        protected Task GetTask()
-        {
-            return GetTask<object>();
-        }
-
-        /// <summary>
-        /// Creates a task to listen for the last async op.
-        /// </summary>
-        protected Task<T> GetTask<T>()
-        {
-            return GetFuture<T>((futId, futTyp) => UU.TargetListenFuture(Target, futId, futTyp)).Task;
-        }
-
         #endregion
     }
 
