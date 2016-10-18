@@ -3,6 +3,10 @@ package org.apache.ignite.internal.processors.cache.database.tree.io;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NavigableSet;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.ThreadLocalRandom;
 import junit.framework.TestCase;
 
@@ -33,13 +37,25 @@ public class PageUpdateTrackingIOTest extends TestCase {
     /**
      *
      */
-    public void testRandom() {
+    public void testMarkingRandomly() {
         ByteBuffer buf = ByteBuffer.allocate(PAGE_SIZE);
 
         int cntOfPageToTrack = countOfPageToTrack(PAGE_SIZE);
 
         for (int i = 0; i < 1001; i++)
-            checkRandomly(buf, cntOfPageToTrack, i);
+            checkMarkingRandomly(buf, cntOfPageToTrack, i, false);
+    }
+
+    /**
+     *
+     */
+    public void testZeroingRandomly() {
+        ByteBuffer buf = ByteBuffer.allocate(PAGE_SIZE);
+
+        int cntOfPageToTrack = countOfPageToTrack(PAGE_SIZE);
+
+        for (int i = 0; i < 1001; i++)
+            checkMarkingRandomly(buf, cntOfPageToTrack, i, true);
     }
 
     /**
@@ -47,10 +63,12 @@ public class PageUpdateTrackingIOTest extends TestCase {
      * @param track Track.
      * @param backupId Backup id.
      */
-    private void checkRandomly(ByteBuffer buf, int track, int backupId) {
+    private void checkMarkingRandomly(ByteBuffer buf, int track, int backupId, boolean testZeroing) {
         ThreadLocalRandom rand = ThreadLocalRandom.current();
 
-        long basePageId = (Math.max(rand.nextLong(Integer.MAX_VALUE - track), 0) / track) * track;
+        long basePageId = PageUpdateTrackingIO.trackingPageFor(Math.max(rand.nextLong(Integer.MAX_VALUE - track), 0), PAGE_SIZE);
+
+        long maxId = testZeroing ? basePageId + rand.nextInt(1, track) : basePageId + track;
 
         assert basePageId >= 0;
 
@@ -62,7 +80,7 @@ public class PageUpdateTrackingIOTest extends TestCase {
 
         try {
             for (long i = basePageId; i < basePageId + track; i++) {
-                boolean changed =  i == basePageId || rand.nextDouble() < 0.5;
+                boolean changed =  (i == basePageId || rand.nextDouble() < 0.5) && i < maxId;
 
                 map.put(i, changed);
 
@@ -82,6 +100,74 @@ public class PageUpdateTrackingIOTest extends TestCase {
                 assertEquals(
                     e.getValue().booleanValue(),
                     wasChanged(buf, e.getKey(), backupId, PAGE_SIZE));
+        }
+        catch (Throwable e) {
+            System.out.println("backupId = " + backupId + ", basePageId = " + basePageId);
+            throw e;
+        }
+    }
+
+    public void testFindNextChangedPage() throws Exception {
+        ByteBuffer buf = ByteBuffer.allocate(PAGE_SIZE);
+
+        int cntOfPageToTrack = countOfPageToTrack(PAGE_SIZE);
+
+        for (int i = 0; i < 101; i++)
+            checkFindingRandomly(buf, cntOfPageToTrack, i);
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param track Track.
+     * @param backupId Backup id.
+     */
+    private void checkFindingRandomly(ByteBuffer buf, int track, int backupId) {
+        ThreadLocalRandom rand = ThreadLocalRandom.current();
+
+        long basePageId = PageUpdateTrackingIO.trackingPageFor(Math.max(rand.nextLong(Integer.MAX_VALUE - track), 0), PAGE_SIZE);
+
+        long maxId = basePageId + rand.nextInt(1, track);
+
+        assert basePageId >= 0;
+
+        PageIO.setPageId(buf, basePageId);
+
+        SortedMap<Long, Boolean> map = new TreeMap<>();
+
+        TreeSet<Long> setIdx = new TreeSet<>();
+
+        try {
+            for (long i = basePageId; i < basePageId + track; i++) {
+                boolean changed =  (i == basePageId || rand.nextDouble() < 0.2) && i < maxId;
+
+                map.put(i, changed);
+
+                if (changed) {
+                    markChanged(buf, i, backupId, PAGE_SIZE);
+
+                    setIdx.add(i);
+                }
+            }
+
+            for (Map.Entry<Long, Boolean> e : map.entrySet()) {
+                Long pageId = e.getKey();
+
+                Long foundNextChangedPage = findNextChangedPage(buf, pageId, backupId, PAGE_SIZE);
+
+                if (trackingPageFor(pageId, PAGE_SIZE) == pageId)
+                    assertEquals(pageId, foundNextChangedPage);
+
+                else if (e.getValue())
+                    assertEquals(pageId, foundNextChangedPage);
+
+                else {
+                    NavigableSet<Long> tailSet = setIdx.tailSet(pageId, false);
+                    Long next = tailSet.isEmpty() ? null : tailSet.first();
+
+                    assertEquals(next, foundNextChangedPage);
+                }
+            }
+
         }
         catch (Throwable e) {
             System.out.println("backupId = " + backupId + ", basePageId = " + basePageId);
