@@ -1462,6 +1462,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         private int goodId;
     }
 
+    /** */
     private static class AffinityKeyGenerator implements Iterator<Integer> {
         /** */
         private final Affinity<Integer> affinity;
@@ -1472,15 +1473,18 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         /** */
         private int start = 0;
 
+        /** Constructor */
         AffinityKeyGenerator(Ignite node, String cacheName) {
             this.affinity = node.affinity(cacheName);
             this.node = node.cluster().localNode();
         }
 
+        /** {@inheritDoc} */
         @Override public boolean hasNext() {
             return true;
         }
 
+        /** {@inheritDoc} */
         @Override public Integer next() {
             int key = start;
 
