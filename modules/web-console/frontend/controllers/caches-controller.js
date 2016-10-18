@@ -292,6 +292,17 @@ export default ['cachesController', [
             return true;
         }
 
+        function checkEvictionPolicy(evictionPlc) {
+            if (evictionPlc && evictionPlc.kind) {
+                const plc = evictionPlc[evictionPlc.kind];
+
+                if (plc.maxMemorySize === 0 && plc.maxSize === 0)
+                    return ErrorPopover.show('evictionPolicymaxMemorySizeInput', 'Either maximum memory size or maximum size should be great than 0!', $scope.ui, 'memory');
+            }
+
+            return true;
+        }
+
         function checkSQLSchemas() {
             const clusters = cacheClusters();
 
@@ -366,6 +377,9 @@ export default ['cachesController', [
 
             if (item.memoryMode === 'OFFHEAP_TIERED' && item.offHeapMaxMemory === -1)
                 return ErrorPopover.show('offHeapModeInput', 'Invalid value!', $scope.ui, 'memory');
+
+            if (!checkEvictionPolicy(item.evictionPolicy))
+                return false;
 
             if (!checkSQLSchemas())
                 return false;
