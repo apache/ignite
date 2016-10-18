@@ -679,7 +679,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
-            return DoOutOpAsync<object>((int)CacheOp.ClearAllAsync, writer => WriteEnumerable(writer, keys)).Task;
+            return DoOutOpAsync<object>((int) CacheOp.ClearAllAsync, writer => WriteEnumerable(writer, keys)).Task;
         }
 
         /** <inheritdoc /> */
@@ -757,9 +757,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task RemoveAllAsync()
         {
-            AsyncInstance.RemoveAll();
-
-            return AsyncInstance.GetTask();
+            return DoOutOpAsync<object>((int) CacheOp.RemoveAll2Async, w => { }).Task;
         }
 
         /** <inheritDoc /> */
