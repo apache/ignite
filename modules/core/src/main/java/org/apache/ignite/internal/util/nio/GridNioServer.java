@@ -110,8 +110,8 @@ public class GridNioServer<T> {
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_NO_SELECTOR_OPTS);
 
     /** */
-    private static final int SPIN_COUNT =
-        IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_SELECTOR_SPINS, 32);
+    private static final int SELECTOR_SPINS =
+        IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_SELECTOR_SPINS, 128);
 
     /**
      *
@@ -1605,7 +1605,7 @@ public class GridNioServer<T> {
 
                     int res = 0;
 
-                    for (int i = 0; i < SPIN_COUNT && res == 0; i++)
+                    for (int i = 0; i < SELECTOR_SPINS && res == 0; i++)
                         res = selector.selectNow();
 
                     if (res > 0) {

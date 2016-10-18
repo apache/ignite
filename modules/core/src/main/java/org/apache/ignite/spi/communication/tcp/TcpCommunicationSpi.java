@@ -290,7 +290,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * Default count of selectors for TCP server equals to
      * {@code "Runtime.getRuntime().availableProcessors()"}.
      */
-    public static final int DFLT_SELECTORS_CNT = Runtime.getRuntime().availableProcessors();
+    public static final int DFLT_SELECTORS_CNT = Math.min(4, Runtime.getRuntime().availableProcessors());
 
     /** Connection index meta for session. */
     private static final int CONN_IDX_META = GridNioSessionMetaKey.nextUniqueKey();
@@ -2018,8 +2018,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                 // Ack Port the TCP server was bound to.
                 if (log.isInfoEnabled())
-                    log.info("Successfully bound to TCP port [port=" + boundTcpPort +
-                        ", locHost=" + locHost + ']');
+                    log.info("Successfully bound communication NIO server to TCP port [port=" + boundTcpPort +
+                        ", locHost=" + locHost + ", selectorsCnt=" + selectorsCnt + ']');
 
                 srvr.idleTimeout(idleConnTimeout);
 
