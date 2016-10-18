@@ -24,7 +24,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.plugin.PluginProvider;
@@ -34,8 +33,6 @@ import org.apache.ignite.plugin.PluginValidationException;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.security.GridSecurityProcessorSelfTest.TEST_SECURITY;
 
 /**
  * Ignite mock security plugin, only for {@link GridSecurityProcessorSelfTest}
@@ -110,7 +107,7 @@ public class IgniteSecurityPluginProvider implements PluginProvider {
         Map<SecurityCredentials, TestSecurityPermissionSet> permsMap =
                 (Map<SecurityCredentials, TestSecurityPermissionSet>) attr.get("permsMap");
 
-        if (crd != null && authCnt != null && rmAuth != null && global != null){
+        if (crd != null && authCnt != null && rmAuth != null && global != null && permsMap != null) {
             grid.context().addNodeAttribute(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, crd);
 
             return new GridTestSecurityProcessor(grid.context(), authCnt, rmAuth, global, permsMap);
