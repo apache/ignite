@@ -692,13 +692,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         boolean client = ctx.config().isClientMode();
 
-        assert !client || allowOverwrite();
-
         GridCacheContext cctx = client ? null : ctx.cache().internalCache(cacheName).context();
 
         AffinityTopologyVersion topVer =
             client ?
-                ctx.cache().context().exchange().readyAffinityVersion() :
+                ctx.cache().context().exchange().clientTopology(
+                    CU.cacheId(cacheName),
+                    ctx.cache().context().exchange().lastTopologyFuture()).topologyVersion() :
                 cctx.isLocal() ?
                     AffinityTopologyVersion.NONE :
                     cctx.topology().topologyVersion();
@@ -902,7 +902,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         List<ClusterNode> res = null;
 
         if (!allowOverwrite())
-            res = cctx.topology().nodes(cctx.affinity().partition(key), topVer);
+            res = cctx.isLocal() ?
+                aff.mapKeyToPrimaryAndBackups(cacheName, key, topVer) :
+                cctx.topology().nodes(cctx.affinity().partition(key), topVer);
         else {
             ClusterNode node = aff.mapKeyToNode(cacheName, key, topVer);
 
@@ -1425,11 +1427,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         private void localUpdate(final Collection<DataStreamerEntry> entries,
             final AffinityTopologyVersion reqTopVer,
             final GridFutureAdapter<Object> curFut) {
+            final boolean allowOverride = allowOverwrite();
+
             GridCacheContext cctx = ctx.cache().internalCache(cacheName).context();
 
             final boolean loc = cctx.isLocal();
 
-            if (!loc)
+            if (!loc && !allowOverride)
                 cctx.topology().readLock();
 
             try {
@@ -1437,12 +1441,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                 AffinityTopologyVersion topVer = loc ? reqTopVer : fut.topologyVersion();
 
-                if (!topVer.equals(reqTopVer)) {
+                if (!allowOverride && !topVer.equals(reqTopVer)) {
                     curFut.onDone(new IgniteCheckedException(
                         "DataStreamer will retry data transfer at stable topology. " +
                             "[reqTop=" + reqTopVer + " ,topVer=" + topVer + ", node=local]"));
                 }
-                else if (loc || fut.isDone()) {
+                else if (loc || allowOverride || fut.isDone()) {
                     IgniteInternalFuture<Object> callFut = ctx.closure().callLocalSafe(
                         new DataStreamerUpdateJob(
                             ctx,
@@ -1457,7 +1461,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                     locFuts.add(callFut);
 
-                    final GridFutureAdapter waitFut = loc ? null : cctx.mvcc().addDataStreamerFuture();
+                    final GridFutureAdapter waitFut = (loc || allowOverride) ? null : cctx.mvcc().addDataStreamerFuture();
 
                     callFut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
                         @Override public void apply(IgniteInternalFuture<Object> t) {
@@ -1472,7 +1476,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                                 curFut.onDone(e);
                             }
                             finally {
-                                if (!loc)
+                                if (!loc && !allowOverride)
                                     waitFut.onDone();
                             }
                         }
@@ -1486,7 +1490,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     });
             }
             finally {
-                if (!loc)
+                if (!loc && !allowOverride)
                     cctx.topology().readUnlock();
             }
         }
@@ -1600,7 +1604,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     dep != null ? dep.participants() : null,
                     dep != null ? dep.classLoaderId() : null,
                     dep == null,
-                    topVer);
+                    topVer,
+                    allowOverwrite());
 
                 try {
                     ctx.io().send(node, TOPIC_DATASTREAM, req, plc);
@@ -1817,7 +1822,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             GridCacheContext cctx = internalCache.context();
 
-            AffinityTopologyVersion topVer = cctx.topology().topologyVersion();
+            AffinityTopologyVersion topVer = cctx.isLocal() ?
+                cctx.affinity().affinityTopologyVersion() :
+                cctx.topology().topologyVersion();
 
             GridCacheVersion ver = cctx.versions().isolatedStreamerVersion();
 

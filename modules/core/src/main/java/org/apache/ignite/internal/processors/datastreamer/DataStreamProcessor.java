@@ -309,23 +309,26 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         final DataStreamerRequest req,
         final StreamReceiver<K, V> updater,
         final Object topic) {
+        final boolean allowOverride = req.allowOverride();
+
         GridCacheContext cctx = ctx.cache().internalCache(req.cacheName()).context();
 
-        cctx.topology().readLock();
+        if (!allowOverride)
+            cctx.topology().readLock();
 
         try {
             GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
 
             AffinityTopologyVersion topVer = fut.topologyVersion();
 
-            if (!topVer.equals(req.topologyVersion())) {
+            if (!allowOverride && !topVer.equals(req.topologyVersion())) {
                 Exception err = new IgniteCheckedException(
                     "DataStreamer will retry data transfer at stable topology. " +
                         "[reqTop=" + req.topologyVersion() + " ,topVer=" + topVer + ", node=remote]");
 
                 sendResponse(nodeId, topic, req.requestId(), err, req.forceLocalDeployment());
             }
-            else if (fut.isDone()) {
+            else if (allowOverride || fut.isDone()) {
                 IgniteInternalFuture<Object> callFut = ctx.closure().callLocalSafe(
                     new DataStreamerUpdateJob(ctx,
                         log,
@@ -337,7 +340,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                         updater),
                     false);
 
-                final GridFutureAdapter waitFut = cctx.mvcc().addDataStreamerFuture();
+                final GridFutureAdapter waitFut = allowOverride ? null : cctx.mvcc().addDataStreamerFuture();
 
                 callFut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
                     @Override public void apply(IgniteInternalFuture<Object> t) {
@@ -350,7 +353,8 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                             sendResponse(nodeId, topic, req.requestId(), e, req.forceLocalDeployment());
                         }
                         finally {
-                            waitFut.onDone();
+                            if (!allowOverride)
+                                waitFut.onDone();
                         }
                     }
                 });
@@ -363,7 +367,8 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                 });
         }
         finally {
-            cctx.topology().readUnlock();
+            if (!allowOverride)
+                cctx.topology().readUnlock();
         }
     }
 

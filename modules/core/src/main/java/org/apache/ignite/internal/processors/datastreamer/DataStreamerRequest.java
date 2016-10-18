@@ -90,6 +90,9 @@ public class DataStreamerRequest implements Message {
     /** Topology version. */
     private AffinityTopologyVersion topVer;
 
+    /** */
+    private boolean allowOverride;
+
     /**
      * {@code Externalizable} support.
      */
@@ -113,6 +116,7 @@ public class DataStreamerRequest implements Message {
      * @param clsLdrId Class loader ID.
      * @param forceLocDep Force local deployment.
      * @param topVer Topology version.
+     * @param allowOverride Allow override flag.
      */
     public DataStreamerRequest(long reqId,
         byte[] resTopicBytes,
@@ -128,7 +132,8 @@ public class DataStreamerRequest implements Message {
         Map<UUID, IgniteUuid> ldrParticipants,
         IgniteUuid clsLdrId,
         boolean forceLocDep,
-        @NotNull AffinityTopologyVersion topVer) {
+        @NotNull AffinityTopologyVersion topVer,
+        boolean allowOverride) {
         assert topVer != null;
 
         this.reqId = reqId;
@@ -146,6 +151,7 @@ public class DataStreamerRequest implements Message {
         this.clsLdrId = clsLdrId;
         this.forceLocDep = forceLocDep;
         this.topVer = topVer;
+        this.allowOverride = allowOverride;
     }
 
     /**
@@ -253,6 +259,13 @@ public class DataStreamerRequest implements Message {
         return topVer;
     }
 
+    /**
+     * @return Allow override flag.
+     */
+    public boolean allowOverride() {
+        return allowOverride;
+    }
+
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
@@ -276,90 +289,96 @@ public class DataStreamerRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeString("cacheName", cacheName))
+                if (!writer.writeBoolean("allowOverride", allowOverride))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeIgniteUuid("clsLdrId", clsLdrId))
+                if (!writer.writeString("cacheName", cacheName))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeByte("depMode", depMode != null ? (byte)depMode.ordinal() : -1))
+                if (!writer.writeIgniteUuid("clsLdrId", clsLdrId))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeCollection("entries", entries, MessageCollectionItemType.MSG))
+                if (!writer.writeByte("depMode", depMode != null ? (byte)depMode.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeBoolean("forceLocDep", forceLocDep))
+                if (!writer.writeCollection("entries", entries, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeBoolean("ignoreDepOwnership", ignoreDepOwnership))
+                if (!writer.writeBoolean("forceLocDep", forceLocDep))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeBoolean("keepBinary", keepBinary))
+                if (!writer.writeBoolean("ignoreDepOwnership", ignoreDepOwnership))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeMap("ldrParticipants", ldrParticipants, MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID))
+                if (!writer.writeBoolean("keepBinary", keepBinary))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeLong("reqId", reqId))
+                if (!writer.writeMap("ldrParticipants", ldrParticipants, MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeByteArray("resTopicBytes", resTopicBytes))
+                if (!writer.writeLong("reqId", reqId))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeString("sampleClsName", sampleClsName))
+                if (!writer.writeByteArray("resTopicBytes", resTopicBytes))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeBoolean("skipStore", skipStore))
+                if (!writer.writeString("sampleClsName", sampleClsName))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeBoolean("skipStore", skipStore))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeByteArray("updaterBytes", updaterBytes))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
             case 14:
+                if (!writer.writeByteArray("updaterBytes", updaterBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 15:
                 if (!writer.writeString("userVer", userVer))
                     return false;
 
@@ -379,7 +398,7 @@ public class DataStreamerRequest implements Message {
 
         switch (reader.state()) {
             case 0:
-                cacheName = reader.readString("cacheName");
+                allowOverride = reader.readBoolean("allowOverride");
 
                 if (!reader.isLastRead())
                     return false;
@@ -387,7 +406,7 @@ public class DataStreamerRequest implements Message {
                 reader.incrementState();
 
             case 1:
-                clsLdrId = reader.readIgniteUuid("clsLdrId");
+                cacheName = reader.readString("cacheName");
 
                 if (!reader.isLastRead())
                     return false;
@@ -395,6 +414,14 @@ public class DataStreamerRequest implements Message {
                 reader.incrementState();
 
             case 2:
+                clsLdrId = reader.readIgniteUuid("clsLdrId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 3:
                 byte depModeOrd;
 
                 depModeOrd = reader.readByte("depMode");
@@ -406,7 +433,7 @@ public class DataStreamerRequest implements Message {
 
                 reader.incrementState();
 
-            case 3:
+            case 4:
                 entries = reader.readCollection("entries", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -414,7 +441,7 @@ public class DataStreamerRequest implements Message {
 
                 reader.incrementState();
 
-            case 4:
+            case 5:
                 forceLocDep = reader.readBoolean("forceLocDep");
 
                 if (!reader.isLastRead())
@@ -422,7 +449,7 @@ public class DataStreamerRequest implements Message {
 
                 reader.incrementState();
 
-            case 5:
+            case 6:
                 ignoreDepOwnership = reader.readBoolean("ignoreDepOwnership");
 
                 if (!reader.isLastRead())
@@ -430,7 +457,7 @@ public class DataStreamerRequest implements Message {
 
                 reader.incrementState();
 
-            case 6:
+            case 7:
                 keepBinary = reader.readBoolean("keepBinary");
 
                 if (!reader.isLastRead())
@@ -438,7 +465,7 @@ public class DataStreamerRequest implements Message {
 
                 reader.incrementState();
 
-            case 7:
+            case 8:
                 ldrParticipants = reader.readMap("ldrParticipants", MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID, false);
 
                 if (!reader.isLastRead())
@@ -446,7 +473,7 @@ public class DataStreamerRequest implements Message {
 
                 reader.incrementState();
 
-            case 8:
+            case 9:
                 reqId = reader.readLong("reqId");
 
                 if (!reader.isLastRead())
@@ -454,7 +481,7 @@ public class DataStreamerRequest implements Message {
 
                 reader.incrementState();
 
-            case 9:
+            case 10:
                 resTopicBytes = reader.readByteArray("resTopicBytes");
 
                 if (!reader.isLastRead())
@@ -462,7 +489,7 @@ public class DataStreamerRequest implements Message {
 
                 reader.incrementState();
 
-            case 10:
+            case 11:
                 sampleClsName = reader.readString("sampleClsName");
 
                 if (!reader.isLastRead())
@@ -470,7 +497,7 @@ public class DataStreamerRequest implements Message {
 
                 reader.incrementState();
 
-            case 11:
+            case 12:
                 skipStore = reader.readBoolean("skipStore");
 
                 if (!reader.isLastRead())
@@ -478,7 +505,7 @@ public class DataStreamerRequest implements Message {
 
                 reader.incrementState();
 
-            case 12:
+            case 13:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
@@ -486,7 +513,7 @@ public class DataStreamerRequest implements Message {
 
                 reader.incrementState();
 
-            case 13:
+            case 14:
                 updaterBytes = reader.readByteArray("updaterBytes");
 
                 if (!reader.isLastRead())
@@ -494,7 +521,7 @@ public class DataStreamerRequest implements Message {
 
                 reader.incrementState();
 
-            case 14:
+            case 15:
                 userVer = reader.readString("userVer");
 
                 if (!reader.isLastRead())
@@ -514,6 +541,6 @@ public class DataStreamerRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 15;
+        return 16;
     }
 }

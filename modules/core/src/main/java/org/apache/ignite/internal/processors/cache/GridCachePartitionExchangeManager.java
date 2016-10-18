@@ -575,7 +575,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      * @return Last completed topology future.
      */
-    public GridDhtTopologyFuture lastTopologyFuture() {
+    public GridDhtPartitionsExchangeFuture lastTopologyFuture() {
         return lastInitializedFut;
     }
 
