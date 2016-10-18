@@ -302,8 +302,10 @@ public class GridSqlQuerySplitter {
 
         boolean hasDistinctAggregate = false;
 
-        for (int i = 0, len = mapExps.size(); i < len; i++)
-            hasDistinctAggregate |= hasAggregates(mapExps.get(i), true);
+        if (!collocatedGroupBy) {
+            for (int i = 0, len = mapExps.size(); i < len; i++)
+                hasDistinctAggregate |= hasAggregates(mapExps.get(i), true);
+        }
 
         boolean aggregateFound = hasDistinctAggregate;
 
