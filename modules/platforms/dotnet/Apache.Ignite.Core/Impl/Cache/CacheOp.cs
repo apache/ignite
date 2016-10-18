@@ -82,6 +82,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         ClearCacheAsync = 58,
         ClearAllAsync = 59,
         RemoveAll2Async = 60,
-        SizeAsync = 61
+        SizeAsync = 61,
+        ClearAsync = 62
     }
 }

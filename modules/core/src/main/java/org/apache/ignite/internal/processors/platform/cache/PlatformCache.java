@@ -253,6 +253,9 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_SIZE_ASYNC = 61;
 
+    /** */
+    public static final int OP_CLEAR_ASYNC = 62;
+
     /** Underlying JCache. */
     private final IgniteCacheProxy cache;
 
@@ -446,6 +449,14 @@ public class PlatformCache extends PlatformAbstractTarget {
                 CachePeekMode[] modes = PlatformUtils.decodeCachePeekModes(reader.readInt());
 
                 cacheAsync.size(modes);
+
+                readAndListenFuture(reader);
+
+                return TRUE;
+            }
+
+            case OP_CLEAR_ASYNC: {
+                cacheAsync.clear(reader.readObjectDetached());
 
                 readAndListenFuture(reader);
 

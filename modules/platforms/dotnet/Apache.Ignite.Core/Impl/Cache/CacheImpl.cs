@@ -661,9 +661,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task ClearAsync(TK key)
         {
-            AsyncInstance.Clear(key);
-
-            return AsyncInstance.GetTask(CacheOp.Clear);
+            return DoOutOpAsync<object, TK>((int) CacheOp.ClearAsync, key);
         }
 
         /** <inheritdoc /> */

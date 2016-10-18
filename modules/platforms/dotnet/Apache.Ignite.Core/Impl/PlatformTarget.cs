@@ -685,6 +685,26 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <typeparam name="T">Type of the result.</typeparam>
         /// <typeparam name="T1">The type of the first arg.</typeparam>
+        /// <param name="type">The type code.</param>
+        /// <param name="val1">First arg.</param>
+        /// <returns>
+        /// Task for async operation
+        /// </returns>
+        protected Task<T> DoOutOpAsync<T, T1>(int type, T1 val1)
+        {
+            return GetFuture<T>((futId, futType) => DoOutOp(type, w =>
+            {
+                w.WriteObject(val1);
+                w.WriteLong(futId);
+                w.WriteInt(futType);
+            })).Task;
+        }
+
+        /// <summary>
+        /// Performs async operation.
+        /// </summary>
+        /// <typeparam name="T">Type of the result.</typeparam>
+        /// <typeparam name="T1">The type of the first arg.</typeparam>
         /// <typeparam name="T2">The type of the second arg.</typeparam>
         /// <param name="type">The type code.</param>
         /// <param name="val1">First arg.</param>
