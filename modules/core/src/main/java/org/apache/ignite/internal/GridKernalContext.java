@@ -533,13 +533,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public ExecutorService getIgfsExecutorService();
 
     /**
-     * Executor service that is in charge of processing data stream messages.
-     *
-     * @return Thread pool implementation to be used for data stream messages.
-     */
-    public ExecutorService getDataStreamerExecutorService();
-
-    /**
      * Should return an instance of fully configured thread pool to be used for
      * processing of client messages (REST requests).
      *

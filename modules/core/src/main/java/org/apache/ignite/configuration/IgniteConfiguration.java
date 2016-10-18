@@ -148,9 +148,6 @@ public class IgniteConfiguration {
     /** Default core size of public thread pool. */
     public static final int DFLT_PUBLIC_THREAD_CNT = Math.max(8, AVAILABLE_PROC_CNT) * 2;
 
-    /** Default size of data streamer thread pool. */
-    public static final int DFLT_DATA_STREAMER_POOL_SIZE = DFLT_PUBLIC_THREAD_CNT;
-
     /** Default keep alive time for public thread pool. */
     @Deprecated
     public static final long DFLT_PUBLIC_KEEP_ALIVE_TIME = 0;
@@ -247,9 +244,6 @@ public class IgniteConfiguration {
 
     /** IGFS pool size. */
     private int igfsPoolSize = AVAILABLE_PROC_CNT;
-
-    /** Data stream pool size. */
-    private int dataStreamerPoolSize = DFLT_DATA_STREAMER_POOL_SIZE;
 
     /** Utility cache pool size. */
     private int utilityCachePoolSize = DFLT_SYSTEM_CORE_THREAD_CNT;
@@ -514,7 +508,6 @@ public class IgniteConfiguration {
         clockSyncFreq = cfg.getClockSyncFrequency();
         clockSyncSamples = cfg.getClockSyncSamples();
         consistentId = cfg.getConsistentId();
-        dataStreamerPoolSize = cfg.getDataStreamerThreadPoolSize();
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
         failureDetectionTimeout = cfg.getFailureDetectionTimeout();
@@ -796,17 +789,6 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Size of thread pool that is in charge of processing data stream messages.
-     * <p>
-     * If not provided, executor service will have size {@link #DFLT_DATA_STREAMER_POOL_SIZE}.
-     *
-     * @return Thread pool size to be used for data stream messages.
-     */
-    public int getDataStreamerThreadPoolSize() {
-        return dataStreamerPoolSize;
-    }
-
-    /**
      * Default size of thread pool that is in charge of processing utility cache messages.
      * <p>
      * If not provided, executor service will have size {@link #DFLT_SYSTEM_CORE_THREAD_CNT}.
@@ -925,19 +907,6 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setIgfsThreadPoolSize(int poolSize) {
         igfsPoolSize = poolSize;
-
-        return this;
-    }
-
-    /**
-     * Set thread pool size that will be used to process data stream messages.
-     *
-     * @param poolSize Executor service to use for data stream messages.
-     * @see IgniteConfiguration#getDataStreamerThreadPoolSize()
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setDataStreamerThreadPoolSize(int poolSize) {
-        dataStreamerPoolSize = poolSize;
 
         return this;
     }
