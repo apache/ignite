@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.plugin.PluginProvider;
@@ -114,7 +115,18 @@ public class IgniteSecurityPluginProvider implements PluginProvider {
 
             grid.context().addNodeAttribute(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, crd);
 
-            return new GridTestSecurityProcessor(grid.context(), authCnt, rmAuth, global, permsMap);
+            GridTestSecurityProcessor proc;
+            try {
+                GridKernalContext kctx = grid.context();
+                proc = new GridTestSecurityProcessor(kctx, authCnt, rmAuth, global, permsMap);
+            }catch (Throwable e){
+                System.out.println(e.getMessage());
+                e.printStackTrace();
+
+                throw e;
+            }
+
+            return proc;
         }
 
         return null;
