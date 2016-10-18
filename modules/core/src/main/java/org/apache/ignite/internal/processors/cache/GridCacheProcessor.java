@@ -2380,6 +2380,112 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Dynamically starts multiple caches.
+     *
+     * @param ccfgList Collection of cache configuration.
+     * @param failIfExists Fail if exists flag.
+     * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
+     * @return Future that will be completed when all caches are deployed.
+     */
+    public IgniteInternalFuture<?> dynamicStartCaches(
+            Collection<CacheConfiguration> ccfgList,
+            boolean failIfExists,
+            boolean checkThreadTx
+    ) {
+        return dynamicStartCaches(ccfgList, CacheType.USER, failIfExists, checkThreadTx);
+    }
+
+    /**
+     * Dynamically starts multiple caches.
+     *
+     * @param ccfgList Collection of cache configuration.
+     * @param cacheType Cache type.
+     * @param failIfExists Fail if exists flag.
+     * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
+     * @return Future that will be completed when all caches are deployed.
+     */
+    public IgniteInternalFuture<?> dynamicStartCaches(
+            Collection<CacheConfiguration> ccfgList,
+            CacheType cacheType,
+            boolean failIfExists,
+            boolean checkThreadTx
+    ) {
+        if (checkThreadTx)
+            checkEmptyTransactions();
+
+        List<DynamicCacheChangeRequest> reqList = new ArrayList<>();
+
+        for (CacheConfiguration ccfg : ccfgList) {
+            String cacheName = ccfg.getName();
+
+            DynamicCacheDescriptor desc = registeredCaches.get(maskNull(cacheName));
+
+            DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(cacheName, ctx.localNodeId());
+
+            req.failIfExists(failIfExists);
+
+                try {
+                    cloneCheckSerializable(ccfg);
+                }
+                catch (IgniteCheckedException e) {
+                    return new GridFinishedFuture<>(e);
+                }
+
+                if (desc != null) {
+                    if (failIfExists) {
+                        return new GridFinishedFuture<>(new CacheExistsException("Failed to start cache " +
+                                "(a cache with the same name is already started): " + cacheName));
+                    }
+                    else {
+                        CacheConfiguration descCfg = desc.cacheConfiguration();
+                        req.clientStartOnly(true);
+
+                        req.deploymentId(desc.deploymentId());
+
+                        req.startCacheConfiguration(descCfg);
+                    }
+                }
+                else {
+                    req.deploymentId(IgniteUuid.randomUuid());
+
+                    try {
+                        CacheConfiguration cfg = new CacheConfiguration(ccfg);
+
+                        CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(cfg);
+
+                        initialize(false, cfg, cacheObjCtx);
+
+                        req.startCacheConfiguration(cfg);
+                    }
+                    catch (IgniteCheckedException e) {
+                        return new GridFinishedFuture(e);
+                    }
+                }
+
+
+            // Fail cache with swap enabled creation on grid without swap space SPI.
+            if (ccfg.isSwapEnabled())
+                for (ClusterNode n : ctx.discovery().allNodes())
+                    if (!GridCacheUtils.clientNode(n) && !GridCacheUtils.isSwapEnabled(n))
+                        return new GridFinishedFuture<>(new IgniteCheckedException("Failed to start cache " +
+                                cacheName + " with swap enabled: Remote Node with ID " + n.id().toString().toUpperCase() +
+                                " has not swap SPI configured"));
+
+
+            req.cacheType(cacheType);
+            reqList.add(req);
+        }
+        Collection<DynamicCacheStartFuture> futs = initiateCacheChanges(reqList, failIfExists);
+        GridCompoundFuture<?, ?> compoundFut = new GridCompoundFuture<>();
+
+        for (DynamicCacheStartFuture fut : futs) {
+            compoundFut.add((IgniteInternalFuture)fut);
+        }
+        compoundFut.markInitialized();
+        return compoundFut;
+    }
+
+    /**
      * @param cacheName Cache name to destroy.
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @return Future that will be completed when cache is destroyed.

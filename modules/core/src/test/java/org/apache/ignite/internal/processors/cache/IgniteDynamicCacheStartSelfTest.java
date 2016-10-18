@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CountDownLatch;
@@ -289,6 +291,20 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testStartStopCachesSimpleTransactional() throws Exception {
+        checkStartStopCachesSimple(CacheAtomicityMode.TRANSACTIONAL);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStartStopCachesSimpleAtomic() throws Exception {
+        checkStartStopCachesSimple(CacheAtomicityMode.ATOMIC);
+    }
+
+    /**
      * @param mode Cache atomicity mode.
      * @throws Exception If failed.
      */
@@ -342,6 +358,79 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
                     return caches[idx].get("1");
                 }
             }, IllegalStateException.class, null);
+        }
+    }
+
+    /**
+     * @param mode Cache atomicity mode.
+     * @throws Exception If failed.
+     */
+    private void checkStartStopCachesSimple(CacheAtomicityMode mode) throws Exception {
+        final IgniteEx kernal = grid(0);
+        final int cacheCount = 3;
+
+        List<CacheConfiguration> ccfgList = new ArrayList<>();
+        for(int i=0; i < cacheCount; i++) {
+            CacheConfiguration ccfg = new CacheConfiguration();
+            ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+            ccfg.setAtomicityMode(mode);
+
+            ccfg.setName(DYNAMIC_CACHE_NAME + Integer.toString(i));
+            ccfgList.add(ccfg);
+        }
+        kernal.createCaches(ccfgList);
+
+        for (int g = 0; g < nodeCount(); g++) {
+            IgniteEx kernal0 = grid(g);
+
+            for (IgniteInternalFuture f : kernal0.context().cache().context().exchange().exchangeFutures())
+                f.get();
+
+            info("Getting cache for node: " + g);
+            for(int i=0; i < cacheCount; i++)
+                assertNotNull(grid(g).cache(DYNAMIC_CACHE_NAME + Integer.toString(i)));
+        }
+
+        for(int i=0; i < cacheCount; i++)
+            grid(0).cache(DYNAMIC_CACHE_NAME + Integer.toString(i)).put(Integer.toString(i), Integer.toString(i));
+
+        for (int g = 0; g < nodeCount(); g++)
+            for(int i=0; i < cacheCount; i++)
+                assertEquals(
+                        Integer.toString(i),
+                        grid(g).cache(DYNAMIC_CACHE_NAME + Integer.toString(i)).get(Integer.toString(i))
+                );
+
+        // Grab caches before stop.
+        final IgniteCache[] caches = new IgniteCache[nodeCount() * cacheCount];
+
+        for (int g = 0; g < nodeCount(); g++)
+            for(int i = 0; i < cacheCount; i++)
+                caches[g * nodeCount() + i] = grid(g).cache(DYNAMIC_CACHE_NAME + Integer.toString(i));
+
+        for(int i=0; i < cacheCount; i++)
+            kernal.context().cache().dynamicDestroyCache(DYNAMIC_CACHE_NAME + Integer.toString(i), true).get();
+
+        for (int g = 0; g < nodeCount(); g++) {
+            final IgniteKernal kernal0 = (IgniteKernal) grid(g);
+
+            for(int i = 0; i < cacheCount; i++) {
+
+                final int idx = g * nodeCount() + i;
+                final int expectedValue = i;
+
+                for (IgniteInternalFuture f : kernal0.context().cache().context().exchange().exchangeFutures())
+                    f.get();
+
+                assertNull(kernal0.cache(DYNAMIC_CACHE_NAME));
+
+                GridTestUtils.assertThrows(log, new Callable<Object>() {
+                    @Override
+                    public Object call() throws Exception {
+                        return caches[idx].get(Integer.toString(expectedValue));
+                    }
+                }, IllegalStateException.class, null);
+            }
         }
     }
 
