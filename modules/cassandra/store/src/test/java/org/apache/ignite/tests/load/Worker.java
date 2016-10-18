@@ -46,31 +46,31 @@ public abstract class Worker extends Thread {
     boolean warmup = TestsHelper.getLoadTestsWarmupPeriod() != 0;
 
     /** */
-    private volatile long warmupStartTime = 0;
+    private volatile long warmupStartTime;
 
     /** */
-    private volatile long warmupFinishTime = 0;
+    private volatile long warmupFinishTime;
 
     /** */
-    private volatile long startTime = 0;
+    private volatile long startTime;
 
     /** */
-    private volatile long finishTime = 0;
+    private volatile long finishTime;
 
     /** */
-    private volatile long warmupMsgProcessed = 0;
+    private volatile long warmupMsgProcessed;
 
     /** */
-    private volatile long warmupSleepCnt = 0;
+    private volatile long warmupSleepCnt;
 
     /** */
-    private volatile long msgProcessed = 0;
+    private volatile long msgProcessed;
 
     /** */
-    private volatile long msgFailed = 0;
+    private volatile long msgFailed;
 
     /** */
-    private volatile long sleepCnt = 0;
+    private volatile long sleepCnt;
 
     /** */
     private Throwable executionError;
