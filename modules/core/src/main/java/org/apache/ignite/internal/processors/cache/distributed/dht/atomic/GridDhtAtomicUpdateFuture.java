@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -394,17 +393,13 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
                     clsr.apply(suc);
             }
 
-            GridCacheSharedContext ctx = cctx.shared();
-
-            boolean backPressureEnabled = MAX_CONCURRENT_UPDATES > 0 && ctx.database().persistenceEnabled();
-
-            boolean fullSync = backPressureEnabled && forceFullSync;
-
-            if (updateReq.writeSynchronizationMode() == FULL_SYNC || fullSync)
+            if (updateReq.writeSynchronizationMode() == FULL_SYNC || forceFullSync)
                 completionCb.apply(updateReq, updateRes);
 
-            if (updateReq.writeSynchronizationMode() != FULL_SYNC && backPressureEnabled)
-                ctx.finishDhtAtomicUpdate(futVer);
+            if (cctx.shared().database().persistenceEnabled() &&
+                updateReq.writeSynchronizationMode() != FULL_SYNC &&
+                MAX_CONCURRENT_UPDATES > 0)
+                cctx.shared().finishDhtAtomicUpdate(futVer);
 
             return true;
         }
@@ -417,6 +412,12 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
      */
     public void map() {
         if (!mappings.isEmpty()) {
+            // Set the flag before sending requests.
+            forceFullSync = cctx.shared().database().persistenceEnabled() &&
+                updateReq.writeSynchronizationMode() != FULL_SYNC &&
+                MAX_CONCURRENT_UPDATES > 0 &&
+                cctx.shared().startDhtAtomicUpdate(futVer) <= MAX_CONCURRENT_UPDATES;
+
             for (GridDhtAtomicUpdateRequest req : mappings.values()) {
                 try {
                     cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
@@ -447,16 +448,8 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
 
         // Send response right away if no ACKs from backup is required.
         // Backups will send ACKs anyway, future will be completed after all backups have replied.
-        GridCacheSharedContext ctx = cctx.shared();
-
         if (updateReq.writeSynchronizationMode() != FULL_SYNC) {
-            if (ctx.database().persistenceEnabled() && MAX_CONCURRENT_UPDATES > 0) {
-                if (ctx.startDhtAtomicUpdate(futVer) <= MAX_CONCURRENT_UPDATES)
-                    completionCb.apply(updateReq, updateRes);
-                else
-                    forceFullSync = true;
-            }
-            else
+            if (!forceFullSync)
                 completionCb.apply(updateReq, updateRes);
         }
     }

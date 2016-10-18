@@ -57,11 +57,11 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_MAX_CONCURRENT_DHT_UPDATES;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY;
 
 /**
@@ -183,8 +183,7 @@ public class GridCacheSharedContext<K, V> {
 
         locStoreCnt = new AtomicInteger();
 
-        if (dbMgr.persistenceEnabled() &&
-            IgniteSystemProperties.getInteger(IGNITE_ATOMIC_CACHE_MAX_CONCURRENT_DHT_UPDATES, 100) > 0)
+        if (dbMgr.persistenceEnabled())
             dhtAtomicUpdCnt = new AtomicIntegerArray(kernalCtx.config().getSystemThreadPoolSize());
 
         msgLog = kernalCtx.log(CU.CACHE_MSG_LOG_CATEGORY);
@@ -837,7 +836,7 @@ public class GridCacheSharedContext<K, V> {
     public int startDhtAtomicUpdate(GridCacheVersion ver) {
         assert dhtAtomicUpdCnt != null;
 
-        return dhtAtomicUpdCnt.incrementAndGet(Math.abs(ver.hashCode() % dhtAtomicUpdCnt.length()));
+        return dhtAtomicUpdCnt.incrementAndGet(dhtAtomicUpdateIndex(ver));
     }
 
     /**
@@ -846,6 +845,14 @@ public class GridCacheSharedContext<K, V> {
     public void finishDhtAtomicUpdate(GridCacheVersion ver) {
         assert dhtAtomicUpdCnt != null;
 
-        dhtAtomicUpdCnt.decrementAndGet(Math.abs(ver.hashCode() % dhtAtomicUpdCnt.length()));
+        dhtAtomicUpdCnt.decrementAndGet(dhtAtomicUpdateIndex(ver));
+    }
+
+    /**
+     * @param ver Version.
+     * @return Index.
+     */
+    private int dhtAtomicUpdateIndex(GridCacheVersion ver) {
+        return U.safeAbs(ver.hashCode() % dhtAtomicUpdCnt.length());
     }
 }
