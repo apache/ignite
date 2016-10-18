@@ -256,6 +256,12 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_CLEAR_ASYNC = 62;
 
+    /** */
+    public static final int OP_LOAD_CACHE_ASYNC = 63;
+
+    /** */
+    public static final int OP_LOC_LOAD_CACHE_ASYNC = 64;
+
     /** Underlying JCache. */
     private final IgniteCacheProxy cache;
 
@@ -348,12 +354,12 @@ public class PlatformCache extends PlatformAbstractTarget {
                     reader.readObjectDetached()) ? TRUE : FALSE;
 
             case OP_LOC_LOAD_CACHE:
-                loadCache0(reader, true);
+                loadCache0(reader, true, cache);
 
                 break;
 
             case OP_LOAD_CACHE:
-                loadCache0(reader, false);
+                loadCache0(reader, false, cache);
 
                 break;
 
@@ -463,6 +469,22 @@ public class PlatformCache extends PlatformAbstractTarget {
                 return TRUE;
             }
 
+            case OP_LOAD_CACHE_ASYNC: {
+                loadCache0(reader, false, cacheAsync);
+
+                readAndListenFuture(reader);
+
+                return TRUE;
+            }
+
+            case OP_LOC_LOAD_CACHE_ASYNC: {
+                loadCache0(reader, true, cacheAsync);
+
+                readAndListenFuture(reader);
+
+                return TRUE;
+            }
+
             default:
                 return super.processInStreamOutLong(type, reader);
         }
@@ -473,7 +495,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Loads cache via localLoadCache or loadCache.
      */
-    private void loadCache0(BinaryRawReaderEx reader, boolean loc) {
+    private void loadCache0(BinaryRawReaderEx reader, boolean loc, IgniteCache cache) {
         PlatformCacheEntryFilter filter = null;
 
         Object pred = reader.readObjectDetached();

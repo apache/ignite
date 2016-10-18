@@ -244,50 +244,45 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public void LoadCache(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            LoadCache0(p, args, (int)CacheOp.LoadCache);
+            DoOutOp((int) CacheOp.LoadCache, writer => WriteLoadCacheData(writer, p, args));
         }
 
         /** <inheritDoc /> */
         public Task LoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            AsyncInstance.LoadCache(p, args);
-
-            return AsyncInstance.GetTask(CacheOp.LoadCache);
+            return DoOutOpAsync<object>((int) CacheOp.LoadCacheAsync,
+                writer => WriteLoadCacheData(writer, p, args)).Task;
         }
 
         /** <inheritDoc /> */
         public void LocalLoadCache(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            LoadCache0(p, args, (int)CacheOp.LocLoadCache);
+            DoOutOp((int) CacheOp.LocLoadCache, writer => WriteLoadCacheData(writer, p, args));
         }
 
         /** <inheritDoc /> */
         public Task LocalLoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            AsyncInstance.LocalLoadCache(p, args);
-
-            return AsyncInstance.GetTask(CacheOp.LocLoadCache);
+            return DoOutOpAsync<object>((int)CacheOp.LocLoadCacheAsync,
+                writer => WriteLoadCacheData(writer, p, args)).Task;
         }
 
         /// <summary>
-        /// Loads the cache.
+        /// Writes the load cache data to the writer.
         /// </summary>
-        private void LoadCache0(ICacheEntryFilter<TK, TV> p, object[] args, int opId)
+        private void WriteLoadCacheData(IBinaryRawWriter writer, ICacheEntryFilter<TK, TV> p, object[] args)
         {
-            DoOutOp(opId, writer =>
+            if (p != null)
             {
-                if (p != null)
-                {
-                    var p0 = new CacheEntryFilterHolder(p, (k, v) => p.Invoke(new CacheEntry<TK, TV>((TK) k, (TV) v)),
-                        Marshaller, IsKeepBinary);
+                var p0 = new CacheEntryFilterHolder(p, (k, v) => p.Invoke(new CacheEntry<TK, TV>((TK) k, (TV) v)),
+                    Marshaller, IsKeepBinary);
 
-                    writer.WriteObject(p0);
-                }
-                else
-                    writer.WriteObject<CacheEntryFilterHolder>(null);
+                writer.WriteObject(p0);
+            }
+            else
+                writer.WriteObject<CacheEntryFilterHolder>(null);
 
-                writer.WriteArray(args);
-            });
+            writer.WriteArray(args);
         }
 
         /** <inheritDoc /> */
