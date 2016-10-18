@@ -652,7 +652,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="keepBinary">Keep binary flag, only applicable to object futures. False by default.</param>
         /// <param name="convertFunc">The function to read future result from stream.</param>
         /// <returns>Future for async operation</returns>
-        protected Future<T> DoOutOpAsync<T>(int type, Action<IBinaryRawWriter> writeAction, bool keepBinary = false,
+        protected Future<T> DoOutOpAsync<T>(int type, Action<BinaryWriter> writeAction, bool keepBinary = false,
             Func<BinaryReader, T> convertFunc = null)
         {
             return GetFuture<T>((futId, futType) => DoOutOp(type, w =>

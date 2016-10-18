@@ -677,9 +677,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task ClearAllAsync(IEnumerable<TK> keys)
         {
-            AsyncInstance.ClearAll(keys);
+            IgniteArgumentCheck.NotNull(keys, "keys");
 
-            return AsyncInstance.GetTask(CacheOp.ClearAll);
+            return DoOutOpAsync<object>((int)CacheOp.ClearAllAsync, writer => WriteEnumerable(writer, keys)).Task;
         }
 
         /** <inheritdoc /> */
