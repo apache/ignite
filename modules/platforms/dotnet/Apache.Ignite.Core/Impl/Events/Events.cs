@@ -316,7 +316,7 @@ namespace Apache.Ignite.Core.Impl.Events
                 // Should do this inside lock to avoid race with subscription
                 // ToArray is required because we are going to modify underlying dictionary during enumeration
                 foreach (var filter in GetLocalFilters(listener, types).ToArray())
-                    success |= (DoOutInOpLong((int) Op.StopLocalListen, filter.Handle) == True);
+                    success |= (DoOutInOp((int) Op.StopLocalListen, filter.Handle) == True);
 
                 return success;
             }
@@ -365,7 +365,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /** <inheritDoc /> */
         public bool IsEnabled(int type)
         {
-            return DoOutInOpLong((int) Op.IsEnabled, type) == True;
+            return DoOutInOp((int) Op.IsEnabled, type) == True;
         }
 
         /// <summary>
