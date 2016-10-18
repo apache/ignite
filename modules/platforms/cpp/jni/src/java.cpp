@@ -1771,7 +1771,7 @@ namespace ignite
             }
 
             JNIEXPORT jlong JNICALL JniAffinityFunctionInit(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr, jobject baseFunc) {
-                void* baseFuncRef = baseFunc ? env->NewGlobalRef(baseFunc) : nullptr;
+                void* baseFuncRef = baseFunc ? env->NewGlobalRef(baseFunc) : 0;
                 IGNITE_SAFE_FUNC(env, envPtr, AffinityFunctionInitHandler, affinityFunctionInit, memPtr, baseFuncRef);
             }
 
