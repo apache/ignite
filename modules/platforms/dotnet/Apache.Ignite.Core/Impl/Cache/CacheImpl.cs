@@ -775,9 +775,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<int> GetSizeAsync(params CachePeekMode[] modes)
         {
-            AsyncInstance.GetSize(modes);
+            var modes0 = EncodePeekModes(modes);
 
-            return AsyncInstance.GetTask<int>();
+            return DoOutOpAsync<int>((int) CacheOp.SizeAsync, w => w.WriteInt(modes0)).Task;
         }
 
         /// <summary>
