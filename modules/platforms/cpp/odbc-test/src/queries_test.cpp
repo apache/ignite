@@ -196,10 +196,10 @@ struct QueriesTestSuiteFixture
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
         }
 
-        SQLCHAR request[] = "SELECT i8Field, i16Field, i32Field, i64Field, strField, "
+        char request[] = "SELECT i8Field, i16Field, i32Field, i64Field, strField, "
             "floatField, doubleField, boolField, guidField, dateField, timestampField FROM TestType";
 
-        ret = SQLExecDirect(stmt, request, SQL_NTS);
+        ret = SQLExecDirect(stmt, reinterpret_cast<SQLCHAR*>(request), SQL_NTS);
 
         if (!SQL_SUCCEEDED(ret))
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
