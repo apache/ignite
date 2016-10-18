@@ -68,31 +68,31 @@ namespace Apache.Ignite.Core.Impl.DataStructures
         /** <inheritDoc /> */
         public long Read()
         {
-            return DoOutOp((int) Op.Get);
+            return DoOutInOp((int) Op.Get);
         }
 
         /** <inheritDoc /> */
         public long Increment()
         {
-            return DoOutOp((int) Op.IncrementAndGet);
+            return DoOutInOp((int) Op.IncrementAndGet);
         }
 
         /** <inheritDoc /> */
         public long Add(long value)
         {
-            return DoOutInOpLong((int) Op.AddAndGet, value);
+            return DoOutInOp((int) Op.AddAndGet, value);
         }
 
         /** <inheritDoc /> */
         public long Decrement()
         {
-            return DoOutOp((int) Op.DecrementAndGet);
+            return DoOutInOp((int) Op.DecrementAndGet);
         }
 
         /** <inheritDoc /> */
         public long Exchange(long value)
         {
-            return DoOutInOpLong((int) Op.GetAndSet, value);
+            return DoOutInOp((int) Op.GetAndSet, value);
         }
 
         /** <inheritDoc /> */
@@ -108,13 +108,13 @@ namespace Apache.Ignite.Core.Impl.DataStructures
         /** <inheritDoc /> */
         public void Close()
         {
-            DoOutOp((int) Op.Close);
+            DoOutInOp((int) Op.Close);
         }
 
         /** <inheritDoc /> */
         public bool IsClosed()
         {
-            return DoOutOp((int) Op.IsClosed) == True;
+            return DoOutInOp((int) Op.IsClosed) == True;
         }
     }
 }
