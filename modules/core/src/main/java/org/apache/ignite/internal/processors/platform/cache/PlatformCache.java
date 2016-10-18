@@ -241,6 +241,9 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_PUT_ASYNC = 57;
 
+    /** */
+    public static final int OP_CLEAR_ASYNC = 58;
+
     /** Underlying JCache. */
     private final IgniteCacheProxy cache;
 
@@ -404,6 +407,14 @@ public class PlatformCache extends PlatformAbstractTarget {
                 catch (InterruptedException e) {
                     throw new IgniteCheckedException(e);
                 }
+            }
+
+            case OP_CLEAR_ASYNC: {
+                cacheAsync.clear();
+
+                readAndListenFuture(reader);
+
+                return TRUE;
             }
 
             default:

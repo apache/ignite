@@ -78,6 +78,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         CloseLock = 54,
         Rebalance = 55,
         SizeLoc = 56,
-        PutAsync = 57
+        PutAsync = 57,
+        ClearCacheAsync = 58
     }
 }

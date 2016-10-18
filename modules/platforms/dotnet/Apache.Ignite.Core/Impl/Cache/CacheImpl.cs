@@ -647,9 +647,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task ClearAsync()
         {
-            AsyncInstance.Clear();
-
-            return AsyncInstance.GetTask();
+            return DoOutOpAsync<object>((int) CacheOp.ClearCacheAsync, w => { }).Task;
         }
 
         /** <inheritdoc /> */
