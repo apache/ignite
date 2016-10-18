@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -555,7 +554,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class AffinityKeyGenerator implements Iterator<Integer> {
+    private static class AffinityKeyGenerator {
         /** */
         private final Affinity<Integer> affinity;
 
@@ -571,13 +570,8 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             this.node = node.cluster().localNode();
         }
 
-        /** {@inheritDoc} */
-        @Override public boolean hasNext() {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Integer next() {
+        /**  */
+        public Integer next() {
             int key = start;
 
             while (start < Integer.MAX_VALUE) {
