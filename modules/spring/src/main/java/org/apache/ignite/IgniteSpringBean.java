@@ -301,6 +301,12 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         return g.createCache(cacheCfg, nearCfg);
     }
 
+    @Override public Collection<IgniteCache> createCaches(Collection<CacheConfiguration> cacheCfgs) {
+        checkIgnite();
+
+        return g.createCaches(cacheCfgs);
+    }
+
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg, NearCacheConfiguration<K, V> nearCfg) {
         checkIgnite();
