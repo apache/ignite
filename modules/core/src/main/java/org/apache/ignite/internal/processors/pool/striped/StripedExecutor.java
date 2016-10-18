@@ -69,7 +69,10 @@ public class StripedExecutor {
      */
     public void stop() {
         for (Stripe stripe : stripes)
-            stripe.stop();
+            stripe.signalStop();
+
+        for (Stripe stripe : stripes)
+            stripe.awaitStop();
     }
 
     /**
@@ -101,7 +104,7 @@ public class StripedExecutor {
             thread = new Thread(this);
 
             thread.setName("stripe-" + idx);
-            thread.setDaemon(true);
+            //thread.setDaemon(true);
 
             thread.start();
         }
@@ -109,7 +112,7 @@ public class StripedExecutor {
         /**
          * Stop the stripe.
          */
-        void stop() {
+        void signalStop() {
             lock.lock();
 
             try {
@@ -121,9 +124,14 @@ public class StripedExecutor {
                 lock.unlock();
             }
 
-            try {
-                thread.interrupt();
+            thread.interrupt();
+        }
 
+        /**
+         * Await thread stop.
+         */
+        void awaitStop() {
+            try {
                 thread.join();
             }
             catch (InterruptedException e) {
