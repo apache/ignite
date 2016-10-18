@@ -45,7 +45,7 @@ public class IgniteSecurityPluginProvider implements PluginProvider {
 
     /** {@inheritDoc} */
     @Override public String version() {
-        return null;
+        return "v1.0";
     }
 
     /** {@inheritDoc} */
@@ -107,7 +107,7 @@ public class IgniteSecurityPluginProvider implements PluginProvider {
         Map<SecurityCredentials, TestSecurityPermissionSet> permsMap =
                 (Map<SecurityCredentials, TestSecurityPermissionSet>) attr.get("permsMap");
 
-        if (crd != null && authCnt != null && rmAuth != null && global != null && permsMap != null) {
+        if (cls.equals(GridSecurityProcessor.class) && crd != null && authCnt != null && rmAuth != null && global != null && permsMap != null) {
             grid.context().addNodeAttribute(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, crd);
 
             return new GridTestSecurityProcessor(grid.context(), authCnt, rmAuth, global, permsMap);
