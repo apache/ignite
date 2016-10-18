@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicRefer
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
-import org.omg.CORBA.TRANSACTION_REQUIRED;
 
 /**
  * Platform atomic reference wrapper.
@@ -135,7 +134,7 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processOutLong(int type) throws IgniteCheckedException {
+    @Override protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         switch (type) {
             case OP_CLOSE:
                 atomicRef.close();
@@ -146,7 +145,6 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
                 return atomicRef.removed() ? TRUE : FALSE;
         }
 
-        return super.processOutLong(type);
+        return super.processInLongOutLong(type, val);
     }
 }
-

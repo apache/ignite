@@ -71,8 +71,19 @@ public class PlatformAtomicSequence extends PlatformAbstractTarget {
 
 
     /** {@inheritDoc} */
-    @Override protected long processOutLong(int type) throws IgniteCheckedException {
+    @Override protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         switch (type) {
+            case OP_ADD_AND_GET:
+                return atomicSeq.addAndGet(val);
+
+            case OP_GET_AND_ADD:
+                return atomicSeq.getAndAdd(val);
+
+            case OP_SET_BATCH_SIZE:
+                atomicSeq.batchSize((int)val);
+
+                return TRUE;
+
             case OP_CLOSE:
                 atomicSeq.close();
 
@@ -92,24 +103,6 @@ public class PlatformAtomicSequence extends PlatformAbstractTarget {
 
             case OP_GET_BATCH_SIZE:
                 return atomicSeq.batchSize();
-        }
-
-        return super.processOutLong(type);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
-        switch (type) {
-            case OP_ADD_AND_GET:
-                return atomicSeq.addAndGet(val);
-
-            case OP_GET_AND_ADD:
-                return atomicSeq.getAndAdd(val);
-
-            case OP_SET_BATCH_SIZE:
-                atomicSeq.batchSize((int)val);
-
-                return TRUE;
         }
 
         return super.processInLongOutLong(type, val);
