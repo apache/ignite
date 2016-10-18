@@ -35,7 +35,7 @@ public class StartFullBackupDiscoveryMessage implements DiscoveryCustomMessage {
     private IgniteUuid id = IgniteUuid.randomUuid();
 
     /** Backup ID. */
-    private long backupId;
+    @Nullable private Long backupId;
 
     /** */
     private Collection<String> cacheNames;
@@ -51,11 +51,9 @@ public class StartFullBackupDiscoveryMessage implements DiscoveryCustomMessage {
     private boolean incremental;
 
     /**
-     * @param backupId Backup ID.
      * @param cacheNames Cache names.
      */
-    public StartFullBackupDiscoveryMessage(long backupId, Collection<String> cacheNames, UUID initiatorId, boolean incremental) {
-        this.backupId = backupId;
+    public StartFullBackupDiscoveryMessage(Collection<String> cacheNames, UUID initiatorId, boolean incremental) {
         this.cacheNames = cacheNames;
         this.initiatorId = initiatorId;
         this.incremental = incremental;
@@ -99,8 +97,12 @@ public class StartFullBackupDiscoveryMessage implements DiscoveryCustomMessage {
     /**
      * @return Backup ID.
      */
-    public long backupId() {
+    @Nullable public Long backupId() {
         return backupId;
+    }
+
+    public void backupId(@Nullable Long backupId) {
+        this.backupId = backupId;
     }
 
     /**
