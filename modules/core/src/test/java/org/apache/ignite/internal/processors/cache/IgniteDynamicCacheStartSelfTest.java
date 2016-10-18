@@ -367,10 +367,11 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
      */
     private void checkStartStopCachesSimple(CacheAtomicityMode mode) throws Exception {
         final IgniteEx kernal = grid(0);
-        final int cacheCount = 3;
+        final int cacheCnt = 3;
 
         List<CacheConfiguration> ccfgList = new ArrayList<>();
-        for(int i=0; i < cacheCount; i++) {
+
+        for(int i = 0; i < cacheCnt; i++) {
             CacheConfiguration ccfg = new CacheConfiguration();
             ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
             ccfg.setAtomicityMode(mode);
@@ -378,6 +379,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
             ccfg.setName(DYNAMIC_CACHE_NAME + Integer.toString(i));
             ccfgList.add(ccfg);
         }
+
         kernal.createCaches(ccfgList);
 
         for (int g = 0; g < nodeCount(); g++) {
@@ -387,37 +389,39 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
                 f.get();
 
             info("Getting cache for node: " + g);
-            for(int i=0; i < cacheCount; i++)
+
+            for(int i = 0; i < cacheCnt; i++)
                 assertNotNull(grid(g).cache(DYNAMIC_CACHE_NAME + Integer.toString(i)));
         }
 
-        for(int i=0; i < cacheCount; i++)
+        for(int i = 0; i < cacheCnt; i++)
             grid(0).cache(DYNAMIC_CACHE_NAME + Integer.toString(i)).put(Integer.toString(i), Integer.toString(i));
 
-        for (int g = 0; g < nodeCount(); g++)
-            for(int i=0; i < cacheCount; i++)
+        for (int g = 0; g < nodeCount(); g++) {
+            for (int i = 0; i < cacheCnt; i++) {
                 assertEquals(
-                        Integer.toString(i),
-                        grid(g).cache(DYNAMIC_CACHE_NAME + Integer.toString(i)).get(Integer.toString(i))
+                    Integer.toString(i),
+                    grid(g).cache(DYNAMIC_CACHE_NAME + Integer.toString(i)).get(Integer.toString(i))
                 );
+            }
+        }
 
         // Grab caches before stop.
-        final IgniteCache[] caches = new IgniteCache[nodeCount() * cacheCount];
+        final IgniteCache[] caches = new IgniteCache[nodeCount() * cacheCnt];
 
         for (int g = 0; g < nodeCount(); g++)
-            for(int i = 0; i < cacheCount; i++)
+            for(int i = 0; i < cacheCnt; i++)
                 caches[g * nodeCount() + i] = grid(g).cache(DYNAMIC_CACHE_NAME + Integer.toString(i));
 
-        for(int i=0; i < cacheCount; i++)
+        for(int i = 0; i < cacheCnt; i++)
             kernal.context().cache().dynamicDestroyCache(DYNAMIC_CACHE_NAME + Integer.toString(i), true).get();
 
         for (int g = 0; g < nodeCount(); g++) {
             final IgniteKernal kernal0 = (IgniteKernal) grid(g);
 
-            for(int i = 0; i < cacheCount; i++) {
-
+            for(int i = 0; i < cacheCnt; i++) {
                 final int idx = g * nodeCount() + i;
-                final int expectedValue = i;
+                final int expVal = i;
 
                 for (IgniteInternalFuture f : kernal0.context().cache().context().exchange().exchangeFutures())
                     f.get();
@@ -425,9 +429,8 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
                 assertNull(kernal0.cache(DYNAMIC_CACHE_NAME));
 
                 GridTestUtils.assertThrows(log, new Callable<Object>() {
-                    @Override
-                    public Object call() throws Exception {
-                        return caches[idx].get(Integer.toString(expectedValue));
+                    @Override public Object call() throws Exception {
+                        return caches[idx].get(Integer.toString(expVal));
                     }
                 }, IllegalStateException.class, null);
             }

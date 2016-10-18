@@ -2388,9 +2388,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Future that will be completed when all caches are deployed.
      */
     public IgniteInternalFuture<?> dynamicStartCaches(
-            Collection<CacheConfiguration> ccfgList,
-            boolean failIfExists,
-            boolean checkThreadTx
+        Collection<CacheConfiguration> ccfgList,
+        boolean failIfExists,
+        boolean checkThreadTx
     ) {
         return dynamicStartCaches(ccfgList, CacheType.USER, failIfExists, checkThreadTx);
     }
@@ -2405,10 +2405,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Future that will be completed when all caches are deployed.
      */
     public IgniteInternalFuture<?> dynamicStartCaches(
-            Collection<CacheConfiguration> ccfgList,
-            CacheType cacheType,
-            boolean failIfExists,
-            boolean checkThreadTx
+        Collection<CacheConfiguration> ccfgList,
+        CacheType cacheType,
+        boolean failIfExists,
+        boolean checkThreadTx
     ) {
         if (checkThreadTx)
             checkEmptyTransactions();
@@ -2424,64 +2424,68 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             req.failIfExists(failIfExists);
 
-                try {
-                    cloneCheckSerializable(ccfg);
-                }
-                catch (IgniteCheckedException e) {
-                    return new GridFinishedFuture<>(e);
-                }
+            try {
+                cloneCheckSerializable(ccfg);
+            }
+            catch (IgniteCheckedException e) {
+                return new GridFinishedFuture<>(e);
+            }
 
-                if (desc != null) {
-                    if (failIfExists) {
-                        return new GridFinishedFuture<>(new CacheExistsException("Failed to start cache " +
-                                "(a cache with the same name is already started): " + cacheName));
-                    }
-                    else {
-                        CacheConfiguration descCfg = desc.cacheConfiguration();
-                        req.clientStartOnly(true);
-
-                        req.deploymentId(desc.deploymentId());
-
-                        req.startCacheConfiguration(descCfg);
-                    }
+            if (desc != null) {
+                if (failIfExists) {
+                    return new GridFinishedFuture<>(new CacheExistsException("Failed to start cache " +
+                            "(a cache with the same name is already started): " + cacheName));
                 }
                 else {
-                    req.deploymentId(IgniteUuid.randomUuid());
+                    CacheConfiguration descCfg = desc.cacheConfiguration();
+                    req.clientStartOnly(true);
 
-                    try {
-                        CacheConfiguration cfg = new CacheConfiguration(ccfg);
+                    req.deploymentId(desc.deploymentId());
 
-                        CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(cfg);
-
-                        initialize(false, cfg, cacheObjCtx);
-
-                        req.startCacheConfiguration(cfg);
-                    }
-                    catch (IgniteCheckedException e) {
-                        return new GridFinishedFuture(e);
-                    }
+                    req.startCacheConfiguration(descCfg);
                 }
+            }
+            else {
+                req.deploymentId(IgniteUuid.randomUuid());
 
+                try {
+                    CacheConfiguration cfg = new CacheConfiguration(ccfg);
+
+                    CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(cfg);
+
+                    initialize(false, cfg, cacheObjCtx);
+
+                    req.startCacheConfiguration(cfg);
+                }
+                catch (IgniteCheckedException e) {
+                    return new GridFinishedFuture(e);
+                }
+            }
 
             // Fail cache with swap enabled creation on grid without swap space SPI.
-            if (ccfg.isSwapEnabled())
-                for (ClusterNode n : ctx.discovery().allNodes())
+            if (ccfg.isSwapEnabled()) {
+                for (ClusterNode n : ctx.discovery().allNodes()) {
                     if (!GridCacheUtils.clientNode(n) && !GridCacheUtils.isSwapEnabled(n))
                         return new GridFinishedFuture<>(new IgniteCheckedException("Failed to start cache " +
-                                cacheName + " with swap enabled: Remote Node with ID " + n.id().toString().toUpperCase() +
-                                " has not swap SPI configured"));
+                            cacheName + " with swap enabled: Remote Node with ID " + n.id().toString().toUpperCase() +
+                            " has not swap SPI configured"));
+                }
+            }
 
 
             req.cacheType(cacheType);
             reqList.add(req);
         }
+
         Collection<DynamicCacheStartFuture> futs = initiateCacheChanges(reqList, failIfExists);
+
         GridCompoundFuture<?, ?> compoundFut = new GridCompoundFuture<>();
 
-        for (DynamicCacheStartFuture fut : futs) {
+        for (DynamicCacheStartFuture fut : futs)
             compoundFut.add((IgniteInternalFuture)fut);
-        }
+
         compoundFut.markInitialized();
+
         return compoundFut;
     }
 
