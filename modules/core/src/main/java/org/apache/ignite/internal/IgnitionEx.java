@@ -1468,9 +1468,6 @@ public class IgnitionEx {
         /** IGFS executor service. */
         private ThreadPoolExecutor igfsExecSvc;
 
-        /** Data streamer executor service. */
-        private ThreadPoolExecutor dataStreamerExecSvc;
-
         /** REST requests executor service. */
         private ThreadPoolExecutor restExecSvc;
 
@@ -1690,17 +1687,6 @@ public class IgnitionEx {
 
             p2pExecSvc.allowCoreThreadTimeOut(true);
 
-            // Note that we do not pre-start threads here as this pool may not be needed.
-            dataStreamerExecSvc = new IgniteThreadPoolExecutor(
-                "data-streamer",
-                cfg.getGridName(),
-                cfg.getDataStreamerThreadPoolSize(),
-                cfg.getDataStreamerThreadPoolSize(),
-                DFLT_THREAD_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>());
-
-            dataStreamerExecSvc.allowCoreThreadTimeOut(true);
-
             // Note that we do not pre-start threads here as igfs pool may not be needed.
             igfsExecSvc = new IgniteThreadPoolExecutor(
                 cfg.getIgfsThreadPoolSize(),
@@ -1773,7 +1759,7 @@ public class IgnitionEx {
                 grid = grid0;
 
                 grid0.start(myCfg, utilityCacheExecSvc, marshCacheExecSvc, execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc,
-                    igfsExecSvc, dataStreamerExecSvc, restExecSvc, affExecSvc, callbackExecSvc,
+                    igfsExecSvc, restExecSvc, affExecSvc, callbackExecSvc,
                     new CA() {
                         @Override public void apply() {
                             startLatch.countDown();
@@ -2390,10 +2376,6 @@ public class IgnitionEx {
             U.shutdownNow(getClass(), p2pExecSvc, log);
 
             p2pExecSvc = null;
-
-            U.shutdownNow(getClass(), dataStreamerExecSvc, log);
-
-            dataStreamerExecSvc = null;
 
             U.shutdownNow(getClass(), igfsExecSvc, log);
 
