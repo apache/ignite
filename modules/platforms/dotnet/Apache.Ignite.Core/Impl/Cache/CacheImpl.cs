@@ -110,7 +110,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        private bool IsAsync
+        private bool IsAsync  // TODO: Remove
         {
             get { return _flagAsync; }
         }
@@ -390,9 +390,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<TV> GetAsync(TK key)
         {
-            AsyncInstance.Get(key);
-
-            return AsyncInstance.GetTask(CacheOp.Get, reader =>
+            return DoOutOpAsync((int) CacheOp.GetAsync, w => w.WriteObject(key), IsKeepBinary, reader =>
             {
                 if (reader != null)
                     return reader.ReadObject<TV>();
