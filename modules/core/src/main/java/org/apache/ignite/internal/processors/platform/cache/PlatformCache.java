@@ -397,14 +397,17 @@ public class PlatformCache extends PlatformAbstractTarget {
                 return cache.isLocalLocked(reader.readObjectDetached(), reader.readBoolean()) ? TRUE : FALSE;
 
             case OP_LOAD_ALL: {
-                long futId = reader.readLong();
                 boolean replaceExisting = reader.readBoolean();
+                Set<Object> keys = PlatformUtils.readSet(reader);
+
+                long futId = reader.readLong();
+                int futTyp = reader.readInt();
 
                 CompletionListenable fut = new CompletionListenable();
 
-                PlatformFutureUtils.listen(platformCtx, fut, futId, PlatformFutureUtils.TYP_OBJ, null, this);
+                PlatformFutureUtils.listen(platformCtx, fut, futId, futTyp, null, this);
 
-                cache.loadAll(PlatformUtils.readSet(reader), replaceExisting, fut);
+                cache.loadAll(keys, replaceExisting, fut);
 
                 return TRUE;
             }

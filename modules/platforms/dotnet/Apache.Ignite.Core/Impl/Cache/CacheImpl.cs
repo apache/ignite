@@ -276,20 +276,17 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public void LoadAll(IEnumerable<TK> keys, bool replaceExistingValues)
         {
-            // TODO: Wtf?
             LoadAllAsync(keys, replaceExistingValues).Wait();
         }
 
         /** <inheritDoc /> */
         public Task LoadAllAsync(IEnumerable<TK> keys, bool replaceExistingValues)
         {
-            // TODO: Wtf?
-            return GetFuture<object>((futId, futTyp) => DoOutOp((int) CacheOp.LoadAll, writer =>
+            return DoOutOpAsync<object>((int) CacheOp.LoadAll, writer =>
             {
-                writer.WriteLong(futId);
                 writer.WriteBoolean(replaceExistingValues);
                 WriteEnumerable(writer, keys);
-            })).Task;
+            }).Task;
         }
 
         /** <inheritDoc /> */
