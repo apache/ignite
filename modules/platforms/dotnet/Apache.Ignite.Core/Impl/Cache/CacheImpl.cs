@@ -629,7 +629,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task ClearAsync()
         {
-            return DoOutOpAsync<object>((int) CacheOp.ClearCacheAsync, w => { }).Task;
+            return DoOutOpAsync<object>((int) CacheOp.ClearCacheAsync).Task;
         }
 
         /** <inheritdoc /> */
@@ -737,7 +737,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task RemoveAllAsync()
         {
-            return DoOutOpAsync<object>((int) CacheOp.RemoveAll2Async, w => { }).Task;
+            return DoOutOpAsync<object>((int) CacheOp.RemoveAll2Async).Task;
         }
 
         /** <inheritDoc /> */
@@ -896,7 +896,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task Rebalance()
         {
-            return DoOutOpAsync<object>((int) CacheOp.Rebalance, w => { }).Task;
+            return DoOutOpAsync<object>((int) CacheOp.Rebalance).Task;
         }
 
         /** <inheritDoc /> */

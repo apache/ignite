@@ -269,7 +269,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task CancelAllAsync()
         {
-            return DoOutOpAsync<object>(OpCancelAllAsync, _ => { }).Task;
+            return DoOutOpAsync<object>(OpCancelAllAsync).Task;
         }
 
         /** <inheritDoc /> */
