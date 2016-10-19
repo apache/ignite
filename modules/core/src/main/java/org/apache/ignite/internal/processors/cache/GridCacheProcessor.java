@@ -2286,12 +2286,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         try {
             DynamicCacheChangeRequest req = prepareCacheChangeRequest(
-                    ccfg,
-                    cacheName,
-                    nearCfg,
-                    cacheType,
-                    failIfExists,
-                    failIfNotStarted);
+                ccfg,
+                cacheName,
+                nearCfg,
+                cacheType,
+                failIfExists,
+                failIfNotStarted);
             if (req != null)
                 return F.first(initiateCacheChanges(F.asList(req), failIfExists));
             else
@@ -2344,12 +2344,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         try {
             for (CacheConfiguration ccfg : ccfgList) {
                 DynamicCacheChangeRequest req = prepareCacheChangeRequest(
-                        ccfg,
-                        ccfg.getName(),
-                        null,
-                        cacheType,
-                        failIfExists,
-                        true
+                    ccfg,
+                    ccfg.getName(),
+                    null,
+                    cacheType,
+                    failIfExists,
+                    true
                 );
 
                 if (req != null)
