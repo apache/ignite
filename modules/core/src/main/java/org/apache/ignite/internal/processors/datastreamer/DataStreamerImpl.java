@@ -1468,7 +1468,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                         locFuts.add(callFut);
 
-                        final GridFutureAdapter waitFut = (loc || allowOverride) ? null : cctx.mvcc().addDataStreamerFuture();
+                        final GridFutureAdapter waitFut = (loc || allowOverride) ?
+                            null :
+                            cctx.mvcc().addDataStreamerFuture();
 
                         callFut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
                             @Override public void apply(IgniteInternalFuture<Object> t) {
@@ -1483,7 +1485,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                                     curFut.onDone(e);
                                 }
                                 finally {
-                                    if (!loc && !allowOverride)
+                                    if (waitFut != null)
                                         waitFut.onDone();
                                 }
                             }

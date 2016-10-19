@@ -313,6 +313,10 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         try {
             GridCacheContext cctx = ctx.cache().internalCache(req.cacheName()).context();
 
+            DataStreamerUpdateJob job = null;
+
+            GridFutureAdapter waitFut = null;
+
             if (!allowOverride)
                 cctx.topology().readLock();
 
@@ -329,35 +333,16 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                     sendResponse(nodeId, topic, req.requestId(), err, req.forceLocalDeployment());
                 }
                 else if (allowOverride || fut.isDone()) {
-                    IgniteInternalFuture<Object> callFut = ctx.closure().callLocalSafe(
-                        new DataStreamerUpdateJob(ctx,
-                            log,
-                            req.cacheName(),
-                            req.entries(),
-                            req.ignoreDeploymentOwnership(),
-                            req.skipStore(),
-                            req.keepBinary(),
-                            updater),
-                        false);
+                    job = new DataStreamerUpdateJob(ctx,
+                        log,
+                        req.cacheName(),
+                        req.entries(),
+                        req.ignoreDeploymentOwnership(),
+                        req.skipStore(),
+                        req.keepBinary(),
+                        updater);
 
-                    final GridFutureAdapter waitFut = allowOverride ? null : cctx.mvcc().addDataStreamerFuture();
-
-                    callFut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
-                        @Override public void apply(IgniteInternalFuture<Object> t) {
-                            try {
-                                t.get();
-
-                                sendResponse(nodeId, topic, req.requestId(), null, req.forceLocalDeployment());
-                            }
-                            catch (IgniteCheckedException e) {
-                                sendResponse(nodeId, topic, req.requestId(), e, req.forceLocalDeployment());
-                            }
-                            finally {
-                                if (!allowOverride)
-                                    waitFut.onDone();
-                            }
-                        }
-                    });
+                    waitFut = allowOverride ? null : cctx.mvcc().addDataStreamerFuture();
                 }
                 else
                     fut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
@@ -370,6 +355,17 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                 if (!allowOverride)
                     cctx.topology().readUnlock();
             }
+
+            if (job != null)
+                try {
+                    job.call();
+
+                    sendResponse(nodeId, topic, req.requestId(), null, req.forceLocalDeployment());
+                }
+                finally {
+                    if (waitFut != null)
+                        waitFut.onDone();
+                }
         }
         catch (Throwable e) {
             sendResponse(nodeId, topic, req.requestId(), e, req.forceLocalDeployment());
