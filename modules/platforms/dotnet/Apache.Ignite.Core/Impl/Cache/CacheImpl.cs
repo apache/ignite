@@ -135,6 +135,17 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Performs async operation.
         /// </summary>
+        /// <param name="op">The operation code.</param>
+        /// <param name="writeAction">The write action.</param>
+        /// <returns>Task for async operation</returns>
+        private Task DoOutOpAsync(CacheOp op, Action<BinaryWriter> writeAction = null)
+        {
+            return DoOutOpAsync<object>(op, writeAction);
+        }
+
+        /// <summary>
+        /// Performs async operation.
+        /// </summary>
         /// <typeparam name="T">Type of the result.</typeparam>
         /// <param name="op">The operation code.</param>
         /// <param name="writeAction">The write action.</param>
@@ -253,7 +264,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task LoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            return DoOutOpAsync((int) CacheOp.LoadCacheAsync, writer => WriteLoadCacheData(writer, p, args));
+            return DoOutOpAsync(CacheOp.LoadCacheAsync, writer => WriteLoadCacheData(writer, p, args));
         }
 
         /** <inheritDoc /> */
@@ -265,7 +276,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task LocalLoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            return DoOutOpAsync((int) CacheOp.LocLoadCacheAsync, writer => WriteLoadCacheData(writer, p, args));
+            return DoOutOpAsync(CacheOp.LocLoadCacheAsync, writer => WriteLoadCacheData(writer, p, args));
         }
 
         /// <summary>
@@ -295,7 +306,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task LoadAllAsync(IEnumerable<TK> keys, bool replaceExistingValues)
         {
-            return DoOutOpAsync((int) CacheOp.LoadAll, writer =>
+            return DoOutOpAsync(CacheOp.LoadAll, writer =>
             {
                 writer.WriteBoolean(replaceExistingValues);
                 WriteEnumerable(writer, keys);
@@ -616,7 +627,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(vals, "vals");
 
-            return DoOutOpAsync((int) CacheOp.PutAllAsync, writer => WriteDictionary(writer, vals));
+            return DoOutOpAsync(CacheOp.PutAllAsync, writer => WriteDictionary(writer, vals));
         }
 
         /** <inheritdoc /> */
@@ -636,7 +647,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task ClearAsync()
         {
-            return DoOutOpAsync((int) CacheOp.ClearCacheAsync);
+            return DoOutOpAsync(CacheOp.ClearCacheAsync);
         }
 
         /** <inheritdoc /> */
@@ -666,7 +677,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
-            return DoOutOpAsync((int) CacheOp.ClearAllAsync, writer => WriteEnumerable(writer, keys));
+            return DoOutOpAsync(CacheOp.ClearAllAsync, writer => WriteEnumerable(writer, keys));
         }
 
         /** <inheritdoc /> */
@@ -732,7 +743,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
-            return DoOutOpAsync((int) CacheOp.RemoveAllAsync, writer => WriteEnumerable(writer, keys));
+            return DoOutOpAsync(CacheOp.RemoveAllAsync, writer => WriteEnumerable(writer, keys));
         }
 
         /** <inheritDoc /> */
@@ -744,7 +755,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task RemoveAllAsync()
         {
-            return DoOutOpAsync((int) CacheOp.RemoveAll2Async);
+            return DoOutOpAsync(CacheOp.RemoveAll2Async);
         }
 
         /** <inheritDoc /> */
@@ -764,7 +775,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             var modes0 = EncodePeekModes(modes);
 
-            return DoOutOpAsync<int>((int) CacheOp.SizeAsync, w => w.WriteInt(modes0));
+            return DoOutOpAsync<int>(CacheOp.SizeAsync, w => w.WriteInt(modes0));
         }
 
         /// <summary>
@@ -903,7 +914,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task Rebalance()
         {
-            return DoOutOpAsync((int) CacheOp.Rebalance);
+            return DoOutOpAsync(CacheOp.Rebalance);
         }
 
         /** <inheritDoc /> */
