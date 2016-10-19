@@ -95,6 +95,7 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         cfg.setPeerClassLoadingEnabled(false);
+        cfg.setLateAffinityAssignment(false);
 
         if (gridName.endsWith(String.valueOf(NODES)))
             cfg.setClientMode(ThreadLocalRandom.current().nextBoolean());
