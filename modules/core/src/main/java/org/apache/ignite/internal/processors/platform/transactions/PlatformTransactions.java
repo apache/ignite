@@ -25,7 +25,6 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
-import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -204,7 +203,7 @@ public class PlatformTransactions extends PlatformAbstractTarget {
                 return super.processInStreamOutLong(type, reader);
         }
 
-        readAndListenFuture(reader, ((IgniteFutureImpl)asyncTx.future()).internalFuture());
+        readAndListenFuture(reader, asyncTx.future());
 
         return TRUE;
     }

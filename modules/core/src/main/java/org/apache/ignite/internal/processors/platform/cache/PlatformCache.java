@@ -49,9 +49,7 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
 import javax.cache.Cache;
@@ -489,6 +487,12 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 return readAndListenFuture(reader);
 
+            case OP_REBALANCE: {
+                readAndListenFuture(reader, cache.rebalance());
+
+                return TRUE;
+            }
+
             default:
                 return super.processInStreamOutLong(type, reader);
         }
@@ -853,16 +857,6 @@ public class PlatformCache extends PlatformAbstractTarget {
                 Lock lock = lockMap.remove(val);
 
                 assert lock != null : "Failed to unregister lock: " + val;
-
-                return TRUE;
-            }
-
-            case OP_REBALANCE: {
-                PlatformFutureUtils.listen(platformCtx, cache.rebalance().chain(new C1<IgniteFuture, Object>() {
-                    @Override public Object apply(IgniteFuture fut) {
-                        return null;
-                    }
-                }), val, PlatformFutureUtils.TYP_OBJ, this);
 
                 return TRUE;
             }

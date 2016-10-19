@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
@@ -26,6 +27,7 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
+import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -342,7 +344,24 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @param writer Writer.
      * @throws IgniteCheckedException In case of error.
      */
-    protected PlatformListenable readAndListenFuture(BinaryRawReaderEx reader, IgniteInternalFuture fut,
+    protected PlatformListenable readAndListenFuture(BinaryRawReader reader, IgniteInternalFuture fut,
+                                                     PlatformFutureUtils.Writer writer)
+            throws IgniteCheckedException {
+        long futId = reader.readLong();
+        int futTyp = reader.readInt();
+
+        return PlatformFutureUtils.listen(platformCtx, fut, futId, futTyp, writer, this);
+    }
+
+    /**
+     * Reads future information and listens.
+     *
+     * @param reader Reader.
+     * @param fut Future.
+     * @param writer Writer.
+     * @throws IgniteCheckedException In case of error.
+     */
+    protected PlatformListenable readAndListenFuture(BinaryRawReader reader, IgniteFuture fut,
                                                      PlatformFutureUtils.Writer writer)
             throws IgniteCheckedException {
         long futId = reader.readLong();
@@ -358,7 +377,20 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @param fut Future.
      * @throws IgniteCheckedException In case of error.
      */
-    protected PlatformListenable readAndListenFuture(BinaryRawReaderEx reader, IgniteInternalFuture fut) throws IgniteCheckedException {
+    protected PlatformListenable readAndListenFuture(BinaryRawReader reader, IgniteInternalFuture fut)
+        throws IgniteCheckedException {
+        return readAndListenFuture(reader, fut, null);
+    }
+
+    /**
+     * Reads future information and listens.
+     *
+     * @param reader Reader.
+     * @param fut Future.
+     * @throws IgniteCheckedException In case of error.
+     */
+    protected PlatformListenable readAndListenFuture(BinaryRawReader reader, IgniteFuture fut)
+        throws IgniteCheckedException {
         return readAndListenFuture(reader, fut, null);
     }
 
@@ -368,7 +400,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @param reader Reader.
      * @throws IgniteCheckedException In case of error.
      */
-    protected long readAndListenFuture(BinaryRawReaderEx reader) throws IgniteCheckedException {
+    protected long readAndListenFuture(BinaryRawReader reader) throws IgniteCheckedException {
         readAndListenFuture(reader, currentFuture(), null);
 
         return TRUE;
