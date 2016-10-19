@@ -118,18 +118,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Gets and resets task for previous asynchronous operation.
         /// </summary>
-        /// <param name="lastAsyncOp">The last async op id.</param>
-        /// <returns>
-        /// Task for previous asynchronous operation.
-        /// </returns>
-        private Task GetTask(CacheOp lastAsyncOp)
-        {
-            return GetTask<object>(lastAsyncOp);
-        }
-
-        /// <summary>
-        /// Gets and resets task for previous asynchronous operation.
-        /// </summary>
         /// <typeparam name="TResult">The type of the result.</typeparam>
         /// <param name="lastAsyncOp">The last async op id.</param>
         /// <param name="converter">The converter.</param>
@@ -620,9 +608,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task PutAllAsync(IDictionary<TK, TV> vals)
         {
-            AsyncInstance.PutAll(vals);
+            IgniteArgumentCheck.NotNull(vals, "vals");
 
-            return AsyncInstance.GetTask(CacheOp.PutAll);
+            return DoOutOpAsync<object>((int) CacheOp.PutAllAsync, writer => WriteDictionary(writer, vals)).Task;
         }
 
         /** <inheritdoc /> */
@@ -736,9 +724,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task RemoveAllAsync(IEnumerable<TK> keys)
         {
-            AsyncInstance.RemoveAll(keys);
+            IgniteArgumentCheck.NotNull(keys, "keys");
 
-            return AsyncInstance.GetTask(CacheOp.RemoveAll);
+            return DoOutOpAsync<object>((int) CacheOp.RemoveAllAsync, writer => WriteEnumerable(writer, keys)).Task;
         }
 
         /** <inheritDoc /> */
