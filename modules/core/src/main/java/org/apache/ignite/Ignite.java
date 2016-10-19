@@ -271,6 +271,18 @@ public interface Ignite extends AutoCloseable {
     public <K, V> IgniteCache<K, V> getOrCreateCache(String cacheName);
 
     /**
+     * Gets existing caches with the given name or created one with the given configuration.
+     * <p>
+     * If a cache with the same name already exist, this method will not check that the given
+     * configuration matches the configuration of existing cache and will return an instance
+     * of the existing cache.
+     *
+     * @param cacheCfgs Collection of cache configuration to use.
+     * @return Collection of existing or newly created caches.
+     */
+    public Collection<IgniteCache> getOrCreateCaches(Collection<CacheConfiguration> cacheCfgs);
+
+    /**
      * Adds cache configuration template.
      *
      * @param cacheCfg Cache configuration template.
