@@ -704,6 +704,7 @@ namespace Apache.Ignite.Core.Impl
         /// </returns>
         protected Task<T> DoOutOpAsync<T, T1>(int type, T1 val1)
         {
+            // TODO: Inline to avoid delegate allocation?
             return GetFuture<T>((futId, futType) => DoOutOp(type, w =>
             {
                 w.WriteObject(val1);
@@ -726,6 +727,7 @@ namespace Apache.Ignite.Core.Impl
         /// </returns>
         protected Task<T> DoOutOpAsync<T, T1, T2>(int type, T1 val1, T2 val2)
         {
+            // TODO: Inline to avoid delegate allocation?
             return GetFuture<T>((futId, futType) => DoOutOp(type, w =>
             {
                 w.WriteObject(val1);
