@@ -1326,18 +1326,15 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                     renewBatch(remap);
                 }
-
-                if (!topVer.equals(curBatchTopVer)) {
-                    entries0 = null;
-
-                    renewBatch(remap);
-
-                    curFut0.onDone(null, new IgniteCheckedException("Topology changed during batch preparation." +
-                        "[batchTopVer=" + curBatchTopVer + ", topVer=" + topVer + "]"));
-                }
             }
 
-            if (entries0 != null) {
+            if (!allowOverwrite() && !topVer.equals(curBatchTopVer)) {
+                renewBatch(remap);
+
+                curFut0.onDone(null, new IgniteCheckedException("Topology changed during batch preparation." +
+                    "[batchTopVer=" + curBatchTopVer + ", topVer=" + topVer + "]"));
+            }
+            else if (entries0 != null) {
                 submit(entries0, curBatchTopVer, curFut0, remap);
 
                 if (cancelled)
