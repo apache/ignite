@@ -584,12 +584,12 @@ BOOST_AUTO_TEST_CASE(TestDataAtExecution)
     SQLLEN len1 = SQL_DATA_AT_EXEC;
     SQLLEN len2 = SQL_LEN_DATA_AT_EXEC(static_cast<SQLLEN>(in1.strField.size()));
 
-    ret = SQLBindParam(stmt, 1, SQL_C_SLONG, SQL_INTEGER, 100, 100, &ind1, &len1);
+    ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 100, 100, &ind1, sizeof(ind1), &len1);
 
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    ret = SQLBindParam(stmt, 2, SQL_C_CHAR, SQL_VARCHAR, 100, 100, &ind2, &len2);
+    ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 100, 100, &ind2, sizeof(ind2), &len2);
 
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
