@@ -132,6 +132,21 @@ namespace Apache.Ignite.Core.Impl.Cache
                 (int) lastAsyncOp), _flagKeepBinary, converter).Task;
         }
 
+        /// <summary>
+        /// Performs async operation.
+        /// </summary>
+        /// <typeparam name="T">Type of the result.</typeparam>
+        /// <param name="op">The operation code.</param>
+        /// <param name="writeAction">The write action.</param>
+        /// <param name="convertFunc">The function to read future result from stream.</param>
+        /// <returns>Task for async operation</returns>
+        private Task<T> DoOutOpAsync<T>(CacheOp op, Action<BinaryWriter> writeAction = null,
+            Func<BinaryReader, T> convertFunc = null)
+        {
+            return DoOutOpAsync((int)op, writeAction, IsKeepBinary, convertFunc);
+        }
+
+
         /** <inheritDoc /> */
         public string Name
         {
@@ -390,7 +405,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<TV> GetAsync(TK key)
         {
-            return DoOutOpAsync((int) CacheOp.GetAsync, w => w.WriteObject(key), IsKeepBinary, reader =>
+            return DoOutOpAsync(CacheOp.GetAsync, w => w.WriteObject(key), reader =>
             {
                 if (reader != null)
                     return reader.ReadObject<TV>();
@@ -417,7 +432,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<CacheResult<TV>> TryGetAsync(TK key)
         {
-            return DoOutOpAsync((int) CacheOp.GetAsync, w => w.WriteObject(key), IsKeepBinary, GetCacheResult);
+            return DoOutOpAsync(CacheOp.GetAsync, w => w.WriteObject(key), GetCacheResult);
         }
 
         /** <inheritDoc /> */
