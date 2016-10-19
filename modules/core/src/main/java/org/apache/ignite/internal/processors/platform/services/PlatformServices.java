@@ -156,9 +156,7 @@ public class PlatformServices extends PlatformAbstractTarget {
             case OP_DOTNET_DEPLOY_ASYNC: {
                 dotnetDeploy(reader, servicesAsync);
 
-                readAndListenFuture(reader);
-
-                return TRUE;
+                return readAndListenFuture(reader);
             }
 
             case OP_DOTNET_DEPLOY_MULTIPLE: {
@@ -170,9 +168,7 @@ public class PlatformServices extends PlatformAbstractTarget {
             case OP_DOTNET_DEPLOY_MULTIPLE_ASYNC: {
                 dotnetDeployMultiple(reader, servicesAsync);
 
-                readAndListenFuture(reader);
-
-                return TRUE;
+                return readAndListenFuture(reader);
             }
 
             case OP_CANCEL: {
@@ -184,17 +180,13 @@ public class PlatformServices extends PlatformAbstractTarget {
             case OP_CANCEL_ASYNC: {
                 servicesAsync.cancel(reader.readString());
 
-                readAndListenFuture(reader);
-
-                return TRUE;
+                return readAndListenFuture(reader);
             }
 
             case OP_CANCEL_ALL_ASYNC: {
                 servicesAsync.cancelAll();
 
-                readAndListenFuture(reader);
-
-                return TRUE;
+                return readAndListenFuture(reader);
             }
 
             default:

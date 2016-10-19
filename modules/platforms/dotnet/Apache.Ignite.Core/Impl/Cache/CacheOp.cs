@@ -85,6 +85,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         SizeAsync = 61,
         ClearAsync = 62,
         LoadCacheAsync = 63,
-        LocLoadCacheAsync = 64
+        LocLoadCacheAsync = 64,
+        PutAllAsync = 65,
+        RemoveAllAsync = 66
     }
 }

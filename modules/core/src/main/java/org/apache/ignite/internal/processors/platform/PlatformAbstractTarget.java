@@ -368,7 +368,9 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @param reader Reader.
      * @throws IgniteCheckedException In case of error.
      */
-    protected PlatformListenable readAndListenFuture(BinaryRawReaderEx reader) throws IgniteCheckedException {
-        return readAndListenFuture(reader, currentFuture(), null);
+    protected long readAndListenFuture(BinaryRawReaderEx reader) throws IgniteCheckedException {
+        readAndListenFuture(reader, currentFuture(), null);
+
+        return TRUE;
     }
 }

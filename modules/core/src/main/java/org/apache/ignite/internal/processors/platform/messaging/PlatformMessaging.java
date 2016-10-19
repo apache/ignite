@@ -133,17 +133,13 @@ public class PlatformMessaging extends PlatformAbstractTarget {
             case OP_REMOTE_LISTEN_ASYNC: {
                 startRemoteListen(reader, messagingAsync);
 
-                readAndListenFuture(reader);
-
-                return TRUE;
+                return readAndListenFuture(reader);
             }
 
             case OP_STOP_REMOTE_LISTEN_ASYNC: {
                 messagingAsync.stopRemoteListen(reader.readUuid());
 
-                readAndListenFuture(reader);
-
-                return TRUE;
+                return readAndListenFuture(reader);
             }
 
             default:

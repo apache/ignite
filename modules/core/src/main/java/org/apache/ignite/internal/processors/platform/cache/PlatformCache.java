@@ -262,6 +262,12 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_LOC_LOAD_CACHE_ASYNC = 64;
 
+    /** */
+    public static final int OP_PUT_ALL_ASYNC = 65;
+
+    /** */
+    public static final int OP_REMOVE_ALL_ASYNC = 66;
+
     /** Underlying JCache. */
     private final IgniteCacheProxy cache;
 
@@ -310,14 +316,6 @@ public class PlatformCache extends PlatformAbstractTarget {
                 cache.put(reader.readObjectDetached(), reader.readObjectDetached());
 
                 return TRUE;
-
-            case OP_PUT_ASYNC: {
-                cacheAsync.put(reader.readObjectDetached(), reader.readObjectDetached());
-
-                readAndListenFuture(reader);
-
-                return TRUE;
-            }
 
             case OP_REMOVE_BOOL:
                 return cache.remove(reader.readObjectDetached(), reader.readObjectDetached()) ? TRUE : FALSE;
@@ -427,28 +425,28 @@ public class PlatformCache extends PlatformAbstractTarget {
                 }
             }
 
+            case OP_PUT_ASYNC: {
+                cacheAsync.put(reader.readObjectDetached(), reader.readObjectDetached());
+
+                return readAndListenFuture(reader);
+            }
+
             case OP_CLEAR_CACHE_ASYNC: {
                 cacheAsync.clear();
 
-                readAndListenFuture(reader);
-
-                return TRUE;
+                return readAndListenFuture(reader);
             }
 
             case OP_CLEAR_ALL_ASYNC: {
                 cacheAsync.clearAll(PlatformUtils.readSet(reader));
 
-                readAndListenFuture(reader);
-
-                return TRUE;
+                return readAndListenFuture(reader);
             }
 
             case OP_REMOVE_ALL2_ASYNC: {
                 cacheAsync.removeAll();
 
-                readAndListenFuture(reader);
-
-                return TRUE;
+                return readAndListenFuture(reader);
             }
 
             case OP_SIZE_ASYNC: {
@@ -456,34 +454,37 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 cacheAsync.size(modes);
 
-                readAndListenFuture(reader);
-
-                return TRUE;
+                return readAndListenFuture(reader);
             }
 
             case OP_CLEAR_ASYNC: {
                 cacheAsync.clear(reader.readObjectDetached());
 
-                readAndListenFuture(reader);
-
-                return TRUE;
+                return readAndListenFuture(reader);
             }
 
             case OP_LOAD_CACHE_ASYNC: {
                 loadCache0(reader, false, cacheAsync);
 
-                readAndListenFuture(reader);
-
-                return TRUE;
+                return readAndListenFuture(reader);
             }
 
             case OP_LOC_LOAD_CACHE_ASYNC: {
                 loadCache0(reader, true, cacheAsync);
 
-                readAndListenFuture(reader);
-
-                return TRUE;
+                return readAndListenFuture(reader);
             }
+
+            case OP_PUT_ALL_ASYNC:
+                cacheAsync.putAll(PlatformUtils.readMap(reader));
+
+                return readAndListenFuture(reader);
+
+
+            case OP_REMOVE_ALL_ASYNC:
+                cacheAsync.removeAll(PlatformUtils.readSet(reader));
+
+                return readAndListenFuture(reader);
 
             default:
                 return super.processInStreamOutLong(type, reader);
