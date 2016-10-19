@@ -310,65 +310,69 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         final StreamReceiver<K, V> updater,
         final Object topic) {
         final boolean allowOverride = req.allowOverride();
-
-        GridCacheContext cctx = ctx.cache().internalCache(req.cacheName()).context();
-
-        if (!allowOverride)
-            cctx.topology().readLock();
-
         try {
-            GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
+            GridCacheContext cctx = ctx.cache().internalCache(req.cacheName()).context();
 
-            AffinityTopologyVersion topVer = fut.topologyVersion();
-
-            if (!allowOverride && !topVer.equals(req.topologyVersion())) {
-                Exception err = new IgniteCheckedException(
-                    "DataStreamer will retry data transfer at stable topology. " +
-                        "[reqTop=" + req.topologyVersion() + " ,topVer=" + topVer + ", node=remote]");
-
-                sendResponse(nodeId, topic, req.requestId(), err, req.forceLocalDeployment());
-            }
-            else if (allowOverride || fut.isDone()) {
-                IgniteInternalFuture<Object> callFut = ctx.closure().callLocalSafe(
-                    new DataStreamerUpdateJob(ctx,
-                        log,
-                        req.cacheName(),
-                        req.entries(),
-                        req.ignoreDeploymentOwnership(),
-                        req.skipStore(),
-                        req.keepBinary(),
-                        updater),
-                    false);
-
-                final GridFutureAdapter waitFut = allowOverride ? null : cctx.mvcc().addDataStreamerFuture();
-
-                callFut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
-                    @Override public void apply(IgniteInternalFuture<Object> t) {
-                        try {
-                            t.get();
-
-                            sendResponse(nodeId, topic, req.requestId(), null, req.forceLocalDeployment());
-                        }
-                        catch (IgniteCheckedException e) {
-                            sendResponse(nodeId, topic, req.requestId(), e, req.forceLocalDeployment());
-                        }
-                        finally {
-                            if (!allowOverride)
-                                waitFut.onDone();
-                        }
-                    }
-                });
-            }
-            else
-                fut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> e) {
-                        localUpdate(nodeId, req, updater, topic);
-                    }
-                });
-        }
-        finally {
             if (!allowOverride)
-                cctx.topology().readUnlock();
+                cctx.topology().readLock();
+
+            try {
+                GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
+
+                AffinityTopologyVersion topVer = fut.topologyVersion();
+
+                if (!allowOverride && !topVer.equals(req.topologyVersion())) {
+                    Exception err = new IgniteCheckedException(
+                        "DataStreamer will retry data transfer at stable topology. " +
+                            "[reqTop=" + req.topologyVersion() + " ,topVer=" + topVer + ", node=remote]");
+
+                    sendResponse(nodeId, topic, req.requestId(), err, req.forceLocalDeployment());
+                }
+                else if (allowOverride || fut.isDone()) {
+                    IgniteInternalFuture<Object> callFut = ctx.closure().callLocalSafe(
+                        new DataStreamerUpdateJob(ctx,
+                            log,
+                            req.cacheName(),
+                            req.entries(),
+                            req.ignoreDeploymentOwnership(),
+                            req.skipStore(),
+                            req.keepBinary(),
+                            updater),
+                        false);
+
+                    final GridFutureAdapter waitFut = allowOverride ? null : cctx.mvcc().addDataStreamerFuture();
+
+                    callFut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
+                        @Override public void apply(IgniteInternalFuture<Object> t) {
+                            try {
+                                t.get();
+
+                                sendResponse(nodeId, topic, req.requestId(), null, req.forceLocalDeployment());
+                            }
+                            catch (IgniteCheckedException e) {
+                                sendResponse(nodeId, topic, req.requestId(), e, req.forceLocalDeployment());
+                            }
+                            finally {
+                                if (!allowOverride)
+                                    waitFut.onDone();
+                            }
+                        }
+                    });
+                }
+                else
+                    fut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                        @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> e) {
+                            localUpdate(nodeId, req, updater, topic);
+                        }
+                    });
+            }
+            finally {
+                if (!allowOverride)
+                    cctx.topology().readUnlock();
+            }
+        }
+        catch (Throwable e) {
+            sendResponse(nodeId, topic, req.requestId(), e, req.forceLocalDeployment());
         }
     }
 

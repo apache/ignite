@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.Cache;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -89,7 +88,7 @@ public class IgniteCacheDynamicStopSelfTest extends GridCommonAbstractTest {
                                 try {
                                     f.get();
                                 }
-                                catch (CacheException ignore) {
+                                catch (Exception ignore) {
                                     // This may be debugged.
                                 }
                             }

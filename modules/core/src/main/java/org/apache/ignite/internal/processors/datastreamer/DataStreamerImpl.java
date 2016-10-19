@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
@@ -104,7 +105,6 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -241,7 +241,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private final Semaphore remapSem = new Semaphore(REMAP_SEMAPHORE_PERMISSIONS_COUNT);
 
     /** */
-    private final ConcurrentLinkedDeque8<Runnable> dataToRemap = new ConcurrentLinkedDeque8<>();
+    private final ConcurrentLinkedDeque<Runnable> dataToRemap = new ConcurrentLinkedDeque<>();
 
     /** */
     private final AtomicInteger remapOwning = new AtomicInteger();
@@ -659,231 +659,240 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         @Nullable final Collection<KeyCacheObjectWrapper> activeKeys,
         final int remaps
     ) {
-        assert entries != null;
+        try {
+            assert entries != null;
 
-        final boolean remap = remaps > 0;
+            final boolean remap = remaps > 0;
 
-        if (!remap) // Failed data should be processed prior to new data.
-            try {
-                if (remapSem.availablePermits() != REMAP_SEMAPHORE_PERMISSIONS_COUNT) {
-                    remapSem.acquire(REMAP_SEMAPHORE_PERMISSIONS_COUNT); // Wait until failed data being processed.
+            if (!remap) // Failed data should be processed prior to new data.
+                try {
+                    if (remapSem.availablePermits() != REMAP_SEMAPHORE_PERMISSIONS_COUNT) {
+                        remapSem.acquire(REMAP_SEMAPHORE_PERMISSIONS_COUNT); // Wait until failed data being processed.
 
-                    remapSem.release(REMAP_SEMAPHORE_PERMISSIONS_COUNT);
+                        remapSem.release(REMAP_SEMAPHORE_PERMISSIONS_COUNT);
+                    }
                 }
-            }
-            catch (InterruptedException e) {
-                log.error("Failed to wait for failed data processing.",e);
-            }
-
-        if (!isWarningPrinted) {
-            synchronized (this) {
-                if (!allowOverwrite() && !isWarningPrinted) {
-                    U.warn(log, "Data streamer will not overwrite existing cache entries for better performance " +
-                        "(to change, set allowOverwrite to true)");
+                catch (InterruptedException e) {
+                    log.error("Failed to wait for failed data processing.", e);
                 }
 
-                isWarningPrinted = true;
+            if (!isWarningPrinted) {
+                synchronized (this) {
+                    if (!allowOverwrite() && !isWarningPrinted) {
+                        U.warn(log, "Data streamer will not overwrite existing cache entries for better performance " +
+                            "(to change, set allowOverwrite to true)");
+                    }
+
+                    isWarningPrinted = true;
+                }
             }
-        }
 
-        Map<ClusterNode, Collection<DataStreamerEntry>> mappings = new HashMap<>();
+            Map<ClusterNode, Collection<DataStreamerEntry>> mappings = new HashMap<>();
 
-        boolean initPda = ctx.deploy().enabled() && jobPda == null;
+            boolean initPda = ctx.deploy().enabled() && jobPda == null;
 
-        boolean client = ctx.config().isClientMode();
+            boolean client = ctx.config().isClientMode();
 
-        GridCacheContext cctx = client ? null : ctx.cache().internalCache(cacheName).context();
+            GridCacheContext cctx = client ? null : ctx.cache().internalCache(cacheName).context();
 
-        AffinityTopologyVersion topVer =
-            client ?
-                ctx.cache().context().exchange().clientTopology(
-                    CU.cacheId(cacheName),
-                    ctx.cache().context().exchange().lastTopologyFuture()).topologyVersion() :
-                cctx.isLocal() ?
-                    AffinityTopologyVersion.NONE :
-                    cctx.topology().topologyVersion();
+            AffinityTopologyVersion topVer =
+                client ?
+                    ctx.cache().context().exchange().clientTopology(
+                        CU.cacheId(cacheName),
+                        ctx.cache().context().exchange().lastTopologyFuture()).topologyVersion() :
+                    cctx.isLocal() ?
+                        AffinityTopologyVersion.NONE :
+                        cctx.topology().topologyVersion();
 
-        for (DataStreamerEntry entry : entries) {
-            List<ClusterNode> nodes;
+            for (DataStreamerEntry entry : entries) {
+                List<ClusterNode> nodes;
 
-            try {
-                KeyCacheObject key = entry.getKey();
+                try {
+                    KeyCacheObject key = entry.getKey();
 
-                assert key != null;
+                    assert key != null;
 
-                if (initPda) {
-                    if (cacheObjCtx.addDeploymentInfo())
-                        jobPda = new DataStreamerPda(key.value(cacheObjCtx, false),
-                            entry.getValue() != null ? entry.getValue().value(cacheObjCtx, false) : null,
-                            rcvr);
-                    else if (rcvr != null)
-                        jobPda = new DataStreamerPda(rcvr);
+                    if (initPda) {
+                        if (cacheObjCtx.addDeploymentInfo())
+                            jobPda = new DataStreamerPda(key.value(cacheObjCtx, false),
+                                entry.getValue() != null ? entry.getValue().value(cacheObjCtx, false) : null,
+                                rcvr);
+                        else if (rcvr != null)
+                            jobPda = new DataStreamerPda(rcvr);
 
-                    initPda = false;
+                        initPda = false;
+                    }
+
+                    nodes = nodes(key, topVer, cctx);
+                }
+                catch (IgniteCheckedException e) {
+                    resFut.onDone(e);
+
+                    return;
                 }
 
-                nodes = nodes(key, topVer, cctx);
-            }
-            catch (IgniteCheckedException e) {
-                resFut.onDone(e);
+                if (F.isEmpty(nodes)) {
+                    resFut.onDone(new ClusterTopologyException("Failed to map key to node " +
+                        "(no nodes with cache found in topology) [infos=" + entries.size() +
+                        ", cacheName=" + cacheName + ']'));
 
-                return;
-            }
+                    return;
+                }
 
-            if (F.isEmpty(nodes)) {
-                resFut.onDone(new ClusterTopologyException("Failed to map key to node " +
-                    "(no nodes with cache found in topology) [infos=" + entries.size() +
-                    ", cacheName=" + cacheName + ']'));
+                for (ClusterNode node : nodes) {
+                    Collection<DataStreamerEntry> col = mappings.get(node);
 
-                return;
-            }
+                    if (col == null)
+                        mappings.put(node, col = new ArrayList<>());
 
-            for (ClusterNode node : nodes) {
-                Collection<DataStreamerEntry> col = mappings.get(node);
-
-                if (col == null)
-                    mappings.put(node, col = new ArrayList<>());
-
-                col.add(entry);
-            }
-        }
-
-        for (final Map.Entry<ClusterNode, Collection<DataStreamerEntry>> e : mappings.entrySet()) {
-            final UUID nodeId = e.getKey().id();
-
-            Buffer buf = bufMappings.get(nodeId);
-
-            if (buf == null) {
-                Buffer old = bufMappings.putIfAbsent(nodeId, buf = new Buffer(e.getKey()));
-
-                if (old != null)
-                    buf = old;
+                    col.add(entry);
+                }
             }
 
-            final Collection<DataStreamerEntry> entriesForNode = e.getValue();
+            for (final Map.Entry<ClusterNode, Collection<DataStreamerEntry>> e : mappings.entrySet()) {
+                final UUID nodeId = e.getKey().id();
 
-            IgniteInClosure<IgniteInternalFuture<?>> lsnr = new IgniteInClosure<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> t) {
-                    try {
-                        t.get();
+                Buffer buf = bufMappings.get(nodeId);
 
-                        if (activeKeys != null) {
-                            for (DataStreamerEntry e : entriesForNode)
-                                activeKeys.remove(new KeyCacheObjectWrapper(e.getKey()));
+                if (buf == null) {
+                    Buffer old = bufMappings.putIfAbsent(nodeId, buf = new Buffer(e.getKey()));
 
-                            if (activeKeys.isEmpty())
+                    if (old != null)
+                        buf = old;
+                }
+
+                final Collection<DataStreamerEntry> entriesForNode = e.getValue();
+
+                IgniteInClosure<IgniteInternalFuture<?>> lsnr = new IgniteInClosure<IgniteInternalFuture<?>>() {
+                    @Override public void apply(IgniteInternalFuture<?> t) {
+                        try {
+                            t.get();
+
+                            if (activeKeys != null) {
+                                for (DataStreamerEntry e : entriesForNode)
+                                    activeKeys.remove(new KeyCacheObjectWrapper(e.getKey()));
+
+                                if (activeKeys.isEmpty())
+                                    resFut.onDone();
+                            }
+                            else {
+                                assert entriesForNode.size() == 1;
+
+                                // That has been a single key,
+                                // so complete result future right away.
                                 resFut.onDone();
+                            }
                         }
-                        else {
-                            assert entriesForNode.size() == 1;
+                        catch (IgniteClientDisconnectedCheckedException e1) {
+                            if (log.isDebugEnabled())
+                                log.debug("Future finished with disconnect error [nodeId=" + nodeId + ", err=" + e1 + ']');
 
-                            // That has been a single key,
-                            // so complete result future right away.
-                            resFut.onDone();
+                            resFut.onDone(e1);
                         }
-                    }
-                    catch (IgniteClientDisconnectedCheckedException e1) {
-                        if (log.isDebugEnabled())
-                            log.debug("Future finished with disconnect error [nodeId=" + nodeId + ", err=" + e1 + ']');
+                        catch (IgniteCheckedException e1) {
+                            if (log.isDebugEnabled())
+                                log.debug("Future finished with error [nodeId=" + nodeId + ", err=" + e1 + ']');
 
-                        resFut.onDone(e1);
-                    }
-                    catch (IgniteCheckedException e1) {
-                        if (log.isDebugEnabled())
-                            log.debug("Future finished with error [nodeId=" + nodeId + ", err=" + e1 + ']');
+                            if (cancelled) {
+                                resFut.onDone(new IgniteCheckedException("Data streamer has been cancelled: " +
+                                    DataStreamerImpl.this, e1));
+                            }
+                            else if (remaps + 1 > maxRemapCnt) {
+                                resFut.onDone(new IgniteCheckedException("Failed to finish operation (too many remaps): "
+                                    + remaps, e1));
+                            }
+                            else {
+                                try {
+                                    remapSem.acquire();
 
-                        if (cancelled) {
-                            resFut.onDone(new IgniteCheckedException("Data streamer has been cancelled: " +
-                                DataStreamerImpl.this, e1));
-                        }
-                        else if (remaps + 1 > maxRemapCnt) {
-                            resFut.onDone(new IgniteCheckedException("Failed to finish operation (too many remaps): "
-                                + remaps, e1));
-                        }
-                        else {
-                            try {
-                                remapSem.acquire();
-
-                                final Runnable r = new Runnable() {
-                                    @Override public void run() {
-                                        try {
-                                            load0(entriesForNode, resFut, activeKeys, remaps + 1);
+                                    final Runnable r = new Runnable() {
+                                        @Override public void run() {
+                                            try {
+                                                load0(entriesForNode, resFut, activeKeys, remaps + 1);
+                                            }
+                                            catch (Throwable ex) {
+                                                resFut.onDone(
+                                                    new IgniteCheckedException("DataStreamer remapping failed. ", ex));
+                                            }
+                                            finally {
+                                                remapSem.release();
+                                            }
                                         }
-                                        finally {
-                                            remapSem.release();
-                                        }
-                                    }
-                                };
+                                    };
 
-                                dataToRemap.add(r);
+                                    dataToRemap.add(r);
 
-                                if (remapOwning.get() == 0 && remapOwning.compareAndSet(0, 1)) {
-                                    ctx.closure().callLocalSafe(new GPC<Boolean>() {
-                                        @Override public Boolean call() {
-                                            boolean locked = true;
+                                    if (remapOwning.get() == 0 && remapOwning.compareAndSet(0, 1)) {
+                                        ctx.closure().callLocalSafe(new GPC<Boolean>() {
+                                            @Override public Boolean call() {
+                                                boolean locked = true;
 
-                                            while (locked || !dataToRemap.isEmptyx()) {
-                                                if (!locked && !remapOwning.compareAndSet(0, 1))
-                                                    return false;
+                                                while (locked || !dataToRemap.isEmpty()) {
+                                                    if (!locked && !remapOwning.compareAndSet(0, 1))
+                                                        return false;
 
-                                                try {
-                                                    Runnable r = dataToRemap.poll();
+                                                    try {
+                                                        Runnable r = dataToRemap.poll();
 
-                                                    if (r != null)
-                                                        r.run();
-                                                }
-                                                finally {
-                                                    if (!dataToRemap.isEmptyx())
-                                                        locked = true;
-                                                    else {
-                                                        boolean res = remapOwning.compareAndSet(1, 0);
+                                                        if (r != null)
+                                                            r.run();
+                                                    }
+                                                    finally {
+                                                        if (!dataToRemap.isEmpty())
+                                                            locked = true;
+                                                        else {
+                                                            boolean res = remapOwning.compareAndSet(1, 0);
 
-                                                        assert res;
+                                                            assert res;
 
-                                                        locked = false;
+                                                            locked = false;
+                                                        }
                                                     }
                                                 }
-                                            }
 
-                                            return true;
-                                        }
-                                    }, true);
+                                                return true;
+                                            }
+                                        }, true);
+                                    }
                                 }
-                            }
-                            catch (InterruptedException e2) {
-                                resFut.onDone(e2);
+                                catch (InterruptedException e2) {
+                                    resFut.onDone(e2);
+                                }
                             }
                         }
                     }
+                };
+
+                final GridFutureAdapter<?> f;
+
+                try {
+                    f = buf.update(entriesForNode, topVer, lsnr, remap);
                 }
-            };
+                catch (IgniteInterruptedCheckedException e1) {
+                    resFut.onDone(e1);
 
-            final GridFutureAdapter<?> f;
+                    return;
+                }
 
-            try {
-                f = buf.update(entriesForNode, topVer, lsnr, remap);
-            }
-            catch (IgniteInterruptedCheckedException e1) {
-                resFut.onDone(e1);
+                if (ctx.discovery().node(nodeId) == null) {
+                    if (bufMappings.remove(nodeId, buf)) {
+                        final Buffer buf0 = buf;
 
-                return;
-            }
+                        waitAffinityAndRun(new Runnable() {
+                            @Override public void run() {
+                                buf0.onNodeLeft();
 
-            if (ctx.discovery().node(nodeId) == null) {
-                if (bufMappings.remove(nodeId, buf)) {
-                    final Buffer buf0 = buf;
-
-                    waitAffinityAndRun(new Runnable() {
-                        @Override public void run() {
-                            buf0.onNodeLeft();
-
-                            if (f != null)
-                                f.onDone(new ClusterTopologyCheckedException("Failed to wait for request completion " +
-                                    "(node has left): " + nodeId));
-                        }
-                    }, ctx.discovery().topologyVersion(), false);
+                                if (f != null)
+                                    f.onDone(new ClusterTopologyCheckedException("Failed to wait for request completion " +
+                                        "(node has left): " + nodeId));
+                            }
+                        }, ctx.discovery().topologyVersion(), false);
+                    }
                 }
             }
+        }
+        catch (Throwable ex) {
+            resFut.onDone(new IgniteCheckedException("DataStreamer data loading failed.", ex));
         }
     }
 
@@ -1427,71 +1436,76 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         private void localUpdate(final Collection<DataStreamerEntry> entries,
             final AffinityTopologyVersion reqTopVer,
             final GridFutureAdapter<Object> curFut) {
-            final boolean allowOverride = allowOverwrite();
-
-            GridCacheContext cctx = ctx.cache().internalCache(cacheName).context();
-
-            final boolean loc = cctx.isLocal();
-
-            if (!loc && !allowOverride)
-                cctx.topology().readLock();
-
             try {
-                GridDhtTopologyFuture fut = loc ? null : cctx.topologyVersionFuture();
+                final boolean allowOverride = allowOverwrite();
 
-                AffinityTopologyVersion topVer = loc ? reqTopVer : fut.topologyVersion();
+                GridCacheContext cctx = ctx.cache().internalCache(cacheName).context();
 
-                if (!allowOverride && !topVer.equals(reqTopVer)) {
-                    curFut.onDone(new IgniteCheckedException(
-                        "DataStreamer will retry data transfer at stable topology. " +
-                            "[reqTop=" + reqTopVer + " ,topVer=" + topVer + ", node=local]"));
-                }
-                else if (loc || allowOverride || fut.isDone()) {
-                    IgniteInternalFuture<Object> callFut = ctx.closure().callLocalSafe(
-                        new DataStreamerUpdateJob(
-                            ctx,
-                            log,
-                            cacheName,
-                            entries,
-                            false,
-                            skipStore,
-                            keepBinary,
-                            rcvr),
-                        false);
+                final boolean loc = cctx.isLocal();
 
-                    locFuts.add(callFut);
-
-                    final GridFutureAdapter waitFut = (loc || allowOverride) ? null : cctx.mvcc().addDataStreamerFuture();
-
-                    callFut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
-                        @Override public void apply(IgniteInternalFuture<Object> t) {
-                            try {
-                                boolean rmv = locFuts.remove(t);
-
-                                assert rmv;
-
-                                curFut.onDone(t.get());
-                            }
-                            catch (IgniteCheckedException e) {
-                                curFut.onDone(e);
-                            }
-                            finally {
-                                if (!loc && !allowOverride)
-                                    waitFut.onDone();
-                            }
-                        }
-                    });
-                }
-                else
-                    fut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                        @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> e) {
-                            localUpdate(entries, reqTopVer, curFut);
-                        }
-                    });
-            }
-            finally {
                 if (!loc && !allowOverride)
-                    cctx.topology().readUnlock();
+                    cctx.topology().readLock();
+
+                try {
+                    GridDhtTopologyFuture fut = loc ? null : cctx.topologyVersionFuture();
+
+                    AffinityTopologyVersion topVer = loc ? reqTopVer : fut.topologyVersion();
+
+                    if (!allowOverride && !topVer.equals(reqTopVer)) {
+                        curFut.onDone(new IgniteCheckedException(
+                            "DataStreamer will retry data transfer at stable topology. " +
+                                "[reqTop=" + reqTopVer + " ,topVer=" + topVer + ", node=local]"));
+                    }
+                    else if (loc || allowOverride || fut.isDone()) {
+                        IgniteInternalFuture<Object> callFut = ctx.closure().callLocalSafe(
+                            new DataStreamerUpdateJob(
+                                ctx,
+                                log,
+                                cacheName,
+                                entries,
+                                false,
+                                skipStore,
+                                keepBinary,
+                                rcvr),
+                            false);
+
+                        locFuts.add(callFut);
+
+                        final GridFutureAdapter waitFut = (loc || allowOverride) ? null : cctx.mvcc().addDataStreamerFuture();
+
+                        callFut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
+                            @Override public void apply(IgniteInternalFuture<Object> t) {
+                                try {
+                                    boolean rmv = locFuts.remove(t);
+
+                                    assert rmv;
+
+                                    curFut.onDone(t.get());
+                                }
+                                catch (IgniteCheckedException e) {
+                                    curFut.onDone(e);
+                                }
+                                finally {
+                                    if (!loc && !allowOverride)
+                                        waitFut.onDone();
+                                }
+                            }
+                        });
+                    }
+                    else
+                        fut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                            @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> e) {
+                                localUpdate(entries, reqTopVer, curFut);
+                            }
+                        });
+                }
+                finally {
+                    if (!loc && !allowOverride)
+                        cctx.topology().readUnlock();
+                }
+            }
+            catch (Throwable ex) {
+                curFut.onDone(new IgniteCheckedException("DataStreamer data handling failed.",ex));
             }
         }
 
