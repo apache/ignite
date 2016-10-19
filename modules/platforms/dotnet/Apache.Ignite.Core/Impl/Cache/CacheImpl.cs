@@ -135,9 +135,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Performs async operation.
         /// </summary>
-        /// <param name="op">The operation code.</param>
-        /// <param name="writeAction">The write action.</param>
-        /// <returns>Task for async operation</returns>
         private Task DoOutOpAsync(CacheOp op, Action<BinaryWriter> writeAction = null)
         {
             return DoOutOpAsync<object>(op, writeAction);
@@ -146,11 +143,22 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Performs async operation.
         /// </summary>
-        /// <typeparam name="T">Type of the result.</typeparam>
-        /// <param name="op">The operation code.</param>
-        /// <param name="writeAction">The write action.</param>
-        /// <param name="convertFunc">The function to read future result from stream.</param>
-        /// <returns>Task for async operation</returns>
+        private Task DoOutOpAsync<T1>(CacheOp op, T1 val1)
+        {
+            return DoOutOpAsync<object, T1>((int) op, val1);
+        }
+
+        /// <summary>
+        /// Performs async operation.
+        /// </summary>
+        private Task DoOutOpAsync<T1, T2>(CacheOp op, T1 val1, T2 val2)
+        {
+            return DoOutOpAsync<object, T1, T2>((int) op, val1, val2);
+        }
+
+        /// <summary>
+        /// Performs async operation.
+        /// </summary>
         private Task<T> DoOutOpAsync<T>(CacheOp op, Action<BinaryWriter> writeAction = null,
             Func<BinaryReader, T> convertFunc = null)
         {
@@ -485,17 +493,16 @@ namespace Apache.Ignite.Core.Impl.Cache
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutOpAsync<object, TK, TV>((int) CacheOp.PutAsync, key, val);
+            return DoOutOpAsync(CacheOp.PutAsync, key, val);
         }
 
         /** <inheritDoc /> */
         public CacheResult<TV> GetAndPut(TK key, TV val)
         {
             IgniteArgumentCheck.NotNull(key, "key");
-
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutInOpNullable<TK, TV, TV>((int)CacheOp.GetAndPut, key, val);
+            return DoOutInOpNullable<TK, TV, TV>((int) CacheOp.GetAndPut, key, val);
         }
 
         /** <inheritDoc /> */
@@ -661,7 +668,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task ClearAsync(TK key)
         {
-            return DoOutOpAsync<object, TK>((int) CacheOp.ClearAsync, key);
+            return DoOutOpAsync(CacheOp.ClearAsync, key);
         }
 
         /** <inheritdoc /> */
