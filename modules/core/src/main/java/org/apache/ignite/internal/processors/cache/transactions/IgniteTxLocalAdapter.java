@@ -2544,7 +2544,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     drExpireTime,
                                     drVer,
                                     skipStore,
-                                    keepBinary);
+                                    keepBinary,
+                                    false);
                             }
                             else {
                                 txEntry = addEntry(READ,
@@ -2559,7 +2560,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     -1L,
                                     null,
                                     skipStore,
-                                    keepBinary);
+                                    keepBinary,
+                                    false);
                             }
 
                             txEntry.markValid();

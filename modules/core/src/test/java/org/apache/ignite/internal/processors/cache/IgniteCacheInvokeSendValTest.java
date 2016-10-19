@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -30,6 +31,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
@@ -138,8 +140,79 @@ public class IgniteCacheInvokeSendValTest extends GridCommonAbstractTest {
     /**
      * @return Count nodes.
      */
-    protected int getServerNodeCount() {
+    private int getServerNodeCount() {
         return NODES;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLockFullSyncOnBackup() throws Exception {
+        doTestLock(new CacheConfiguration<Integer, Integer>()
+            .setName(CACHE_NAME)
+            .setBackups(1)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+            .setAtomicityMode(TRANSACTIONAL)
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLockPrimarySyncOnBackup() throws Exception {
+        doTestLock(new CacheConfiguration<Integer, Integer>()
+            .setName(CACHE_NAME)
+            .setBackups(1)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+            .setAtomicityMode(TRANSACTIONAL)
+        );
+    }
+
+    /**
+     *
+     * @param ccfg Cache configuration.
+     * @throws Exception If failed.
+     */
+    private void doTestLock(CacheConfiguration ccfg) throws Exception {
+        IgniteCache<Integer, Integer> cache = grid(0).createCache(ccfg);
+
+        try {
+            for (int key = 0; key < KEYS_CNT; key++)
+                cache.put(key, key);
+
+            log.info("Test single lock.");
+
+            for (int i = 0; i < ITERATION_CNT; i++) {
+                Lock lock = cache.lock(ThreadLocalRandom.current().nextInt(KEYS_CNT));
+
+                lock.lock();
+
+                lock.unlock();
+            }
+
+            log.info("Test multiply locks.");
+
+            for (int i = 0; i < ITERATION_CNT; i++) {
+                Set<Integer> keys = new HashSet<>();
+
+                for (int key = 0; key < ITERATION_CNT / 2; key++)
+                    keys.add(ThreadLocalRandom.current().nextInt(KEYS_CNT));
+
+                Lock lock = cache.lockAll(keys);
+
+                lock.lock();
+
+                lock.unlock();
+            }
+        }
+        catch (Exception e) {
+            log.error("Test failed. ", e);
+
+            fail("Test failed.");
+        }
+        finally {
+            grid(0).destroyCache(ccfg.getName());
+        }
     }
 
     /**
