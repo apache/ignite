@@ -276,6 +276,11 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
+    @Override public void destroyCaches(Collection<String> cacheNames) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteTransactions transactions() {
         return null;
     }

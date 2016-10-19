@@ -364,6 +364,13 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
+    @Override public void destroyCaches(Collection<String> cacheNames) {
+        checkIgnite();
+
+        g.destroyCaches(cacheNames);
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteTransactions transactions() {
         checkIgnite();
 

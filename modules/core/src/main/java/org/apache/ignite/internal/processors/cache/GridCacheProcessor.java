@@ -2393,6 +2393,34 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param cacheNames Collection of cache names to destroy.
+     * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
+     * @return Future that will be completed when cache is destroyed.
+     */
+    public IgniteInternalFuture<?> dynamicDestroyCaches(Collection<String> cacheNames, boolean checkThreadTx) {
+        if (checkThreadTx)
+            checkEmptyTransactions();
+
+        List<DynamicCacheChangeRequest> reqs = new ArrayList<>();
+
+        for (String cacheName : cacheNames) {
+            DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(cacheName, ctx.localNodeId());
+            t.stop(true);
+            reqs.add(t);
+        }
+
+        GridCompoundFuture<?, ?> compoundFut = new GridCompoundFuture<>();
+
+        for (DynamicCacheStartFuture fut : initiateCacheChanges(reqs, false)) {
+            compoundFut.add((IgniteInternalFuture)fut);
+        }
+
+        compoundFut.markInitialized();
+
+        return compoundFut;
+    }
+
+    /**
      * @param cacheName Cache name to close.
      * @return Future that will be completed when cache is closed.
      */

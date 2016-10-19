@@ -351,6 +351,13 @@ public interface Ignite extends AutoCloseable {
     public void destroyCache(String cacheName);
 
     /**
+     * Stops dynamically started caches.
+     *
+     * @param cacheNames Collection of cache names to stop.
+     */
+    public void destroyCaches(Collection<String> cacheNames);
+
+    /**
      * Gets an instance of {@link IgniteCache} API. {@code IgniteCache} is a fully-compatible
      * implementation of {@code JCache (JSR 107)} specification.
      *

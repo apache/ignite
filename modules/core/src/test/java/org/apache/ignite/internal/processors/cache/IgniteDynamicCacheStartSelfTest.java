@@ -413,8 +413,11 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
             for(int i = 0; i < cacheCnt; i++)
                 caches[g * nodeCount() + i] = grid(g).cache(DYNAMIC_CACHE_NAME + Integer.toString(i));
 
+        List<String> namesToDestroy = new ArrayList<>();
         for(int i = 0; i < cacheCnt; i++)
-            kernal.context().cache().dynamicDestroyCache(DYNAMIC_CACHE_NAME + Integer.toString(i), true).get();
+            namesToDestroy.add(DYNAMIC_CACHE_NAME + Integer.toString(i));
+
+        kernal.context().cache().dynamicDestroyCaches(namesToDestroy, true).get();
 
         for (int g = 0; g < nodeCount(); g++) {
             final IgniteKernal kernal0 = (IgniteKernal) grid(g);
