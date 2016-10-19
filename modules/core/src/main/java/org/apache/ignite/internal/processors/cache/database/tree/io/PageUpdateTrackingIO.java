@@ -161,7 +161,7 @@ public class PageUpdateTrackingIO extends PageIO {
 
         long trackingPageId = PageIdUtils.pageId(PageIdUtils.partId(pageId), PageIdUtils.flag(pageId), pageIdx);
 
-        assert trackingPageId <= pageId;
+        assert PageIdUtils.pageIndex(trackingPageId) <= PageIdUtils.pageIndex(pageId);
 
         return trackingPageId;
     }
