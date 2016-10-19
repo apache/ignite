@@ -755,7 +755,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             var modes0 = EncodePeekModes(modes);
 
-            return DoOutOpAsync<int>((int) CacheOp.SizeAsync, w => w.WriteInt(modes0)).Task;
+            return DoOutOpAsync<int>((int) CacheOp.SizeAsync, w => w.WriteInt(modes0));
         }
 
         /// <summary>

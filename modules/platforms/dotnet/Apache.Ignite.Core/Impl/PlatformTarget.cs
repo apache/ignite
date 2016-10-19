@@ -648,9 +648,10 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="type">The type code.</param>
         /// <param name="writeAction">The write action.</param>
+        /// <returns>Task for async operation</returns>
         protected Task DoOutOpAsync(int type, Action<BinaryWriter> writeAction = null)
         {
-            return DoOutOpAsync<object>(type, writeAction).Task;
+            return DoOutOpAsync<object>(type, writeAction);
         }
 
         /// <summary>
@@ -661,8 +662,8 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="writeAction">The write action.</param>
         /// <param name="keepBinary">Keep binary flag, only applicable to object futures. False by default.</param>
         /// <param name="convertFunc">The function to read future result from stream.</param>
-        /// <returns>Future for async operation</returns>
-        protected Future<T> DoOutOpAsync<T>(int type, Action<BinaryWriter> writeAction = null, bool keepBinary = false,
+        /// <returns>Task for async operation</returns>
+        protected Task<T> DoOutOpAsync<T>(int type, Action<BinaryWriter> writeAction = null, bool keepBinary = false,
             Func<BinaryReader, T> convertFunc = null)
         {
             return GetFuture<T>((futId, futType) => DoOutOp(type, w =>
@@ -671,7 +672,7 @@ namespace Apache.Ignite.Core.Impl
                     writeAction(w);
                 w.WriteLong(futId);
                 w.WriteInt(futType);
-            }), keepBinary, convertFunc);
+            }), keepBinary, convertFunc).Task;
         }
 
         /// <summary>

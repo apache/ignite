@@ -197,7 +197,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         public Task<Guid> RemoteListenAsync<T>(IMessageListener<T> listener, object topic = null)
         {
             return RemoteListen(listener, topic,
-                (writeAct, readAct) => DoOutOpAsync((int) Op.RemoteListenAsync, writeAct, convertFunc: readAct)).Task;
+                (writeAct, readAct) => DoOutOpAsync((int) Op.RemoteListenAsync, writeAct, convertFunc: readAct));
         }
 
         /** <inheritdoc /> */

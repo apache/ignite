@@ -110,7 +110,7 @@ namespace Apache.Ignite.Core.Impl.Events
         {
             // ReSharper disable once RedundantTypeArgumentsOfMethod (won't compile in VS2010)
             return DoOutOpAsync<ICollection<T>>((int) Op.RemoteQueryAsync,
-                w => WriteRemoteQuery(filter, timeout, types, w), convertFunc: ReadEvents<T>).Task;
+                w => WriteRemoteQuery(filter, timeout, types, w), convertFunc: ReadEvents<T>);
         }
 
         /** <inheritDoc /> */
@@ -230,7 +230,7 @@ namespace Apache.Ignite.Core.Impl.Events
 
             try
             {
-                var fut = DoOutOpAsync((int) Op.WaitForLocalAsync, writer =>
+                var task = DoOutOpAsync((int) Op.WaitForLocalAsync, writer =>
                 {
                     writer.WriteObject(hnd);
                     WriteEventTypes(types, writer);
@@ -239,10 +239,10 @@ namespace Apache.Ignite.Core.Impl.Events
                 if (hnd != null)
                 {
                     // Dispose handle as soon as future ends.
-                    fut.Task.ContinueWith(x => Ignite.HandleRegistry.Release(hnd.Value));
+                    task.ContinueWith(x => Ignite.HandleRegistry.Release(hnd.Value));
                 }
 
-                return fut.Task;
+                return task;
             }
             catch (Exception)
             {
