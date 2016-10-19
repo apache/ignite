@@ -768,7 +768,12 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                             GridDhtLocalPartition part = partsToEvict.poll();
 
                             if (part != null)
-                                part.tryEvict();
+                                try {
+                                    part.tryEvict();
+                                }
+                                catch (Throwable ex) {
+                                    log.error("Partition eviction failed, this can cause grid hangup.", ex);
+                                }
                         }
                         finally {
                             if (!partsToEvict.isEmptyx())
