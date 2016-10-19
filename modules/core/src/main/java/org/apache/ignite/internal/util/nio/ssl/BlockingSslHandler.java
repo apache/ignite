@@ -113,6 +113,13 @@ public class BlockingSslHandler {
     }
 
     /**
+     *
+     */
+    public ByteBuffer inputBuffer(){
+        return inNetBuf;
+    }
+
+    /**
      * Performs handshake procedure with remote peer.
      *
      * @throws GridNioException If filter processing has thrown an exception.
@@ -255,7 +262,7 @@ public class BlockingSslHandler {
      * @throws SSLException If failed to process SSL data.
      */
     public ByteBuffer decode(ByteBuffer buf) throws IgniteCheckedException, SSLException {
-        inNetBuf.clear();
+        appBuf.clear();
 
         if (buf.limit() > inNetBuf.remaining()) {
             inNetBuf = expandBuffer(inNetBuf, inNetBuf.capacity() + buf.limit() * 2);
@@ -465,8 +472,6 @@ public class BlockingSslHandler {
      */
     private void readFromNet() throws IgniteCheckedException {
         try {
-            inNetBuf.clear();
-
             int read = ch.read(inNetBuf);
 
             if (read == -1)
