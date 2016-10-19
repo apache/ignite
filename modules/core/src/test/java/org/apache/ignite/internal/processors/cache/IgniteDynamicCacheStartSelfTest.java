@@ -581,6 +581,34 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testFailWhenOneOfConfiguredCacheExists() throws Exception {
+        GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                final Ignite kernal = grid(0);
+
+                CacheConfiguration ccfgDynamic = new CacheConfiguration();
+                ccfgDynamic.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+
+                ccfgDynamic.setName(DYNAMIC_CACHE_NAME);
+
+                ccfgDynamic.setNodeFilter(NODE_FILTER);
+
+                CacheConfiguration ccfgStatic = new CacheConfiguration();
+                ccfgStatic.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+
+                // Cache is already configured, should fail.
+                ccfgStatic.setName(STATIC_CACHE_NAME);
+
+                ccfgStatic.setNodeFilter(NODE_FILTER);
+
+                return kernal.createCaches(F.asList(ccfgDynamic, ccfgStatic));
+            }
+        }, CacheExistsException.class, null);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testClientCache() throws Exception {
         try {
             testAttribute = false;
@@ -874,6 +902,30 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         }
         finally {
             grid(0).destroyCache(DYNAMIC_CACHE_NAME);
+        }
+    }
+
+    /** {@inheritDoc} */
+    public void testGetOrCreateCollection() throws Exception {
+        final int cacheCnt = 3;
+
+        try {
+            final Collection<CacheConfiguration> ccfgs = new ArrayList<>();
+
+            for(int i = 0; i < cacheCnt; i++) {
+                final CacheConfiguration cfg = new CacheConfiguration();
+
+                cfg.setName(DYNAMIC_CACHE_NAME + Integer.toString(i));
+                cfg.setNodeFilter(NODE_FILTER);
+
+                ccfgs.add(cfg);
+
+                grid(0).getOrCreateCaches(ccfgs);
+            }
+
+        } finally {
+            for(int i = 0; i < cacheCnt; i++)
+                grid(0).destroyCache(DYNAMIC_CACHE_NAME + Integer.toString(i));
         }
     }
 
