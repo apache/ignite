@@ -17,47 +17,43 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
-import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
-import org.apache.ignite.igfs.IgfsIpcEndpointType;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT;
 
 /**
- * IGFS Hadoop file system Ignite client based IPC self test.
+ * IGFS Hadoop file system Ignite client -based self test.
  */
 public abstract class IgniteHadoopFileSystemClientBasedAbstractSelfTest extends IgniteHadoopFileSystemAbstractSelfTest {
+    /** Alive node index. */
+    private static final int ALIVE_NODE_IDX = GRID_COUNT - 1;
+
     /**
      * Constructor.
      *
      * @param mode IGFS mode.
      */
-    protected IgniteHadoopFileSystemClientBasedAbstractSelfTest(IgfsMode mode) {
+    IgniteHadoopFileSystemClientBasedAbstractSelfTest(IgfsMode mode) {
         super(mode, true, true);
     }
 
     /** {@inheritDoc} */
     @Override protected IgfsIpcEndpointConfiguration primaryIpcEndpointConfiguration(final String gridName) {
-//        IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
-//
-//        endpointCfg.setType(IgfsIpcEndpointType.SHMEM);
-//        endpointCfg.setPort(DFLT_IPC_PORT + getTestGridIndex(gridName));
-//
-//        return endpointCfg;
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override protected FileSystemConfiguration igfsConfiguration(String gridName) throws IgniteCheckedException {
         FileSystemConfiguration cfg = super.igfsConfiguration(gridName);
 
@@ -81,15 +77,10 @@ public abstract class IgniteHadoopFileSystemClientBasedAbstractSelfTest extends 
             org.apache.ignite.hadoop.fs.v2.IgniteHadoopFileSystem.class.getName());
 
         cfg.setBoolean("fs.igfs.impl.disable.cache", true);
-
         cfg.setBoolean(String.format(HadoopIgfsUtils.PARAM_IGFS_ENDPOINT_NO_EMBED, authority), true);
-
         cfg.setBoolean(String.format(HadoopIgfsUtils.PARAM_IGFS_ENDPOINT_NO_LOCAL_SHMEM, authority), true);
-
         cfg.setBoolean(String.format(HadoopIgfsUtils.PARAM_IGFS_ENDPOINT_NO_LOCAL_TCP, authority), true);
-
         cfg.setBoolean(String.format(HadoopIgfsUtils.PARAM_IGFS_ENDPOINT_NO_REMOTE_TCP, authority), true);
-
         cfg.setStrings(String.format(HadoopIgfsUtils.PARAM_IGFS_ENDPOINT_IGNITE_CFG_PATH, authority),
             getClientConfig());
 
@@ -103,48 +94,92 @@ public abstract class IgniteHadoopFileSystemClientBasedAbstractSelfTest extends 
         final FSDataOutputStream s = fs.create(filePath); // Open the stream before stopping IGFS.
 
         try {
-            stopNodes();
-
-            startNodes(); // Start server again.
-
-//            Thread.sleep(20000);
+            restartServerNodesExceptOne();
 
             // Check that client is again operational.
             assertTrue(fs.mkdirs(new Path(PRIMARY_URI, "dir1/dir2")));
 
-//            // However, the streams, opened before disconnect, should not be valid.
-//            GridTestUtils.assertThrows(log, new Callable<Object>() {
-//                @Nullable @Override public Object call() throws Exception {
-                    s.write("test".getBytes());
+            s.write("test".getBytes());
 
-                    s.flush(); // Flush data to the broken output stream.
-
-//                    return null;
-//                }
-//            }, IOException.class, null);
+            s.flush(); // Flush data to the broken output stream.
 
             assertTrue(fs.exists(filePath));
-
-            System.out.println("+++ OKKK");
         }
         finally {
             U.closeQuiet(s); // Safety.
         }
     }
 
+    /**
+     * Verifies that client reconnects after connection to the server has been lost (multithreaded mode).
+     *
+     * @throws Exception If error occurs.
+     */
+    @Override public void testClientReconnectMultithreaded() throws Exception {
+        final ConcurrentLinkedQueue<FileSystem> q = new ConcurrentLinkedQueue<>();
 
-//    /** {@inheritDoc} */
-//    @Override public void testInitialize() throws Exception {
-//        // No-op.
-//    }
-//
-//    /** {@inheritDoc} */
-//    @Override public void testClientReconnect() throws Exception {
-//        // No-op.
-//    }
-//
-//    /** {@inheritDoc} */
-//    @Override public void testClientReconnectMultithreaded() throws Exception {
-//        // No-op.
-//    }
+        Configuration cfg = new Configuration();
+
+        for (Map.Entry<String, String> entry : primaryFsCfg)
+            cfg.set(entry.getKey(), entry.getValue());
+
+        cfg.setBoolean("fs.igfs.impl.disable.cache", true);
+
+        final int nClients = 1;
+
+        // Initialize clients.
+        for (int i = 0; i < nClients; i++)
+            q.add(FileSystem.get(primaryFsUri, cfg));
+
+        restartServerNodesExceptOne();
+
+        GridTestUtils.runMultiThreaded(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                FileSystem fs = q.poll();
+
+                try {
+                    // Check that client is again operational.
+                    assertTrue(fs.mkdirs(new Path("/" + Thread.currentThread().getName())));
+
+                    return true;
+                }
+                finally {
+                    U.closeQuiet(fs);
+                }
+            }
+        }, nClients, "test-client");
+    }
+
+    /**
+     *
+     * @throws Exception If failed.
+     */
+    private void restartServerNodesExceptOne() throws Exception {
+        stopAllNodesExcept(ALIVE_NODE_IDX);
+
+        Thread.sleep(500);
+
+        startAllNodesExcept(ALIVE_NODE_IDX); // Start server again.
+
+        awaitPartitionMapExchange();
+    }
+
+    /**
+     * @param nodeIdx Node index to not stop
+     */
+    private void stopAllNodesExcept(int nodeIdx) {
+        for (int i = 0; i < GRID_COUNT; ++i)
+            if (i != nodeIdx)
+                stopGrid(i);
+    }
+
+    /**
+     * @param nodeIdx Node index to not stop
+     * @throws Exception If failed.
+     */
+    private void startAllNodesExcept(int nodeIdx) throws Exception {
+        for (int i = 0; i < GRID_COUNT; ++i)
+            if (i != nodeIdx)
+                startGrid(i);
+    }
 }

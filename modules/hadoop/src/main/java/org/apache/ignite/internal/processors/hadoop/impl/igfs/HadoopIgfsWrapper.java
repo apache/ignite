@@ -27,21 +27,26 @@ import org.apache.commons.logging.Log;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathSummary;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsEndpoint;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.processors.igfs.IgfsHandshakeResponse;
 import org.apache.ignite.internal.processors.igfs.IgfsStatus;
+import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteState.STARTED;
@@ -470,7 +475,26 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
 
             try {
                 Ignition.setClientMode(true);
-                final Ignite ignite = Ignition.start(igniteCliCfgPath);
+
+                Ignite ignite0;
+
+                try {
+                    ignite0 = Ignition.start(igniteCliCfgPath);
+                } catch (IgniteException e) {
+                    if (e.getMessage().contains("Ignite instance with this name has already been started")) {
+                        IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> cfg =
+                            IgnitionEx.loadConfiguration(igniteCliCfgPath);
+
+                        // Try to get ignite instance if it is already started
+                        ignite0 = Ignition.ignite(cfg.get1().getGridName());
+                    }
+                    else if (e.getMessage().contains("Default Ignite instance has already been started"))
+                        ignite0 = Ignition.ignite();
+                    else
+                        throw e;
+                }
+
+                final Ignite ignite = ignite0;
 
                 if (ignite == null)
                     throw new HadoopIgfsCommunicationException("Cannot create Ignite client node. See the log");

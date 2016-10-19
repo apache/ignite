@@ -29,6 +29,7 @@ import java.security.PrivilegedExceptionAction;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.LinkedList;
@@ -76,6 +77,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -189,6 +191,8 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         this.skipLocShmem = skipLocShmem;
 
         endpoint = skipLocShmem ? "127.0.0.1:10500" : "shmem:10500";
+
+        ((TcpDiscoveryVmIpFinder)IP_FINDER).setAddresses(Collections.singleton("127.0.0.1:47500..47509"));
     }
 
     /**
@@ -287,7 +291,6 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         for (int i = 0; i < GRID_COUNT; ++i)
             startGrid(i);
 
-//        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */
@@ -347,12 +350,14 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(IP_FINDER);
 
+        cfg.setGridName(gridName);
+        cfg.setMarshaller(new OptimizedMarshaller());
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(cacheConfiguration(gridName));
         cfg.setFileSystemConfiguration(igfsConfiguration(gridName));
@@ -2090,12 +2095,6 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         finally {
             U.closeQuiet(s); // Safety.
         }
-    }
-
-    public void testRRRR() throws Exception {
-            stopNodes();
-
-            startNodes(); // Start server again.
     }
 
     /**

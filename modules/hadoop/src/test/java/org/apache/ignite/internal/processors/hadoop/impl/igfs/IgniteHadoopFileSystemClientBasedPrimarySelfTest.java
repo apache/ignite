@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 import org.apache.ignite.igfs.IgfsMode;
 
 /**
- * IGFS Hadoop file system IPC self test.
+ * IGFS Hadoop file system Ignite client -based self test for PRIMARY mode.
  */
 public class IgniteHadoopFileSystemClientBasedPrimarySelfTest
     extends IgniteHadoopFileSystemClientBasedAbstractSelfTest {

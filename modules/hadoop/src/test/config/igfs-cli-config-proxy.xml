@@ -52,8 +52,6 @@
     -->
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="clientMode" value="true"/>
-        <property name="gridName" value="test-IGFS-cli"/>
-
         <property name="marshaller">
             <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
             </bean>
@@ -114,7 +112,7 @@
                     <property name="metaCacheName" value="replicated"/>
                     <property name="dataCacheName" value="partitioned"/>
                     <property name="blockSize" value="524288"/>
-                    <property name="defaultMode" value="DUAL_ASYNC"/>
+                    <property name="defaultMode" value="PROXY"/>
 
                     <property name="secondaryFileSystem">
                         <bean class="org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem">
