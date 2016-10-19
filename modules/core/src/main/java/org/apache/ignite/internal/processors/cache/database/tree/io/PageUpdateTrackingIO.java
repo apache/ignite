@@ -106,7 +106,8 @@ public class PageUpdateTrackingIO extends PageIO {
      * @param pageSize Page size.
      */
     public static boolean wasChanged(ByteBuffer buf, long pageId, long backupId, int pageSize) {
-        assert ((buf.getLong(LAST_BACKUP_OFFSET) - backupId) & 0xFFFFFFFFFFFFFFFEL) == 0; // 0 or 1
+        if (countOfChangedPage(buf, backupId, pageSize) < 1)
+            return false;
 
         int cntOfPage = countOfPageToTrack(pageSize);
 
