@@ -238,8 +238,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task LoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            return DoOutOpAsync<object>((int) CacheOp.LoadCacheAsync,
-                writer => WriteLoadCacheData(writer, p, args)).Task;
+            return DoOutOpAsync((int) CacheOp.LoadCacheAsync, writer => WriteLoadCacheData(writer, p, args));
         }
 
         /** <inheritDoc /> */
@@ -251,8 +250,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task LocalLoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            return DoOutOpAsync<object>((int)CacheOp.LocLoadCacheAsync,
-                writer => WriteLoadCacheData(writer, p, args)).Task;
+            return DoOutOpAsync((int) CacheOp.LocLoadCacheAsync, writer => WriteLoadCacheData(writer, p, args));
         }
 
         /// <summary>
@@ -282,11 +280,11 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task LoadAllAsync(IEnumerable<TK> keys, bool replaceExistingValues)
         {
-            return DoOutOpAsync<object>((int) CacheOp.LoadAll, writer =>
+            return DoOutOpAsync((int) CacheOp.LoadAll, writer =>
             {
                 writer.WriteBoolean(replaceExistingValues);
                 WriteEnumerable(writer, keys);
-            }).Task;
+            });
         }
 
         /** <inheritDoc /> */
@@ -609,7 +607,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(vals, "vals");
 
-            return DoOutOpAsync<object>((int) CacheOp.PutAllAsync, writer => WriteDictionary(writer, vals)).Task;
+            return DoOutOpAsync((int) CacheOp.PutAllAsync, writer => WriteDictionary(writer, vals));
         }
 
         /** <inheritdoc /> */
@@ -629,7 +627,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task ClearAsync()
         {
-            return DoOutOpAsync<object>((int) CacheOp.ClearCacheAsync).Task;
+            return DoOutOpAsync((int) CacheOp.ClearCacheAsync);
         }
 
         /** <inheritdoc /> */
@@ -659,7 +657,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
-            return DoOutOpAsync<object>((int) CacheOp.ClearAllAsync, writer => WriteEnumerable(writer, keys)).Task;
+            return DoOutOpAsync((int) CacheOp.ClearAllAsync, writer => WriteEnumerable(writer, keys));
         }
 
         /** <inheritdoc /> */
@@ -725,7 +723,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
-            return DoOutOpAsync<object>((int) CacheOp.RemoveAllAsync, writer => WriteEnumerable(writer, keys)).Task;
+            return DoOutOpAsync((int) CacheOp.RemoveAllAsync, writer => WriteEnumerable(writer, keys));
         }
 
         /** <inheritDoc /> */
@@ -737,7 +735,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task RemoveAllAsync()
         {
-            return DoOutOpAsync<object>((int) CacheOp.RemoveAll2Async).Task;
+            return DoOutOpAsync((int) CacheOp.RemoveAll2Async);
         }
 
         /** <inheritDoc /> */
@@ -896,7 +894,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task Rebalance()
         {
-            return DoOutOpAsync<object>((int) CacheOp.Rebalance).Task;
+            return DoOutOpAsync((int) CacheOp.Rebalance);
         }
 
         /** <inheritDoc /> */

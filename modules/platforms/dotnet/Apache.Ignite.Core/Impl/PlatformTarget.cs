@@ -646,6 +646,16 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Performs async operation.
         /// </summary>
+        /// <param name="type">The type code.</param>
+        /// <param name="writeAction">The write action.</param>
+        protected Task DoOutOpAsync(int type, Action<BinaryWriter> writeAction = null)
+        {
+            return DoOutOpAsync<object>(type, writeAction).Task;
+        }
+
+        /// <summary>
+        /// Performs async operation.
+        /// </summary>
         /// <typeparam name="T">Type of the result.</typeparam>
         /// <param name="type">The type code.</param>
         /// <param name="writeAction">The write action.</param>
@@ -655,8 +665,6 @@ namespace Apache.Ignite.Core.Impl
         protected Future<T> DoOutOpAsync<T>(int type, Action<BinaryWriter> writeAction = null, bool keepBinary = false,
             Func<BinaryReader, T> convertFunc = null)
         {
-            // TODO: Most usages are non-generic!
-
             return GetFuture<T>((futId, futType) => DoOutOp(type, w =>
             {
                 if (writeAction != null)

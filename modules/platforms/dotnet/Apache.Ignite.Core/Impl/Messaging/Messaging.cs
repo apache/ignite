@@ -209,7 +209,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /** <inheritdoc /> */
         public Task StopRemoteListenAsync(Guid opId)
         {
-            return DoOutOpAsync<object>((int) Op.StopRemoteListenAsync, writer => writer.WriteGuid(opId)).Task;
+            return DoOutOpAsync((int) Op.StopRemoteListenAsync, writer => writer.WriteGuid(opId));
         }
 
         /// <summary>

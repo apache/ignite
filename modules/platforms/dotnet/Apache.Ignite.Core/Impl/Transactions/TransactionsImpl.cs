@@ -213,7 +213,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// </summary>
         internal Task CommitAsync(TransactionImpl tx)
         {
-            return DoOutOpAsync<object>(OpCommitAsync, w => w.WriteLong(tx.Id)).Task;
+            return DoOutOpAsync(OpCommitAsync, w => w.WriteLong(tx.Id));
         }
 
         /// <summary>
@@ -221,7 +221,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// </summary>
         internal Task RollbackAsync(TransactionImpl tx)
         {
-            return DoOutOpAsync<object>(OpRollbackAsync, w => w.WriteLong(tx.Id)).Task;
+            return DoOutOpAsync(OpRollbackAsync, w => w.WriteLong(tx.Id));
         }
     }
 }

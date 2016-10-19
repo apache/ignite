@@ -219,13 +219,13 @@ namespace Apache.Ignite.Core.Impl.Services
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
             IgniteArgumentCheck.NotNull(service, "service");
 
-            return DoOutOpAsync<object>(OpDeployMultipleAsync, w =>
+            return DoOutOpAsync(OpDeployMultipleAsync, w =>
             {
                 w.WriteString(name);
                 w.WriteObject(service);
                 w.WriteInt(totalCount);
                 w.WriteInt(maxPerNodeCount);
-            }).Task;
+            });
         }
 
         /** <inheritDoc /> */
@@ -241,7 +241,7 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
-            return DoOutOpAsync<object>(OpDeployAsync, w => WriteServiceConfiguration(configuration, w)).Task;
+            return DoOutOpAsync(OpDeployAsync, w => WriteServiceConfiguration(configuration, w));
         }
 
         /** <inheritDoc /> */
@@ -257,7 +257,7 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
-            return DoOutOpAsync<object>(OpCancelAsync, w => w.WriteString(name)).Task;
+            return DoOutOpAsync(OpCancelAsync, w => w.WriteString(name));
         }
 
         /** <inheritDoc /> */
@@ -269,7 +269,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task CancelAllAsync()
         {
-            return DoOutOpAsync<object>(OpCancelAllAsync).Task;
+            return DoOutOpAsync(OpCancelAllAsync);
         }
 
         /** <inheritDoc /> */
