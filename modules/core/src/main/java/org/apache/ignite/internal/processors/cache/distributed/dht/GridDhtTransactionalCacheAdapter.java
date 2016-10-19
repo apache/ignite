@@ -1271,20 +1271,22 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 if (ret && val == null)
                                     val = e.valueBytes(null);
 
-                                IgniteTxEntry txEntry = tx.entry(e.txKey());
-
                                 CacheInvokeDirectResult invokeVal = null;
                                 T2<GridCacheOperation, CacheObject> result = null;
 
-                                if (cacheRet != null && txEntry != null && cacheRet.invokeResult()) {
-                                    result = txEntry.entryProcessorCalculatedValue();
+                                if (tx != null) {
+                                    IgniteTxEntry txEntry = tx.entry(e.txKey());
 
-                                    invokeVal = cacheRet.invokeResult(idxInvk);
+                                    if (cacheRet != null && txEntry != null && cacheRet.invokeResult()) {
+                                        result = txEntry.entryProcessorCalculatedValue();
 
-                                    if (invokeVal != null && invokeVal.key().equals(e.key()))
-                                        ++idxInvk;
-                                    else
-                                        invokeVal = null;
+                                        invokeVal = cacheRet.invokeResult(idxInvk);
+
+                                        if (invokeVal != null && invokeVal.key().equals(e.key()))
+                                            ++idxInvk;
+                                        else
+                                            invokeVal = null;
+                                    }
                                 }
 
                                 // We include values into response since they are required for local
