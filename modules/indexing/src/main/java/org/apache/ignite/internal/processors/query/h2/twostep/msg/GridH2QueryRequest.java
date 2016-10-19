@@ -318,7 +318,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeMessage("timeout", topVer))
+                if (!writer.writeInt("timeout", timeout))
                     return false;
 
                 writer.incrementState();
@@ -400,7 +400,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 8:
-                topVer = reader.readMessage("timeout");
+                timeout = reader.readInt("timeout");
 
                 if (!reader.isLastRead())
                     return false;
