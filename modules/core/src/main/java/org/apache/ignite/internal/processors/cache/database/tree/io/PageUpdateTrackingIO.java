@@ -133,7 +133,7 @@ public class PageUpdateTrackingIO extends PageIO {
      * @return count of pages which were marked as change for given backupId
      */
     public static short countOfChangedPage(ByteBuffer buf, long backupId, int pageSize) {
-        long dif = buf.getLong(LAST_BACKUP_OFFSET) - backupId;
+        long dif = backupId - buf.getLong(LAST_BACKUP_OFFSET);
 
         if (dif != 0 && dif != 1)
             return -1;
