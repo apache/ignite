@@ -417,11 +417,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<CacheResult<TV>> TryGetAsync(TK key)
         {
-            IgniteArgumentCheck.NotNull(key, "key");
-
-            AsyncInstance.Get(key);
-
-            return AsyncInstance.GetTask(CacheOp.Get, GetCacheResult);
+            return DoOutOpAsync((int) CacheOp.GetAsync, w => w.WriteObject(key), IsKeepBinary, GetCacheResult);
         }
 
         /** <inheritDoc /> */
