@@ -88,6 +88,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         LocLoadCacheAsync = 64,
         PutAllAsync = 65,
         RemoveAllAsync = 66,
-        GetAsync = 67
+        GetAsync = 67,
+        ContainsKeyAsync = 68,
+        ContainsKeysAsync = 69
     }
 }

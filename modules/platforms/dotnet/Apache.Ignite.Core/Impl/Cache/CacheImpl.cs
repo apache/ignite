@@ -135,14 +135,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Performs async operation.
         /// </summary>
-        private Task DoOutOpAsync(CacheOp op, Action<BinaryWriter> writeAction = null)
-        {
-            return DoOutOpAsync<object>(op, writeAction);
-        }
-
-        /// <summary>
-        /// Performs async operation.
-        /// </summary>
         private Task DoOutOpAsync<T1>(CacheOp op, T1 val1)
         {
             return DoOutOpAsync<object, T1>((int) op, val1);
@@ -151,9 +143,25 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Performs async operation.
         /// </summary>
+        private Task<T> DoOutOpAsync<T, T1>(CacheOp op, T1 val1)
+        {
+            return DoOutOpAsync<T, T1>((int) op, val1);
+        }
+
+        /// <summary>
+        /// Performs async operation.
+        /// </summary>
         private Task DoOutOpAsync<T1, T2>(CacheOp op, T1 val1, T2 val2)
         {
             return DoOutOpAsync<object, T1, T2>((int) op, val1, val2);
+        }
+
+        /// <summary>
+        /// Performs async operation.
+        /// </summary>
+        private Task DoOutOpAsync(CacheOp op, Action<BinaryWriter> writeAction = null)
+        {
+            return DoOutOpAsync<object>(op, writeAction);
         }
 
         /// <summary>
@@ -332,9 +340,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<bool> ContainsKeyAsync(TK key)
         {
-            AsyncInstance.ContainsKey(key);
-
-            return AsyncInstance.GetTask<bool>(CacheOp.ContainsKey);
+            return DoOutOpAsync<bool, TK>(CacheOp.ContainsKeyAsync, key);
         }
 
         /** <inheritDoc /> */
@@ -348,9 +354,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<bool> ContainsKeysAsync(IEnumerable<TK> keys)
         {
-            AsyncInstance.ContainsKeys(keys);
+            IgniteArgumentCheck.NotNull(keys, "keys");
 
-            return AsyncInstance.GetTask<bool>(CacheOp.ContainsKeys);
+            return DoOutOpAsync<bool>(CacheOp.ContainsKeysAsync, writer => WriteEnumerable(writer, keys));
         }
 
         /** <inheritDoc /> */

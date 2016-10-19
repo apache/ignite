@@ -269,6 +269,12 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_GET_ASYNC = 67;
 
+    /** */
+    public static final int OP_CONTAINS_KEY_ASYNC = 68;
+
+    /** */
+    public static final int OP_CONTAINS_KEYS_ASYNC = 69;
+
     /** Underlying JCache. */
     private final IgniteCacheProxy cache;
 
@@ -490,17 +496,25 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 return readAndListenFuture(reader);
 
-            case OP_REBALANCE: {
+            case OP_REBALANCE:
                 readAndListenFuture(reader, cache.rebalance());
 
                 return TRUE;
-            }
 
-            case OP_GET_ASYNC: {
+            case OP_GET_ASYNC:
                 cacheAsync.get(reader.readObjectDetached());
 
                 return readAndListenFuture(reader);
-            }
+
+            case OP_CONTAINS_KEY_ASYNC:
+                cacheAsync.containsKey(reader.readObjectDetached());
+
+                return readAndListenFuture(reader);
+
+            case OP_CONTAINS_KEYS_ASYNC:
+                cacheAsync.containsKeys(PlatformUtils.readSet(reader));
+
+                return readAndListenFuture(reader);
 
             default:
                 return super.processInStreamOutLong(type, reader);
