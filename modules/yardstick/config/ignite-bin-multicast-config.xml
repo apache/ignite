@@ -67,7 +67,7 @@
                             <property name="typeName" value="BinaryKeyWithFullIdentity"/>
 
                             <property name="identity">
-                                <bean class="org.apache.ignite.internal.binary.FullIdentity"/>
+                                <bean class="org.apache.ignite.binary.BinaryFullIdentity"/>
                             </property>
                         </bean>
                     </list>

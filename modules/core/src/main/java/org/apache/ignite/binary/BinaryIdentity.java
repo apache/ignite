@@ -18,21 +18,23 @@
 package org.apache.ignite.binary;
 
 /**
- * Method to compute hash codes for new binary objects and compare them for equality.
+ * Interface to compute hash codes for new binary objects and compare them for equality.
  */
-public interface BinaryTypeIdentity {
+public interface BinaryIdentity {
     /**
-     * @param obj Binary object builder.
+     * Compute hash code for binary object.
+     *
+     * @param obj Binary object.
      * @return Hash code value.
      */
     public int hash(BinaryObject obj);
 
     /**
-     * Compare binary objects for equality in consistence with how hash code is computed.
+     * Compare two binary objects for equality.
      *
      * @param o1 First object.
      * @param o2 Second object.
-     * @return
+     * @return {@code True} if both objects are equal.
      */
     public boolean equals(BinaryObject o1, BinaryObject o2);
 }

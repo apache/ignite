@@ -470,7 +470,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
-    @Override protected BinarySchema createSchema() {
+    @Override public BinarySchema createSchema() {
         return reader(null, false).getOrCreateSchema();
     }
 

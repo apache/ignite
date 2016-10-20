@@ -120,12 +120,12 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
-    @Override protected BinarySchema createSchema() {
+    @Override public BinarySchema createSchema() {
         return reader(null, false).getOrCreateSchema();
     }
 
     /** {@inheritDoc} */
-    @Override protected BinaryContext context() {
+    @Override public BinaryContext context() {
         return ctx;
     }
 

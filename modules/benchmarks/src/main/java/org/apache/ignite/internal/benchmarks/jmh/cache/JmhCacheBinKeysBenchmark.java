@@ -21,7 +21,7 @@ import java.util.Collections;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
-import org.apache.ignite.binary.BinaryTypeIdentity;
+import org.apache.ignite.binary.BinaryIdentity;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -32,7 +32,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 @SuppressWarnings("unchecked")
 public class JmhCacheBinKeysBenchmark extends JmhCacheBenchmark {
     /** */
-    private BinaryTypeIdentity keyIdentity;
+    private BinaryIdentity keyIdentity;
 
     /** {@inheritDoc} */
     @Override public void setup() throws Exception {
@@ -65,7 +65,7 @@ public class JmhCacheBinKeysBenchmark extends JmhCacheBenchmark {
     /**
      * @return New identity to hash/compare keys with, {@code null} for default behavior.
      */
-    protected BinaryTypeIdentity identity() {
+    protected BinaryIdentity identity() {
         return null;
     }
 

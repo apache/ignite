@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.cache;
 
-import org.apache.ignite.binary.BinaryTypeIdentity;
-import org.apache.ignite.internal.binary.FullIdentity;
+import org.apache.ignite.binary.BinaryIdentity;
+import org.apache.ignite.binary.BinaryFullIdentity;
 
 /**
  *
@@ -26,7 +26,7 @@ import org.apache.ignite.internal.binary.FullIdentity;
 @SuppressWarnings("unchecked")
 public class JmhCacheBinKeysFullIdentityBenchmark extends JmhCacheBinKeysBenchmark {
     /** {@inheritDoc} */
-    @Override protected BinaryTypeIdentity identity() {
-        return new FullIdentity();
+    @Override protected BinaryIdentity identity() {
+        return new BinaryFullIdentity();
     }
 }

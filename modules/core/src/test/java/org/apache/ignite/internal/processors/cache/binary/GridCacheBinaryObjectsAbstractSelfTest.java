@@ -42,7 +42,7 @@ import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryTypeIdentity;
+import org.apache.ignite.binary.BinaryIdentity;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.binary.BinaryWriter;
@@ -61,8 +61,8 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
-import org.apache.ignite.internal.binary.FieldsListIdentity;
-import org.apache.ignite.internal.binary.FullIdentity;
+import org.apache.ignite.binary.BinaryFieldListIdentity;
+import org.apache.ignite.binary.BinaryFullIdentity;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -130,18 +130,18 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
         binTypes.add(new BinaryTypeConfiguration() {{
             setTypeName("FullyHashedKey");
-            setIdentity(new FullIdentity());
+            setIdentity(new BinaryFullIdentity());
         }});
 
         binTypes.add(new BinaryTypeConfiguration() {{
             setTypeName("FullyHashedKeyField");
-            setIdentity(new FullIdentity());
+            setIdentity(new BinaryFullIdentity());
         }});
 
         binTypes.add(new BinaryTypeConfiguration() {{
             setTypeName("FieldsHashedKey");
 
-            FieldsListIdentity id = new FieldsListIdentity();
+            BinaryFieldListIdentity id = new BinaryFieldListIdentity();
             id.setFieldNames(Arrays.asList("fld1", "fld3"));
 
             setIdentity(id);
@@ -156,7 +156,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         binTypes.add(new BinaryTypeConfiguration() {{
             setTypeName("ComplexBinaryFieldsListHashedKey");
 
-            FieldsListIdentity id = new FieldsListIdentity();
+            BinaryFieldListIdentity id = new BinaryFieldListIdentity();
             id.setFieldNames(Arrays.asList("secondField", "thirdField"));
 
             setIdentity(id);
@@ -1437,7 +1437,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      *
      */
-    private final static class Identity implements BinaryTypeIdentity {
+    private final static class Identity implements BinaryIdentity {
         /** {@inheritDoc} */
         @Override public int hash(BinaryObject builder) {
             return (Integer) builder.field("fld1") * 31 / 5;

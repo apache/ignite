@@ -15,33 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.binary;
+package org.apache.ignite.binary;
 
-import java.util.List;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryTypeIdentity;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.IgniteBinary;
+import org.apache.ignite.internal.binary.BinaryObjectExImpl;
+import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
- * Default implementation of fields based hash code resolver.
+ * Hash and compare instances of {@link BinaryObjectExImpl} for equality using values of all their fields.
+ * This has been introduced primarily for use by DML engine to free the user from the need to worry about hash codes.
+ * This hashing method should be used only in cases when you are sure that compared objects have <b>full</b> field sets.
+ * Objects built via {@link IgniteBinary#toBinary} and those constructed inside DML engine satisfy that requirement.
  */
-public final class FieldsListIdentity implements BinaryTypeIdentity {
-    /**
-     * Fields based on whose values hash code should be computed.
-     */
-    private List<String> fieldNames;
-
+public class BinaryFullIdentity implements BinaryIdentity {
     /** {@inheritDoc} */
     @Override public int hash(BinaryObject obj) {
+        A.notNull(obj, "Can't compute hash code for null object");
+
         assert obj instanceof BinaryObjectExImpl;
 
         BinaryObjectExImpl exObj = (BinaryObjectExImpl) obj;
 
+        BinarySchema schema = exObj.createSchema();
+
         int hash = 0;
 
-        for (String fieldName : fieldNames) {
-            Object val = fieldValue(exObj, fieldName);
+        for (int fieldId : schema.fieldIdsSorted()) {
+            Object val = exObj.context().createField(exObj.typeId(), fieldId).value(obj);
 
             hash = 31 * hash + (val != null ? val.hashCode() : 0);
         }
@@ -62,10 +64,12 @@ public final class FieldsListIdentity implements BinaryTypeIdentity {
 
         BinaryObjectExImpl exObj1 = (BinaryObjectExImpl) o1;
 
+        BinarySchema schema1 = exObj1.createSchema();
+
         BinaryObjectExImpl exObj2 = (BinaryObjectExImpl) o2;
 
-        for (String fld : fieldNames) {
-            if (!F.eq(fieldValue(exObj1, fld), fieldValue(exObj2, fld)))
+        for (int fldId : schema1.fieldIdsSorted()) {
+            if (!F.eq(fieldValue(exObj1, fldId), fieldValue(exObj2, fldId)))
                 return false;
         }
 
@@ -73,25 +77,11 @@ public final class FieldsListIdentity implements BinaryTypeIdentity {
     }
 
     /**
-     * @return Fields list to hash/compare objects based upon.
-     */
-    public List<String> getFieldNames() {
-        return fieldNames;
-    }
-
-    /**
-     * @param fieldNames Fields list to hash/compare objects based upon.
-     */
-    public void setFieldNames(List<String> fieldNames) {
-        this.fieldNames = fieldNames;
-    }
-
-    /**
      * @param exObj Object to get the field value from.
-     * @param fieldName Field id.
+     * @param fieldId Field id.
      * @return Field value.
      */
-    private static Object fieldValue(BinaryObjectExImpl exObj, String fieldName) {
-        return exObj.context().createField(exObj.typeId(), fieldName).value(exObj);
+    private static Object fieldValue(BinaryObjectExImpl exObj, int fieldId) {
+        return exObj.context().createField(exObj.typeId(), fieldId).value(exObj);
     }
 }

@@ -26,7 +26,7 @@ import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryTypeIdentity;
+import org.apache.ignite.binary.BinaryIdentity;
 import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryType;
@@ -223,7 +223,7 @@ public class BinaryContext {
     private final ConcurrentMap<String, BinaryInternalMapper> cls2Mappers = new ConcurrentHashMap8<>(0);
 
     /** Affinity key field names. */
-    private final ConcurrentMap<Integer, BinaryTypeIdentity> typeIdentities = new ConcurrentHashMap8<>(0);
+    private final ConcurrentMap<Integer, BinaryIdentity> typeIdentities = new ConcurrentHashMap8<>(0);
 
     /** */
     private BinaryMetadataHandler metaHnd;
@@ -418,14 +418,14 @@ public class BinaryContext {
         BinaryNameMapper globalNameMapper,
         BinaryIdMapper globalIdMapper,
         BinarySerializer globalSerializer,
-        BinaryTypeIdentity globalIdentity,
+        BinaryIdentity globalIdentity,
         Collection<BinaryTypeConfiguration> typeCfgs
     ) throws BinaryObjectException {
         TypeDescriptors descs = new TypeDescriptors();
 
         Map<String, String> affFields = new HashMap<>();
 
-        Map<String, BinaryTypeIdentity> identities = new HashMap<>();
+        Map<String, BinaryIdentity> identities = new HashMap<>();
 
         if (!F.isEmpty(igniteCfg.getCacheKeyConfiguration())) {
             for (CacheKeyConfiguration keyCfg : igniteCfg.getCacheKeyConfiguration())
@@ -452,7 +452,7 @@ public class BinaryContext {
                 // Resolve serializer.
                 BinarySerializer serializer = U.firstNotNull(typeCfg.getSerializer(), globalSerializer);
 
-                BinaryTypeIdentity identity = U.firstNotNull(typeCfg.getIdentity(), globalIdentity);
+                BinaryIdentity identity = U.firstNotNull(typeCfg.getIdentity(), globalIdentity);
 
                 if (clsName.endsWith(".*")) {
                     String pkgName = clsName.substring(0, clsName.length() - 2);
@@ -1102,7 +1102,7 @@ public class BinaryContext {
     public void registerUserType(String clsName,
         BinaryInternalMapper mapper,
         @Nullable BinarySerializer serializer,
-        @Nullable BinaryTypeIdentity identity,
+        @Nullable BinaryIdentity identity,
         @Nullable String affKeyFieldName,
         boolean isEnum)
         throws BinaryObjectException {
@@ -1249,7 +1249,7 @@ public class BinaryContext {
      * @param typeId Type ID.
      * @return Type identity.
      */
-    public BinaryTypeIdentity identity(int typeId) {
+    public BinaryIdentity identity(int typeId) {
         return typeIdentities.get(typeId);
     }
 
@@ -1371,7 +1371,7 @@ public class BinaryContext {
         private void add(String clsName,
             BinaryInternalMapper mapper,
             BinarySerializer serializer,
-            BinaryTypeIdentity identity,
+            BinaryIdentity identity,
             String affKeyFieldName,
             boolean isEnum,
             boolean canOverride)
@@ -1416,7 +1416,7 @@ public class BinaryContext {
         private BinarySerializer serializer;
 
         /** Type identity. */
-        private BinaryTypeIdentity identity;
+        private BinaryIdentity identity;
 
         /** Affinity key field name. */
         private String affKeyFieldName;
@@ -1438,7 +1438,7 @@ public class BinaryContext {
          * @param canOverride Whether this descriptor can be override.
          */
         private TypeDescriptor(String clsName, BinaryInternalMapper mapper,
-            BinarySerializer serializer, BinaryTypeIdentity identity, String affKeyFieldName, boolean isEnum,
+            BinarySerializer serializer, BinaryIdentity identity, String affKeyFieldName, boolean isEnum,
             boolean canOverride) {
             this.clsName = clsName;
             this.mapper = mapper;
