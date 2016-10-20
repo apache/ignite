@@ -65,8 +65,8 @@ abstract class IgniteBinaryIdentityBenchmark extends IgniteCacheAbstractBenchmar
      * @param key Key field value.
      * @return Binary object without hash code explicitly set at build time.
      */
-    BinaryObject createFullIdentityBinaryKey(int key) {
-        BinaryObjectBuilder bldr = ignite().binary().builder("BinaryKeyWithFullIdentity");
+    BinaryObject createFieldsIdentityBinaryKey(int key) {
+        BinaryObjectBuilder bldr = ignite().binary().builder("BinaryKeyWithFieldsIdentity");
 
         setBuilderFields(bldr, key);
 

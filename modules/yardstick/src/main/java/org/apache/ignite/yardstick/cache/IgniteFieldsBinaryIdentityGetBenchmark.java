@@ -22,9 +22,9 @@ import org.apache.ignite.binary.BinaryObject;
 /**
  * Test GETs with binary hashed key.
  */
-public class IgniteFullBinaryIdentityGetBenchmark extends IgniteBinaryIdentityGetBenchmark {
+public class IgniteFieldsBinaryIdentityGetBenchmark extends IgniteBinaryIdentityGetBenchmark {
     /** {@inheritDoc} */
     @Override BinaryObject createKey(int key) {
-        return createFullIdentityBinaryKey(key);
+        return createFieldsIdentityBinaryKey(key);
     }
 }

@@ -48,7 +48,7 @@
                 </bean>
 
                 <bean class="org.apache.ignite.cache.CacheKeyConfiguration">
-                    <property name="typeName" value="BinaryKeyWithFullIdentity"/>
+                    <property name="typeName" value="BinaryKeyWithFieldsIdentity"/>
 
                     <property name="affinityKeyFieldName" value="f3" />
                 </bean>
@@ -64,10 +64,18 @@
                         </bean>
 
                         <bean class="org.apache.ignite.binary.BinaryTypeConfiguration">
-                            <property name="typeName" value="BinaryKeyWithFullIdentity"/>
+                            <property name="typeName" value="BinaryKeyWithFieldsIdentity"/>
 
                             <property name="identity">
-                                <bean class="org.apache.ignite.binary.BinaryFullIdentity"/>
+                                <bean class="org.apache.ignite.binary.BinaryFieldListIdentity">
+                                    <property name="fieldNames">
+                                        <list>
+                                            <value>f1</value>
+                                            <value>f2</value>
+                                            <value>f3</value>
+                                        </list>
+                                    </property>
+                                </bean>
                             </property>
                         </bean>
                     </list>

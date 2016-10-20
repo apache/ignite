@@ -22,9 +22,9 @@ import org.apache.ignite.binary.BinaryObject;
 /**
  * Test PUTs with binary hashed key.
  */
-public class IgniteFullBinaryIdentityPutBenchmark extends IgniteBinaryIdentityPutBenchmark {
+public class IgniteFieldsBinaryIdentityPutBenchmark extends IgniteBinaryIdentityPutBenchmark {
     /** {@inheritDoc} */
     @Override BinaryObject createKey(int key) {
-        return createFullIdentityBinaryKey(key);
+        return createFieldsIdentityBinaryKey(key);
     }
 }
