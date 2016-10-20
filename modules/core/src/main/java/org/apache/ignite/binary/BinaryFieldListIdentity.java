@@ -63,45 +63,91 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
     /** {@inheritDoc} */
     @Override public int hashCode(BinaryObject obj) {
         assert obj != null;
+        assert !(obj instanceof BinaryEnumObjectImpl);
         assert fieldNames != null;
 
-        if (obj instanceof BinaryEnumObjectImpl)
-            // Handle special case for enums.
-            return obj.hashCode();
-        else {
-            if (obj instanceof BinaryObjectExImpl) {
-                BinaryObjectExImpl obj0 = (BinaryObjectExImpl)obj;
+        if (obj instanceof BinaryObjectExImpl) {
+            BinaryObjectExImpl obj0 = (BinaryObjectExImpl)obj;
 
-                if (obj0.hasSchema())
-                    // Handle optimized case.
-                    return hashCode0(obj0);
+            if (obj0.hasSchema()) {
+                // Handle optimized case.
+                HashCodeCalculator calc = hashCalculator(obj0);
+
+                assert calc != null;
+
+                return calc.calculate(obj0);
             }
-
-            // Handle regular case.
-            int hash = 0;
-
-            for (String fieldName : fieldNames) {
-                Object val = obj.field(fieldName);
-
-                hash = 31 * hash + (val != null ? val.hashCode() : 0);
-            }
-
-            return hash;
         }
+
+        // Handle regular case.
+        int hash = 0;
+
+        for (String fieldName : fieldNames) {
+            Object val = obj.field(fieldName);
+
+            hash = 31 * hash + (val != null ? val.hashCode() : 0);
+        }
+
+        return hash;
     }
 
-    /**
-     * Optimized routine for well-known binary object classes.
-     *
-     * @param obj Object.
-     * @return Hash code.
-     */
-    private int hashCode0(BinaryObjectExImpl obj) {
-        HashCodeCalculator calc = hashCalculator(obj);
+    /** {@inheritDoc} */
+    @Override public boolean equals(BinaryObject o1, BinaryObject o2) {
+        assert fieldNames != null;
+        assert o1 != null;
+        assert o1 instanceof BinaryObjectExImpl;
 
-        assert calc != null;
+        if (o1 == o2)
+            return true;
 
-        return calc.calculate(obj);
+        if (o2 == null || !(o2 instanceof BinaryObjectExImpl))
+            return false;
+
+        BinaryObjectExImpl ex1 = (BinaryObjectExImpl) o1;
+        BinaryObjectExImpl ex2 = (BinaryObjectExImpl) o2;
+
+        if (ex1.hasSchema() && ex2.hasSchema()) {
+            HashCodeCalculator calc1 = hashCalculator(ex1);
+            HashCodeCalculator calc2 = hashCalculator(ex2);
+
+            for (int i = 0; i < fieldNames.length; i++) {
+                Object val1 = calc1.field(ex1, i);
+                Object val2 = calc2.field(ex2, i);
+
+                if (!F.eq(val1, val2))
+                    return false;
+            }
+        }
+        else {
+            BinaryType type1 = ex1.type();
+            BinaryType type2 = ex1.type();
+
+            if (type1.typeId() == type2.typeId()) {
+                for (String fieldName : fieldNames) {
+                    BinaryFieldImpl field = (BinaryFieldImpl)type1.field(fieldName);
+
+                    Object val1 = field.value(ex1);
+                    Object val2 = field.value(ex2);
+
+                    if (!F.eq(val1, val2))
+                        return false;
+                }
+            }
+            else {
+                for (String fieldName : fieldNames) {
+                    BinaryFieldImpl field1 = (BinaryFieldImpl)type1.field(fieldName);
+                    BinaryFieldImpl field2 = (BinaryFieldImpl)type2.field(fieldName);
+
+                    Object val1 = field1.value(ex1);
+                    Object val2 = field2.value(ex2);
+
+                    if (!F.eq(val1, val2))
+                        return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -170,40 +216,6 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(BinaryObject o1, BinaryObject o2) {
-        assert fieldNames != null;
-
-        if (o1 == o2)
-            return true;
-
-        if (o1 == null || o2 == null)
-            return false;
-
-        if (!(o1 instanceof BinaryObjectExImpl) || !(o2 instanceof BinaryObjectExImpl))
-            return false;
-
-        BinaryObjectExImpl exObj1 = (BinaryObjectExImpl) o1;
-
-        BinaryObjectExImpl exObj2 = (BinaryObjectExImpl) o2;
-
-        for (String fld : fieldNames) {
-            if (!F.eq(fieldValue(exObj1, fld), fieldValue(exObj2, fld)))
-                return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * @param exObj Object to get the field value from.
-     * @param fieldName Field id.
-     * @return Field value.
-     */
-    private static Object fieldValue(BinaryObjectExImpl exObj, String fieldName) {
-        return exObj.context().createField(exObj.typeId(), fieldName).value(exObj);
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(BinaryFieldListIdentity.class, this);
     }
@@ -241,6 +253,19 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
          */
         private boolean applicableTo(int expTypeId, int expSchemaId) {
             return typeId == expTypeId && schemaId == expSchemaId;
+        }
+
+        /**
+         * Get field on the given index.
+         *
+         * @param obj Object.
+         * @param idx Index.
+         * @return Field value.
+         */
+        private Object field(BinaryObjectExImpl obj, int idx) {
+            int order = orders[idx];
+
+            return obj.fieldByOrder(order);
         }
 
         /**
