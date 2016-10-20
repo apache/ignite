@@ -42,6 +42,22 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
     private String[] fieldNames;
 
     /**
+     * Default constructor.
+     */
+    public BinaryFieldListIdentity() {
+        // No-op.
+    }
+
+    /**
+     * Copy constructor.
+     *
+     * @param other Other instance.
+     */
+    public BinaryFieldListIdentity(BinaryFieldListIdentity other) {
+        fieldNames = other.fieldNames;
+    }
+
+    /**
      * @return Fields list to hash/compare objects based upon.
      */
     public String[] getFieldNames() {
