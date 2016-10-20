@@ -136,9 +136,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetOutObject")]
         public static extern void* TargetOutObject(void* ctx, void* target, int opType);
 
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetListenFutureForOperation")]
-        public static extern void TargetListenFutForOp(void* ctx, void* target, long futId, int typ, int opId);
-
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAcquire")]
         public static extern void* Acquire(void* ctx, void* target);
 

@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Impl.Cache
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
@@ -35,7 +34,6 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Unmanaged;
-    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Native cache wrapper.
@@ -61,15 +59,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** Flag: keep binary. */
         private readonly bool _flagKeepBinary;
 
-        /** Flag: async mode.*/
-        private readonly bool _flagAsync;
-
         /** Flag: no-retries.*/
         private readonly bool _flagNoRetries;
 
-        /** Async instance. */
-        private readonly Lazy<CacheImpl<TK, TV>> _asyncInstance;
-        
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -78,58 +70,20 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="marsh">Marshaller.</param>
         /// <param name="flagSkipStore">Skip store flag.</param>
         /// <param name="flagKeepBinary">Keep binary flag.</param>
-        /// <param name="flagAsync">Async mode flag.</param>
         /// <param name="flagNoRetries">No-retries mode flag.</param>
         public CacheImpl(Ignite grid, IUnmanagedTarget target, Marshaller marsh,
-            bool flagSkipStore, bool flagKeepBinary, bool flagAsync, bool flagNoRetries) : base(target, marsh)
+            bool flagSkipStore, bool flagKeepBinary, bool flagNoRetries) : base(target, marsh)
         {
             _ignite = grid;
             _flagSkipStore = flagSkipStore;
             _flagKeepBinary = flagKeepBinary;
-            _flagAsync = flagAsync;
             _flagNoRetries = flagNoRetries;
-
-            _asyncInstance = new Lazy<CacheImpl<TK, TV>>(WithAsync);
-        }
-
-        /// <summary>
-        /// Returns an instance with async mode enabled.
-        /// </summary>
-        private CacheImpl<TK, TV> WithAsync()
-        {
-            var target = DoOutOpObject((int) CacheOp.WithAsync);
-
-            return new CacheImpl<TK, TV>(_ignite, target, Marshaller, _flagSkipStore, _flagKeepBinary, 
-                true, _flagNoRetries);
         }
 
         /** <inheritDoc /> */
         public IIgnite Ignite
         {
             get { return _ignite; }
-        }
-
-        /** <inheritDoc /> */
-        private bool IsAsync  // TODO: Remove
-        {
-            get { return _flagAsync; }
-        }
-
-        /// <summary>
-        /// Gets and resets task for previous asynchronous operation.
-        /// </summary>
-        /// <typeparam name="TResult">The type of the result.</typeparam>
-        /// <param name="lastAsyncOp">The last async op id.</param>
-        /// <param name="converter">The converter.</param>
-        /// <returns>
-        /// Task for previous asynchronous operation.
-        /// </returns>
-        private Task<TResult> GetTask<TResult>(CacheOp lastAsyncOp, Func<BinaryReader, TResult> converter = null)
-        {
-            Debug.Assert(_flagAsync);
-
-            return GetFuture((futId, futTypeId) => UU.TargetListenFutureForOperation(Target, futId, futTypeId, 
-                (int) lastAsyncOp), _flagKeepBinary, converter).Task;
         }
 
         /// <summary>
@@ -207,7 +161,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return this;
 
             return new CacheImpl<TK, TV>(_ignite, DoOutOpObject((int) CacheOp.WithSkipStore), Marshaller,
-                true, _flagKeepBinary, _flagAsync, true);
+                true, _flagKeepBinary, true);
         }
 
         /// <summary>
@@ -231,7 +185,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             }
 
             return new CacheImpl<TK1, TV1>(_ignite, DoOutOpObject((int) CacheOp.WithKeepBinary), Marshaller,
-                _flagSkipStore, true, _flagAsync, _flagNoRetries);
+                _flagSkipStore, true, _flagNoRetries);
         }
 
         /** <inheritDoc /> */
@@ -250,7 +204,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 w.WriteLong(access);
             });
 
-            return new CacheImpl<TK, TV>(_ignite, cache0, Marshaller, _flagSkipStore, _flagKeepBinary, _flagAsync, _flagNoRetries);
+            return new CacheImpl<TK, TV>(_ignite, cache0, Marshaller, _flagSkipStore, _flagKeepBinary, _flagNoRetries);
         }
 
         /// <summary>
@@ -401,16 +355,10 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             get
             {
-                if (IsAsync)
-                    throw new InvalidOperationException("Indexer can't be used in async mode.");
-
                 return Get(key);
             }
             set
             {
-                if (IsAsync)
-                    throw new InvalidOperationException("Indexer can't be used in async mode.");
-
                 Put(key, value);
             }
         }
@@ -422,23 +370,15 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             var result = DoOutInOpNullable<TK, TV>((int) CacheOp.Get, key);
 
-            if (!IsAsync)
-            {
-                if (!result.Success)
-                    throw GetKeyNotFoundException();
+            if (!result.Success)
+                throw GetKeyNotFoundException();
 
-                return result.Value;
-            }
-
-            Debug.Assert(!result.Success);
-
-            return default(TV);
+            return result.Value;
         }
 
         /** <inheritDoc /> */
         public Task<TV> GetAsync(TK key)
         {
-            // TODO: Get rid of delegate allocation
             return DoOutOpAsync(CacheOp.GetAsync, w => w.WriteObject(key), reader =>
             {
                 if (reader != null)
@@ -452,9 +392,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         public bool TryGet(TK key, out TV value)
         {
             IgniteArgumentCheck.NotNull(key, "key");
-
-            if (IsAsync)
-                throw new InvalidOperationException("TryGet can't be used in async mode.");
 
             var res = DoOutInOpNullable<TK, TV>((int) CacheOp.Get, key);
 
@@ -585,9 +522,10 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<bool> PutIfAbsentAsync(TK key, TV val)
         {
-            AsyncInstance.PutIfAbsent(key, val);
+            IgniteArgumentCheck.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(val, "val");
 
-            return AsyncInstance.GetTask<bool>(CacheOp.PutIfAbsent);
+            return DoOutOpAsync<TK, TV, bool>(CacheOp.PutIfAbsentAsync, key, val);
         }
 
         /** <inheritdoc /> */
@@ -864,20 +802,29 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<TRes> InvokeAsync<TArg, TRes>(TK key, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
-            AsyncInstance.Invoke(key, processor, arg);
+            IgniteArgumentCheck.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(processor, "processor");
 
-            return AsyncInstance.GetTask(CacheOp.Invoke, r =>
-            {
-                if (r == null)
-                    return default(TRes);
+            var holder = new CacheEntryProcessorHolder(processor, arg,
+                (e, a) => processor.Process((IMutableCacheEntry<TK, TV>)e, (TArg)a), typeof(TK), typeof(TV));
 
-                var hasError = r.ReadBoolean();
+            return DoOutOpAsync(CacheOp.InvokeAsync, writer =>
+                {
+                    writer.Write(key);
+                    writer.Write(holder);
+                },
+                r =>
+                {
+                    if (r == null)
+                        return default(TRes);
 
-                if (hasError)
-                    throw ReadException(r.Stream);
+                    var hasError = r.ReadBoolean();
 
-                return r.ReadObject<TRes>();
-            });
+                    if (hasError)
+                        throw ReadException(r);
+
+                    return r.ReadObject<TRes>();
+                });
         }
 
         /** <inheritdoc /> */
@@ -897,15 +844,28 @@ namespace Apache.Ignite.Core.Impl.Cache
                     WriteEnumerable(writer, keys);
                     writer.Write(holder);
                 },
-                input => ReadInvokeAllResults<TRes>(input));
+                input => ReadInvokeAllResults<TRes>(Marshaller.StartUnmarshal(input, IsKeepBinary)));
         }
 
         /** <inheritDoc /> */
-        public Task<IDictionary<TK, ICacheEntryProcessorResult<TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
+        public Task<IDictionary<TK, ICacheEntryProcessorResult<TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys, 
+            ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
-            AsyncInstance.InvokeAll(keys, processor, arg);
+            IgniteArgumentCheck.NotNull(keys, "keys");
 
-            return AsyncInstance.GetTask(CacheOp.InvokeAll, reader => ReadInvokeAllResults<TRes>(reader.Stream));
+            IgniteArgumentCheck.NotNull(processor, "processor");
+
+            var holder = new CacheEntryProcessorHolder(processor, arg,
+                (e, a) => processor.Process((IMutableCacheEntry<TK, TV>)e, (TArg)a), typeof(TK), typeof(TV));
+
+            return DoOutOpAsync(CacheOp.InvokeAllAsync,
+                writer =>
+                {
+                    WriteEnumerable(writer, keys);
+                    writer.Write(holder);
+                },
+                input => ReadInvokeAllResults<TRes>(input));
+
         }
 
         /** <inheritdoc /> */
@@ -966,15 +926,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return this;
 
             return new CacheImpl<TK, TV>(_ignite, DoOutOpObject((int) CacheOp.WithNoRetries), Marshaller,
-                _flagSkipStore, _flagKeepBinary, _flagAsync, true);
-        }
-
-        /// <summary>
-        /// Gets the asynchronous instance.
-        /// </summary>
-        private CacheImpl<TK, TV> AsyncInstance
-        {
-            get { return _asyncInstance.Value; }
+                _flagSkipStore, _flagKeepBinary, true);
         }
 
         #region Queries
@@ -1169,11 +1121,11 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// Reads results of InvokeAll operation.
         /// </summary>
         /// <typeparam name="T">The type of the result.</typeparam>
-        /// <param name="inStream">Stream.</param>
+        /// <param name="reader">Stream.</param>
         /// <returns>Results of InvokeAll operation.</returns>
-        private IDictionary<TK, ICacheEntryProcessorResult<T>> ReadInvokeAllResults<T>(IBinaryStream inStream)
+        private IDictionary<TK, ICacheEntryProcessorResult<T>> ReadInvokeAllResults<T>(IBinaryRawReader reader)
         {
-            var count = inStream.ReadInt();
+            var count = reader.ReadInt();
 
             if (count == -1)
                 return null;
@@ -1182,13 +1134,13 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             for (var i = 0; i < count; i++)
             {
-                var key = Unmarshal<TK>(inStream);
+                var key = reader.ReadObject<TK>();
 
-                var hasError = inStream.ReadBool();
+                var hasError = reader.ReadBoolean();
 
                 results[key] = hasError
-                    ? new CacheEntryProcessorResult<T>(ReadException(inStream))
-                    : new CacheEntryProcessorResult<T>(Unmarshal<T>(inStream));
+                    ? new CacheEntryProcessorResult<T>(ReadException(reader))
+                    : new CacheEntryProcessorResult<T>(reader.ReadObject<T>());
             }
 
             return results;
@@ -1197,18 +1149,18 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Reads the exception, either in binary wrapper form, or as a pair of strings.
         /// </summary>
-        /// <param name="inStream">The stream.</param>
+        /// <param name="reader">The stream.</param>
         /// <returns>Exception.</returns>
-        private CacheEntryProcessorException ReadException(IBinaryStream inStream)
+        private CacheEntryProcessorException ReadException(IBinaryRawReader reader)
         {
-            var item = Unmarshal<object>(inStream);
+            var item = reader.ReadObject<object>();
 
             var clsName = item as string;
 
             if (clsName == null)
                 return new CacheEntryProcessorException((Exception) item);
 
-            var msg = Unmarshal<string>(inStream);
+            var msg = reader.ReadObject<string>();
                 
             return new CacheEntryProcessorException(ExceptionUtils.GetException(_ignite, clsName, msg));
         }

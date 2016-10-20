@@ -409,11 +409,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return target.ChangeTarget(res);
         }
 
-        internal static void TargetListenFutureForOperation(IUnmanagedTarget target, long futId, int typ, int opId)
-        {
-            JNI.TargetListenFutForOp(target.Context, target.Target, futId, typ, opId);
-        }
-
         #endregion
 
         #region NATIVE METHODS: MISCELANNEOUS
