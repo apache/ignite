@@ -25,6 +25,8 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
+import org.apache.ignite.internal.util.typedef.C1;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -203,7 +205,16 @@ public class PlatformTransactions extends PlatformAbstractTarget {
                 return super.processInStreamOutLong(type, reader);
         }
 
-        readAndListenFuture(reader, asyncTx.future());
+        // Future result is the tx itself, we do not want to return it to the platform.
+        IgniteFuture fut = asyncTx.future().chain(new C1<IgniteFuture, Object>() {
+            private static final long serialVersionUID = 0L;
+
+            @Override public Object apply(IgniteFuture fut) {
+                return null;
+            }
+        });
+
+        readAndListenFuture(reader, fut);
 
         return TRUE;
     }
