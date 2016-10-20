@@ -77,7 +77,7 @@ public class PageUpdateTrackingIO extends PageIO {
             buf.putLong(LAST_BACKUP_OFFSET, backupId);
 
             if (backupId - last > 1) //wipe all data in buffer
-                PageHandler.zeroMemory(buf, SIZE_FIELD_OFFSET, buf.capacity() - SIZE_FIELD_SIZE);
+                PageHandler.zeroMemory(buf, SIZE_FIELD_OFFSET, buf.capacity() - SIZE_FIELD_OFFSET);
             else
                 PageHandler.zeroMemory(buf, sizeOff + SIZE_FIELD_SIZE, (cntOfPage >> 3));
 
@@ -133,7 +133,7 @@ public class PageUpdateTrackingIO extends PageIO {
      * @return count of pages which were marked as change for given backupId
      */
     public static short countOfChangedPage(ByteBuffer buf, long backupId, int pageSize) {
-        long dif = backupId - buf.getLong(LAST_BACKUP_OFFSET);
+        long dif = buf.getLong(LAST_BACKUP_OFFSET) - backupId;
 
         if (dif != 0 && dif != 1)
             return -1;
