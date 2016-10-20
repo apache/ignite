@@ -57,7 +57,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
     private static final int DATA_STREAMER_POOL_MINOR_VER = 6;
 
     /** Data streamer separate pool feature maintenance version. */
-    private static final int DATA_STREAMER_POOL_MAINTENANCE_VER = 10;
+    private static final int DATA_STREAMER_POOL_MAINTENANCE_VER = 11;
 
     /** Default pool for data streamer messages processing. */
     public static final byte DFLT_POLICY = GridIoPolicy.PUBLIC_POOL;
