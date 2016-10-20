@@ -130,7 +130,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
                         set.add(dataStreamer.addData(i, "Data"));
 
                         if (i % 100000 == 0)
-                            log.info("Streaming "+i+"'th entry.");
+                            log.info("Streaming " + i + "'th entry.");
                     }
                 }
             }
@@ -142,12 +142,12 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
 
         fut.get();
 
-        for (IgniteFuture res: set)
+        for (IgniteFuture res : set)
             assert res.get() == null;
 
         IgniteCache<Integer, String> cache = grid(0).cache(null);
 
-        if (cache.size(CachePeekMode.PRIMARY) != KEYS_CNT){
+        if (cache.size(CachePeekMode.PRIMARY) != KEYS_CNT) {
             Set<Integer> failedKeys = new LinkedHashSet<>();
 
             for (int i = 0; i < KEYS_CNT; i++)

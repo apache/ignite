@@ -92,13 +92,13 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
                     onDone(rdc.reduce());
             }
             catch (RuntimeException e) {
-                U.error(null, "Failed to execute compound future reducer: " + this, e);
+                U.error(null, "Failed to execute compound future reducer: " + this, new IgniteCheckedException(e));
 
                 // Exception in reducer is a bug, so we bypass checkComplete here.
                 onDone(e);
             }
             catch (AssertionError e) {
-                U.error(null, "Failed to execute compound future reducer: " + this, e);
+                U.error(null, "Failed to execute compound future reducer: " + this, new IgniteCheckedException(e));
 
                 // Bypass checkComplete because need to rethrow.
                 onDone(e);
@@ -113,18 +113,18 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
         }
         catch (IgniteCheckedException e) {
             if (!ignoreFailure(e)) {
-                U.error(null, "Failed to execute compound future reducer: " + this, e);
+                U.error(null, "Failed to execute compound future reducer: " + this, new IgniteCheckedException(e));
 
                 onDone(e);
             }
         }
         catch (RuntimeException e) {
-            U.error(null, "Failed to execute compound future reducer: " + this, e);
+            U.error(null, "Failed to execute compound future reducer: " + this, new IgniteCheckedException(e));
 
             onDone(e);
         }
         catch (AssertionError e) {
-            U.error(null, "Failed to execute compound future reducer: " + this, e);
+            U.error(null, "Failed to execute compound future reducer: " + this, new IgniteCheckedException(e));
 
             // Bypass checkComplete because need to rethrow.
             onDone(e);
@@ -241,12 +241,12 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
                 onDone(rdc != null ? rdc.reduce() : null);
             }
             catch (RuntimeException e) {
-                U.error(null, "Failed to execute compound future reducer: " + this, e);
+                U.error(null, "Failed to execute compound future reducer: " + this, new IgniteCheckedException(e));
 
                 onDone(e);
             }
             catch (AssertionError e) {
-                U.error(null, "Failed to execute compound future reducer: " + this, e);
+                U.error(null, "Failed to execute compound future reducer: " + this, new IgniteCheckedException(e));
 
                 onDone(e);
 

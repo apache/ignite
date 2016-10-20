@@ -1363,6 +1363,17 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             List<DataStreamerEntry> entries0 = null;
             GridFutureAdapter<Object> curFut0 = null;
 
+            try {
+                if (remapSem.availablePermits() != REMAP_SEMAPHORE_PERMISSIONS_COUNT) {
+                    remapSem.acquire(REMAP_SEMAPHORE_PERMISSIONS_COUNT); // Wait until failed data being processed.
+
+                    remapSem.release(REMAP_SEMAPHORE_PERMISSIONS_COUNT);
+                }
+            }
+            catch (InterruptedException e) {
+                log.error("Failed to wait for failed data processing.", e);
+            }
+
             synchronized (this) {
                 if (!entries.isEmpty()) {
                     entries0 = entries;
