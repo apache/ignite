@@ -83,7 +83,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
      * @param fieldOffset Field offset.
      * @return Field value.
      */
-    @Nullable protected abstract <F> F fieldByOrder(int fieldOffset);
+    @Nullable public abstract <F> F fieldByOrder(int fieldOffset);
 
     /**
      * @param ctx Reader context.
@@ -93,11 +93,16 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
     @Nullable protected abstract <F> F field(BinaryReaderHandles ctx, String fieldName);
 
     /**
+     * @return {@code True} if object has schema.
+     */
+    public abstract boolean hasSchema();
+
+    /**
      * Get schema ID.
      *
      * @return Schema ID.
      */
-    protected abstract int schemaId();
+    public abstract int schemaId();
 
     /**
      * Create schema for object.

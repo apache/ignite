@@ -24,6 +24,7 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -295,7 +296,10 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Nullable @Override protected <F> F fieldByOrder(int order) {
+    @Nullable @Override public <F> F fieldByOrder(int order) {
+        if (order == BinarySchema.ORDER_NOT_FOUND)
+            return null;
+
         Object val;
 
         // Calculate field position.
@@ -465,7 +469,14 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
-    @Override protected int schemaId() {
+    @Override public boolean hasSchema() {
+        short flags = BinaryPrimitives.readShort(arr, start + GridBinaryMarshaller.FLAGS_POS);
+
+        return BinaryUtils.hasSchema(flags);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int schemaId() {
         return BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.SCHEMA_ID_POS);
     }
 

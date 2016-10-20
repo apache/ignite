@@ -115,7 +115,14 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
-    @Override protected int schemaId() {
+    @Override public boolean hasSchema() {
+        short flags = BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS);
+
+        return BinaryUtils.hasSchema(flags);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int schemaId() {
         return BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.SCHEMA_ID_POS);
     }
 
@@ -180,7 +187,10 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Nullable @Override protected <F> F fieldByOrder(int order) {
+    @Nullable @Override public <F> F fieldByOrder(int order) {
+        if (order == BinarySchema.ORDER_NOT_FOUND)
+            return null;
+
         Object val;
 
         // Calculate field position.
