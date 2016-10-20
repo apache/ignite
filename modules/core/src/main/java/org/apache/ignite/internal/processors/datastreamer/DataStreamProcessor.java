@@ -310,6 +310,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         final StreamReceiver<K, V> updater,
         final Object topic) {
         final boolean allowOverride = req.allowOverride();
+
         try {
             GridCacheContext cctx = ctx.cache().internalCache(req.cacheName()).context();
 

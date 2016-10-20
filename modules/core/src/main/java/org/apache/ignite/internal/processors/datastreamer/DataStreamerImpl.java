@@ -1445,10 +1445,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             final AffinityTopologyVersion reqTopVer,
             final GridFutureAdapter<Object> curFut) {
             try {
-                final boolean allowOverride = allowOverwrite();
-
                 GridCacheContext cctx = ctx.cache().internalCache(cacheName).context();
 
+                final boolean allowOverride = allowOverwrite();
                 final boolean loc = cctx.isLocal();
 
                 if (!loc && !allowOverride)
