@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.binary;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
