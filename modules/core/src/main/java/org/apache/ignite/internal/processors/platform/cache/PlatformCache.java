@@ -281,6 +281,9 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_REMOVE_OBJ_ASYNC = 71;
 
+    /** */
+    public static final int OP_GET_ALL_ASYNC = 72;
+
     /** Underlying JCache. */
     private final IgniteCacheProxy cache;
 
@@ -531,6 +534,16 @@ public class PlatformCache extends PlatformAbstractTarget {
                 cacheAsync.remove(reader.readObjectDetached(), reader.readObjectDetached());
 
                 return readAndListenFuture(reader);
+
+            case OP_GET_ALL_ASYNC: {
+                Set keys = PlatformUtils.readSet(reader);
+
+                cacheAsync.getAll(keys);
+
+                readAndListenFuture(reader, cacheAsync.future(), WRITER_GET_ALL);
+
+                return TRUE;
+            }
 
             default:
                 return super.processInStreamOutLong(type, reader);

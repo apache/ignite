@@ -93,5 +93,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         ContainsKeysAsync = 69,
         RemoveBoolAsync = 70,
         RemoveObjAsync = 71,
+        GetAllAsync = 72,
     }
 }

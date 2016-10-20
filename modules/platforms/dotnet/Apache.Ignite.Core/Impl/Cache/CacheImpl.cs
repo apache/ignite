@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
@@ -487,9 +488,10 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<IDictionary<TK, TV>> GetAllAsync(IEnumerable<TK> keys)
         {
-            AsyncInstance.GetAll(keys);
+            IgniteArgumentCheck.NotNull(keys, "keys");
 
-            return AsyncInstance.GetTask(CacheOp.GetAll, r => r == null ? null : ReadGetAllDictionary(r));
+            return DoOutOpAsync(CacheOp.GetAllAsync, writer => WriteEnumerable(writer, keys),
+                reader => ReadGetAllDictionary(reader));
         }
 
         /** <inheritdoc /> */
@@ -1200,6 +1202,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>Dictionary.</returns>
         private static IDictionary<TK, TV> ReadGetAllDictionary(BinaryReader reader)
         {
+            if (reader == null)
+                return null;
+
             IBinaryStream stream = reader.Stream;
 
             if (stream.ReadBool())
