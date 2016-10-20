@@ -17,6 +17,8 @@
 
 package org.apache.ignite.binary;
 
+import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryObjectExImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -36,17 +38,53 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
     }
 
     /**
-     * @param fieldNames Fields list to hash/compare objects based upon.
+     * Set field names.
+     *
+     * @param fieldNames Field names.
+     * @return {@code this} for chaining.
      */
-    public void setFieldNames(String... fieldNames) {
+    public BinaryFieldListIdentity setFieldNames(String... fieldNames) {
         this.fieldNames = fieldNames;
+
+        return this;
     }
 
     /** {@inheritDoc} */
-    @Override public int hash(BinaryObject obj) {
+    @Override public int hashCode(BinaryObject obj) {
+        assert obj != null;
         assert fieldNames != null;
 
-        BinaryObjectExImpl exObj = (BinaryObjectExImpl) obj;
+        if (obj instanceof BinaryEnumObjectImpl)
+            // Handle special case for enums.
+            return obj.hashCode();
+        else {
+            if (obj instanceof BinaryObjectEx)
+                // Handle optimized case.
+                return hashCode0((BinaryObjectEx)obj);
+            else {
+                // Handle regular case.
+                int hash = 0;
+
+                for (String fieldName : fieldNames) {
+                    Object val = obj.field(fieldName);
+
+                    hash = 31 * hash + (val != null ? val.hashCode() : 0);
+                }
+
+                return hash;
+            }
+        }
+    }
+
+    /**
+     * Optimized routine for well-known binary object classes.
+     *
+     * @param obj Object.
+     * @return Hash code.
+     */
+    private int hashCode0(BinaryObjectEx obj) {
+        // TODO.
+        BinaryObjectExImpl exObj = (BinaryObjectExImpl)obj;
 
         int hash = 0;
 

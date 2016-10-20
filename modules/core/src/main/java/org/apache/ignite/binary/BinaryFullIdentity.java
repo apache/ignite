@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
  */
 public class BinaryFullIdentity implements BinaryIdentity {
     /** {@inheritDoc} */
-    @Override public int hash(BinaryObject obj) {
+    @Override public int hashCode(BinaryObject obj) {
         A.notNull(obj, "Can't compute hash code for null object");
 
         assert obj instanceof BinaryObjectExImpl;

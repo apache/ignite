@@ -27,7 +27,7 @@ public interface BinaryIdentity {
      * @param obj Binary object.
      * @return Hash code value.
      */
-    public int hash(BinaryObject obj);
+    public int hashCode(BinaryObject obj);
 
     /**
      * Compare two binary objects for equality.

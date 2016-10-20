@@ -1439,7 +1439,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      */
     private final static class Identity implements BinaryIdentity {
         /** {@inheritDoc} */
-        @Override public int hash(BinaryObject builder) {
+        @Override public int hashCode(BinaryObject builder) {
             return (Integer) builder.field("fld1") * 31 / 5;
         }
 

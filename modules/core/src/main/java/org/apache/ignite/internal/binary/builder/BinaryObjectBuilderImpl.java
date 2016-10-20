@@ -200,7 +200,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                     BinaryPrimitives.writeShort(arr, GridBinaryMarshaller.FLAGS_POS,
                         (short) (flags & ~BinaryUtils.FLAG_EMPTY_HASH_CODE));
 
-                    BinaryPrimitives.writeInt(arr, GridBinaryMarshaller.HASH_CODE_POS, identity.hash(res));
+                    BinaryPrimitives.writeInt(arr, GridBinaryMarshaller.HASH_CODE_POS, identity.hashCode(res));
                 }
             }
 
