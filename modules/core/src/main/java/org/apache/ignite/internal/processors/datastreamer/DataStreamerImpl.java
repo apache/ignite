@@ -95,6 +95,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPC;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -105,6 +106,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
+import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -184,6 +186,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** {@code True} if data loader has been cancelled. */
     private volatile boolean cancelled;
 
+    /** Fail counter. */
+    private final LongAdder8 failCntr = new LongAdder8();
+
     /** Active futures of this data loader. */
     @GridToStringInclude
     private final Collection<IgniteInternalFuture<?>> activeFuts = new GridConcurrentHashSet<>();
@@ -195,6 +200,14 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             boolean rmv = activeFuts.remove(t);
 
             assert rmv;
+
+            if (t.error() != null) {
+                LT.error(log, t.error(), "DataStreamer operation failed.");
+
+                failCntr.increment();
+
+                cancelled = true;
+            }
         }
     };
 
@@ -578,6 +591,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      * @return Future.
      */
     public IgniteFuture<?> addDataInternal(Collection<? extends DataStreamerEntry> entries) {
+        if (cancelled)
+            throw new CacheException("DataStreamer cancelled, new data can't be processed.");
+
         enterBusy();
 
         GridFutureAdapter<Object> resFut = new GridFutureAdapter<>();
@@ -1135,7 +1151,15 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             throw e;
         }
 
+        long failed = failCntr.longValue();
+
+        if (failed > 0)
+            err = new IgniteCheckedException("Some of DataStreamer operations failed. [failedCount=" + failed + "]");
+
         fut.onDone(err);
+
+        if (err != null)
+            throw err;
     }
 
     /**

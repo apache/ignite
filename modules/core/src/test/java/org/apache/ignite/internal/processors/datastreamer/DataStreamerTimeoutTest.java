@@ -20,8 +20,8 @@ import java.util.Collection;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteDataStreamerTimeoutException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -36,7 +36,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Test timeout for Data streamer.
  */
 public class DataStreamerTimeoutTest extends GridCommonAbstractTest {
-
     /** Cache name. */
     public static final String CACHE_NAME = "cacheName";
 
@@ -73,6 +72,7 @@ public class DataStreamerTimeoutTest extends GridCommonAbstractTest {
 
     /**
      * Test timeout on {@code DataStreamer.addData()} method
+     *
      * @throws Exception If fail.
      */
     public void testTimeoutOnCloseMethod() throws Exception {
@@ -85,12 +85,12 @@ public class DataStreamerTimeoutTest extends GridCommonAbstractTest {
             ldr.receiver(new TestDataReceiver());
             ldr.perNodeBufferSize(ENTRY_AMOUNT);
 
-            for (int i=0; i < ENTRY_AMOUNT; i++)
+            for (int i = 0; i < ENTRY_AMOUNT; i++)
                 ldr.addData(i, i);
-
         }
         catch (IgniteDataStreamerTimeoutException e) {
             assertEquals(e.getMessage(), "Data streamer exceeded timeout on flush.");
+
             thrown = true;
         }
         finally {
@@ -102,40 +102,49 @@ public class DataStreamerTimeoutTest extends GridCommonAbstractTest {
 
     /**
      * Test timeout on {@code DataStreamer.close()} method
+     *
      * @throws Exception If fail.
      */
     public void testTimeoutOnAddDataMethod() throws Exception {
-        Ignite ignite = startGrid(1);
-
-        boolean thrown = false;
-
-        IgniteDataStreamer ldr = ignite.dataStreamer(CACHE_NAME);
-
         try {
-            ldr.timeout(TIMEOUT);
-            ldr.receiver(new TestDataReceiver());
-            ldr.perNodeBufferSize(ENTRY_AMOUNT/2);
-            ldr.perNodeParallelOperations(1);
+            Ignite ignite = startGrid(1);
 
-            try {
-                for (int i=0; i < ENTRY_AMOUNT; i++)
-                    ldr.addData(i, i);
+            boolean thrown = false;
+            int processed = 0;
+
+            try (IgniteDataStreamer ldr = ignite.dataStreamer(CACHE_NAME)) {
+                ldr.timeout(TIMEOUT);
+                ldr.receiver(new TestDataReceiver());
+                ldr.perNodeBufferSize(1);
+                ldr.perNodeParallelOperations(1);
+                ((DataStreamerImpl)ldr).maxRemapCount(0);
+
+                try {
+                    for (int i = 0; i < ENTRY_AMOUNT; i++) {
+                        ldr.addData(i, i);
+
+                        processed++;
+                    }
+                }
+                catch (Exception e) {
+                    assertEquals(e.getMessage(), "DataStreamer cancelled, new data can't be processed.");
+                }
             }
-            catch (IgniteDataStreamerTimeoutException e) {
-                assertEquals(e.getMessage(), "Data streamer exceeded timeout when starts parallel operation.");
+            catch (Exception e) {
+                String mess = e.getMessage();
+
+                assertTrue(mess, mess.contains("Some of DataStreamer operations failed") ||
+                    mess.contains("Data streamer exceeded timeout on flush"));
 
                 thrown = true;
             }
 
+            assertTrue(thrown);
+            assertTrue(processed < 3);
         }
         finally {
-            if (thrown)
-                ldr.close(true);
-
             stopAllGrids();
         }
-
-        assertTrue(thrown);
     }
 
     /**
