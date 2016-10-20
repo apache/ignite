@@ -475,11 +475,14 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
 
             try {
                 Ignite ignite0;
+                boolean cliStarted0 = false;
 
                 try {
                     Ignition.setClientMode(true);
 
                     ignite0 = Ignition.start(igniteCliCfgPath);
+
+                    cliStarted0 = true;
                 } catch (IgniteException e) {
                     if (e.getMessage().contains("Ignite instance with this name has already been started")) {
                         IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> cfg =
@@ -499,6 +502,8 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
 
                 final Ignite ignite = ignite0;
 
+                final boolean cliStarted = cliStarted0;
+
                 if (ignite == null)
                     throw new HadoopIgfsCommunicationException("Cannot create Ignite client node. See the log");
 
@@ -509,9 +514,11 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
                     try {
                         hadoop = new HadoopIgfsInProc(igfs, log, userName) {
                             @Override public void close(boolean force) {
-                                ignite.close();
+                                if (cliStarted) {
+                                    ignite.close();
 
-                                log.info("IGFS Ignite client is stopped.");
+                                    log.info("IGFS Ignite client is stopped.");
+                                }
                             }
                         };
 
