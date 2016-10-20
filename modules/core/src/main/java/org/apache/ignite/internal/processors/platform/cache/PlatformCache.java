@@ -603,6 +603,35 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 return readAndListenFuture(reader);
 
+            case OP_INVOKE_ASYNC: {
+                Object key = reader.readObjectDetached();
+
+                CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), 0);
+
+                cacheAsync.invoke(key, proc);
+
+                readAndListenFuture(reader, cacheAsync.future(), WRITER_INVOKE);
+
+                return TRUE;
+            }
+
+            case OP_INVOKE_ALL_ASYNC: {
+                Set<Object> keys = PlatformUtils.readSet(reader);
+
+                CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), 0);
+
+                cacheAsync.invokeAll(keys, proc);
+
+                readAndListenFuture(reader, cacheAsync.future(), WRITER_INVOKE_ALL);
+
+                return TRUE;
+            }
+
+            case OP_PUT_IF_ABSENT_ASYNC:
+                cacheAsync.putIfAbsent(reader.readObjectDetached(), reader.readObjectDetached());
+
+                return readAndListenFuture(reader);
+
             default:
                 return super.processInStreamOutLong(type, reader);
         }
