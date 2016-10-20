@@ -100,5 +100,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         GetAndReplaceAsync = 76,
         Replace2Async = 77,
         Replace3Async = 78,
+        InvokeAsync = 79,
+        InvokeAllAsync = 80,
+        PutIfAbsentAsync = 81
     }
 }

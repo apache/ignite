@@ -302,6 +302,15 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_REPLACE_3_ASYNC = 78;
 
+    /** */
+    public static final int OP_INVOKE_ASYNC = 79;
+
+    /** */
+    public static final int OP_INVOKE_ALL_ASYNC = 80;
+
+    /** */
+    public static final int OP_PUT_IF_ABSENT_ASYNC = 81;
+
     /** Underlying JCache. */
     private final IgniteCacheProxy cache;
 
