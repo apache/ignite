@@ -46,9 +46,9 @@ public class StartFullBackupDiscoveryMessage implements DiscoveryCustomMessage {
     /** Error. */
     private Exception err;
 
-    private Long prevBackupId;
-
     private boolean incremental;
+
+    private Long lastFullBackupId;
 
     /**
      * @param cacheNames Cache names.
@@ -116,17 +116,17 @@ public class StartFullBackupDiscoveryMessage implements DiscoveryCustomMessage {
         return incremental;
     }
 
-    public Long previousBackupId() {
-        return prevBackupId;
+    public Long lastFullBackupId() {
+        return lastFullBackupId;
     }
 
-    public void previousBackupId(long id) {
-        prevBackupId = id;
+    public void lastFullBackupId(long id) {
+        lastFullBackupId = id;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return new StartFullBackupAckDiscoveryMessage(backupId, prevBackupId, cacheNames, err, initiatorId);
+        return new StartFullBackupAckDiscoveryMessage(backupId, lastFullBackupId, cacheNames, err, initiatorId);
     }
 
     /** {@inheritDoc} */
