@@ -510,7 +510,6 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
                 IgfsEx igfs = (IgfsEx)ignite.fileSystem(endpoint.igfs());
 
                 if (igfs != null) {
-
                     try {
                         hadoop = new HadoopIgfsInProc(igfs, log, userName) {
                             @Override public void close(boolean force) {
