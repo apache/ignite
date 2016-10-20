@@ -51,6 +51,9 @@ import org.jetbrains.annotations.NotNull;
 public class GridNearInvokeResponse extends GridNearGetResponse implements GridCacheDeployable,
     GridCacheVersionable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     @GridToStringExclude
     private GridCacheReturn ret;
 
