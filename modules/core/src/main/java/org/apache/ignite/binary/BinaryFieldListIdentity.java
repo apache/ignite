@@ -119,22 +119,36 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
         if (o2 == null || !(o2 instanceof BinaryObjectExImpl))
             return false;
 
-        BinaryObjectExImpl ex1 = (BinaryObjectExImpl) o1;
-        BinaryObjectExImpl ex2 = (BinaryObjectExImpl) o2;
+        BinaryObjectExImpl ex1 = (BinaryObjectExImpl)o1;
+        BinaryObjectExImpl ex2 = (BinaryObjectExImpl)o2;
 
         if (ex1.hasSchema() && ex2.hasSchema()) {
             FieldAccessor accessor1 = accessor(ex1);
             FieldAccessor accessor2 = accessor(ex2);
 
-            for (int i = 0; i < fieldNames.length; i++) {
-                Object val1 = accessor1.field(ex1, i);
-                Object val2 = accessor2.field(ex2, i);
+            if (accessor1 == accessor2) {
+                // Optimistic case: both objects have the same structure.
+                for (int i = 0; i < fieldNames.length; i++) {
+                    Object val1 = accessor1.field(ex1, i);
+                    Object val2 = accessor1.field(ex2, i);
 
-                if (!F.eq(val1, val2))
-                    return false;
+                    if (!F.eq(val1, val2))
+                        return false;
+                }
+            }
+            else {
+                // Moderate case: both objects has schemas, but have different structure.
+                for (int i = 0; i < fieldNames.length; i++) {
+                    Object val1 = accessor1.field(ex1, i);
+                    Object val2 = accessor2.field(ex2, i);
+
+                    if (!F.eq(val1, val2))
+                        return false;
+                }
             }
         }
         else {
+            // Pessimistic case: object of unknown types, or without schemas. Have to read fields in usual way.
             BinaryType type1 = ex1.type();
             BinaryType type2 = ex1.type();
 
@@ -183,7 +197,7 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
             return res;
 
         // Try reading form map.
-        long key = (long)typeId << 32 + schemaId;
+        long key = ((long)typeId << 32) + schemaId;
 
         HashMap<Long, FieldAccessor> accessors0 = accessors;
 
@@ -254,6 +268,7 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
          *
          * @param typeId Type ID.
          * @param schemaId Schema ID.
+         * @param orders Field orders.
          */
         private FieldAccessor(int typeId, int schemaId, int[] orders) {
             this.typeId = typeId;
