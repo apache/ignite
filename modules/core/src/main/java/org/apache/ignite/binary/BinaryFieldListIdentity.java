@@ -17,22 +17,34 @@
 
 package org.apache.ignite.binary;
 
-import java.util.List;
 import org.apache.ignite.internal.binary.BinaryObjectExImpl;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Default implementation of fields based hash code resolver.
  */
 public final class BinaryFieldListIdentity implements BinaryIdentity {
+    /** Field names. */
+    private String[] fieldNames;
+
     /**
-     * Fields based on whose values hash code should be computed.
+     * @return Fields list to hash/compare objects based upon.
      */
-    private List<String> fieldNames;
+    public String[] getFieldNames() {
+        return fieldNames;
+    }
+
+    /**
+     * @param fieldNames Fields list to hash/compare objects based upon.
+     */
+    public void setFieldNames(String... fieldNames) {
+        this.fieldNames = fieldNames;
+    }
 
     /** {@inheritDoc} */
     @Override public int hash(BinaryObject obj) {
-        assert obj instanceof BinaryObjectExImpl;
+        assert fieldNames != null;
 
         BinaryObjectExImpl exObj = (BinaryObjectExImpl) obj;
 
@@ -49,6 +61,8 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
 
     /** {@inheritDoc} */
     @Override public boolean equals(BinaryObject o1, BinaryObject o2) {
+        assert fieldNames != null;
+
         if (o1 == o2)
             return true;
 
@@ -71,25 +85,16 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
     }
 
     /**
-     * @return Fields list to hash/compare objects based upon.
-     */
-    public List<String> getFieldNames() {
-        return fieldNames;
-    }
-
-    /**
-     * @param fieldNames Fields list to hash/compare objects based upon.
-     */
-    public void setFieldNames(List<String> fieldNames) {
-        this.fieldNames = fieldNames;
-    }
-
-    /**
      * @param exObj Object to get the field value from.
      * @param fieldName Field id.
      * @return Field value.
      */
     private static Object fieldValue(BinaryObjectExImpl exObj, String fieldName) {
         return exObj.context().createField(exObj.typeId(), fieldName).value(exObj);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(BinaryFieldListIdentity.class, this);
     }
 }

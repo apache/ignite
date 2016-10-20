@@ -142,7 +142,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             setTypeName("FieldsHashedKey");
 
             BinaryFieldListIdentity id = new BinaryFieldListIdentity();
-            id.setFieldNames(Arrays.asList("fld1", "fld3"));
+            id.setFieldNames("fld1", "fld3");
 
             setIdentity(id);
         }});
@@ -157,7 +157,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             setTypeName("ComplexBinaryFieldsListHashedKey");
 
             BinaryFieldListIdentity id = new BinaryFieldListIdentity();
-            id.setFieldNames(Arrays.asList("secondField", "thirdField"));
+            id.setFieldNames("secondField", "thirdField");
 
             setIdentity(id);
         }});
