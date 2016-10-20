@@ -50,11 +50,13 @@ public class IgfsClientUpdateCallable extends IgfsClientAbstractCallable<IgfsFil
      * Constructor.
      *
      * @param igfsName IGFS name.
+     * @param userName IGFS user name.
      * @param path Path.
      * @param props Properties.
      */
-    public IgfsClientUpdateCallable(@Nullable String igfsName, IgfsPath path, @Nullable Map<String, String> props) {
-        super(igfsName, path);
+    public IgfsClientUpdateCallable(@Nullable String igfsName, @Nullable String userName, IgfsPath path,
+        @Nullable Map<String, String> props) {
+        super(igfsName, userName, path);
 
         this.props = props;
     }

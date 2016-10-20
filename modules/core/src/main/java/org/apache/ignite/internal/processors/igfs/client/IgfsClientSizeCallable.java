@@ -41,10 +41,11 @@ public class IgfsClientSizeCallable extends IgfsClientAbstractCallable<Long> {
      * Constructor.
      *
      * @param igfsName IGFS name.
+     * @param userName IGFS user name.
      * @param path Path.
      */
-    public IgfsClientSizeCallable(@Nullable String igfsName, IgfsPath path) {
-        super(igfsName, path);
+    public IgfsClientSizeCallable(@Nullable String igfsName, @Nullable String userName, IgfsPath path) {
+        super(igfsName, userName, path);
     }
 
     /** {@inheritDoc} */

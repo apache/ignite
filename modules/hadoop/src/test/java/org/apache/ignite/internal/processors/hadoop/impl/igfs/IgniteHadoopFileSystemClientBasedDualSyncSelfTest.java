@@ -35,19 +35,4 @@ public class IgniteHadoopFileSystemClientBasedDualSyncSelfTest
     @Override protected String getClientConfig() {
         return "modules/hadoop/src/test/config/igfs-cli-config-dual-sync.xml";
     }
-
-    /** {@inheritDoc} */
-    @Override public void testOpen() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-3667");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testMkdirs() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-3667");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testSetOwner() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-3667");
-    }
 }

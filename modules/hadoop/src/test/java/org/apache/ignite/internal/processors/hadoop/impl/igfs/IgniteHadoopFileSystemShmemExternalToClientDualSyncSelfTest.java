@@ -17,22 +17,17 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
-import org.apache.ignite.igfs.IgfsMode;
+import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
 
 /**
- * IGFS Hadoop file system Ignite client -based self test for DUAL_ASYNC mode.
+ * IGFS Hadoop file system IPC shmem self test in PRIMARY mode.
  */
-public class IgniteHadoopFileSystemClientBasedDualAsyncSelfTest
-    extends IgniteHadoopFileSystemClientBasedAbstractSelfTest {
+public class IgniteHadoopFileSystemShmemExternalToClientDualSyncSelfTest
+    extends IgniteHadoopFileSystemShmemExternalToClientAbstractSelfTest {
     /**
      * Constructor.
      */
-    public IgniteHadoopFileSystemClientBasedDualAsyncSelfTest() {
-        super(IgfsMode.DUAL_ASYNC);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected String getClientConfig() {
-        return "modules/hadoop/src/test/config/igfs-cli-config-dual-async.xml";
+    public IgniteHadoopFileSystemShmemExternalToClientDualSyncSelfTest() {
+        super(DUAL_SYNC, true);
     }
 }

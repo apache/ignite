@@ -64,6 +64,7 @@ public class IgfsClientMetaUnlockCallable extends IgfsClientAbstractCallable<Voi
      * Constructor.
      *
      * @param igfsName IGFS name.
+     * @param userName IGFS user name.
      * @param fileId File ID.
      * @param lockId Lock ID.
      * @param modificationTime Modification time to write to file info.
@@ -71,9 +72,10 @@ public class IgfsClientMetaUnlockCallable extends IgfsClientAbstractCallable<Voi
      * @param space Space.
      * @param affRange Affinity range.
      */
-    public IgfsClientMetaUnlockCallable(@Nullable String igfsName, IgniteUuid fileId, IgniteUuid lockId,
-        long modificationTime, boolean updateSpace, long space, final IgfsFileAffinityRange affRange) {
-        super(igfsName, null);
+    public IgfsClientMetaUnlockCallable(@Nullable String igfsName, @Nullable String userName, IgniteUuid fileId,
+        IgniteUuid lockId, long modificationTime, boolean updateSpace, long space,
+        final IgfsFileAffinityRange affRange) {
+        super(igfsName, userName, null);
 
         this.fileId = fileId;
         this.lockId = lockId;
