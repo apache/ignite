@@ -51,7 +51,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
     /**
      * @return {@code True} if object is array based.
      */
-    protected abstract boolean hasArray();
+    public abstract boolean hasArray();
 
     /**
      * @return Object array if object is array based, otherwise {@code null}.
@@ -84,6 +84,13 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
      * @return Field value.
      */
     @Nullable public abstract <F> F fieldByOrder(int fieldOffset);
+
+    /**
+     * Create field comparer.
+     *
+     * @return Comparer.
+     */
+    public abstract BinarySerializedFieldComparer createFieldComparer();
 
     /**
      * @param ctx Reader context.

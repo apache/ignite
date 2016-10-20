@@ -20,6 +20,7 @@ package org.apache.ignite.binary;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryFieldImpl;
 import org.apache.ignite.internal.binary.BinaryObjectExImpl;
+import org.apache.ignite.internal.binary.BinarySerializedFieldComparer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -123,21 +124,24 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
         BinaryObjectExImpl ex2 = (BinaryObjectExImpl)o2;
 
         if (ex1.hasSchema() && ex2.hasSchema()) {
+            // Optimistic case: both objects have schemas.
             FieldAccessor accessor1 = accessor(ex1);
             FieldAccessor accessor2 = accessor(ex2);
 
-            if (accessor1 == accessor2) {
-                // Optimistic case: both objects have the same structure.
-                for (int i = 0; i < fieldNames.length; i++) {
-                    Object val1 = accessor1.field(ex1, i);
-                    Object val2 = accessor1.field(ex2, i);
+            if (ex1.hasArray() && ex2.hasArray()) {
+                // Even better case: compare fields without deserialization.
+                BinarySerializedFieldComparer comp1 = ex1.createFieldComparer();
+                BinarySerializedFieldComparer comp2 = ex2.createFieldComparer();
 
-                    if (!F.eq(val1, val2))
+                for (int i = 0; i < fieldNames.length; i++) {
+                    comp1.findField(accessor1.orders[i]);
+                    comp2.findField(accessor2.orders[i]);
+
+                    if (!BinarySerializedFieldComparer.equals(comp1, comp2))
                         return false;
                 }
             }
             else {
-                // Moderate case: both objects has schemas, but have different structure.
                 for (int i = 0; i < fieldNames.length; i++) {
                     Object val1 = accessor1.field(ex1, i);
                     Object val2 = accessor2.field(ex2, i);

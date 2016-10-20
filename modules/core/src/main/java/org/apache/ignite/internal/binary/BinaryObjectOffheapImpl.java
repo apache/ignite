@@ -152,7 +152,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean hasArray() {
+    @Override public boolean hasArray() {
         return false;
     }
 
@@ -183,6 +183,21 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     @SuppressWarnings("unchecked")
     @Nullable @Override public <F> F field(int fieldId) throws BinaryObjectException {
         return (F) reader(null, false).unmarshalField(fieldId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinarySerializedFieldComparer createFieldComparer() {
+        int schemaOff = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
+
+        short flags = BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS);
+
+        int fieldIdLen = BinaryUtils.isCompactFooter(flags) ? 0 : BinaryUtils.FIELD_ID_LEN;
+        int fieldOffLen = BinaryUtils.fieldOffsetLength(flags);
+
+        int orderBase = start + schemaOff + fieldIdLen;
+        int orderMultiplier = fieldIdLen + fieldOffLen;
+
+        return new BinarySerializedFieldComparer(ctx, null, ptr, start, orderBase, orderMultiplier, fieldOffLen);
     }
 
     /** {@inheritDoc} */
