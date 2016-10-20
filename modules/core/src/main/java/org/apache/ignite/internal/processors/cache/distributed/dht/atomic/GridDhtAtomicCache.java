@@ -22,12 +22,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
@@ -35,9 +38,14 @@ import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -125,6 +133,8 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
 public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
+
+    private static final BinaryObjectComparator BINARY_COMPARATOR = new BinaryObjectComparator();
 
     /** Deferred update response buffer size. */
     private static final int DEFERRED_UPDATE_RESPONSE_BUFFER_SIZE =
@@ -1033,6 +1043,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         if (map != null && keyCheck)
             validateCacheKeys(map.keySet());
+
+        map = sortMap(map);
 
         ctx.checkSecurity(SecurityPermission.CACHE_PUT);
 
@@ -3457,6 +3469,49 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /**
+     * Sort map if is not SourtedMap yet
+     *
+     * @param map map to sort
+     * @return sorted map
+     */
+    private SortedMap<? extends K, ? extends V> sortMap(@Nullable Map<? extends K, ? extends V> map) {
+        if (map == null)
+            return null;
+        if (map.isEmpty())
+            return new TreeMap<K, V>();
+        if (map instanceof SortedMap)
+            return (SortedMap)map;
+
+        boolean binary = true;
+        boolean comparable = true;
+        if (keyCheck) {
+            for (K key : map.keySet()) {
+                if (!(key instanceof BinaryObject)) {
+                    binary = false;
+                }
+                if (!(key instanceof Comparable)) {
+                    comparable = false;
+                }
+                if (!binary && !comparable) {
+                    throw new IllegalArgumentException("Cache key must be in SortedMap or implements Comparable interface: " +
+                        key.getClass().getName());
+                }
+            }
+        } else {
+            if (!(map.keySet().iterator().next() instanceof BinaryObject)) {
+                binary = false;
+            }
+        }
+        if (binary) {
+            SortedMap<K, V> result = (SortedMap<K, V>)new TreeMap<BinaryObjectEx, V>(BINARY_COMPARATOR);
+            result.putAll(map);
+            return result;
+        }
+
+        return new TreeMap<K, V>(map);
+    }
+
+    /**
      *
      */
     private static class FinishedLockFuture extends GridFinishedFuture<Boolean> implements GridDhtFuture<Boolean> {
@@ -3470,6 +3525,47 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         /** {@inheritDoc} */
         @Override public Collection<Integer> invalidPartitions() {
             return Collections.emptyList();
+        }
+    }
+
+    private static class BinaryObjectComparator implements Comparator<BinaryObject> {
+
+        @Override public int compare(BinaryObject obj1, BinaryObject obj2) {
+            BinaryObjectEx o1 = (BinaryObjectEx)obj1;
+            BinaryObjectEx o2 = (BinaryObjectEx)obj2;
+            int typeComparsion = Integer.compare(o1.typeId(), o2.typeId());
+            if (typeComparsion != 0) {
+                return typeComparsion;
+            }
+            if (o1 instanceof BinaryEnumObjectImpl && o2 instanceof BinaryEnumObjectImpl) {
+                return Integer.compare(((BinaryEnumObjectImpl)o1).enumOrdinal(),
+                    ((BinaryEnumObjectImpl)o2).enumOrdinal());
+            }
+            if (o1 instanceof BinaryObjectOffheapImpl) {
+                o1 = (BinaryObjectImpl)((BinaryObjectOffheapImpl)o1).heapCopy();
+            }
+            if (o2 instanceof BinaryObjectOffheapImpl) {
+                o2 = (BinaryObjectImpl)((BinaryObjectOffheapImpl)o2).heapCopy();
+            }
+
+            if (o1 instanceof BinaryObjectImpl && o2 instanceof BinaryObjectImpl) {
+                byte[] o1array = ((BinaryObjectImpl)o1).array();
+                byte[] o2array = ((BinaryObjectImpl)o2).array();
+                int sizeComparsion = Integer.compare(o1array.length, o2array.length);
+                if (sizeComparsion != 0) {
+                    return sizeComparsion;
+                }
+                int elementComparsion;
+                for (int i = 0; i < o1array.length; i++) {
+                    elementComparsion = Byte.compare(o1array[i], o2array[i]);
+                    if (elementComparsion != 0) {
+                        return elementComparsion;
+                    }
+                }
+                return 0;
+            }
+
+            return 0;
         }
     }
 }
