@@ -302,6 +302,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<bool> ContainsKeyAsync(TK key)
         {
+            IgniteArgumentCheck.NotNull(key, "key");
+
             return DoOutOpAsync<TK, bool>(CacheOp.ContainsKeyAsync, key);
         }
 
@@ -379,6 +381,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<TV> GetAsync(TK key)
         {
+            IgniteArgumentCheck.NotNull(key, "key");
+
             return DoOutOpAsync(CacheOp.GetAsync, w => w.WriteObject(key), reader =>
             {
                 if (reader != null)
@@ -403,6 +407,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<CacheResult<TV>> TryGetAsync(TK key)
         {
+            IgniteArgumentCheck.NotNull(key, "key");
+
             return DoOutOpAsync(CacheOp.GetAsync, w => w.WriteObject(key), GetCacheResult);
         }
 
@@ -564,6 +570,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<bool> ReplaceAsync(TK key, TV val)
         {
+            IgniteArgumentCheck.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(val, "val");
+
             return DoOutOpAsync<TK, TV, bool>(CacheOp.Replace2Async, key, val);
         }
 
@@ -641,6 +650,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task ClearAsync(TK key)
         {
+            IgniteArgumentCheck.NotNull(key, "key");
+
             return DoOutOpAsync(CacheOp.ClearAsync, key);
         }
 
