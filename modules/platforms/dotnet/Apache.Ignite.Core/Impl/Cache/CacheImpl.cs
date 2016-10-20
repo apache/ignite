@@ -409,7 +409,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutOpAsync(CacheOp.GetAsync, w => w.WriteObject(key), GetCacheResult);
+            return DoOutOpAsync(CacheOp.GetAsync, w => w.WriteObject(key), reader => GetCacheResult(reader));
         }
 
         /** <inheritDoc /> */

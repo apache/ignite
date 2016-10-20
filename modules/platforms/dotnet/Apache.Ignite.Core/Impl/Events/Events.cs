@@ -108,6 +108,8 @@ namespace Apache.Ignite.Core.Impl.Events
         public Task<ICollection<T>> RemoteQueryAsync<T>(IEventFilter<T> filter, TimeSpan? timeout = null, 
             params int[] types) where T : IEvent
         {
+            IgniteArgumentCheck.NotNull(filter, "filter");
+
             // ReSharper disable once RedundantTypeArgumentsOfMethod (won't compile in VS2010)
             return DoOutOpAsync<ICollection<T>>((int) Op.RemoteQueryAsync,
                 w => WriteRemoteQuery(filter, timeout, types, w), convertFunc: ReadEvents<T>);
