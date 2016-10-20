@@ -251,7 +251,9 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
             Collection<IgfsBlockLocation> blocks0 =
                 igfs.affinity(filePath, start, len, 0);
 
-            blocks = igfs.affinity(filePath, start, len, igfs.context().data().groupBlockSize());
+            blocks =
+                igfs.affinity(filePath, start, len, 0);
+//            blocks = igfs.affinity(filePath, start, len, igfs.context().data().groupBlockSize());
 
             System.out.println( i + " --------------------");
             System.out.println(" +++ ZERO");
