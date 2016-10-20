@@ -666,7 +666,7 @@ namespace Apache.Ignite.Core.Impl
         protected Task<T> DoOutOpAsync<T>(int type, Action<BinaryWriter> writeAction = null, bool keepBinary = false,
             Func<BinaryReader, T> convertFunc = null)
         {
-            return GetFuture<T>((futId, futType) => DoOutOp(type, w =>
+            return GetFuture((futId, futType) => DoOutOp(type, w =>
             {
                 if (writeAction != null)
                     writeAction(w);
