@@ -474,11 +474,11 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
             HadoopIgfsEx hadoop = null;
 
             try {
-                Ignition.setClientMode(true);
-
                 Ignite ignite0;
 
                 try {
+                    Ignition.setClientMode(true);
+
                     ignite0 = Ignition.start(igniteCliCfgPath);
                 } catch (IgniteException e) {
                     if (e.getMessage().contains("Ignite instance with this name has already been started")) {
@@ -492,6 +492,9 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
                         ignite0 = Ignition.ignite();
                     else
                         throw e;
+                }
+                finally {
+                    Ignition.setClientMode(false);
                 }
 
                 final Ignite ignite = ignite0;
