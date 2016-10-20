@@ -32,11 +32,11 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
     /** Mutex for synchronization. */
     private final Object mux = new Object();
 
-    /** Cached single calculator. */
-    private volatile HashCodeCalculator calc;
+    /** Cached single accessor. */
+    private volatile FieldAccessor accessor;
 
-    /** Cached calculators used when multiple (typeId, schemaId) pairs are met. */
-    private volatile HashMap<Long, HashCodeCalculator> calcs;
+    /** Cached accessors used when multiple (typeId, schemaId) pairs are met. */
+    private volatile HashMap<Long, FieldAccessor> accessors;
 
     /** Field names. */
     private String[] fieldNames;
@@ -71,11 +71,11 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
 
             if (obj0.hasSchema()) {
                 // Handle optimized case.
-                HashCodeCalculator calc = hashCalculator(obj0);
+                FieldAccessor accessor = accessor(obj0);
 
-                assert calc != null;
+                assert accessor != null;
 
-                return calc.calculate(obj0);
+                return accessor.hashCode(obj0);
             }
         }
 
@@ -107,12 +107,12 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
         BinaryObjectExImpl ex2 = (BinaryObjectExImpl) o2;
 
         if (ex1.hasSchema() && ex2.hasSchema()) {
-            HashCodeCalculator calc1 = hashCalculator(ex1);
-            HashCodeCalculator calc2 = hashCalculator(ex2);
+            FieldAccessor accessor1 = accessor(ex1);
+            FieldAccessor accessor2 = accessor(ex2);
 
             for (int i = 0; i < fieldNames.length; i++) {
-                Object val1 = calc1.field(ex1, i);
-                Object val2 = calc2.field(ex2, i);
+                Object val1 = accessor1.field(ex1, i);
+                Object val2 = accessor2.field(ex2, i);
 
                 if (!F.eq(val1, val2))
                     return false;
@@ -151,17 +151,17 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
     }
 
     /**
-     * Get hash code calculator.
+     * Get fields accessor for the given object.
      *
      * @param obj Object.
-     * @return Calculator.
+     * @return Accessor.
      */
-    private HashCodeCalculator hashCalculator(BinaryObjectExImpl obj) {
+    private FieldAccessor accessor(BinaryObjectExImpl obj) {
         int typeId = obj.typeId();
         int schemaId = obj.schemaId();
 
-        // Try getting single calc.
-        HashCodeCalculator res = calc;
+        // Try getting single accessor.
+        FieldAccessor res = accessor;
 
         if (res != null && res.applicableTo(typeId, schemaId))
             return res;
@@ -169,10 +169,10 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
         // Try reading form map.
         long key = (long)typeId << 32 + schemaId;
 
-        HashMap<Long, HashCodeCalculator> calcs0 = calcs;
+        HashMap<Long, FieldAccessor> accessors0 = accessors;
 
-        if (calcs0 != null) {
-            res = calcs0.get(key);
+        if (accessors0 != null) {
+            res = accessors0.get(key);
 
             if (res != null)
                 return res;
@@ -180,7 +180,7 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
 
         // Failed to get from cache, go to locking.
         synchronized (mux) {
-            // Create calc.
+            // Create accessor.
             int[] orders = new int[fieldNames.length];
 
             BinaryType type = obj.type();
@@ -191,24 +191,24 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
                 orders[i] = field.fieldOrder(obj);
             }
 
-            res = new HashCodeCalculator(typeId, schemaId, orders);
+            res = new FieldAccessor(typeId, schemaId, orders);
 
-            // Set calc.
-            if (calcs != null) {
-                calcs0 = new HashMap<>(calcs);
+            // Set accessor.
+            if (accessors != null) {
+                accessors0 = new HashMap<>(accessors);
 
-                calcs0.put(key, res);
+                accessors0.put(key, res);
 
-                calcs = calcs0;
+                accessors = accessors0;
             }
-            else if (calc == null)
-                calc = res;
+            else if (accessor == null)
+                accessor = res;
             else {
-                calcs0 = new HashMap<>();
+                accessors0 = new HashMap<>();
 
-                calcs0.put(key, res);
+                accessors0.put(key, res);
 
-                calcs = calcs0;
+                accessors = accessors0;
             }
         }
 
@@ -221,9 +221,9 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
     }
 
     /**
-     * Optimized hash code calculator.
+     * Optimized fields accessor.
      */
-    private static class HashCodeCalculator {
+    private static class FieldAccessor {
         /** Type ID. */
         private final int typeId;
 
@@ -239,14 +239,14 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
          * @param typeId Type ID.
          * @param schemaId Schema ID.
          */
-        private HashCodeCalculator(int typeId, int schemaId, int[] orders) {
+        private FieldAccessor(int typeId, int schemaId, int[] orders) {
             this.typeId = typeId;
             this.schemaId = schemaId;
             this.orders = orders;
         }
 
         /**
-         * Check whether object is applicable to that hash code calculator.
+         * Check whether object is applicable to that hash code accessor.
          * @param expTypeId Expected schema ID.
          * @param expSchemaId Expected schema ID.
          * @return {@code True} if matches.
@@ -274,7 +274,7 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
          * @param obj Object.
          * @return Hash code.
          */
-        private int calculate(BinaryObjectExImpl obj) {
+        private int hashCode(BinaryObjectExImpl obj) {
             int hash = 0;
 
             for (int order : orders) {
