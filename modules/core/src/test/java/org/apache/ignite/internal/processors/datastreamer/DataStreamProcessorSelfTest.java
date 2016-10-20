@@ -1013,14 +1013,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             IgniteDataStreamer<String, String> ldr = client.dataStreamer(null);
             try {
-                ldr.receiver(new StreamReceiver<String, String>() {
-                    @Override public void receive(IgniteCache<String, String> cache,
-                        Collection<Map.Entry<String, String>> entries) throws IgniteException {
-                        String threadName = Thread.currentThread().getName();
-
-                        cache.put("key", threadName);
-                    }
-                });
+                ldr.receiver(new StringStringStreamReceiver());
 
                 ldr.addData("key", "value");
 
@@ -1119,6 +1112,15 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
                 cache.put(e.getKey(), new TestObject(e.getValue().val + 1));
             }
+        }
+    }
+
+    private static class StringStringStreamReceiver implements StreamReceiver<String, String> {
+        @Override public void receive(IgniteCache<String, String> cache,
+            Collection<Map.Entry<String, String>> entries) throws IgniteException {
+            String threadName = Thread.currentThread().getName();
+
+            cache.put("key", threadName);
         }
     }
 }
