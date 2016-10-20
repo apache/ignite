@@ -695,17 +695,16 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Performs async operation.
         /// </summary>
-        /// <typeparam name="T">Type of the result.</typeparam>
+        /// <typeparam name="TR">Type of the result.</typeparam>
         /// <typeparam name="T1">The type of the first arg.</typeparam>
         /// <param name="type">The type code.</param>
         /// <param name="val1">First arg.</param>
         /// <returns>
         /// Task for async operation
         /// </returns>
-        protected Task<T> DoOutOpAsync<T, T1>(int type, T1 val1)
+        protected Task<TR> DoOutOpAsync<T1, TR>(int type, T1 val1)
         {
-            // TODO: Inline to avoid delegate allocation?
-            return GetFuture<T>((futId, futType) => DoOutOp(type, w =>
+            return GetFuture<TR>((futId, futType) => DoOutOp(type, w =>
             {
                 w.WriteObject(val1);
                 w.WriteLong(futId);
@@ -716,7 +715,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Performs async operation.
         /// </summary>
-        /// <typeparam name="T">Type of the result.</typeparam>
+        /// <typeparam name="TR">Type of the result.</typeparam>
         /// <typeparam name="T1">The type of the first arg.</typeparam>
         /// <typeparam name="T2">The type of the second arg.</typeparam>
         /// <param name="type">The type code.</param>
@@ -725,10 +724,9 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>
         /// Task for async operation
         /// </returns>
-        protected Task<T> DoOutOpAsync<T, T1, T2>(int type, T1 val1, T2 val2)
+        protected Task<TR> DoOutOpAsync<T1, T2, TR>(int type, T1 val1, T2 val2)
         {
-            // TODO: Inline to avoid delegate allocation?
-            return GetFuture<T>((futId, futType) => DoOutOp(type, w =>
+            return GetFuture<TR>((futId, futType) => DoOutOp(type, w =>
             {
                 w.WriteObject(val1);
                 w.WriteObject(val2);
