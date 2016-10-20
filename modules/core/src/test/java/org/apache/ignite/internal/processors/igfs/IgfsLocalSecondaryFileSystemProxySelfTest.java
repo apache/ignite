@@ -225,6 +225,8 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
      * @throws Exception If failed.
      */
     public void testAffinityMaxLen() throws Exception {
+        awaitPartitionMapExchange();
+
         long fileSize = 32 * 1024 * 1024;
 
         IgfsPath filePath = new IgfsPath("/file");
@@ -247,13 +249,11 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
 
         long len = igfs.info(filePath).length();
         int start = 0;
-        for (int i = 0; i < igfs.context().data().groupBlockSize(); i++) {
+        for (int i = 0; i < igfs.context().data().groupBlockSize() / 1024; i++) {
             Collection<IgfsBlockLocation> blocks0 =
                 igfs.affinity(filePath, start, len, 0);
 
-            blocks =
-                igfs.affinity(filePath, start, len, 0);
-//            blocks = igfs.affinity(filePath, start, len, igfs.context().data().groupBlockSize());
+            blocks = igfs.affinity(filePath, start, len, igfs.context().data().groupBlockSize());
 
             System.out.println( i + " --------------------");
             System.out.println(" +++ ZERO");
@@ -281,8 +281,8 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
 
             assertEquals(blocks0, blocks);
 
-            --len;
-            ++start;
+            len -= 1024 * 2;
+            start += 1024;
         }
     }
 

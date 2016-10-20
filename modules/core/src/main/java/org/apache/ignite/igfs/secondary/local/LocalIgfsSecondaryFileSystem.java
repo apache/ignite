@@ -459,7 +459,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystemV2, 
             else
                 lastBlock.increaseLength(lenStep);
 
-            if (lastBlock.length() == maxLen) {
+            if (lastBlock.length() == maxLen || lastBlock.start() + lastBlock.length() == end) {
                 blocks.add(lastBlock);
                 lastBlock = null;
             }
