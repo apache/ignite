@@ -94,5 +94,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         RemoveBoolAsync = 70,
         RemoveObjAsync = 71,
         GetAllAsync = 72,
+        GetAndPutAsync = 73,
+        GetAndPutIfAbsentAsync = 74,
+        GetAndRemoveAsync = 75,
+        GetAndReplaceAsync = 76,
     }
 }

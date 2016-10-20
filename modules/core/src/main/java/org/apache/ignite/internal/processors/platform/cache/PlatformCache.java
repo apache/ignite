@@ -284,6 +284,18 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_GET_ALL_ASYNC = 72;
 
+    /** */
+    public static final int OP_GET_AND_PUT_ASYNC = 73;
+
+    /** */
+    public static final int OP_GET_AND_PUT_IF_ABSENT_ASYNC = 74;
+
+    /** */
+    public static final int OP_GET_AND_REMOVE_ASYNC = 75;
+
+    /** */
+    public static final int OP_GET_AND_REPLACE_ASYNC = 76;
+
     /** Underlying JCache. */
     private final IgniteCacheProxy cache;
 
@@ -544,6 +556,26 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 return TRUE;
             }
+
+            case OP_GET_AND_PUT_ASYNC:
+                cacheAsync.getAndPut(reader.readObjectDetached(), reader.readObjectDetached());
+
+                return readAndListenFuture(reader);
+
+            case OP_GET_AND_PUT_IF_ABSENT_ASYNC:
+                cacheAsync.getAndPutIfAbsent(reader.readObjectDetached(), reader.readObjectDetached());
+
+                return readAndListenFuture(reader);
+
+            case OP_GET_AND_REMOVE_ASYNC:
+                cacheAsync.getAndRemove(reader.readObjectDetached());
+
+                return readAndListenFuture(reader);
+
+            case OP_GET_AND_REPLACE_ASYNC:
+                cacheAsync.getAndReplace(reader.readObjectDetached(), reader.readObjectDetached());
+
+                return readAndListenFuture(reader);
 
             default:
                 return super.processInStreamOutLong(type, reader);

@@ -490,8 +490,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
-            return DoOutOpAsync(CacheOp.GetAllAsync, writer => WriteEnumerable(writer, keys),
-                reader => ReadGetAllDictionary(reader));
+            return DoOutOpAsync(CacheOp.GetAllAsync, w => WriteEnumerable(w, keys), r => ReadGetAllDictionary(r));
         }
 
         /** <inheritdoc /> */
@@ -525,9 +524,14 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<CacheResult<TV>> GetAndPutAsync(TK key, TV val)
         {
-            AsyncInstance.GetAndPut(key, val);
+            IgniteArgumentCheck.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(val, "val");
 
-            return AsyncInstance.GetTask(CacheOp.GetAndPut, GetCacheResult);
+            return DoOutOpAsync(CacheOp.GetAndPutAsync, w =>
+            {
+                w.WriteObject(key);
+                w.WriteObject(val);
+            }, r => GetCacheResult(r));
         }
 
         /** <inheritDoc /> */
@@ -543,9 +547,14 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<CacheResult<TV>> GetAndReplaceAsync(TK key, TV val)
         {
-            AsyncInstance.GetAndReplace(key, val);
+            IgniteArgumentCheck.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(val, "val");
 
-            return AsyncInstance.GetTask(CacheOp.GetAndReplace, GetCacheResult);
+            return DoOutOpAsync(CacheOp.GetAndReplaceAsync, w =>
+            {
+                w.WriteObject(key);
+                w.WriteObject(val);
+            }, r => GetCacheResult(r));
         }
 
         /** <inheritDoc /> */
@@ -559,9 +568,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<CacheResult<TV>> GetAndRemoveAsync(TK key)
         {
-            AsyncInstance.GetAndRemove(key);
+            IgniteArgumentCheck.NotNull(key, "key");
 
-            return AsyncInstance.GetTask(CacheOp.GetAndRemove, GetCacheResult);
+            return DoOutOpAsync(CacheOp.GetAndRemoveAsync, w => w.WriteObject(key), r => GetCacheResult(r));
         }
 
         /** <inheritdoc /> */
@@ -595,9 +604,14 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<CacheResult<TV>> GetAndPutIfAbsentAsync(TK key, TV val)
         {
-            AsyncInstance.GetAndPutIfAbsent(key, val);
+            IgniteArgumentCheck.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(val, "val");
 
-            return AsyncInstance.GetTask(CacheOp.GetAndPutIfAbsent, GetCacheResult);
+            return DoOutOpAsync(CacheOp.GetAndPutIfAbsentAsync, w =>
+            {
+                w.WriteObject(key);
+                w.WriteObject(val);
+            }, r => GetCacheResult(r));
         }
 
         /** <inheritdoc /> */
