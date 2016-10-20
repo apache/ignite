@@ -5,10 +5,12 @@ import java.util.UUID;
 import java.util.List;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityPermission;
@@ -195,6 +197,15 @@ public class GridSecurityProcessorSelfTest extends GridCommonAbstractTest {
         Ignite ig5 = startGrid(name5, config(cred, selfAuth, rmAuth, true, permsMap));
 
         assertEquals(5, selfAuth.get());
+
+        Collection<ClusterNode> nodes = ig5.cluster().nodes();
+
+        assertEquals(4, nodes.size());
+
+        assertTrue(nodes.contains(ig1.cluster().localNode()));
+        assertTrue(nodes.contains(ig2.cluster().localNode()));
+        assertTrue(nodes.contains(ig3.cluster().localNode()));
+        assertTrue(nodes.contains(ig5.cluster().localNode()));
 
         UUID ig1Id = nodeId(ig1);
         UUID ig2Id = nodeId(ig2);

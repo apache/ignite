@@ -811,8 +811,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         boolean auth = false;
 
-        if (spi.nodeAuth != null && spi.nodeAuth.isGlobalNodeAuthentication())
-            auth = localAuthentication(locCred);
+        if (spi.nodeAuth != null && spi.nodeAuth.isGlobalNodeAuthentication()) {
+            localAuthentication(locCred);
+            auth = true;
+        }
 
         // Marshal credentials for backward compatibility and security.
         marshalCredentials(locNode, locCred);
@@ -822,7 +824,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (log.isDebugEnabled())
                     log.debug("Join request message has not been sent (local node is the first in the topology).");
 
-                if (!auth)
+                if (!auth && spi.nodeAuth != null)
                     localAuthentication(locCred);
 
                 locNode.order(1);
@@ -917,27 +919,25 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @param locCred Local security credentials for authentication.
      * @throws IgniteSpiException If any error occurs.
      */
-    private boolean localAuthentication(SecurityCredentials locCred){
-        if (spi.nodeAuth != null) {
-            try {
-                SecurityContext subj = spi.nodeAuth.authenticateNode(locNode, locCred);
+    private void localAuthentication(SecurityCredentials locCred){
+        assert spi.nodeAuth != null;
+        assert locCred != null;
 
-                if (subj == null)
-                    throw new IgniteSpiException("Authentication failed for local node: " + locNode.id());
+        try {
+            SecurityContext subj = spi.nodeAuth.authenticateNode(locNode, locCred);
 
-                Map<String, Object> attrs = new HashMap<>(locNode.attributes());
+            if (subj == null)
+                throw new IgniteSpiException("Authentication failed for local node: " + locNode.id());
 
-                attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT, spi.marshaller().marshal(subj));
+            Map<String, Object> attrs = new HashMap<>(locNode.attributes());
 
-                locNode.setAttributes(attrs);
+            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT, spi.marshaller().marshal(subj));
 
-                return true;
-            }
-            catch (IgniteException | IgniteCheckedException e) {
-                throw new IgniteSpiException("Failed to authenticate local node (will shutdown local node).", e);
-            }
-        }else
-            return false;
+            locNode.setAttributes(attrs);
+
+        } catch (IgniteException | IgniteCheckedException e) {
+            throw new IgniteSpiException("Failed to authenticate local node (will shutdown local node).", e);
+        }
     }
 
     /**
@@ -3924,15 +3924,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                         TcpDiscoveryAbstractMessage authFail = new TcpDiscoveryAuthFailedMessage(locNodeId, spi.locHost);
 
-                                        synchronized (mux) {
-                                            if (spiState == CONNECTING) {
-                                                joinRes.set(authFail);
+                                        joinRes.set(authFail);
 
-                                                spiState = AUTH_FAILED;
+                                        spiState = AUTH_FAILED;
 
-                                                mux.notifyAll();
-                                            }
-                                        }
+                                        mux.notifyAll();
                                     }
                                 } catch (IgniteCheckedException e) {
                                     U.error(log, "Failed to verify node permissions consistency (will drop the node): " + node, e);
