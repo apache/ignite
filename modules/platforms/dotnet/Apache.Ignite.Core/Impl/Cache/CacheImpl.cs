@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl.Cache
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
-    using System.Linq;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
@@ -627,9 +626,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<bool> ReplaceAsync(TK key, TV val)
         {
-            AsyncInstance.Replace(key, val);
-
-            return AsyncInstance.GetTask<bool>(CacheOp.Replace2);
+            return DoOutOpAsync<TK, TV, bool>(CacheOp.Replace2Async, key, val);
         }
 
         /** <inheritdoc /> */
@@ -647,9 +644,16 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<bool> ReplaceAsync(TK key, TV oldVal, TV newVal)
         {
-            AsyncInstance.Replace(key, oldVal, newVal);
+            IgniteArgumentCheck.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(oldVal, "oldVal");
+            IgniteArgumentCheck.NotNull(newVal, "newVal");
 
-            return AsyncInstance.GetTask<bool>(CacheOp.Replace3);
+            return DoOutOpAsync<bool>(CacheOp.Replace3Async, w =>
+            {
+                w.WriteObject(key);
+                w.WriteObject(oldVal);
+                w.WriteObject(newVal);
+            });
         }
 
         /** <inheritdoc /> */

@@ -296,6 +296,12 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_GET_AND_REPLACE_ASYNC = 76;
 
+    /** */
+    public static final int OP_REPLACE_2_ASYNC = 77;
+
+    /** */
+    public static final int OP_REPLACE_3_ASYNC = 78;
+
     /** Underlying JCache. */
     private final IgniteCacheProxy cache;
 
@@ -574,6 +580,17 @@ public class PlatformCache extends PlatformAbstractTarget {
 
             case OP_GET_AND_REPLACE_ASYNC:
                 cacheAsync.getAndReplace(reader.readObjectDetached(), reader.readObjectDetached());
+
+                return readAndListenFuture(reader);
+
+            case OP_REPLACE_2_ASYNC:
+                cacheAsync.replace(reader.readObjectDetached(), reader.readObjectDetached());
+
+                return readAndListenFuture(reader);
+
+            case OP_REPLACE_3_ASYNC:
+                cacheAsync.replace(reader.readObjectDetached(), reader.readObjectDetached(),
+                    reader.readObjectDetached());
 
                 return readAndListenFuture(reader);
 
