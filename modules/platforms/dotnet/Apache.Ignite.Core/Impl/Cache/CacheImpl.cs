@@ -159,6 +159,14 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Performs async operation.
         /// </summary>
+        private Task<T> DoOutOpAsync<T1, T2, T>(CacheOp op, T1 val1, T2 val2)
+        {
+            return DoOutOpAsync<T, T1, T2>((int) op, val1, val2);
+        }
+
+        /// <summary>
+        /// Performs async operation.
+        /// </summary>
         private Task DoOutOpAsync(CacheOp op, Action<BinaryWriter> writeAction = null)
         {
             return DoOutOpAsync<object>(op, writeAction);
@@ -721,16 +729,15 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<bool> RemoveAsync(TK key)
         {
-            AsyncInstance.Remove(key);
+            IgniteArgumentCheck.NotNull(key, "key");
 
-            return AsyncInstance.GetTask<bool>(CacheOp.RemoveObj);
+            return DoOutOpAsync<bool, TK>(CacheOp.RemoveObjAsync, key);
         }
 
         /** <inheritDoc /> */
         public bool Remove(TK key, TV val)
         {
             IgniteArgumentCheck.NotNull(key, "key");
-
             IgniteArgumentCheck.NotNull(val, "val");
 
             return DoOutOp((int)CacheOp.RemoveBool, key, val) == True;
@@ -739,9 +746,10 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<bool> RemoveAsync(TK key, TV val)
         {
-            AsyncInstance.Remove(key, val);
+            IgniteArgumentCheck.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(val, "val");
 
-            return AsyncInstance.GetTask<bool>(CacheOp.RemoveBool);
+            return DoOutOpAsync<TK, TV, bool>(CacheOp.RemoveBoolAsync, key, val);
         }
 
         /** <inheritDoc /> */

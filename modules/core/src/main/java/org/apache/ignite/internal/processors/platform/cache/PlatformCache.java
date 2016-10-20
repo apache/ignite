@@ -275,6 +275,12 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_CONTAINS_KEYS_ASYNC = 69;
 
+    /** */
+    public static final int OP_REMOVE_BOOL_ASYNC = 70;
+
+    /** */
+    public static final int OP_REMOVE_OBJ_ASYNC = 71;
+
     /** Underlying JCache. */
     private final IgniteCacheProxy cache;
 
@@ -513,6 +519,16 @@ public class PlatformCache extends PlatformAbstractTarget {
 
             case OP_CONTAINS_KEYS_ASYNC:
                 cacheAsync.containsKeys(PlatformUtils.readSet(reader));
+
+                return readAndListenFuture(reader);
+
+            case OP_REMOVE_OBJ_ASYNC:
+                cacheAsync.remove(reader.readObjectDetached());
+
+                return readAndListenFuture(reader);
+
+            case OP_REMOVE_BOOL_ASYNC:
+                cacheAsync.remove(reader.readObjectDetached(), reader.readObjectDetached());
 
                 return readAndListenFuture(reader);
 
