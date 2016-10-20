@@ -105,7 +105,7 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable,
     /**
      * @param start Start.
      * @param len Length.
-     * @param nodes Affinity nodes.
+     * @param block Block.
      */
     public IgfsBlockLocationImpl(long start, long len, IgfsBlockLocation block) {
         assert start >= 0;
@@ -152,6 +152,13 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable,
      */
     @Override public long length() {
         return len;
+    }
+
+    /**
+     * @param addLen Length to increase.
+     */
+    public void increaseLength(long addLen) {
+        len += addLen;
     }
 
     /**

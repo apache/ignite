@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsFile;
@@ -233,14 +234,53 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
                 os.write(chunk);
         }
 
+        Collection<IgfsBlockLocation> blocks;
         int blockSize = igfs.configuration().getBlockSize();
 
         for (int maxLen = blockSize / 4; maxLen < blockSize; maxLen += blockSize / 4) {
-            Collection<IgfsBlockLocation> blocks = igfs.affinity(filePath, 0, igfs.info(filePath).length(), maxLen);
+            blocks = igfs.affinity(filePath, 0, igfs.info(filePath).length(), maxLen);
 
             for (IgfsBlockLocation block : blocks)
                 assert block.length() <= maxLen : "block.length() <= maxLen. [block.length=" + block.length()
                     + ", maxLen=" + maxLen +']';
+        }
+
+        long len = igfs.info(filePath).length();
+        int start = 0;
+        for (int i = 0; i < igfs.context().data().groupBlockSize(); i++) {
+            Collection<IgfsBlockLocation> blocks0 =
+                igfs.affinity(filePath, start, len, 0);
+
+            blocks = igfs.affinity(filePath, start, len, igfs.context().data().groupBlockSize());
+
+            System.out.println( i + " --------------------");
+            System.out.println(" +++ ZERO");
+            for (IgfsBlockLocation block : blocks0)
+                System.out.println(block);
+            System.out.println(" +++ BLK");
+            for (IgfsBlockLocation block : blocks)
+                System.out.println(block);
+
+            assertEquals(blocks0.size(), blocks.size());
+
+            List<IgfsBlockLocation> lst0 = (List<IgfsBlockLocation>)blocks0;
+            List<IgfsBlockLocation> lst = (List<IgfsBlockLocation>)blocks;
+
+            for(int j = 0; j < lst0.size(); ++j) {
+                if (!lst0.get(j).equals(lst.get(j))) {
+                    System.out.println("BLOCK: " + j);
+                    System.out.println("0: " + lst0.get(j));
+                    System.out.println("MAXLEN " + lst.get(j));
+                }
+            }
+
+            assertEquals(F.first(blocks).start(), start);
+            assertEquals(start + len, F.last(blocks).start() + F.last(blocks).length());
+
+            assertEquals(blocks0, blocks);
+
+            --len;
+            ++start;
         }
     }
 

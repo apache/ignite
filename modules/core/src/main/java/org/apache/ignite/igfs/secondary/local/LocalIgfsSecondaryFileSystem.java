@@ -20,6 +20,7 @@ package org.apache.ignite.igfs.secondary.local;
 import java.util.ArrayList;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
@@ -409,28 +410,62 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystemV2, 
             throw new IgfsPathNotFoundException("File not found: " + path);
 
         // Create fake block & fake affinity for blocks
-        long blockSize =  igfs.configuration().getBlockSize();
+        long blockSize = igfs.configuration().getBlockSize();
 
-        Collection<IgfsBlockLocation> blocks = new ArrayList<>((int)(len/ blockSize + (len % blockSize == 0 ? 0 : 1)));
+        if (maxLen <= 0)
+            maxLen = igfs.context().data().groupBlockSize();
+
+        assert maxLen > 0 : "maxLen : " + maxLen;
 
         long end = start + len;
 
+        Collection<IgfsBlockLocation> blocks = new ArrayList<>((int)(len / maxLen));
+
         IgfsDataManager data = igfs.context().data();
 
-        long blockIdx = start / blockSize;
+        Collection<ClusterNode> lastNodes = null;
 
-        for (long offset = blockSize * blockIdx; offset < end; offset += blockSize) {
+        long lastBlockIdx = -1;
+
+        IgfsBlockLocationImpl lastBlock = null;
+
+        for (long offset = start; offset < end; ) {
+            long blockIdx = offset / blockSize;
+
+            // Each step is min of maxLen and end of block.
+            long lenStep = Math.min(
+                maxLen - (lastBlock != null ? lastBlock.length() : 0),
+                (blockIdx + 1) * blockSize - offset);
+
+            lenStep = Math.min(lenStep, end - offset);
+
             // Create fake affinity key to map blocks of secondary filesystem to nodes.
             IgfsLocalSecondaryBlockKey affKey = new IgfsLocalSecondaryBlockKey(path, blockIdx);
 
-            IgfsBlockLocationImpl.splitBlocks(offset,
-                offset + blockSize < end ? blockSize : end - offset,
-                maxLen,
-                data.affinityNodes(affKey),
-                blocks);
+            if (blockIdx != lastBlockIdx) {
+                Collection<ClusterNode> nodes = data.affinityNodes(affKey);
 
-            ++blockIdx;
-        }
+                if (!nodes.equals(lastNodes) && lastNodes != null && lastBlock != null) {
+                    blocks.add(lastBlock);
+                    lastBlock = null;
+                }
+
+                lastNodes = nodes;
+                lastBlockIdx = blockIdx;
+            }
+
+            if(lastBlock == null)
+                lastBlock = new IgfsBlockLocationImpl(offset, lenStep, lastNodes);
+            else
+                lastBlock.increaseLength(lenStep);
+
+            if (lastBlock.length() == maxLen) {
+                blocks.add(lastBlock);
+                lastBlock = null;
+            }
+
+            offset += lenStep;
+       }
 
         return blocks;
     }
