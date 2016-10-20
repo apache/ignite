@@ -1115,7 +1115,11 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     *
+     */
     private static class StringStringStreamReceiver implements StreamReceiver<String, String> {
+        /** {@inheritDoc} */
         @Override public void receive(IgniteCache<String, String> cache,
             Collection<Map.Entry<String, String>> entries) throws IgniteException {
             String threadName = Thread.currentThread().getName();
