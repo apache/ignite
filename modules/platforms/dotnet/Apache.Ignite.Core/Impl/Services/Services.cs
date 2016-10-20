@@ -273,7 +273,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public void CancelAll()
         {
-            DoOutOp(OpCancelAll);
+            DoOutInOp(OpCancelAll);
         }
 
         /** <inheritDoc /> */
@@ -390,7 +390,7 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             return DoOutInOp(OpInvokeMethod,
                 writer => ServiceProxySerializer.WriteProxyMethod(writer, method, args, platform),
-                stream => ServiceProxySerializer.ReadInvocationResult(stream, Marshaller, _keepBinary), proxy.Target);
+                (stream, res) => ServiceProxySerializer.ReadInvocationResult(stream, Marshaller, _keepBinary), proxy.Target);
         }
     }
 }

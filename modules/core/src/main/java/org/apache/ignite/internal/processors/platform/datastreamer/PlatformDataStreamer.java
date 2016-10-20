@@ -217,14 +217,7 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
 
                 return TRUE;
             }
-        }
 
-        return super.processInLongOutLong(type, val);
-    }
-
-    /** {@inheritDoc}  */
-    @Override public long processOutLong(int type) throws IgniteCheckedException {
-        switch (type) {
             case OP_ALLOW_OVERWRITE:
                 return ldr.allowOverwrite() ? TRUE : FALSE;
 
@@ -238,7 +231,7 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
                 return ldr.perNodeParallelOperations();
         }
 
-        return super.processOutLong(type);
+        return super.processInLongOutLong(type, val);
     }
 
     /**

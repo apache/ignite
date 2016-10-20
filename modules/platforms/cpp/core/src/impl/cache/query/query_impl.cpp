@@ -67,7 +67,7 @@ namespace ignite
                     delete batch;
 
                     // 2. Close the cursor.
-                    env.Get()->Context()->TargetOutLong(javaRef, OP_ITERATOR_CLOSE);
+                    env.Get()->Context()->TargetInLongOutLong(javaRef, OP_ITERATOR_CLOSE, 0);
 
                     // 3. Release Java reference.
                     JniContext::Release(javaRef);
@@ -199,7 +199,7 @@ namespace ignite
 
                     JniErrorInfo jniErr;
 
-                    env.Get()->Context()->TargetOutLong(javaRef, OP_ITERATOR, &jniErr);
+                    env.Get()->Context()->TargetInLongOutLong(javaRef, OP_ITERATOR, 0, &jniErr);
 
                     IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
 
@@ -249,7 +249,7 @@ namespace ignite
                 {
                     JniErrorInfo jniErr;
 
-                    bool res = env.Get()->Context()->TargetOutLong(javaRef, OP_ITERATOR_HAS_NEXT, &jniErr) == 1;
+                    bool res = env.Get()->Context()->TargetInLongOutLong(javaRef, OP_ITERATOR_HAS_NEXT, 0, &jniErr) == 1;
 
                     IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
 
