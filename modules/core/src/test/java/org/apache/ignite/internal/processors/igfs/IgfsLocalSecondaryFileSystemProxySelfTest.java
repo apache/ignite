@@ -239,51 +239,64 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
         Collection<IgfsBlockLocation> blocks;
         int blockSize = igfs.configuration().getBlockSize();
 
-        for (int maxLen = blockSize / 4; maxLen < blockSize; maxLen += blockSize / 4) {
-            blocks = igfs.affinity(filePath, 0, igfs.info(filePath).length(), maxLen);
-
-            for (IgfsBlockLocation block : blocks)
-                assert block.length() <= maxLen : "block.length() <= maxLen. [block.length=" + block.length()
-                    + ", maxLen=" + maxLen +']';
-        }
-
         long len = igfs.info(filePath).length();
         int start = 0;
+
+        // Check default maxLen (maxLen = 0)
         for (int i = 0; i < igfs.context().data().groupBlockSize() / 1024; i++) {
             Collection<IgfsBlockLocation> blocks0 =
                 igfs.affinity(filePath, start, len, 0);
 
             blocks = igfs.affinity(filePath, start, len, igfs.context().data().groupBlockSize());
 
-            System.out.println( i + " --------------------");
-            System.out.println(" +++ ZERO");
-            for (IgfsBlockLocation block : blocks0)
-                System.out.println(block);
-            System.out.println(" +++ BLK");
-            for (IgfsBlockLocation block : blocks)
-                System.out.println(block);
-
             assertEquals(blocks0.size(), blocks.size());
-
-            List<IgfsBlockLocation> lst0 = (List<IgfsBlockLocation>)blocks0;
-            List<IgfsBlockLocation> lst = (List<IgfsBlockLocation>)blocks;
-
-            for(int j = 0; j < lst0.size(); ++j) {
-                if (!lst0.get(j).equals(lst.get(j))) {
-                    System.out.println("BLOCK: " + j);
-                    System.out.println("0: " + lst0.get(j));
-                    System.out.println("MAXLEN " + lst.get(j));
-                }
-            }
-
             assertEquals(F.first(blocks).start(), start);
             assertEquals(start + len, F.last(blocks).start() + F.last(blocks).length());
-
             assertEquals(blocks0, blocks);
 
             len -= 1024 * 2;
             start += 1024;
         }
+
+        len = igfs.info(filePath).length();
+        start = 0;
+        long maxLen = igfs.context().data().groupBlockSize() * 2;
+
+        // Different cases of start, len and maxLen
+        for (int i = 0; i < igfs.context().data().groupBlockSize() / 1024; i++) {
+            blocks = igfs.affinity(filePath, start, len, maxLen);
+
+            assertEquals(F.first(blocks).start(), start);
+            assertEquals(start + len, F.last(blocks).start() + F.last(blocks).length());
+
+            long totalLen=0;
+            for (IgfsBlockLocation block : blocks) {
+                totalLen += block.length();
+
+                assert block.length() <= maxLen : "block.length() <= maxLen. [block.length=" + block.length()
+                    + ", maxLen=" + maxLen + ']';
+
+                assert block.length() + block.start() <= start + len : "block.length() + block.start() < start + len. [block.length=" + block.length()
+                    + ", block.start()=" + block.start() + ", start=" + start +", len=" + len + ']';
+
+                for (IgfsBlockLocation block0 : blocks)
+                    if (!block0.equals(block))
+                        assert block.start() < block0.start() && block.start() + block.length() <= block0.start() ||
+                            block.start() > block0.start() && block0.start() + block0.length() <= block.start()
+                            : "Blocks cross each other: block0=" +  block + ", block1= " + block0;
+            }
+
+            assert totalLen == len : "Summary length of blocks must be: " + len + " actual: " + totalLen;
+
+            len -= 1024 * 2;
+            start += 1024;
+            maxLen -= igfs.context().data().groupBlockSize() * 2 / 1024;
+        }
+
+    }
+
+    @Override protected long getTestTimeout() {
+        return 300000_000;
     }
 
     /**

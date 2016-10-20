@@ -382,13 +382,8 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
 
             Collection<IgfsBlockLocation> blocks = new ArrayList<>(hadoopBlocks.length);
 
-            for (int i = 0; i < hadoopBlocks.length; ++i) {
-                IgfsBlockLocation blk = convertBlockLocation(hadoopBlocks[i]);
-
-                IgfsBlockLocationImpl.splitBlocks(blk, maxLen, blocks);
-
+            for (int i = 0; i < hadoopBlocks.length; ++i)
                 blocks.add(convertBlockLocation(hadoopBlocks[i]));
-            }
 
             return blocks;
         }

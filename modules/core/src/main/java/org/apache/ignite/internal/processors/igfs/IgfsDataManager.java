@@ -740,7 +740,7 @@ public class IgfsDataManager extends IgfsManager {
         if (info.affinityKey() != null) {
             Collection<IgfsBlockLocation> res = new LinkedList<>();
 
-            IgfsBlockLocationImpl.splitBlocks(start, len, maxLen, dataCache.affinity().mapKeyToPrimaryAndBackups(
+            splitBlocks(start, len, maxLen, dataCache.affinity().mapKeyToPrimaryAndBackups(
                 new IgfsBlockKey(info.id(), info.affinityKey(), info.evictExclude(), 0)), res);
 
             return res;
@@ -788,11 +788,11 @@ public class IgfsDataManager extends IgfsManager {
                     // Merge with the previous block in result.
                     res.removeLast();
 
-                    IgfsBlockLocationImpl.splitBlocks(last.start(), last.length() + partEnd - pos, maxLen, affNodes, res);
+                    splitBlocks(last.start(), last.length() + partEnd - pos, maxLen, affNodes, res);
                 }
                 else
                     // Do not merge with the previous block.
-                    IgfsBlockLocationImpl.splitBlocks(pos, partEnd - pos, maxLen, affNodes, res);
+                    splitBlocks(pos, partEnd - pos, maxLen, affNodes, res);
 
                 pos = partEnd;
             }
@@ -871,15 +871,43 @@ public class IgfsDataManager extends IgfsManager {
                 res.removeLast();
 
                 // Update affinity block location with merged one.
-                IgfsBlockLocationImpl.splitBlocks(last.start(), last.length() + blockLen, maxLen, affNodes, res);
+                splitBlocks(last.start(), last.length() + blockLen, maxLen, affNodes, res);
             }
             else
-                IgfsBlockLocationImpl.splitBlocks(grpIdx * grpBlockSize + blockStart, blockLen, maxLen, affNodes, res);
+                splitBlocks(grpIdx * grpBlockSize + blockStart, blockLen, maxLen, affNodes, res);
         }
 
         if (log.isDebugEnabled())
             log.debug("Calculated file affinity [info=" + info + ", start=" + start + ", len=" + len +
                 ", res=" + res + ']');
+    }
+
+    /**
+     * Split blocks according to maximum split length.
+     *
+     * @param start Start position.
+     * @param len Length.
+     * @param maxLen Maximum allowed length.
+     * @param nodes Affinity nodes.
+     * @param res Where to put results.
+     */
+    private void splitBlocks(long start, long len, long maxLen,
+        Collection<ClusterNode> nodes, Collection<IgfsBlockLocation> res) {
+        if (maxLen > 0) {
+            long end = start + len;
+
+            long start0 = start;
+
+            while (start0 < end) {
+                long len0 = Math.min(maxLen, end - start0);
+
+                res.add(new IgfsBlockLocationImpl(start0, len0, nodes));
+
+                start0 += len0;
+            }
+        }
+        else
+            res.add(new IgfsBlockLocationImpl(start, len, nodes));
     }
 
     /**
