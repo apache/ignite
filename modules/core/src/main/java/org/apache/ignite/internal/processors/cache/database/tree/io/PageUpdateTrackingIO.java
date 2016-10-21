@@ -22,6 +22,12 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 
 /**
+ *                      +-----------------------------------------+-----------------------------------------+
+ *                      |                left half                |               right half                |
+ * +---------+----------+----+------------------------------------+----+------------------------------------+
+ * |  HEADER | Last     |size|                                    |size|                                    |
+ * |         | BackupId |2b. |  tracking bits                     |2b. |  tracking bits                     |
+ * +---------+----------+----+------------------------------------+----+------------------------------------+
  *
  */
 public class PageUpdateTrackingIO extends PageIO {
@@ -41,6 +47,8 @@ public class PageUpdateTrackingIO extends PageIO {
 
     /** Bitmap offset. */
     public static final int BITMAP_OFFSET = SIZE_FIELD_OFFSET + SIZE_FIELD_SIZE;
+
+    /** Count of extra page. */
     public static final int COUNT_OF_EXTRA_PAGE = 1;
 
     /**
@@ -86,6 +94,12 @@ public class PageUpdateTrackingIO extends PageIO {
         return newVal != byteToUpdate;
     }
 
+    /**
+     * @param buf Buffer.
+     * @param nextBackupId Next backup id.
+     * @param lastSuccessfulBackupId Last successful backup id.
+     * @param pageSize Page size.
+     */
     private void validateBackupId(ByteBuffer buf, long nextBackupId, long lastSuccessfulBackupId, int pageSize) {
         assert nextBackupId != lastSuccessfulBackupId;
 
@@ -114,7 +128,17 @@ public class PageUpdateTrackingIO extends PageIO {
                     PageHandler.copyMemory(buf, buf, sizeOff, sizeOff2, len + SIZE_FIELD_SIZE);
             } else { //last - lastSuccessfulBackupId > 1, e.g. we should merge two half in one
                 int newSize = 0;
-                for (int i = 0; i < len; i++) {
+                int i = 0;
+
+                for (; i < len - 8; i += 8) {
+                    long newVal = buf.getLong(sizeOff + SIZE_FIELD_SIZE + i) | buf.getLong(sizeOff2 + SIZE_FIELD_SIZE + i);
+
+                    newSize += Long.bitCount(newVal);
+
+                    buf.putLong(sizeOff2 + SIZE_FIELD_SIZE + i, newVal);
+                }
+
+                for (i -= 8; i < len; i ++) {
                     byte newVal = (byte) (buf.get(sizeOff + SIZE_FIELD_SIZE + i) | buf.get(sizeOff2 + SIZE_FIELD_SIZE + i));
 
                     newSize += Integer.bitCount(newVal & 0xFF);
