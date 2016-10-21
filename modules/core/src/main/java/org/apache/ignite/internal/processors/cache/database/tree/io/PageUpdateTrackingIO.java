@@ -58,7 +58,7 @@ public class PageUpdateTrackingIO extends PageIO {
      * @param backupId Backup id.
      * @param pageSize Page size.
      */
-    public static boolean markChanged(ByteBuffer buf, long pageId, long backupId, int pageSize) {
+    public boolean markChanged(ByteBuffer buf, long pageId, long backupId, int pageSize) {
         int cntOfPage = countOfPageToTrack(pageSize);
 
         int idxToUpdate = (PageIdUtils.pageIndex(pageId) - COUNT_OF_EXTRA_PAGE) % cntOfPage;
@@ -90,11 +90,90 @@ public class PageUpdateTrackingIO extends PageIO {
 
         int updateTemplate = 1 << (idxToUpdate & 0b111);
 
-        byte newValue =  (byte) (byteToUpdate | updateTemplate);
+        byte newVal =  (byte) (byteToUpdate | updateTemplate);
 
-        buf.put(idx, newValue);
+        buf.put(idx, newVal);
 
-        return newValue != byteToUpdate;
+        return newVal != byteToUpdate;
+    }
+
+    /**
+     * Will mark pageId as changed for backupId.
+     *
+     * @param buf Buffer.
+     * @param pageId Page id.
+     * @param curBackupId Backup id.
+     * @param pageSize Page size.
+     */
+    public boolean markChanged(ByteBuffer buf, long pageId, long curBackupId, long lastSuccessfulBackupId, int pageSize) {
+        validateBackupId(buf, curBackupId, lastSuccessfulBackupId, pageSize);
+
+        int cntOfPage = countOfPageToTrack(pageSize);
+
+        int idxToUpdate = (PageIdUtils.pageIndex(pageId) - COUNT_OF_EXTRA_PAGE) % cntOfPage;
+
+        int sizeOff = useLeftHalf(curBackupId) ? SIZE_FIELD_OFFSET : BITMAP_OFFSET + (cntOfPage >> 3);
+
+        short newSize = (short)(countOfChangedPage(buf, curBackupId, pageSize) + 1);
+
+        buf.putShort(sizeOff, newSize);
+
+        assert newSize == countOfChangedPage(buf, curBackupId, pageSize);
+
+        int idx = sizeOff + SIZE_FIELD_SIZE + (idxToUpdate >> 3);
+
+        byte byteToUpdate = buf.get(idx);
+
+        int updateTemplate = 1 << (idxToUpdate & 0b111);
+
+        byte newVal =  (byte) (byteToUpdate | updateTemplate);
+
+        buf.put(idx, newVal);
+
+        return newVal != byteToUpdate;
+    }
+
+    private void validateBackupId(ByteBuffer buf, long nextBackupId, long lastSuccessfulBackupId, int pageSize) {
+        assert nextBackupId != lastSuccessfulBackupId;
+
+        long last = buf.getLong(LAST_BACKUP_OFFSET);
+
+        if (nextBackupId == last) //everything is ok
+            return;
+
+        int cntOfPage = countOfPageToTrack(pageSize);
+
+        if (last <= lastSuccessfulBackupId) { //we can drop our data
+            buf.putLong(LAST_BACKUP_OFFSET, nextBackupId);
+
+            PageHandler.zeroMemory(buf, SIZE_FIELD_OFFSET, buf.capacity() - SIZE_FIELD_OFFSET);
+        } else { //we can't drop data, it is still necessary for incremental backups
+            int length = cntOfPage >> 3;
+
+            int sizeOff = useLeftHalf(nextBackupId) ? SIZE_FIELD_OFFSET : BITMAP_OFFSET + length;
+            int sizeOff2 = !useLeftHalf(nextBackupId) ? SIZE_FIELD_OFFSET : BITMAP_OFFSET + length;
+
+            if (last - lastSuccessfulBackupId == 1) { //we should keep only data in last half
+                //new data will be written in the same half, we should move old data to another half
+                if ((nextBackupId - last) % 2 == 0)
+                    PageHandler.copyMemory(buf, buf, sizeOff, sizeOff2, length + SIZE_FIELD_SIZE);
+            } else { //last - lastSuccessfulBackupId > 1, e.g. we should merge two half in one
+                int newSize = 0;
+                for (int i = 0; i < length; i++) {
+                    byte newVal = (byte) (buf.get(sizeOff + SIZE_FIELD_SIZE + i) | buf.get(sizeOff2 + SIZE_FIELD_SIZE + 1));
+
+                    newSize += Integer.bitCount(newVal);
+
+                    buf.put(sizeOff2 + SIZE_FIELD_SIZE + i, (byte)newVal);
+                }
+
+                buf.putShort(sizeOff2, (short)newSize);
+            }
+
+            buf.putLong(LAST_BACKUP_OFFSET, nextBackupId);
+
+            PageHandler.zeroMemory(buf, sizeOff, length + SIZE_FIELD_SIZE);
+        }
     }
 
     /**
@@ -105,7 +184,7 @@ public class PageUpdateTrackingIO extends PageIO {
      * @param backupId Backup id.
      * @param pageSize Page size.
      */
-    public static boolean wasChanged(ByteBuffer buf, long pageId, long backupId, int pageSize) {
+    public boolean wasChanged(ByteBuffer buf, long pageId, long backupId, int pageSize) {
         if (countOfChangedPage(buf, backupId, pageSize) < 1)
             return false;
 
@@ -132,7 +211,7 @@ public class PageUpdateTrackingIO extends PageIO {
      *
      * @return count of pages which were marked as change for given backupId
      */
-    public static short countOfChangedPage(ByteBuffer buf, long backupId, int pageSize) {
+    public short countOfChangedPage(ByteBuffer buf, long backupId, int pageSize) {
         long dif = buf.getLong(LAST_BACKUP_OFFSET) - backupId;
 
         if (dif != 0 && dif != 1)
@@ -149,11 +228,16 @@ public class PageUpdateTrackingIO extends PageIO {
      *
      * @return true if backupId is odd, otherwise - false
      */
-    static boolean useLeftHalf(long backupId) {
+    boolean useLeftHalf(long backupId) {
         return (backupId & 0b1) == 0;
     }
 
-    public static long trackingPageFor(long pageId, int pageSize) {
+    /**
+     * @param pageId Page id.
+     * @param pageSize Page size.
+     * @return pageId of tracking page which set pageId belongs to
+     */
+    public long trackingPageFor(long pageId, int pageSize) {
         assert PageIdUtils.pageIndex(pageId) > 0;
 
         int pageIdx = ((PageIdUtils.pageIndex(pageId) - COUNT_OF_EXTRA_PAGE) /
@@ -171,11 +255,18 @@ public class PageUpdateTrackingIO extends PageIO {
      *
      * @return how many page we can track with 1 page
      */
-    public static int countOfPageToTrack(int pageSize) {
+    public int countOfPageToTrack(int pageSize) {
         return ((pageSize - SIZE_FIELD_OFFSET) / 2 - SIZE_FIELD_SIZE)  << 3;
     }
 
-    public static Long findNextChangedPage(ByteBuffer buf, long start, int backupId, int pageSize) {
+    /**
+     * @param buf Buffer.
+     * @param start Start.
+     * @param backupId Backup id.
+     * @param pageSize Page size.
+     * @return set pageId if it was changed or next closest one, if there is no changed page null will be returned
+     */
+    public Long findNextChangedPage(ByteBuffer buf, long start, int backupId, int pageSize) {
         int cntOfPage = countOfPageToTrack(pageSize);
 
         long trackingPage = trackingPageFor(start, pageSize);

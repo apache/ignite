@@ -10,8 +10,6 @@ import java.util.TreeSet;
 import java.util.concurrent.ThreadLocalRandom;
 import junit.framework.TestCase;
 
-import static org.apache.ignite.internal.processors.cache.database.tree.io.PageUpdateTrackingIO.*;
-
 /**
  *
  */
@@ -19,19 +17,21 @@ public class PageUpdateTrackingIOTest extends TestCase {
     /** Page size. */
     public static final int PAGE_SIZE = 2048;
 
+    private final PageUpdateTrackingIO io = PageUpdateTrackingIO.VERSIONS.latest();
+
     /**
      *
      */
     public void testBasics() {
         ByteBuffer buf = ByteBuffer.allocate(PAGE_SIZE);
 
-        markChanged(buf, 2, 0, PAGE_SIZE);
+        io.markChanged(buf, 2, 0, PAGE_SIZE);
 
-        assertTrue(wasChanged(buf, 2, 0, PAGE_SIZE));
+        assertTrue(io.wasChanged(buf, 2, 0, PAGE_SIZE));
 
-        assertFalse(wasChanged(buf, 1, 0, PAGE_SIZE));
-        assertFalse(wasChanged(buf, 3, 0, PAGE_SIZE));
-        assertFalse(wasChanged(buf, 2, 1, PAGE_SIZE));
+        assertFalse(io.wasChanged(buf, 1, 0, PAGE_SIZE));
+        assertFalse(io.wasChanged(buf, 3, 0, PAGE_SIZE));
+        assertFalse(io.wasChanged(buf, 2, 1, PAGE_SIZE));
     }
 
     /**
@@ -40,7 +40,7 @@ public class PageUpdateTrackingIOTest extends TestCase {
     public void testMarkingRandomly() {
         ByteBuffer buf = ByteBuffer.allocate(PAGE_SIZE);
 
-        int cntOfPageToTrack = countOfPageToTrack(PAGE_SIZE);
+        int cntOfPageToTrack = io.countOfPageToTrack(PAGE_SIZE);
 
         for (int i = 0; i < 1001; i++)
             checkMarkingRandomly(buf, cntOfPageToTrack, i, false);
@@ -52,7 +52,7 @@ public class PageUpdateTrackingIOTest extends TestCase {
     public void testZeroingRandomly() {
         ByteBuffer buf = ByteBuffer.allocate(PAGE_SIZE);
 
-        int cntOfPageToTrack = countOfPageToTrack(PAGE_SIZE);
+        int cntOfPageToTrack = io.countOfPageToTrack(PAGE_SIZE);
 
         for (int i = 0; i < 1001; i++)
             checkMarkingRandomly(buf, cntOfPageToTrack, i, true);
@@ -66,7 +66,7 @@ public class PageUpdateTrackingIOTest extends TestCase {
     private void checkMarkingRandomly(ByteBuffer buf, int track, int backupId, boolean testZeroing) {
         ThreadLocalRandom rand = ThreadLocalRandom.current();
 
-        long basePageId = PageUpdateTrackingIO.trackingPageFor(Math.max(rand.nextLong(Integer.MAX_VALUE - track), 0), PAGE_SIZE);
+        long basePageId = io.trackingPageFor(Math.max(rand.nextLong(Integer.MAX_VALUE - track), 0), PAGE_SIZE);
 
         long maxId = testZeroing ? basePageId + rand.nextInt(1, track) : basePageId + track;
 
@@ -85,21 +85,21 @@ public class PageUpdateTrackingIOTest extends TestCase {
                 map.put(i, changed);
 
                 if (changed) {
-                    markChanged(buf, i, backupId, PAGE_SIZE);
+                    io.markChanged(buf, i, backupId, PAGE_SIZE);
 
                     cntOfChanged++;
                 }
 
                 assertEquals(basePageId, PageIO.getPageId(buf));
-                assertEquals(cntOfChanged, countOfChangedPage(buf, backupId, PAGE_SIZE));
+                assertEquals(cntOfChanged, io.countOfChangedPage(buf, backupId, PAGE_SIZE));
             }
 
-            assertEquals(cntOfChanged, countOfChangedPage(buf, backupId, PAGE_SIZE));
+            assertEquals(cntOfChanged, io.countOfChangedPage(buf, backupId, PAGE_SIZE));
 
             for (Map.Entry<Long, Boolean> e : map.entrySet())
                 assertEquals(
                     e.getValue().booleanValue(),
-                    wasChanged(buf, e.getKey(), backupId, PAGE_SIZE));
+                    io.wasChanged(buf, e.getKey(), backupId, PAGE_SIZE));
         }
         catch (Throwable e) {
             System.out.println("backupId = " + backupId + ", basePageId = " + basePageId);
@@ -110,7 +110,7 @@ public class PageUpdateTrackingIOTest extends TestCase {
     public void testFindNextChangedPage() throws Exception {
         ByteBuffer buf = ByteBuffer.allocate(PAGE_SIZE);
 
-        int cntOfPageToTrack = countOfPageToTrack(PAGE_SIZE);
+        int cntOfPageToTrack = io.countOfPageToTrack(PAGE_SIZE);
 
         for (int i = 0; i < 101; i++)
             checkFindingRandomly(buf, cntOfPageToTrack, i);
@@ -124,7 +124,9 @@ public class PageUpdateTrackingIOTest extends TestCase {
     private void checkFindingRandomly(ByteBuffer buf, int track, int backupId) {
         ThreadLocalRandom rand = ThreadLocalRandom.current();
 
-        long basePageId = PageUpdateTrackingIO.trackingPageFor(Math.max(rand.nextLong(Integer.MAX_VALUE - track), 0), PAGE_SIZE);
+        PageUpdateTrackingIO io = PageUpdateTrackingIO.VERSIONS.latest();
+
+        long basePageId = io.trackingPageFor(Math.max(rand.nextLong(Integer.MAX_VALUE - track), 0), PAGE_SIZE);
 
         long maxId = basePageId + rand.nextInt(1, track);
 
@@ -143,7 +145,7 @@ public class PageUpdateTrackingIOTest extends TestCase {
                 map.put(i, changed);
 
                 if (changed) {
-                    markChanged(buf, i, backupId, PAGE_SIZE);
+                    io.markChanged(buf, i, backupId, PAGE_SIZE);
 
                     setIdx.add(i);
                 }
@@ -152,9 +154,9 @@ public class PageUpdateTrackingIOTest extends TestCase {
             for (Map.Entry<Long, Boolean> e : map.entrySet()) {
                 Long pageId = e.getKey();
 
-                Long foundNextChangedPage = findNextChangedPage(buf, pageId, backupId, PAGE_SIZE);
+                Long foundNextChangedPage = io.findNextChangedPage(buf, pageId, backupId, PAGE_SIZE);
 
-                if (trackingPageFor(pageId, PAGE_SIZE) == pageId)
+                if (io.trackingPageFor(pageId, PAGE_SIZE) == pageId)
                     assertEquals(pageId, foundNextChangedPage);
 
                 else if (e.getValue())
