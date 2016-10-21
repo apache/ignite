@@ -60,7 +60,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
  * Lite DHT cache update request sent from near node to primary node.
  */
 public class GridNearAtomicUpdateRequest extends GridNearAtomicAbstractUpdateRequest {
-
     /** Keys to update. */
     @GridToStringInclude
     @GridDirectCollection(KeyCacheObject.class)
@@ -183,22 +182,13 @@ public class GridNearAtomicUpdateRequest extends GridNearAtomicAbstractUpdateReq
         partIds = new ArrayList<>(initSize);
     }
 
-
-    /**
-     * @param key Key to add.
-     * @param val Optional update value.
-     * @param conflictTtl Conflict TTL (optional).
-     * @param conflictExpireTime Conflict expire time (optional).
-     * @param conflictVer Conflict version (optional).
-     * @param primary If given key is primary on this mapping.
-     */
-    @Override
-    public void addUpdateEntry(KeyCacheObject key,
-                               @Nullable Object val,
-                               long conflictTtl,
-                               long conflictExpireTime,
-                               @Nullable GridCacheVersion conflictVer,
-                               boolean primary) {
+    /** {@inheritDoc} */
+    @Override public void addUpdateEntry(KeyCacheObject key,
+        @Nullable Object val,
+        long conflictTtl,
+        long conflictExpireTime,
+        @Nullable GridCacheVersion conflictVer,
+        boolean primary) {
         EntryProcessor<Object, Object, Object> entryProcessor = null;
 
         if (op == TRANSFORM) {

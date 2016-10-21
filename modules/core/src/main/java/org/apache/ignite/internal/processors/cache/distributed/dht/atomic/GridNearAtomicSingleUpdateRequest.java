@@ -1,10 +1,40 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
+import java.io.Externalizable;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -16,22 +46,13 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import javax.cache.expiry.ExpiryPolicy;
-import javax.cache.processor.EntryProcessor;
-import java.io.Externalizable;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
-
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 
-
+/**
+ *
+ */
 public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpdateRequest {
-
     /** Key to update. */
     @GridToStringInclude
     private KeyCacheObject key;
@@ -89,25 +110,25 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
      * @param addDepInfo Deployment info flag.
      */
     public GridNearAtomicSingleUpdateRequest(
-            int cacheId,
-            UUID nodeId,
-            GridCacheVersion futVer,
-            boolean fastMap,
-            @Nullable GridCacheVersion updateVer,
-            @NotNull AffinityTopologyVersion topVer,
-            boolean topLocked,
-            CacheWriteSynchronizationMode syncMode,
-            GridCacheOperation op,
-            boolean retval,
-            @Nullable ExpiryPolicy expiryPlc,
-            @Nullable Object[] invokeArgs,
-            @Nullable CacheEntryPredicate[] filter,
-            @Nullable UUID subjId,
-            int taskNameHash,
-            boolean skipStore,
-            boolean keepBinary,
-            boolean clientReq,
-            boolean addDepInfo
+        int cacheId,
+        UUID nodeId,
+        GridCacheVersion futVer,
+        boolean fastMap,
+        @Nullable GridCacheVersion updateVer,
+        @NotNull AffinityTopologyVersion topVer,
+        boolean topLocked,
+        CacheWriteSynchronizationMode syncMode,
+        GridCacheOperation op,
+        boolean retval,
+        @Nullable ExpiryPolicy expiryPlc,
+        @Nullable Object[] invokeArgs,
+        @Nullable CacheEntryPredicate[] filter,
+        @Nullable UUID subjId,
+        int taskNameHash,
+        boolean skipStore,
+        boolean keepBinary,
+        boolean clientReq,
+        boolean addDepInfo
     ) {
         super(
                 cacheId,
@@ -142,11 +163,11 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
      * @param primary If given key is primary on this mapping.
      */
     public void addUpdateEntry(KeyCacheObject key,
-                               @Nullable Object val,
-                               long conflictTtl,
-                               long conflictExpireTime,
-                               @Nullable GridCacheVersion conflictVer,
-                               boolean primary) {
+       @Nullable Object val,
+       long conflictTtl,
+       long conflictExpireTime,
+       @Nullable GridCacheVersion conflictVer,
+       boolean primary) {
         EntryProcessor<Object, Object, Object> entryProcessor = null;
 
         if (op == TRANSFORM) {

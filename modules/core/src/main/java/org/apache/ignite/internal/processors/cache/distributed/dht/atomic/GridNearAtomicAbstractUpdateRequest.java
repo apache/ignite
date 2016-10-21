@@ -1,10 +1,39 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
+import java.io.Externalizable;
+import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.UUID;
+import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -12,15 +41,10 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import javax.cache.expiry.ExpiryPolicy;
-import javax.cache.processor.EntryProcessor;
-import java.io.Externalizable;
-import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.UUID;
-
-public abstract class GridNearAtomicAbstractUpdateRequest  extends GridCacheMessage implements GridCacheDeployable {
-
+/**
+ *
+ */
+public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -350,11 +374,11 @@ public abstract class GridNearAtomicAbstractUpdateRequest  extends GridCacheMess
      * @param primary If given key is primary on this mapping.
      */
     public abstract void addUpdateEntry(KeyCacheObject key,
-                                        @Nullable Object val,
-                                        long conflictTtl,
-                                        long conflictExpireTime,
-                                        @Nullable GridCacheVersion conflictVer,
-                                        boolean primary);
+        @Nullable Object val,
+        long conflictTtl,
+        long conflictExpireTime,
+        @Nullable GridCacheVersion conflictVer,
+        boolean primary);
 
     /**
      * @return Keys for this update request.
@@ -409,8 +433,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest  extends GridCacheMess
      */
     public abstract long conflictExpireTime(int idx);
 
-    @Override
-    public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
         if (!super.writeTo(buf, writer))
@@ -531,8 +554,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest  extends GridCacheMess
         return true;
     }
 
-    @Override
-    public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
@@ -698,8 +720,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest  extends GridCacheMess
      */
     public abstract void cleanup(boolean clearKeys);
 
-    @Override
-    public byte fieldsCount() {
+    @Override public byte fieldsCount() {
         return 20;
     }
 }
