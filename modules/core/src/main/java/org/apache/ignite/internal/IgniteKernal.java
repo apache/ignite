@@ -2533,10 +2533,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             ctx.cache().dynamicStartCaches(cacheCfgs,
                 true,
                 true).get();
-            List<IgniteCache> createdCaches = new ArrayList<>();
-            for (CacheConfiguration cacheCfg : cacheCfgs) {
+
+            List<IgniteCache> createdCaches = new ArrayList<>(cacheCfgs.size());
+
+            for (CacheConfiguration cacheCfg : cacheCfgs)
                 createdCaches.add(ctx.cache().publicJCache(cacheCfg.getName()));
-            }
+
             return createdCaches;
         }
         catch (IgniteCheckedException e) {
@@ -2600,11 +2602,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             ctx.cache().dynamicStartCaches(cacheCfgs,
                 false,
                 true).get();
-            List<IgniteCache> createdCaches = new ArrayList<>();
 
-            for (CacheConfiguration cacheCfg : cacheCfgs) {
+            List<IgniteCache> createdCaches = new ArrayList<>(cacheCfgs.size());
+
+            for (CacheConfiguration cacheCfg : cacheCfgs)
                 createdCaches.add(ctx.cache().publicJCache(cacheCfg.getName()));
-            }
 
             return createdCaches;
         }

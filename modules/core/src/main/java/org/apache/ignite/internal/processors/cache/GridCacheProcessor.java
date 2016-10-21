@@ -2292,15 +2292,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 cacheType,
                 failIfExists,
                 failIfNotStarted);
+
             if (req != null)
                 return F.first(initiateCacheChanges(F.asList(req), failIfExists));
             else
                 return new GridFinishedFuture<>();
         }
-        catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(e);
-        }
-        catch (CacheExistsException e) {
+        catch (Exception e) {
             return new GridFinishedFuture<>(e);
         }
     }
@@ -2330,7 +2328,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @return Future that will be completed when all caches are deployed.
      */
-    public IgniteInternalFuture<?> dynamicStartCaches(
+    private IgniteInternalFuture<?> dynamicStartCaches(
         Collection<CacheConfiguration> ccfgList,
         CacheType cacheType,
         boolean failIfExists,
@@ -2339,7 +2337,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (checkThreadTx)
             checkEmptyTransactions();
 
-        List<DynamicCacheChangeRequest> reqList = new ArrayList<>();
+        List<DynamicCacheChangeRequest> reqList = new ArrayList<>(ccfgList.size());
 
         try {
             for (CacheConfiguration ccfg : ccfgList) {
@@ -2356,10 +2354,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     reqList.add(req);
             }
         }
-        catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(e);
-        }
-        catch (CacheExistsException e) {
+        catch (Exception e) {
             return new GridFinishedFuture<>(e);
         }
 
@@ -2372,7 +2367,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             compoundFut.markInitialized();
 
             return compoundFut;
-        } else
+        }
+        else
             return new GridFinishedFuture<>();
     }
 
@@ -2401,19 +2397,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (checkThreadTx)
             checkEmptyTransactions();
 
-        List<DynamicCacheChangeRequest> reqs = new ArrayList<>();
+        List<DynamicCacheChangeRequest> reqs = new ArrayList<>(cacheNames.size());
 
         for (String cacheName : cacheNames) {
             DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(cacheName, ctx.localNodeId());
+
             t.stop(true);
+
             reqs.add(t);
         }
 
         GridCompoundFuture<?, ?> compoundFut = new GridCompoundFuture<>();
 
-        for (DynamicCacheStartFuture fut : initiateCacheChanges(reqs, false)) {
+        for (DynamicCacheStartFuture fut : initiateCacheChanges(reqs, false))
             compoundFut.add((IgniteInternalFuture)fut);
-        }
 
         compoundFut.markInitialized();
 
@@ -2441,6 +2438,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param reqs Requests.
+     * @param failIfExists Fail if exists flag.
      * @return Collection of futures.
      */
     @SuppressWarnings("TypeMayBeWeakened")
@@ -3633,18 +3631,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Prepares DynamicCacheChangeRequest for cache creation
+     * Prepares DynamicCacheChangeRequest for cache creation.
+     *
      * @param ccfg Cache configuration
      * @param cacheName Cache name
      * @param nearCfg Near cache configuration
      * @param cacheType Cache type
-     * @param failIfExists
-     * @param failIfNotStarted
-     * @return request or {@code null} if cache already exests
+     * @param failIfExists Fail if exists flag.
+     * @param failIfNotStarted If {@code true} fails if cache is not started.
+     * @return Request or {@code null} if cache already exists.
      * @throws IgniteCheckedException if some of pre-checks failed
      * @throws CacheExistsException if cache exists and failIfExists flag is {@code true}
      */
-    private DynamicCacheChangeRequest prepareCacheChangeRequest(@Nullable CacheConfiguration ccfg,
+    private DynamicCacheChangeRequest prepareCacheChangeRequest(
+        @Nullable CacheConfiguration ccfg,
         String cacheName,
         @Nullable NearCacheConfiguration nearCfg,
         CacheType cacheType,
@@ -3658,14 +3658,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         req.failIfExists(failIfExists);
 
         if (ccfg != null) {
-
             cloneCheckSerializable(ccfg);
 
             if (desc != null) {
                 if (failIfExists) {
                     throw new CacheExistsException("Failed to start cache " +
                             "(a cache with the same name is already started): " + cacheName);
-
                 }
                 else {
                     CacheConfiguration descCfg = desc.cacheConfiguration();
@@ -3736,6 +3734,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             req.nearCacheConfiguration(nearCfg);
 
         req.cacheType(cacheType);
+
         return req;
     }
 
