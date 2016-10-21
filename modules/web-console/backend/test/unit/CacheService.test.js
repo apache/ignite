@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-
-import {assert} from 'chai';
-import injector from '../injector';
-import testCaches from '../data/caches.json';
-import testAccounts from '../data/accounts.json';
+const assert = require('chai').assert;
+const injector = require('../injector');
+const testCaches = require('../data/caches.json');
+const testAccounts = require('../data/accounts.json');
 
 let cacheService;
 let mongo;
@@ -79,7 +78,7 @@ suite('CacheServiceTestsSuite', () => {
 
         cacheService.merge(testCaches[0])
             .then((cache) => {
-                const cacheBeforeMerge = {...testCaches[0], _id: cache._id, name: newName};
+                const cacheBeforeMerge = Object.assign({}, testCaches[0], {_id: cache._id, name: newName});
 
                 return cacheService.merge(cacheBeforeMerge);
             })
@@ -92,11 +91,12 @@ suite('CacheServiceTestsSuite', () => {
     });
 
     test('Create duplicated cache', (done) => {
+        const dupleCache = Object.assign({}, testCaches[0], {_id: null});
+
         cacheService.merge(testCaches[0])
-            .then(() => cacheService.merge(testCaches[0]))
+            .then(() => cacheService.merge(dupleCache))
             .catch((err) => {
                 assert.instanceOf(err, errors.DuplicateKeyException);
-
                 done();
             });
     });
@@ -145,7 +145,7 @@ suite('CacheServiceTestsSuite', () => {
         prepareUserSpaces()
             .then(([accounts, spaces]) => {
                 const currentUser = accounts[0];
-                const userCache = {...testCaches[0], space: spaces[0][0]._id};
+                const userCache = Object.assign({}, testCaches[0], {space: spaces[0][0]._id});
 
                 return cacheService.merge(userCache)
                     .then(() => cacheService.removeAll(currentUser._id, false));
@@ -160,7 +160,7 @@ suite('CacheServiceTestsSuite', () => {
     test('Get all caches by space', (done) => {
         prepareUserSpaces()
             .then(([accounts, spaces]) => {
-                const userCache = {...testCaches[0], space: spaces[0][0]._id};
+                const userCache = Object.assign({}, testCaches[0], {space: spaces[0][0]._id});
 
                 return cacheService.merge(userCache)
                     .then((cache) => {

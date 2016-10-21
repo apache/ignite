@@ -145,6 +145,13 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isFlagSet(short flag) {
+        short flags = BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS);
+
+        return BinaryUtils.isFlagSet(flags, flag);
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public BinaryType type() throws BinaryObjectException {
         return BinaryUtils.typeProxy(ctx, this);
     }

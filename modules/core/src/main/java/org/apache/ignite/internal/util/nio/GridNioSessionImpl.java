@@ -105,12 +105,24 @@ public class GridNioSessionImpl implements GridNioSession {
         try {
             resetSendScheduleTime();
 
-            return chain().onSessionWrite(this, msg);
+            return chain().onSessionWrite(this, msg, true);
         }
         catch (IgniteCheckedException e) {
             close();
 
             return new GridNioFinishedFuture<Object>(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void sendNoFuture(Object msg) throws IgniteCheckedException {
+        try {
+            chain().onSessionWrite(this, msg, false);
+        }
+        catch (IgniteCheckedException e) {
+            close();
+
+            throw e;
         }
     }
 
@@ -343,6 +355,11 @@ public class GridNioSessionImpl implements GridNioSession {
     /** {@inheritDoc} */
     @Nullable @Override public GridNioRecoveryDescriptor inRecoveryDescriptor() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void systemMessage(Object msg) {
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

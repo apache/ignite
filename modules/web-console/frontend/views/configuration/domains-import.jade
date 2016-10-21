@@ -53,64 +53,31 @@ mixin td-ellipses-lbl(w, lbl)
                                 li Copy h2-x.x.x.jar into agent 'jdbc-drivers' folder and try again
                                 li Refer to agent README.txt for more information
                 .import-domain-model-wizard-page(ng-if='importDomain.action == "connect" && !importDomain.demo')
-                    - var form = 'connectForm'
+                    -var form = 'connectForm'
 
                     form.form-horizontal(name=form novalidate)
+                        .settings-row.settings-row_small-label
+                            +ignite-form-field-dropdown('Driver JAR:', 'ui.selectedJdbcDriverJar', '"jdbcDriverJar"', false, true, false,
+                                'Choose JDBC driver', '', 'jdbcDriverJars',
+                                'Select appropriate JAR with JDBC driver<br> To add another driver you need to place it into "/jdbc-drivers" folder of Ignite Web Agent<br> Refer to Ignite Web Agent README.txt for for more information'
+                            )(data-container='.modal-domain-import')
+                        .settings-row.settings-row_small-label
+                            +java-class('JDBC driver:', 'selectedPreset.jdbcDriverClass', '"jdbcDriverClass"', true, true, 'Fully qualified class name of JDBC driver that will be used to connect to database')
+                        .settings-row.settings-row_small-label
+                            +text('JDBC URL:', 'selectedPreset.jdbcUrl', '"jdbcUrl"', true, 'JDBC URL', 'JDBC URL for connecting to database<br>Refer to your database documentation for details')
+                        .settings-row.settings-row_small-label
+                            +text('User:', 'selectedPreset.user', '"jdbdUser"', false, '', 'User name for connecting to database')
+                        .settings-row.settings-row_small-label
+                            +password('Password:', 'selectedPreset.password', '"jdbcPassword"', false, '', 'Password for connecting to database<br>Note, password would not be saved in preferences for security reasons')(ignite-on-enter='importDomainNext()')
                         .settings-row
-                            label.col-xs-4.col-sm-2.col-md-2.required Driver JAR:
-                            .col-xs-8.col-sm-10.col-md-10
-                                i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='Select appropriate JAR with JDBC driver<br> To add another driver you need to place it into "/jdbc-drivers" folder of Ignite Web Agent<br> Refer to Ignite Web Agent README.txt for for more information')
-                                .input-tip
-                                    button.select-toggle.form-control(id='jdbcDriverJar' bs-select data-container='.modal-domain-import' ng-model='ui.selectedJdbcDriverJar' ng-class='{placeholder: !(jdbcDriverJars && jdbcDriverJars.length > 0)}' placeholder='Choose JDBC driver' bs-options='item.value as item.label for item in jdbcDriverJars')
-                        .settings-row
-                            label.col-xs-4.col-sm-2.col-md-2.required JDBC driver:
-                            .col-xs-8.col-sm-10.col-md-10
-                                - var name = '"jdbcDriverClass"'
-                                i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='Fully qualified class name of JDBC driver that will be used to connect to database')
-
-                                +form-field-feedback(name, 'javaBuiltInClass', 'JDBC Driver should not be the Java built-in class!')
-                                +form-field-feedback(name, 'javaKeywords', 'JDBC Driver could not contains reserved Java keyword!')
-                                +form-field-feedback(name, 'javaPackageSpecified', 'JDBC Driver does not have package specified!')
-                                +form-field-feedback(name, 'javaIdentifier', 'JDBC Driver is invalid Java identifier!')
-
-                                .input-tip
-                                    +ignite-form-field-input(name, 'selectedPreset.jdbcDriverClass', false, true, 'Enter fully qualified class name')(
-                                        data-java-identifier='true'
-                                        data-java-package-specified='true'
-                                        data-java-keywords='true'
-                                        data-java-built-in-class='true'
-                                    )
-                        .settings-row
-                            label.col-xs-4.col-sm-2.col-md-2.required JDBC URL:
-                            .col-xs-8.col-sm-10.col-md-10
-                                i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='JDBC URL for connecting to database<br>Refer to your database documentation for details')
-                                .input-tip
-                                    +ignite-form-field-input('jdbcUrl', 'selectedPreset.jdbcUrl', false, true, 'JDBC URL')
-                        .settings-row
-                            label.col-xs-4.col-sm-2.col-md-2 User:
-                            .col-xs-8.col-sm-10.col-md-10
-                                i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='User name for connecting to database')
-                                .input-tip
-                                    input.form-control(id='user' type='text' ng-model='selectedPreset.user')
-                        .settings-row
-                            label.col-xs-4.col-sm-2.col-md-2 Password:
-                            .col-xs-8.col-sm-10.col-md-10
-                                i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='Password for connecting to database<br>Note, password would not be saved in preferences for security reasons')
-                                .input-tip
-                                    input.form-control(id='password' type='password' ng-model='selectedPreset.password' ignite-on-enter='importDomainNext()')
-                        .settings-row
-                            .checkbox
-                                label
-                                    input(id='tablesOnly' type='checkbox' ng-model='selectedPreset.tablesOnly')
-                                    | Tables only
-                                i.tipLabel.fa.fa-question-circle(bs-tooltip='' data-title='If selected, then only tables metadata will be parsed<br>Otherwise table and view metadata will be parsed')
+                            +checkbox('Tables only', 'selectedPreset.tablesOnly', '"tablesOnly"', 'If selected, then only tables metadata will be parsed<br>Otherwise table and view metadata will be parsed')
                 .import-domain-model-wizard-page(ng-show='importDomain.action == "schemas"')
                     table.table.metadata(st-table='importDomain.displayedSchemas' st-safe-src='importDomain.schemas')
                         thead
                             tr
                                 th.header(colspan='2')
                                     .col-sm-4.pull-right(style='margin-bottom: 5px')
-                                        input.form-control(type='text' st-search='name' placeholder='Filter schemas...' ng-model='importDomain.displayedSchemasFilter' ng-change='selectSchema()')
+                                        input.form-control(type='text' st-search='name' placeholder='Filter schemas...' ng-model='importDomain.displayedSchemasFilter' )
                             tr
                                 th(width='30px')
                                     +chk('importDomain.allSchemasSelected',  'selectAllSchemas()', 'Select all schemas')
@@ -174,49 +141,22 @@ mixin td-ellipses-lbl(w, lbl)
                         .col-sm-1(style='padding-left: 5px')
                             button.btn.btn-primary(ng-click='applyDefaults()') Apply
                 .import-domain-model-wizard-page(ng-show='importDomain.action == "options"')
-                    - var form = 'optionsForm'
-                    form.form-horizontal(name='optionsForm' novalidate)
-                        .settings-row
-                            .col-xs-3.col-sm-2.col-md-2.required
-                                label.required Package:
-                            .col-xs-9.col-sm-10.col-md-10
-                                - var name = '"domainPackageName"'
-                                i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='Package that will be used for POJOs generation')
+                    -var form = 'optionsForm'
 
-                                +form-field-feedback(name, 'javaPackageName', 'Package name is invalid')
-                                +form-field-feedback(name, 'javaKeywords', 'Package name could not contains reserved java keyword')
-
-                                .input-tip
-                                    +ignite-form-field-input(name, 'ui.packageName', false, true, 'Enter package name')(
-                                        data-java-keywords='true'
-                                        data-java-package-name='package-only'
-                                        ng-model-options='{allowInvalid: true}'
-                                    )
+                    form.form-horizontal(name=form novalidate)
+                        .settings-row.settings-row_small-label
+                            +java-package('Package:', 'ui.packageName', '"domainPackageName"', true, true, 'Package that will be used for POJOs generation')(data-container='.modal-domain-import')
                         .settings-row
-                            .checkbox
-                                label
-                                    input(id='domainBuiltinKeys' type='checkbox' ng-model='ui.builtinKeys')
-                                    | Use Java built-in types for keys
-                                    i.tipLabel.fa.fa-question-circle(bs-tooltip='' data-title='Use Java built-in types like "Integer", "Long", "String" instead of POJO generation in case when table primary key contains only one field')
+                            +checkbox('Use Java built-in types for keys', 'ui.builtinKeys', '"domainBuiltinKeys"', 'Use Java built-in types like "Integer", "Long", "String" instead of POJO generation in case when table primary key contains only one field')
                         .settings-row
-                            .checkbox
-                                label
-                                    input(id='domainUsePrimitives' type='checkbox' ng-model='ui.usePrimitives')
-                                    | Use primitive types for NOT NULL table columns
-                                    i.tipLabel.fa.fa-question-circle(bs-tooltip='' data-title='Use primitive types like "int", "long", "double" for POJOs fields generation in case of NOT NULL columns')
+                            +checkbox('Use primitive types for NOT NULL table columns', 'ui.usePrimitives', '"domainUsePrimitives"', 'Use primitive types like "int", "long", "double" for POJOs fields generation in case of NOT NULL columns')
                         .settings-row
-                            .checkbox
-                                label
-                                    input(id='domainGenerateAliases' type='checkbox' ng-model='ui.generateAliases')
-                                    | Generate aliases for query fields
-                                    i.tipLabel.fa.fa-question-circle(bs-tooltip='' data-title='Generate aliases for query fields with database field names when database field name differ from Java field name')
-                        .settings-row
-                            .col-xs-3.col-sm-2.col-md-2.required
-                                label Clusters:
-                            .col-xs-9.col-sm-10.col-md-10
-                                i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='Choose clusters that will be associated with generated caches')
-                                .input-tip
-                                    button.select-toggle.form-control(id='generatedCachesClusters' bs-select ng-model='ui.generatedCachesClusters' ng-class='{placeholder: !(ui.generatedCachesClusters && ui.generatedCachesClusters.length > 0)}' data-container='.modal-domain-import' data-multiple='1' placeholder='Choose clusters for generated caches' bs-options='item.value as item.label for item in clusters')
+                            +checkbox('Generate aliases for query fields', 'ui.generateAliases', '"domainGenerateAliases"', 'Generate aliases for query fields with database field names when database field name differ from Java field name')
+                        .settings-row.settings-row_small-label
+                            +ignite-form-field-dropdown('Clusters:', 'ui.generatedCachesClusters', '"generatedCachesClusters"', false, false, true,
+                                'Choose clusters for generated caches', '', 'clusters',
+                                'Choose clusters that will be associated with generated caches'
+                            )(data-container='.modal-domain-import')
             .modal-footer
                 label(ng-hide='importDomain.action == "drivers" || (importDomain.action == "connect" && importDomain.demo)').labelField {{importDomain.info}}
                 a.btn.btn-primary(ng-hide='importDomain.action == "drivers" || importDomain.action == "connect"' ng-click='importDomainPrev()' bs-tooltip='' data-title='{{prevTooltipText()}}' data-placement='bottom') Prev

@@ -41,7 +41,7 @@ $generatorProperties.jdbcUrlTemplate = function(dialect) {
 $generatorProperties.createBuilder = function() {
     const res = $generatorCommon.builder();
 
-    res.line('# ' + $generatorCommon.mainComment());
+    res.line('# ' + $generatorCommon.mainComment('list of properties'));
 
     return res;
 };

@@ -430,6 +430,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_NO_SELECTOR_OPTS = "IGNITE_NO_SELECTOR_OPTS";
 
     /**
+     * Defines how many non-blocking {@code selector.selectNow()} should be made before
+     * falling into {@code selector.select(long)} in NIO server.
+     */
+    public static final String IGNITE_SELECTOR_SPINS = "IGNITE_SELECTOR_SPINS";
+
+    /**
      * System property to specify period in milliseconds between calls of the SQL statements cache cleanup task.
      * <p>
      * Cleanup tasks clears cache for terminated threads and for threads which did not perform SQL queries within

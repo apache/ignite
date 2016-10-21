@@ -17,53 +17,91 @@
 
 import JavaTypes from '../../app/services/JavaTypes.service.js';
 
-import { assert } from 'chai';
+const INSTANCE = new JavaTypes();
 
-const { nonBuiltInClass, fullClassName, validIdentifier, validPackage, packageSpecified, isKeywords, isJavaPrimitive} = JavaTypes[1]();
+import { assert } from 'chai';
 
 suite('JavaTypesTestsSuite', () => {
     test('nonBuiltInClass', () => {
-        assert.equal(nonBuiltInClass('BigDecimal'), false);
-        assert.equal(nonBuiltInClass('java.math.BigDecimal'), false);
+        assert.equal(INSTANCE.nonBuiltInClass('BigDecimal'), false);
+        assert.equal(INSTANCE.nonBuiltInClass('java.math.BigDecimal'), false);
 
-        assert.equal(nonBuiltInClass('String'), false);
-        assert.equal(nonBuiltInClass('java.lang.String'), false);
+        assert.equal(INSTANCE.nonBuiltInClass('String'), false);
+        assert.equal(INSTANCE.nonBuiltInClass('java.lang.String'), false);
 
-        assert.equal(nonBuiltInClass('Timestamp'), false);
-        assert.equal(nonBuiltInClass('java.sql.Timestamp'), false);
+        assert.equal(INSTANCE.nonBuiltInClass('Timestamp'), false);
+        assert.equal(INSTANCE.nonBuiltInClass('java.sql.Timestamp'), false);
 
-        assert.equal(nonBuiltInClass('Date'), false);
-        assert.equal(nonBuiltInClass('java.sql.Date'), false);
+        assert.equal(INSTANCE.nonBuiltInClass('Date'), false);
+        assert.equal(INSTANCE.nonBuiltInClass('java.sql.Date'), false);
 
-        assert.equal(nonBuiltInClass('Date'), false);
-        assert.equal(nonBuiltInClass('java.util.Date'), false);
+        assert.equal(INSTANCE.nonBuiltInClass('Date'), false);
+        assert.equal(INSTANCE.nonBuiltInClass('java.util.Date'), false);
 
-        assert.equal(nonBuiltInClass('CustomClass'), true);
-        assert.equal(nonBuiltInClass('java.util.CustomClass'), true);
-        assert.equal(nonBuiltInClass('my.package.CustomClass'), true);
+        assert.equal(INSTANCE.nonBuiltInClass('CustomClass'), true);
+        assert.equal(INSTANCE.nonBuiltInClass('java.util.CustomClass'), true);
+        assert.equal(INSTANCE.nonBuiltInClass('my.package.CustomClass'), true);
     });
 
     test('fullClassName', () => {
-        assert.equal(fullClassName('BigDecimal'), 'java.math.BigDecimal');
+        assert.equal(INSTANCE.fullClassName('BigDecimal'), 'java.math.BigDecimal');
     });
 
     test('validIdentifier', () => {
-        assert.equal(validIdentifier('java.math.BigDecimal'), true);
+        assert.equal(INSTANCE.validIdentifier('myIdent'), true);
+        assert.equal(INSTANCE.validIdentifier('java.math.BigDecimal'), false);
+        assert.equal(INSTANCE.validIdentifier('2Demo'), false);
+        assert.equal(INSTANCE.validIdentifier('abra kadabra'), false);
+        assert.equal(INSTANCE.validIdentifier(undefined), false);
+        assert.equal(INSTANCE.validIdentifier(null), false);
+        assert.equal(INSTANCE.validIdentifier(''), false);
+        assert.equal(INSTANCE.validIdentifier(' '), false);
+    });
+
+    test('validClassName', () => {
+        assert.equal(INSTANCE.validClassName('java.math.BigDecimal'), true);
+        assert.equal(INSTANCE.validClassName('2Demo'), false);
+        assert.equal(INSTANCE.validClassName('abra kadabra'), false);
+        assert.equal(INSTANCE.validClassName(undefined), false);
+        assert.equal(INSTANCE.validClassName(null), false);
+        assert.equal(INSTANCE.validClassName(''), false);
+        assert.equal(INSTANCE.validClassName(' '), false);
     });
 
     test('validPackage', () => {
-        assert.equal(validPackage('java.math.BigDecimal'), true);
+        assert.equal(INSTANCE.validPackage('java.math.BigDecimal'), true);
+        assert.equal(INSTANCE.validPackage('my.org.SomeClass'), true);
+        assert.equal(INSTANCE.validPackage('25'), false);
+        assert.equal(INSTANCE.validPackage('abra kadabra'), false);
+        assert.equal(INSTANCE.validPackage(''), false);
+        assert.equal(INSTANCE.validPackage(' '), false);
     });
 
     test('packageSpecified', () => {
-        assert.equal(packageSpecified('java.math.BigDecimal'), true);
+        assert.equal(INSTANCE.packageSpecified('java.math.BigDecimal'), true);
+        assert.equal(INSTANCE.packageSpecified('BigDecimal'), false);
     });
 
-    test('isKeywords', () => {
-        assert.equal(isKeywords('abstract'), true);
+    test('isKeyword', () => {
+        assert.equal(INSTANCE.isKeyword('abstract'), true);
+        assert.equal(INSTANCE.isKeyword('Abstract'), true);
+        assert.equal(INSTANCE.isKeyword('abra kadabra'), false);
+        assert.equal(INSTANCE.isKeyword(undefined), false);
+        assert.equal(INSTANCE.isKeyword(null), false);
+        assert.equal(INSTANCE.isKeyword(''), false);
+        assert.equal(INSTANCE.isKeyword(' '), false);
     });
 
     test('isJavaPrimitive', () => {
-        assert.equal(isJavaPrimitive('boolean'), true);
+        assert.equal(INSTANCE.isJavaPrimitive('boolean'), true);
+    });
+
+    test('validUUID', () => {
+        assert.equal(INSTANCE.validUUID('123e4567-e89b-12d3-a456-426655440000'), true);
+        assert.equal(INSTANCE.validUUID('12345'), false);
+        assert.equal(INSTANCE.validUUID(undefined), false);
+        assert.equal(INSTANCE.validUUID(null), false);
+        assert.equal(INSTANCE.validUUID(''), false);
+        assert.equal(INSTANCE.validUUID(' '), false);
     });
 });

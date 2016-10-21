@@ -93,6 +93,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMultic
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.indexing.noop.NoopIndexingSpi;
+import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
 import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.spi.swapspace.noop.NoopSwapSpaceSpi;
@@ -2052,6 +2053,24 @@ public class IgnitionEx {
 
             if (cfg.getLoadBalancingSpi() == null)
                 cfg.setLoadBalancingSpi(new RoundRobinLoadBalancingSpi());
+            else {
+                Collection<LoadBalancingSpi> spis = new ArrayList<>();
+
+                boolean dfltLoadBalancingSpi = false;
+
+                for (LoadBalancingSpi spi : cfg.getLoadBalancingSpi()) {
+                    spis.add(spi);
+
+                    if (!dfltLoadBalancingSpi && spi instanceof RoundRobinLoadBalancingSpi)
+                        dfltLoadBalancingSpi = true;
+                }
+
+                // Add default load balancing SPI for internal tasks.
+                if (!dfltLoadBalancingSpi)
+                    spis.add(new RoundRobinLoadBalancingSpi());
+
+                cfg.setLoadBalancingSpi(spis.toArray(new LoadBalancingSpi[spis.size()]));
+            }
 
             if (cfg.getIndexingSpi() == null)
                 cfg.setIndexingSpi(new NoopIndexingSpi());

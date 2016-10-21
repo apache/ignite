@@ -21,34 +21,22 @@
 
 module.exports = {
     implements: 'routes/public',
-    inject: ['require(express)', 'require(passport)', 'settings', 'mongo', 'services/mails', 'services/users']
+    inject: ['require(express)', 'require(passport)', 'mongo', 'services/mails', 'services/users', 'services/auth']
 };
 
 /**
  *
  * @param express
  * @param passport
- * @param settings
  * @param mongo
  * @param mailsService
  * @param {UsersService} usersService
+ * @param {AuthService} authService
  * @returns {Promise}
  */
-module.exports.factory = function(express, passport, settings, mongo, mailsService, usersService) {
+module.exports.factory = function(express, passport, mongo, mailsService, usersService, authService) {
     return new Promise((factoryResolve) => {
         const router = new express.Router();
-
-        const _randomString = () => {
-            const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            const possibleLen = possible.length;
-
-            let res = '';
-
-            for (let i = 0; i < settings.tokenLength; i++)
-                res += possible.charAt(Math.floor(Math.random() * possibleLen));
-
-            return res;
-        };
 
         // GET user.
         router.post('/user', (req, res) => {
@@ -107,60 +95,33 @@ module.exports.factory = function(express, passport, settings, mongo, mailsServi
          * Send e-mail to user with reset token.
          */
         router.post('/password/forgot', (req, res) => {
-            mongo.Account.findOne({email: req.body.email}).exec()
-                .then((user) => {
-                    if (!user)
-                        throw new Error('Account with that email address does not exists!');
-
-                    user.resetPasswordToken = _randomString();
-
-                    return user.save();
-                })
+            authService.resetPasswordToken(req.body.email)
                 .then((user) => mailsService.emailUserResetLink(req.origin(), user))
-                .then(() => res.status(200).send('An email has been sent with further instructions.'))
-                .catch((err) => {
-                    // TODO IGNITE-843 Send email to admin
-                    return res.status(401).send(err.message);
-                });
+                .then(() => 'An email has been sent with further instructions.')
+                .then(res.api.ok)
+                .catch(res.api.error);
         });
 
         /**
          * Change password with given token.
          */
         router.post('/password/reset', (req, res) => {
-            mongo.Account.findOne({resetPasswordToken: req.body.token}).exec()
-                .then((user) => {
-                    if (!user)
-                        throw new Error('Failed to find account with this token! Please check link from email.');
+            const {token, password} = req.body;
 
-                    return new Promise((resolve, reject) => {
-                        user.setPassword(req.body.password, (err, _user) => {
-                            if (err)
-                                return reject(new Error('Failed to reset password: ' + err.message));
-
-                            _user.resetPasswordToken = undefined; // eslint-disable-line no-undefined
-
-                            resolve(_user.save());
-                        });
-                    });
-                })
+            authService.resetPasswordByToken(token, password)
                 .then((user) => mailsService.emailPasswordChanged(req.origin(), user))
-                .then((user) => res.status(200).send(user.email))
-                .catch((err) => res.status(401).send(err.message));
+                .then((user) => user.email)
+                .then(res.api.ok)
+                .then(res.api.error);
         });
 
         /* GET reset password page. */
         router.post('/password/validate/token', (req, res) => {
             const token = req.body.token;
 
-            mongo.Account.findOne({resetPasswordToken: token}).exec()
-                .then((user) => {
-                    if (!user)
-                        throw new Error('Invalid token for password reset!');
-
-                    return res.json({token, email: user.email});
-                })
-                .catch((err) => res.status(401).send(err.message));
+            authService.validateResetToken(token)
+                .then(res.api.ok)
+                .catch(res.api.error);
         });
 
         factoryResolve(router);

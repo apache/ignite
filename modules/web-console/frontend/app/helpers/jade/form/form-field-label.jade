@@ -14,8 +14,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin ignite-form-field-label(label, name, required)
-    label.col-xs-4.col-sm-4.col-md-4(
+mixin ignite-form-field__label(label, name, required)
+    label.ignite-form-field__label(
         id='{{ #{name} }}Label'
         for='{{ #{name} }}Input'
         class="{{ #{required} ? 'required' : '' }}"

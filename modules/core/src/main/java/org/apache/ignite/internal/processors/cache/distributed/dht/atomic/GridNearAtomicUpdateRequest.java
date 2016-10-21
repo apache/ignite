@@ -679,6 +679,15 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         return ctx.atomicMessageLogger();
     }
 
+    /**
+     * Get single partition for that message.
+     *
+     * @return Partition.
+     */
+    public int partition() {
+        return partIds != null && !partIds.isEmpty() ? partIds.get(0) : -1;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);

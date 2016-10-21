@@ -609,7 +609,7 @@ public class IgfsDataManager extends IgfsManager {
     }
 
     /**
-     * Moves all colocated blocks in range to non-colocated keys.
+     * Moves all collocated blocks in range to non-colocated keys.
      * @param fileInfo File info to move data for.
      * @param range Range to move.
      */

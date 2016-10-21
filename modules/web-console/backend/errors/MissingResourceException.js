@@ -17,7 +17,7 @@
 
 'use strict';
 
-import AppErrorException from './AppErrorException';
+const AppErrorException = require('./AppErrorException');
 
 class MissingResourceException extends AppErrorException {
     constructor(message) {

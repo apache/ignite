@@ -43,6 +43,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Transactions;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Lifecycle;
+    using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Messaging;
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Transactions;
@@ -273,6 +274,12 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public IClusterGroup ForDaemons()
+        {
+            return _prj.ForDaemons();
+        }
+
+        /** <inheritdoc /> */
         public IClusterGroup ForHost(IClusterNode node)
         {
             IgniteArgumentCheck.NotNull(node, "node");
@@ -401,6 +408,7 @@ namespace Apache.Ignite.Core.Impl
             NearCacheConfiguration nearConfiguration)
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
+            configuration.Validate(Logger);
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
@@ -439,6 +447,7 @@ namespace Apache.Ignite.Core.Impl
             NearCacheConfiguration nearConfiguration)
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
+            configuration.Validate(Logger);
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
@@ -482,7 +491,9 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IClusterNode GetLocalNode()
         {
-            return _locNode ?? (_locNode = GetNodes().FirstOrDefault(x => x.IsLocal));
+            return _locNode ?? (_locNode =
+                       GetNodes().FirstOrDefault(x => x.IsLocal) ??
+                       ForDaemons().GetNodes().FirstOrDefault(x => x.IsLocal));
         }
 
         /** <inheritdoc /> */
@@ -663,6 +674,12 @@ namespace Apache.Ignite.Core.Impl
 
                 return res;
             }
+        }
+
+        /** <inheritdoc /> */
+        public ILogger Logger
+        {
+            get { return _cbs.Log; }
         }
 
         /** <inheritdoc /> */

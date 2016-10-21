@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-
-import {assert} from 'chai';
-import injector from '../injector';
-import testIgfss from '../data/igfss.json';
-import testAccounts from '../data/accounts.json';
+const assert = require('chai').assert;
+const injector = require('../injector');
+const testIgfss = require('../data/igfss.json');
+const testAccounts = require('../data/accounts.json');
 
 let igfsService;
 let mongo;
@@ -78,7 +77,7 @@ suite('IgfsServiceTestsSuite', () => {
 
         igfsService.merge(testIgfss[0])
             .then((existIgfs) => {
-                const igfsBeforeMerge = {...testIgfss[0], _id: existIgfs._id, name: newName};
+                const igfsBeforeMerge = Object.assign({}, testIgfss[0], {_id: existIgfs._id, name: newName});
 
                 return igfsService.merge(igfsBeforeMerge);
             })
@@ -91,8 +90,10 @@ suite('IgfsServiceTestsSuite', () => {
     });
 
     test('Create duplicated igfs', (done) => {
+        const dupleIfgs = Object.assign({}, testIgfss[0], {_id: null});
+
         igfsService.merge(testIgfss[0])
-            .then(() => igfsService.merge(testIgfss[0]))
+            .then(() => igfsService.merge(dupleIfgs))
             .catch((err) => {
                 assert.instanceOf(err, errors.DuplicateKeyException);
 
@@ -143,7 +144,7 @@ suite('IgfsServiceTestsSuite', () => {
         prepareUserSpaces()
             .then(([accounts, spaces]) => {
                 const currentUser = accounts[0];
-                const userIgfs = {...testIgfss[0], space: spaces[0][0]._id};
+                const userIgfs = Object.assign({}, testIgfss[0], {space: spaces[0][0]._id});
 
                 return igfsService.merge(userIgfs)
                     .then(() => igfsService.removeAll(currentUser._id, false));
@@ -158,7 +159,7 @@ suite('IgfsServiceTestsSuite', () => {
     test('Get all igfss by space', (done) => {
         prepareUserSpaces()
             .then(([accounts, spaces]) => {
-                const userIgfs = {...testIgfss[0], space: spaces[0][0]._id};
+                const userIgfs = Object.assign({}, testIgfss[0], {space: spaces[0][0]._id});
 
                 return igfsService.merge(userIgfs)
                     .then((existIgfs) => {

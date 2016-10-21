@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-
-import {assert} from 'chai';
-import injector from '../injector';
-import testClusters from '../data/clusters.json';
-import testAccounts from '../data/accounts.json';
+const assert = require('chai').assert;
+const injector = require('../injector');
+const testClusters = require('../data/clusters.json');
+const testAccounts = require('../data/accounts.json');
 
 let clusterService;
 let mongo;
@@ -78,7 +77,7 @@ suite('ClusterServiceTestsSuite', () => {
 
         clusterService.merge(testClusters[0])
             .then((cluster) => {
-                const clusterBeforeMerge = {...testClusters[0], _id: cluster._id, name: newName};
+                const clusterBeforeMerge = Object.assign({}, testClusters[0], {_id: cluster._id, name: newName});
 
                 return clusterService.merge(clusterBeforeMerge);
             })
@@ -91,8 +90,10 @@ suite('ClusterServiceTestsSuite', () => {
     });
 
     test('Create duplicated cluster', (done) => {
+        const dupleCluster = Object.assign({}, testClusters[0], {_id: null});
+
         clusterService.merge(testClusters[0])
-            .then(() => clusterService.merge(testClusters[0]))
+            .then(() => clusterService.merge(dupleCluster))
             .catch((err) => {
                 assert.instanceOf(err, errors.DuplicateKeyException);
 
@@ -143,7 +144,7 @@ suite('ClusterServiceTestsSuite', () => {
         prepareUserSpaces()
             .then(([accounts, spaces]) => {
                 const currentUser = accounts[0];
-                const userCluster = {...testClusters[0], space: spaces[0][0]._id};
+                const userCluster = Object.assign({}, testClusters[0], {space: spaces[0][0]._id});
 
                 return clusterService.merge(userCluster)
                     .then(() => clusterService.removeAll(currentUser._id, false));
@@ -158,7 +159,7 @@ suite('ClusterServiceTestsSuite', () => {
     test('Get all clusters by space', (done) => {
         prepareUserSpaces()
             .then(([accounts, spaces]) => {
-                const userCluster = {...testClusters[0], space: spaces[0][0]._id};
+                const userCluster = Object.assign({}, testClusters[0], {space: spaces[0][0]._id});
 
                 return clusterService.merge(userCluster)
                     .then((existCluster) => {

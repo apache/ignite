@@ -496,6 +496,13 @@
         </profile>
 
         <profile>
+            <id>ignored-tests</id>
+            <modules>
+                <module>modules/ignored-tests</module>
+            </modules>
+        </profile>
+
+        <profile>
             <id>examples</id>
             <modules>
                 <module>examples</module>
