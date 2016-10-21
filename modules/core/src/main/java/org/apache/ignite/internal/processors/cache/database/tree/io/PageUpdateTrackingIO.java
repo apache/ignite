@@ -165,6 +165,7 @@ public class PageUpdateTrackingIO extends PageIO {
      */
     public boolean wasChanged(ByteBuffer buf, long pageId, long curBackupId, long lastSuccessfulBackupId, int pageSize) {
         validateBackupId(buf, curBackupId + 1, lastSuccessfulBackupId, pageSize);
+
         if (countOfChangedPage(buf, curBackupId, pageSize) < 1)
             return false;
 
