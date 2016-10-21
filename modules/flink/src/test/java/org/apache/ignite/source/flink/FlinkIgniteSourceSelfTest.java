@@ -120,7 +120,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
         final IgniteSource igniteSrc = new IgniteSource(TEST_CACHE);
 
         igniteSrc.setIgnite(ignite);
-        igniteSrc.setEvtBatchSize(10);
+        igniteSrc.setEvtBatchSize(1);
         igniteSrc.setEvtBufTimeout(10);
 
         igniteSrc.start(filter, EventType.EVT_CACHE_OBJECT_PUT);
