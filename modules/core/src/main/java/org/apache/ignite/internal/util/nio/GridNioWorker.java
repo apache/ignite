@@ -28,16 +28,16 @@ interface GridNioWorker {
     /**
      * @param req Change request.
      */
-    public void offer(GridNioFuture req);
+    public void offer(GridNioServer.SessionChangeRequest req);
 
     /**
      * @param reqs Change requests.
      */
-    public void offer(Collection<GridNioFuture> reqs);
+    public void offer(Collection<GridNioServer.SessionChangeRequest> reqs);
 
     /**
      * @param ses Session.
      * @return Session state change requests.
      */
-    @Nullable public List<GridNioFuture> clearSessionRequests(GridNioSession ses);
+    @Nullable public List<GridNioServer.SessionChangeRequest> clearSessionRequests(GridNioSession ses);
 }

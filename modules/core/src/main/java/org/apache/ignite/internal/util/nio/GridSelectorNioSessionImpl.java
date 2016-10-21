@@ -46,7 +46,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     private SelectionKey key;
 
     /** Current worker thread. */
-    private GridNioWorker worker;
+    private volatile GridNioWorker worker;
 
     /** Semaphore. */
     @GridToStringExclude
@@ -68,7 +68,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     private final IgniteLogger log;
 
     /** */
-    private List<GridNioFuture> pendingStateChanges;
+    private List<GridNioServer.SessionChangeRequest> pendingStateChanges;
 
     /** */
     final AtomicBoolean procWrite = new AtomicBoolean();
@@ -129,6 +129,10 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
         }
     }
 
+    GridNioWorker worker() {
+        return worker;
+    }
+
     /**
      * Sets selection key for this session.
      *
@@ -166,7 +170,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      * @param fut Move future.
      * @return {@code True} if session move was scheduled.
      */
-    boolean offerMove(GridNioWorker from, GridNioFuture fut) {
+    boolean offerMove(GridNioWorker from, GridNioServer.SessionChangeRequest fut) {
         synchronized (this) {
             GridNioWorker worker0 = worker;
 
@@ -182,7 +186,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     /**
      * @param fut Future.
      */
-    void offerStateChange(GridNioFuture fut) {
+    void offerStateChange(GridNioServer.SessionChangeRequest fut) {
         synchronized (this) {
             GridNioWorker worker0 = worker;
 
@@ -204,7 +208,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
         synchronized (this) {
             assert this.worker == moveFrom;
 
-            List<GridNioFuture> sesReqs = moveFrom.clearSessionRequests(this);
+            List<GridNioServer.SessionChangeRequest> sesReqs = moveFrom.clearSessionRequests(this);
 
             worker = null;
 

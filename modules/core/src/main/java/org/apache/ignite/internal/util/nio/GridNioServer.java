@@ -545,8 +545,12 @@ public class GridNioServer<T> {
                     throw new IgniteCheckedException(err);
             }
         }
-        else if (!ses.procWrite.get() && ses.procWrite.compareAndSet(false, true))
-            clientWorkers.get(ses.selectorIndex()).offer((SessionChangeRequest)req, ses.selectorIndex());
+        else if (!ses.procWrite.get() && ses.procWrite.compareAndSet(false, true)) {
+            AbstractNioClientWorker worker = (AbstractNioClientWorker)ses.worker();
+
+            if (worker != null)
+                worker.offer((SessionChangeRequest)req);
+        }
 
         if (msgQueueLsnr != null)
             msgQueueLsnr.apply(ses, msgCnt);
@@ -622,7 +626,7 @@ public class GridNioServer<T> {
             ses0.resend(futs);
 
             // Wake up worker.
-            ses0.offerStateChange(fut0);
+            ses0.offerStateChange((GridNioServer.SessionChangeRequest)fut0);
         }
     }
 
@@ -688,7 +692,7 @@ public class GridNioServer<T> {
             ", writerSesBalanceCnt=" + writerMoveCnt.get() + ']');
 
         for (int i = 0; i < clientWorkers.size(); i++)
-            clientWorkers.get(i).offer(new NioOperationFuture<Void>(null, NioOperation.DUMP_STATS), i);
+            clientWorkers.get(i).offer(new NioOperationFuture<Void>(null, NioOperation.DUMP_STATS));
     }
 
     /**
@@ -835,7 +839,7 @@ public class GridNioServer<T> {
         else
             balanceIdx = 0;
 
-        clientWorkers.get(balanceIdx).offer(req, balanceIdx);
+        clientWorkers.get(balanceIdx).offer(req);
     }
 
     /** {@inheritDoc} */
@@ -1644,30 +1648,29 @@ public class GridNioServer<T> {
          * Adds socket channel to the registration queue and wakes up reading thread.
          *
          * @param req Change request.
-         * @param workerIdx Worker thread index.
          */
-        private void offer(SessionChangeRequest req, int workerIdx) {
+        public void offer(SessionChangeRequest req) {
             changeReqs.offer(req);
 
             if (select)
                 selector.wakeup();
             else if (park)
-                LockSupport.unpark(clientThreads[workerIdx]);
+                LockSupport.unpark(clientThreads[idx]);
         }
 
         /** {@inheritDoc} */
-        @Override public void offer(Collection<GridNioFuture> reqs) {
-            for (GridNioFuture req : reqs)
-                changeReqs.offer((NioOperationFuture)req);
+        @Override public void offer(Collection<SessionChangeRequest> reqs) {
+            for (SessionChangeRequest req : reqs)
+                changeReqs.offer(req);
 
             selector.wakeup();
         }
 
         /** {@inheritDoc} */
-        @Override public List<GridNioFuture> clearSessionRequests(GridNioSession ses) {
-            List<GridNioFuture> sesReqs = null;
+        @Override public List<SessionChangeRequest> clearSessionRequests(GridNioSession ses) {
+            List<SessionChangeRequest> sesReqs = null;
 
-            for (GridNioServer.NioOperationFuture changeReq : changeReqs) {
+            for (SessionChangeRequest changeReq : changeReqs) {
                 if (changeReq.session() == ses && !(changeReq instanceof SessionMoveFuture)) {
                     boolean rmv = changeReqs.remove(changeReq);
 
@@ -1705,7 +1708,7 @@ public class GridNioServer<T> {
                             }
 
                             case MOVE: {
-                                SessionMoveFuture f = (SessionMoveFuture)req;
+                                SessionMoveFuture f = (SessionMoveFuture)req0;
 
                                 GridSelectorNioSessionImpl ses = f.session();
 
@@ -2541,7 +2544,7 @@ public class GridNioServer<T> {
     /**
      * Asynchronous operation that may be requested on selector.
      */
-    private enum NioOperation {
+    enum NioOperation {
         /** Register read key selection. */
         REGISTER,
 
@@ -3613,6 +3616,8 @@ public class GridNioServer<T> {
      *
      */
     interface SessionChangeRequest {
+        GridNioSession session();
+
         /**
          * @return Requested change operation.
          */
