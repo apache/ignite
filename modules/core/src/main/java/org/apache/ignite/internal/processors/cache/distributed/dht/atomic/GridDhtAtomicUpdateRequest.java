@@ -602,6 +602,15 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     }
 
     /**
+     * Get single partition for that message.
+     *
+     * @return Partition.
+     */
+    public int partition() {
+        return partIds != null && !partIds.isEmpty() ? partIds.get(0) : -1;
+    }
+
+    /**
      * @param idx Index.
      * @return Conflict expire time.
      */

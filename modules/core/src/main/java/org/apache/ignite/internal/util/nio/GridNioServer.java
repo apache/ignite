@@ -45,6 +45,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -87,6 +88,9 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.NIO_OPER
  *
  */
 public class GridNioServer<T> {
+    /** */
+    private static final boolean DISABLE_PARK = IgniteSystemProperties.getBoolean("DISABLE_PARK", false);
+
     /** Default session write timeout. */
     public static final int DFLT_SES_WRITE_TIMEOUT = 5000;
 
@@ -117,6 +121,8 @@ public class GridNioServer<T> {
      *
      */
     static {
+        System.out.println(">>> Disable park: " + DISABLE_PARK);
+
         // This is a workaround for JDK bug (NPE in Selector.open()).
         // http://bugs.sun.com/view_bug.do?bug_id=6427854
         try {
@@ -408,7 +414,7 @@ public class GridNioServer<T> {
 
         NioOperationFuture<Boolean> fut = new NioOperationFuture<>(impl, NioOperation.CLOSE);
 
-        clientWorkers.get(impl.selectorIndex()).offer(fut);
+        clientWorkers.get(impl.selectorIndex()).offer(fut, impl.selectorIndex());
 
         return fut;
     }
@@ -496,7 +502,7 @@ public class GridNioServer<T> {
             }
         }
         else if (!ses.procWrite.get() && ses.procWrite.compareAndSet(false, true))
-            clientWorkers.get(ses.selectorIndex()).offer((SessionChangeRequest)req);
+            clientWorkers.get(ses.selectorIndex()).offer((SessionChangeRequest)req, ses.selectorIndex());
 
         if (msgQueueLsnr != null)
             msgQueueLsnr.apply(ses, msgCnt);
@@ -572,7 +578,7 @@ public class GridNioServer<T> {
             ses0.resend(futs);
 
             // Wake up worker.
-            clientWorkers.get(ses0.selectorIndex()).offer(((SessionChangeRequest)fut0));
+            clientWorkers.get(ses0.selectorIndex()).offer(((SessionChangeRequest)fut0), ses0.selectorIndex());
         }
     }
 
@@ -600,7 +606,7 @@ public class GridNioServer<T> {
 
         NioOperationFuture<?> fut = new NioOperationFuture<Void>(impl, op);
 
-        clientWorkers.get(impl.selectorIndex()).offer(fut);
+        clientWorkers.get(impl.selectorIndex()).offer(fut, impl.selectorIndex());
 
         return fut;
     }
@@ -610,7 +616,7 @@ public class GridNioServer<T> {
      */
     public void dumpStats() {
         for (int i = 0; i < clientWorkers.size(); i++)
-            clientWorkers.get(i).offer(new NioOperationFuture<Void>(null, NioOperation.DUMP_STATS));
+            clientWorkers.get(i).offer(new NioOperationFuture<Void>(null, NioOperation.DUMP_STATS), i);
     }
 
     /**
@@ -757,7 +763,7 @@ public class GridNioServer<T> {
         else
             balanceIdx = 0;
 
-        clientWorkers.get(balanceIdx).offer(req);
+        clientWorkers.get(balanceIdx).offer(req, balanceIdx);
     }
 
     /** {@inheritDoc} */
@@ -879,9 +885,7 @@ public class GridNioServer<T> {
 
                     if (req == null) {
                         if (ses.procWrite.get()) {
-                            boolean set = ses.procWrite.compareAndSet(true, false);
-
-                            assert set;
+                            ses.procWrite.set(false);
 
                             if (ses.writeQueue().isEmpty())
                                 key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
@@ -967,6 +971,16 @@ public class GridNioServer<T> {
                 return;
             }
 
+            int pendingAcks0 = -1;
+
+            GridNioRecoveryDescriptor desc = null;
+
+            if (!DISABLE_PARK && writer) {
+                desc = ((GridSelectorNioSessionImpl)key.attachment()).outRecoveryDescriptor();
+
+                pendingAcks0 = desc.messagesRequests().size() % desc.ackSendThreshold();
+            }
+
             ReadableByteChannel sockCh = (ReadableByteChannel)key.channel();
 
             final GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
@@ -1017,6 +1031,12 @@ public class GridNioServer<T> {
             catch (IgniteCheckedException e) {
                 close(ses, e);
             }
+
+            if (!DISABLE_PARK && pendingAcks0 != -1) {
+                assert desc != null;
+
+                pendingAcks -= pendingAcks0 - (desc.messagesRequests().size() % desc.ackSendThreshold());
+            }
         }
 
         /**
@@ -1026,10 +1046,26 @@ public class GridNioServer<T> {
          * @throws IOException If write failed.
          */
         @Override protected void processWrite(SelectionKey key) throws IOException {
+            int pendingAcks0 = -1;
+
+            GridNioRecoveryDescriptor desc = null;
+
+            if (!DISABLE_PARK && writer) {
+                desc = ((GridSelectorNioSessionImpl)key.attachment()).outRecoveryDescriptor();
+
+                pendingAcks0 = desc.messagesRequests().size() % desc.ackSendThreshold();
+            }
+
             if (sslFilter != null)
                 processWriteSsl(key);
             else
                 processWrite0(key);
+
+            if (!DISABLE_PARK && pendingAcks0 != -1) {
+                assert desc != null;
+
+                pendingAcks += (desc.messagesRequests().size() % desc.ackSendThreshold()) - pendingAcks0;
+            }
         }
 
         /**
@@ -1096,9 +1132,7 @@ public class GridNioServer<T> {
 
                             if (req == null && buf.position() == 0) {
                                 if (ses.procWrite.get()) {
-                                    boolean set = ses.procWrite.compareAndSet(true, false);
-
-                                    assert set;
+                                    ses.procWrite.set(false);
 
                                     if (ses.writeQueue().isEmpty())
                                         key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
@@ -1294,12 +1328,17 @@ public class GridNioServer<T> {
 
                     if (req == null && buf.position() == 0) {
                         if (ses.procWrite.get()) {
-                            boolean set = ses.procWrite.compareAndSet(true, false);
+                            ses.procWrite.set(false);
 
-                            assert set;
+                            if (ses.writeQueue().isEmpty()) {
+                                if ((key.interestOps() & SelectionKey.OP_WRITE) != 0) {
+                                    key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
 
-                            if (ses.writeQueue().isEmpty())
-                                key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+                                    writeSesCnt--;
+
+                                    assert writeSesCnt >= 0 : writeSesCnt;
+                                }
+                            }
                             else
                                 ses.procWrite.set(true);
                         }
@@ -1402,8 +1441,20 @@ public class GridNioServer<T> {
         /** Worker index. */
         private final int idx;
 
+        /** Writer worker flag. */
+        final boolean writer;
+
         /** {@code True} if calls 'selector.select'. */
         private volatile boolean select;
+
+        /** {@code True} if calls 'LockSupport.park'. */
+        private volatile boolean park;
+
+        /** Number of sessions which require writes. */
+        protected int writeSesCnt;
+
+        /** */
+        protected int pendingAcks;
 
         /**
          * @param idx Index of this worker in server's array.
@@ -1419,6 +1470,8 @@ public class GridNioServer<T> {
             createSelector();
 
             this.idx = idx;
+
+            writer = idx % 2 == 1;
         }
 
         /** {@inheritDoc} */
@@ -1501,12 +1554,15 @@ public class GridNioServer<T> {
          * Adds socket channel to the registration queue and wakes up reading thread.
          *
          * @param req Change request.
+         * @param workerIdx Worker thread index.
          */
-        private void offer(SessionChangeRequest req) {
+        private void offer(SessionChangeRequest req, int workerIdx) {
             changeReqs.offer(req);
 
             if (select)
                 selector.wakeup();
+            else if (park)
+                LockSupport.unpark(clientThreads[workerIdx]);
         }
 
         /**
@@ -1603,6 +1659,18 @@ public class GridNioServer<T> {
                         }
                     }
 
+                    if (!DISABLE_PARK && writer && writeSesCnt == 0 && pendingAcks == 0) {
+                        park = true;
+
+                        try {
+                            if (changeReqs.isEmpty())
+                                LockSupport.parkNanos(1_000_000_000);
+                        }
+                        finally {
+                            park = false;
+                        }
+                    }
+
                     int res = 0;
 
                     for (int i = 0; i < SELECTOR_SPINS && res == 0; i++)
@@ -1616,7 +1684,7 @@ public class GridNioServer<T> {
                             processSelectedKeysOptimized(selectedKeys.flip());
                     }
 
-                    if (!changeReqs.isEmpty())
+                    if (!changeReqs.isEmpty() || (!DISABLE_PARK && writer))
                         continue;
 
                     select = true;
@@ -1682,8 +1750,11 @@ public class GridNioServer<T> {
             SelectionKey key = ses.key();
 
             if (key.isValid()) {
-                if ((key.interestOps() & SelectionKey.OP_WRITE) == 0)
+                if ((key.interestOps() & SelectionKey.OP_WRITE) == 0) {
                     key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
+
+                    writeSesCnt++;
+                }
 
                 // Update timestamp to protected against false write timeout.
                 ses.bytesSent(0);

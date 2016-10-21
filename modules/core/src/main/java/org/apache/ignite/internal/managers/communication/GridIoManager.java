@@ -40,7 +40,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -61,6 +60,7 @@ import org.apache.ignite.internal.processors.platform.message.PlatformMessageFil
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
+import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple3;
@@ -269,6 +269,28 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         assertParameter(discoDelay > 0, "discoveryStartupDelay > 0");
 
         startSpi();
+
+//        striped = new StripedExecutor(Runtime.getRuntime().availableProcessors());
+//        responseExec = new StripedExecutor(1);
+
+//        Thread t = new Thread(new Runnable() {
+//            @Override public void run() {
+//                for (;;) {
+//                    try {
+//                        Thread.sleep(5000);
+//                    }
+//                    catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//
+//                    striped.dumpStats(log);
+//                }
+//            }
+//        });
+//
+//        t.setDaemon(true);
+//
+//        t.start();
 
         pubPool = ctx.getExecutorService();
         p2pPool = ctx.getPeerClassLoadingExecutorService();
@@ -701,6 +723,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (log.isDebugEnabled())
             log.debug(stopInfo());
 
+        if (striped != null)
+            striped.stop();
+
+        if (responseExec != null)
+            responseExec.stop();
+
         Arrays.fill(ioPools, null);
     }
 
@@ -919,6 +947,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
     }
 
+    StripedExecutor striped;
+    StripedExecutor responseExec;
+
     /**
      * @param nodeId Node ID.
      * @param msg Message.
@@ -956,6 +987,15 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 return;
             }
         }
+
+//        if (msg.partition() != -1) {
+//            striped.execute(msg.partition(), c);
+//        }
+//        else if (msg.response()) {
+//            responseExec.execute(0, c);
+//        }
+//        else
+
 
         try {
             pool(plc).execute(c);
