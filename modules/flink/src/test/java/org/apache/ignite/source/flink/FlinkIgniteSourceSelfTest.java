@@ -49,7 +49,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 15_000;
+        return 20_000;
     }
 
     /** {@inheritDoc} */
