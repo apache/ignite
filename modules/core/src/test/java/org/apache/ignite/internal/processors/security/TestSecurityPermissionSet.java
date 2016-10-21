@@ -61,8 +61,7 @@ public class TestSecurityPermissionSet implements SecurityPermissionSet {
     }
 
     /** {@inheritDoc} */
-    @Nullable
-    @Override public Collection<SecurityPermission> systemPermissions() {
+    @Nullable @Override public Collection<SecurityPermission> systemPermissions() {
         return sysPerms;
     }
 }

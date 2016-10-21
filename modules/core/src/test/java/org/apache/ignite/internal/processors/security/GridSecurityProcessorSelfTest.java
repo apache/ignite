@@ -241,11 +241,11 @@ public class GridSecurityProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If fail get configuration.
      */
     private IgniteConfiguration config(
-            SecurityCredentials crd,
-            AtomicInteger authCnt,
-            Map<UUID,List<UUID>> authMap,
-            Boolean global,
-            Map<SecurityCredentials, TestSecurityPermissionSet> permsMap
+        SecurityCredentials crd,
+        AtomicInteger authCnt,
+        Map<UUID, List<UUID>> authMap,
+        Boolean global,
+        Map<SecurityCredentials, TestSecurityPermissionSet> permsMap
     ) throws Exception {
         IgniteConfiguration cfg = getConfiguration();
 

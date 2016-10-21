@@ -807,12 +807,13 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         SecurityCredentials locCred = (SecurityCredentials)locNode.getAttributes()
-                .get(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
+            .get(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
 
         boolean auth = false;
 
         if (spi.nodeAuth != null && spi.nodeAuth.isGlobalNodeAuthentication()) {
             localAuthentication(locCred);
+
             auth = true;
         }
 
@@ -3907,8 +3908,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                             spi.gridStartTime = msg.gridStartTime();
 
                             if (spi.nodeAuth != null && spi.nodeAuth.isGlobalNodeAuthentication()) {
-
-                                TcpDiscoveryAbstractMessage authFail = new TcpDiscoveryAuthFailedMessage(locNodeId, spi.locHost);
+                                TcpDiscoveryAbstractMessage authFail =
+                                    new TcpDiscoveryAuthFailedMessage(locNodeId, spi.locHost);
 
                                 try {
                                     ClassLoader cl = U.resolveClassLoader(spi.ignite().configuration());
@@ -3919,11 +3920,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     SecurityContext rmCrd = spi.marshaller().unmarshal(rmSubj, cl);
                                     SecurityContext locCrd = spi.marshaller().unmarshal(locSubj, cl);
 
-                                    if (!permissionsEqual(locCrd.subject().permissions(), rmCrd.subject().permissions())) {
+                                    if (!permissionsEqual(locCrd.subject().permissions(),
+                                        rmCrd.subject().permissions())) {
                                         // Node has not pass authentication.
-                                        LT.warn(log, null, "Authentication failed, local authentication is different of " +
-                                                        "coordinator and other nodes [nodeId=" + node.id() + ", addrs=" + U.addressesAsString(node) + ']',
-                                                "Authentication failed [nodeId=" + U.id8(node.id()) + ", addrs=" + U.addressesAsString(node) + ']');
+                                        LT.warn(log,
+                                            null,
+                                            "Failed to authenticate local node " +
+                                                "(local authentication result is different from rest of topology) " +
+                                                "[nodeId=" + node.id() + ", addrs=" + U.addressesAsString(node) + ']',
+                                            "Authentication failed [nodeId=" + U.id8(node.id()) +
+                                                ", addrs=" + U.addressesAsString(node) + ']');
 
                                         joinRes.set(authFail);
 
@@ -3931,7 +3937,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                         mux.notifyAll();
                                     }
-                                } catch (IgniteCheckedException e) {
+                                }
+                                catch (IgniteCheckedException e) {
                                     U.error(log, "Failed to verify node permissions consistency (will drop the node): " + node, e);
 
                                     joinRes.set(authFail);
