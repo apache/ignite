@@ -23,18 +23,23 @@ import java.util.List;
 import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -122,7 +127,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
      * Empty constructor required by {@link Externalizable}.
      */
     public GridNearAtomicAbstractUpdateRequest() {
-       // NoOp
+        // NoOp
     }
 
     /**
@@ -149,25 +154,25 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
      * @param addDepInfo Deployment info flag.
      */
     public GridNearAtomicAbstractUpdateRequest(
-            int cacheId,
-            UUID nodeId,
-            GridCacheVersion futVer,
-            boolean fastMap,
-            @Nullable GridCacheVersion updateVer,
-            @NotNull AffinityTopologyVersion topVer,
-            boolean topLocked,
-            CacheWriteSynchronizationMode syncMode,
-            GridCacheOperation op,
-            boolean retval,
-            @Nullable ExpiryPolicy expiryPlc,
-            @Nullable Object[] invokeArgs,
-            @Nullable CacheEntryPredicate[] filter,
-            @Nullable UUID subjId,
-            int taskNameHash,
-            boolean skipStore,
-            boolean keepBinary,
-            boolean clientReq,
-            boolean addDepInfo
+        int cacheId,
+        UUID nodeId,
+        GridCacheVersion futVer,
+        boolean fastMap,
+        @Nullable GridCacheVersion updateVer,
+        @NotNull AffinityTopologyVersion topVer,
+        boolean topLocked,
+        CacheWriteSynchronizationMode syncMode,
+        GridCacheOperation op,
+        boolean retval,
+        @Nullable ExpiryPolicy expiryPlc,
+        @Nullable Object[] invokeArgs,
+        @Nullable CacheEntryPredicate[] filter,
+        @Nullable UUID subjId,
+        int taskNameHash,
+        boolean skipStore,
+        boolean keepBinary,
+        boolean clientReq,
+        boolean addDepInfo
     ) {
         assert futVer != null;
 
@@ -192,7 +197,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
         this.clientReq = clientReq;
         this.addDepInfo = addDepInfo;
     }
-
 
     /** {@inheritDoc} */
     @Override public int lookupIndex() {
@@ -311,7 +315,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
         return keepBinary;
     }
 
-
     /**
      * @return Update operation.
      */
@@ -325,7 +328,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
     @Nullable public Object[] invokeArguments() {
         return invokeArgs;
     }
-
 
     /**
      * @return Flag indicating whether this request contains primary keys.
@@ -432,6 +434,46 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
      * @return Conflict expire time.
      */
     public abstract long conflictExpireTime(int idx);
+
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+        super.prepareMarshal(ctx);
+
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+        if (filter != null) {
+            boolean hasFilter = false;
+
+            for (CacheEntryPredicate p : filter) {
+                if (p != null) {
+                    hasFilter = true;
+
+                    p.prepareMarshal(cctx);
+                }
+            }
+
+            if (!hasFilter)
+                filter = null;
+        }
+
+        if (expiryPlc != null && expiryPlcBytes == null)
+            expiryPlcBytes = CU.marshal(cctx, new IgniteExternalizableExpiryPolicy(expiryPlc));
+    }
+
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        super.finishUnmarshal(ctx, ldr);
+
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+        if (filter != null) {
+            for (CacheEntryPredicate p : filter) {
+                if (p != null)
+                    p.finishUnmarshal(cctx, ldr);
+            }
+        }
+
+        if (expiryPlcBytes != null && expiryPlc == null)
+            expiryPlc = ctx.marshaller().unmarshal(expiryPlcBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+    }
 
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);

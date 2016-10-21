@@ -35,7 +35,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -131,25 +130,25 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
         boolean addDepInfo
     ) {
         super(
-                cacheId,
-                nodeId,
-                futVer,
-                fastMap,
-                updateVer,
-                topVer,
-                topLocked,
-                syncMode,
-                op,
-                retval,
-                expiryPlc,
-                invokeArgs,
-                filter,
-                subjId,
-                taskNameHash,
-                skipStore,
-                keepBinary,
-                clientReq,
-                addDepInfo
+            cacheId,
+            nodeId,
+            futVer,
+            fastMap,
+            updateVer,
+            topVer,
+            topLocked,
+            syncMode,
+            op,
+            retval,
+            expiryPlc,
+            invokeArgs,
+            filter,
+            subjId,
+            taskNameHash,
+            skipStore,
+            keepBinary,
+            clientReq,
+            addDepInfo
         );
 
     }
@@ -163,11 +162,11 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
      * @param primary If given key is primary on this mapping.
      */
     public void addUpdateEntry(KeyCacheObject key,
-       @Nullable Object val,
-       long conflictTtl,
-       long conflictExpireTime,
-       @Nullable GridCacheVersion conflictVer,
-       boolean primary) {
+        @Nullable Object val,
+        long conflictTtl,
+        long conflictExpireTime,
+        @Nullable GridCacheVersion conflictVer,
+        boolean primary) {
         EntryProcessor<Object, Object, Object> entryProcessor = null;
 
         if (op == TRANSFORM) {
@@ -266,24 +265,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
 
         prepareMarshalCacheObject(key, cctx);
 
-        if (filter != null) {
-            boolean hasFilter = false;
-
-            for (CacheEntryPredicate p : filter) {
-                if (p != null) {
-                    hasFilter = true;
-
-                    p.prepareMarshal(cctx);
-                }
-            }
-
-            if (!hasFilter)
-                filter = null;
-        }
-
-        if (expiryPlc != null && expiryPlcBytes == null)
-            expiryPlcBytes = CU.marshal(cctx, new IgniteExternalizableExpiryPolicy(expiryPlc));
-
         if (op == TRANSFORM) {
             // force addition of deployment info for entry processors if P2P is enabled globally.
             if (!addDepInfo && ctx.deploymentEnabled())
@@ -317,19 +298,8 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
             if (invokeArgs == null)
                 invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, ctx, ldr);
         }
-        else
-            if (val != null)
-                val.finishUnmarshal(cctx.cacheObjectContext(), ldr);
-
-        if (filter != null) {
-            for (CacheEntryPredicate p : filter) {
-                if (p != null)
-                    p.finishUnmarshal(cctx, ldr);
-            }
-        }
-
-        if (expiryPlcBytes != null && expiryPlc == null)
-            expiryPlc = ctx.marshaller().unmarshal(expiryPlcBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+        else if (val != null)
+            val.finishUnmarshal(cctx.cacheObjectContext(), ldr);
 
         key.partition(partId);
     }
@@ -492,6 +462,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridNearAtomicSingleUpdateRequest.class, this, "filter", Arrays.toString(filter),
-                "parent", super.toString());
+            "parent", super.toString());
     }
 }
