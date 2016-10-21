@@ -111,6 +111,9 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIM
  * Grid communication manager.
  */
 public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializable>> {
+    // TODO
+    private static final boolean STRIPED = Boolean.getBoolean("STRIPED_POOL");
+
     /** Empty array of message factories. */
     public static final MessageFactory[] EMPTY = {};
 
@@ -270,27 +273,29 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         startSpi();
 
-//        striped = new StripedExecutor(Runtime.getRuntime().availableProcessors());
-//        responseExec = new StripedExecutor(1);
+        if (STRIPED) {
+            striped = new StripedExecutor(Runtime.getRuntime().availableProcessors());
+            responseExec = new StripedExecutor(1);
 
-//        Thread t = new Thread(new Runnable() {
-//            @Override public void run() {
-//                for (;;) {
-//                    try {
-//                        Thread.sleep(5000);
-//                    }
-//                    catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
-//
-//                    striped.dumpStats(log);
-//                }
-//            }
-//        });
-//
-//        t.setDaemon(true);
-//
-//        t.start();
+            Thread t = new Thread(new Runnable() {
+                @Override public void run() {
+                    for (; ; ) {
+                        try {
+                            Thread.sleep(5000);
+                        }
+                        catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+
+                        striped.dumpStats(log);
+                    }
+                }
+            });
+
+            t.setDaemon(true);
+
+            t.start();
+        }
 
         pubPool = ctx.getExecutorService();
         p2pPool = ctx.getPeerClassLoadingExecutorService();
@@ -988,14 +993,22 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
         }
 
-//        if (msg.partition() != -1) {
-//            striped.execute(msg.partition(), c);
-//        }
-//        else if (msg.response()) {
-//            responseExec.execute(0, c);
-//        }
-//        else
+        if (STRIPED) {
+            if (msg.partition() != -1) {
+                striped.execute(
+                    msg.partition(),
+                    c);
 
+                return;
+            }
+            else if (msg.response()) {
+                responseExec.execute(
+                    0,
+                    c);
+
+                return;
+            }
+        }
 
         try {
             pool(plc).execute(c);
