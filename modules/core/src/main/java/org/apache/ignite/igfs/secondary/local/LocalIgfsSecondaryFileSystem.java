@@ -447,10 +447,12 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystemV2, 
 
                 if (!nodes.equals(lastNodes) && lastNodes != null && lastBlock != null) {
                     blocks.add(lastBlock);
+
                     lastBlock = null;
                 }
 
                 lastNodes = nodes;
+
                 lastBlockIdx = blockIdx;
             }
 
@@ -461,6 +463,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystemV2, 
 
             if (lastBlock.length() == maxLen || lastBlock.start() + lastBlock.length() == end) {
                 blocks.add(lastBlock);
+
                 lastBlock = null;
             }
 

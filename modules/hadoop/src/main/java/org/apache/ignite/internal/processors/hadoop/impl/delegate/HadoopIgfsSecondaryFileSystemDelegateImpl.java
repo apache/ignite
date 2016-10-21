@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.hadoop.impl.delegate;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -27,6 +28,7 @@ import org.apache.hadoop.fs.PathExistsException;
 import org.apache.hadoop.fs.PathIsNotEmptyDirectoryException;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
@@ -48,6 +50,7 @@ import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsSecondar
 import org.apache.ignite.internal.processors.igfs.IgfsBlockLocationImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsEntryInfo;
 import org.apache.ignite.internal.processors.igfs.IgfsFileImpl;
+import org.apache.ignite.internal.processors.igfs.IgfsLocalSecondaryBlockKey;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -380,10 +383,73 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
         try {
             BlockLocation[] hadoopBlocks = fileSystemForUser().getFileBlockLocations(convert(path), start, len);
 
-            Collection<IgfsBlockLocation> blocks = new ArrayList<>(hadoopBlocks.length);
+            IgfsBlockLocation[] blksRaw = new IgfsBlockLocation[hadoopBlocks.length];
 
             for (int i = 0; i < hadoopBlocks.length; ++i)
-                blocks.add(convertBlockLocation(hadoopBlocks[i]));
+                blksRaw[i] = convertBlockLocation(hadoopBlocks[i]);
+
+            // Because there is not guarantee that hadoop returns sorted array of block
+            Arrays.sort(blksRaw, new Comparator<IgfsBlockLocation>() {
+                @Override public int compare(IgfsBlockLocation o1, IgfsBlockLocation o2) {
+                    return Long.compare(o1.start(), o2.start());
+                }
+            });
+
+            assert blksRaw[0].start() == start : "Check bounds:"
+                + "[firstBlock.start()=" + blksRaw[0].start() + ", start=" + start + ']';
+
+            assert blksRaw[blksRaw.length - 1].start() + blksRaw[blksRaw.length - 1].length() == start + len
+                : "Check bounds: "
+                + "lastBlock.start()" + blksRaw[blksRaw.length - 1].start() + ", lastBlock.length=" +
+                blksRaw[blksRaw.length - 1].start() + ", start=" + start + ", len=" + len + ']';
+
+            Collection<IgfsBlockLocation> blocks = new ArrayList<>((int)(len / maxLen));
+
+            Collection<String> lastHosts = null;
+
+            long lastBlockIdx = -1;
+
+            long end = start + len;
+
+            IgfsBlockLocationImpl lastBlock = null;
+
+            int blockIdx = 0;
+
+            for (long offset = start; offset < end; ) {
+                IgfsBlockLocation blk = blksRaw[blockIdx];
+
+                // Each step is min of maxLen and end of block.
+                long lenStep = Math.min(
+                    maxLen - (lastBlock != null ? lastBlock.length() : 0),
+                    blk.start() + blk.length() - offset);
+
+                if (blockIdx != lastBlockIdx) {
+                    Collection<String> hosts = blk.hosts();
+
+                    if (!hosts.equals(lastHosts) && lastHosts!= null && lastBlock != null) {
+                        blocks.add(lastBlock);
+
+                        lastBlock = null;
+                    }
+
+                    lastHosts = hosts;
+
+                    lastBlockIdx = blockIdx;
+                }
+
+                if(lastBlock == null)
+                    lastBlock = new IgfsBlockLocationImpl(offset, lenStep, blk);
+                else
+                    lastBlock.increaseLength(lenStep);
+
+                if (lastBlock.length() == maxLen || lastBlock.start() + lastBlock.length() == end) {
+                    blocks.add(lastBlock);
+
+                    lastBlock = null;
+                }
+
+                offset += lenStep;
+            }
 
             return blocks;
         }
@@ -447,6 +513,7 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
     /**
      * Cast IO exception to IGFS exception.
      *
+     * @param msg Error message.
      * @param e IO exception.
      * @return IGFS exception.
      */
