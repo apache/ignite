@@ -3114,6 +3114,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     try {
                         SecurityCredentials cred = unmarshalCredentials(node);
 
+                        System.out.println("coordinator auth " + msg);
                         SecurityContext subj = spi.nodeAuth.authenticateNode(node, cred);
 
                         if (subj == null) {
@@ -3936,6 +3937,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         spiState = AUTH_FAILED;
 
                                         mux.notifyAll();
+
+                                        return;
                                     }
                                 }
                                 catch (IgniteCheckedException e) {
@@ -3946,6 +3949,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     spiState = AUTH_FAILED;
 
                                     mux.notifyAll();
+
+                                    return;
                                 }
                             }
 
