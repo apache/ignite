@@ -3907,6 +3907,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                             spi.gridStartTime = msg.gridStartTime();
 
                             if (spi.nodeAuth != null && spi.nodeAuth.isGlobalNodeAuthentication()) {
+
+                                TcpDiscoveryAbstractMessage authFail = new TcpDiscoveryAuthFailedMessage(locNodeId, spi.locHost);
+
                                 try {
                                     ClassLoader cl = U.resolveClassLoader(spi.ignite().configuration());
 
@@ -3922,8 +3925,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                                         "coordinator and other nodes [nodeId=" + node.id() + ", addrs=" + U.addressesAsString(node) + ']',
                                                 "Authentication failed [nodeId=" + U.id8(node.id()) + ", addrs=" + U.addressesAsString(node) + ']');
 
-                                        TcpDiscoveryAbstractMessage authFail = new TcpDiscoveryAuthFailedMessage(locNodeId, spi.locHost);
-
                                         joinRes.set(authFail);
 
                                         spiState = AUTH_FAILED;
@@ -3932,6 +3933,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     }
                                 } catch (IgniteCheckedException e) {
                                     U.error(log, "Failed to verify node permissions consistency (will drop the node): " + node, e);
+
+                                    joinRes.set(authFail);
+
+                                    spiState = AUTH_FAILED;
+
+                                    mux.notifyAll();
                                 }
                             }
 
