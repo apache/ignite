@@ -45,7 +45,7 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
     private static final Logger log = LoggerFactory.getLogger(IgniteSource.class);
 
     /** Default max number of events taken from the buffer at once. */
-    private static final int DFLT_EVT_BATCH_SIZE = 100;
+    private static final int DFLT_EVT_BATCH_SIZE = 1;
 
     /** Default number of milliseconds timeout for event buffer queue operation. */
     private static final int DFLT_EVT_BUFFER_TIMEOUT = 10;
