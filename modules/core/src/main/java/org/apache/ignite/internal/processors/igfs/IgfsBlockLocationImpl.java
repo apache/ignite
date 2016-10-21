@@ -63,6 +63,7 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable,
     private Collection<String> names;
 
     /** */
+    @GridToStringInclude
     private Collection<String> hosts;
 
     /**

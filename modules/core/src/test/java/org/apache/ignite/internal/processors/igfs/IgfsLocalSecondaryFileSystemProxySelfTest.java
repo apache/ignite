@@ -269,7 +269,8 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
             assertEquals(F.first(blocks).start(), start);
             assertEquals(start + len, F.last(blocks).start() + F.last(blocks).length());
 
-            long totalLen=0;
+            long totalLen = 0;
+
             for (IgfsBlockLocation block : blocks) {
                 totalLen += block.length();
 
@@ -292,11 +293,6 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
             start += 1024;
             maxLen -= igfs.context().data().groupBlockSize() * 2 / 1024;
         }
-
-    }
-
-    @Override protected long getTestTimeout() {
-        return 300000_000;
     }
 
     /**

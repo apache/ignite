@@ -395,67 +395,83 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
                 }
             });
 
-            assert blksRaw[0].start() == start : "Check bounds:"
-                + "[firstBlock.start()=" + blksRaw[0].start() + ", start=" + start + ']';
+            return resliceBlocks(blksRaw, start, len, maxLen);
+        }
+        catch (IOException e) {
+            throw handleSecondaryFsError(e, "Failed affinity for path: " + path);
+        }
+    }
 
-            assert blksRaw[blksRaw.length - 1].start() + blksRaw[blksRaw.length - 1].length() == start + len
-                : "Check bounds: "
-                + "lastBlock.start()" + blksRaw[blksRaw.length - 1].start() + ", lastBlock.length=" +
-                blksRaw[blksRaw.length - 1].start() + ", start=" + start + ", len=" + len + ']';
+    /**
+     * @param blks Blocks array.
+     * @param start Position in the file to start affinity resolution from.
+     * @param len Size of data in the file to resolve affinity for.
+     * @param maxLen Maximum length of a single returned block location length.
+     * @return Blocks collection sliced by maxLen
+     */
+    static Collection<IgfsBlockLocation> resliceBlocks(IgfsBlockLocation[] blks, long start, long len,
+        long maxLen) {
+        assert blks[0].start() == start : "Check bounds:"
+            + "[firstBlock.start()=" + blks[0].start() + ", start=" + start + ']';
 
-            Collection<IgfsBlockLocation> blocks = new ArrayList<>((int)(len / maxLen));
+        assert blks[blks.length - 1].start() + blks[blks.length - 1].length() == start + len
+            : "Check bounds: "
+            + "lastBlock.start()=" + blks[blks.length - 1].start() + ", lastBlock.length=" +
+            blks[blks.length - 1].length() + ", start=" + start + ", len=" + len + ']';
 
-            Collection<String> lastHosts = null;
+        Collection<IgfsBlockLocation> blocks = new ArrayList<>((int)(len / maxLen));
 
-            long lastBlockIdx = -1;
+        Collection<String> lastHosts = null;
 
-            long end = start + len;
+        long lastBlockIdx = -1;
 
-            IgfsBlockLocationImpl lastBlock = null;
+        long end = start + len;
 
-            int blockIdx = 0;
+        IgfsBlockLocationImpl lastBlock = null;
 
-            for (long offset = start; offset < end; ) {
-                IgfsBlockLocation blk = blksRaw[blockIdx];
+        int blockIdx = 0;
 
-                // Each step is min of maxLen and end of block.
-                long lenStep = Math.min(
-                    maxLen - (lastBlock != null ? lastBlock.length() : 0),
-                    blk.start() + blk.length() - offset);
+        for (long offset = start; offset < end; ) {
+            IgfsBlockLocation blk = blks[blockIdx];
 
-                if (blockIdx != lastBlockIdx) {
-                    Collection<String> hosts = blk.hosts();
+            // Each step is min of maxLen and end of block.
+            long lenStep = Math.min(
+                maxLen - (lastBlock != null ? lastBlock.length() : 0),
+                blk.start() + blk.length() - offset);
 
-                    if (!hosts.equals(lastHosts) && lastHosts!= null && lastBlock != null) {
-                        blocks.add(lastBlock);
+            if (blockIdx != lastBlockIdx) {
+                Collection<String> hosts = blk.hosts();
 
-                        lastBlock = null;
-                    }
-
-                    lastHosts = hosts;
-
-                    lastBlockIdx = blockIdx;
-                }
-
-                if(lastBlock == null)
-                    lastBlock = new IgfsBlockLocationImpl(offset, lenStep, blk);
-                else
-                    lastBlock.increaseLength(lenStep);
-
-                if (lastBlock.length() == maxLen || lastBlock.start() + lastBlock.length() == end) {
+                if (!hosts.equals(lastHosts) && lastHosts!= null && lastBlock != null) {
                     blocks.add(lastBlock);
 
                     lastBlock = null;
                 }
 
-                offset += lenStep;
+                lastHosts = hosts;
+
+                lastBlockIdx = blockIdx;
             }
 
-            return blocks;
+            if(lastBlock == null)
+                lastBlock = new IgfsBlockLocationImpl(offset, lenStep, blk);
+            else
+                lastBlock.increaseLength(lenStep);
+
+            if (lastBlock.length() == maxLen || lastBlock.start() + lastBlock.length() == end) {
+                blocks.add(lastBlock);
+
+                lastBlock = null;
+            }
+
+            offset += lenStep;
+
+            if (offset == blk.start() + blk.length())
+                ++blockIdx;
         }
-        catch (IOException e) {
-            throw handleSecondaryFsError(e, "Failed affinity for path: " + path);
-        }
+
+        return blocks;
+
     }
 
     /** {@inheritDoc} */
