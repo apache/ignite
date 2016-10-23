@@ -1677,13 +1677,37 @@ object visor extends VisorTag {
             val n = ignite.cluster.node(id)
 
             val id8 = nid8(id)
-            val v = mfindHead(id8)
+            var v = mfindHead(id8)
+
+            if(!v.isDefined){
+               v = assignNodeValue(n)
+            }
 
             id8 +
-                (if (v.isDefined) "(@" + v.get._1 + ")" else "") +
+                (if (v.isDefined) "(@" + v.get._1 + ")" else "" )+
                 ", " +
                 (if (n == null) NA else sortAddresses(n.addresses).headOption.getOrElse(NA))
         }
+    }
+
+    def assignNodeValue(node: ClusterNode): Option[(String, String)] = {
+        assert(node != null)
+
+        val id8 = nid8(node.id())
+
+        setVarIfAbsent(id8, "n")
+
+        val alias = if (U.sameMacs(ignite.localNode(), node)) "nl" else "nr"
+
+        if (mgetOpt(alias).isEmpty)
+            msetOpt(alias, nid8(node.id()))
+
+        val ip = sortAddresses(node.addresses).headOption
+
+        if (ip.isDefined)
+            setVarIfAbsent(ip.get, "h")
+
+        mfindHead(id8)
     }
 
     /**
