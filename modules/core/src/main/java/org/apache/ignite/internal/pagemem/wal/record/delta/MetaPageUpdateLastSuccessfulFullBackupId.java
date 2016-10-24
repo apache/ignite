@@ -19,39 +19,38 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.database.tree.io.TrackingPageIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.PageMetaIO;
 
-/**
- * Delta record for updates in tracking pages
- */
-public class TrackingPageDeltaRecord extends PageDeltaRecord {
-    /** Page id to mark. */
-    private final long pageIdToMark;
+public class MetaPageUpdateLastSuccessfulFullBackupId extends PageDeltaRecord {
+    /** */
+    private final long lastSuccessfulFullBackupId;
 
     /**
-     * @param cacheId Cache id.
-     * @param pageId Page id.
+     * @param pageId Meta page ID.
      */
-    public TrackingPageDeltaRecord(int cacheId, long pageId, long pageIdToMark) {
+    public MetaPageUpdateLastSuccessfulFullBackupId(int cacheId, long pageId, long lastSuccessfulFullBackupId) {
         super(cacheId, pageId);
 
-        this.pageIdToMark = pageIdToMark;
-    }
-
-    /**
-     * Page Id which should be marked as changed
-     */
-    public long pageIdToMark() {
-        return pageIdToMark;
+        this.lastSuccessfulFullBackupId = lastSuccessfulFullBackupId;
     }
 
     /** {@inheritDoc} */
     @Override public void applyDelta(ByteBuffer buf) throws IgniteCheckedException {
-        TrackingPageIO.VERSIONS.forPage(buf).restoreMark(buf, pageIdToMark);
+        PageMetaIO io = PageMetaIO.VERSIONS.forPage(buf);
+
+        io.setLastSuccessfulFullBackupId(buf, lastSuccessfulFullBackupId);
     }
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return RecordType.TRACKING_PAGE_DELTA;
+        return RecordType.META_PAGE_UPDATE_LAST_SUCCESSFUL_FULL_BACKUP_ID;
+    }
+
+    /**
+     * @return Root ID.
+     */
+    public long lastSuccessfulFullBackupId() {
+        return lastSuccessfulFullBackupId;
     }
 }
+

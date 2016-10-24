@@ -133,7 +133,16 @@ public abstract class WALRecord {
         MEMORY_RECOVERY,
 
         /** */
-        TRACKING_PAGE_DELTA
+        TRACKING_PAGE_DELTA,
+
+        /** Meta page update last successful backup id. */
+        META_PAGE_UPDATE_LAST_SUCCESSFUL_BACKUP_ID,
+
+        /** Meta page update last successful full backup id. */
+        META_PAGE_UPDATE_LAST_SUCCESSFUL_FULL_BACKUP_ID,
+
+        /** Meta page update next backup id. */
+        META_PAGE_UPDATE_NEXT_BACKUP_ID
         ;
 
         /** */
