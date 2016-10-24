@@ -96,7 +96,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
             int off = start + GridBinaryMarshaller.DFLT_HDR_LEN;
 
-            String clsName = BinaryUtils.doReadClassName(new BinaryOffheapInputStream(off, size));
+            String clsName = BinaryUtils.doReadClassName(new BinaryOffheapInputStream(ptr + off, size));
 
             typeId = ctx.typeId(clsName);
         }
@@ -174,11 +174,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override protected <F> F fieldByOrder(int order) {
-        Object val;
-
-        // Calculate field position.
+    @Nullable @Override protected int fieldOffsetByOrder(int order) {
         int schemaOff = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
 
         short flags = BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS);
@@ -196,6 +192,16 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
             fieldPos = start + ((int)BinaryPrimitives.readShort(ptr, fieldOffsetPos) & 0xFFFF);
         else
             fieldPos = start + BinaryPrimitives.readInt(ptr, fieldOffsetPos);
+
+        return fieldPos;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Nullable @Override protected <F> F fieldByOrder(int order) {
+        Object val;
+
+        int fieldPos = fieldOffsetByOrder(order);
 
         // Read header and try performing fast lookup for well-known types (the most common types go first).
         byte hdr = BinaryPrimitives.readByte(ptr, fieldPos);

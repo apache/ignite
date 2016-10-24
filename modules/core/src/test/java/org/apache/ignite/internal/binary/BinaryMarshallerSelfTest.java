@@ -2922,6 +2922,132 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testBinaryEquals() throws Exception {
+        List<BinaryTypeConfiguration> bcfgs = Arrays.asList(new BinaryTypeConfiguration(Value.class.getName()));
+
+        BinaryMarshaller m0 = binaryMarshaller(null, Collections.singletonList(Value.class.getName()));
+        BinaryMarshaller m1 = binaryMarshaller();
+
+        Value v = new Value(27);
+
+        BinaryObjectImpl binObj0 = marshal(v, m0);
+        BinaryObjectImpl binObj1 = marshal(v, m1);
+
+        assertNotEquals(binObj0.array().length, binObj1.array().length);
+
+        assertEquals(binObj0, binObj1);
+        assertEquals(binObj1, binObj0);
+        assertEquals(binObj0, binObj0);
+        assertEquals(binObj1, binObj1);
+
+        BinaryObjectOffheapImpl binObjOffheap0 = null;
+        BinaryObjectOffheapImpl binObjOffheap1 = null;
+
+        try {
+            binObjOffheap0 = marshalOffHeap(binObj0, m0);
+            binObjOffheap1 = marshalOffHeap(binObj1, m1);
+
+            assertEquals(binObj0, binObjOffheap0);
+            assertEquals(binObj0, binObjOffheap1);
+            assertEquals(binObj1, binObjOffheap0);
+            assertEquals(binObj1, binObjOffheap1);
+
+            assertEquals(binObjOffheap0, binObj0);
+            assertEquals(binObjOffheap0, binObj1);
+            assertEquals(binObjOffheap1, binObj0);
+            assertEquals(binObjOffheap1, binObj1);
+
+            assertEquals(binObjOffheap0, binObjOffheap1);
+            assertEquals(binObjOffheap1, binObjOffheap0);
+            assertEquals(binObjOffheap0, binObjOffheap0);
+            assertEquals(binObjOffheap1, binObjOffheap1);
+        }
+        finally {
+            if (binObjOffheap0 != null) {
+                GridUnsafe.freeMemory(binObjOffheap0.offheapAddress());
+                binObjOffheap0 = null;
+            }
+
+            if (binObjOffheap1 != null) {
+                GridUnsafe.freeMemory(binObjOffheap1.offheapAddress());
+                binObjOffheap1 = null;
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testBinaryEqualsComplexObject() throws Exception {
+        List<String> excludedClasses = Arrays.asList(
+            TestClass0.class.getName(),
+            TestClass1.class.getName(),
+            TestClass2.class.getName());
+
+        BinaryMarshaller m0 = binaryMarshaller(null, excludedClasses);
+        BinaryMarshaller m1 = binaryMarshaller(null);
+
+        TestClass0 obj0 = new TestClass0();
+        TestClass1 obj1 = new TestClass1();
+        TestClass2 obj2 = new TestClass2();
+
+        BinaryObjectImpl binObj00 = marshal(obj0, m0);
+        BinaryObjectImpl binObj01 = marshal(obj1, m0);
+        BinaryObjectImpl binObj02 = marshal(obj2, m0);
+
+        // The length of array must be equal. Object are different only by the class.
+        assertEquals(binObj00.array().length, binObj01.array().length);
+        assertEquals(binObj00.array().length, binObj02.array().length);
+
+        BinaryObjectImpl binObj10 = marshal(obj0, m1);
+        BinaryObjectImpl binObj11 = marshal(obj1, m1);
+        BinaryObjectImpl binObj12 = marshal(obj2, m1);
+
+        // The length of array must be equal. Object are different only by the class.
+        assertEquals(binObj10.array().length, binObj11.array().length);
+        assertEquals(binObj10.array().length, binObj12.array().length);
+
+        assertNotEquals(binObj10.array().length, binObj00.array().length);
+
+        assertEquals(binObj00, binObj10);
+        assertEquals(binObj01, binObj11);
+        assertEquals(binObj02, binObj12);
+
+        assertNotEquals(binObj00, binObj01);
+        assertNotEquals(binObj00, binObj02);
+        assertNotEquals(binObj00, binObj11);
+        assertNotEquals(binObj00, binObj12);
+
+        assertNotEquals(binObj01, binObj00);
+        assertNotEquals(binObj01, binObj02);
+        assertNotEquals(binObj01, binObj10);
+        assertNotEquals(binObj01, binObj12);
+
+        assertNotEquals(binObj02, binObj00);
+        assertNotEquals(binObj02, binObj01);
+        assertNotEquals(binObj02, binObj00);
+        assertNotEquals(binObj02, binObj11);
+    }
+
+
+        /**
+         * @param obj Instance of the BinaryObjectImpl to offheap marshalling.
+         * @param marsh Binary marshaller.
+         * @return Instance of BinaryObjectOffheapImpl.
+         */
+    private BinaryObjectOffheapImpl marshalOffHeap(BinaryObjectImpl obj, BinaryMarshaller marsh) {
+        long ptr = copyOffheap(obj);
+
+        return new BinaryObjectOffheapImpl(binaryContext(marsh),
+            ptr,
+            0,
+            obj.array().length);
+    }
+
+
+    /**
      *
      */
     private static interface SomeItf {
@@ -3331,7 +3457,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @return Simple object.
      */
-    private SimpleObject simpleObject() {
+    private static SimpleObject simpleObject() {
         SimpleObject inner = new SimpleObject();
 
         inner.b = 1;
@@ -4917,5 +5043,62 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         public ClassFieldObject(Class<?> cls) {
             this.cls = cls;
         }
+    }
+
+    /**
+     *
+     */
+    private static class TestClass0 {
+        /** */
+        private int intVal = 33;
+
+        /** */
+        private String strVal = "Test string value";
+
+        /** */
+        private SimpleObject obj = constSimpleObject();
+
+        /**
+         * @return Constant value of the SimpleObject.
+         */
+        public  static SimpleObject constSimpleObject() {
+            SimpleObject obj = simpleObject();
+
+            obj.uuid = null;
+            obj.date = new Date(33);
+            obj.ts = new Timestamp(22);
+            obj.uuidArr = new UUID[] {null, null, null};
+            obj.dateArr = new Date[] {new Date(11111), new Date(22222), new Date(33333)};
+            obj.objArr = new Object[] {null, null, null};
+
+            obj.inner.uuid = null;
+            obj.inner.date = new Date(33);
+            obj.inner.ts = new Timestamp(22);
+            obj.inner.uuidArr = new UUID[] {null, null, null};
+            obj.inner.dateArr = new Date[] {new Date(11111), new Date(22222), new Date(33333)};
+            obj.inner.objArr = new Object[] {null, null, null};
+
+            return obj;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestClass1 {
+        /** */
+        private int intVal = 33;
+
+        /** */
+        private String strVal = "Test string value";
+
+        /** */
+        private SimpleObject obj = TestClass0.constSimpleObject();
+    }
+
+    /**
+     *
+     */
+    private static class TestClass2 extends TestClass0 {
     }
 }
