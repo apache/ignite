@@ -1779,8 +1779,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         // If configured TCP port is busy, find first available in range.
         for (int port = shmemPort; port < shmemPort + locPortRange; port++) {
             try {
+                IgniteConfiguration cfg = ignite.configuration();
+
                 IpcSharedMemoryServerEndpoint srv =
-                    new IpcSharedMemoryServerEndpoint(log, ignite.configuration().getNodeId(), gridName);
+                    new IpcSharedMemoryServerEndpoint(log, cfg.getNodeId(), gridName, cfg.getWorkDirectory());
 
                 srv.setPort(port);
 

@@ -408,7 +408,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.restExecSvc = restExecSvc;
         this.callbackExecSvc = callbackExecSvc;
 
-        marshCtx = new MarshallerContextImpl(plugins);
+        String workDir = U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome());
+
+        marshCtx = new MarshallerContextImpl(workDir, plugins);
 
         try {
             spring = SPRING.create(false);
