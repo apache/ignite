@@ -40,6 +40,7 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.hadoop.mapreduce.IgniteHadoopClientProtocolProvider;
@@ -81,6 +82,22 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
+        clearConnectionMap();
+
+        super.afterTest();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        clearConnectionMap();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void clearConnectionMap() throws IgniteCheckedException {
         ConcurrentHashMap<String, IgniteInternalFuture<GridClient>> cliMap =
             GridTestUtils.getFieldValue(IgniteHadoopClientProtocolProvider.class, "cliMap");
 
@@ -88,8 +105,6 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
             fut.get().close();
 
         cliMap.clear();
-
-        super.afterTest();
     }
 
     /** {@inheritDoc} */
