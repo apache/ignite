@@ -655,8 +655,8 @@ class ClientImpl extends TcpDiscoveryImpl {
             catch (IOException | IgniteCheckedException e) {
                 U.closeQuiet(sock);
 
-//                if (log.isDebugEnabled())
-                    log.error("== Exception on joining: " + e.getMessage(), e);
+                if (log.isDebugEnabled())
+                    log.error("Exception on joining: " + e.getMessage(), e);
 
                 onException("Exception on joining: " + e.getMessage(), e);
 
@@ -692,8 +692,8 @@ class ClientImpl extends TcpDiscoveryImpl {
             }
         }
 
-//        if (log.isDebugEnabled())
-            log.debug("== Failed to join to address [addr=" + addr + ", recon=" + recon + ", errs=" + errs + ']');
+        if (log.isDebugEnabled())
+            log.debug("Failed to join to address [addr=" + addr + ", recon=" + recon + ", errs=" + errs + ']');
 
         return null;
     }
@@ -1310,8 +1310,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                     catch (IOException | IgniteCheckedException e) {
                         U.closeQuiet(sock);
 
-//                        if (log.isDebugEnabled())
-                            log.error("== Reconnect error [join=" + join + ", timeout=" + timeout + ']', e);
+                        if (log.isDebugEnabled())
+                            log.error("Reconnect error [join=" + join + ", timeout=" + timeout + ']', e);
 
                         if (timeout > 0 && (U.currentTimeMillis() - startTime) > timeout) {
                             String msg = join ? "Failed to connect to cluster (consider increasing 'joinTimeout' " +
