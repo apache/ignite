@@ -236,7 +236,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public void LoadCache(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            DoOutOp((int) CacheOp.LoadCache, writer => WriteLoadCacheData(writer, p, args));
+            DoOutInOpX((int) CacheOp.LoadCache, writer => WriteLoadCacheData(writer, p, args), ReadException);
         }
 
         /** <inheritDoc /> */
@@ -248,7 +248,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public void LocalLoadCache(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            DoOutOp((int) CacheOp.LocLoadCache, writer => WriteLoadCacheData(writer, p, args));
+            DoOutInOpX((int) CacheOp.LocLoadCache, writer => WriteLoadCacheData(writer, p, args), ReadException);
         }
 
         /** <inheritDoc /> */
@@ -444,7 +444,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             IgniteArgumentCheck.NotNull(val, "val");
 
-            DoOutOp((int) CacheOp.Put, key, val);
+            DoOutOp(CacheOp.Put, key, val);
         }
 
         /** <inheritDoc /> */
