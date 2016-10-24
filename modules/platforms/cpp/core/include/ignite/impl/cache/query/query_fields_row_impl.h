@@ -15,18 +15,11 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_CACHE_QUERY_FIELDS_ROW_IMPL
-#define _IGNITE_CACHE_QUERY_FIELDS_ROW_IMPL
-
-#include <vector>
-#include <memory>
+#ifndef _IGNITE_IMPL_CACHE_QUERY_CACHE_QUERY_FIELDS_ROW_IMPL
+#define _IGNITE_IMPL_CACHE_QUERY_CACHE_QUERY_FIELDS_ROW_IMPL
 
 #include <ignite/common/concurrent.h>
-
-#include "ignite/cache/cache_entry.h"
-#include "ignite/ignite_error.h"
-#include "ignite/impl/cache/query/query_impl.h"
-#include "ignite/impl/operations.h"
+#include <ignite/ignite_error.h>
 
 namespace ignite
 {
@@ -42,26 +35,21 @@ namespace ignite
                 class QueryFieldsRowImpl
                 {
                 public:
-                    typedef common::concurrent::SharedPointer<interop::InteropMemory> InteropMemorySharedPtr;
-
-                    /**
-                     * Default constructor.
-                     */
-                    QueryFieldsRowImpl() : mem(NULL), stream(NULL), reader(NULL), size(0), 
-                        processed(0)
-                    {
-                        // No-op.
-                    }
+                    typedef common::concurrent::SharedPointer<interop::InteropMemory> SP_InteropMemory;
 
                     /**
                      * Constructor.
                      *
                      * @param mem Memory containig row data.
                      */
-                    QueryFieldsRowImpl(InteropMemorySharedPtr mem) : mem(mem), stream(mem.Get()), 
-                        reader(&stream), size(reader.ReadInt32()), processed(0)
+                    QueryFieldsRowImpl(SP_InteropMemory mem, int32_t rowBegin, int32_t columnNum) :
+                        mem(mem),
+                        stream(mem.Get()),
+                        reader(&stream),
+                        columnNum(columnNum),
+                        processed(0)
                     {
-                        // No-op.
+                        stream.Position(rowBegin);
                     }
 
                     /**
@@ -89,7 +77,7 @@ namespace ignite
                     bool HasNext(IgniteError& err)
                     {
                         if (IsValid())
-                            return processed < size;
+                            return processed < columnNum;
                         else
                         {
                             err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
@@ -141,16 +129,22 @@ namespace ignite
                     /**
                      * Check if the instance is valid.
                      *
+                     * Invalid instance can be returned if some of the previous
+                     * operations have resulted in a failure. For example invalid
+                     * instance can be returned by not-throwing version of method
+                     * in case of error. Invalid instances also often can be
+                     * created using default constructor.
+                     *
                      * @return True if the instance is valid and can be used.
                      */
                     bool IsValid()
                     {
-                        return mem.Get() != NULL;
+                        return mem.Get() != 0;
                     }
 
                 private:
                     /** Row memory. */
-                    InteropMemorySharedPtr mem;
+                    SP_InteropMemory mem;
 
                     /** Row data stream. */
                     interop::InteropInputStream stream;
@@ -159,7 +153,7 @@ namespace ignite
                     binary::BinaryReaderImpl reader;
 
                     /** Number of elements in a row. */
-                    int32_t size;
+                    int32_t columnNum;
 
                     /** Number of elements that have been read by now. */
                     int32_t processed;
@@ -171,4 +165,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_IMPL_CACHE_QUERY_CACHE_QUERY_FIELDS_ROW_IMPL

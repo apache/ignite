@@ -84,6 +84,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
         cacheCfg1.setCacheMode(cacheMode);
         cacheCfg1.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg1.setIndexedTypes(String.class, Integer.class);
+        cacheCfg1.setStatisticsEnabled(true);
 
         CacheConfiguration<String, Integer> cacheCfg2 = defaultCacheConfiguration();
 
@@ -91,6 +92,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
         cacheCfg2.setCacheMode(cacheMode);
         cacheCfg2.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg2.setIndexedTypes(String.class, Integer.class);
+        cacheCfg2.setStatisticsEnabled(true);
 
         cfg.setCacheConfiguration(cacheCfg1, cacheCfg2);
 
@@ -234,6 +236,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
         assertTrue(m.averageTime() >= 0);
         assertTrue(m.maximumTime() >= 0);
         assertTrue(m.minimumTime() >= 0);
+        assertTrue("On first execution minTime == maxTime", m.minimumTime() == m.maximumTime());
 
         // Execute again with the same parameters.
         cache.query(qry).getAll();
@@ -272,6 +275,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
         assertTrue(m.averageTime() >= 0);
         assertTrue(m.maximumTime() >= 0);
         assertTrue(m.minimumTime() >= 0);
+        assertTrue("On first execution minTime == maxTime", m.minimumTime() == m.maximumTime());
 
         // Execute again with the same parameters.
         cache.query(qry).iterator().next();
@@ -299,7 +303,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
         try {
             cache.query(qry).getAll();
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             // No-op.
         }
 
@@ -318,7 +322,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
         try {
             cache.query(qry).getAll();
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             // No-op.
         }
 

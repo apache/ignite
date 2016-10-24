@@ -60,6 +60,7 @@ public class PlatformStopIgniteTask extends ComputeTaskAdapter<String, Boolean> 
 
         /**
          * Ctor.
+         *
          * @param gridName Name.
          */
         private PlatformStopIgniteJob(String gridName) {

@@ -405,7 +405,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
                         try {
                             if (!locPart.isEmpty()) {
-                                for (GridDhtCacheEntry o : locPart.entries()) {
+                                for (GridCacheEntryEx o : locPart.allEntries()) {
                                     if (!o.obsoleteOrDeleted())
                                         dataLdr.removeDataInternal(o.key());
                                 }
@@ -428,7 +428,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                 if (near != null) {
                     GridCacheVersion obsoleteVer = ctx.versions().next();
 
-                    for (GridCacheEntryEx e : near.map().allEntries0()) {
+                    for (GridCacheEntryEx e : near.allEntries()) {
                         if (!e.valid(topVer) && e.markObsolete(obsoleteVer))
                             near.removeEntry(e);
                     }

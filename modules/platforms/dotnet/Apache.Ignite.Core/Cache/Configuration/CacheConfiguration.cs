@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
@@ -267,6 +268,10 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
             var count = reader.ReadInt();
             QueryEntities = count == 0 ? null : Enumerable.Range(0, count).Select(x => new QueryEntity(reader)).ToList();
+
+            NearConfiguration = reader.ReadBoolean() ? new NearCacheConfiguration(reader) : null;
+
+            EvictionPolicy = EvictionPolicyBase.Read(reader);
         }
 
         /// <summary>
@@ -329,6 +334,16 @@ namespace Apache.Ignite.Core.Cache.Configuration
             }
             else
                 writer.WriteInt(0);
+
+            if (NearConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+                NearConfiguration.Write(writer);
+            }
+            else
+                writer.WriteBoolean(false);
+
+            EvictionPolicyBase.Write(writer, EvictionPolicy);
         }
 
         /// <summary>
@@ -633,5 +648,16 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<QueryEntity> QueryEntities { get; set; }
+
+        /// <summary>
+        /// Gets or sets the near cache configuration.
+        /// </summary>
+        public NearCacheConfiguration NearConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the eviction policy.
+        /// Null value means disabled evictions.
+        /// </summary>
+        public IEvictionPolicy EvictionPolicy { get; set; }
     }
 }

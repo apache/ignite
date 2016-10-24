@@ -93,12 +93,12 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
         for (String topic : TOPICS)
             kafkaBroker.createTopic(topic, PARTITIONS, REPLICATION_FACTOR);
 
-        WorkerConfig workerConfig = new StandaloneConfig(makeWorkerProps());
+        WorkerConfig workerCfg = new StandaloneConfig(makeWorkerProps());
 
-        OffsetBackingStore offsetBackingStore = mock(OffsetBackingStore.class);
-        offsetBackingStore.configure(anyObject(Map.class));
+        OffsetBackingStore offBackingStore = mock(OffsetBackingStore.class);
+        offBackingStore.configure(anyObject(Map.class));
 
-        worker = new Worker(workerConfig, offsetBackingStore);
+        worker = new Worker(workerCfg, offBackingStore);
         worker.start();
 
         herder = new StandaloneHerder(worker);

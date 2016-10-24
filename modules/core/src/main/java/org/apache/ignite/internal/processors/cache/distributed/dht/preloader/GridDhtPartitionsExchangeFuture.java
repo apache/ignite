@@ -73,6 +73,7 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -85,7 +86,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityTopologyVersion>
     implements Comparable<GridDhtPartitionsExchangeFuture>, GridDhtTopologyFuture {
     /** */
-    private static final int DUMP_PENDING_OBJECTS_THRESHOLD =
+    public static final int DUMP_PENDING_OBJECTS_THRESHOLD =
         IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_DUMP_PENDING_OBJECTS_THRESHOLD, 10);
 
     /** */
@@ -104,10 +105,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private volatile DiscoveryEvent discoEvt;
 
     /** */
-    @GridToStringInclude
+    @GridToStringExclude
     private final Set<UUID> remaining = new HashSet<>();
 
     /** */
+    @GridToStringExclude
     private List<ClusterNode> srvNodes;
 
     /** */
@@ -133,6 +135,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private GridFutureAdapter<Boolean> initFut;
 
     /** */
+    @GridToStringExclude
     private final List<IgniteRunnable> discoEvts = new ArrayList<>();
 
     /** */
@@ -804,6 +807,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         U.warn(log, "Awaited locked entry [key=" + e.getKey() + ", mvcc=" + e.getValue() + ']');
 
                     dumpedObjects++;
+
+                    if (IgniteSystemProperties.getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT, false))
+                        U.dumpThreads(log);
                 }
             }
         }
@@ -889,7 +895,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         U.warn(log, "Failed to wait for partition release future [topVer=" + topologyVersion() +
             ", node=" + cctx.localNodeId() + "]. Dumping pending objects that might be the cause: ");
 
-        cctx.exchange().dumpDebugInfo(topologyVersion());
+        try {
+            cctx.exchange().dumpDebugInfo(topologyVersion());
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to dump debug information: " + e, e);
+        }
+
+        if (IgniteSystemProperties.getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT, false))
+            U.dumpThreads(log);
     }
 
     /**
@@ -1072,9 +1086,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             cacheValidRes = m != null ? m : Collections.<Integer, Boolean>emptyMap();
         }
 
-        cctx.cache().onExchangeDone(exchId.topologyVersion(), reqs, err);
-
         cctx.exchange().onExchangeDone(this, err);
+
+        cctx.cache().onExchangeDone(exchId.topologyVersion(), reqs, err);
 
         if (super.onDone(res, err) && realExchange) {
             if (log.isDebugEnabled())
@@ -1539,6 +1553,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     try {
                         boolean crdChanged = false;
                         boolean allReceived = false;
+                        Set<UUID> reqFrom = null;
 
                         ClusterNode crd0;
 
@@ -1554,8 +1569,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                                 crd = srvNodes.size() > 0 ? srvNodes.get(0) : null;
                             }
 
-                            if (crd != null && crd.isLocal() && rmvd)
-                                allReceived = remaining.isEmpty();
+                            if (crd != null && crd.isLocal()) {
+                                if (rmvd)
+                                    allReceived = remaining.isEmpty();
+
+                                if (crdChanged && !remaining.isEmpty())
+                                    reqFrom = new HashSet<>(remaining);
+                            }
 
                             crd0 = crd;
                         }
@@ -1584,6 +1604,25 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                                 onAllReceived(true);
 
                                 return;
+                            }
+
+                            if (crdChanged && reqFrom != null) {
+                                GridDhtPartitionsSingleRequest req = new GridDhtPartitionsSingleRequest(exchId);
+
+                                for (UUID nodeId : reqFrom) {
+                                    try {
+                                        // It is possible that some nodes finished exchange with previous coordinator.
+                                        cctx.io().send(nodeId, req, SYSTEM_POOL);
+                                    }
+                                    catch (ClusterTopologyCheckedException e) {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Node left during partition exchange [nodeId=" + nodeId +
+                                                ", exchId=" + exchId + ']');
+                                    }
+                                    catch (IgniteCheckedException e) {
+                                        U.error(log, "Failed to request partitions from node: " + nodeId, e);
+                                    }
+                                }
                             }
 
                             for (Map.Entry<ClusterNode, GridDhtPartitionsSingleMessage> m : singleMsgs.entrySet())
@@ -1643,19 +1682,18 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        ClusterNode oldestNode;
         Set<UUID> remaining;
+        List<ClusterNode> srvNodes;
 
         synchronized (mux) {
-            oldestNode = this.crd;
             remaining = new HashSet<>(this.remaining);
+            srvNodes = this.srvNodes != null ? new ArrayList<>(this.srvNodes) : null;
         }
 
         return S.toString(GridDhtPartitionsExchangeFuture.class, this,
-            "oldest", oldestNode == null ? "null" : oldestNode.id(),
-            "oldestOrder", oldestNode == null ? "null" : oldestNode.order(),
             "evtLatch", evtLatch == null ? "null" : evtLatch.getCount(),
             "remaining", remaining,
+            "srvNodes", srvNodes,
             "super", super.toString());
     }
 }

@@ -1280,7 +1280,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         client.destroyCache(CACHE_NAME2);
 
-        checkAffinity(4, topVer(4, 2), true);
+        checkAffinity(4, topVer(4, 3), true);
     }
 
     /**
@@ -1742,10 +1742,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         client = false;
 
         final List<CacheConfiguration> ccfgs = new ArrayList<>();
-
-        ccfgs.add(cacheConfiguration("ac1", ATOMIC, 0));
-        ccfgs.add(cacheConfiguration("ac2", ATOMIC, 1));
-        ccfgs.add(cacheConfiguration("ac3", ATOMIC, 2));
 
         ccfgs.add(cacheConfiguration("tc1", TRANSACTIONAL, 0));
         ccfgs.add(cacheConfiguration("tc2", TRANSACTIONAL, 1));

@@ -43,6 +43,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lifecycle.LifecycleBean;
@@ -148,28 +149,37 @@ public class IgniteConfiguration {
     public static final int DFLT_PUBLIC_THREAD_CNT = Math.max(8, AVAILABLE_PROC_CNT) * 2;
 
     /** Default keep alive time for public thread pool. */
+    @Deprecated
     public static final long DFLT_PUBLIC_KEEP_ALIVE_TIME = 0;
 
     /** Default limit of threads used for rebalance. */
     public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = 1;
 
     /** Default max queue capacity of public thread pool. */
+    @Deprecated
     public static final int DFLT_PUBLIC_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
 
     /** Default size of system thread pool. */
     public static final int DFLT_SYSTEM_CORE_THREAD_CNT = DFLT_PUBLIC_THREAD_CNT;
 
     /** Default max size of system thread pool. */
+    @Deprecated
     public static final int DFLT_SYSTEM_MAX_THREAD_CNT = DFLT_PUBLIC_THREAD_CNT;
 
     /** Default keep alive time for system thread pool. */
+    @Deprecated
     public static final long DFLT_SYSTEM_KEEP_ALIVE_TIME = 0;
 
     /** Default keep alive time for utility thread pool. */
+    @Deprecated
     public static final long DFLT_UTILITY_KEEP_ALIVE_TIME = 10_000;
 
     /** Default max queue capacity of system thread pool. */
+    @Deprecated
     public static final int DFLT_SYSTEM_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
+
+    /** Default Ignite thread keep alive time. */
+    public static final long DFLT_THREAD_KEEP_ALIVE_TIME = 60_000L;
 
     /** Default size of peer class loading thread pool. */
     public static final int DFLT_P2P_THREAD_CNT = 2;
@@ -223,6 +233,9 @@ public class IgniteConfiguration {
     /** Public pool size. */
     private int pubPoolSize = DFLT_PUBLIC_THREAD_CNT;
 
+    /** Async Callback pool size. */
+    private int callbackPoolSize = DFLT_PUBLIC_THREAD_CNT;
+
     /** System pool size. */
     private int sysPoolSize = DFLT_SYSTEM_CORE_THREAD_CNT;
 
@@ -236,13 +249,13 @@ public class IgniteConfiguration {
     private int utilityCachePoolSize = DFLT_SYSTEM_CORE_THREAD_CNT;
 
     /** Utility cache pool keep alive time. */
-    private long utilityCacheKeepAliveTime = DFLT_UTILITY_KEEP_ALIVE_TIME;
+    private long utilityCacheKeepAliveTime = DFLT_THREAD_KEEP_ALIVE_TIME;
 
     /** Marshaller pool size. */
     private int marshCachePoolSize = DFLT_SYSTEM_CORE_THREAD_CNT;
 
     /** Marshaller pool keep alive time. */
-    private long marshCacheKeepAliveTime = DFLT_UTILITY_KEEP_ALIVE_TIME;
+    private long marshCacheKeepAliveTime = DFLT_THREAD_KEEP_ALIVE_TIME;
 
     /** P2P pool size. */
     private int p2pPoolSize = DFLT_P2P_THREAD_CNT;
@@ -488,6 +501,7 @@ public class IgniteConfiguration {
         cacheCfg = cfg.getCacheConfiguration();
         cacheKeyCfg = cfg.getCacheKeyConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
+        callbackPoolSize = cfg.getAsyncCallbackPoolSize();
         connectorCfg = cfg.getConnectorConfiguration();
         classLdr = cfg.getClassLoader();
         clientMode = cfg.isClientMode();
@@ -723,6 +737,20 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Size of thread pool that is in charge of processing asynchronous callbacks.
+     * <p>
+     * This pool is used for callbacks annotated with {@link IgniteAsyncCallback}.
+     * <p>
+     * If not provided, executor service will have size {@link #DFLT_PUBLIC_THREAD_CNT}.
+     *
+     * @return Thread pool size to be used.
+     * @see IgniteAsyncCallback
+     */
+    public int getAsyncCallbackPoolSize() {
+        return callbackPoolSize;
+    }
+
+    /**
      * Size of thread pool that is in charge of processing internal and Visor
      * {@link ComputeJob GridJobs}.
      * <p>
@@ -774,7 +802,7 @@ public class IgniteConfiguration {
     /**
      * Keep alive time of thread pool that is in charge of processing utility cache messages.
      * <p>
-     * If not provided, executor service will have keep alive time {@link #DFLT_UTILITY_KEEP_ALIVE_TIME}.
+     * If not provided, executor service will have keep alive time {@link #DFLT_THREAD_KEEP_ALIVE_TIME}.
      *
      * @return Thread pool keep alive time (in milliseconds) to be used in grid for utility cache messages.
      */
@@ -796,7 +824,7 @@ public class IgniteConfiguration {
     /**
      * Keep alive time of thread pool that is in charge of processing marshaller messages.
      * <p>
-     * If not provided, executor service will have keep alive time {@link #DFLT_UTILITY_KEEP_ALIVE_TIME}.
+     * If not provided, executor service will have keep alive time {@link #DFLT_THREAD_KEEP_ALIVE_TIME}.
      *
      * @return Thread pool keep alive time (in milliseconds) to be used in grid for marshaller messages.
      */
@@ -826,6 +854,20 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setSystemThreadPoolSize(int poolSize) {
         sysPoolSize = poolSize;
+
+        return this;
+    }
+
+    /**
+     * Sets async callback thread pool size to use within grid.
+     *
+     * @param poolSize Thread pool size to use within grid.
+     * @return {@code this} for chaining.
+     * @see IgniteConfiguration#getAsyncCallbackPoolSize()
+     * @see IgniteAsyncCallback
+     */
+    public IgniteConfiguration setAsyncCallbackPoolSize(int poolSize) {
+        this.callbackPoolSize = poolSize;
 
         return this;
     }
@@ -2177,6 +2219,9 @@ public class IgniteConfiguration {
 
     /**
      * Defines port range to try for time server start.
+     *
+     * If port range value is <tt>0</tt>, then implementation will try bind only to the port provided by
+     * {@link #setTimeServerPortBase(int)} method and fail if binding to this port did not succeed.
      *
      * @return Number of ports to try before server initialization fails.
      */

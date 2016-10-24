@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.util.io;
 
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHAL_BUFFERS_RECHECK;
@@ -31,8 +33,17 @@ public class GridUnsafeDataOutputArraySizingSelfTest extends GridCommonAbstractT
     /** Big array. */
     private static final byte[] BIG = new byte[2048];
 
+    /** Buffer timeout. */
+    private static final long BUFFER_TIMEOUT = 1000;
+
+    /** Wait timeout is bigger then buffer timeout to prevent failures due to time measurement error. */
+    private static final long WAIT_BUFFER_TIMEOUT = BUFFER_TIMEOUT + BUFFER_TIMEOUT / 2;
+
+    /**
+     *
+     */
     static {
-        System.setProperty(IGNITE_MARSHAL_BUFFERS_RECHECK, "1000");
+        System.setProperty(IGNITE_MARSHAL_BUFFERS_RECHECK, Long.toString(BUFFER_TIMEOUT));
     }
 
     /**
@@ -40,39 +51,13 @@ public class GridUnsafeDataOutputArraySizingSelfTest extends GridCommonAbstractT
      */
     @SuppressWarnings("BusyWait")
     public void testSmall() throws Exception {
-        GridUnsafeDataOutput out = new GridUnsafeDataOutput(512);
+        final GridUnsafeDataOutput out = new GridUnsafeDataOutput(512);
 
-        for (int i = 0; i < 11; i++) {
-            Thread.sleep(100);
-
-            writeSmall(out);
-        }
-
-        assertEquals(256, out.internalArray().length);
-
-        for (int i = 0; i < 11; i++) {
-            Thread.sleep(100);
-
-            writeSmall(out);
-        }
-
-        assertEquals(128, out.internalArray().length);
-
-        for (int i = 0; i < 11; i++) {
-            Thread.sleep(100);
-
-            writeSmall(out);
-        }
-
-        assertEquals(64, out.internalArray().length);
-
-        for (int i = 0; i < 11; i++) {
-            Thread.sleep(100);
-
-            writeSmall(out);
-        }
-
-        assertEquals(64, out.internalArray().length);
+        assertTrue(GridTestUtils.waitForCondition(new WriteAndCheckPredicate(out, SMALL, 256), WAIT_BUFFER_TIMEOUT));
+        assertTrue(GridTestUtils.waitForCondition(new WriteAndCheckPredicate(out, SMALL, 128), WAIT_BUFFER_TIMEOUT));
+        assertTrue(GridTestUtils.waitForCondition(new WriteAndCheckPredicate(out, SMALL, 64), WAIT_BUFFER_TIMEOUT));
+        assertFalse(GridTestUtils.waitForCondition(new WriteAndCheckPredicate(out, SMALL, 32), WAIT_BUFFER_TIMEOUT));
+        assertTrue(GridTestUtils.waitForCondition(new WriteAndCheckPredicate(out, SMALL, 64), WAIT_BUFFER_TIMEOUT));
     }
 
     /**
@@ -81,7 +66,8 @@ public class GridUnsafeDataOutputArraySizingSelfTest extends GridCommonAbstractT
     public void testBig() throws Exception {
         GridUnsafeDataOutput out = new GridUnsafeDataOutput(512);
 
-        writeBig(out);
+        out.write(BIG);
+        out.reset();
 
         assertEquals(4096, out.internalArray().length);
     }
@@ -96,8 +82,10 @@ public class GridUnsafeDataOutputArraySizingSelfTest extends GridCommonAbstractT
         for (int i = 0; i < 100; i++) {
             Thread.sleep(100);
 
-            writeSmall(out);
-            writeBig(out);
+            out.write(SMALL);
+            out.reset();
+            out.write(BIG);
+            out.reset();
         }
 
         assertEquals(4096, out.internalArray().length);
@@ -108,54 +96,58 @@ public class GridUnsafeDataOutputArraySizingSelfTest extends GridCommonAbstractT
      */
     @SuppressWarnings("BusyWait")
     public void testChanged2() throws Exception {
-        GridUnsafeDataOutput out = new GridUnsafeDataOutput(512);
+        final GridUnsafeDataOutput out = new GridUnsafeDataOutput(512);
 
-        for (int i = 0; i < 11; i++) {
-            Thread.sleep(100);
+        assertTrue(GridTestUtils.waitForCondition(new WriteAndCheckPredicate(out, SMALL, 256), WAIT_BUFFER_TIMEOUT));
 
-            writeSmall(out);
-        }
-
-        assertEquals(256, out.internalArray().length);
-
-        writeBig(out);
-
-        assertEquals(4096, out.internalArray().length);
-
-        for (int i = 0; i < 11; i++) {
-            Thread.sleep(100);
-
-            writeSmall(out);
-        }
-
-        assertEquals(4096, out.internalArray().length);
-
-        for (int i = 0; i < 11; i++) {
-            Thread.sleep(100);
-
-            writeSmall(out);
-        }
-
-        assertEquals(2048, out.internalArray().length);
-    }
-
-    /**
-     * @param out Output.
-     * @throws Exception If failed.
-     */
-    private void writeSmall(GridUnsafeDataOutput out) throws Exception {
-        out.write(SMALL);
-
-        out.reset();
-    }
-
-    /**
-     * @param out Output.
-     * @throws Exception If failed.
-     */
-    private void writeBig(GridUnsafeDataOutput out) throws Exception {
         out.write(BIG);
-
         out.reset();
+        assertEquals(4096, out.internalArray().length);
+
+        assertTrue(GridTestUtils.waitForCondition(new WriteAndCheckPredicate(out, SMALL, 4096), WAIT_BUFFER_TIMEOUT));
+        assertTrue(GridTestUtils.waitForCondition(new WriteAndCheckPredicate(out, SMALL, 2048), 2 * WAIT_BUFFER_TIMEOUT));
+    }
+
+    /**
+     *
+     */
+    private static class WriteAndCheckPredicate implements GridAbsPredicate {
+        /** */
+        final GridUnsafeDataOutput out;
+
+        /** */
+        final byte [] bytes;
+
+        /** */
+        final int len;
+
+        /**
+         * @param out Out.
+         * @param bytes Bytes.
+         * @param len Length.
+         */
+        WriteAndCheckPredicate(GridUnsafeDataOutput out, byte[] bytes, int len) {
+            this.out = out;
+            this.bytes = bytes;
+            this.len = len;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public boolean apply() {
+            try {
+                out.write(bytes);
+                out.reset();
+
+                System.out.println("L=" + out.internalArray().length);
+
+                return out.internalArray().length == len;
+            }
+            catch (Exception e) {
+                assertTrue("Unexpected exception: " + e.getMessage(), false);
+                return false;
+            }
+        }
     }
 }

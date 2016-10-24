@@ -23,10 +23,13 @@ import org.apache.ignite.internal.processors.cache.CacheSerializableTransactions
 import org.apache.ignite.internal.processors.cache.GridCacheSwapSpaceSpiConsistencySelfTest;
 import org.apache.ignite.internal.processors.cache.EntryVersionConsistencyReadThroughTest;
 import org.apache.ignite.internal.processors.cache.IgniteCachePutStackOverflowSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheReadThroughEvictionsVariationsSuite;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStoreCollectionTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentFairAffinityTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentNodeJoinValidationTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheSyncRebalanceModeSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxIteratorSelfTest;
 import org.apache.ignite.internal.processors.cache.store.IgniteCacheWriteBehindNoUpdateSelfTest;
 
 /**
@@ -51,6 +54,10 @@ public class IgniteCacheTestSuite5 extends TestSuite {
         suite.addTestSuite(CacheLateAffinityAssignmentFairAffinityTest.class);
         suite.addTestSuite(CacheLateAffinityAssignmentNodeJoinValidationTest.class);
         suite.addTestSuite(EntryVersionConsistencyReadThroughTest.class);
+        suite.addTestSuite(IgniteCacheSyncRebalanceModeSelfTest.class);
+
+        suite.addTest(IgniteCacheReadThroughEvictionsVariationsSuite.suite());
+        suite.addTestSuite(IgniteCacheTxIteratorSelfTest.class);
 
         return suite;
     }

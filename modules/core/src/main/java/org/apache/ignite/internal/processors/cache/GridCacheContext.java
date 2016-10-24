@@ -59,7 +59,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTransactionalCacheAdapter;
@@ -589,14 +588,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert e != null;
         assert !e.isInternal() : e;
 
-        cache.map().incrementSize(e);
-
-        if (isDht() || isColocated() || isDhtAtomic()) {
-            GridDhtLocalPartition part = topology().localPartition(e.partition(), AffinityTopologyVersion.NONE, false);
-
-            if (part != null)
-                part.incrementPublicSize();
-        }
+        cache.incrementSize(e);
     }
 
     /**
@@ -607,14 +599,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert e != null;
         assert !e.isInternal() : e;
 
-        cache.map().decrementSize(e);
-
-        if (isDht() || isColocated() || isDhtAtomic()) {
-            GridDhtLocalPartition part = topology().localPartition(e.partition(), AffinityTopologyVersion.NONE, false);
-
-            if (part != null)
-                part.decrementPublicSize();
-        }
+        cache.decrementSize(e);
     }
 
     /**
@@ -1097,8 +1082,8 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         for (CacheEntryPredicate p0 : p) {
             if ((p0 instanceof CacheEntrySerializablePredicate) &&
-               ((CacheEntrySerializablePredicate)p0).predicate() instanceof CacheEntryPredicateNoValue)
-            return true;
+                ((CacheEntrySerializablePredicate)p0).predicate() instanceof CacheEntryPredicateNoValue)
+                return true;
         }
 
         return false;
@@ -1155,7 +1140,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     @SuppressWarnings({"unchecked"})
     public IgnitePredicate<Cache.Entry<K, V>>[] vararg(IgnitePredicate<Cache.Entry<K, V>> p) {
-        return p == null ? CU.<K, V>empty() : new IgnitePredicate[]{p};
+        return p == null ? CU.<K, V>empty() : new IgnitePredicate[] {p};
     }
 
     /**
@@ -1170,7 +1155,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheEntryEx e,
         @Nullable IgnitePredicate<Cache.Entry<K1, V1>>[] p
     ) throws IgniteCheckedException {
-        return F.isEmpty(p) || isAll(e.<K1, V1>wrapLazyValue(), p);
+        return F.isEmpty(p) || isAll(e.<K1, V1>wrapLazyValue(keepBinary()), p);
     }
 
     /**
@@ -1319,8 +1304,6 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         return (opCtx != null && opCtx.skipStore());
     }
-
-
 
     /**
      * @return {@code True} if need check near cache context.
@@ -1704,14 +1687,15 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if OFFHEAP_TIERED memory mode is enabled.
      */
     public boolean offheapTiered() {
-        return cacheCfg.getMemoryMode() == OFFHEAP_TIERED && isOffHeapEnabled();
+        return cacheCfg != null && cacheCfg.getMemoryMode() == OFFHEAP_TIERED && isOffHeapEnabled();
     }
 
     /**
      * @return {@code True} if should use entry with offheap value pointer.
      */
     public boolean useOffheapEntry() {
-        return cacheCfg.getMemoryMode() == OFFHEAP_TIERED || cacheCfg.getMemoryMode() == OFFHEAP_VALUES;
+        return cacheCfg != null &&
+            (cacheCfg.getMemoryMode() == OFFHEAP_TIERED || cacheCfg.getMemoryMode() == OFFHEAP_VALUES);
     }
 
     /**
@@ -1806,7 +1790,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public KeyCacheObject toCacheKeyObject(Object obj) {
         assert validObjectForCache(obj) : obj;
 
-        return cacheObjects().toCacheKeyObject(cacheObjCtx, obj, true);
+        return cacheObjects().toCacheKeyObject(cacheObjCtx, this, obj, true);
     }
 
     /**
@@ -1827,7 +1811,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public KeyCacheObject toCacheKeyObject(byte[] bytes) throws IgniteCheckedException {
         Object obj = ctx.cacheObjects().unmarshal(cacheObjCtx, bytes, deploy().localLoader());
 
-        return cacheObjects().toCacheKeyObject(cacheObjCtx, obj, false);
+        return cacheObjects().toCacheKeyObject(cacheObjCtx, this, obj, false);
     }
 
     /**
@@ -1838,8 +1822,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public CacheObject unswapCacheObject(byte type, byte[] bytes, @Nullable IgniteUuid clsLdrId)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         if (ctx.config().isPeerClassLoadingEnabled() && type != CacheObject.TYPE_BYTE_ARR) {
             ClassLoader ldr = clsLdrId != null ? deploy().getClassLoader(clsLdrId) : deploy().localLoader();
 
@@ -1973,7 +1956,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /**
      * @param keys Keys.
-     * @return Co
+     * @return Read-only collection of KeyCacheObject instances.
      */
     public Collection<KeyCacheObject> cacheKeysView(Collection<?> keys) {
         return F.viewReadOnly(keys, new C1<Object, KeyCacheObject>() {
@@ -2036,7 +2019,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         try {
             IgniteBiTuple<String, String> t = stash.get();
 
-            IgniteKernal grid = IgnitionEx.gridx(t.get1());
+            IgniteKernal grid = IgnitionEx.localIgnite();
 
             GridCacheAdapter<K, V> cache = grid.internalCache(t.get2());
 

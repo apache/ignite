@@ -234,6 +234,8 @@ object visor extends VisorTag {
 
     private var reader: ConsoleReader = null
 
+    var batchMode: Boolean = false
+
     def reader(reader: ConsoleReader) {
         assert(reader != null)
 
@@ -244,7 +246,7 @@ object visor extends VisorTag {
      * Get grid node for specified ID.
      *
      * @param nid Node ID.
-     * @return GridNode instance.
+     * @return ClusterNode instance.
      * @throws IgniteException if Visor is disconnected or node not found.
      */
     def node(nid: UUID): ClusterNode = {
@@ -661,12 +663,18 @@ object visor extends VisorTag {
     }
 
     /**
-     * Finds variable by its value.
+     * Finds variables by its value.
      *
      * @param v Value to find by.
      */
-    def mfind(@Nullable v: String): Option[(String, String)] =
-        mem find(t => t._2 == v)
+    def mfind(@Nullable v: String) = mem.filter(t => t._2 == v).toSeq
+
+    /**
+      * Finds variable by its value.
+      *
+      * @param v Value to find by.
+      */
+    def mfindHead(@Nullable v: String) = mfind(v).filterNot(entry => Seq("nl", "nr").contains(entry._1)).headOption
 
     /**
      * Sets Visor console memory variable. Note that this method '''does not'''
@@ -872,7 +880,7 @@ object visor extends VisorTag {
                 case _ => Left("'id8' resolves to more than one node (use full 'id' instead): " + id8.get)
             }
         }
-        else if (id.isDefined)
+        else if (id.isDefined) {
             try {
                 val node = Option(ignite.cluster.node(java.util.UUID.fromString(id.get)))
 
@@ -884,6 +892,7 @@ object visor extends VisorTag {
             catch {
                 case e: IllegalArgumentException => Left("Invalid node 'id': " + id.get)
             }
+        }
         else
             Right(None)
     }
@@ -1101,20 +1110,24 @@ object visor extends VisorTag {
             }
 
         try
-            if (s.startsWith("lte")) // <=
-                Some(_ <= value(s.substring(3)))
-            else if (s.startsWith("lt")) // <
-                Some(_ < value(s.substring(2)))
-            else if (s.startsWith("gte")) // >=
-                Some(_ >= value(s.substring(3)))
-            else if (s.startsWith("gt")) // >
-                Some(_ > value(s.substring(2)))
-            else if (s.startsWith("eq")) // ==
-                Some(_ == value(s.substring(2)))
-            else if (s.startsWith("neq")) // !=
-                Some(_ != value(s.substring(3)))
-            else
-                None
+            Option(
+                if (s == null)
+                    null
+                else if (s.startsWith("lte")) // <=
+                    _ <= value(s.substring(3))
+                else if (s.startsWith("lt"))  // <
+                    _ < value(s.substring(2))
+                else if (s.startsWith("gte")) // >=
+                    _ >= value(s.substring(3))
+                else if (s.startsWith("gt"))  // >
+                    _ > value(s.substring(2))
+                else if (s.startsWith("eq"))  // ==
+                    _ == value(s.substring(2))
+                else if (s.startsWith("neq")) // !=
+                    _ != value(s.substring(3))
+                else
+                    null
+            )
         catch {
             case e: Throwable => None
         }
@@ -1518,15 +1531,27 @@ object visor extends VisorTag {
                 setVarIfAbsent(ip.get, "h")
         })
 
+        val onHost = ignite.cluster.forHost(ignite.localNode())
+
+        Option(onHost.forServers().forOldest().node()).foreach(n => msetOpt("nl", nid8(n)))
+        Option(ignite.cluster.forOthers(onHost).forServers.forOldest().node()).foreach(n => msetOpt("nr", nid8(n)))
+
         nodeJoinLsnr = new IgnitePredicate[Event]() {
             override def apply(e: Event): Boolean = {
                 e match {
                     case de: DiscoveryEvent =>
-                        setVarIfAbsent(nid8(de.eventNode()), "n")
+                        val n = nid8(de.eventNode())
+
+                        setVarIfAbsent(n, "n")
 
                         val node = ignite.cluster.node(de.eventNode().id())
 
                         if (node != null) {
+                            val alias = if (U.sameMacs(ignite.localNode(), node)) "nl" else "nr"
+
+                            if (mgetOpt(alias).isEmpty)
+                                msetOpt(alias, n)
+
                             val ip = sortAddresses(node.addresses).headOption
 
                             if (ip.isDefined)
@@ -1547,29 +1572,25 @@ object visor extends VisorTag {
 
         ignite.events().localListen(nodeJoinLsnr, EVT_NODE_JOINED)
 
+        val mclear = (node: ClusterNode) => {
+            mfind(nid8(node)).foreach(nv => mem.remove(nv._1))
+
+            val onHost = ignite.cluster.forHost(ignite.localNode())
+
+            if (mgetOpt("nl").isEmpty)
+                Option(onHost.forServers().forOldest().node()).foreach(n => msetOpt("nl", nid8(n)))
+
+            if (mgetOpt("nr").isEmpty)
+                Option(ignite.cluster.forOthers(onHost).forServers.forOldest().node()).foreach(n => msetOpt("nr", nid8(n)))
+
+            if (onHost.nodes().isEmpty)
+                sortAddresses(node.addresses).headOption.foreach((ip) => mfind(ip).foreach(hv => mem.remove(hv._1)))
+        }
+
         nodeLeftLsnr = new IgnitePredicate[Event]() {
             override def apply(e: Event): Boolean = {
                 e match {
-                    case (de: DiscoveryEvent) =>
-                        val nv = mfind(nid8(de.eventNode()))
-
-                        if (nv.isDefined)
-                            mem.remove(nv.get._1)
-
-                        val ip = sortAddresses(de.eventNode().addresses).headOption
-
-                        if (ip.isDefined) {
-                            val last = !ignite.cluster.nodes().exists(n =>
-                                n.addresses.size > 0 && sortAddresses(n.addresses).head == ip.get
-                            )
-
-                            if (last) {
-                                val hv = mfind(ip.get)
-
-                                if (hv.isDefined)
-                                    mem.remove(hv.get._1)
-                            }
-                        }
+                    case (de: DiscoveryEvent) => mclear(de.eventNode())
                 }
 
                 true
@@ -1590,6 +1611,8 @@ object visor extends VisorTag {
 
                             close()
                         }
+                        else
+                            mclear(de.eventNode())
                 }
 
                 true
@@ -1654,7 +1677,7 @@ object visor extends VisorTag {
             val n = ignite.cluster.node(id)
 
             val id8 = nid8(id)
-            val v = mfind(id8)
+            val v = mfindHead(id8)
 
             id8 +
                 (if (v.isDefined) "(@" + v.get._1 + ")" else "") +
@@ -1674,7 +1697,7 @@ object visor extends VisorTag {
         assert(isCon)
 
         val id8 = nid8(id)
-        val v = mfind(id8)
+        val v = mfindHead(id8)
 
         id8 + (if (v.isDefined) "(@" + v.get._1 + ")" else "")
     }
@@ -1842,7 +1865,7 @@ object visor extends VisorTag {
 
             t.render()
 
-            val a = ask("\nChoose node number ('c' to cancel) [c]: ", "c")
+            val a = ask("\nChoose node number ('c' to cancel) [0]: ", "0")
 
             if (a.toLowerCase == "c")
                 None
@@ -1925,7 +1948,7 @@ object visor extends VisorTag {
 
             t.render()
 
-            val a = ask("\nChoose host number ('c' to cancel) [c]: ", "c")
+            val a = ask("\nChoose host number ('c' to cancel) [0]: ", "0")
 
             if (a.toLowerCase == "c")
                 None
@@ -1995,6 +2018,9 @@ object visor extends VisorTag {
     def ask(prompt: String, dflt: String, passwd: Boolean = false): String = {
         assert(prompt != null)
         assert(dflt != null)
+
+        if (batchMode)
+            return dflt
 
         readLineOpt(prompt, if (passwd) Some('*') else None) match {
             case None => dflt
@@ -2331,7 +2357,7 @@ object visor extends VisorTag {
         val folder = Option(f.getParent).getOrElse("")
         val fileName = f.getName
 
-        logFile = new File(U.resolveWorkDirectory(folder, false), fileName)
+        logFile = new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), folder, false), fileName)
 
         logFile.createNewFile()
 

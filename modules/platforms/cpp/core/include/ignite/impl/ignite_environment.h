@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ENVIRONMENT
-#define _IGNITE_ENVIRONMENT
+#ifndef _IGNITE_IMPL_IGNITE_ENVIRONMENT
+#define _IGNITE_IMPL_IGNITE_ENVIRONMENT
 
 #include <ignite/common/concurrent.h>
-#include <ignite/common/java.h>
+#include <ignite/jni/java.h>
 
 #include "ignite/impl/interop/interop_memory.h"
-#include "binary/binary_type_manager.h"
+#include "ignite/impl/binary/binary_type_manager.h"
 
 namespace ignite 
 {
@@ -55,14 +55,14 @@ namespace ignite
              * @param Target (current env wrapped into a shared pointer).
              * @return JNI handlers.
              */
-            ignite::common::java::JniHandlers GetJniHandlers(ignite::common::concurrent::SharedPointer<IgniteEnvironment>* target);
+            ignite::jni::java::JniHandlers GetJniHandlers(ignite::common::concurrent::SharedPointer<IgniteEnvironment>* target);
 
             /**
              * Perform initialization on successful start.
              *
              * @param ctx Context.
              */
-            void Initialize(ignite::common::concurrent::SharedPointer<ignite::common::java::JniContext> ctx);
+            void Initialize(ignite::common::concurrent::SharedPointer<ignite::jni::java::JniContext> ctx);
 
             /**
              * Start callback.
@@ -83,7 +83,7 @@ namespace ignite
              *
              * @return Context.
              */
-            ignite::common::java::JniContext* Context();
+            ignite::jni::java::JniContext* Context();
 
             /**
              * Get memory for interop operations.
@@ -116,7 +116,7 @@ namespace ignite
             binary::BinaryTypeManager* GetTypeManager();
         private:
             /** Context to access Java. */
-            ignite::common::concurrent::SharedPointer<ignite::common::java::JniContext> ctx;
+            ignite::common::concurrent::SharedPointer<ignite::jni::java::JniContext> ctx;
 
             /** Startup latch. */
             ignite::common::concurrent::SingleLatch* latch;
@@ -132,4 +132,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_IMPL_IGNITE_ENVIRONMENT

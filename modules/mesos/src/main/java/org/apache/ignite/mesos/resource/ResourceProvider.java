@@ -18,9 +18,15 @@
 package org.apache.ignite.mesos.resource;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.ignite.mesos.ClusterProperties;
 
 import static org.apache.ignite.mesos.resource.ResourceHandler.CONFIG_PREFIX;
@@ -32,6 +38,9 @@ import static org.apache.ignite.mesos.resource.ResourceHandler.LIBS_PREFIX;
  * Provides path to user's libs and config file.
  */
 public class ResourceProvider {
+    /** */
+    private static final Logger log = Logger.getLogger(ResourceProvider.class.getSimpleName());
+
     /** Ignite url. */
     private String igniteUrl;
 
@@ -39,26 +48,57 @@ public class ResourceProvider {
     private Collection<String> libsUris;
 
     /** Url config. */
-    private String configUrl;
+    private String cfgUrl;
 
     /** Config name. */
-    private String configName;
+    private String cfgName;
 
     /**
-     * @param properties Cluster properties.
+     * @param props Cluster properties.
      * @param provider Ignite provider.
      * @param baseUrl Base url.
      */
-    public void init(ClusterProperties properties, IgniteProvider provider, String baseUrl) {
-        // Downloading ignite.
-        if (properties.igniteVer().equals(ClusterProperties.DEFAULT_IGNITE_VERSION))
-            igniteUrl = baseUrl + IGNITE_PREFIX + provider.getIgnite();
-        else
-            igniteUrl = baseUrl + IGNITE_PREFIX + provider.getIgnite(properties.igniteVer());
+    public void init(ClusterProperties props, IgniteProvider provider, String baseUrl) throws IOException {
+        if (props.ignitePackageUrl() == null && props.ignitePackagePath() == null) {
+            // Downloading ignite.
+            try {
+                igniteUrl = baseUrl + IGNITE_PREFIX + provider.getIgnite(props.igniteVer());
+            }
+            catch (Exception e) {
+                log.log(Level.SEVERE, "Failed to download Ignite [err={0}, ver={1}].\n" +
+                    "If application working behind NAT or Intranet and does not have access to external resources " +
+                    "then you can use IGNITE_PACKAGE_URL or IGNITE_PACKAGE_PATH property that allow to use local " +
+                    "resources.",
+                    new Object[]{e, props.igniteVer()});
+            }
+        }
+
+        if (props.ignitePackagePath() != null) {
+            Path ignitePackPath = Paths.get(props.ignitePackagePath());
+
+            if (Files.exists(ignitePackPath) && !Files.isDirectory(ignitePackPath)) {
+                try {
+                    String fileName = provider.copyToWorkDir(props.ignitePackagePath());
+
+                    assert fileName != null;
+
+                    igniteUrl = baseUrl + IGNITE_PREFIX + fileName;
+                }
+                catch (Exception e) {
+                    log.log(Level.SEVERE, "Failed to copy Ignite to working directory [err={0}, path={1}].",
+                        new Object[] {e, props.ignitePackagePath()});
+
+                    throw e;
+                }
+            }
+            else
+                throw new IllegalArgumentException("Failed to find a ignite archive by path: "
+                    + props.ignitePackagePath());
+        }
 
         // Find all jar files into user folder.
-        if (properties.userLibs() != null && !properties.userLibs().isEmpty()) {
-            File libsDir = new File(properties.userLibs());
+        if (props.userLibs() != null && !props.userLibs().isEmpty()) {
+            File libsDir = new File(props.userLibs());
 
             List<String> libs = new ArrayList<>();
 
@@ -78,19 +118,19 @@ public class ResourceProvider {
         }
 
         // Set configuration url.
-        if (properties.igniteCfg() != null) {
-            File cfg = new File(properties.igniteCfg());
+        if (props.igniteCfg() != null) {
+            File cfg = new File(props.igniteCfg());
 
             if (cfg.isFile() && cfg.canRead()) {
-                configUrl = baseUrl + CONFIG_PREFIX + cfg.getName();
+                cfgUrl = baseUrl + CONFIG_PREFIX + cfg.getName();
 
-                configName = cfg.getName();
+                cfgName = cfg.getName();
             }
         }
         else {
-            configName = "ignite-default-config.xml";
+            cfgName = "ignite-default-config.xml";
 
-            configUrl = baseUrl + DEFAULT_CONFIG + configName;
+            cfgUrl = baseUrl + DEFAULT_CONFIG + cfgName;
         }
     }
 
@@ -98,7 +138,7 @@ public class ResourceProvider {
      * @return Config name.
      */
     public String configName() {
-        return configName;
+        return cfgName;
     }
 
     /**
@@ -119,6 +159,6 @@ public class ResourceProvider {
      * @return Url to config file.
      */
     public String igniteConfigUrl() {
-        return configUrl;
+        return cfgUrl;
     }
 }

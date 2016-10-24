@@ -20,8 +20,8 @@
  * Declares ignite::cache::query::SqlQuery class.
  */
 
-#ifndef _IGNITE_CACHE_QUERY_SQL
-#define _IGNITE_CACHE_QUERY_SQL
+#ifndef _IGNITE_CACHE_QUERY_QUERY_SQL
+#define _IGNITE_CACHE_QUERY_QUERY_SQL
 
 #include <stdint.h>
 #include <string>
@@ -31,11 +31,11 @@
 #include "ignite/binary/binary_raw_writer.h"
 
 namespace ignite
-{    
+{
     namespace cache
     {
         namespace query
-        {         
+        {
             /**
              * Sql query.
              */
@@ -48,8 +48,8 @@ namespace ignite
                  * @param type Type name.
                  * @param sql SQL string.
                  */
-                SqlQuery(const std::string& type, const std::string& sql) : type(type), sql(sql), pageSize(1024), 
-                    loc(false), args(NULL)
+                SqlQuery(const std::string& type, const std::string& sql)
+                    : type(type), sql(sql), pageSize(1024),  loc(false), args()
                 {
                     // No-op.
                 }
@@ -59,7 +59,8 @@ namespace ignite
                  *
                  * @param other Other instance.
                  */
-                SqlQuery(const SqlQuery& other) : type(other.type), sql(other.sql), pageSize(other.pageSize),
+                SqlQuery(const SqlQuery& other) :
+                    type(other.type), sql(other.sql), pageSize(other.pageSize),
                     loc(other.loc), args()
                 {
                     args.reserve(other.args.size());
@@ -199,6 +200,10 @@ namespace ignite
                 /**
                  * Add argument.
                  *
+                 * Template argument type should be copy-constructable and
+                 * assignable. Also BinaryType class template should be specialized
+                 * for this type.
+                 *
                  * @param arg Argument.
                  */
                 template<typename T>
@@ -245,4 +250,4 @@ namespace ignite
     }    
 }
 
-#endif
+#endif //_IGNITE_CACHE_QUERY_QUERY_SQL

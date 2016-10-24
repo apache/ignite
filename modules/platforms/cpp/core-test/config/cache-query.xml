@@ -59,6 +59,8 @@
                                     <map>
                                         <entry key="name" value="java.lang.String"/>
                                         <entry key="age" value="java.lang.Integer"/>
+                                        <entry key="birthday" value="java.util.Date"/>
+                                        <entry key="recordCreated" value="java.sql.Timestamp"/>
                                     </map>
                                 </property>
                                 <property name="textFields">

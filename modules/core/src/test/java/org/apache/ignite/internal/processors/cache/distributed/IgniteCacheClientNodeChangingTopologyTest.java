@@ -1230,9 +1230,16 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         lockFut.get();
 
+        awaitPartitionMapExchange();
+
         boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return unlocked(ignite0) && unlocked(ignite1);
+                for (int i = 0; i < 4; i++) {
+                    if (!unlocked(ignite(i)))
+                        return false;
+                }
+
+                return true;
             }
 
             private boolean unlocked(Ignite ignite) {

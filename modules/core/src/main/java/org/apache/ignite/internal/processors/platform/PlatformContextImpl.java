@@ -514,7 +514,6 @@ public class PlatformContextImpl implements PlatformContext {
             writeNode(writer, event0.eventNode());
             writer.writeObject(event0.key());
             PlatformUtils.writeIgniteUuid(writer, event0.xid());
-            writer.writeObject(event0.lockId());
             writer.writeObject(event0.newValue());
             writer.writeObject(event0.oldValue());
             writer.writeBoolean(event0.hasOldValue());

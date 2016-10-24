@@ -56,6 +56,13 @@ class CacheContinuousQueryEvent<K, V> extends CacheQueryEntryEvent<K, V> {
         return e;
     }
 
+    /**
+     * @return Partition ID.
+     */
+    public int partitionId() {
+        return e.partition();
+    }
+
     /** {@inheritDoc} */
     @Override public K getKey() {
         return (K)cctx.cacheObjectContext().unwrapBinaryIfNeeded(e.key(), e.isKeepBinary(), false);

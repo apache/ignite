@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -65,6 +66,9 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     /** With async. */
     private final boolean isAsync;
 
+    /** Expiry policy. */
+    private final ExpiryPolicy expiryPlc;
+
     /** Ignite proxy. */
     private final transient IgniteProcessProxy igniteProxy;
 
@@ -73,24 +77,26 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
      * @param proxy Ignite Process Proxy.
      */
     public IgniteCacheProcessProxy(String name, IgniteProcessProxy proxy) {
-        this(name, false, proxy);
+        this(name, false, null, proxy);
     }
 
     /**
      * @param name Name.
      * @param async Async flag.
+     * @param plc Expiry policy.
      * @param proxy Ignite Process Proxy.
      */
-    public IgniteCacheProcessProxy(String name, boolean async, IgniteProcessProxy proxy) {
+    private IgniteCacheProcessProxy(String name, boolean async, ExpiryPolicy plc, IgniteProcessProxy proxy) {
         cacheName = name;
         isAsync = async;
+        expiryPlc = plc;
         igniteProxy = proxy;
         compute = proxy.remoteCompute();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withAsync() {
-        return new IgniteCacheProcessProxy<>(cacheName, true, igniteProxy);
+        return new IgniteCacheProcessProxy<>(cacheName, true, null, igniteProxy);
     }
 
     /** {@inheritDoc} */
@@ -116,7 +122,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withExpiryPolicy(ExpiryPolicy plc) {
-        throw new UnsupportedOperationException("Method should be supported.");
+        return new IgniteCacheProcessProxy<>(cacheName, isAsync, plc, igniteProxy);
     }
 
     /** {@inheritDoc} */
@@ -167,6 +173,11 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public <T, R> QueryCursor<R> query(Query<T> qry, IgniteClosure<T, R> transformer) {
+        throw new UnsupportedOperationException("Method should be supported.");
+    }
+
+    /** {@inheritDoc} */
     @Override public Iterable<Entry<K, V>> localEntries(CachePeekMode... peekModes) throws CacheException {
         return compute.call(new LocalEntriesTask<K, V>(cacheName, isAsync, peekModes));
     }
@@ -202,6 +213,11 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public long sizeLong(int partition, CachePeekMode... peekModes) throws CacheException {
+        return compute.call(new PartitionSizeLongTask(cacheName, isAsync, peekModes, partition, false));
+    }
+
+    /** {@inheritDoc} */
     @Override public int localSize(CachePeekMode... peekModes) {
         return compute.call(new SizeTask(cacheName, isAsync, peekModes, true));
     }
@@ -209,6 +225,11 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     /** {@inheritDoc} */
     @Override public long localSizeLong(CachePeekMode... peekModes) {
         return compute.call(new SizeLongTask(cacheName, isAsync, peekModes, true));
+    }
+
+    /** {@inheritDoc} */
+    @Override public long localSizeLong(int partition, CachePeekMode... peekModes) {
+        return compute.call(new PartitionSizeLongTask(cacheName, isAsync, peekModes, partition, true));
     }
 
     /** {@inheritDoc} */
@@ -261,7 +282,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public void put(K key, V val) {
-        compute.call(new PutTask<>(cacheName, isAsync, key, val));
+        compute.call(new PutTask<>(cacheName, isAsync, expiryPlc, key, val));
     }
 
     /** {@inheritDoc} */
@@ -439,6 +460,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 
+    /** {@inheritDoc} */
     @Override public CacheMetrics localMetrics() {
         throw new UnsupportedOperationException("Method should be supported.");
     }
@@ -448,6 +470,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 
+    /** {@inheritDoc} */
     @Override public CacheMetricsMXBean localMxBean() {
         throw new UnsupportedOperationException("Method should be supported.");
     }
@@ -470,7 +493,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param clazz Clazz.
          */
         public GetConfigurationTask(String cacheName, boolean async, Class<C> clazz) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.clazz = clazz;
         }
 
@@ -497,7 +520,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param args Args.
          */
         public LocalLoadCacheTask(String cacheName, boolean async, IgniteBiPredicate<K, V> p, Object[] args) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.p = p;
             this.args = args;
         }
@@ -527,7 +550,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param val Value.
          */
         public GetAndPutIfAbsentTask(String cacheName, boolean async, K key, V val) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.key = key;
             this.val = val;
         }
@@ -555,7 +578,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param byCurrThread By current thread.
          */
         public IsLocalLockedTask(String cacheName, boolean async, K key, boolean byCurrThread) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.key = key;
             this.byCurrThread = byCurrThread;
         }
@@ -579,7 +602,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param peekModes Peek modes.
          */
         public LocalEntriesTask(String cacheName, boolean async, CachePeekMode[] peekModes) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.peekModes = peekModes;
         }
 
@@ -607,7 +630,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param keys Keys.
          */
         public LocalEvictTask(String cacheName, boolean async, Collection<? extends K> keys) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.keys = keys;
         }
 
@@ -636,7 +659,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param peekModes Peek modes.
          */
         public LocalPeekTask(String cacheName, boolean async, K key, CachePeekMode[] peekModes) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.key = key;
             this.peekModes = peekModes;
         }
@@ -664,7 +687,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param loc Local.
          */
         public SizeTask(String cacheName, boolean async, CachePeekMode[] peekModes, boolean loc) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.loc = loc;
             this.peekModes = peekModes;
         }
@@ -692,7 +715,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param loc Local.
          */
         public SizeLongTask(String cacheName, boolean async, CachePeekMode[] peekModes, boolean loc) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.loc = loc;
             this.peekModes = peekModes;
         }
@@ -700,6 +723,39 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         /** {@inheritDoc} */
         @Override public Long call() throws Exception {
             return loc ? cache().localSizeLong(peekModes) : cache().sizeLong(peekModes);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class PartitionSizeLongTask extends CacheTaskAdapter<Void, Void, Long> {
+        /** Partition. */
+        int partition;
+
+        /** Peek modes. */
+        private final CachePeekMode[] peekModes;
+
+        /** Local. */
+        private final boolean loc;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param peekModes Peek modes.
+         * @param partition partition.
+         * @param loc Local.
+         */
+        public PartitionSizeLongTask(String cacheName, boolean async, CachePeekMode[] peekModes, int partition, boolean loc) {
+            super(cacheName, async, null);
+            this.loc = loc;
+            this.peekModes = peekModes;
+            this.partition = partition;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Long call() throws Exception {
+            return loc ? cache().localSizeLong(partition, peekModes) : cache().sizeLong(partition, peekModes);
         }
     }
 
@@ -716,7 +772,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param key Key.
          */
         public GetTask(String cacheName, boolean async, K key) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.key = key;
         }
 
@@ -739,7 +795,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param key Key.
          */
         public GetEntryTask(String cacheName, boolean async, K key) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.key = key;
         }
 
@@ -758,7 +814,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param async Async.
          */
         public RemoveAllTask(String cacheName, boolean async) {
-            super(cacheName, async);
+            super(cacheName, async, null);
         }
 
         /** {@inheritDoc} */
@@ -787,11 +843,12 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         /**
          * @param cacheName Cache name.
          * @param async Async.
+         * @param expiryPlc Expiry policy.
          * @param key Key.
          * @param val Value.
          */
-        public PutTask(String cacheName, boolean async, K key, V val) {
-            super(cacheName, async);
+        public PutTask(String cacheName, boolean async, ExpiryPolicy expiryPlc, K key, V val) {
+            super(cacheName, async, expiryPlc);
             this.key = key;
             this.val = val;
         }
@@ -817,7 +874,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param key Key.
          */
         public ContainsKeyTask(String cacheName, boolean async, K key) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.key = key;
         }
 
@@ -836,7 +893,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param async Async.
          */
         public ClearTask(String cacheName, boolean async) {
-            super(cacheName, async);
+            super(cacheName, async, null);
         }
 
         /** {@inheritDoc} */
@@ -856,7 +913,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param async Async.
          */
         public IteratorTask(String cacheName, boolean async) {
-            super(cacheName, async);
+            super(cacheName, async, null);
         }
 
         /** {@inheritDoc} */
@@ -887,7 +944,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param val Value.
          */
         public ReplaceTask(String cacheName, boolean async, K key, V val) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.key = key;
             this.val = val;
         }
@@ -907,7 +964,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param async Async.
          */
         public GetNameTask(String cacheName, boolean async) {
-            super(cacheName, async);
+            super(cacheName, async, null);
         }
 
         /** {@inheritDoc} */
@@ -929,7 +986,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param key Key.
          */
         public RemoveTask(String cacheName, boolean async, K key) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.key = key;
         }
 
@@ -952,7 +1009,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param map Map.
          */
         public PutAllTask(String cacheName, boolean async, Map<? extends K, ? extends V> map) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.map = map;
         }
 
@@ -977,7 +1034,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param keys Keys.
          */
         public RemoveAllKeysTask(String cacheName, boolean async, Set<? extends K> keys) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.keys = keys;
         }
 
@@ -1002,7 +1059,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param keys Keys.
          */
         public GetAllTask(String cacheName, boolean async, Set<? extends K> keys) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.keys = keys;
         }
 
@@ -1025,7 +1082,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param keys Keys.
          */
         public GetEntriesTask(String cacheName, boolean async, Set<? extends K> keys) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.keys = keys;
         }
 
@@ -1048,7 +1105,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param keys Keys.
          */
         public GetAllOutTxTask(String cacheName, boolean async, Set<? extends K> keys) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.keys = keys;
         }
 
@@ -1071,7 +1128,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param keys Keys.
          */
         public ContainsKeysTask(String cacheName, boolean async, Set<? extends K> keys) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.keys = keys;
         }
 
@@ -1098,7 +1155,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param val Value.
          */
         public GetAndPutTask(String cacheName, boolean async, K key, V val) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.key = key;
             this.val = val;
         }
@@ -1126,7 +1183,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param val Value.
          */
         public PutIfAbsentTask(String cacheName, boolean async, K key, V val) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.key = key;
             this.val = val;
         }
@@ -1154,7 +1211,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param oldVal Old value.
          */
         public RemoveIfExistsTask(String cacheName, boolean async, K key, V oldVal) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.key = key;
             this.oldVal = oldVal;
         }
@@ -1178,7 +1235,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param key Key.
          */
         public GetAndRemoveTask(String cacheName, boolean async, K key) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.key = key;
         }
 
@@ -1209,7 +1266,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param newVal New value.
          */
         public ReplaceIfExistsTask(String cacheName, boolean async, K key, V oldVal, V newVal) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.key = key;
             this.oldVal = oldVal;
             this.newVal = newVal;
@@ -1238,7 +1295,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param val Value.
          */
         public GetAndReplaceTask(String cacheName, boolean async, K key, V val) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.key = key;
             this.val = val;
         }
@@ -1265,7 +1322,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param key Key.
          */
         public ClearKeyTask(String cacheName, boolean async, boolean loc, K key) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.key = key;
             this.loc = loc;
         }
@@ -1297,7 +1354,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param keys Keys.
          */
         public ClearAllKeys(String cacheName, boolean async, boolean loc, Set<? extends K> keys) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.keys = keys;
             this.loc = loc;
         }
@@ -1335,7 +1392,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          */
         public InvokeTask(String cacheName, boolean async, K key, EntryProcessor<K, V, R> processor,
             Object[] args) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.args = args;
             this.key = key;
             this.processor = processor;
@@ -1369,7 +1426,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          */
         public InvokeAllTask(String cacheName, boolean async, Set<? extends K> keys,
             EntryProcessor<K, V, T> processor, Object[] args) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.args = args;
             this.keys = keys;
             this.processor = processor;
@@ -1390,7 +1447,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param async Async.
          */
         public CloseTask(String cacheName, boolean async) {
-            super(cacheName, async);
+            super(cacheName, async, null);
         }
 
         /** {@inheritDoc} */
@@ -1410,7 +1467,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param async Async.
          */
         public DestroyTask(String cacheName, boolean async) {
-            super(cacheName, async);
+            super(cacheName, async, null);
         }
 
         /** {@inheritDoc} */
@@ -1430,7 +1487,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param async Async.
          */
         public IsClosedTask(String cacheName, boolean async) {
-            super(cacheName, async);
+            super(cacheName, async, null);
         }
 
         /** {@inheritDoc} */
@@ -1452,7 +1509,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param clazz Clazz.
          */
         public UnwrapTask(String cacheName, boolean async, Class<R> clazz) {
-            super(cacheName, async);
+            super(cacheName, async, null);
             this.clazz = clazz;
         }
 
@@ -1476,20 +1533,27 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         /** Async. */
         protected final boolean async;
 
+        /** Expiry policy. */
+        protected final ExpiryPolicy expiryPlc;
+
         /**
          * @param cacheName Cache name.
          * @param async Async.
+         * @param expiryPlc Optional expiry policy.
          */
-        public CacheTaskAdapter(String cacheName, boolean async) {
+        public CacheTaskAdapter(String cacheName, boolean async, ExpiryPolicy expiryPlc) {
             this.async = async;
             this.cacheName = cacheName;
+            this.expiryPlc = expiryPlc;
         }
 
         /**
-         * Returns cache instance.
+         * @return Cache instance.
          */
         protected IgniteCache<K, V> cache() {
             IgniteCache<K, V> cache = ignite.cache(cacheName);
+
+            cache = expiryPlc != null ? cache.withExpiryPolicy(expiryPlc) : cache;
 
             return async ? cache.withAsync() : cache;
         }

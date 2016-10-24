@@ -31,7 +31,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeaderKey;
 import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -191,7 +191,7 @@ public class GridCacheQueueCleanupSelfTest extends IgniteCollectionAbstractTest 
                     GridCacheAdapter<Object, Object> cache =
                         ((IgniteKernal)grid(i)).context().cache().internalCache(queueCacheName);
 
-                    Iterator<GridCacheEntryEx> entries = cache.map().allEntries0().iterator();
+                    Iterator<GridCacheMapEntry> entries = cache.map().entries().iterator();
 
                     while (entries.hasNext()) {
                         cnt++;

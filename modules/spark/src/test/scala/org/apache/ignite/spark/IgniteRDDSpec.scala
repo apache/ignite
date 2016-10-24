@@ -18,7 +18,7 @@
 package org.apache.ignite.spark
 
 import org.apache.ignite.Ignition
-import org.apache.ignite.cache.query.annotations.{QueryTextField, QuerySqlField}
+import org.apache.ignite.cache.query.annotations.{QuerySqlField, QueryTextField}
 import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder
@@ -27,14 +27,16 @@ import org.junit.runner.RunWith
 import org.scalatest._
 import org.scalatest.junit.JUnitRunner
 
+import scala.collection.JavaConversions._
 import IgniteRDDSpec._
+import org.apache.ignite.binary.BinaryObject
 
 import scala.annotation.meta.field
 
 @RunWith(classOf[JUnitRunner])
 class IgniteRDDSpec extends FunSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
     describe("IgniteRDD") {
-        it("should successfully store data to ignite") {
+        it("should successfully store data to ignite using savePairs") {
             val sc = new SparkContext("local[*]", "test")
 
             try {
@@ -53,6 +55,80 @@ class IgniteRDDSpec extends FunSpec with Matchers with BeforeAndAfterAll with Be
                     assert(res != null, "Value was not put to cache for key: " + i)
                     assert("val" + i == res, "Invalid value stored for key: " + i)
                 }
+            }
+            finally {
+                sc.stop()
+            }
+        }
+
+        it("should successfully store data to ignite using savePairs with inline transformation") {
+            val sc = new SparkContext("local[*]", "test")
+
+            try {
+                val ic = new IgniteContext[String, String](sc,
+                    () ⇒ configuration("client", client = true))
+
+                // Save pairs ("0", "val0"), ("1", "val1"), ... to Ignite cache.
+                ic.fromCache(PARTITIONED_CACHE_NAME).savePairs(
+                    sc.parallelize(0 to 10000, 2), (i: Int, ic) ⇒ (String.valueOf(i), "val" + i))
+
+                // Check cache contents.
+                val ignite = Ignition.ignite("grid-0")
+
+                for (i ← 0 to 10000) {
+                    val res = ignite.cache[String, String](PARTITIONED_CACHE_NAME).get(String.valueOf(i))
+
+                    assert(res != null, "Value was not put to cache for key: " + i)
+                    assert("val" + i == res, "Invalid value stored for key: " + i)
+                }
+            }
+            finally {
+                sc.stop()
+            }
+        }
+
+        it("should successfully store data to ignite using saveValues") {
+            val sc = new SparkContext("local[*]", "test")
+
+            try {
+                val ic = new IgniteContext[String, String](sc,
+                    () ⇒ configuration("client", client = true))
+
+                // Save pairs ("0", "val0"), ("1", "val1"), ... to Ignite cache.
+                ic.fromCache(PARTITIONED_CACHE_NAME).saveValues(
+                    sc.parallelize(0 to 10000, 2).map(i ⇒ "val" + i))
+
+                // Check cache contents.
+                val ignite = Ignition.ignite("grid-0")
+
+                val values = ignite.cache[String, String](PARTITIONED_CACHE_NAME).toList.map(e ⇒ e.getValue)
+
+                for (i ← 0 to 10000)
+                    assert(values.contains("val" + i), "Value not found for index: " + i)
+            }
+            finally {
+                sc.stop()
+            }
+        }
+
+        it("should successfully store data to ignite using saveValues with inline transformation") {
+            val sc = new SparkContext("local[*]", "test")
+
+            try {
+                val ic = new IgniteContext[String, String](sc,
+                    () ⇒ configuration("client", client = true))
+
+                // Save pairs ("0", "val0"), ("1", "val1"), ... to Ignite cache.
+                ic.fromCache(PARTITIONED_CACHE_NAME).saveValues(
+                    sc.parallelize(0 to 10000, 2), (i: Int, ic) ⇒ "val" + i)
+
+                // Check cache contents.
+                val ignite = Ignition.ignite("grid-0")
+
+                val values = ignite.cache[String, String](PARTITIONED_CACHE_NAME).toList.map(e ⇒ e.getValue)
+
+                for (i ← 0 to 10000)
+                    assert(values.contains("val" + i), "Value not found for index: " + i)
             }
             finally {
                 sc.stop()
@@ -165,6 +241,80 @@ class IgniteRDDSpec extends FunSpec with Matchers with BeforeAndAfterAll with Be
                 sc.stop()
             }
         }
+
+        it("should successfully query complex object fields") {
+            assert(false, "https://issues.apache.org/jira/browse/IGNITE-3077")
+
+            val sc = new SparkContext("local[*]", "test")
+
+            try {
+                val ic = new IgniteContext[Integer, WithObjectField](sc,
+                    () ⇒ configuration("client", client = true))
+
+                val cache: IgniteRDD[Integer, WithObjectField] = ic.fromCache(PARTITIONED_CACHE_NAME)
+
+                cache.savePairs(sc.parallelize(0 to 1000, 2).map(i ⇒ (i:java.lang.Integer, new WithObjectField(i, new Entity(i, "", i)))))
+
+                val df = cache.sql("select i, ts from WithLocalDate where i = ?", 50)
+
+                df.printSchema()
+
+                val res = df.collect()
+
+                assert(res.length == 1, "Invalid result length")
+                assert(50 == res(0)(0), "Invalid result")
+            }
+            finally {
+                sc.stop()
+            }
+        }
+
+        it("should properly count RDD size") {
+            val sc = new SparkContext("local[*]", "test")
+
+            try {
+                val ic = new IgniteContext[Integer, WithObjectField](sc,
+                    () ⇒ configuration("client", client = true))
+
+                val cache: IgniteRDD[Integer, WithObjectField] = ic.fromCache(PARTITIONED_CACHE_NAME)
+
+                assert(cache.count() == 0)
+                assert(cache.isEmpty())
+
+                cache.savePairs(sc.parallelize(0 until 1000, 2).map(i ⇒ (i:java.lang.Integer, new WithObjectField(i, new Entity(i, "", i)))))
+
+                assert(cache.count() == 1000)
+                assert(!cache.isEmpty())
+
+                cache.clear()
+
+                assert(cache.count() == 0)
+                assert(cache.isEmpty())
+            }
+            finally {
+                sc.stop()
+            }
+        }
+
+        it("should properly work with binary objects") {
+            val sc = new SparkContext("local[*]", "test")
+
+            try {
+                val ic = new IgniteContext[String, Entity](sc, () ⇒ configuration("client", client = true))
+
+                val cache = ic.fromCache(PARTITIONED_CACHE_NAME)
+
+                cache.savePairs(sc.parallelize(0 until 10, 2).map(i ⇒ (String.valueOf(i),
+                    new Entity(i, "name" + i, i * 100))))
+
+                val res = cache.withKeepBinary[String, BinaryObject]().map(t ⇒ t._2.field[Int]("salary")).collect()
+
+                println(res)
+            }
+            finally {
+                sc.stop()
+            }
+        }
     }
 
     override protected def beforeEach() = {
@@ -186,6 +336,12 @@ class IgniteRDDSpec extends FunSpec with Matchers with BeforeAndAfterAll with Be
             Ignition.stop("grid-" + i, false)
         }
     }
+}
+
+case class WithObjectField(
+    @(QuerySqlField @field)(index = true) val i : Int,
+    @(QuerySqlField @field)(index = false) val ts : Object
+) {
 }
 
 /**
@@ -242,7 +398,10 @@ object IgniteRDDSpec {
 
         ccfg.setName(PARTITIONED_CACHE_NAME)
 
-        ccfg.setIndexedTypes(classOf[String], classOf[Entity])
+        ccfg.setIndexedTypes(
+            classOf[String], classOf[Entity],
+            classOf[Integer], classOf[WithObjectField]
+        )
 
         ccfg
     }

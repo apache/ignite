@@ -166,6 +166,29 @@
                                                 </xs:sequence>
                                             </xs:complexType>
                                         </xs:element>
+                                        <xs:element name="nearConfiguration" minOccurs="0">
+                                            <xs:complexType>
+                                                <xs:all>
+                                                    <xs:element name="evictionPolicy" minOccurs="0">
+                                                        <xs:complexType>
+                                                            <xs:attribute name="batchSize" type="xs:int" />
+                                                            <xs:attribute name="maxSize" type="xs:int" />
+                                                            <xs:attribute name="maxMemorySize" type="xs:int" />
+                                                            <xs:attribute name="type" type="xs:string" use="required" />
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:all>
+                                                <xs:attribute name="nearStartSize" type="xs:int" />
+                                            </xs:complexType>
+                                        </xs:element>
+                                        <xs:element name="evictionPolicy" minOccurs="0">
+                                            <xs:complexType>
+                                                <xs:attribute name="batchSize" type="xs:int" />
+                                                <xs:attribute name="maxSize" type="xs:int" />
+                                                <xs:attribute name="maxMemorySize" type="xs:int" />
+                                                <xs:attribute name="type" type="xs:string" use="required" />
+                                            </xs:complexType>
+                                        </xs:element>
                                     </xs:all>
                                     <xs:attribute name="name" type="xs:string" />
                                     <xs:attribute name="cacheMode" type="xs:string" />
@@ -259,6 +282,41 @@
                         <xs:attribute name="maxAckTimeout" type="xs:string" />
                         <xs:attribute name="networkTimeout" type="xs:string" />
                         <xs:attribute name="joinTimeout" type="xs:string" />
+                        <xs:attribute name="clientReconnectDisabled" type="xs:boolean" />
+                        <xs:attribute name="forceServerMode" type="xs:boolean" />
+                        <xs:attribute name="heartbeatFrequency" type="xs:string" />
+                        <xs:attribute name="ipFinderCleanFrequency" type="xs:string" />
+                        <xs:attribute name="localAddress" type="xs:string" />
+                        <xs:attribute name="localPort" type="xs:int" />
+                        <xs:attribute name="localPortRange" type="xs:int" />
+                        <xs:attribute name="maxMissedClientHeartbeats" type="xs:int" />
+                        <xs:attribute name="maxMissedHeartbeats" type="xs:int" />
+                        <xs:attribute name="reconnectCount" type="xs:int" />
+                        <xs:attribute name="statisticsPrintFrequency" type="xs:string" />
+                        <xs:attribute name="threadPriority" type="xs:int" />
+                        <xs:attribute name="topologyHistorySize" type="xs:int" />
+                        <xs:attribute name="type" type="xs:string" use="required" />
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="communicationSpi" minOccurs="0">
+                    <xs:complexType>
+                        <xs:attribute name="ackSendThreshold" type="xs:int" />
+                        <xs:attribute name="connectTimeout" type="xs:string" />
+                        <xs:attribute name="directBuffer" type="xs:boolean" />
+                        <xs:attribute name="directSendBuffer" type="xs:boolean" />
+                        <xs:attribute name="idleConnectionTimeout" type="xs:string" />
+                        <xs:attribute name="localAddress" type="xs:string" />
+                        <xs:attribute name="localPort" type="xs:int" />
+                        <xs:attribute name="localPortRange" type="xs:int" />
+                        <xs:attribute name="maxConnectTimeout" type="xs:string" />
+                        <xs:attribute name="messageQueueLimit" type="xs:string" />
+                        <xs:attribute name="reconnectCount" type="xs:int" />
+                        <xs:attribute name="selectorsCount" type="xs:int" />
+                        <xs:attribute name="slowClientQueueLimit" type="xs:int" />
+                        <xs:attribute name="socketReceiveBufferSize" type="xs:int" />
+                        <xs:attribute name="socketSendBufferSize" type="xs:int" />
+                        <xs:attribute name="tcpNoDelay" type="xs:boolean" />
+                        <xs:attribute name="unacknowledgedMessagesBufferSize" type="xs:int" />
                         <xs:attribute name="type" type="xs:string" use="required" />
                     </xs:complexType>
                 </xs:element>

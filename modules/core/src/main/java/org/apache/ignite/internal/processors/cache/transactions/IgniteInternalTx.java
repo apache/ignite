@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -34,7 +33,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheFilterFailedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.lang.IgniteAsyncSupported;
@@ -47,7 +45,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Transaction managed by cache ({@code 'Ex'} stands for external).
  */
-public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
+public interface IgniteInternalTx extends AutoCloseable {
     /**
      *
      */
@@ -699,4 +697,9 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
      * @param topVer New topology version.
      */
     public void onRemap(AffinityTopologyVersion topVer);
+
+    /**
+     * @param e Commit error.
+     */
+    public void commitError(Throwable e);
 }

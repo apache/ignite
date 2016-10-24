@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 
@@ -106,6 +107,21 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
      */
     public void status(int status) {
         this.status = status;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        // NOTE!
+        // Do not call super. As IDs will differ, but we can ignore this.
+
+        if (!(obj instanceof TcpDiscoveryStatusCheckMessage))
+            return false;
+
+        TcpDiscoveryStatusCheckMessage other = (TcpDiscoveryStatusCheckMessage)obj;
+
+        return F.eqNodes(other.creatorNode, creatorNode) &&
+            F.eq(other.failedNodeId, failedNodeId) &&
+            status == other.status;
     }
 
     /** {@inheritDoc} */

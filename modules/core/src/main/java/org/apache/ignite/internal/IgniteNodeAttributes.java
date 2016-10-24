@@ -39,6 +39,10 @@ public final class IgniteNodeAttributes {
     /** Attribute for marshaller compact footers. */
     public static final String ATTR_MARSHALLER_COMPACT_FOOTER = ATTR_PREFIX + ".marshaller.compactFooter";
 
+    /** Internal attribute constant that controls which String serialization version to use. */
+    public static final String ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2 = ATTR_PREFIX +
+        ".marshaller.utf8SerializationVer2";
+
     /** Internal attribute name constant. */
     public static final String ATTR_JIT_NAME = ATTR_PREFIX + ".jit.name";
 
@@ -152,6 +156,9 @@ public final class IgniteNodeAttributes {
 
     /** Late affinity assignment mode. */
     public static final String ATTR_LATE_AFFINITY_ASSIGNMENT = ATTR_PREFIX + ".cache.lateAffinity";
+
+    /** Ignite services compatibility mode (can be {@code null}). */
+    public static final String ATTR_SERVICES_COMPATIBILITY_MODE = ATTR_PREFIX + ".services.compatibility.enabled";
 
     /**
      * Enforces singleton.

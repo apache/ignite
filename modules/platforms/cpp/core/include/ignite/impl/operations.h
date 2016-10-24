@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_OPERATION
-#define _IGNITE_IMPL_OPERATION
+#ifndef _IGNITE_IMPL_OPERATIONS
+#define _IGNITE_IMPL_OPERATIONS
 
 #include <map>
 #include <set>
@@ -310,7 +310,7 @@ namespace ignite
         };
 
         /**
-         * Output operation returning single object.
+         * Output operation returning two objects.
          */
         template<typename T1, typename T2>
         class Out2Operation : public OutputOperation
@@ -359,7 +359,86 @@ namespace ignite
 
             IGNITE_NO_COPY_ASSIGNMENT(Out2Operation)
         };
-        
+
+        /**
+         * Output operation returning four objects.
+         */
+        template<typename T1, typename T2, typename T3, typename T4>
+        class Out4Operation : public OutputOperation
+        {
+        public:
+            /**
+             * Constructor.
+             */
+            Out4Operation()
+            {
+                // No-op.
+            }
+
+            virtual void ProcessOutput(ignite::impl::binary::BinaryReaderImpl& reader)
+            {
+                val1 = reader.ReadTopObject<T1>();
+                val2 = reader.ReadTopObject<T2>();
+                val3 = reader.ReadTopObject<T3>();
+                val4 = reader.ReadTopObject<T4>();
+            }
+
+            /**
+             * Get value 1.
+             *
+             * @param Value 1.
+             */
+            T1& Get1()
+            {
+                return val1;
+            }
+
+            /**
+             * Get value 2.
+             *
+             * @param Value 2.
+             */
+            T2& Get2()
+            {
+                return val2;
+            }
+
+            /**
+             * Get value 3.
+             *
+             * @param Value 3.
+             */
+            T3& Get3()
+            {
+                return val3;
+            }
+
+            /**
+             * Get value 4.
+             *
+             * @param Value 4.
+             */
+            T4& Get4()
+            {
+                return val4;
+            }
+
+        private:
+            /** Value 1. */
+            T1 val1; 
+            
+            /** Value 2. */
+            T2 val2;
+
+            /** Value 3. */
+            T3 val3;
+
+            /** Value 4. */
+            T4 val4;
+
+            IGNITE_NO_COPY_ASSIGNMENT(Out4Operation)
+        };
+
         /**
          * Output map operation.
          */
@@ -449,4 +528,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_IMPL_OPERATIONS

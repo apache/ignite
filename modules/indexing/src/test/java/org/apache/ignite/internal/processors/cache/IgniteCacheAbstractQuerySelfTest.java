@@ -867,7 +867,13 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     public void testScanQuery() throws Exception {
         IgniteCache<Integer, String> c1 = ignite().cache(null);
 
-        c1.put(777, "value");
+        Map<Integer, String> map = new HashMap(){{
+            for (int i = 0; i < 5000; i++)
+                put(i, "str" + i);
+        }};
+
+        for (Map.Entry<Integer, String> e : map.entrySet())
+            c1.put(e.getKey(), e.getValue());
 
         // Scan query.
         QueryCursor<Cache.Entry<Integer, String>> qry = c1.query(new ScanQuery<Integer, String>());
@@ -876,16 +882,21 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         assert iter != null;
 
-        int expCnt = 1;
+        int cnt = 0;
 
-        for (int i = 0; i < expCnt; i++) {
-            Cache.Entry<Integer, String> e1 = iter.next();
+        while (iter.hasNext()) {
+            Cache.Entry<Integer, String> e = iter.next();
 
-            assertEquals(777, e1.getKey().intValue());
-            assertEquals("value", e1.getValue());
+            String expVal = map.get(e.getKey());
+
+            assertNotNull(expVal);
+
+            assertEquals(expVal, e.getValue());
+
+            cnt++;
         }
 
-        assert !iter.hasNext();
+        assertEquals(map.size(), cnt);
     }
 
     /**
@@ -1308,13 +1319,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testScanQueryEvents() throws Exception {
-        checkScanQueryEvents();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    private void checkScanQueryEvents() throws Exception {
         final Map<Integer, Integer> map = new ConcurrentHashMap8<>();
         final CountDownLatch latch = new CountDownLatch(10);
         final CountDownLatch execLatch = new CountDownLatch(cacheMode() == REPLICATED ? 1 : gridCount());

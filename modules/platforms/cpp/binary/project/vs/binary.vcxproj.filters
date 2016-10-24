@@ -1,0 +1,145 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Code">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Code\binary">
+      <UniqueIdentifier>{1815eb01-65f5-4142-b773-06abf2dcd0af}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl">
+      <UniqueIdentifier>{7cb1d41b-cf13-4c88-a663-3d74f0bd1b52}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl\binary">
+      <UniqueIdentifier>{12775752-54bd-4c9c-b890-0252b2f221b5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl\interop">
+      <UniqueIdentifier>{d41f0ecd-360a-4a59-a5fb-98db54a3e170}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\include\ignite\binary\binary.h">
+      <Filter>Code\binary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\binary\binary_consts.h">
+      <Filter>Code\binary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\binary\binary_containers.h">
+      <Filter>Code\binary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\binary\binary_raw_reader.h">
+      <Filter>Code\binary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\binary\binary_raw_writer.h">
+      <Filter>Code\binary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\binary\binary_reader.h">
+      <Filter>Code\binary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\binary\binary_type.h">
+      <Filter>Code\binary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\binary\binary_writer.h">
+      <Filter>Code\binary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_common.h">
+      <Filter>Code\impl\binary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_id_resolver.h">
+      <Filter>Code\impl\binary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_reader_impl.h">
+      <Filter>Code\impl\binary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_schema.h">
+      <Filter>Code\impl\binary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_handler.h">
+      <Filter>Code\impl\binary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_manager.h">
+      <Filter>Code\impl\binary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_snapshot.h">
+      <Filter>Code\impl\binary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_updater.h">
+      <Filter>Code\impl\binary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_utils.h">
+      <Filter>Code\impl\binary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_writer_impl.h">
+      <Filter>Code\impl\binary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\interop\interop.h">
+      <Filter>Code\impl\interop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\interop\interop_input_stream.h">
+      <Filter>Code\impl\interop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\interop\interop_memory.h">
+      <Filter>Code\impl\interop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\interop\interop_output_stream.h">
+      <Filter>Code\impl\interop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\interop\interop_stream_position_guard.h">
+      <Filter>Code\impl\interop</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\binary\binary_containers.cpp">
+      <Filter>Code\binary</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\binary\binary_raw_reader.cpp">
+      <Filter>Code\binary</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\binary\binary_raw_writer.cpp">
+      <Filter>Code\binary</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\binary\binary_reader.cpp">
+      <Filter>Code\binary</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\binary\binary_type.cpp">
+      <Filter>Code\binary</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\binary\binary_writer.cpp">
+      <Filter>Code\binary</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\binary\binary_reader_impl.cpp">
+      <Filter>Code\impl\binary</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\binary\binary_schema.cpp">
+      <Filter>Code\impl\binary</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\binary\binary_type_handler.cpp">
+      <Filter>Code\impl\binary</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\binary\binary_type_manager.cpp">
+      <Filter>Code\impl\binary</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\binary\binary_type_snapshot.cpp">
+      <Filter>Code\impl\binary</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\binary\binary_type_updater.cpp">
+      <Filter>Code\impl\binary</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\binary\binary_utils.cpp">
+      <Filter>Code\impl\binary</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\binary\binary_writer_impl.cpp">
+      <Filter>Code\impl\binary</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\interop\interop_input_stream.cpp">
+      <Filter>Code\impl\interop</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\interop\interop_memory.cpp">
+      <Filter>Code\impl\interop</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\interop\interop_output_stream.cpp">
+      <Filter>Code\impl\interop</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

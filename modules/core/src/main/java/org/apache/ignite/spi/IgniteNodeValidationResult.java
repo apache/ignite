@@ -18,6 +18,7 @@
 package org.apache.ignite.spi;
 
 import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Result of joining node validation.
@@ -62,5 +63,10 @@ public class IgniteNodeValidationResult {
      */
     public String sendMessage() {
         return sndMsg;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgniteNodeValidationResult.class, this);
     }
 }

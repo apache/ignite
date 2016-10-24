@@ -74,10 +74,14 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     /** Logger. */
     protected static IgniteLogger log;
 
+    /** Logger. */
+    protected static IgniteLogger msgLog;
+
     /** Context. */
     protected GridCacheSharedContext<?, ?> cctx;
 
     /** Future ID. */
+    @GridToStringInclude
     protected IgniteUuid futId;
 
     /** Transaction. */
@@ -109,8 +113,10 @@ public abstract class GridNearTxPrepareFutureAdapter extends
 
         futId = IgniteUuid.randomUuid();
 
-        if (log == null)
+        if (log == null) {
+            msgLog = cctx.txFinishMessageLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridNearTxPrepareFutureAdapter.class);
+        }
     }
 
     /** {@inheritDoc} */

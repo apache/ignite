@@ -35,7 +35,7 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_HANDLER;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
 
 /**
  * Implementation of SSL filter using {@link SSLEngine}
@@ -154,28 +154,61 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         if (log.isDebugEnabled())
             log.debug("Remote client connected, creating SSL handler and performing initial handshake: " + ses);
 
-        SSLEngine engine = sslCtx.createSSLEngine();
+        SSLEngine engine;
 
-        engine.setUseClientMode(clientMode);
+        boolean handshake;
 
-        if (!clientMode) {
-            engine.setWantClientAuth(wantClientAuth);
+        GridSslMeta sslMeta = ses.meta(SSL_META.ordinal());
 
-            engine.setNeedClientAuth(needClientAuth);
+        if (sslMeta == null) {
+            engine = sslCtx.createSSLEngine();
+
+            engine.setUseClientMode(clientMode);
+
+            if (!clientMode) {
+                engine.setWantClientAuth(wantClientAuth);
+
+                engine.setNeedClientAuth(needClientAuth);
+            }
+
+            if (enabledCipherSuites != null)
+                engine.setEnabledCipherSuites(enabledCipherSuites);
+
+            if (enabledProtos != null)
+                engine.setEnabledProtocols(enabledProtos);
+
+            sslMeta = new GridSslMeta();
+
+            ses.addMeta(SSL_META.ordinal(), sslMeta);
+
+            handshake = true;
+        }
+        else {
+            engine = sslMeta.sslEngine();
+
+            assert engine != null;
+
+            handshake = false;
         }
 
-        if (enabledCipherSuites != null)
-            engine.setEnabledCipherSuites(enabledCipherSuites);
-
-        if (enabledProtos != null)
-            engine.setEnabledProtocols(enabledProtos);
-
         try {
-            GridNioSslHandler hnd = new GridNioSslHandler(this, ses, engine, directBuf, order, log);
+            GridNioSslHandler hnd = new GridNioSslHandler(this,
+                ses,
+                engine,
+                directBuf,
+                order,
+                log,
+                handshake,
+                sslMeta.encodedBuffer());
 
-            ses.addMeta(SSL_HANDLER.ordinal(), hnd);
+            sslMeta.handler(hnd);
 
             hnd.handshake();
+
+            ByteBuffer alreadyDecoded = sslMeta.decodedBuffer();
+
+            if (alreadyDecoded != null)
+                proceedMessageReceived(ses, alreadyDecoded);
         }
         catch (SSLException e) {
             U.error(log, "Failed to start SSL handshake (will close inbound connection): " + ses, e);
@@ -379,7 +412,11 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
      * @return SSL handler.
      */
     private GridNioSslHandler sslHandler(GridNioSession ses) {
-        GridNioSslHandler hnd = ses.meta(SSL_HANDLER.ordinal());
+        GridSslMeta sslMeta = ses.meta(SSL_META.ordinal());
+
+        assert sslMeta != null;
+
+        GridNioSslHandler hnd = sslMeta.handler();
 
         if (hnd == null)
             throw new IgniteException("Failed to process incoming message (received message before SSL handler " +

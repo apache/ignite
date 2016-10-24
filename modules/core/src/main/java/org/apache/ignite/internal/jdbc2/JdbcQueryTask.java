@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.jdbc2;
 
 import java.io.Serializable;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -34,6 +35,7 @@ import org.apache.ignite.IgniteJdbcDriver;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.typedef.CAX;
@@ -126,6 +128,19 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
 
         if (first = (cursor == null)) {
             IgniteCache<?, ?> cache = ignite.cache(cacheName);
+
+            // Don't create caches on server nodes in order to avoid of data rebalancing.
+            boolean start = ignite.configuration().isClientMode();
+
+            if (cache == null && cacheName == null)
+                cache = ((IgniteKernal)ignite).context().cache().getOrStartPublicCache(start, !loc && locQry);
+
+            if (cache == null) {
+                if (cacheName == null)
+                    throw new SQLException("Failed to execute query. No suitable caches found.");
+                else
+                    throw new SQLException("Cache not found [cacheName=" + cacheName + ']');
+            }
 
             SqlFieldsQuery qry = new SqlFieldsQuery(sql).setArgs(args);
 

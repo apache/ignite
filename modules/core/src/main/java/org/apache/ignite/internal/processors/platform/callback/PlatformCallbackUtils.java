@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.platform.callback;
 
+import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunctionTarget;
+
 /**
  * Platform callback utility methods. Implemented in target platform. All methods in this class must be
  * package-visible and invoked only through {@link PlatformCallbackGateway}.
@@ -35,10 +37,9 @@ public class PlatformCallbackUtils {
      * @param envPtr Environment pointer.
      * @param objPtr Object pointer.
      * @param memPtr Memory pointer.
-     * @param cb Callback.
      * @return Result.
      */
-    static native int cacheStoreInvoke(long envPtr, long objPtr, long memPtr, Object cb);
+    static native int cacheStoreInvoke(long envPtr, long objPtr, long memPtr);
 
     /**
      * @param envPtr Environment pointer.
@@ -494,6 +495,53 @@ public class PlatformCallbackUtils {
      * @param clusterRestarted Cluster restarted flag.
      */
     static native void onClientReconnected(long envPtr, boolean clusterRestarted);
+
+    /**
+     * Initializes affinity function.
+     *
+     * @param envPtr Environment pointer.
+     * @param memPtr Pointer to a stream with serialized affinity function.
+     * @param baseFunc Optional func for base calls.
+     * @return Affinity function pointer.
+     */
+    static native long affinityFunctionInit(long envPtr, long memPtr, PlatformAffinityFunctionTarget baseFunc);
+
+    /**
+     * Gets the partition from affinity function.
+     *
+     * @param envPtr Environment pointer.
+     * @param ptr Affinity function pointer.
+     * @param memPtr Pointer to a stream with key object.
+     * @return Partition number for a given key.
+     */
+    static native int affinityFunctionPartition(long envPtr, long ptr, long memPtr);
+
+    /**
+     * Assigns the affinity partitions.
+     *
+     * @param envPtr Environment pointer.
+     * @param ptr Affinity function pointer.
+     * @param outMemPtr Pointer to a stream with affinity context.
+     * @param inMemPtr Pointer to a stream with result.
+     */
+    static native void affinityFunctionAssignPartitions(long envPtr, long ptr, long outMemPtr, long inMemPtr);
+
+    /**
+     * Removes the node from affinity function.
+     *
+     * @param envPtr Environment pointer.
+     * @param ptr Affinity function pointer.
+     * @param memPtr Pointer to a stream with node id.
+     */
+    static native void affinityFunctionRemoveNode(long envPtr, long ptr, long memPtr);
+
+    /**
+     * Destroys the affinity function.
+     *
+     * @param envPtr Environment pointer.
+     * @param ptr Affinity function pointer.
+     */
+    static native void affinityFunctionDestroy(long envPtr, long ptr);
 
     /**
      * Private constructor.

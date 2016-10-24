@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Platform bootstrap. Responsible for starting Ignite node with non-Java platform.
@@ -27,9 +29,11 @@ public interface PlatformBootstrap {
      * Start Ignite node.
      *
      * @param cfg Configuration.
+     * @param springCtx Optional Spring resource context.
      * @param envPtr Environment pointer.
      * @param dataPtr Optional pointer to additional data required for startup.
      * @return Platform processor.
      */
-    public PlatformProcessor start(IgniteConfiguration cfg, long envPtr, long dataPtr);
+    public PlatformProcessor start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx,
+        long envPtr, long dataPtr);
 }

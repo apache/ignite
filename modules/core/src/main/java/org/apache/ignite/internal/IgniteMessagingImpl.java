@@ -184,7 +184,12 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
         try {
             GridContinuousHandler hnd = new GridMessageListenHandler(topic, (IgniteBiPredicate<UUID, Object>)p);
 
-            return saveOrGet(ctx.continuous().startRoutine(hnd, 1, 0, false, prj.predicate()));
+            return saveOrGet(ctx.continuous().startRoutine(hnd,
+                false,
+                1,
+                0,
+                false,
+                prj.predicate()));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

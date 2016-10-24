@@ -461,7 +461,7 @@ public class IgniteJdbcDriver implements Driver {
 
         if (url.startsWith(URL_PREFIX) && url.length() > URL_PREFIX.length())
             return parseJdbcUrl(url, props);
-        else if (url.startsWith(CFG_URL_PREFIX) && url.length() > CFG_URL_PREFIX.length())
+        else if (url.startsWith(CFG_URL_PREFIX) && url.length() >= CFG_URL_PREFIX.length())
             return parseJdbcConfigUrl(url, props);
 
         return false;

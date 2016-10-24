@@ -82,7 +82,7 @@ public class GridServiceProxyClientReconnectSelfTest extends GridCommonAbstractT
 
         startGrid("server");
 
-        assert latch.await(2000, TimeUnit.MILLISECONDS);
+        assert latch.await(10, TimeUnit.SECONDS);
 
         client.services().deployClusterSingleton("my-service", new MyServiceImpl());
 

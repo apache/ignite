@@ -18,7 +18,6 @@
 package org.apache.ignite.mesos;
 
 import com.google.protobuf.ByteString;
-import java.net.InetSocketAddress;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.ignite.mesos.resource.IgniteProvider;
@@ -34,15 +33,16 @@ import org.apache.mesos.Scheduler;
  */
 public class IgniteFramework {
     /** */
-    public static final Logger log = Logger.getLogger(IgniteFramework.class.getSimpleName());
+    private static final Logger log = Logger.getLogger(IgniteFramework.class.getSimpleName());
 
     /** Framework name. */
-    public static final String IGNITE_FRAMEWORK_NAME = "Ignite";
+    private static final String IGNITE_FRAMEWORK_NAME = "Ignite";
 
     /**
      * Main methods has only one optional parameter - path to properties files.
      *
      * @param args Args.
+     * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
         final int frameworkFailoverTimeout = 0;
@@ -63,11 +63,11 @@ public class IgniteFramework {
 
         String baseUrl = String.format("http://%s:%d", clusterProps.httpServerHost(), clusterProps.httpServerPort());
 
-        JettyServer httpServer = new JettyServer();
+        JettyServer httpSrv = new JettyServer();
 
-        httpServer.start(
-            new InetSocketAddress(clusterProps.httpServerHost(), clusterProps.httpServerPort()),
-            new ResourceHandler(clusterProps.userLibs(), clusterProps.igniteCfg(), clusterProps.igniteWorkDir())
+        httpSrv.start(
+            new ResourceHandler(clusterProps.userLibs(), clusterProps.igniteCfg(), clusterProps.igniteWorkDir()),
+            clusterProps
         );
 
         ResourceProvider provider = new ResourceProvider();
@@ -79,8 +79,9 @@ public class IgniteFramework {
         // Create the scheduler.
         Scheduler scheduler = new IgniteScheduler(clusterProps, provider);
 
-        // create the driver
+        // Create the driver.
         MesosSchedulerDriver driver;
+
         if (System.getenv("MESOS_AUTHENTICATE") != null) {
             log.info("Enabling authentication for the framework");
 
@@ -96,7 +97,7 @@ public class IgniteFramework {
                 System.exit(1);
             }
 
-            Protos.Credential credential = Protos.Credential.newBuilder()
+            Protos.Credential cred = Protos.Credential.newBuilder()
                 .setPrincipal(System.getenv("DEFAULT_PRINCIPAL"))
                 .setSecret(ByteString.copyFrom(System.getenv("DEFAULT_SECRET").getBytes()))
                 .build();
@@ -104,7 +105,7 @@ public class IgniteFramework {
             frameworkBuilder.setPrincipal(System.getenv("DEFAULT_PRINCIPAL"));
 
             driver = new MesosSchedulerDriver(scheduler, frameworkBuilder.build(), clusterProps.masterUrl(),
-                credential);
+                cred);
         }
         else {
             frameworkBuilder.setPrincipal("ignite-framework-java");
@@ -114,7 +115,7 @@ public class IgniteFramework {
 
         int status = driver.run() == Protos.Status.DRIVER_STOPPED ? 0 : 1;
 
-        httpServer.stop();
+        httpSrv.stop();
 
         // Ensure that the driver process terminates.
         driver.stop();

@@ -33,7 +33,9 @@ import org.apache.ignite.internal.GridSelfTest;
 import org.apache.ignite.internal.GridStartStopSelfTest;
 import org.apache.ignite.internal.GridStopWithCancelSelfTest;
 import org.apache.ignite.internal.IgniteSlowClientDetectionSelfTest;
+import org.apache.ignite.internal.MarshallerContextLockingSelfTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
+import org.apache.ignite.internal.processors.cache.GridLocalIgniteSerializationTest;
 import org.apache.ignite.internal.processors.cache.GridProjectionForCachesOnDaemonNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteDaemonNodeMarshallerCacheTest;
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheConcurrentReadWriteTest;
@@ -41,6 +43,8 @@ import org.apache.ignite.internal.processors.cache.OffHeapTieredTransactionSelfT
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorSelfTest;
 import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
 import org.apache.ignite.internal.processors.continuous.GridMessageListenSelfTest;
+import org.apache.ignite.internal.processors.odbc.OdbcProcessorValidationSelfTest;
+import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.processors.service.ClosureServiceClientsNodesTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
 import org.apache.ignite.internal.util.nio.IgniteExceptionInNioWorkerSelfTest;
@@ -50,6 +54,7 @@ import org.apache.ignite.messaging.GridMessagingNoPeerClassLoadingSelfTest;
 import org.apache.ignite.messaging.GridMessagingSelfTest;
 import org.apache.ignite.messaging.IgniteMessagingWithClientTest;
 import org.apache.ignite.spi.GridSpiLocalHostInjectionTest;
+import org.apache.ignite.startup.properties.NotStringSystemPropertyTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.test.ConfigVariationsTestSuiteBuilderTest;
 import org.apache.ignite.testframework.test.ParametersTest;
@@ -75,9 +80,9 @@ public class IgniteBasicTestSuite extends TestSuite {
     public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
         TestSuite suite = new TestSuite("Ignite Basic Test Suite");
 
+        suite.addTest(IgniteMarshallerSelfTestSuite.suite(ignoredTests));
         suite.addTest(IgniteLangSelfTestSuite.suite());
         suite.addTest(IgniteUtilSelfTestSuite.suite(ignoredTests));
-        suite.addTest(IgniteMarshallerSelfTestSuite.suite(ignoredTests));
 
         suite.addTest(IgniteKernalSelfTestSuite.suite(ignoredTests));
         suite.addTest(IgniteStartUpTestSuite.suite());
@@ -85,6 +90,8 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTest(IgniteP2PSelfTestSuite.suite(ignoredTests));
         suite.addTest(IgniteCacheP2pUnmarshallingErrorTestSuite.suite(ignoredTests));
         suite.addTest(IgniteStreamSelfTestSuite.suite());
+
+        suite.addTest(IgnitePlatformsTestSuite.suite());
 
         suite.addTest(new TestSuite(GridSelfTest.class));
         suite.addTest(new TestSuite(ClusterGroupHostsSelfTest.class));
@@ -119,8 +126,12 @@ public class IgniteBasicTestSuite extends TestSuite {
         GridTestUtils.addTestIfNeeded(suite, IgniteDaemonNodeMarshallerCacheTest.class, ignoredTests);
         suite.addTestSuite(IgniteMarshallerCacheConcurrentReadWriteTest.class);
         suite.addTestSuite(GridNodeMetricsLogSelfTest.class);
+        suite.addTestSuite(GridLocalIgniteSerializationTest.class);
 
         suite.addTestSuite(IgniteExceptionInNioWorkerSelfTest.class);
+
+        suite.addTestSuite(OdbcProcessorValidationSelfTest.class);
+        suite.addTestSuite(OdbcEscapeSequenceSelfTest.class);
 
         GridTestUtils.addTestIfNeeded(suite, DynamicProxySerializationMultiJvmSelfTest.class, ignoredTests);
 
@@ -128,6 +139,9 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(ParametersTest.class);
         suite.addTestSuite(VariationsIteratorTest.class);
         suite.addTestSuite(ConfigVariationsTestSuiteBuilderTest.class);
+        suite.addTestSuite(NotStringSystemPropertyTest.class);
+
+        suite.addTestSuite(MarshallerContextLockingSelfTest.class);
 
         return suite;
     }

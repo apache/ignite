@@ -38,6 +38,7 @@ public class TcpDiscoveryClientHeartbeatMessage extends TcpDiscoveryAbstractMess
      * Constructor.
      *
      * @param creatorNodeId Creator node.
+     * @param metrics Metrics.
      */
     public TcpDiscoveryClientHeartbeatMessage(UUID creatorNodeId, ClusterMetrics metrics) {
         super(creatorNodeId);

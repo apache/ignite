@@ -32,8 +32,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfoCollectSwapListener;
+import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSwapEntry;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -298,8 +298,8 @@ class GridDhtPartitionSupplier {
                         phase = SupplyContextPhase.ONHEAP;
 
                     if (phase == SupplyContextPhase.ONHEAP) {
-                        Iterator<GridDhtCacheEntry> entIt = sctx != null ?
-                            (Iterator<GridDhtCacheEntry>)sctx.entryIt : loc.entries().iterator();
+                        Iterator<GridCacheMapEntry> entIt = sctx != null ?
+                            (Iterator<GridCacheMapEntry>)sctx.entryIt : loc.allEntries().iterator();
 
                         while (entIt.hasNext()) {
                             if (!cctx.affinity().belongs(node, part, d.topologyVersion())) {
@@ -807,7 +807,7 @@ class GridDhtPartitionSupplier {
 
                     boolean partMissing = false;
 
-                    for (GridCacheEntryEx e : loc.entries()) {
+                    for (GridCacheEntryEx e : loc.allEntries()) {
                         if (!cctx.affinity().belongs(node, part, d.topologyVersion())) {
                             // Demander no longer needs this partition, so we send '-1' partition and move on.
                             s.missed(part);

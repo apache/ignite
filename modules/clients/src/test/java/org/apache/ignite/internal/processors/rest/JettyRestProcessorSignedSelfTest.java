@@ -78,10 +78,7 @@ public class JettyRestProcessorSignedSelfTest extends JettyRestProcessorAbstract
         assertEquals(200, ((HttpURLConnection)conn).getResponseCode());
     }
 
-    /**
-     * @return Signature.
-     * @throws Exception If failed.
-     */
+    /** {@inheritDoc} */
     @Override protected String signature() throws Exception {
         long ts = U.currentTimeMillis();
 

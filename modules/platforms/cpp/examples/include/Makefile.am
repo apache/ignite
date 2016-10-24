@@ -15,7 +15,10 @@
 ## limitations under the License.
 ##
 
-ACLOCAL_AMFLAGS = "-Im4"
+ACLOCAL_AMFLAGS =-I m4
 
-nobase_include_HEADERS = ignite/examples/address.h \
-                         ignite/examples/organization.h
+noinst_HEADERS = \
+    ignite/examples/address.h \
+    ignite/examples/organization.h \
+    ignite/examples/person.h
+

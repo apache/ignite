@@ -41,22 +41,4 @@
 #   define IGNITE_NO_THROW throw()
 #endif
 
-namespace ignite
-{
-    namespace common
-    {
-        /**
-         * Helper class to manage attached threads.
-         */
-        class AttachHelper 
-        {
-        public:                       
-            /**
-             * Callback invoked on successful thread attach ot JVM.
-             */
-            static void OnThreadAttach();
-        };   
-    }
-}
-
-#endif
+#endif //_IGNITE_COMMON_COMMON

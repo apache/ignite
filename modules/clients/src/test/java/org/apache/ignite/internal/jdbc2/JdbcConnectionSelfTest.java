@@ -108,10 +108,12 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
 
         try (Connection conn = DriverManager.getConnection(url)) {
             assertNotNull(conn);
+            assertTrue(((JdbcConnection)conn).ignite().configuration().isClientMode());
         }
 
         try (Connection conn = DriverManager.getConnection(url + '/')) {
             assertNotNull(conn);
+            assertTrue(((JdbcConnection)conn).ignite().configuration().isClientMode());
         }
     }
 

@@ -40,10 +40,11 @@ Creating NuGet package:
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>
 LINQ Provider for Apache Ignite
+
+Query distributed in-memory data in a strongly-typed manner and with IDE support!
+All Ignite SQL features are supported: distributed joins, groupings, aggregates, field queries, and more.
             
 More info: https://apacheignite-net.readme.io/
-            
-WARNING: this only works with x64 build targets.
         </description>
         <summary>
             LINQ Provider for Apache Ignite

@@ -30,4 +30,22 @@ public interface KeyCacheObject extends CacheObject {
      * @return {@code True} if internal cache key.
      */
     public boolean internal();
+
+    /**
+     * @return Partition ID for this key or -1 if it is unknown.
+     */
+    public int partition();
+
+    /**
+     * Sets partition ID for this key.
+     *
+     * @param part Partition ID.
+     */
+    public void partition(int part);
+
+    /**
+     * @param part Partition ID.
+     * @return Copy of this object with given partition set.
+     */
+    public KeyCacheObject copy(int part);
 }

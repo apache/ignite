@@ -341,7 +341,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     public void testListenActor() throws Exception {
         latch = new CountDownLatch(MSG_CNT * (GRID_CNT + 1));
 
-        grid(0).message().remoteListen(null, new Actor(grid(0).cluster()));
+        grid(0).message().remoteListen(null, new Actor(grid(0).localNode().id()));
 
         try {
             Ignite g = startGrid("anotherGrid");
@@ -376,7 +376,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     private void listen(final ClusterGroup prj, @Nullable Object topic, final boolean ret) throws Exception {
         assert prj != null;
 
-        message(prj).remoteListen(topic, new Listener(prj, ret));
+        message(prj).remoteListen(topic, new Listener(grid(0).localNode().id(), ret));
     }
 
     /**
@@ -428,23 +428,21 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
 
     /** */
     private static class Listener implements P2<UUID, Object> {
-        /** */
-        private final ClusterGroup prj;
-
+        /** Source node id. */
+        private final UUID sourceNodeId;
         /** */
         private final boolean ret;
-
         /** */
         @IgniteInstanceResource
         private Ignite ignite;
 
         /**
-         * @param prj Projection.
          * @param ret Return value.
+         * @param sourceNodeId expected source node id
          */
-        private Listener(ClusterGroup prj, boolean ret) {
-            this.prj = prj;
+        private Listener(UUID sourceNodeId, boolean ret) {
             this.ret = ret;
+            this.sourceNodeId = sourceNodeId;
         }
 
         /** {@inheritDoc} */
@@ -454,7 +452,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
 
             X.println("Received message [nodeId=" + nodeId + ", locNodeId=" + ignite.cluster().localNode().id() + ']');
 
-            assertEquals(prj.ignite().cluster().localNode().id(), nodeId);
+            assertEquals(sourceNodeId, nodeId);
             assertEquals(MSG, msg);
 
             nodes.add(ignite.configuration().getNodeId());
@@ -467,14 +465,14 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
 
     /** */
     private static class Actor extends MessagingListenActor<Object> {
-        /** */
-        private final ClusterGroup prj;
+        /** Source node id. */
+        private final UUID sourceNodeId;
 
         /**
-         * @param prj Projection.
+         * @param sourceNodeId expected source node id
          */
-        private Actor(ClusterGroup prj) {
-            this.prj = prj;
+        private Actor(UUID sourceNodeId) {
+            this.sourceNodeId = sourceNodeId;
         }
 
         /** {@inheritDoc} */
@@ -485,7 +483,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
 
             X.println("Received message [nodeId=" + nodeId + ", locNodeId=" + locNodeId + ']');
 
-            assertEquals(prj.ignite().cluster().localNode().id(), nodeId);
+            assertEquals(sourceNodeId, nodeId);
             assertEquals(MSG, msg);
 
             nodes.add(locNodeId);

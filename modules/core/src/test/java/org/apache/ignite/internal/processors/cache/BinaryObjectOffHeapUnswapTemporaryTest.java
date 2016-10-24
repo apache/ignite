@@ -36,6 +36,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -53,6 +54,9 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
     /** */
     private static final int CNT = 20;
 
+    /** Cache name. */
+    private static final String CACHE_NAME = "cache";
+
     /** */
     @SuppressWarnings("serial")
     private static final CacheEntryProcessor PROC = new CacheEntryProcessor() {
@@ -69,6 +73,7 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
         IgniteConfiguration c = super.getConfiguration(gridName);
 
         c.setMarshaller(new BinaryMarshaller());
+        c.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
         return c;
     }
@@ -82,8 +87,9 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
         CacheMemoryMode memoryMode) {
         this.atomicityMode = atomicityMode;
 
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration<Object, Object>  cfg = new CacheConfiguration<>();
 
+        cfg.setName(CACHE_NAME);
         cfg.setCacheMode(CacheMode.PARTITIONED);
         cfg.setAtomicityMode(atomicityMode);
         cfg.setMemoryMode(memoryMode);
@@ -168,10 +174,10 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
      */
     @SuppressWarnings("serial")
     private void doTest() {
-        final IgniteCache<Integer, BinaryObject> cache = jcache(0).withKeepBinary();
+        final IgniteCache<Integer, BinaryObject> cache = jcache(0, CACHE_NAME).withKeepBinary();
 
         for (int key = 0; key < CNT; key++)
-            jcache(0).put(key, new TestObject(key));
+            jcache(0, CACHE_NAME).put(key, new TestObject(key));
 
         for (int key = CNT; key < 2 * CNT; key++) {
             BinaryObjectBuilder builder = ignite(0).binary().builder("SomeType");

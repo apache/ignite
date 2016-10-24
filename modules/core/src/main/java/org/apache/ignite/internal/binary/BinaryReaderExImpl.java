@@ -34,6 +34,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -113,6 +114,9 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /** Footer end. */
     private final int footerLen;
+
+    /** Class descriptor. */
+    private BinaryClassDescriptor desc;
 
     /** Mapper. */
     private final BinaryInternalMapper mapper;
@@ -254,7 +258,9 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
                 if (forUnmarshal) {
                     // Registers class by type ID, at least locally if the cache is not ready yet.
-                    typeId = ctx.descriptorForClass(BinaryUtils.doReadClass(in, ctx, ldr, typeId0), false).typeId();
+                    desc = ctx.descriptorForClass(BinaryUtils.doReadClass(in, ctx, ldr, typeId0), false);
+
+                    typeId = desc.typeId();
                 }
                 else
                     typeId = ctx.typeId(BinaryUtils.doReadClassName(in));
@@ -300,7 +306,10 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @return Descriptor.
      */
     BinaryClassDescriptor descriptor() {
-        return ctx.descriptorForTypeId(userType, typeId, ldr, true);
+        if (desc == null)
+            desc = ctx.descriptorForTypeId(userType, typeId, ldr, true);
+
+        return desc;
     }
 
     /**
@@ -1434,6 +1443,22 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @throws BinaryObjectException If failed.
      */
     @Nullable Object deserialize() throws BinaryObjectException {
+        String newName = ctx.configuration().getGridName();
+        String oldName = IgniteUtils.setCurrentIgniteName(newName);
+
+        try {
+            return deserialize0();
+        }
+        finally {
+            IgniteUtils.restoreOldIgniteName(oldName, newName);
+        }
+    }
+
+    /**
+     * @return Deserialized object.
+     * @throws BinaryObjectException If failed.
+     */
+    @Nullable private Object deserialize0() throws BinaryObjectException {
         Object obj;
 
         byte flag = in.readByte();
@@ -1462,7 +1487,8 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case OBJ:
-                BinaryClassDescriptor desc = ctx.descriptorForTypeId(userType, typeId, ldr, true);
+                if (desc == null)
+                    desc = ctx.descriptorForTypeId(userType, typeId, ldr, true);
 
                 streamPosition(dataStart);
 
@@ -2038,6 +2064,13 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
         // No-op.
+    }
+
+    /**
+     * @return Binary context.
+     */
+    public BinaryContext context() {
+        return ctx;
     }
 
     /**
