@@ -135,6 +135,8 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
             clientReq,
             addDepInfo
         );
+        this.invokeArgs = invokeArgs;
+
         assert op == TRANSFORM : op;
     }
 
