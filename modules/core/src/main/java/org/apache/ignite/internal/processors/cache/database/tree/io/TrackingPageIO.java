@@ -22,6 +22,16 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 
 /**
+ * We use dedicated page for tracking pages updates.
+ * Also we divide such 'tracking' pages on two half, first is used for check that page was changed or not
+ * (during incremental backup), second - to accumulate changed for next backup.
+ *
+ * You cannot test change for not started backup! because it will cause of preparation for backup.
+ *
+ * Implementation. For each page there is own bit in both half. Tracking page is used for tracking N page after it.
+ * N depends on page size (how many bytes we can use for tracking).
+ *
+ *
  *                      +-----------------------------------------+-----------------------------------------+
  *                      |                left half                |               right half                |
  * +---------+----------+----+------------------------------------+----+------------------------------------+
@@ -30,10 +40,10 @@ import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandle
  * +---------+----------+----+------------------------------------+----+------------------------------------+
  *
  */
-public class PageUpdateTrackingIO extends PageIO {
+public class TrackingPageIO extends PageIO {
     /** */
-    public static final IOVersions<PageUpdateTrackingIO> VERSIONS = new IOVersions<>(
-        new PageUpdateTrackingIO(1)
+    public static final IOVersions<TrackingPageIO> VERSIONS = new IOVersions<>(
+        new TrackingPageIO(1)
     );
 
     /** Last backup offset. */
@@ -54,7 +64,7 @@ public class PageUpdateTrackingIO extends PageIO {
     /**
      * @param ver Page format version.
      */
-    protected PageUpdateTrackingIO(int ver) {
+    protected TrackingPageIO(int ver) {
         super(PageIO.T_PAGE_UPDATE_TRACKING, ver);
     }
 
@@ -92,6 +102,18 @@ public class PageUpdateTrackingIO extends PageIO {
         buf.put(idx, newVal);
 
         return newVal != byteToUpdate;
+    }
+
+    /**
+     * Should be use only for tracking page restore
+     *
+     * @param buf Buffer.
+     * @param pageId Page id.
+     */
+    public boolean restoreMark(ByteBuffer buf, long pageId) {
+        long lastBackupId = buf.getLong(LAST_BACKUP_OFFSET);
+
+        return markChanged(buf, pageId, lastBackupId, lastBackupId - 1, buf.capacity());
     }
 
     /**
@@ -156,7 +178,7 @@ public class PageUpdateTrackingIO extends PageIO {
     }
 
     /**
-     * Check that pageId was marked as changed for backup with set id.
+     * Check that pageId was marked as changed between previous backup finish and current backup start.
      *
      * @param buf Buffer.
      * @param pageId Page id.
@@ -273,17 +295,19 @@ public class PageUpdateTrackingIO extends PageIO {
         while (idx < stopIdx) {
             byte byteToTest = buf.get(idx);
 
-            int foundSetBit;
-            if ((foundSetBit = foundSetBit(byteToTest, idx == startIdx ? (idxToStartTest & 0b111) : 0)) != -1) {
-                long foundPageId = PageIdUtils.pageId(
-                    PageIdUtils.partId(start),
-                    PageIdUtils.flag(start),
-                    PageIdUtils.pageIndex(trackingPage) + ((idx - zeroIdx) << 3) + foundSetBit);
+            if (byteToTest != 0) {
+                int foundSetBit;
+                if ((foundSetBit = foundSetBit(byteToTest, idx == startIdx ? (idxToStartTest & 0b111) : 0)) != -1) {
+                    long foundPageId = PageIdUtils.pageId(
+                        PageIdUtils.partId(start),
+                        PageIdUtils.flag(start),
+                        PageIdUtils.pageIndex(trackingPage) + ((idx - zeroIdx) << 3) + foundSetBit);
 
-                assert wasChanged(buf, foundPageId, curBackupId, lastSuccessfulBackupId, pageSize);
-                assert trackingPageFor(foundPageId, pageSize) == trackingPage;
+                    assert wasChanged(buf, foundPageId, curBackupId, lastSuccessfulBackupId, pageSize);
+                    assert trackingPageFor(foundPageId, pageSize) == trackingPage;
 
-                return foundPageId;
+                    return foundPageId;
+                }
             }
 
             idx++;
