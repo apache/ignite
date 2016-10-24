@@ -75,10 +75,17 @@ public class SingleConsumerSpinCircularBuffer<T> {
      * @return
      */
     public T poll() {
-        return poll0(false);
+        try {
+            return poll0(false);
+        }
+        catch (InterruptedException e) {
+            assert false; // should never happen.
+
+            throw new Error();
+        }
     }
 
-    private T poll0(boolean take) {
+    private T poll0(boolean take) throws InterruptedException {
         if (consumer == null)
             consumer = Thread.currentThread();
 
@@ -89,10 +96,15 @@ public class SingleConsumerSpinCircularBuffer<T> {
                 parked = true;
 
                 try {
-                    for (; readPos0 == writePos; ) {
+                    for (int i = 0; readPos0 == writePos; i++) {
 //                        System.out.println("parked " + consumer.getId() + "readPos=" + readPos + ", writePos=" + writePos);
 
-                        LockSupport.park();
+                        if ((i & 31) == 0) {
+                            LockSupport.park();
+
+                            if (Thread.interrupted())
+                                throw new InterruptedException();
+                        }
                     }
                 }
                 finally {
@@ -113,11 +125,23 @@ public class SingleConsumerSpinCircularBuffer<T> {
             parked = true;
 
             try {
-                for (item0 = item.item(readPos0, 1); item0 == null; item0 = item.item(readPos0, 1)) {
-                    LockSupport.park();
+                int i = 0;
+
+                boolean interrupted = false;
+
+                for (item0 = item.item(readPos0, 1); item0 == null; item0 = item.item(readPos0, 1), i++) {
+                    if ((i & 31) == 0) {
+                        LockSupport.park();
+
+                        if ((interrupted |= Thread.interrupted()) && take)
+                            throw new InterruptedException();
+                    }
 
 //                    System.out.println("readPos=" + readPos + ", writePos=" + writePos + ", item=" + item);
                 }
+
+                if (interrupted)
+                    Thread.currentThread().interrupt();
             }
             finally {
                 parked = false;
@@ -350,12 +374,9 @@ public class SingleConsumerSpinCircularBuffer<T> {
 
                 i++;
 
-                if ((i & 3) == 0)
+                if ((i & 15) == 0)
                     LockSupport.parkNanos(1L);
             }
-
-            if (i > 100)
-                System.out.println("Spins [i=" + i + ", writePos=" + writePos + ']');
 
             item = newItem;
 
