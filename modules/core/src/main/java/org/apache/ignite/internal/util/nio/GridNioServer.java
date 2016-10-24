@@ -3415,6 +3415,9 @@ public class GridNioServer<T> {
      */
     private class SizeBasedBalancer implements IgniteRunnable {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private long lastBalance;
 
         /** */
@@ -3558,6 +3561,9 @@ public class GridNioServer<T> {
      */
     @SuppressWarnings("unchecked")
     private class RandomBalancer implements IgniteRunnable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** {@inheritDoc} */
         @Override public void run() {
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
