@@ -33,6 +33,9 @@ public class BackupFinishedMessage implements Message {
     /** */
     private long backupId;
 
+    /** */
+    private boolean success;
+
     /**
      *
      */
@@ -42,8 +45,9 @@ public class BackupFinishedMessage implements Message {
     /**
      * @param backupId Backup ID.
      */
-    public BackupFinishedMessage(long backupId) {
+    public BackupFinishedMessage(long backupId, boolean success) {
         this.backupId = backupId;
+        this.success = success;
     }
 
     /**
@@ -51,6 +55,10 @@ public class BackupFinishedMessage implements Message {
      */
     public long backupId() {
         return backupId;
+    }
+
+    public boolean success() {
+        return success;
     }
 
     /** {@inheritDoc} */
@@ -70,7 +78,11 @@ public class BackupFinishedMessage implements Message {
                     return false;
 
                 writer.incrementState();
+            case 1:
+                if (!writer.writeBoolean("success", success))
+                    return false;
 
+                writer.incrementState();
         }
 
         return true;
@@ -92,6 +104,13 @@ public class BackupFinishedMessage implements Message {
 
                 reader.incrementState();
 
+            case 1:
+                success = reader.readBoolean("success");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(BackupFinishedMessage.class);
@@ -104,7 +123,7 @@ public class BackupFinishedMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 1;
+        return 2;
     }
 
     /** {@inheritDoc} */
