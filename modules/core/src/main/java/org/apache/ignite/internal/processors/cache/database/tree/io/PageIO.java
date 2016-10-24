@@ -331,7 +331,7 @@ public abstract class PageIO {
                 return (Q)PagePartitionMetaIO.VERSIONS.forVersion(ver);
 
             case T_PAGE_UPDATE_TRACKING:
-                return (Q)PageUpdateTrackingIO.VERSIONS.forVersion(ver);
+                return (Q)TrackingPageIO.VERSIONS.forVersion(ver);
 
             default:
                 return (Q)getBPlusIO(type, ver);

@@ -130,7 +130,10 @@ public abstract class WALRecord {
         PARTITION_META_PAGE_UPDATE_COUNTERS,
 
         /** */
-        MEMORY_RECOVERY
+        MEMORY_RECOVERY,
+
+        /** */
+        TRACKING_PAGE_DELTA
         ;
 
         /** */

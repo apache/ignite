@@ -12,11 +12,11 @@ import junit.framework.TestCase;
 /**
  *
  */
-public class PageUpdateTrackingIOTest extends TestCase {
+public class TrackingPageIOTest extends TestCase {
     /** Page size. */
     public static final int PAGE_SIZE = 2048;
 
-    private final PageUpdateTrackingIO io = PageUpdateTrackingIO.VERSIONS.latest();
+    private final TrackingPageIO io = TrackingPageIO.VERSIONS.latest();
 
     /**
      *
