@@ -1069,7 +1069,7 @@ public abstract class PagesList extends DataStructure {
                     nextId = io.getNextId(buf);
                 }
                 finally {
-                    if (next != null)
+                    if (nextBuf != null)
                         writeUnlock(next, nextBuf, write);
 
                     writeUnlock(page, buf, write);
