@@ -119,6 +119,11 @@ namespace ignite
                     val = reader.ReadInt64();
                 }
 
+                virtual void SetNull()
+                {
+                    // No-op.
+                }
+
                 /**
                 * Get value.
                 *
