@@ -71,14 +71,13 @@ public class PlatformCallbackGateway {
     /**
      * @param objPtr Object pointer.
      * @param memPtr Memory pointer.
-     * @param cb Callback.
      * @return Result.
      */
-    public int cacheStoreInvoke(long objPtr, long memPtr, Object cb) {
+    public int cacheStoreInvoke(long objPtr, long memPtr) {
         enter();
 
         try {
-            return PlatformCallbackUtils.cacheStoreInvoke(envPtr, objPtr, memPtr, cb);
+            return PlatformCallbackUtils.cacheStoreInvoke(envPtr, objPtr, memPtr);
         }
         finally {
             leave();

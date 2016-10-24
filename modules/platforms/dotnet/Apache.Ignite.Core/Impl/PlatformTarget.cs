@@ -40,6 +40,9 @@ namespace Apache.Ignite.Core.Impl
     internal abstract class PlatformTarget
     {
         /** */
+        protected const int False = 0;
+
+        /** */
         protected const int True = 1;
 
         /** */
@@ -259,6 +262,16 @@ namespace Apache.Ignite.Core.Impl
         /// Perform out operation.
         /// </summary>
         /// <param name="type">Operation type.</param>
+        /// <returns>Long result.</returns>
+        protected long DoOutOp(int type)
+        {
+            return UU.TargetOutLong(_target, type);
+        }
+
+        /// <summary>
+        /// Perform out operation.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
         /// <param name="action">Action to be performed on the stream.</param>
         /// <returns></returns>
         protected long DoOutOp(int type, Action<IBinaryStream> action)
@@ -309,6 +322,16 @@ namespace Apache.Ignite.Core.Impl
 
                 return UU.TargetInStreamOutObject(_target, type, stream.SynchronizeOutput());
             }
+        }
+
+        /// <summary>
+        /// Perform out operation.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
+        /// <returns>Resulting object.</returns>
+        protected IUnmanagedTarget DoOutOpObject(int type)
+        {
+            return UU.TargetOutObject(_target, type);
         }
 
         /// <summary>
@@ -583,6 +606,66 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="type">Operation type.</param>
         /// <param name="outAction">Out action.</param>
+        /// <param name="inAction">In action.</param>
+        /// <param name="arg">Argument.</param>
+        /// <returns>Result.</returns>
+        protected unsafe TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction,
+            Func<IBinaryStream, IUnmanagedTarget, TR> inAction, void* arg)
+        {
+            PlatformMemoryStream outStream = null;
+            long outPtr = 0;
+
+            PlatformMemoryStream inStream = null;
+            long inPtr = 0;
+
+            try
+            {
+                if (outAction != null)
+                {
+                    outStream = IgniteManager.Memory.Allocate().GetStream();
+                    var writer = _marsh.StartMarshal(outStream);
+                    outAction(writer);
+                    FinishMarshal(writer);
+                    outPtr = outStream.SynchronizeOutput();
+                }
+
+                if (inAction != null)
+                {
+                    inStream = IgniteManager.Memory.Allocate().GetStream();
+                    inPtr = inStream.MemoryPointer;
+                }
+
+                var res = UU.TargetInObjectStreamOutObjectStream(_target, type, arg, outPtr, inPtr);
+
+                if (inAction == null)
+                    return default(TR);
+
+                inStream.SynchronizeInput();
+
+                return inAction(inStream, res);
+
+            }
+            finally
+            {
+                try
+                {
+                    if (inStream != null)
+                        inStream.Dispose();
+
+                }
+                finally
+                {
+                    if (outStream != null)
+                        outStream.Dispose();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Perform out-in operation.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
+        /// <param name="outAction">Out action.</param>
         /// <returns>Result.</returns>
         protected TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction)
         {
@@ -659,6 +742,17 @@ namespace Apache.Ignite.Core.Impl
                     return Unmarshal<TR>(inStream);
                 }
             }
+        }
+
+        /// <summary>
+        /// Perform simple out-in operation accepting two arguments.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
+        /// <param name="val">Value.</param>
+        /// <returns>Result.</returns>
+        protected long DoOutInOpLong(int type, long val)
+        {
+            return UU.TargetInLongOutLong(_target, type, val);
         }
 
         #endregion

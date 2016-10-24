@@ -57,6 +57,15 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** */
         private const int OpUnicast = 5;
 
+        /** */
+        private const int OpWithNoFailover = 6;
+
+        /** */
+        private const int OpWithTimeout = 7;
+
+        /** */
+        private const int OpExecNative = 8;
+
         /** Underlying projection. */
         private readonly ClusterGroupImpl _prj;
 
@@ -97,7 +106,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         public void WithNoFailover()
         {
-            UU.ComputeWithNoFailover(Target);
+            DoOutOp(OpWithNoFailover);
         }
 
         /// <summary>
@@ -107,7 +116,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="timeout">Computation timeout in milliseconds.</param>
         public void WithTimeout(long timeout)
         {
-            UU.ComputeWithTimeout(Target, timeout);
+            DoOutInOpLong(OpWithTimeout, timeout);
         }
 
         /// <summary>
@@ -193,7 +202,11 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             long ptr = Marshaller.Ignite.HandleRegistry.Allocate(holder);
 
-            var futTarget = UU.ComputeExecuteNative(Target, ptr, _prj.TopologyVersion);
+            var futTarget = DoOutOpObject(OpExecNative, w =>
+            {
+                w.WriteLong(ptr);
+                w.WriteLong(_prj.TopologyVersion);
+            });
 
             var future = holder.Future;
 

@@ -51,6 +51,21 @@ namespace Apache.Ignite.Core.Impl.Services
         private const int OpDescriptors = 5;
 
         /** */
+        private const int OpWithAsync = 6;
+
+        /** */
+        private const int OpWithServerKeepBinary = 7;
+
+        /** */
+        private const int OpServiceProxy = 8;
+
+        /** */
+        private const int OpCancel = 9;
+
+        /** */
+        private const int OpCancelAll = 10;
+
+        /** */
         private readonly IClusterGroup _clusterGroup;
 
         /** Invoker binary flag. */
@@ -87,7 +102,8 @@ namespace Apache.Ignite.Core.Impl.Services
         /// Initializes a new async instance.
         /// </summary>
         /// <param name="services">The services.</param>
-        private Services(Services services) : base(UU.ServicesWithAsync(services.Target), services.Marshaller)
+        private Services(Services services) : base(UU.TargetOutObject(services.Target, OpWithAsync), 
+            services.Marshaller)
         {
             _clusterGroup = services.ClusterGroup;
             _keepBinary = services._keepBinary;
@@ -109,7 +125,7 @@ namespace Apache.Ignite.Core.Impl.Services
             if (_srvKeepBinary)
                 return this;
 
-            return new Services(UU.ServicesWithServerKeepBinary(Target), Marshaller, _clusterGroup, _keepBinary, true);
+            return new Services(DoOutOpObject(OpWithServerKeepBinary), Marshaller, _clusterGroup, _keepBinary, true);
         }
 
         /** <inheritDoc /> */
@@ -243,7 +259,7 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
-            UU.ServicesCancel(Target, name);
+            DoOutOp(OpCancel, w => w.WriteString(name));
         }
 
         /** <inheritDoc /> */
@@ -257,7 +273,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public void CancelAll()
         {
-            UU.ServicesCancelAll(Target);
+            DoOutOp(OpCancelAll);
         }
 
         /** <inheritDoc /> */
@@ -346,7 +362,12 @@ namespace Apache.Ignite.Core.Impl.Services
             if (locInst != null)
                 return locInst;
 
-            var javaProxy = UU.ServicesGetServiceProxy(Target, name, sticky);
+            var javaProxy = DoOutOpObject(OpServiceProxy, w =>
+            {
+                w.WriteString(name);
+                w.WriteBoolean(sticky);
+            });
+
             var platform = GetServiceDescriptors().Cast<ServiceDescriptor>().Single(x => x.Name == name).Platform;
 
             return new ServiceProxy<T>((method, args) =>

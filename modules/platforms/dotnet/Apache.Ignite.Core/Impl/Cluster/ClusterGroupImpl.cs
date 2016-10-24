@@ -99,6 +99,21 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** */
         private const int OpSchema = 15;
 
+        /** */
+        private const int OpForRemotes = 17;
+        
+        /** */
+        private const int OpForRandom = 19;
+        
+        /** */
+        private const int OpForOldest = 20;
+        
+        /** */
+        private const int OpForYoungest = 21;
+        
+        /** */
+        public const int OpResetMetrics = 22;
+        
         /** Initial Ignite instance. */
         private readonly Ignite _ignite;
         
@@ -208,7 +223,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             Debug.Assert(items != null);
 
-            IUnmanagedTarget prj = DoProjetionOutOp(OpForNodeIds, writer =>
+            IUnmanagedTarget prj = DoOutOpObject(OpForNodeIds, writer =>
             {
                 WriteEnumerable(writer, items, func);
             });
@@ -229,11 +244,12 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             IgniteArgumentCheck.NotNull(name, "name");
 
-            IUnmanagedTarget prj = DoProjetionOutOp(OpForAttribute, writer =>
+            Action<BinaryWriter> action = writer =>
             {
                 writer.WriteString(name);
                 writer.WriteString(val);
-            });
+            };
+            IUnmanagedTarget prj = DoOutOpObject(OpForAttribute, action);
 
             return GetClusterGroup(prj);
         }
@@ -248,7 +264,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// </returns>
         private IClusterGroup ForCacheNodes(string name, int op)
         {
-            IUnmanagedTarget prj = DoProjetionOutOp(op, writer =>
+            IUnmanagedTarget prj = DoOutOpObject(op, writer =>
             {
                 writer.WriteString(name);
             });
@@ -277,7 +293,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IClusterGroup ForRemotes()
         {
-            return GetClusterGroup(UU.ProjectionForRemotes(Target));
+            return GetClusterGroup(DoOutOpObject(OpForRemotes));
         }
 
         /** <inheritDoc /> */
@@ -291,7 +307,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             IgniteArgumentCheck.NotNull(node, "node");
 
-            IUnmanagedTarget prj = DoProjetionOutOp(OpForHost, writer =>
+            IUnmanagedTarget prj = DoOutOpObject(OpForHost, writer =>
             {
                 writer.WriteGuid(node.Id);
             });    
@@ -302,19 +318,19 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IClusterGroup ForRandom()
         {
-            return GetClusterGroup(UU.ProjectionForRandom(Target));
+            return GetClusterGroup(DoOutOpObject(OpForRandom));
         }
 
         /** <inheritDoc /> */
         public IClusterGroup ForOldest()
         {
-            return GetClusterGroup(UU.ProjectionForOldest(Target));
+            return GetClusterGroup(DoOutOpObject(OpForOldest));
         }
 
         /** <inheritDoc /> */
         public IClusterGroup ForYoungest()
         {
-            return GetClusterGroup(UU.ProjectionForYoungest(Target));
+            return GetClusterGroup(DoOutOpObject(OpForYoungest));
         }
 
         /** <inheritDoc /> */
@@ -531,27 +547,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
 
             return _nodes;
         }
-        
-        /// <summary>
-        /// Perform synchronous out operation returning value.
-        /// </summary>
-        /// <param name="type">Operation type.</param>
-        /// <param name="action">Action.</param>
-        /// <returns>Native projection.</returns>
-        private IUnmanagedTarget DoProjetionOutOp(int type, Action<BinaryWriter> action)
-        {
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
-            {
-                var writer = Marshaller.StartMarshal(stream);
 
-                action(writer);
-
-                FinishMarshal(writer);
-
-                return UU.ProjectionOutOpRet(Target, type, stream.SynchronizeOutput());
-            }
-        }
-        
         /** <inheritDoc /> */
         public IBinaryType GetBinaryType(int typeId)
         {
