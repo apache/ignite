@@ -59,7 +59,16 @@ public class PlatformMessaging extends PlatformAbstractTarget {
     public static final int OP_WITH_ASYNC = 8;
 
     /** */
+    public static final int OP_REMOTE_LISTEN_ASYNC = 9;
+
+    /** */
+    public static final int OP_STOP_REMOTE_LISTEN_ASYNC = 10;
+
+    /** */
     private final IgniteMessaging messaging;
+
+    /** */
+    private final IgniteMessaging messagingAsync;
 
     /**
      * Ctor.
@@ -73,6 +82,7 @@ public class PlatformMessaging extends PlatformAbstractTarget {
         assert messaging != null;
 
         this.messaging = messaging;
+        messagingAsync = messaging.withAsync();
     }
 
     /** {@inheritDoc} */
@@ -120,6 +130,18 @@ public class PlatformMessaging extends PlatformAbstractTarget {
                 return TRUE;
             }
 
+            case OP_REMOTE_LISTEN_ASYNC: {
+                startRemoteListen(reader, messagingAsync);
+
+                return readAndListenFuture(reader);
+            }
+
+            case OP_STOP_REMOTE_LISTEN_ASYNC: {
+                messagingAsync.stopRemoteListen(reader.readUuid());
+
+                return readAndListenFuture(reader);
+            }
+
             default:
                 return super.processInStreamOutLong(type, reader);
         }
@@ -131,17 +153,7 @@ public class PlatformMessaging extends PlatformAbstractTarget {
         throws IgniteCheckedException {
         switch (type) {
             case OP_REMOTE_LISTEN:{
-                Object nativeFilter = reader.readObjectDetached();
-
-                long ptr = reader.readLong();  // interop pointer
-
-                Object topic = reader.readObjectDetached();
-
-                PlatformMessageFilter filter = platformCtx.createRemoteMessageFilter(nativeFilter, ptr);
-
-                UUID listenId = messaging.remoteListen(topic, filter);
-
-                writer.writeUuid(listenId);
+                writer.writeUuid(startRemoteListen(reader, messaging));
 
                 break;
             }
@@ -151,9 +163,26 @@ public class PlatformMessaging extends PlatformAbstractTarget {
         }
     }
 
+    /**
+     * Starts the remote listener.
+     * @param reader Reader.
+     * @return Listen id.
+     */
+    private UUID startRemoteListen(BinaryRawReaderEx reader, IgniteMessaging messaging) {
+        Object nativeFilter = reader.readObjectDetached();
+
+        long ptr = reader.readLong();  // interop pointer
+
+        Object topic = reader.readObjectDetached();
+
+        PlatformMessageFilter filter = platformCtx.createRemoteMessageFilter(nativeFilter, ptr);
+
+        return messaging.remoteListen(topic, filter);
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
-        return ((IgniteFutureImpl)messaging.future()).internalFuture();
+        return ((IgniteFutureImpl)messagingAsync.future()).internalFuture();
     }
 
     /** {@inheritDoc} */

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
@@ -26,6 +27,7 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
+import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -244,23 +246,12 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
 
     /** {@inheritDoc} */
     @Override public void listenFuture(final long futId, int typ) throws Exception {
-        listenFutureAndGet(futId, typ);
+        PlatformFutureUtils.listen(platformCtx, currentFuture(), futId, typ, null, this);
     }
 
     /** {@inheritDoc} */
     @Override public void listenFutureForOperation(final long futId, int typ, int opId) throws Exception {
-        listenFutureForOperationAndGet(futId, typ, opId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformListenable listenFutureAndGet(final long futId, int typ) throws Exception {
-        return PlatformFutureUtils.listen(platformCtx, currentFuture(), futId, typ, null, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformListenable listenFutureForOperationAndGet(final long futId, int typ, int opId)
-            throws Exception {
-        return PlatformFutureUtils.listen(platformCtx, currentFuture(), futId, typ, futureWriter(opId), this);
+        PlatformFutureUtils.listen(platformCtx, currentFuture(), futId, typ, futureWriter(opId), this);
     }
 
     /**
@@ -412,5 +403,75 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      */
     protected <T> T throwUnsupported(int type) throws IgniteCheckedException {
         throw new IgniteCheckedException("Unsupported operation type: " + type);
+    }
+
+    /**
+     * Reads future information and listens.
+     *
+     * @param reader Reader.
+     * @param fut Future.
+     * @param writer Writer.
+     * @throws IgniteCheckedException In case of error.
+     */
+    protected PlatformListenable readAndListenFuture(BinaryRawReader reader, IgniteInternalFuture fut,
+                                                     PlatformFutureUtils.Writer writer)
+            throws IgniteCheckedException {
+        long futId = reader.readLong();
+        int futTyp = reader.readInt();
+
+        return PlatformFutureUtils.listen(platformCtx, fut, futId, futTyp, writer, this);
+    }
+
+    /**
+     * Reads future information and listens.
+     *
+     * @param reader Reader.
+     * @param fut Future.
+     * @param writer Writer.
+     * @throws IgniteCheckedException In case of error.
+     */
+    protected PlatformListenable readAndListenFuture(BinaryRawReader reader, IgniteFuture fut,
+                                                     PlatformFutureUtils.Writer writer)
+            throws IgniteCheckedException {
+        long futId = reader.readLong();
+        int futTyp = reader.readInt();
+
+        return PlatformFutureUtils.listen(platformCtx, fut, futId, futTyp, writer, this);
+    }
+
+    /**
+     * Reads future information and listens.
+     *
+     * @param reader Reader.
+     * @param fut Future.
+     * @throws IgniteCheckedException In case of error.
+     */
+    protected PlatformListenable readAndListenFuture(BinaryRawReader reader, IgniteInternalFuture fut)
+        throws IgniteCheckedException {
+        return readAndListenFuture(reader, fut, null);
+    }
+
+    /**
+     * Reads future information and listens.
+     *
+     * @param reader Reader.
+     * @param fut Future.
+     * @throws IgniteCheckedException In case of error.
+     */
+    protected PlatformListenable readAndListenFuture(BinaryRawReader reader, IgniteFuture fut)
+        throws IgniteCheckedException {
+        return readAndListenFuture(reader, fut, null);
+    }
+
+    /**
+     * Reads future information and listens.
+     *
+     * @param reader Reader.
+     * @throws IgniteCheckedException In case of error.
+     */
+    protected long readAndListenFuture(BinaryRawReader reader) throws IgniteCheckedException {
+        readAndListenFuture(reader, currentFuture(), null);
+
+        return TRUE;
     }
 }

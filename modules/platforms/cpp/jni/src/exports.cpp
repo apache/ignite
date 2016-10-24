@@ -190,14 +190,6 @@ extern "C" {
         ctx->TargetListenFutureForOperation(static_cast<jobject>(obj), futId, typ, opId);
     }
 
-    void* IGNITE_CALL IgniteTargetListenFutureAndGet(gcj::JniContext* ctx, void* obj, long long futId, int typ) {
-        return ctx->TargetListenFutureAndGet(static_cast<jobject>(obj), futId, typ);
-    }
-
-    void* IGNITE_CALL IgniteTargetListenFutureForOperationAndGet(gcj::JniContext* ctx, void* obj, long long futId, int typ, int opId) {
-        return ctx->TargetListenFutureForOperationAndGet(static_cast<jobject>(obj), futId, typ, opId);
-    }
-
     void* IGNITE_CALL IgniteAcquire(gcj::JniContext* ctx, void* obj) {
         return ctx->Acquire(static_cast<jobject>(obj));
     }
