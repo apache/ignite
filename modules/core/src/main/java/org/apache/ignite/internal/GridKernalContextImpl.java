@@ -320,6 +320,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
+    protected ExecutorService idxExecSvc;
+
+    /** */
+    @GridToStringExclude
     protected IgniteStripedThreadPoolExecutor callbackExecSvc;
 
     /** */
@@ -382,6 +386,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param igfsExecSvc IGFS executor service.
      * @param restExecSvc REST executor service.
      * @param affExecSvc Affinity executor service.
+     * @param idxExecSvc Indexing executor service.
      * @param plugins Plugin providers.
      * @throws IgniteCheckedException In case of error.
      */
@@ -400,6 +405,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ExecutorService igfsExecSvc,
         ExecutorService restExecSvc,
         ExecutorService affExecSvc,
+        @Nullable ExecutorService idxExecSvc,
         IgniteStripedThreadPoolExecutor callbackExecSvc,
         List<PluginProvider> plugins) throws IgniteCheckedException {
         assert grid != null;
@@ -418,6 +424,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.igfsExecSvc = igfsExecSvc;
         this.restExecSvc = restExecSvc;
         this.affExecSvc = affExecSvc;
+        this.idxExecSvc = idxExecSvc;
         this.callbackExecSvc = callbackExecSvc;
 
         String workDir = U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome());
@@ -963,6 +970,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public ExecutorService getAffinityExecutorService() {
         return affExecSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override @Nullable public ExecutorService getIndexingExecutorService() {
+        return idxExecSvc;
     }
 
     /** {@inheritDoc} */

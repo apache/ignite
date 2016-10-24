@@ -70,6 +70,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -546,6 +547,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Affinity executor service.
      */
     public ExecutorService getAffinityExecutorService();
+
+    /**
+     * Get indexing executor service.
+     *
+     * @return Indexing executor service.
+     */
+    @Nullable public ExecutorService getIndexingExecutorService();
 
     /**
      * Gets exception registry.

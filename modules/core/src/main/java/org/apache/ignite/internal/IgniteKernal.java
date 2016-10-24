@@ -668,6 +668,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param igfsExecSvc IGFS executor service.
      * @param restExecSvc Reset executor service.
      * @param affExecSvc Affinity executor service.
+     * @param idxExecSvc Indexing executor service.
      * @param errHnd Error handler to use for notification about startup problems.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
@@ -682,6 +683,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ExecutorService igfsExecSvc,
         ExecutorService restExecSvc,
         ExecutorService affExecSvc,
+        @Nullable ExecutorService idxExecSvc,
         IgniteStripedThreadPoolExecutor callbackExecSvc,
         GridAbsClosure errHnd)
         throws IgniteCheckedException
@@ -788,6 +790,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 igfsExecSvc,
                 restExecSvc,
                 affExecSvc,
+                idxExecSvc,
                 callbackExecSvc,
                 plugins);
 

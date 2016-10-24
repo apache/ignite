@@ -1480,6 +1480,9 @@ public class IgnitionEx {
         /** Affinity executor service. */
         private ThreadPoolExecutor affExecSvc;
 
+        /** Indexing pool. */
+        private ThreadPoolExecutor idxExecSvc;
+
         /** Continuous query executor service. */
         private IgniteStripedThreadPoolExecutor callbackExecSvc;
 
@@ -1747,6 +1750,19 @@ public class IgnitionEx {
 
             affExecSvc.allowCoreThreadTimeOut(true);
 
+            if (IgniteComponentType.INDEXING.inClassPath()) {
+                int cpus = Runtime.getRuntime().availableProcessors();
+
+                idxExecSvc = new IgniteThreadPoolExecutor(
+                    "idx",
+                    cfg.getGridName(),
+                    cpus,
+                    cpus * 2,
+                    3000L,
+                    new LinkedBlockingQueue<Runnable>(1000)
+                );
+            }
+
             // Register Ignite MBean for current grid instance.
             registerFactoryMbean(myCfg.getMBeanServer());
 
@@ -1759,7 +1775,7 @@ public class IgnitionEx {
                 grid = grid0;
 
                 grid0.start(myCfg, utilityCacheExecSvc, marshCacheExecSvc, execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc,
-                    igfsExecSvc, restExecSvc, affExecSvc, callbackExecSvc,
+                    igfsExecSvc, restExecSvc, affExecSvc, idxExecSvc, callbackExecSvc,
                     new CA() {
                         @Override public void apply() {
                             startLatch.countDown();
@@ -2397,6 +2413,10 @@ public class IgnitionEx {
             U.shutdownNow(getClass(), affExecSvc, log);
 
             affExecSvc = null;
+
+            U.shutdownNow(getClass(), idxExecSvc, log);
+
+            idxExecSvc = null;
 
             U.shutdownNow(getClass(), callbackExecSvc, log);
 

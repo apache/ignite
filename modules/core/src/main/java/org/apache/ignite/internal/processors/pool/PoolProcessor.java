@@ -108,6 +108,11 @@ public class PoolProcessor extends GridProcessorAdapter {
             case GridIoPolicy.AFFINITY_POOL:
                 return ctx.getAffinityExecutorService();
 
+            case GridIoPolicy.IDX_POOL:
+                assert ctx.getIndexingExecutorService() != null : "Indexing pool is not configured.";
+
+                return ctx.getIndexingExecutorService();
+
             case GridIoPolicy.UTILITY_CACHE_POOL:
                 assert ctx.utilityCachePool() != null : "Utility cache pool is not configured.";
 
