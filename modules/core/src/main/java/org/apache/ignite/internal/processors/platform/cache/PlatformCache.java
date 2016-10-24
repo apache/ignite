@@ -382,8 +382,8 @@ public class PlatformCache extends PlatformAbstractTarget {
 
         rawCache = cache;
         cacheAsync = cache.withAsync();
-        this.cache = (IgniteCacheProxy)cache;
 
+        this.cache = (IgniteCacheProxy)cache.withKeepBinary();
         this.keepBinary = keepBinary;
         this.exts = exts;
     }
