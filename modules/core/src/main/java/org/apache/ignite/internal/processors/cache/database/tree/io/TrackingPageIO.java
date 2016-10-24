@@ -123,7 +123,8 @@ public class TrackingPageIO extends PageIO {
      * @param pageSize Page size.
      */
     private void validateBackupId(ByteBuffer buf, long nextBackupId, long lastSuccessfulBackupId, int pageSize) {
-        assert nextBackupId != lastSuccessfulBackupId;
+        assert nextBackupId != lastSuccessfulBackupId : "nextBackupId = " + nextBackupId +
+            ", lastSuccessfulBackupId = " + lastSuccessfulBackupId;
 
         long last = buf.getLong(LAST_BACKUP_OFFSET);
 

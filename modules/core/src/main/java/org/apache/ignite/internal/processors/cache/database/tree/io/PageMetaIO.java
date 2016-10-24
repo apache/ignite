@@ -68,6 +68,9 @@ public class PageMetaIO extends PageIO {
 
         setTreeRoot(buf, 0);
         setReuseListRoot(buf, 0);
+        setLastSuccessfulFullBackupId(buf, -1);
+        setLastSuccessfulBackupId(buf, -1);
+        setNextBackupId(buf, 0);
     }
 
     /**
