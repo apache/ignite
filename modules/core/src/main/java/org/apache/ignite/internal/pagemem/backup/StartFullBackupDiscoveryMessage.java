@@ -19,6 +19,8 @@
 package org.apache.ignite.internal.pagemem.backup;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.lang.IgniteUuid;
@@ -48,7 +50,7 @@ public class StartFullBackupDiscoveryMessage implements DiscoveryCustomMessage {
 
     private boolean incremental;
 
-    private Long lastFullBackupId;
+    private Map<Integer, Long> lastFullBackupIdForCache = new HashMap<>();
 
     /**
      * @param cacheNames Cache names.
@@ -116,17 +118,17 @@ public class StartFullBackupDiscoveryMessage implements DiscoveryCustomMessage {
         return incremental;
     }
 
-    public Long lastFullBackupId() {
-        return lastFullBackupId;
+    public Long lastFullBackupId(int cacheId) {
+        return lastFullBackupIdForCache.get(cacheId);
     }
 
-    public void lastFullBackupId(long id) {
-        lastFullBackupId = id;
+    public void lastFullBackupId(int cacheId, long id) {
+        lastFullBackupIdForCache.put(cacheId, id);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return new StartFullBackupAckDiscoveryMessage(backupId, lastFullBackupId, cacheNames, err, initiatorId);
+        return new StartFullBackupAckDiscoveryMessage(backupId, incremental, lastFullBackupIdForCache, cacheNames, err, initiatorId);
     }
 
     /** {@inheritDoc} */

@@ -787,7 +787,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                     assert node != null;
 
-                    cctx.database().startLocalBackup(backupMsg, node).get();
+                    IgniteInternalFuture fut = cctx.database().startLocalBackup(backupMsg, node);
+
+                    if (fut != null)
+                        fut.get();
                 }
             }
         }

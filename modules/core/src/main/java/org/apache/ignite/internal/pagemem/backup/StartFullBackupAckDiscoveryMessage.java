@@ -19,6 +19,7 @@
 package org.apache.ignite.internal.pagemem.backup;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.lang.IgniteUuid;
@@ -46,18 +47,22 @@ public class StartFullBackupAckDiscoveryMessage implements DiscoveryCustomMessag
     /** */
     private UUID initiatorNodeId;
 
-    @Nullable private Long lastFullBackupId;
+    private boolean incremental;
+
+    @Nullable private Map<Integer, Long> lastFullBackupIdForCache;
 
     /**
      * @param backupId Backup ID.
      * @param err Error.
      * @param cacheNames Cache names.
      */
-    public StartFullBackupAckDiscoveryMessage(long backupId, @Nullable Long lastFullBackupId,
+    public StartFullBackupAckDiscoveryMessage(long backupId, boolean incremental,
+        Map<Integer, Long> lastFullBackupIdForCache,
         Collection<String> cacheNames, Exception err,
         UUID initiatorNodeId) {
         this.backupId = backupId;
-        this.lastFullBackupId = lastFullBackupId;
+        this.incremental = incremental;
+        this.lastFullBackupIdForCache = lastFullBackupIdForCache;
         this.err = err;
         this.cacheNames = cacheNames;
         this.initiatorNodeId = initiatorNodeId;
@@ -104,11 +109,11 @@ public class StartFullBackupAckDiscoveryMessage implements DiscoveryCustomMessag
     }
 
     public boolean incremental() {
-        return lastFullBackupId != null;
+        return incremental;
     }
 
-    @Nullable public Long lastFullBackupId() {
-        return lastFullBackupId;
+    @Nullable public Long lastFullBackupId(int cacheId) {
+        return lastFullBackupIdForCache.get(cacheId);
     }
 
     /** {@inheritDoc} */
