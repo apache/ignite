@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.util;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -84,7 +82,10 @@ public class StripedExecutor {
         StringBuilder sb = new StringBuilder("Stats ");
 
         for (int i = 0; i < stripes.length; i++) {
-            sb.append(i).append("=").append(stripes[i].cnt).append("; ");
+            sb.append(i)
+                .append(" [cnt=").append(stripes[i].cnt)
+                .append(", qSize=").append(stripes[i].queue.size())
+                .append("]; ");
 
             stripes[i].cnt = 0;
         }
