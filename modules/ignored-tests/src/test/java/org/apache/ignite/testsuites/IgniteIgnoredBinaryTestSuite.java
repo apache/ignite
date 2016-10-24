@@ -18,19 +18,25 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.testframework.IgniteTestSuite;
 
 /**
- * Cache query suite with binary marshaller.
+ * Special test suite with ignored tests for Binary mode.
  */
-public class IgniteBinarySimpleNameMapperCacheQueryTestSuite extends TestSuite {
+public class IgniteIgnoredBinaryTestSuite extends TestSuite {
     /**
-     * @return Suite.
-     * @throws Exception In case of error.
+     * @return IgniteCache test suite.
+     * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER, "true");
+        IgniteTestSuite.ignoreDefault(true);
 
-        return IgniteBinaryCacheQueryTestSuite.suite();
+        IgniteTestSuite suite = new IgniteTestSuite(null, "Ignite Ignored Binary Test Suite");
+
+        /* --- QUERY --- */
+        suite.addTest(IgniteBinaryCacheQueryTestSuite.suite());
+        suite.addTest(IgniteBinaryCacheQueryTestSuite2.suite());
+
+        return suite;
     }
 }
