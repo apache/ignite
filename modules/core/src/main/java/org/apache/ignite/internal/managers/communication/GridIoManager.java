@@ -277,11 +277,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             striped = new StripedExecutor(Runtime.getRuntime().availableProcessors());
             responseExec = new StripedExecutor(1);
 
+            // TODO
             Thread t = new Thread(new Runnable() {
                 @Override public void run() {
                     for (; ; ) {
                         try {
-                            Thread.sleep(5000);
+                            Thread.sleep(ctx.config().getMetricsLogFrequency());
                         }
                         catch (InterruptedException e) {
                             e.printStackTrace();
