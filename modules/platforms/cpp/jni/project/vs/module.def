@@ -50,7 +50,6 @@ IgniteProcessorAtomicReference @128
 IgniteProcessorCreateNearCache @131
 IgniteProcessorGetOrCreateNearCache @132
 IgniteProcessorGetCacheNames @133
-IgniteProjectionForServers @134
 IgniteSetConsoleHandler @135
 IgniteRemoveConsoleHandler @136
 IgniteProcessorLoggerIsLevelEnabled @137

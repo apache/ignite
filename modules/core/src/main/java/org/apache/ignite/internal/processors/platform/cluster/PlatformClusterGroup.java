@@ -29,6 +29,7 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -101,6 +102,9 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
     /** */
     private static final int OP_RESET_METRICS = 22;
+
+    /** */
+    private static final int OP_FOR_SERVERS = 23;
 
     /** Projection. */
     private final ClusterGroupEx prj;
@@ -316,6 +320,9 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
             case OP_FOR_YOUNGEST:
                 return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forYoungest());
+
+            case OP_FOR_SERVERS:
+                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forServers());
         }
 
         return super.processOutObject(type);
@@ -334,13 +341,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
         }
 
         return super.processOutLong(type);
-    }
-
-    /**
-     * @return New projection.
-     */
-    public PlatformClusterGroup forServers() {
-        return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forServers());
     }
 
     /**
@@ -367,7 +367,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
      * @return Collection of grid nodes which represented by specified topology version,
      * if it is present in history storage, {@code null} otherwise.
      * @throws UnsupportedOperationException If underlying SPI implementation does not support
-     *      topology history. Currently only {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}
+     *      topology history. Currently only {@link TcpDiscoverySpi}
      *      supports topology history.
      */
     private Collection<ClusterNode> topology(long topVer) {

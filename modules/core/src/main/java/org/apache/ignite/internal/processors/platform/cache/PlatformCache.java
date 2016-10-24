@@ -281,6 +281,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param cache Underlying cache.
      * @param keepBinary Keep binary flag.
      */
+    @SuppressWarnings("ZeroLengthArrayAllocation")
     public PlatformCache(PlatformContext platformCtx, IgniteCache cache, boolean keepBinary) {
         this(platformCtx, cache, keepBinary, new PlatformCacheExtension[0]);
     }
@@ -503,11 +504,25 @@ public class PlatformCache extends PlatformAbstractTarget {
                     });
                 }
 
-                case OP_LOCK:
-                    return registerLock(cache.lock(reader.readObjectDetached()));
+                case OP_LOCK: {
+                    long id = registerLock(cache.lock(reader.readObjectDetached()));
 
-                case OP_LOCK_ALL:
-                    return registerLock(cache.lockAll(PlatformUtils.readCollection(reader)));
+                    return writeResult(mem, id, new PlatformWriterClosure<Long>() {
+                        @Override public void write(BinaryRawWriterEx writer, Long val) {
+                            writer.writeLong(val);
+                        }
+                    });
+                }
+
+                case OP_LOCK_ALL: {
+                    long id = registerLock(cache.lockAll(PlatformUtils.readCollection(reader)));
+
+                    return writeResult(mem, id, new PlatformWriterClosure<Long>() {
+                        @Override public void write(BinaryRawWriterEx writer, Long val) {
+                            writer.writeLong(val);
+                        }
+                    });
+                }
 
                 case OP_EXTENSION:
                     PlatformCacheExtension ext = extension(reader.readInt());

@@ -101,7 +101,10 @@ namespace Apache.Ignite.Core.Impl.Cluster
 
         /** */
         private const int OpForRemotes = 17;
-        
+
+        /** */
+        public const int OpForDaemons = 18;
+
         /** */
         private const int OpForRandom = 19;
         
@@ -113,6 +116,9 @@ namespace Apache.Ignite.Core.Impl.Cluster
         
         /** */
         public const int OpResetMetrics = 22;
+        
+        /** */
+        public const int OpForServers = 23;
         
         /** Initial Ignite instance. */
         private readonly Ignite _ignite;
@@ -299,7 +305,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IClusterGroup ForDaemons()
         {
-            return GetClusterGroup(UU.ProjectionForDaemons(Target));
+            return GetClusterGroup(DoOutOpObject(OpForDaemons));
         }
 
         /** <inheritDoc /> */
@@ -336,7 +342,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IClusterGroup ForServers()
         {
-            return GetClusterGroup(UU.ProjectionForServers(Target));
+            return GetClusterGroup(DoOutOpObject(OpForServers));
         }
 
         /** <inheritDoc /> */
