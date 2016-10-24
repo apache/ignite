@@ -17,31 +17,32 @@
 
 package org.apache.ignite.internal.util;
 
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
-import org.jsr166.LongAdder8;
-import sun.java2d.pipe.SpanIterator;
 
 /**
  * This class implements a circular buffer for efficient data exchange.
  */
 public class SingleConsumerSpinCircularBuffer<T> {
-    private static final int PARK_FREQ = 3;
+    /** */
     private static final int SPINS_CNT = 32;
 
+    /** */
     private static final AtomicLongFieldUpdater<SingleConsumerSpinCircularBuffer> writePosUpd =
         AtomicLongFieldUpdater.newUpdater(SingleConsumerSpinCircularBuffer.class, "writePos");
 
+    /** */
     private volatile long readPos;
 
+    /** */
+    @SuppressWarnings("unused")
     private long p01, p02, p03, p04, p05, p06, p07;
 
+    /** */
     private volatile long writePos;
 
+    /** */
+    @SuppressWarnings("unused")
     private long p11, p12, p13, p14, p15, p16, p17;
 
     /** */
@@ -50,13 +51,16 @@ public class SingleConsumerSpinCircularBuffer<T> {
     /** */
     private final Item<T>[] arr;
 
+    /** */
     private volatile Thread consumer;
 
+    /** */
     private volatile boolean parked;
 
     /**
      * @param size Size.
      */
+    @SuppressWarnings("unchecked")
     public SingleConsumerSpinCircularBuffer(
         int size
     ) {
@@ -72,7 +76,7 @@ public class SingleConsumerSpinCircularBuffer<T> {
     }
 
     /**
-     * @return
+     * @return Head element or {@code null}.
      */
     public T poll() {
         try {
@@ -85,6 +89,11 @@ public class SingleConsumerSpinCircularBuffer<T> {
         }
     }
 
+    /**
+     * @param take {@code false} to poll, {@code true} to take.
+     * @return Head element or {@code null}.
+     * @throws InterruptedException If interrupted.
+     */
     private T poll0(boolean take) throws InterruptedException {
         if (consumer == null)
             consumer = Thread.currentThread();
@@ -97,9 +106,7 @@ public class SingleConsumerSpinCircularBuffer<T> {
 
                 try {
                     for (int i = 0; readPos0 == writePos; i++) {
-//                        System.out.println("parked " + consumer.getId() + "readPos=" + readPos + ", writePos=" + writePos);
-
-                        if ((i & 31) == 0) {
+                        if ((i & (SPINS_CNT - 1)) == 0) {
                             LockSupport.park();
 
                             if (Thread.interrupted())
@@ -119,51 +126,27 @@ public class SingleConsumerSpinCircularBuffer<T> {
 
         readPos = readPos0 + 1;
 
-        T item0 = item.item(readPos0, SPINS_CNT);
-
-        if (item0 == null) {
-            parked = true;
-
-            try {
-                int i = 0;
-
-                boolean interrupted = false;
-
-                for (item0 = item.item(readPos0, 1); item0 == null; item0 = item.item(readPos0, 1), i++) {
-                    if ((i & 31) == 0) {
-                        LockSupport.park();
-
-                        if ((interrupted |= Thread.interrupted()) && take)
-                            throw new InterruptedException();
-                    }
-
-//                    System.out.println("readPos=" + readPos + ", writePos=" + writePos + ", item=" + item);
-                }
-
-                if (interrupted)
-                    Thread.currentThread().interrupt();
-            }
-            finally {
-                parked = false;
-            }
-
-            assert item != null;
-        }
-
-        return item0;
+        return item.item(readPos0);
     }
 
+    /**
+     * @return Head element or blocks until buffer is not empty.
+     * @throws InterruptedException If interrupted.
+     */
     public T take() throws InterruptedException {
         return poll0(true);
     }
 
+    /**
+     * @return Size.
+     */
     public int size() {
         return (int)(writePos - readPos);
     }
 
     /**
-     * @param t
-     * @return
+     * @param t Element to put.
+     * @return Current size.
      */
     public int put(T t) {
         long writePos0;
@@ -179,144 +162,10 @@ public class SingleConsumerSpinCircularBuffer<T> {
 
         item.update(writePos0, arr.length, t);
 
-        if (parked) {
-//            System.out.println("unpark " + consumer.getId() + "readPos=" + readPos + ", writePos=" + writePos + " " + item);
-
+        if (parked)
             LockSupport.unpark(consumer);
-        }
 
         return (int)(writePos0 + 1 - readPos);
-    }
-
-    public static void main_(String[] args) {
-        final ConcurrentLinkedDeque<Long> b = new ConcurrentLinkedDeque<>();
-
-        final LongAdder8 cnt = new LongAdder8();
-
-        new Thread(
-            new Runnable() {
-                @Override public void run() {
-                    for (;;) {
-                        try {
-                            Thread.sleep(1000);
-                        }
-                        catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-
-                        System.out.println("TPS: " + cnt.sumThenReset());
-                    }
-                }
-            }
-        ).start();
-
-        final Semaphore sem = new Semaphore(8192);
-
-        new Thread(
-            new Runnable() {
-                @Override public void run() {
-                    for (;;) {
-                        Long poll = b.poll();
-
-                        if (poll != null) {
-                            cnt.increment();
-
-                            sem.release();
-                        }
-                    }
-                }
-            }
-        ).start();
-
-        for (int i = 0; i < 4; i++) {
-            new Thread(
-                new Runnable() {
-                    @Override public void run() {
-                        for (long i = 0; ; i++) {
-                            sem.acquireUninterruptibly();
-                            b.add(i);
-                        }
-                    }
-                }
-            ).start();
-        }
-    }
-    public static void main(String[] args) throws InterruptedException {
-        final SingleConsumerSpinCircularBuffer<Long> b = new SingleConsumerSpinCircularBuffer<>(
-            1024);
-
-//        b.put(1L);
-//        b.put(2L);
-//        b.put(3L);
-//
-//        System.out.println(b.take());
-//        System.out.println(b.poll());
-//        System.out.println(b.poll());
-
-        final LongAdder8 cnt = new LongAdder8();
-
-        new Thread(
-            new Runnable() {
-                @Override public void run() {
-                    for (;;) {
-                        try {
-                            Thread.sleep(1000);
-                        }
-                        catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-
-                        System.out.println("TPS: " + cnt.sumThenReset());
-                    }
-                }
-            }
-        ).start();
-
-        final CyclicBarrier bar = new CyclicBarrier(2);
-
-        new Thread(
-            new Runnable() {
-                @Override public void run() {
-                    for (;;) {
-                        Long poll = null;
-
-                        try {
-                            poll = b.take();
-
-                            //bar.await();
-                        }
-                        catch (Exception e) {
-                            e.printStackTrace();
-                        }
-
-                        if (poll != null)
-                            cnt.increment();
-
-                    }
-                }
-            }
-        ).start();
-
-        for (int i = 0; i < 4; i++) {
-            new Thread(
-                new Runnable() {
-                    @Override public void run() {
-                        for (long i = 0; ; i++) {
-                            b.put(i);
-
-//                            LockSupport.parkNanos(1L);
-
-//                            try {
-//                                bar.await();
-//                            }
-//                            catch (InterruptedException | BrokenBarrierException e) {
-//                                e.printStackTrace();
-//                            }
-                        }
-                    }
-                }
-            ).start();
-        }
     }
 
     /** {@inheritDoc} */
@@ -329,13 +178,14 @@ public class SingleConsumerSpinCircularBuffer<T> {
      */
     private static class Item<V> {
         /** */
-        private V item;
-
-        /** */
         private volatile long idx;
 
+        /** */
+        private V item;
+
+        /** Padding. */
+        @SuppressWarnings("unused")
         private long p01, p02, p03, p04, p05, p06;
-        private int i01;
 
         /**
          *
@@ -347,8 +197,8 @@ public class SingleConsumerSpinCircularBuffer<T> {
         /**
          * @return Item.
          */
-        V item(long readPos, int spins) {
-            for (int i = 0; i < spins; i++) {
+        V item(long readPos) {
+            for (;;) {
                 if (idx == readPos) {
                     V item1 = this.item;
 
@@ -357,8 +207,6 @@ public class SingleConsumerSpinCircularBuffer<T> {
                     return item1;
                 }
             }
-
-            return null;
         }
 
         /**
@@ -366,16 +214,9 @@ public class SingleConsumerSpinCircularBuffer<T> {
          * @param newItem Item.
          */
         void update(long writePos, long diff, V newItem) {
-            int i = 0;
-
             for (;;) {
                 if (idx == -(writePos - diff))
                     break;
-
-                i++;
-
-                if ((i & 15) == 0)
-                    LockSupport.parkNanos(1L);
             }
 
             item = newItem;
