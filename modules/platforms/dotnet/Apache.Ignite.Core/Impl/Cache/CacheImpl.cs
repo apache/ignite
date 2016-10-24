@@ -375,8 +375,13 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             return DoOutInOpX((int) CacheOp.Get,
                 w => w.Write(key),
-                (stream, res) => res == True ? Unmarshal<TV>(stream) : default(TV),
-                ReadException);
+                (stream, res) =>
+                {
+                    if (res != True)
+                        throw GetKeyNotFoundException();
+
+                    return Unmarshal<TV>(stream);
+                }, ReadException);
         }
 
         /** <inheritDoc /> */

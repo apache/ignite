@@ -553,6 +553,19 @@ public class PlatformCache extends PlatformAbstractTarget {
                     }
                 }
 
+                case OP_GET_ALL: {
+                    Set keys = PlatformUtils.readSet(reader);
+
+                    Map entries = cache.getAll(keys);
+
+                    return writeResult(mem, entries, new PlatformWriterClosure<Map>() {
+                        @Override public void write(BinaryRawWriterEx writer, Map val) {
+                            PlatformUtils.writeNullableMap(writer, val);
+                        }
+                    });
+                }
+
+
                 case OP_PUT_ASYNC: {
                     cacheAsync.put(reader.readObjectDetached(), reader.readObjectDetached());
 
