@@ -86,6 +86,13 @@ public class GridNearAtomicUpdateRequest extends GridNearAtomicAbstractUpdateReq
     /** Conflict expire times. */
     private GridLongList conflictExpireTimes;
 
+    /** Optional arguments for entry processor. */
+    @GridDirectTransient
+    protected Object[] invokeArgs;
+
+    /** Entry processor arguments bytes. */
+    protected byte[][] invokeArgsBytes;
+
     /** Maximum possible size of inner collections. */
     @GridDirectTransient
     private int initSize;
@@ -155,7 +162,6 @@ public class GridNearAtomicUpdateRequest extends GridNearAtomicAbstractUpdateReq
             op,
             retval,
             expiryPlc,
-            invokeArgs,
             filter,
             subjId,
             taskNameHash,
@@ -169,6 +175,9 @@ public class GridNearAtomicUpdateRequest extends GridNearAtomicAbstractUpdateReq
         // will be added to request because of unknown affinity distribution. However, we DO KNOW how many keys
         // participate in request. As such, we know upper bound of all collections in request. If this bound is lower
         // than 10, we use it.
+
+        this.invokeArgs = invokeArgs;
+
         initSize = Math.min(maxEntryCnt, 10);
 
         keys = new ArrayList<>(initSize);
@@ -322,12 +331,19 @@ public class GridNearAtomicUpdateRequest extends GridNearAtomicAbstractUpdateReq
         return CU.EXPIRE_TIME_CALCULATE;
     }
 
+    /** {@inheritDoc} */
+    @Override @Nullable public Object[] invokeArguments() {
+        return invokeArgs;
+    }
+
     /** {@inheritDoc}
      * @param ctx*/
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+        prepareMarshalCacheObjects(keys, cctx);
 
         if (op == TRANSFORM) {
             // force addition of deployment info for entry processors if P2P is enabled globally.
@@ -385,26 +401,32 @@ public class GridNearAtomicUpdateRequest extends GridNearAtomicAbstractUpdateReq
         }
 
         switch (writer.state()) {
-            case 20:
+            case 19:
                 if (!writer.writeMessage("conflictExpireTimes", conflictExpireTimes))
                     return false;
 
                 writer.incrementState();
 
-            case 21:
+            case 20:
                 if (!writer.writeMessage("conflictTtls", conflictTtls))
                     return false;
 
                 writer.incrementState();
 
-            case 22:
+            case 21:
                 if (!writer.writeCollection("conflictVers", conflictVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 23:
+            case 22:
                 if (!writer.writeCollection("entryProcessorsBytes", entryProcessorsBytes, MessageCollectionItemType.BYTE_ARR))
+                    return false;
+
+                writer.incrementState();
+
+            case 23:
+                if (!writer.writeObjectArray("invokeArgsBytes", invokeArgsBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -443,7 +465,7 @@ public class GridNearAtomicUpdateRequest extends GridNearAtomicAbstractUpdateReq
             return false;
 
         switch (reader.state()) {
-            case 20:
+            case 19:
                 conflictExpireTimes = reader.readMessage("conflictExpireTimes");
 
                 if (!reader.isLastRead())
@@ -451,7 +473,7 @@ public class GridNearAtomicUpdateRequest extends GridNearAtomicAbstractUpdateReq
 
                 reader.incrementState();
 
-            case 21:
+            case 20:
                 conflictTtls = reader.readMessage("conflictTtls");
 
                 if (!reader.isLastRead())
@@ -459,7 +481,7 @@ public class GridNearAtomicUpdateRequest extends GridNearAtomicAbstractUpdateReq
 
                 reader.incrementState();
 
-            case 22:
+            case 21:
                 conflictVers = reader.readCollection("conflictVers", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -467,8 +489,16 @@ public class GridNearAtomicUpdateRequest extends GridNearAtomicAbstractUpdateReq
 
                 reader.incrementState();
 
-            case 23:
+            case 22:
                 entryProcessorsBytes = reader.readCollection("entryProcessorsBytes", MessageCollectionItemType.BYTE_ARR);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 23:
+                invokeArgsBytes = reader.readObjectArray("invokeArgsBytes", MessageCollectionItemType.BYTE_ARR, byte[].class);
 
                 if (!reader.isLastRead())
                     return false;
