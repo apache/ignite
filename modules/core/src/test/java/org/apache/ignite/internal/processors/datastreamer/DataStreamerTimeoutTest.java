@@ -17,10 +17,10 @@
 package org.apache.ignite.internal.processors.datastreamer;
 
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteDataStreamerTimeoutException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -44,6 +44,9 @@ public class DataStreamerTimeoutTest extends GridCommonAbstractTest {
 
     /** Amount of entries. */
     public static final int ENTRY_AMOUNT = 100;
+
+    /** Fail on. */
+    private static volatile int failOn;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -76,6 +79,8 @@ public class DataStreamerTimeoutTest extends GridCommonAbstractTest {
      * @throws Exception If fail.
      */
     public void testTimeoutOnCloseMethod() throws Exception {
+        failOn = 1;
+
         Ignite ignite = startGrid(1);
 
         boolean thrown = false;
@@ -88,8 +93,11 @@ public class DataStreamerTimeoutTest extends GridCommonAbstractTest {
             for (int i = 0; i < ENTRY_AMOUNT; i++)
                 ldr.addData(i, i);
         }
-        catch (IgniteDataStreamerTimeoutException e) {
-            assertEquals(e.getMessage(), "Data streamer exceeded timeout on flush.");
+        catch (Exception e) {
+            String mess = e.getMessage();
+
+            assertTrue(mess, mess.contains("Some of DataStreamer operations failed") ||
+                mess.contains("Data streamer exceeded timeout on flush"));
 
             thrown = true;
         }
@@ -105,12 +113,35 @@ public class DataStreamerTimeoutTest extends GridCommonAbstractTest {
      *
      * @throws Exception If fail.
      */
-    public void testTimeoutOnAddDataMethod() throws Exception {
+    public void testTimeoutOnAddData() throws Exception {
+        failOn = 1;
+
+        int res = timeoutOnAddData();
+
+        assertTrue(res == (failOn + 1) || res == failOn);
+
+        failOn = ENTRY_AMOUNT / 2;
+
+        res = timeoutOnAddData();
+
+        assertTrue(res == (failOn + 1) || res == failOn);
+
+        failOn = ENTRY_AMOUNT;
+
+        res = timeoutOnAddData();
+
+        assertTrue(res == (failOn + 1) || res == failOn);
+    }
+
+    /**
+     *
+     */
+    private int timeoutOnAddData() throws Exception {
+        boolean thrown = false;
+        int processed = 0;
+
         try {
             Ignite ignite = startGrid(1);
-
-            boolean thrown = false;
-            int processed = 0;
 
             try (IgniteDataStreamer ldr = ignite.dataStreamer(CACHE_NAME)) {
                 ldr.timeout(TIMEOUT);
@@ -133,18 +164,19 @@ public class DataStreamerTimeoutTest extends GridCommonAbstractTest {
             catch (Exception e) {
                 String mess = e.getMessage();
 
-                assertTrue(mess, mess.contains("Some of DataStreamer operations failed") ||
+                assertTrue(mess, mess.contains("Some of DataStreamer operations failed. [failedCount=1]") ||
                     mess.contains("Data streamer exceeded timeout on flush"));
 
                 thrown = true;
             }
-
-            assertTrue(thrown);
-            assertTrue(processed < 3);
         }
         finally {
             stopAllGrids();
         }
+
+        assertTrue(thrown);
+
+        return processed;
     }
 
     /**
@@ -152,16 +184,14 @@ public class DataStreamerTimeoutTest extends GridCommonAbstractTest {
      */
     private static class TestDataReceiver implements StreamReceiver {
 
-        /** Is first. */
-        boolean isFirst = true;
+        /** Count. */
+        private final AtomicInteger cnt = new AtomicInteger();
 
         /** {@inheritDoc} */
-        @Override public void receive(IgniteCache cache, Collection collection) throws IgniteException {
+        @Override public void receive(IgniteCache cache, Collection col) throws IgniteException {
             try {
-                if (isFirst)
+                if (cnt.incrementAndGet() == failOn)
                     U.sleep(2 * TIMEOUT);
-
-                isFirst = false;
             }
             catch (IgniteInterruptedCheckedException e) {
                 throw new IgniteException(e);
