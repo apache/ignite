@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedDeque8;
 
@@ -172,6 +173,11 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      */
     boolean offerMove(GridNioWorker from, GridNioServer.SessionChangeRequest fut) {
         synchronized (this) {
+            U.debug(log, "Offered move [ses=" + this + ", fut=" + fut + ']');
+
+            if (log.isDebugEnabled())
+                log.debug("Offered move [ses=" + this + ", fut=" + fut + ']');
+
             GridNioWorker worker0 = worker;
 
             if (worker0 != from)
@@ -188,6 +194,11 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      */
     void offerStateChange(GridNioServer.SessionChangeRequest fut) {
         synchronized (this) {
+            U.debug(log, "Offered change [ses=" + this + ", fut=" + fut + ']');
+
+            if (log.isDebugEnabled())
+                log.debug("Offered move [ses=" + this + ", fut=" + fut + ']');
+
             GridNioWorker worker0 = worker;
 
             if (worker0 == null) {
@@ -208,6 +219,11 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
         synchronized (this) {
             assert this.worker == moveFrom;
 
+            U.debug(log, "Started moving [ses=" + this + ", from=" + moveFrom + ']');
+
+            if (log.isDebugEnabled())
+                log.debug("Started moving [ses=" + this + ", from=" + moveFrom + ']');
+
             List<GridNioServer.SessionChangeRequest> sesReqs = moveFrom.clearSessionRequests(this);
 
             worker = null;
@@ -227,6 +243,11 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     void finishMoveSession(GridNioWorker moveTo) {
         synchronized (this) {
             assert worker == null;
+
+            U.debug(log, "Finishing moving [ses=" + this + ", to=" + moveTo + ']');
+
+            if (log.isDebugEnabled())
+                log.debug("Finishing moving [ses=" + this + ", to=" + moveTo + ']');
 
             worker = moveTo;
 

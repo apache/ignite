@@ -128,6 +128,7 @@ public class GridNioServer<T> {
      *
      */
     static {
+        // TODO
         System.out.println(">>> Disable park: " + DISABLE_PARK);
 
         // This is a workaround for JDK bug (NPE in Selector.open()).
