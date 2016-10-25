@@ -842,8 +842,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(clazz, marshalUnmarshal(clazz));
     }
 
-
-
     /**
      *
      */
@@ -2925,44 +2923,67 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBinaryEquals() throws Exception {
-        List<BinaryTypeConfiguration> bcfgs = Arrays.asList(new BinaryTypeConfiguration(Value.class.getName()));
+        Collection<String> excludedClasses = Arrays.asList(
+            ObjectRaw.class.getName(),
+            ObjectWithRaw.class.getName(),
+            Value.class.getName());
 
-        BinaryMarshaller m0 = binaryMarshaller(null, Collections.singletonList(Value.class.getName()));
+        BinaryMarshaller m0 = binaryMarshaller(null, excludedClasses);
         BinaryMarshaller m1 = binaryMarshaller();
 
-        Value v = new Value(27);
+        Value obj = new Value(27);
+        ObjectWithRaw objectWithRaw = new ObjectWithRaw(27, 13);
+        ObjectRaw objectRaw = new ObjectRaw(27, 13);
 
-        BinaryObjectImpl binObj0 = marshal(v, m0);
-        BinaryObjectImpl binObj1 = marshal(v, m1);
+        BinaryObjectImpl binObj0 = marshal(obj, m0);
+        BinaryObjectImpl binObj1 = marshal(obj, m1);
+        BinaryObjectImpl binObjWithRaw0 = marshal(objectWithRaw, m0);
+        BinaryObjectImpl binObjWithRaw1 = marshal(objectWithRaw, m1);
+        BinaryObjectImpl binObjRaw0 = marshal(objectRaw, m0);
+        BinaryObjectImpl binObjRaw1 = marshal(objectRaw, m1);
 
         assertNotEquals(binObj0.array().length, binObj1.array().length);
+        assertNotEquals(binObjWithRaw0.array().length, binObjWithRaw1.array().length);
+        assertNotEquals(binObjRaw0.array().length, binObjRaw1.array().length);
 
-        assertEquals(binObj0, binObj1);
-        assertEquals(binObj1, binObj0);
-        assertEquals(binObj0, binObj0);
-        assertEquals(binObj1, binObj1);
+        checkEquals(binObj0, binObj1);
+
+        checkEquals(binObjWithRaw0, binObjWithRaw1);
+
+        checkEquals(binObjRaw0, binObjRaw1);
 
         BinaryObjectOffheapImpl binObjOffheap0 = null;
         BinaryObjectOffheapImpl binObjOffheap1 = null;
+        BinaryObjectOffheapImpl binObjWithRawOffheap0 = null;
+        BinaryObjectOffheapImpl binObjWithRawOffheap1 = null;
+        BinaryObjectOffheapImpl binObjRawOffheap0 = null;
+        BinaryObjectOffheapImpl binObjRawOffheap1 = null;
 
         try {
             binObjOffheap0 = marshalOffHeap(binObj0, m0);
             binObjOffheap1 = marshalOffHeap(binObj1, m1);
+            binObjWithRawOffheap0 = marshalOffHeap(binObjWithRaw0, m0);
+            binObjWithRawOffheap1 = marshalOffHeap(binObjWithRaw1, m1);
+            binObjRawOffheap0 = marshalOffHeap(binObjRaw0, m0);
+            binObjRawOffheap1 = marshalOffHeap(binObjRaw1, m1);
 
-            assertEquals(binObj0, binObjOffheap0);
-            assertEquals(binObj0, binObjOffheap1);
-            assertEquals(binObj1, binObjOffheap0);
-            assertEquals(binObj1, binObjOffheap1);
+            checkEquals(binObj0, binObjOffheap0);
+            checkEquals(binObj1, binObjOffheap0);
+            checkEquals(binObj0, binObjOffheap1);
+            checkEquals(binObj1, binObjOffheap1);
+            checkEquals(binObjOffheap0, binObjOffheap1);
 
-            assertEquals(binObjOffheap0, binObj0);
-            assertEquals(binObjOffheap0, binObj1);
-            assertEquals(binObjOffheap1, binObj0);
-            assertEquals(binObjOffheap1, binObj1);
+            checkEquals(binObjWithRaw0, binObjWithRawOffheap0);
+            checkEquals(binObjWithRaw0, binObjWithRawOffheap1);
+            checkEquals(binObjWithRaw1, binObjWithRawOffheap0);
+            checkEquals(binObjWithRaw1, binObjWithRawOffheap1);
+            checkEquals(binObjWithRawOffheap0, binObjWithRawOffheap1);
 
-            assertEquals(binObjOffheap0, binObjOffheap1);
-            assertEquals(binObjOffheap1, binObjOffheap0);
-            assertEquals(binObjOffheap0, binObjOffheap0);
-            assertEquals(binObjOffheap1, binObjOffheap1);
+            checkEquals(binObjRaw0, binObjRawOffheap0);
+            checkEquals(binObjRaw1, binObjRawOffheap0);
+            checkEquals(binObjRaw0, binObjRawOffheap1);
+            checkEquals(binObjRaw1, binObjRawOffheap1);
+            checkEquals(binObjRawOffheap0, binObjRawOffheap1);
         }
         finally {
             if (binObjOffheap0 != null) {
@@ -2974,7 +2995,38 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
                 GridUnsafe.freeMemory(binObjOffheap1.offheapAddress());
                 binObjOffheap1 = null;
             }
+
+            if (binObjWithRawOffheap0 != null) {
+                GridUnsafe.freeMemory(binObjWithRawOffheap0.offheapAddress());
+                binObjOffheap1 = null;
+            }
+
+            if (binObjWithRawOffheap1 != null) {
+                GridUnsafe.freeMemory(binObjWithRawOffheap1.offheapAddress());
+                binObjOffheap1 = null;
+            }
+
+            if (binObjRawOffheap0 != null) {
+                GridUnsafe.freeMemory(binObjRawOffheap0.offheapAddress());
+                binObjOffheap1 = null;
+            }
+
+            if (binObjRawOffheap1 != null) {
+                GridUnsafe.freeMemory(binObjRawOffheap1.offheapAddress());
+                binObjOffheap1 = null;
+            }
         }
+    }
+
+    /**
+     * @param binObj0 Object #0.
+     * @param binObj1 Object #1.
+     */
+    private void checkEquals(Object binObj0, Object binObj1) {
+        assertEquals(binObj0, binObj1);
+        assertEquals(binObj1, binObj0);
+        assertEquals(binObj0, binObj0);
+        assertEquals(binObj1, binObj1);
     }
 
     /**
@@ -3031,12 +3083,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertNotEquals(binObj02, binObj11);
     }
 
-
-        /**
-         * @param obj Instance of the BinaryObjectImpl to offheap marshalling.
-         * @param marsh Binary marshaller.
-         * @return Instance of BinaryObjectOffheapImpl.
-         */
+    /**
+     * @param obj Instance of the BinaryObjectImpl to offheap marshalling.
+     * @param marsh Binary marshaller.
+     * @return Instance of BinaryObjectOffheapImpl.
+     */
     private BinaryObjectOffheapImpl marshalOffHeap(BinaryObjectImpl obj, BinaryMarshaller marsh) {
         long ptr = copyOffheap(obj);
 
@@ -3045,7 +3096,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             0,
             obj.array().length);
     }
-
 
     /**
      *
@@ -5029,7 +5079,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
     /**
      */
-    private static class SingleHandleB {}
+    private static class SingleHandleB {
+    }
 
     /**
      */
@@ -5061,7 +5112,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         /**
          * @return Constant value of the SimpleObject.
          */
-        public  static SimpleObject constSimpleObject() {
+        public static SimpleObject constSimpleObject() {
             SimpleObject obj = simpleObject();
 
             obj.uuid = null;
@@ -5100,5 +5151,79 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      *
      */
     private static class TestClass2 extends TestClass0 {
+    }
+
+    /** */
+    private static class ObjectWithRaw implements Binarylizable {
+        /** */
+        private int val;
+
+        /** */
+        private int rawVal;
+
+        /**
+         *
+         */
+        public ObjectWithRaw() {
+        }
+
+        /**
+         * @param val Value.
+         * @param rawVal Raw value.
+         */
+        public ObjectWithRaw(int val, int rawVal) {
+            this.val = val;
+            this.rawVal = rawVal;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+            writer.writeInt("val", val);
+
+            writer.rawWriter().writeInt(rawVal);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+            val = reader.readInt("val");
+
+            rawVal = reader.rawReader().readInt();
+        }
+    }
+
+    /** */
+    private static class ObjectRaw implements Binarylizable {
+        /** */
+        private int val0;
+
+        /** */
+        private int val1;
+
+        /**
+         *
+         */
+        public ObjectRaw() {
+        }
+
+        /**
+         * @param val0 Value.
+         * @param val1 Raw value.
+         */
+        public ObjectRaw(int val0, int val1) {
+            this.val0 = val0;
+            this.val1 = val1;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+            writer.rawWriter().writeInt(val0);
+            writer.rawWriter().writeInt(val1);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+            val0 = reader.rawReader().readInt();
+            val1 = reader.rawReader().readInt();
+        }
     }
 }

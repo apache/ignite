@@ -77,17 +77,23 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
     }
 
     /**
-     * Get field offset by order.
+     * Get offset of data begin.
      *
-     * @param order Field order.
      * @return Field value.
      */
-    @Nullable protected abstract int fieldOffsetByOrder(int order);
+    @Nullable protected abstract int dataStartOffset();
+
+    /**
+     * Get offset of the footer begin.
+     *
+     * @return Field value.
+     */
+    @Nullable protected abstract int footerStartOffset();
 
     /**
      * Get field by offset.
      *
-     * @param order Field offset.
+     * @param order Field order.
      * @return Field value.
      */
     @Nullable protected abstract <F> F fieldByOrder(int order);
@@ -136,80 +142,22 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
 
         BinaryObjectExImpl otherPo = (BinaryObjectExImpl)other;
 
-        if (hashCode() != hashCode())
+        if (typeId() == otherPo.typeId())
             return false;
 
-        if (typeId() != otherPo.typeId() && !(typeId() == GridBinaryMarshaller.UNREGISTERED_TYPE_ID
-            || otherPo.typeId() == GridBinaryMarshaller.UNREGISTERED_TYPE_ID))
+        int off0 = dataStartOffset();
+        int end0 = footerStartOffset();
+        int off1 = otherPo.dataStartOffset();
+        int end1 = otherPo.footerStartOffset();
+
+        if (end0 - off0 != end1 - off1)
             return false;
 
-        if (length() == otherPo.length() && typeId() == otherPo.typeId()) {
-            if (hasArray()) {
-                if (otherPo.hasArray()) {
-                    int len = length();
-                    int end = start() + len;
+        if (hasArray()) {
+            byte[] arr0 = array();
 
-                    byte[] arr = array();
-                    byte[] otherArr = otherPo.array();
-
-                    for (int i = start(), j = otherPo.start(); i < end; i++, j++) {
-                        if (arr[i] != otherArr[j])
-                            return false;
-                    }
-
-                    return true;
-                }
-                else {
-                    assert otherPo.offheapAddress() > 0;
-
-                    return GridUnsafeMemory.compare(otherPo.offheapAddress() + otherPo.start(), array());
-                }
-            }
-            else {
-                assert offheapAddress() > 0;
-
-                if (otherPo.hasArray())
-                    return GridUnsafeMemory.compare(offheapAddress() + start(), otherPo.array());
-                else {
-                    assert otherPo.offheapAddress() > 0;
-
-                    return GridUnsafeMemory.compare(offheapAddress() + start(),
-                        otherPo.offheapAddress() + otherPo.start(),
-                        length());
-                }
-            }
-        } else
-            return equalsDiffHeader(this, otherPo);
-    }
-
-    /**
-     * Equals compare in case the header formats are different.
-     *
-     * @param o0 the reference to #0 object to compare.
-     * @param o1 the reference to #1 object to compare.
-     * @return {@code true} if this object is the same as the obj
-     *          argument; {@code false} otherwise.
-     */
-    private static boolean equalsDiffHeader(BinaryObjectExImpl o0, BinaryObjectExImpl o1) {
-        if (!o0.rawType().typeName().equals(o1.rawType().typeName()))
-            return false;
-
-        if (o0.hasArray()) {
-            byte[] arr0 = o0.array();
-
-            int off0 = o0.fieldOffsetByOrder(0);
-
-            int end0 = BinaryPrimitives.readInt(arr0, o0.start() + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
-
-            if (o1.hasArray()) {
-                byte[] arr1 = o1.array();
-
-                int off1 = o1.fieldOffsetByOrder(0);
-
-                int end1 = BinaryPrimitives.readInt(arr1, o1.start() + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
-
-                if (end0 - off0 != end1 - off1)
-                    return false;
+            if (otherPo.hasArray()) {
+                byte[] arr1 = otherPo.array();
 
                 for (int i = off0, j = off1; i < end0; i++, j++) {
                     if (arr0[i] != arr1[j])
@@ -219,53 +167,24 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
                 return true;
             }
             else {
-                assert o1.offheapAddress() > 0;
+                assert otherPo.offheapAddress() > 0;
 
-                int off1 = o1.fieldOffsetByOrder(0);
-
-                int end1 = BinaryPrimitives.readInt(o1.offheapAddress(), o1.start()
-                    + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
-
-                if (end0 - off0 != end1 - off1)
-                    return false;
-
-                return GridUnsafeMemory.compare(o1.offheapAddress() + off1, arr0, off0, end0 - off0);
+                return GridUnsafeMemory.compare(otherPo.offheapAddress() + off1, arr0, off0, end0 - off0);
             }
         }
         else {
-            assert o0.offheapAddress() > 0;
+            assert offheapAddress() > 0;
 
-            int off0 = o0.fieldOffsetByOrder(0);
+            if (otherPo.hasArray()) {
+                byte[] arr1 = otherPo.array();
 
-            int end0 = BinaryPrimitives.readInt(o0.offheapAddress(), o0.start()
-                + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
-
-            if (o1.hasArray()) {
-                byte[] arr1 = o1.array();
-
-                int off1 = o1.fieldOffsetByOrder(0);
-
-                int end1 = BinaryPrimitives.readInt(arr1, o1.start() + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
-
-                if (end0 - off0 != end1 - off1)
-                    return false;
-
-                return GridUnsafeMemory.compare(o0.offheapAddress() + off0, arr1, off1, end1 - off1);
-
+                return GridUnsafeMemory.compare(offheapAddress() + off0, arr1, off1, end1 - off1);
             }
             else {
-                assert o1.offheapAddress() > 0;
+                assert otherPo.offheapAddress() > 0;
 
-                int off1 = o1.fieldOffsetByOrder(0);
-
-                int end1 = BinaryPrimitives.readInt(o1.offheapAddress(), o1.start()
-                    + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
-
-                if (end0 - off0 != end1 - off1)
-                    return false;
-
-                return GridUnsafeMemory.compare(o0.offheapAddress() + off0,
-                    o1.offheapAddress() + off1,
+                return GridUnsafeMemory.compare(offheapAddress() + off0,
+                    otherPo.offheapAddress() + off1,
                     end0 - off0);
             }
         }
