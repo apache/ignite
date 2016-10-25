@@ -173,7 +173,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      */
     boolean offerMove(GridNioWorker from, GridNioServer.SessionChangeRequest fut) {
         synchronized (this) {
-            U.debug(log, "Offered move [ses=" + this + ", fut=" + fut + ']');
+            // U.debug(log, "Offered move [ses=" + this + ", fut=" + fut + ']');
 
             if (log.isDebugEnabled())
                 log.debug("Offered move [ses=" + this + ", fut=" + fut + ']');
@@ -194,7 +194,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      */
     void offerStateChange(GridNioServer.SessionChangeRequest fut) {
         synchronized (this) {
-            U.debug(log, "Offered change [ses=" + this + ", fut=" + fut + ']');
+            // U.debug(log, "Offered change [ses=" + this + ", fut=" + fut + ']');
 
             if (log.isDebugEnabled())
                 log.debug("Offered move [ses=" + this + ", fut=" + fut + ']');
@@ -219,7 +219,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
         synchronized (this) {
             assert this.worker == moveFrom;
 
-            U.debug(log, "Started moving [ses=" + this + ", from=" + moveFrom + ']');
+            // U.debug(log, "Started moving [ses=" + this + ", from=" + moveFrom + ']');
 
             if (log.isDebugEnabled())
                 log.debug("Started moving [ses=" + this + ", from=" + moveFrom + ']');
@@ -244,7 +244,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
         synchronized (this) {
             assert worker == null;
 
-            U.debug(log, "Finishing moving [ses=" + this + ", to=" + moveTo + ']');
+            // U.debug(log, "Finishing moving [ses=" + this + ", to=" + moveTo + ']');
 
             if (log.isDebugEnabled())
                 log.debug("Finishing moving [ses=" + this + ", to=" + moveTo + ']');
