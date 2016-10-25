@@ -274,7 +274,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public PlatformTargetProxy affinity(@Nullable String name) throws IgniteCheckedException {
-        return new PlatformTargetProxyImpl(new PlatformAffinity(platformCtx, ctx, name), platformCtx);
+        return proxy(new PlatformAffinity(platformCtx, ctx, name));
     }
 
     /** {@inheritDoc} */
@@ -284,51 +284,45 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         ldr.keepBinary(true);
 
-        return new PlatformTargetProxyImpl(
-            new PlatformDataStreamer(platformCtx, cacheName, (DataStreamerImpl)ldr, keepBinary), platformCtx);
+        return proxy(new PlatformDataStreamer(platformCtx, cacheName, (DataStreamerImpl)ldr, keepBinary));
     }
 
     /** {@inheritDoc} */
     @Override public PlatformTargetProxy transactions() {
-        return new PlatformTargetProxyImpl(new PlatformTransactions(platformCtx), platformCtx);
+        return proxy(new PlatformTransactions(platformCtx));
     }
 
     /** {@inheritDoc} */
     @Override public PlatformTargetProxy projection() throws IgniteCheckedException {
-        return new PlatformTargetProxyImpl(new PlatformClusterGroup(platformCtx, ctx.grid().cluster()), platformCtx);
+        return proxy(new PlatformClusterGroup(platformCtx, ctx.grid().cluster()));
     }
 
     /** {@inheritDoc} */
     @Override public PlatformTargetProxy compute(PlatformTargetProxy grp) {
         PlatformClusterGroup grp0 = (PlatformClusterGroup)grp;
 
-        return new PlatformTargetProxyImpl(
-            new PlatformCompute(platformCtx, grp0.projection(), PlatformUtils.ATTR_PLATFORM), platformCtx);
+        return proxy(new PlatformCompute(platformCtx, grp0.projection(), PlatformUtils.ATTR_PLATFORM));
     }
 
     /** {@inheritDoc} */
     @Override public PlatformTargetProxy message(PlatformTargetProxy grp) {
         PlatformClusterGroup grp0 = (PlatformClusterGroup)grp;
 
-        return new PlatformTargetProxyImpl(
-            new PlatformMessaging(platformCtx, grp0.projection().ignite().message(grp0.projection())), platformCtx);
+        return proxy(new PlatformMessaging(platformCtx, grp0.projection().ignite().message(grp0.projection())));
     }
 
     /** {@inheritDoc} */
     @Override public PlatformTargetProxy events(PlatformTargetProxy grp) {
         PlatformClusterGroup grp0 = (PlatformClusterGroup)grp;
 
-        return new PlatformTargetProxyImpl(
-            new PlatformEvents(platformCtx, grp0.projection().ignite().events(grp0.projection())), platformCtx);
+        return proxy(new PlatformEvents(platformCtx, grp0.projection().ignite().events(grp0.projection())));
     }
 
     /** {@inheritDoc} */
     @Override public PlatformTargetProxy services(PlatformTargetProxy grp) {
         PlatformClusterGroup grp0 = (PlatformClusterGroup)grp;
 
-        return new PlatformTargetProxyImpl(
-            new PlatformServices(platformCtx, grp0.projection().ignite().services(grp0.projection()), false),
-            platformCtx);
+        return proxy(new PlatformServices(platformCtx, grp0.projection().ignite().services(grp0.projection()), false));
     }
 
     /** {@inheritDoc} */
@@ -363,7 +357,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         if (atomicLong == null)
             return null;
 
-        return new PlatformTargetProxyImpl(new PlatformAtomicLong(platformCtx, atomicLong), platformCtx);
+        return proxy(new PlatformAtomicLong(platformCtx, atomicLong));
     }
 
     /** {@inheritDoc} */
@@ -374,14 +368,13 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         if (atomicSeq == null)
             return null;
 
-        return new PlatformTargetProxyImpl(new PlatformAtomicSequence(platformCtx, atomicSeq), platformCtx);
+        return proxy(new PlatformAtomicSequence(platformCtx, atomicSeq));
     }
 
     /** {@inheritDoc} */
     @Override public PlatformTargetProxy atomicReference(String name, long memPtr, boolean create)
         throws IgniteException {
-        return new PlatformTargetProxyImpl(
-            PlatformAtomicReference.createInstance(platformCtx, name, memPtr, create), platformCtx);
+        return proxy(PlatformAtomicReference.createInstance(platformCtx, name, memPtr, create));
     }
 
     /** {@inheritDoc} */
@@ -443,7 +436,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
      * Creates new platform cache.
      */
     private PlatformTargetProxy createPlatformCache(IgniteCacheProxy cache) {
-        return new PlatformTargetProxyImpl(new PlatformCache(platformCtx, cache, false, cacheExts), platformCtx);
+        return proxy(new PlatformCache(platformCtx, cache, false, cacheExts));
     }
 
     /** {@inheritDoc} */
@@ -567,6 +560,13 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         else
             //noinspection ZeroLengthArrayAllocation
             return new PlatformCacheExtension[0];
+    }
+
+    /**
+     * Wraps target in a proxy.
+     */
+    private PlatformTargetProxy proxy(PlatformTarget target) {
+        return new PlatformTargetProxyImpl(target, platformCtx);
     }
 
     /**
