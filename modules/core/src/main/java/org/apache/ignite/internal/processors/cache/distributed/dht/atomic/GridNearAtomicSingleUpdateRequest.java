@@ -149,7 +149,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
      * @param conflictVer Conflict version (optional).
      * @param primary If given key is primary on this mapping.
      */
-    public void addUpdateEntry(KeyCacheObject key,
+    @Override public void addUpdateEntry(KeyCacheObject key,
         @Nullable Object val,
         long conflictTtl,
         long conflictExpireTime,

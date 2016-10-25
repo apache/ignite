@@ -1,0 +1,215 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.cache;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
+import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateTransformRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequest;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+
+/**
+ * Tests single / transform messages being sent between nodes in ATOMIC mode.
+ */
+public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTest {
+    /** VM ip finder for TCP discovery. */
+    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
+
+        discoSpi.setForceServerMode(true);
+        discoSpi.setIpFinder(ipFinder);
+
+        cfg.setDiscoverySpi(discoSpi);
+
+        CacheConfiguration cCfg = new CacheConfiguration();
+
+        cCfg.setCacheMode(PARTITIONED);
+        cCfg.setBackups(1);
+        cCfg.setWriteSynchronizationMode(FULL_SYNC);
+        cCfg.setAtomicWriteOrderMode(CacheAtomicWriteOrderMode.PRIMARY);
+
+        cfg.setCacheConfiguration(cCfg);
+
+        cfg.setCommunicationSpi(new TestCommunicationSpi());
+
+        return cfg;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSingleMessage() throws Exception {
+        startGrids(2);
+
+        try {
+            awaitPartitionMapExchange();
+
+            TestCommunicationSpi commSpi = (TestCommunicationSpi)grid(0).configuration().getCommunicationSpi();
+
+            commSpi.registerMessage(GridNearAtomicUpdateRequest.class);
+            commSpi.registerMessage(GridDhtAtomicUpdateRequest.class);
+            commSpi.registerMessage(GridNearAtomicSingleUpdateRequest.class);
+            commSpi.registerMessage(GridNearAtomicSingleUpdateTransformRequest.class);
+
+            Integer key = primaryKey(jcache(1));
+
+            int putCnt = 15;
+
+            int expNearCnt = 0;
+
+            for (int i = 0; i < putCnt; i++) {
+                ClusterNode locNode = grid(0).localNode();
+
+                Affinity<Object> affinity = ignite(0).affinity(null);
+
+                if (!affinity.isPrimary(locNode, i))
+                    expNearCnt++;
+
+                jcache(0).put(i, i);
+            }
+
+            assertEquals(0, commSpi.messageCount(GridNearAtomicUpdateRequest.class));
+            assertEquals(expNearCnt, commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class));
+            assertEquals(0, commSpi.messageCount(GridNearAtomicSingleUpdateTransformRequest.class));
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSingleTransformMessage() throws Exception {
+        startGrids(2);
+
+        try {
+            awaitPartitionMapExchange();
+
+            TestCommunicationSpi commSpi = (TestCommunicationSpi)grid(0).configuration().getCommunicationSpi();
+
+            commSpi.registerMessage(GridNearAtomicUpdateRequest.class);
+            commSpi.registerMessage(GridDhtAtomicUpdateRequest.class);
+            commSpi.registerMessage(GridNearAtomicSingleUpdateRequest.class);
+            commSpi.registerMessage(GridNearAtomicSingleUpdateTransformRequest.class);
+
+            int putCnt = 15;
+
+            int expNearCnt = 0;
+
+            for (int i = 0; i < putCnt; i++) {
+                ClusterNode locNode = grid(0).localNode();
+
+                Affinity<Object> affinity = ignite(0).affinity(null);
+
+                if (!affinity.isPrimary(locNode, i))
+                    expNearCnt++;
+
+                jcache(0).invoke(i, new CacheEntryProcessor<Object, Object, Object>() {
+                    @Override
+                    public Object process(MutableEntry<Object, Object> entry,
+                        Object... objects) throws EntryProcessorException {
+                        return 2;
+                    }
+                });
+            }
+
+            assertTrue(expNearCnt != 0);
+            assertEquals(expNearCnt, commSpi.messageCount(GridNearAtomicSingleUpdateTransformRequest.class));
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * Test communication SPI.
+     */
+    private static class TestCommunicationSpi extends TcpCommunicationSpi {
+        /** Counters map. */
+        private Map<Class<?>, AtomicInteger> cntMap = new HashMap<>();
+
+        /** {@inheritDoc} */
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
+            throws IgniteSpiException {
+            AtomicInteger cntr = cntMap.get(((GridIoMessage)msg).message().getClass());
+            System.out.println(((GridIoMessage)msg).message().getClass());
+            if (cntr != null)
+                cntr.incrementAndGet();
+
+            super.sendMessage(node, msg, ackClosure);
+        }
+
+        /**
+         * Registers message for counting.
+         *
+         * @param cls Class to count.
+         */
+        public void registerMessage(Class<?> cls) {
+            AtomicInteger cntr = cntMap.get(cls);
+
+            if (cntr == null)
+                cntMap.put(cls, new AtomicInteger());
+        }
+
+        /**
+         * @param cls Message type to get count.
+         * @return Number of messages of given class.
+         */
+        public int messageCount(Class<?> cls) {
+            AtomicInteger cntr = cntMap.get(cls);
+
+            return cntr == null ? 0 : cntr.get();
+        }
+
+        /**
+         * Resets counter to zero.
+         */
+        public void resetCount() {
+            cntMap.clear();
+        }
+    }
+}

@@ -60,7 +60,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
  */
 public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpdateFuture {
     // TODO: 24.10.16 add correct version
-    public static final IgniteProductVersion SINGLE_UPDATE_REQUEST = IgniteProductVersion.fromString("9.9.9");
+    public static final IgniteProductVersion SINGLE_UPDATE_REQUEST = IgniteProductVersion.fromString("1.8.0");
 
     /** Keys */
     private Object key;
