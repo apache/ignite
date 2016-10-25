@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 
@@ -24,8 +25,18 @@ import org.apache.ignite.internal.processors.platform.PlatformContext;
  * Wraps listenable in a platform target.
  */
 public class PlatformListenableTarget extends PlatformAbstractTarget {
+    /** */
+    private static final int OP_CANCEL = 1;
+
+    /** */
+    private static final int OP_IS_CANCELLED = 2;
+
     /** Wrapped listenable */
     private final PlatformListenable listenable;
+
+    @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        return super.processInLongOutLong(type, val);
+    }
 
     /**
      * Constructor.
