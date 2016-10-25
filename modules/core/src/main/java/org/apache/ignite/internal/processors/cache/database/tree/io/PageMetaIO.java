@@ -70,7 +70,7 @@ public class PageMetaIO extends PageIO {
         setReuseListRoot(buf, 0);
         setLastSuccessfulFullBackupId(buf, -1);
         setLastSuccessfulBackupId(buf, -1);
-        setNextBackupId(buf, 0);
+        setNextBackupId(buf, 1);
     }
 
     /**
