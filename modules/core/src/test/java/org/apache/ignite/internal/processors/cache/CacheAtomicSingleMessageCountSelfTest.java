@@ -25,7 +25,6 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -53,6 +52,9 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
     /** VM ip finder for TCP discovery. */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
+    /** Starting grid index. */
+    private int idx;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -73,6 +75,9 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
 
         cfg.setCacheConfiguration(cCfg);
 
+        if (idx++ == 0)
+            cfg.setClientMode(true);
+
         cfg.setCommunicationSpi(new TestCommunicationSpi());
 
         return cfg;
@@ -88,31 +93,20 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
             awaitPartitionMapExchange();
 
             TestCommunicationSpi commSpi = (TestCommunicationSpi)grid(0).configuration().getCommunicationSpi();
+            commSpi.resetCount();
 
             commSpi.registerMessage(GridNearAtomicUpdateRequest.class);
             commSpi.registerMessage(GridDhtAtomicUpdateRequest.class);
             commSpi.registerMessage(GridNearAtomicSingleUpdateRequest.class);
             commSpi.registerMessage(GridNearAtomicSingleUpdateTransformRequest.class);
 
-            Integer key = primaryKey(jcache(1));
-
             int putCnt = 15;
 
-            int expNearCnt = 0;
-
-            for (int i = 0; i < putCnt; i++) {
-                ClusterNode locNode = grid(0).localNode();
-
-                Affinity<Object> affinity = ignite(0).affinity(null);
-
-                if (!affinity.isPrimary(locNode, i))
-                    expNearCnt++;
-
+            for (int i = 0; i < putCnt; i++)
                 jcache(0).put(i, i);
-            }
 
             assertEquals(0, commSpi.messageCount(GridNearAtomicUpdateRequest.class));
-            assertEquals(expNearCnt, commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class));
+            assertEquals(putCnt, commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class));
             assertEquals(0, commSpi.messageCount(GridNearAtomicSingleUpdateTransformRequest.class));
         }
         finally {
@@ -131,23 +125,15 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
 
             TestCommunicationSpi commSpi = (TestCommunicationSpi)grid(0).configuration().getCommunicationSpi();
 
+            commSpi.resetCount();
+
             commSpi.registerMessage(GridNearAtomicUpdateRequest.class);
-            commSpi.registerMessage(GridDhtAtomicUpdateRequest.class);
             commSpi.registerMessage(GridNearAtomicSingleUpdateRequest.class);
             commSpi.registerMessage(GridNearAtomicSingleUpdateTransformRequest.class);
 
             int putCnt = 15;
 
-            int expNearCnt = 0;
-
             for (int i = 0; i < putCnt; i++) {
-                ClusterNode locNode = grid(0).localNode();
-
-                Affinity<Object> affinity = ignite(0).affinity(null);
-
-                if (!affinity.isPrimary(locNode, i))
-                    expNearCnt++;
-
                 jcache(0).invoke(i, new CacheEntryProcessor<Object, Object, Object>() {
                     @Override
                     public Object process(MutableEntry<Object, Object> entry,
@@ -157,8 +143,9 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
                 });
             }
 
-            assertTrue(expNearCnt != 0);
-            assertEquals(expNearCnt, commSpi.messageCount(GridNearAtomicSingleUpdateTransformRequest.class));
+//            assertEquals(0, commSpi.messageCount(GridNearAtomicUpdateRequest.class));
+            assertEquals(0, commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class));
+            assertEquals(putCnt, commSpi.messageCount(GridNearAtomicSingleUpdateTransformRequest.class));
         }
         finally {
             stopAllGrids();
