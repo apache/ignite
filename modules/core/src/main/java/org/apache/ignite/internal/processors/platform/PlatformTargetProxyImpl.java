@@ -23,7 +23,6 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
-import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
 
 /**
  * Platform target that is invoked via JNI and propagates calls to underlying {@link PlatformTarget}.
@@ -179,7 +178,7 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
                 writer = platformCtx.writer(out);
             }
 
-            Object res = target.processInObjectStreamOutObjectStream(type, unwrapProxy(arg), reader, writer);
+            PlatformTarget res = target.processInObjectStreamOutObjectStream(type, unwrapProxy(arg), reader, writer);
 
             if (out != null)
                 out.synchronize();
@@ -238,13 +237,8 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
      * @param obj Object to wrap.
      * @return Wrapped object.
      */
-    private Object wrapProxy(Object obj) {
-        // TODO: This is dirty. PlatformTarget should only operate on other PlatformTarget instances!
-
-        if (obj instanceof PlatformTarget)
-            return new PlatformTargetProxyImpl((PlatformTarget)obj, platformCtx);
-
-        return obj;
+    private Object wrapProxy(PlatformTarget obj) {
+        return new PlatformTargetProxyImpl((PlatformTarget)obj, platformCtx);
     }
 
     /**
@@ -253,10 +247,7 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
      * @param obj Object to unwrap.
      * @return Unwrapped object.
      */
-    private Object unwrapProxy(Object obj) {
-        if (obj instanceof PlatformTargetProxyImpl)
-            return ((PlatformTargetProxyImpl)obj).target;
-
-        return obj;
+    private PlatformTarget unwrapProxy(Object obj) {
+        return ((PlatformTargetProxyImpl)obj).target;
     }
 }

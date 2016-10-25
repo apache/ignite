@@ -77,7 +77,7 @@ public interface PlatformTarget {
      * @return Result.
      * @throws IgniteCheckedException In case of exception.
      */
-    Object processInStreamOutObject(int type, BinaryRawReaderEx reader) throws IgniteCheckedException;
+    PlatformTarget processInStreamOutObject(int type, BinaryRawReaderEx reader) throws IgniteCheckedException;
 
     /**
      * Process IN-OUT operation.
@@ -88,7 +88,7 @@ public interface PlatformTarget {
      * @param writer Binary writer.
      * @throws IgniteCheckedException In case of exception.
      */
-    void processInObjectStreamOutStream(int type, @Nullable Object arg, BinaryRawReaderEx reader,
+    void processInObjectStreamOutStream(int type, @Nullable PlatformTarget arg, BinaryRawReaderEx reader,
         BinaryRawWriterEx writer) throws IgniteCheckedException;
 
     /**
@@ -100,7 +100,7 @@ public interface PlatformTarget {
      * @param writer Binary writer.
      * @throws IgniteCheckedException In case of exception.
      */
-    Object processInObjectStreamOutObjectStream(int type, @Nullable Object arg, BinaryRawReaderEx reader,
+    PlatformTarget processInObjectStreamOutObjectStream(int type, @Nullable PlatformTarget arg, BinaryRawReaderEx reader,
         BinaryRawWriterEx writer) throws IgniteCheckedException;
 
     /**
@@ -126,7 +126,7 @@ public interface PlatformTarget {
      * @param type Type.
      * @throws IgniteCheckedException In case of exception.
      */
-    Object processOutObject(int type) throws IgniteCheckedException;
+    PlatformTarget processOutObject(int type) throws IgniteCheckedException;
 
     /**
      * Convert caught exception.

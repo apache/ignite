@@ -15,41 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.cache.query;
+package org.apache.ignite.internal.processors.platform.utils;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
-import org.apache.ignite.internal.processors.platform.PlatformTarget;
 
 /**
- * Proxy that implements PlatformTarget.
+ * Wraps listenable in a platform target.
  */
-public class PlatformContinuousQueryProxy extends PlatformAbstractTarget  {
-    private final PlatformContinuousQuery qry;
+public class PlatformListenableTarget extends PlatformAbstractTarget {
+    /** Wrapped listenable */
+    private final PlatformListenable listenable;
 
     /**
      * Constructor.
      *
      * @param platformCtx Context.
      */
-    public PlatformContinuousQueryProxy(PlatformContext platformCtx, PlatformContinuousQuery qry) {
+    public PlatformListenableTarget(PlatformListenable listenable, PlatformContext platformCtx) {
         super(platformCtx);
 
-        assert qry != null;
+        assert listenable != null;
 
-        this.qry = qry;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTarget processOutObject(int type) throws IgniteCheckedException {
-        return qry.getInitialQueryCursor();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long processOutLong(int type) throws IgniteCheckedException {
-        qry.close();
-
-        return 0;
+        this.listenable = listenable;
     }
 }

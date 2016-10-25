@@ -26,6 +26,7 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
+import org.apache.ignite.internal.processors.platform.utils.PlatformListenableTarget;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
@@ -153,7 +154,8 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @return Result.
      * @throws IgniteCheckedException In case of exception.
      */
-    @Override public Object processInStreamOutObject(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+    @Override public PlatformTarget processInStreamOutObject(int type, BinaryRawReaderEx reader)
+        throws IgniteCheckedException {
         return throwUnsupported(type);
     }
 
@@ -166,8 +168,8 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @param writer Binary writer.
      * @throws IgniteCheckedException In case of exception.
      */
-    @Override public void processInObjectStreamOutStream(int type, @Nullable Object arg, BinaryRawReaderEx reader,
-        BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public void processInObjectStreamOutStream(int type, @Nullable PlatformTarget arg,
+        BinaryRawReaderEx reader, BinaryRawWriterEx writer) throws IgniteCheckedException {
         throwUnsupported(type);
     }
 
@@ -180,8 +182,8 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @param writer Binary writer.
      * @throws IgniteCheckedException In case of exception.
      */
-    @Override public Object processInObjectStreamOutObjectStream(int type, @Nullable Object arg, BinaryRawReaderEx reader,
-        BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public PlatformTarget processInObjectStreamOutObjectStream(int type, @Nullable PlatformTarget arg,
+        BinaryRawReaderEx reader, BinaryRawWriterEx writer) throws IgniteCheckedException {
         return throwUnsupported(type);
     }
 
@@ -212,7 +214,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @param type Type.
      * @throws IgniteCheckedException In case of exception.
      */
-    @Override public Object processOutObject(int type) throws IgniteCheckedException {
+    @Override public PlatformTarget processOutObject(int type) throws IgniteCheckedException {
         return throwUnsupported(type);
     }
 
@@ -295,5 +297,15 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
         readAndListenFuture(reader, currentFuture(), null);
 
         return TRUE;
+    }
+
+    /**
+     * Wraps a listenable to be returned to platform.
+     *
+     * @param listenable Listenable.
+     * @return Target.
+     */
+    protected PlatformTarget wrapListenable(PlatformListenable listenable) {
+        return new PlatformListenableTarget(listenable, platformCtx);
     }
 }

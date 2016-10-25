@@ -29,6 +29,7 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.PlatformTarget;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -98,7 +99,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public Object processInStreamOutObject(int type, BinaryRawReaderEx reader)
+    @Override public PlatformTarget processInStreamOutObject(int type, BinaryRawReaderEx reader)
         throws IgniteCheckedException {
         switch (type) {
             case OP_UNICAST:
@@ -120,7 +121,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
             }
 
             case OP_EXEC_ASYNC:
-                return executeJavaTask(reader, true);
+                return wrapListenable((PlatformListenable) executeJavaTask(reader, true));
 
             default:
                 return super.processInStreamOutObject(type, reader);
@@ -161,7 +162,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * @param reader Reader.
      * @param broadcast broadcast flag.
      */
-    private PlatformListenable processClosures(long taskPtr, BinaryRawReaderEx reader, boolean broadcast,
+    private PlatformTarget processClosures(long taskPtr, BinaryRawReaderEx reader, boolean broadcast,
         boolean affinity) {
         PlatformAbstractTask task;
 
@@ -246,7 +247,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      *
      * @param task Task.
      */
-    private PlatformListenable executeNative0(final PlatformAbstractTask task) {
+    private PlatformTarget executeNative0(final PlatformAbstractTask task) {
         IgniteInternalFuture fut = computeForPlatform.executeAsync(task, null);
 
         fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
@@ -264,7 +265,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
             }
         });
 
-        return PlatformFutureUtils.getListenable(fut);
+        return wrapListenable(PlatformFutureUtils.getListenable(fut));
     }
 
     /**
