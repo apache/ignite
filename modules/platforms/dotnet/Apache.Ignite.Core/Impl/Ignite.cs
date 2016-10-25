@@ -517,7 +517,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public void ResetMetrics()
         {
-            UU.TargetOutLong(_prj.Target, ClusterGroupImpl.OpResetMetrics);
+            _prj.ResetMetrics();
         }
 
         /** <inheritdoc /> */
