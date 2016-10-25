@@ -380,8 +380,11 @@ public class PlatformCache extends PlatformAbstractTarget {
         assert exts != null;
 
         rawCache = cache;
+
         IgniteCache binCache = cache.withKeepBinary();
+
         cacheAsync = binCache.withAsync();
+
         this.cache = (IgniteCacheProxy)binCache;
         this.keepBinary = keepBinary;
         this.exts = exts;
@@ -563,7 +566,6 @@ public class PlatformCache extends PlatformAbstractTarget {
                         }
                     });
                 }
-
 
                 case OP_PUT_ASYNC: {
                     cacheAsync.put(reader.readObjectDetached(), reader.readObjectDetached());
@@ -1166,7 +1168,7 @@ public class PlatformCache extends PlatformAbstractTarget {
 
     /** <inheritDoc /> */
     @Override protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
-        return ((IgniteFutureImpl) cacheAsync.future()).internalFuture();
+        return ((IgniteFutureImpl)cacheAsync.future()).internalFuture();
     }
 
     /** <inheritDoc /> */

@@ -414,8 +414,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @throws IgniteCheckedException In case of error.
      */
     protected PlatformListenable readAndListenFuture(BinaryRawReader reader, IgniteInternalFuture fut,
-                                                     PlatformFutureUtils.Writer writer)
-            throws IgniteCheckedException {
+        PlatformFutureUtils.Writer writer) throws IgniteCheckedException {
         long futId = reader.readLong();
         int futTyp = reader.readInt();
 
@@ -431,8 +430,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @throws IgniteCheckedException In case of error.
      */
     protected PlatformListenable readAndListenFuture(BinaryRawReader reader, IgniteFuture fut,
-                                                     PlatformFutureUtils.Writer writer)
-            throws IgniteCheckedException {
+        PlatformFutureUtils.Writer writer) throws IgniteCheckedException {
         long futId = reader.readLong();
         int futTyp = reader.readInt();
 

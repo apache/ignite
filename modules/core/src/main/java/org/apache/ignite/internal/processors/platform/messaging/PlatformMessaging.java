@@ -82,6 +82,7 @@ public class PlatformMessaging extends PlatformAbstractTarget {
         assert messaging != null;
 
         this.messaging = messaging;
+
         messagingAsync = messaging.withAsync();
     }
 

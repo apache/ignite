@@ -125,7 +125,9 @@ public class PlatformServices extends PlatformAbstractTarget {
         assert services != null;
 
         this.services = services;
+
         servicesAsync = services.withAsync();
+
         this.srvKeepBinary = srvKeepBinary;
     }
 
@@ -365,7 +367,7 @@ public class PlatformServices extends PlatformAbstractTarget {
         int maxPerNodeCnt = reader.readInt();
 
         services.deployMultiple(name, new PlatformDotNetServiceImpl(svc, platformCtx, srvKeepBinary),
-                totalCnt, maxPerNodeCnt);
+            totalCnt, maxPerNodeCnt);
     }
 
     /**

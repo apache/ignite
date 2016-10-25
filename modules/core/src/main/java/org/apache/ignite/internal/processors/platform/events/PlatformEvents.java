@@ -110,6 +110,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
         assert events != null;
 
         this.events = events;
+
         eventsAsync = events.withAsync();
 
         eventResWriter = new EventResultWriter(platformCtx);
