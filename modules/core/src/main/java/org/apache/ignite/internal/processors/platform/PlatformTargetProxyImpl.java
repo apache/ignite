@@ -239,6 +239,8 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
      * @return Wrapped object.
      */
     private Object wrapProxy(Object obj) {
+        // TODO: This is dirty. PlatformTarget should only operate on other PlatformTarget instances!
+
         if (obj instanceof PlatformTarget)
             return new PlatformTargetProxyImpl((PlatformTarget)obj, platformCtx);
 
