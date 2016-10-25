@@ -241,7 +241,7 @@ public class TrackingPageIO extends PageIO {
      * @param pageSize Page size.
      * @return pageId of tracking page which set pageId belongs to
      */
-    public long trackingPageFor(long pageId, int pageSize) {
+    public static long trackingPageFor(long pageId, int pageSize) {
         assert PageIdUtils.pageIndex(pageId) > 0;
 
         int pageIdx = ((PageIdUtils.pageIndex(pageId) - COUNT_OF_EXTRA_PAGE) /
@@ -259,7 +259,7 @@ public class TrackingPageIO extends PageIO {
      *
      * @return how many page we can track with 1 page
      */
-    public int countOfPageToTrack(int pageSize) {
+    public static int countOfPageToTrack(int pageSize) {
         return ((pageSize - SIZE_FIELD_OFFSET) / 2 - SIZE_FIELD_SIZE)  << 3;
     }
 
