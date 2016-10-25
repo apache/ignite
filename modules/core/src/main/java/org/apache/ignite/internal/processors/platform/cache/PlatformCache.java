@@ -319,7 +319,6 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_PUT_IF_ABSENT_ASYNC = 81;
 
-    /** Underlying JCache. */
     /** */
     public static final int OP_EXTENSION = 82;
 
