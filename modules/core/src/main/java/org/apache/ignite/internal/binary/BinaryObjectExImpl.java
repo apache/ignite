@@ -142,7 +142,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
 
         BinaryObjectExImpl otherPo = (BinaryObjectExImpl)other;
 
-        if (typeId() == otherPo.typeId())
+        if (typeId() != otherPo.typeId())
             return false;
 
         int off0 = dataStartOffset();

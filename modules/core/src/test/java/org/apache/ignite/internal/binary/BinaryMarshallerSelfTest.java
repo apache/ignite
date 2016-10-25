@@ -2935,6 +2935,10 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         ObjectWithRaw objectWithRaw = new ObjectWithRaw(27, 13);
         ObjectRaw objectRaw = new ObjectRaw(27, 13);
 
+        Value objOther = new Value(26);
+        ObjectWithRaw objectWithRawOther = new ObjectWithRaw(26, 13);
+        ObjectRaw objectRawOther = new ObjectRaw(26, 13);
+
         BinaryObjectImpl binObj0 = marshal(obj, m0);
         BinaryObjectImpl binObj1 = marshal(obj, m1);
         BinaryObjectImpl binObjWithRaw0 = marshal(objectWithRaw, m0);
@@ -2958,6 +2962,27 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         BinaryObjectOffheapImpl binObjWithRawOffheap1 = null;
         BinaryObjectOffheapImpl binObjRawOffheap0 = null;
         BinaryObjectOffheapImpl binObjRawOffheap1 = null;
+
+        BinaryObjectImpl binObjOther0 = marshal(objOther, m0);
+        BinaryObjectImpl binObjOther1 = marshal(objOther, m1);
+        BinaryObjectImpl binObjWithRawOther0 = marshal(objectWithRawOther, m0);
+        BinaryObjectImpl binObjWithRawOther1 = marshal(objectWithRawOther, m1);
+        BinaryObjectImpl binObjRawOther0 = marshal(objectRawOther, m0);
+        BinaryObjectImpl binObjRawOther1 = marshal(objectRawOther, m1);
+
+        assertEquals(binObjOther0.length(), binObj0.length());
+        assertEquals(binObjOther1.length(), binObj1.length());
+        assertEquals(binObjWithRawOther0.length(), binObjWithRaw0.length());
+        assertEquals(binObjWithRawOther1.length(), binObjWithRaw1.length());
+        assertEquals(binObjRawOther0.length(), binObjRaw0.length());
+        assertEquals(binObjRawOther1.length(), binObjRaw1.length());
+
+        assertNotEquals(binObjOther0, binObj0);
+        assertNotEquals(binObjOther1, binObj1);
+        assertNotEquals(binObjWithRawOther0, binObjWithRaw0);
+        assertNotEquals(binObjWithRawOther1, binObjWithRaw1);
+        assertNotEquals(binObjRawOther0, binObjRaw0);
+        assertNotEquals(binObjRawOther1, binObjRaw1);
 
         try {
             binObjOffheap0 = marshalOffHeap(binObj0, m0);
