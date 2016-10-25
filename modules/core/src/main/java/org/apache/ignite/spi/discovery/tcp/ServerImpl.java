@@ -85,6 +85,7 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.io.GridByteArrayInputStream;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilterAdapter;
@@ -6142,14 +6143,16 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             final ByteBuffer buf = (ByteBuffer)msg;
 
-            if (msgBuf == null) {
+            if (msgBuf == null || msgBuf.position() == 0) {
                 // first packet
                 final int msgLen = getMessageLength(buf, ses);
 
                 if (msgLen == -1)
                     return;
 
-                msgBuf = ByteBuffer.allocate(msgLen);
+                msgBuf = enlargeIfNeed(msgBuf, msgLen);
+
+                ses.addMeta(INCOMPLETE_MESSAGE_META, msgBuf);
             }
 
             final int left = buf.remaining();
@@ -6162,10 +6165,21 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (!msgBuf.hasRemaining()) {
                 // unmarshal and process
-                final Object obj = spi.marshaller().unmarshal(msgBuf.array(),
-                    U.resolveClassLoader(spi.ignite().configuration()));
+                GridByteArrayInputStream in = null;
 
-                ses.removeMeta(INCOMPLETE_MESSAGE_META);
+                final Object obj;
+
+                try {
+                    in = new GridByteArrayInputStream(msgBuf.array(), 0, msgBuf.position());
+
+                    obj = spi.marshaller().unmarshal(in,
+                        U.resolveClassLoader(spi.ignite().configuration()));
+                }
+                finally {
+                    U.closeQuiet(in);
+
+                    msgBuf.clear();
+                }
 
                 proceedMessageReceived(ses, obj);
 
@@ -6173,8 +6187,22 @@ class ServerImpl extends TcpDiscoveryImpl {
                 while (buf.hasRemaining())
                     onMessageReceived(ses, msg);
             }
-            else
-                ses.addMeta(INCOMPLETE_MESSAGE_META, msgBuf);
+        }
+
+        /**
+         * @param buf Byte buffer.
+         * @param len Length.
+         * @return New buffer.
+         */
+        private ByteBuffer enlargeIfNeed(ByteBuffer buf, int len) {
+            assert buf == null || buf.position() == 0 : buf;
+
+            if (buf == null || buf.capacity() < len)
+                buf = ByteBuffer.allocate(len);
+
+            buf.limit(len);
+
+            return buf;
         }
 
         /**
