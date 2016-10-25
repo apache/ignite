@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.cache.query;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 
@@ -40,12 +41,12 @@ public class PlatformContinuousQueryProxy extends PlatformAbstractTarget  {
     }
 
     /** {@inheritDoc} */
-    @Override public Object outObject(int type) throws Exception {
+    @Override public Object processOutObject(int type) throws IgniteCheckedException {
         return qry.getInitialQueryCursor();
     }
 
     /** {@inheritDoc} */
-    @Override public long outLong(int type) throws Exception {
+    @Override public long processOutLong(int type) throws IgniteCheckedException {
         qry.close();
 
         return 0;

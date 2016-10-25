@@ -114,7 +114,7 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc}  */
-    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
         switch (type) {
             case OP_UPDATE:
                 int plc = reader.readInt();
@@ -169,7 +169,7 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc}  */
-    @Override protected long processInLongOutLong(int type, final long val) throws IgniteCheckedException {
+    @Override public long processInLongOutLong(int type, final long val) throws IgniteCheckedException {
         switch (type) {
             case OP_SET_ALLOW_OVERWRITE:
                 ldr.allowOverwrite(val == TRUE);
