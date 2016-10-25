@@ -143,7 +143,6 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
                 });
             }
 
-//            assertEquals(0, commSpi.messageCount(GridNearAtomicUpdateRequest.class));
             assertEquals(0, commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class));
             assertEquals(putCnt, commSpi.messageCount(GridNearAtomicSingleUpdateTransformRequest.class));
         }
