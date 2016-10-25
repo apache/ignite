@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Impl.Compute
     using System.Linq;
     using System.Runtime.Serialization;
     using System.Threading;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
@@ -141,12 +142,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             try
             {
-                TReduceRes res = DoOutInOp<TReduceRes>(OpExec, writer =>
-                {
-                    WriteTask(writer, taskName, taskArg, nodes);
-                });
-
-                return res;
+                return DoOutInOp<TReduceRes>(OpExec, writer => WriteTask(writer, taskName, taskArg, nodes));
             }
             finally
             {
@@ -167,18 +163,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             try
             {
-                Future<TReduceRes> fut = null;
-
-                DoOutInOp(OpExecAsync, writer =>
-                {
-                    WriteTask(writer, taskName, taskArg, nodes);
-                }, input =>
-                {
-                    fut = GetFuture<TReduceRes>((futId, futTyp) =>
-                        UU.TargetListenFutureAndGet(Target, futId, futTyp), _keepBinary.Value);
-                });
-
-                return fut;
+                return DoOutOpObjectAsync<TReduceRes>(OpExecAsync, w => WriteTask(w, taskName, taskArg, nodes));
             }
             finally
             {
@@ -625,12 +610,12 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="taskName">Task name.</param>
         /// <param name="taskArg">Task arg.</param>
         /// <param name="nodes">Nodes.</param>
-        private void WriteTask(BinaryWriter writer, string taskName, object taskArg,
+        private void WriteTask(IBinaryRawWriter writer, string taskName, object taskArg,
             ICollection<IClusterNode> nodes)
         {
             writer.WriteString(taskName);
             writer.WriteBoolean(_keepBinary.Value);
-            writer.Write(taskArg);
+            writer.WriteObject(taskArg);
 
             WriteNodeIds(writer, nodes);
         }
@@ -640,7 +625,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         /// <param name="writer">Writer.</param>
         /// <param name="nodes">Nodes.</param>
-        private static void WriteNodeIds(BinaryWriter writer, ICollection<IClusterNode> nodes)
+        private static void WriteNodeIds(IBinaryRawWriter writer, ICollection<IClusterNode> nodes)
         {
             if (nodes == null)
                 writer.WriteBoolean(false);

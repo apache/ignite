@@ -460,31 +460,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return target.ChangeTarget(res);
         }
 
-        internal static void TargetListenFuture(IUnmanagedTarget target, long futId, int typ)
-        {
-            JNI.TargetListenFut(target.Context, target.Target, futId, typ);
-        }
-
-        internal static void TargetListenFutureForOperation(IUnmanagedTarget target, long futId, int typ, int opId)
-        {
-            JNI.TargetListenFutForOp(target.Context, target.Target, futId, typ, opId);
-        }
-
-        internal static IUnmanagedTarget TargetListenFutureAndGet(IUnmanagedTarget target, long futId, int typ)
-        {
-            var res = JNI.TargetListenFutAndGet(target.Context, target.Target, futId, typ);
-
-            return target.ChangeTarget(res);
-        }
-
-        internal static IUnmanagedTarget TargetListenFutureForOperationAndGet(IUnmanagedTarget target, long futId,
-            int typ, int opId)
-        {
-            var res = JNI.TargetListenFutForOpAndGet(target.Context, target.Target, futId, typ, opId);
-
-            return target.ChangeTarget(res);
-        }
-
         #endregion
 
         #region NATIVE METHODS: MISCELANNEOUS

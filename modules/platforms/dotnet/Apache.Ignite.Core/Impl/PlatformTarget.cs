@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
@@ -757,6 +758,102 @@ namespace Apache.Ignite.Core.Impl
 
         #endregion
 
+        #region Async operations
+
+        /// <summary>
+        /// Performs async operation.
+        /// </summary>
+        /// <param name="type">The type code.</param>
+        /// <param name="writeAction">The write action.</param>
+        /// <returns>Task for async operation</returns>
+        protected Task DoOutOpAsync(int type, Action<BinaryWriter> writeAction = null)
+        {
+            return DoOutOpAsync<object>(type, writeAction);
+        }
+
+        /// <summary>
+        /// Performs async operation.
+        /// </summary>
+        /// <typeparam name="T">Type of the result.</typeparam>
+        /// <param name="type">The type code.</param>
+        /// <param name="writeAction">The write action.</param>
+        /// <param name="keepBinary">Keep binary flag, only applicable to object futures. False by default.</param>
+        /// <param name="convertFunc">The function to read future result from stream.</param>
+        /// <returns>Task for async operation</returns>
+        protected Task<T> DoOutOpAsync<T>(int type, Action<BinaryWriter> writeAction = null, bool keepBinary = false,
+            Func<BinaryReader, T> convertFunc = null)
+        {
+            return GetFuture((futId, futType) => DoOutOp(type, w =>
+            {
+                if (writeAction != null)
+                    writeAction(w);
+                w.WriteLong(futId);
+                w.WriteInt(futType);
+            }), keepBinary, convertFunc).Task;
+        }
+
+        /// <summary>
+        /// Performs async operation.
+        /// </summary>
+        /// <typeparam name="T">Type of the result.</typeparam>
+        /// <param name="type">The type code.</param>
+        /// <param name="writeAction">The write action.</param>
+        /// <returns>Future for async operation</returns>
+        protected Future<T> DoOutOpObjectAsync<T>(int type, Action<IBinaryRawWriter> writeAction)
+        {
+            return GetFuture<T>((futId, futType) => DoOutOpObject(type, w =>
+            {
+                writeAction(w);
+                w.WriteLong(futId);
+                w.WriteInt(futType);
+            }));
+        }
+
+        /// <summary>
+        /// Performs async operation.
+        /// </summary>
+        /// <typeparam name="TR">Type of the result.</typeparam>
+        /// <typeparam name="T1">The type of the first arg.</typeparam>
+        /// <param name="type">The type code.</param>
+        /// <param name="val1">First arg.</param>
+        /// <returns>
+        /// Task for async operation
+        /// </returns>
+        protected Task<TR> DoOutOpAsync<T1, TR>(int type, T1 val1)
+        {
+            return GetFuture<TR>((futId, futType) => DoOutOp(type, w =>
+            {
+                w.WriteObject(val1);
+                w.WriteLong(futId);
+                w.WriteInt(futType);
+            })).Task;
+        }
+
+        /// <summary>
+        /// Performs async operation.
+        /// </summary>
+        /// <typeparam name="TR">Type of the result.</typeparam>
+        /// <typeparam name="T1">The type of the first arg.</typeparam>
+        /// <typeparam name="T2">The type of the second arg.</typeparam>
+        /// <param name="type">The type code.</param>
+        /// <param name="val1">First arg.</param>
+        /// <param name="val2">Second arg.</param>
+        /// <returns>
+        /// Task for async operation
+        /// </returns>
+        protected Task<TR> DoOutOpAsync<T1, T2, TR>(int type, T1 val1, T2 val2)
+        {
+            return GetFuture<TR>((futId, futType) => DoOutOp(type, w =>
+            {
+                w.WriteObject(val1);
+                w.WriteObject(val2);
+                w.WriteLong(futId);
+                w.WriteInt(futType);
+            })).Task;
+        }
+
+        #endregion
+
         #region Miscelanneous
 
         /// <summary>
@@ -846,7 +943,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="keepBinary">Keep binary flag, only applicable to object futures. False by default.</param>
         /// <param name="convertFunc">The function to read future result from stream.</param>
         /// <returns>Created future.</returns>
-        protected Future<T> GetFuture<T>(Func<long, int, IUnmanagedTarget> listenAction, bool keepBinary = false,
+        private Future<T> GetFuture<T>(Func<long, int, IUnmanagedTarget> listenAction, bool keepBinary = false,
             Func<BinaryReader, T> convertFunc = null)
         {
             var futType = FutureType.Object;
@@ -862,7 +959,18 @@ namespace Apache.Ignite.Core.Impl
 
             var futHnd = _marsh.Ignite.HandleRegistry.Allocate(fut);
 
-            var futTarget = listenAction(futHnd, (int) futType);
+            IUnmanagedTarget futTarget;
+
+            try
+            {
+                futTarget = listenAction(futHnd, (int)futType);
+            }
+            catch (Exception)
+            {
+                _marsh.Ignite.HandleRegistry.Release(futHnd);
+
+                throw;
+            }
 
             fut.SetTarget(futTarget);
 
@@ -893,25 +1001,18 @@ namespace Apache.Ignite.Core.Impl
 
             var futHnd = _marsh.Ignite.HandleRegistry.Allocate(fut);
 
-            listenAction(futHnd, (int)futType);
+            try
+            {
+                listenAction(futHnd, (int)futType);
+            }
+            catch (Exception)
+            {
+                _marsh.Ignite.HandleRegistry.Release(futHnd);
+
+                throw;
+            }
 
             return fut;
-        }
-
-        /// <summary>
-        /// Creates a task to listen for the last async op.
-        /// </summary>
-        protected Task GetTask()
-        {
-            return GetTask<object>();
-        }
-
-        /// <summary>
-        /// Creates a task to listen for the last async op.
-        /// </summary>
-        protected Task<T> GetTask<T>()
-        {
-            return GetFuture<T>((futId, futTyp) => UU.TargetListenFuture(Target, futId, futTyp)).Task;
         }
 
         #endregion
