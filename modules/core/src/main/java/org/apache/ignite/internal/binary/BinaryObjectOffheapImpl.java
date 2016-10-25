@@ -190,9 +190,9 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         short flags = BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS);
 
         if (!BinaryUtils.hasSchema(flags))
-            return length();
+            return start + length();
 
-        return BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
+        return start + BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
     }
 
     /** {@inheritDoc} */

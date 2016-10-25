@@ -312,9 +312,9 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         short flags = BinaryPrimitives.readShort(arr, start + GridBinaryMarshaller.FLAGS_POS);
 
         if (!BinaryUtils.hasSchema(flags))
-            return length();
+            return start + length();
 
-        return BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
+        return start + BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
     }
 
    /** {@inheritDoc} */
