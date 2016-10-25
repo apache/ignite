@@ -299,28 +299,28 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public PlatformTargetProxy compute(PlatformTargetProxy grp) {
-        PlatformClusterGroup grp0 = (PlatformClusterGroup)grp;
+        PlatformClusterGroup grp0 = (PlatformClusterGroup)grp.unwrap();
 
         return proxy(new PlatformCompute(platformCtx, grp0.projection(), PlatformUtils.ATTR_PLATFORM));
     }
 
     /** {@inheritDoc} */
     @Override public PlatformTargetProxy message(PlatformTargetProxy grp) {
-        PlatformClusterGroup grp0 = (PlatformClusterGroup)grp;
+        PlatformClusterGroup grp0 = (PlatformClusterGroup)grp.unwrap();
 
         return proxy(new PlatformMessaging(platformCtx, grp0.projection().ignite().message(grp0.projection())));
     }
 
     /** {@inheritDoc} */
     @Override public PlatformTargetProxy events(PlatformTargetProxy grp) {
-        PlatformClusterGroup grp0 = (PlatformClusterGroup)grp;
+        PlatformClusterGroup grp0 = (PlatformClusterGroup)grp.unwrap();
 
         return proxy(new PlatformEvents(platformCtx, grp0.projection().ignite().events(grp0.projection())));
     }
 
     /** {@inheritDoc} */
     @Override public PlatformTargetProxy services(PlatformTargetProxy grp) {
-        PlatformClusterGroup grp0 = (PlatformClusterGroup)grp;
+        PlatformClusterGroup grp0 = (PlatformClusterGroup)grp.unwrap();
 
         return proxy(new PlatformServices(platformCtx, grp0.projection().ignite().services(grp0.projection()), false));
     }

@@ -136,4 +136,11 @@ public interface PlatformTargetProxy {
      */
     @SuppressWarnings("UnusedDeclaration")
     public void listenFutureForOperation(final long futId, int typ, int opId) throws Exception;
+
+    /**
+     * Returns the underlying target.
+     *
+     * @return Underlying target.
+     */
+    public PlatformTarget unwrap();
 }

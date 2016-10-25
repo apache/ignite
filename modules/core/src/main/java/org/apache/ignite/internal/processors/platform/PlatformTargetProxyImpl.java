@@ -70,7 +70,7 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
         try (PlatformMemory mem = memPtr != 0 ? platformCtx.memory().get(memPtr) : null) {
             BinaryRawReaderEx reader = mem != null ? platformCtx.reader(mem) : null;
 
-            return target.processInStreamOutObject(type, reader);
+            return wrapProxy(target.processInStreamOutObject(type, reader));
         }
         catch (Exception e) {
             throw target.convertException(e);
@@ -106,7 +106,7 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
     /** {@inheritDoc} */
     @Override public Object outObject(int type) throws Exception {
         try {
-            return target.processOutObject(type);
+            return wrapProxy(target.processOutObject(type));
         }
         catch (Exception e) {
             throw target.convertException(e);
@@ -143,7 +143,7 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
 
                 BinaryRawWriterEx writer = platformCtx.writer(out);
 
-                target.processInObjectStreamOutStream(type, arg, reader, writer);
+                target.processInObjectStreamOutStream(type, unwrapProxy(arg), reader, writer);
 
                 out.synchronize();
             }
@@ -179,12 +179,12 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
                 writer = platformCtx.writer(out);
             }
 
-            Object res = target.processInObjectStreamOutObjectStream(type, arg, reader, writer);
+            Object res = target.processInObjectStreamOutObjectStream(type, unwrapProxy(arg), reader, writer);
 
             if (out != null)
                 out.synchronize();
 
-            return res;
+            return wrapProxy(res);
         }
         catch (Exception e) {
             throw target.convertException(e);
@@ -211,6 +211,11 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
         PlatformFutureUtils.listen(platformCtx, currentFuture(), futId, typ, futureWriter(opId), target);
     }
 
+    /** {@inheritDoc} */
+    @Override public PlatformTarget unwrap() {
+        return target;
+    }
+
     /**
      * @return Future writer.
      */
@@ -225,5 +230,31 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
     private IgniteInternalFuture currentFuture() {
         // TODO: Delegate to TargetEx
         return null;
+    }
+
+    /**
+     * Wraps an object in a proxy when possible.
+     *
+     * @param obj Object to wrap.
+     * @return Wrapped object.
+     */
+    private Object wrapProxy(Object obj) {
+        if (obj instanceof PlatformTarget)
+            return new PlatformTargetProxyImpl((PlatformTarget)obj, platformCtx);
+
+        return obj;
+    }
+
+    /**
+     * Unwraps an object from a proxy when possible.
+     *
+     * @param obj Object to unwrap.
+     * @return Unwrapped object.
+     */
+    private Object unwrapProxy(Object obj) {
+        if (obj instanceof PlatformTargetProxyImpl)
+            return ((PlatformTargetProxyImpl)obj).target;
+
+        return obj;
     }
 }
