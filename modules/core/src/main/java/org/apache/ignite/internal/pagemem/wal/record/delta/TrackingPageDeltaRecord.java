@@ -28,14 +28,24 @@ public class TrackingPageDeltaRecord extends PageDeltaRecord {
     /** Page id to mark. */
     private final long pageIdToMark;
 
+    /** Next backup id. */
+    private final long nextBackupId;
+
+    /** Last successful backup id. */
+    private final long lastSuccessfulBackupId;
+
     /**
      * @param cacheId Cache id.
      * @param pageId Page id.
+     * @param nextBackupId
+     * @param lastSuccessfulBackupId
      */
-    public TrackingPageDeltaRecord(int cacheId, long pageId, long pageIdToMark) {
+    public TrackingPageDeltaRecord(int cacheId, long pageId, long pageIdToMark, long nextBackupId, long lastSuccessfulBackupId) {
         super(cacheId, pageId);
 
         this.pageIdToMark = pageIdToMark;
+        this.nextBackupId = nextBackupId;
+        this.lastSuccessfulBackupId = lastSuccessfulBackupId;
     }
 
     /**
@@ -45,9 +55,23 @@ public class TrackingPageDeltaRecord extends PageDeltaRecord {
         return pageIdToMark;
     }
 
+    /**
+     *
+     */
+    public long nextBackupId() {
+        return nextBackupId;
+    }
+
+    /**
+     *
+     */
+    public long lastSuccessfulBackupId() {
+        return lastSuccessfulBackupId;
+    }
+
     /** {@inheritDoc} */
     @Override public void applyDelta(ByteBuffer buf) throws IgniteCheckedException {
-        TrackingPageIO.VERSIONS.forPage(buf).restoreMark(buf, pageIdToMark);
+        TrackingPageIO.VERSIONS.forPage(buf).markChanged(buf, pageIdToMark, nextBackupId, lastSuccessfulBackupId, buf.capacity());
     }
 
     /** {@inheritDoc} */

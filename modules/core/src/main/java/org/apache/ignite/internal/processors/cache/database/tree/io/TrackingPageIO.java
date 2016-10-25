@@ -105,18 +105,6 @@ public class TrackingPageIO extends PageIO {
     }
 
     /**
-     * Should be use only for tracking page restore
-     *
-     * @param buf Buffer.
-     * @param pageId Page id.
-     */
-    public boolean restoreMark(ByteBuffer buf, long pageId) {
-        long lastBackupId = buf.getLong(LAST_BACKUP_OFFSET);
-
-        return markChanged(buf, pageId, lastBackupId, lastBackupId - 1, buf.capacity());
-    }
-
-    /**
      * @param buf Buffer.
      * @param nextBackupId Next backup id.
      * @param lastSuccessfulBackupId Last successful backup id.
