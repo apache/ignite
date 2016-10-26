@@ -186,8 +186,6 @@ public class JmhIdeBenchmarkRunner {
         builder.timeUnit(outputTimeUnit);
         builder.threads(threads);
 
-        builder.shouldFailOnError(true);
-
         if (benchmarkModes != null) {
             for (Mode benchmarkMode : benchmarkModes)
                 builder.getBenchModes().add(benchmarkMode);
