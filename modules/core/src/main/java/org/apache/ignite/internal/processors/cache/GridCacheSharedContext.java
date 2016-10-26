@@ -853,6 +853,6 @@ public class GridCacheSharedContext<K, V> {
      * @return Index.
      */
     private int dhtAtomicUpdateIndex(GridCacheVersion ver) {
-        return U.safeAbs(ver.hashCode() % dhtAtomicUpdCnt.length());
+        return U.safeAbs(ver.hashCode()) % dhtAtomicUpdCnt.length();
     }
 }

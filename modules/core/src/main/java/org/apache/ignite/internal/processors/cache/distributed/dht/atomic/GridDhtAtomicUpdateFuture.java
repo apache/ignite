@@ -64,7 +64,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
 
     /** Max concurrent updates. */
     private static final int MAX_CONCURRENT_UPDATES =
-        IgniteSystemProperties.getInteger(IGNITE_ATOMIC_CACHE_MAX_CONCURRENT_DHT_UPDATES, 100);
+        IgniteSystemProperties.getInteger(IGNITE_ATOMIC_CACHE_MAX_CONCURRENT_DHT_UPDATES, 2000);
 
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
@@ -396,9 +396,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
             if (updateReq.writeSynchronizationMode() == FULL_SYNC || forceFullSync)
                 completionCb.apply(updateReq, updateRes);
 
-            if (cctx.shared().database().persistenceEnabled() &&
-                updateReq.writeSynchronizationMode() != FULL_SYNC &&
-                MAX_CONCURRENT_UPDATES > 0)
+            if (backpressureEnabled())
                 cctx.shared().finishDhtAtomicUpdate(futVer);
 
             return true;
@@ -413,10 +411,8 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
     public void map() {
         if (!mappings.isEmpty()) {
             // Set the flag before sending requests.
-            forceFullSync = cctx.shared().database().persistenceEnabled() &&
-                updateReq.writeSynchronizationMode() != FULL_SYNC &&
-                MAX_CONCURRENT_UPDATES > 0 &&
-                cctx.shared().startDhtAtomicUpdate(futVer) <= MAX_CONCURRENT_UPDATES;
+            forceFullSync = backpressureEnabled() &&
+                cctx.shared().startDhtAtomicUpdate(futVer) > MAX_CONCURRENT_UPDATES;
 
             for (GridDhtAtomicUpdateRequest req : mappings.values()) {
                 try {
@@ -437,7 +433,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
                 }
                 catch (IgniteCheckedException e) {
                     U.error(msgLog, "Failed to send request [futId=" + futVer +
-                        ", writeVer=" + writeVer + ", node=" + req.nodeId() + ']');
+                        ", writeVer=" + writeVer + ", node=" + req.nodeId() + ']', e);
 
                     registerResponse(req.nodeId());
                 }
@@ -452,6 +448,16 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
             if (!forceFullSync)
                 completionCb.apply(updateReq, updateRes);
         }
+    }
+
+    /**
+     * @return Backpressure enabled flag.
+     */
+    private boolean backpressureEnabled() {
+        return cctx.shared().database().persistenceEnabled() &&
+            cctx.shared().wal().isFullSync() &&
+            updateReq.writeSynchronizationMode() != FULL_SYNC &&
+            MAX_CONCURRENT_UPDATES > 0;
     }
 
     /**
