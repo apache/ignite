@@ -34,10 +34,6 @@ public class PlatformListenableTarget extends PlatformAbstractTarget {
     /** Wrapped listenable */
     private final PlatformListenable listenable;
 
-    @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
-        return super.processInLongOutLong(type, val);
-    }
-
     /**
      * Constructor.
      *
@@ -49,5 +45,20 @@ public class PlatformListenableTarget extends PlatformAbstractTarget {
         assert listenable != null;
 
         this.listenable = listenable;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        switch (type) {
+            case OP_CANCEL:
+                listenable.cancel();
+
+                return TRUE;
+
+            case OP_IS_CANCELLED:
+                return listenable.isCancelled() ? TRUE : FALSE;
+        }
+
+        return super.processInLongOutLong(type, val);
     }
 }
