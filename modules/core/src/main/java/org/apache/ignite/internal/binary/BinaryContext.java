@@ -425,8 +425,6 @@ public class BinaryContext {
 
         Map<String, String> affFields = new HashMap<>();
 
-        Map<String, BinaryIdentity> identities = new HashMap<>();
-
         if (!F.isEmpty(igniteCfg.getCacheKeyConfiguration())) {
             for (CacheKeyConfiguration keyCfg : igniteCfg.getCacheKeyConfiguration())
                 affFields.put(keyCfg.getTypeName(), keyCfg.getAffinityKeyFieldName());
@@ -440,19 +438,12 @@ public class BinaryContext {
                     throw new BinaryObjectException("Class name is required for binary type configuration.");
 
                 // Resolve mapper.
-                BinaryIdMapper idMapper = globalIdMapper;
-
-                if (typeCfg.getIdMapper() != null)
-                    idMapper = typeCfg.getIdMapper();
-
+                BinaryIdMapper idMapper = U.firstNotNull(typeCfg.getIdMapper(), globalIdMapper);
                 BinaryNameMapper nameMapper = U.firstNotNull(typeCfg.getNameMapper(), globalNameMapper);
+                BinarySerializer serializer = U.firstNotNull(typeCfg.getSerializer(), globalSerializer);
+                BinaryIdentity identity = U.firstNotNull(typeCfg.getIdentity(), globalIdentity);
 
                 BinaryInternalMapper mapper = resolveMapper(nameMapper, idMapper);
-
-                // Resolve serializer.
-                BinarySerializer serializer = U.firstNotNull(typeCfg.getSerializer(), globalSerializer);
-
-                BinaryIdentity identity = U.firstNotNull(typeCfg.getIdentity(), globalIdentity);
 
                 if (clsName.endsWith(".*")) {
                     String pkgName = clsName.substring(0, clsName.length() - 2);
@@ -1123,19 +1114,19 @@ public class BinaryContext {
 
         //Workaround for IGNITE-1358
         if (predefinedTypes.get(id) != null)
-            dup(clsName, id);
+            throw duplicateTypeIdException(clsName, id);
 
         if (typeId2Mapper.put(id, mapper) != null)
-            dup(clsName, id);
+            throw duplicateTypeIdException(clsName, id);
 
         if (identity != null) {
             if (typeIdentities.put(id, identity) != null)
-                dup(clsName, id);
+                throw duplicateTypeIdException(clsName, id);
         }
 
         if (affKeyFieldName != null) {
             if (affKeyFieldNames.put(id, affKeyFieldName) != null)
-                dup(clsName, id);
+                throw duplicateTypeIdException(clsName, id);
         }
 
         cls2Mappers.put(clsName, mapper);
@@ -1184,8 +1175,8 @@ public class BinaryContext {
      * @param clsName Class name.
      * @param id Type id.
      */
-    private static void dup(String clsName, int id) {
-        throw new BinaryObjectException("Duplicate type ID [clsName=" + clsName + ", id=" + id + ']');
+    private static BinaryObjectException duplicateTypeIdException(String clsName, int id) {
+        return new BinaryObjectException("Duplicate type ID [clsName=" + clsName + ", id=" + id + ']');
     }
 
     /**
