@@ -27,7 +27,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import java.util.HashMap;
 
 /**
- * Default implementation of fields based hash code resolver.
+ * Identity implementation which use the list of provided fields to calculate the hash code and to perform equality
+ * checks.
  */
 public final class BinaryFieldListIdentity implements BinaryIdentity {
     /** Mutex for synchronization. */
@@ -88,7 +89,7 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
 
             if (obj0.hasSchema()) {
                 // Handle optimized case.
-                FieldAccessor accessor = accessor(obj0);
+                FieldAccessor accessor = accessor(obj0, obj0.typeId(), obj0.schemaId());
 
                 assert accessor != null;
 
@@ -123,10 +124,24 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
         BinaryObjectExImpl ex1 = (BinaryObjectExImpl)o1;
         BinaryObjectExImpl ex2 = (BinaryObjectExImpl)o2;
 
+        int typeId = ex1.typeId();
+
+        if (typeId != ex2.typeId())
+            return false;
+
         if (ex1.hasSchema() && ex2.hasSchema()) {
+            int schemaId1 = ex1.schemaId();
+            int schemaId2 = ex2.schemaId();
+
             // Optimistic case: both objects have schemas.
-            FieldAccessor accessor1 = accessor(ex1);
-            FieldAccessor accessor2 = accessor(ex2);
+            FieldAccessor accessor1 = accessor(ex1, typeId, schemaId1);
+
+            FieldAccessor accessor2;
+
+            if (schemaId1 == schemaId2)
+                accessor2 = accessor1;
+            else
+                accessor2 = accessor(ex2, typeId, schemaId2);
 
             if (ex1.hasArray() && ex2.hasArray()) {
                 // Even better case: compare fields without deserialization.
@@ -153,31 +168,16 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
         }
         else {
             // Pessimistic case: object of unknown types, or without schemas. Have to read fields in usual way.
-            BinaryType type1 = ex1.type();
-            BinaryType type2 = ex1.type();
+            BinaryType typ = ex1.type();
 
-            if (type1.typeId() == type2.typeId()) {
-                for (String fieldName : fieldNames) {
-                    BinaryFieldImpl field = (BinaryFieldImpl)type1.field(fieldName);
+            for (String fieldName : fieldNames) {
+                BinaryFieldImpl field = (BinaryFieldImpl)typ.field(fieldName);
 
-                    Object val1 = field.value(ex1);
-                    Object val2 = field.value(ex2);
+                Object val1 = field.value(ex1);
+                Object val2 = field.value(ex2);
 
-                    if (!F.eq(val1, val2))
-                        return false;
-                }
-            }
-            else {
-                for (String fieldName : fieldNames) {
-                    BinaryFieldImpl field1 = (BinaryFieldImpl)type1.field(fieldName);
-                    BinaryFieldImpl field2 = (BinaryFieldImpl)type2.field(fieldName);
-
-                    Object val1 = field1.value(ex1);
-                    Object val2 = field2.value(ex2);
-
-                    if (!F.eq(val1, val2))
-                        return false;
-                }
+                if (!F.eq(val1, val2))
+                    return false;
             }
         }
 
@@ -188,20 +188,19 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
      * Get fields accessor for the given object.
      *
      * @param obj Object.
+     * @param typId Type ID.
+     * @param schemaId Schema ID.
      * @return Accessor.
      */
-    private FieldAccessor accessor(BinaryObjectExImpl obj) {
-        int typeId = obj.typeId();
-        int schemaId = obj.schemaId();
-
+    private FieldAccessor accessor(BinaryObjectExImpl obj, int typId, int schemaId) {
         // Try getting single accessor.
         FieldAccessor res = accessor;
 
-        if (res != null && res.applicableTo(typeId, schemaId))
+        if (res != null && res.applicableTo(typId, schemaId))
             return res;
 
         // Try reading form map.
-        long key = ((long)typeId << 32) + schemaId;
+        long key = ((long)typId << 32) + schemaId;
 
         HashMap<Long, FieldAccessor> accessors0 = accessors;
 
@@ -225,20 +224,19 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
                 orders[i] = field.fieldOrder(obj);
             }
 
-            res = new FieldAccessor(typeId, schemaId, orders);
+            res = new FieldAccessor(typId, schemaId, orders);
 
             // Set accessor.
-            if (accessors != null) {
-                accessors0 = new HashMap<>(accessors);
-
-                accessors0.put(key, res);
-
-                accessors = accessors0;
-            }
-            else if (accessor == null)
+            if (accessor == null)
                 accessor = res;
             else {
-                accessors0 = new HashMap<>();
+                if (accessors == null) {
+                    accessor = null;
+
+                    accessors0 = new HashMap<>();
+                }
+                else
+                    accessors0 = new HashMap<>(accessors);
 
                 accessors0.put(key, res);
 
