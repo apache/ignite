@@ -38,7 +38,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class MetadataStorage implements MetaStore {
     /** Max index name length (bytes num) */
-    public static final int MAX_IDX_NAME_LEN = 64;
+    public static final int MAX_IDX_NAME_LEN = 512;
 
     /** Bytes in byte. */
     private static final int BYTE_LEN = 1;
