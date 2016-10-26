@@ -32,6 +32,11 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager {
     public boolean isAlwaysWriteFullPages();
 
     /**
+     * @return {@code true} if WAL will perform fair syncs on fsync call.
+     */
+    public boolean isFullSync();
+
+    /**
      * Resumes logging after start. When WAL manager is started, it will skip logging any updates until this
      * method is called to avoid logging changes induced by the state restore procedure.
      */

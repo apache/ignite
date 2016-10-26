@@ -3015,6 +3015,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     cctx.dataStructures().onEntryUpdated(key, false, true);
                 }
 
+                onUpdateFinished(updateCntr);
+
                 if (!fromStore && cctx.store().isLocal()) {
                     if (val != null)
                         cctx.store().put(null, key, val, ver);

@@ -153,7 +153,9 @@ public class OffheapReadWriteLock {
         while (true) {
             long state = GridUnsafe.getLongVolatile(null, lock);
 
-            assert state > 0;
+            if (lockCount(state) <= 0)
+                throw new IllegalMonitorStateException("Attempted to release a read lock while not holding it " +
+                    "[lock=" + U.hexLong(lock) + ", state=" + U.hexLong(state) + ']');
 
             long updated = updateState(state, -1, 0, 0);
 
@@ -253,7 +255,9 @@ public class OffheapReadWriteLock {
         while (true) {
             long state = GridUnsafe.getLongVolatile(null, lock);
 
-            assert lockCount(state) == -1;
+            if (lockCount(state) != -1)
+                throw new IllegalMonitorStateException("Attempted to release write lock while not holding it " +
+                    "[lock=" + U.hexLong(lock) + ", state=" + U.hexLong(state));
 
             updated = releaseWithTag(state, tag);
 

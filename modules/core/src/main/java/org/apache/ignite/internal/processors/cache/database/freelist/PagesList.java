@@ -719,7 +719,7 @@ public abstract class PagesList extends DataStructure {
                         setupNextPage(io, prevId, prevBuf, nextId, nextBuf);
 
                         if (isWalDeltaRecordNeeded(wal, page))
-                            wal.log(new PagesListSetNextRecord(cacheId, pageId, nextId));
+                            wal.log(new PagesListSetNextRecord(cacheId, prevId, nextId));
 
                         // Here we should never write full page, because it is known to be new.
                         next.fullPageWalRecordPolicy(FALSE);
@@ -731,7 +731,7 @@ public abstract class PagesList extends DataStructure {
                                 io.getType(),
                                 io.getVersion(),
                                 nextId,
-                                pageId,
+                                prevId,
                                 0L
                             ));
 
@@ -745,7 +745,7 @@ public abstract class PagesList extends DataStructure {
                 else {
                     // TODO: use single WAL record for bag?
                     if (isWalDeltaRecordNeeded(wal, page))
-                        wal.log(new PagesListAddPageRecord(cacheId, pageId, nextId));
+                        wal.log(new PagesListAddPageRecord(cacheId, prevId, nextId));
                 }
             }
         }
@@ -1069,7 +1069,7 @@ public abstract class PagesList extends DataStructure {
                     nextId = io.getNextId(buf);
                 }
                 finally {
-                    if (next != null)
+                    if (nextBuf != null)
                         writeUnlock(next, nextBuf, write);
 
                     writeUnlock(page, buf, write);

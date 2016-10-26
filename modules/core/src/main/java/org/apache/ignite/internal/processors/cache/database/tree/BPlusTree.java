@@ -1921,6 +1921,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
 
             ByteBuffer buf = readLock(meta); // Meta can't be removed.
 
+            assert buf != null : "Failed to read lock meta page [page=" + meta + ", metaPageId=" +
+                U.hexLong(metaPageId) + ']';
+
             try {
                 BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(buf);
 
