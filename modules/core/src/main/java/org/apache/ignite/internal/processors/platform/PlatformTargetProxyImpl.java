@@ -208,7 +208,7 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
      * @return Wrapped object.
      */
     private Object wrapProxy(PlatformTarget obj) {
-        return new PlatformTargetProxyImpl((PlatformTarget)obj, platformCtx);
+        return obj == null ? null : new PlatformTargetProxyImpl(obj, platformCtx);
     }
 
     /**
@@ -218,6 +218,6 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
      * @return Unwrapped object.
      */
     private PlatformTarget unwrapProxy(Object obj) {
-        return ((PlatformTargetProxyImpl)obj).target;
+        return obj == null ? null : ((PlatformTargetProxyImpl)obj).target;
     }
 }
