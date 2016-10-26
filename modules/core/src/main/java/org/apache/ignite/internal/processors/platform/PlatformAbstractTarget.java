@@ -177,16 +177,6 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * Process OUT operation.
      *
      * @param type Type.
-     * @throws IgniteCheckedException In case of exception.
-     */
-    @Override public long processOutLong(int type) throws IgniteCheckedException {
-        return throwUnsupported(type);
-    }
-
-    /**
-     * Process OUT operation.
-     *
-     * @param type Type.
      * @param writer Binary writer.
      * @throws IgniteCheckedException In case of exception.
      */

@@ -73,6 +73,15 @@ public interface PlatformTarget {
      * Process IN-OUT operation.
      *
      * @param type Type.
+     * @param reader Binary reader.
+     * @throws IgniteCheckedException In case of exception.
+     */
+    PlatformTarget processInStreamOutObject(int type, BinaryRawReaderEx reader) throws IgniteCheckedException;
+
+    /**
+     * Process IN-OUT operation.
+     *
+     * @param type Type.
      * @param arg Argument.
      * @param reader Binary reader.
      * @param writer Binary writer.
