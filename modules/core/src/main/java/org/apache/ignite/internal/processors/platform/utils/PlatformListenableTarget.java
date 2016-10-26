@@ -51,9 +51,7 @@ public class PlatformListenableTarget extends PlatformAbstractTarget {
     @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         switch (type) {
             case OP_CANCEL:
-                listenable.cancel();
-
-                return TRUE;
+                return listenable.cancel() ? TRUE : FALSE;
 
             case OP_IS_CANCELLED:
                 return listenable.isCancelled() ? TRUE : FALSE;
