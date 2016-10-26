@@ -1207,19 +1207,6 @@ public class BinaryContext {
     }
 
     /**
-     * Create binary field.
-     *
-     * @param typeId Type ID.
-     * @param fieldId Field id.
-     * @return Binary field.
-     */
-    public BinaryFieldImpl createField(int typeId, int fieldId) {
-        BinarySchemaRegistry schemaReg = schemaRegistry(typeId);
-
-        return new BinaryFieldImpl(typeId, schemaReg, null, fieldId);
-    }
-
-    /**
      * @param typeId Type ID.
      * @return Meta data.
      * @throws BinaryObjectException In case of error.
