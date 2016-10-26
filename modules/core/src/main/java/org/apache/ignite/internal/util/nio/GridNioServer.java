@@ -1503,6 +1503,11 @@ public class GridNioServer<T> {
             else
                 buf.clear();
         }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(DirectNioClientWorker.class, this, super.toString());
+        }
     }
 
     /**
@@ -1538,7 +1543,7 @@ public class GridNioServer<T> {
             new GridConcurrentHashSet<>();
 
         /** Writer worker flag. */
-        final boolean writer;
+        protected final boolean writer;
 
         /** {@code True} if calls 'selector.select'. */
         private volatile boolean select;
@@ -2386,6 +2391,11 @@ public class GridNioServer<T> {
 
             for (GridSelectorNioSessionImpl ses : workerSessions)
                 ses.reset0();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(AbstractNioClientWorker.class, this, super.toString());
         }
     }
 
