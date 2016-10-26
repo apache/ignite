@@ -296,7 +296,33 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected int fieldOffsetByOrder(int order) {
+    @Nullable @Override protected int dataStartOffset() {
+        int typeId = BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.TYPE_ID_POS);
+
+        if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
+            int len = BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.DFLT_HDR_LEN + 1);
+
+            return start + GridBinaryMarshaller.DFLT_HDR_LEN + len + 5;
+        } else
+            return start + GridBinaryMarshaller.DFLT_HDR_LEN;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override protected int footerStartOffset() {
+        short flags = BinaryPrimitives.readShort(arr, start + GridBinaryMarshaller.FLAGS_POS);
+
+        if (!BinaryUtils.hasSchema(flags))
+            return start + length();
+
+        return start + BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
+    }
+
+   /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Nullable @Override protected <F> F fieldByOrder(int order) {
+        Object val;
+
+        // Calculate field position.
         int schemaOff = BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
 
         short flags = BinaryPrimitives.readShort(arr, start + GridBinaryMarshaller.FLAGS_POS);
@@ -314,16 +340,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
             fieldPos = start + ((int)BinaryPrimitives.readShort(arr, fieldOffsetPos) & 0xFFFF);
         else
             fieldPos = start + BinaryPrimitives.readInt(arr, fieldOffsetPos);
-
-        return fieldPos;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override protected <F> F fieldByOrder(int order) {
-        Object val;
-
-        int fieldPos = fieldOffsetByOrder(order);
 
         // Read header and try performing fast lookup for well-known types (the most common types go first).
         byte hdr = BinaryPrimitives.readByte(arr, fieldPos);
