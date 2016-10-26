@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequest;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -138,10 +139,12 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
             TestCommunicationSpi commSpi = (TestCommunicationSpi)grid(0).configuration().getCommunicationSpi();
 
             commSpi.registerMessage(GridNearAtomicSingleUpdateRequest.class);
+            commSpi.registerMessage(GridNearAtomicUpdateRequest.class);
             commSpi.registerMessage(GridDhtAtomicUpdateRequest.class);
 
             int putCnt = 15;
 
+            int expNearSingleCnt = 0;
             int expNearCnt = 0;
             int expDhtCnt = 0;
 
@@ -160,13 +163,14 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
                     if (affinity.isPrimary(locNode, i))
                         expDhtCnt++;
                     else
-                        expNearCnt ++;
+                        expNearSingleCnt++;
                 }
 
                 jcache(0).put(i, i);
             }
 
-            assertEquals(expNearCnt, commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class));
+            assertEquals(expNearCnt, commSpi.messageCount(GridNearAtomicUpdateRequest.class));
+            assertEquals(expNearSingleCnt, commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class));
             assertEquals(expDhtCnt, commSpi.messageCount(GridDhtAtomicUpdateRequest.class));
 
             if (writeOrderMode == CLOCK) {
@@ -174,6 +178,7 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
                     commSpi = (TestCommunicationSpi)grid(i).configuration().getCommunicationSpi();
 
                     assertEquals(0, commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class));
+                    assertEquals(0, commSpi.messageCount(GridNearAtomicUpdateRequest.class));
                     assertEquals(0, commSpi.messageCount(GridDhtAtomicUpdateRequest.class));
                 }
             }
@@ -182,6 +187,7 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
                     commSpi = (TestCommunicationSpi)grid(i).configuration().getCommunicationSpi();
 
                     assertEquals(0, commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class));
+                    assertEquals(0, commSpi.messageCount(GridNearAtomicUpdateRequest.class));
                 }
             }
         }
