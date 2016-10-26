@@ -140,52 +140,50 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
         if (!(other instanceof BinaryObjectExImpl))
             return false;
 
-        BinaryObjectExImpl otherPo = (BinaryObjectExImpl)other;
+        BinaryObjectExImpl other0 = (BinaryObjectExImpl)other;
 
-        if (typeId() != otherPo.typeId())
+        if (typeId() != other0.typeId())
             return false;
 
-        int off0 = dataStartOffset();
-        int end0 = footerStartOffset();
-        int off1 = otherPo.dataStartOffset();
-        int end1 = otherPo.footerStartOffset();
+        int start = dataStartOffset();
+        int end = footerStartOffset();
 
-        if (end0 - off0 != end1 - off1)
+        int otherStart = other0.dataStartOffset();
+        int otherEnd = other0.footerStartOffset();
+
+        int len = end - start;
+
+        if (len != otherEnd - otherStart)
             return false;
 
         if (hasArray()) {
-            byte[] arr0 = array();
+            byte[] arr = array();
 
-            if (otherPo.hasArray()) {
-                byte[] arr1 = otherPo.array();
+            if (other0.hasArray()) {
+                byte[] otherArr = other0.array();
 
-                for (int i = off0, j = off1; i < end0; i++, j++) {
-                    if (arr0[i] != arr1[j])
+                for (int i = start, j = otherStart; i < end; i++, j++) {
+                    if (arr[i] != otherArr[j])
                         return false;
                 }
 
                 return true;
             }
             else {
-                assert otherPo.offheapAddress() > 0;
+                assert other0.offheapAddress() > 0;
 
-                return GridUnsafeMemory.compare(otherPo.offheapAddress() + off1, arr0, off0, end0 - off0);
+                return GridUnsafeMemory.compare(other0.offheapAddress() + otherStart, arr, start, len);
             }
         }
         else {
             assert offheapAddress() > 0;
 
-            if (otherPo.hasArray()) {
-                byte[] arr1 = otherPo.array();
-
-                return GridUnsafeMemory.compare(offheapAddress() + off0, arr1, off1, end1 - off1);
-            }
+            if (other0.hasArray())
+                return GridUnsafeMemory.compare(offheapAddress() + start, other0.array(), otherStart, len);
             else {
-                assert otherPo.offheapAddress() > 0;
+                assert other0.offheapAddress() > 0;
 
-                return GridUnsafeMemory.compare(offheapAddress() + off0,
-                    otherPo.offheapAddress() + off1,
-                    end0 - off0);
+                return GridUnsafeMemory.compare(offheapAddress() + start, other0.offheapAddress() + otherStart, len);
             }
         }
     }

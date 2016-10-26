@@ -531,7 +531,7 @@ public class GridUnsafeMemory {
         int align = addrSize - off;
 
         if (align != addrSize) {
-            for (int i = 0, tmpOff = bytesOff; i < align && i < len; ++i, ++tmpOff, ++ptr) {
+            for (int i = 0, tmpOff = bytesOff; i < align && i < len; i++, tmpOff++, ptr++) {
                 if (GridUnsafe.getByte(ptr) != bytes[tmpOff])
                     return false;
             }
