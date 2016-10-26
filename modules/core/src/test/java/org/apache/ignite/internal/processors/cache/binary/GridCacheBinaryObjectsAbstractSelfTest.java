@@ -61,7 +61,6 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
 import org.apache.ignite.binary.BinaryFieldListIdentity;
-import org.apache.ignite.binary.BinaryFullIdentity;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -128,16 +127,6 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         List<BinaryTypeConfiguration> binTypes = new ArrayList<>();
 
         binTypes.add(new BinaryTypeConfiguration() {{
-            setTypeName("FullyHashedKey");
-            setIdentity(new BinaryFullIdentity());
-        }});
-
-        binTypes.add(new BinaryTypeConfiguration() {{
-            setTypeName("FullyHashedKeyField");
-            setIdentity(new BinaryFullIdentity());
-        }});
-
-        binTypes.add(new BinaryTypeConfiguration() {{
             setTypeName("FieldsHashedKey");
 
             BinaryFieldListIdentity id = new BinaryFieldListIdentity();
@@ -166,13 +155,11 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
         cfg.setBinaryConfiguration(binCfg);
 
-        CacheKeyConfiguration arrHashConfiguration = new CacheKeyConfiguration("FullyHashedKey", "fld1");
-
         CacheKeyConfiguration fieldsHashConfiguration = new CacheKeyConfiguration("FieldsHashedKey", "fld1");
 
         CacheKeyConfiguration customHashConfiguration = new CacheKeyConfiguration("CustomHashedKey", "fld1");
 
-        cfg.setCacheKeyConfiguration(arrHashConfiguration, fieldsHashConfiguration, customHashConfiguration);
+        cfg.setCacheKeyConfiguration(fieldsHashConfiguration, customHashConfiguration);
 
         GridCacheBinaryObjectsAbstractSelfTest.cfg = cfg;
 
@@ -995,51 +982,6 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             }
         }, IllegalArgumentException.class, "Cache key created with BinaryBuilder is missing hash code - " +
             "please set it explicitly during building by using BinaryBuilder.hashCode(int)");
-    }
-
-    /**
-     *
-     */
-    @SuppressWarnings("unchecked")
-    public void testPutWithFullHashing() {
-        IgniteCache c = binKeysCache();
-
-        {
-            BinaryObjectBuilder bldr = grid(0).binary().builder("FullyHashedKey");
-
-            bldr.setField("fld1", 5);
-            bldr.setField("fld2", "abc");
-
-            BinaryObjectBuilder bldr2 = grid(0).binary().builder("FullyHashedKeyField");
-
-            bldr2.setField("a", "x");
-            bldr2.setField("b", 345L);
-
-            bldr.setField("fld3", bldr2.build());
-
-            BinaryObject binKey = bldr.build();
-
-            c.put(binKey, "zzz");
-        }
-
-        // Now let's build an identical key for get
-        {
-            BinaryObjectBuilder bldr = grid(0).binary().builder("FullyHashedKey");
-
-            bldr.setField("fld1", 5);
-            bldr.setField("fld2", "abc");
-
-            BinaryObjectBuilder bldr2 = grid(0).binary().builder("FullyHashedKeyField");
-
-            bldr2.setField("a", "x");
-            bldr2.setField("b", 345L);
-
-            bldr.setField("fld3", bldr2.build());
-
-            BinaryObject binKey = bldr.build();
-
-            assertEquals("zzz", c.get(binKey));
-        }
     }
 
     /**
