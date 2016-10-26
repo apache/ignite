@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Abstract interop target.
  */
-public abstract class PlatformAbstractTarget implements PlatformTarget {
+public abstract class PlatformAbstractTarget implements PlatformTarget, PlatformAsyncTarget {
     /** Constant: TRUE.*/
     protected static final int TRUE = 1;
 
@@ -60,12 +60,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
         log = platformCtx.kernalContext().log(PlatformAbstractTarget.class);
     }
 
-    /**
-     * Convert caught exception.
-     *
-     * @param e Exception to convert.
-     * @return Converted exception.
-     */
+    /** {@inheritDoc} */
     @Override public Exception convertException(Exception e) {
         return e;
     }
@@ -77,119 +72,55 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
         return platformCtx;
     }
 
-    /**
-     * When overridden in a derived class, gets future for the current operation.
-     *
-     * @return current future.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture currentFuture() throws IgniteCheckedException {
         throw new IgniteCheckedException("Future listening is not supported in " + getClass());
     }
 
-    /**
-     * When overridden in a derived class, gets a custom future writer.
-     *
-     * @param opId Operation id.
-     * @return A custom writer for given op id.
-     */
-    @Nullable protected PlatformFutureUtils.Writer futureWriter(int opId){
+    /** {@inheritDoc} */
+    @Override @Nullable public PlatformFutureUtils.Writer futureWriter(int opId){
         return null;
     }
 
-    /**
-     * Process IN operation.
-     *
-     * @param type Type.
-     * @param val Value.
-     * @return Result.
-     * @throws IgniteCheckedException In case of exception.
-     */
+    /** {@inheritDoc} */
     @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         return throwUnsupported(type);
     }
 
-    /**
-     * Process IN operation.
-     *
-     * @param type Type.
-     * @param reader Binary reader.
-     * @return Result.
-     * @throws IgniteCheckedException In case of exception.
-     */
+    /** {@inheritDoc} */
     @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
         return throwUnsupported(type);
     }
 
-    /**
-     * Process IN operation.
-     *
-     * @param type Type.
-     * @param reader Binary reader.
-     * @return Result.
-     * @throws IgniteCheckedException In case of exception.
-     */
+    /** {@inheritDoc} */
     @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader, PlatformMemory mem) throws IgniteCheckedException {
         return processInStreamOutLong(type, reader);
     }
 
-    /**
-     * Process IN-OUT operation.
-     *
-     * @param type Type.
-     * @param reader Binary reader.
-     * @param writer Binary writer.
-     * @throws IgniteCheckedException In case of exception.
-     */
+    /** {@inheritDoc} */
     @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException {
         throwUnsupported(type);
     }
 
-    /**
-     * Process IN operation with managed object as result.
-     *
-     * @param type Type.
-     * @param reader Binary reader.
-     * @return Result.
-     * @throws IgniteCheckedException In case of exception.
-     */
+    /** {@inheritDoc} */
     @Override public PlatformTarget processInStreamOutObject(int type, BinaryRawReaderEx reader)
         throws IgniteCheckedException {
         return throwUnsupported(type);
     }
 
-    /**
-     * Process IN-OUT operation.
-     *
-     * @param type Type.
-     * @param arg Argument.
-     * @param reader Binary reader.
-     * @param writer Binary writer.
-     * @throws IgniteCheckedException In case of exception.
-     */
+    /** {@inheritDoc} */
     @Override public PlatformTarget processInObjectStreamOutObjectStream(int type, @Nullable PlatformTarget arg,
         BinaryRawReaderEx reader, BinaryRawWriterEx writer) throws IgniteCheckedException {
         return throwUnsupported(type);
     }
 
-    /**
-     * Process OUT operation.
-     *
-     * @param type Type.
-     * @param writer Binary writer.
-     * @throws IgniteCheckedException In case of exception.
-     */
+    /** {@inheritDoc} */
     @Override public void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
         throwUnsupported(type);
     }
 
-    /**
-     * Process OUT operation.
-     *
-     * @param type Type.
-     * @throws IgniteCheckedException In case of exception.
-     */
+    /** {@inheritDoc} */
     @Override public PlatformTarget processOutObject(int type) throws IgniteCheckedException {
         return throwUnsupported(type);
     }

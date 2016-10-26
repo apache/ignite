@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
@@ -189,16 +190,14 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
      * @return Future writer.
      */
     private PlatformFutureUtils.Writer futureWriter(int opId) {
-        // TODO: Delegate to TargetEx
-        return null;
+        return ((PlatformAsyncTarget)target).futureWriter(opId);
     }
 
     /**
      * @return Current future.
      */
-    private IgniteInternalFuture currentFuture() {
-        // TODO: Delegate to TargetEx
-        return null;
+    private IgniteInternalFuture currentFuture() throws IgniteCheckedException {
+        return ((PlatformAsyncTarget)target).currentFuture();
     }
 
     /**
