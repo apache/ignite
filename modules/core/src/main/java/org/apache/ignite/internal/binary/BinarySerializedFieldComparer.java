@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- * Descriptor of a serialized field.
+ * Compares fiels in serialized form when possible.
  */
 public class BinarySerializedFieldComparer {
     /** Context. */
