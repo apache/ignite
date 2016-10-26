@@ -101,15 +101,6 @@ public class PlatformAtomicLong extends PlatformAbstractTarget {
     /** {@inheritDoc} */
     @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         switch (type) {
-            case OP_ADD_AND_GET:
-                return atomicLong.addAndGet(val);
-
-            case OP_GET_AND_ADD:
-                return atomicLong.getAndAdd(val);
-
-            case OP_GET_AND_SET:
-                return atomicLong.getAndSet(val);
-
             case OP_CLOSE:
                 atomicLong.close();
 

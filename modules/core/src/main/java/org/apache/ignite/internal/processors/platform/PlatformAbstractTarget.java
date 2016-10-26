@@ -168,20 +168,6 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @param writer Binary writer.
      * @throws IgniteCheckedException In case of exception.
      */
-    @Override public void processInObjectStreamOutStream(int type, @Nullable PlatformTarget arg,
-        BinaryRawReaderEx reader, BinaryRawWriterEx writer) throws IgniteCheckedException {
-        throwUnsupported(type);
-    }
-
-    /**
-     * Process IN-OUT operation.
-     *
-     * @param type Type.
-     * @param arg Argument.
-     * @param reader Binary reader.
-     * @param writer Binary writer.
-     * @throws IgniteCheckedException In case of exception.
-     */
     @Override public PlatformTarget processInObjectStreamOutObjectStream(int type, @Nullable PlatformTarget arg,
         BinaryRawReaderEx reader, BinaryRawWriterEx writer) throws IgniteCheckedException {
         return throwUnsupported(type);

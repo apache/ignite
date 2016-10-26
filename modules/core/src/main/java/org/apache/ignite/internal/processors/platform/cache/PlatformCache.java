@@ -78,7 +78,7 @@ import java.util.concurrent.locks.Lock;
 /**
  * Native cache wrapper implementation.
  */
-@SuppressWarnings({"unchecked", "UnusedDeclaration", "TryFinallyCanBeTryWithResources", "TypeMayBeWeakened"})
+@SuppressWarnings({"unchecked", "UnusedDeclaration", "TryFinallyCanBeTryWithResources", "TypeMayBeWeakened", "WeakerAccess"})
 public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_CLEAR = 1;
@@ -386,23 +386,6 @@ public class PlatformCache extends PlatformAbstractTarget {
         this.cache = (IgniteCacheProxy)binCache;
         this.keepBinary = keepBinary;
         this.exts = exts;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long processInLongOutLong(int type) throws IgniteCheckedException {
-        switch (type) {
-            case OP_CLEAR_CACHE:
-                cache.clear();
-
-                return TRUE;
-
-            case OP_REMOVE_ALL2:
-                cache.removeAll();
-
-                return TRUE;
-        }
-
-        return super.processOutLong(type);
     }
 
     /**
