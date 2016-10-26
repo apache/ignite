@@ -24,6 +24,7 @@ import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.PlatformTargetProxyImpl;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
@@ -277,7 +278,11 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
                 ? new PlatformAffinityFunctionTarget(ctx, baseFunc)
                 : null;
 
-            ptr = ctx.gateway().affinityFunctionInit(mem.pointer(), baseTarget);
+            PlatformTargetProxyImpl baseTargetProxy = baseTarget != null
+                    ? new PlatformTargetProxyImpl(baseTarget, ctx)
+                    : null;
+
+            ptr = ctx.gateway().affinityFunctionInit(mem.pointer(), baseTargetProxy);
         }
     }
 
