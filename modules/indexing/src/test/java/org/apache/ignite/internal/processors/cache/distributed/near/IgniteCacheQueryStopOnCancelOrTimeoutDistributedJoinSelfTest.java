@@ -17,6 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCancelledException;
@@ -26,31 +32,51 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import javax.cache.CacheException;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-
 /**
- * Test for distributed queries with node restarts.
+ * Test for cancel of query containing distributed joins.
  */
 public class IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest extends IgniteCacheQueryAbstractDistributedJoinSelfTest {
     /** */
-    private static final String QRY_0 = "select co._key, count(*), sleep() cnt\n" +
-            "from \"pe\".Person pe, \"pr\".Product pr, \"co\".Company co, \"pu\".Purchase pu\n" +
-            "where pe._key = pu.personId and pu.productId = pr._key and pr.companyId = co._key \n" +
-            "group by co._key order by cnt desc, co._key";
-
-    /** */
-    public void test() throws Exception {
-        testQueryCancel(grid(0), "co", QRY_0, 500, TimeUnit.MILLISECONDS, false);
+    public void testCancel1() throws Exception {
+        testQueryCancel(grid(0), "pe", QRY_0, 1, TimeUnit.MILLISECONDS, false);
     }
 
-    /**
-     * TODO FIXME test is broken.
-     */
+    /** */
+    public void testCancel2() throws Exception {
+        testQueryCancel(grid(0), "pe", QRY_0, 50, TimeUnit.MILLISECONDS, false);
+    }
+
+    /** */
+    public void testCancel3() throws Exception {
+        testQueryCancel(grid(0), "pe", QRY_0, 100, TimeUnit.MILLISECONDS, false);
+    }
+
+    /** */
+    public void testCancel4() throws Exception {
+        testQueryCancel(grid(0), "pe", QRY_0, 500, TimeUnit.MILLISECONDS, false);
+    }
+
+    /** */
+    public void testTimeout1() throws Exception {
+        testQueryCancel(grid(0), "pe", QRY_0, 1, TimeUnit.MILLISECONDS, true);
+    }
+
+    /** */
+    public void testTimeout2() throws Exception {
+        testQueryCancel(grid(0), "pe", QRY_0, 50, TimeUnit.MILLISECONDS, true);
+    }
+
+    /** */
+    public void testTimeout3() throws Exception {
+        testQueryCancel(grid(0), "pe", QRY_0, 100, TimeUnit.MILLISECONDS, true);
+    }
+
+    /** */
+    public void testTimeout4() throws Exception {
+        testQueryCancel(grid(0), "pe", QRY_0, 500, TimeUnit.MILLISECONDS, true);
+    }
+
+    /** */
     private void testQueryCancel(Ignite ignite, String cacheName, String sql, int timeoutUnits, TimeUnit timeUnit,
                            boolean timeout) throws Exception {
         SqlFieldsQuery qry = new SqlFieldsQuery(sql).setDistributedJoins(true);
@@ -74,7 +100,8 @@ public class IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest extend
 
         try (QueryCursor<List<?>> ignored = cursor) {
             cursor.iterator();
-        } catch (CacheException ex) {
+        }
+        catch (CacheException ex) {
             log().error("Got expected exception", ex);
 
             assertTrue("Must throw correct exception", ex.getCause() instanceof QueryCancelledException);

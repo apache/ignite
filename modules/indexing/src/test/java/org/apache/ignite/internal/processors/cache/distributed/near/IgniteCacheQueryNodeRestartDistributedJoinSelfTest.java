@@ -36,30 +36,6 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
  * Test for distributed queries with node restarts.
  */
 public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCacheQueryAbstractDistributedJoinSelfTest {
-    /** */
-    private static final String QRY_0 = "select co._key, count(*) cnt\n" +
-            "from \"pe\".Person pe, \"pr\".Product pr, \"co\".Company co, \"pu\".Purchase pu\n" +
-            "where pe._key = pu.personId and pu.productId = pr._key and pr.companyId = co._key \n" +
-            "group by co._key order by cnt desc, co._key";
-
-    /** */
-    private static final String QRY_0_BROADCAST = "select co._key, count(*) cnt\n" +
-            "from \"co\".Company co, \"pr\".Product pr, \"pu\".Purchase pu, \"pe\".Person pe \n" +
-            "where pe._key = pu.personId and pu.productId = pr._key and pr.companyId = co._key \n" +
-            "group by co._key order by cnt desc, co._key";
-
-    /** */
-    private static final String QRY_1 = "select pr._key, co._key\n" +
-            "from \"pr\".Product pr, \"co\".Company co\n" +
-            "where pr.companyId = co._key\n" +
-            "order by co._key, pr._key ";
-
-    /** */
-    private static final String QRY_1_BROADCAST = "select pr._key, co._key\n" +
-            "from \"co\".Company co, \"pr\".Product pr \n" +
-            "where pr.companyId = co._key\n" +
-            "order by co._key, pr._key ";
-
     /**
      * @throws Exception If failed.
      */

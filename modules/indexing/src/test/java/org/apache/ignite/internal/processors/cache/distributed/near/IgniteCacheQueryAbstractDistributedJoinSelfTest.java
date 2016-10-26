@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import java.io.Serializable;
+import java.util.Random;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -32,9 +34,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.io.Serializable;
-import java.util.Random;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -45,13 +44,37 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class IgniteCacheQueryAbstractDistributedJoinSelfTest extends GridCommonAbstractTest {
     /** */
-    protected static final int GRID_CNT = 6;
+    protected static final String QRY_0 = "select co._key, count(*) cnt\n" +
+        "from \"pe\".Person pe, \"pr\".Product pr, \"co\".Company co, \"pu\".Purchase pu\n" +
+        "where pe._key = pu.personId and pu.productId = pr._key and pr.companyId = co._key \n" +
+        "group by co._key order by cnt desc, co._key";
+
+    /** */
+    protected static final String QRY_0_BROADCAST = "select co._key, count(*) cnt\n" +
+        "from \"co\".Company co, \"pr\".Product pr, \"pu\".Purchase pu, \"pe\".Person pe \n" +
+        "where pe._key = pu.personId and pu.productId = pr._key and pr.companyId = co._key \n" +
+        "group by co._key order by cnt desc, co._key";
+
+    /** */
+    protected static final String QRY_1 = "select pr._key, co._key\n" +
+        "from \"pr\".Product pr, \"co\".Company co\n" +
+        "where pr.companyId = co._key\n" +
+        "order by co._key, pr._key ";
+
+    /** */
+    protected static final String QRY_1_BROADCAST = "select pr._key, co._key\n" +
+        "from \"co\".Company co, \"pr\".Product pr \n" +
+        "where pr.companyId = co._key\n" +
+        "order by co._key, pr._key ";
+
+    /** */
+    protected static final int GRID_CNT = 2;
 
     /** */
     private static final int PERS_CNT = 600;
 
     /** */
-    private static final int PURCHASE_CNT = 6000;
+    private static final int PURCHASE_CNT = 6_000;
 
     /** */
     private static final int COMPANY_CNT = 25;
@@ -90,7 +113,6 @@ public class IgniteCacheQueryAbstractDistributedJoinSelfTest extends GridCommonA
             cc.setRebalanceMode(SYNC);
             cc.setLongQueryWarningTimeout(15_000);
             cc.setAffinity(new RendezvousAffinityFunction(false, 60));
-            cc.setSqlFunctionClasses(Functions.class);
 
             switch (name) {
                 case "pe":

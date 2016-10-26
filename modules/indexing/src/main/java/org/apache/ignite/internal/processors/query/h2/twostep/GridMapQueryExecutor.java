@@ -890,11 +890,13 @@ public class GridMapQueryExecutor {
                 if (res != null) {
                     res.close();
 
-                    GridQueryCancel cancel = cancels[i];
-
-                    if (cancel != null)
-                        cancel.cancel();
+                    continue;
                 }
+
+                GridQueryCancel cancel = cancels[i];
+
+                if (cancel != null)
+                    cancel.cancel();
             }
         }
     }
