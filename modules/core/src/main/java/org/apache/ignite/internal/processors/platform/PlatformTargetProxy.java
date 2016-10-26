@@ -66,17 +66,6 @@ public interface PlatformTargetProxy {
     public void inStreamOutStream(int type, long inMemPtr, long outMemPtr) throws Exception;
 
     /**
-     * Operation accepting an object and a memory stream and returning result to another memory stream.
-     *
-     * @param type Operation type.
-     * @param arg Argument (optional).
-     * @param inMemPtr Input memory pointer.
-     * @param outMemPtr Output memory pointer.
-     * @throws Exception In case of failure.
-     */
-    public void inObjectStreamOutStream(int type, @Nullable Object arg, long inMemPtr, long outMemPtr) throws Exception;
-
-    /**
      * Operation accepting an object and a memory stream and returning result to another memory stream and an object.
      *
      * @param type Operation type.
@@ -88,15 +77,6 @@ public interface PlatformTargetProxy {
      */
     public Object inObjectStreamOutObjectStream(int type, @Nullable Object arg, long inMemPtr, long outMemPtr)
         throws Exception;
-
-    /**
-     * Operation returning long result.
-     *
-     * @param type Operation type.
-     * @return Result.
-     * @throws Exception In case of failure.
-     */
-    public long outLong(int type) throws Exception;
 
     /**
      * Operation returning result to memory stream.

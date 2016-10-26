@@ -77,16 +77,6 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
     }
 
     /** {@inheritDoc} */
-    @Override public long outLong(int type) throws Exception {
-        try {
-            return target.processOutLong(type);
-        }
-        catch (Exception e) {
-            throw target.convertException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void outStream(int type, long memPtr) throws Exception {
         try (PlatformMemory mem = platformCtx.memory().get(memPtr)) {
             PlatformOutputStream out = mem.output();
@@ -123,26 +113,6 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
                 BinaryRawWriterEx writer = platformCtx.writer(out);
 
                 target.processInStreamOutStream(type, reader, writer);
-
-                out.synchronize();
-            }
-        }
-        catch (Exception e) {
-            throw target.convertException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void inObjectStreamOutStream(int type, Object arg, long inMemPtr, long outMemPtr) throws Exception {
-        try (PlatformMemory inMem = platformCtx.memory().get(inMemPtr)) {
-            BinaryRawReaderEx reader = platformCtx.reader(inMem);
-
-            try (PlatformMemory outMem = platformCtx.memory().get(outMemPtr)) {
-                PlatformOutputStream out = outMem.output();
-
-                BinaryRawWriterEx writer = platformCtx.writer(out);
-
-                target.processInObjectStreamOutStream(type, unwrapProxy(arg), reader, writer);
 
                 out.synchronize();
             }
