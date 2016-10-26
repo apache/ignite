@@ -128,9 +128,6 @@ public class PoolProcessor extends GridProcessorAdapter {
 
                 return ctx.getIgfsExecutorService();
 
-            case GridIoPolicy.DATA_STREAMER_POOL:
-                return ctx.getDataStreamerExecutorService();
-
             default: {
                 if (plc < 0)
                     throw new IgniteCheckedException("Policy cannot be negative: " + plc);

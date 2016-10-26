@@ -70,26 +70,16 @@ public interface PlatformTarget {
         throws IgniteCheckedException;
 
     /**
-     * Process IN operation with managed object as result.
+     * Operation accepting an object and a memory stream and returning result to another memory stream and an object.
      *
-     * @param type Type.
-     * @param reader Binary reader.
+     * @param type Operation type.
+     * @param arg Argument (optional).
+     * @param inMemPtr Input memory pointer.
+     * @param outMemPtr Output memory pointer.
      * @return Result.
      * @throws IgniteCheckedException In case of exception.
      */
     PlatformTarget processInStreamOutObject(int type, BinaryRawReaderEx reader) throws IgniteCheckedException;
-
-    /**
-     * Process IN-OUT operation.
-     *
-     * @param type Type.
-     * @param arg Argument.
-     * @param reader Binary reader.
-     * @param writer Binary writer.
-     * @throws IgniteCheckedException In case of exception.
-     */
-    void processInObjectStreamOutStream(int type, @Nullable PlatformTarget arg, BinaryRawReaderEx reader,
-        BinaryRawWriterEx writer) throws IgniteCheckedException;
 
     /**
      * Process IN-OUT operation.

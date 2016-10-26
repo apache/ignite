@@ -107,7 +107,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         public void WithNoFailover()
         {
-            DoOutOp(OpWithNoFailover);
+            DoOutInOp(OpWithNoFailover);
         }
 
         /// <summary>
@@ -117,7 +117,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="timeout">Computation timeout in milliseconds.</param>
         public void WithTimeout(long timeout)
         {
-            DoOutInOpLong(OpWithTimeout, timeout);
+            DoOutInOp(OpWithTimeout, timeout);
         }
 
         /// <summary>

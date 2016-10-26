@@ -340,7 +340,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public long processOutLong(int type) throws IgniteCheckedException {
+    @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         switch (type) {
             case OP_RESET_METRICS: {
                 assert prj instanceof IgniteCluster; // Can only be invoked on top-level cluster group.
@@ -351,7 +351,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
             }
         }
 
-        return super.processOutLong(type);
+        return super.processInLongOutLong(type, val);
     }
 
     /**

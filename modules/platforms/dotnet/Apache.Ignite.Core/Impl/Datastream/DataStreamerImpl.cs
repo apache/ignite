@@ -156,7 +156,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             _hnd = marsh.Ignite.HandleRegistry.Allocate(thisRef);
 
             // Start topology listening. This call will ensure that buffer size member is updated.
-            DoOutInOpLong(OpListenTopology, _hnd);
+            DoOutInOp(OpListenTopology, _hnd);
 
             // Membar to ensure fields initialization before leaving constructor.
             Thread.MemoryBarrier();
@@ -184,7 +184,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    return DoOutOp(OpAllowOverwrite) == True;
+                    return DoOutInOp(OpAllowOverwrite) == True;
                 }
                 finally
                 {
@@ -199,7 +199,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    DoOutInOpLong(OpSetAllowOverwrite, value ? True : False);
+                    DoOutInOp(OpSetAllowOverwrite, value ? True : False);
                 }
                 finally
                 {
@@ -219,7 +219,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    return DoOutOp(OpSkipStore) == True;
+                    return DoOutInOp(OpSkipStore) == True;
                 }
                 finally
                 {
@@ -234,7 +234,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    DoOutInOpLong(OpSetSkipStore, value ? True : False);
+                    DoOutInOp(OpSetSkipStore, value ? True : False);
                 }
                 finally
                 {
@@ -254,7 +254,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    return (int) DoOutOp(OpPerNodeBufferSize);
+                    return (int) DoOutInOp(OpPerNodeBufferSize);
                 }
                 finally
                 {
@@ -269,7 +269,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    DoOutInOpLong(OpSetPerNodeBufferSize, value);
+                    DoOutInOp(OpSetPerNodeBufferSize, value);
 
                     _bufSndSize = _topSize * value;
                 }
@@ -291,7 +291,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    return (int) DoOutOp(OpPerNodeParallelOps);
+                    return (int) DoOutInOp(OpPerNodeParallelOps);
                 }
                 finally
                 {
@@ -307,7 +307,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    DoOutInOpLong(OpSetPerNodeParallelOps, value);
+                    DoOutInOp(OpSetPerNodeParallelOps, value);
                 }
                 finally
                 {
@@ -598,7 +598,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                     _topVer = topVer;
                     _topSize = topSize > 0 ? topSize : 1;  // Do not set to 0 to avoid 0 buffer size.
 
-                    _bufSndSize = (int) (_topSize * DoOutOp(OpPerNodeBufferSize));
+                    _bufSndSize = (int) (_topSize * DoOutInOp(OpPerNodeBufferSize));
                 }
             }
             finally

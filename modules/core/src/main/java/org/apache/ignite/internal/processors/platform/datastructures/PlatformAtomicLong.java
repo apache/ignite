@@ -99,8 +99,17 @@ public class PlatformAtomicLong extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public long processOutLong(int type) throws IgniteCheckedException {
+    @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         switch (type) {
+            case OP_ADD_AND_GET:
+                return atomicLong.addAndGet(val);
+
+            case OP_GET_AND_ADD:
+                return atomicLong.getAndAdd(val);
+
+            case OP_GET_AND_SET:
+                return atomicLong.getAndSet(val);
+
             case OP_CLOSE:
                 atomicLong.close();
 
@@ -123,14 +132,7 @@ public class PlatformAtomicLong extends PlatformAbstractTarget {
 
             case OP_IS_CLOSED:
                 return atomicLong.removed() ? TRUE : FALSE;
-        }
 
-        return super.processOutLong(type);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
-        switch (type) {
             case OP_ADD_AND_GET:
                 return atomicLong.addAndGet(val);
 
@@ -141,6 +143,6 @@ public class PlatformAtomicLong extends PlatformAbstractTarget {
                 return atomicLong.getAndSet(val);
         }
 
-        return super.processInLongOutLong(type, val);
+        return super.processOutLong(type);
     }
 }

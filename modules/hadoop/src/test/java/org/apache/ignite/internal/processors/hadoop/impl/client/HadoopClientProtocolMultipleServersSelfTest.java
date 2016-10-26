@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
@@ -40,7 +41,7 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.ignite.IgniteFileSystem;
-import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.hadoop.mapreduce.IgniteHadoopClientProtocolProvider;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
@@ -61,6 +62,9 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     /** Job name. */
     private static final String JOB_NAME = "myJob";
 
+    /** Rest port. */
+    private static int restPort;
+
     /** {@inheritDoc} */
     @Override protected boolean igfsEnabled() {
         return true;
@@ -72,15 +76,6 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        startGrids(gridCount());
-
-        awaitPartitionMapExchange();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
@@ -88,10 +83,10 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration dataCacheConfiguration() {
-        CacheConfiguration cfg = super.dataCacheConfiguration();
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setBackups(1);
+        cfg.getConnectorConfiguration().setPort(restPort++);
 
         return cfg;
     }
@@ -149,15 +144,22 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
      */
     @SuppressWarnings("ConstantConditions")
     public void testMultipleAddresses() throws Exception {
-        beforeJob();
+        try {
+            restPort = REST_PORT;
 
-        stopGrid(0);
+            startGrids(gridCount());
 
-        U.sleep(5000);
+            beforeJob();
 
-        checkJobSubmit(configMultipleAddrs(gridCount()));
+            U.sleep(5000);
 
-        startGrid(0);
+            checkJobSubmit(configMultipleAddrs(gridCount()));
+        }
+        finally {
+            FileSystem fs = FileSystem.get(configMultipleAddrs(gridCount()));
+
+            fs.close();
+        }
     }
 
     /**
@@ -165,21 +167,25 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
      */
     @SuppressWarnings({"ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
     public void testSingleAddress() throws Exception {
-        stopGrid(0);
+        try {
+            // Don't use REST_PORT to test connection fails if the only this port is configured
+            restPort = REST_PORT + 1;
 
-        U.sleep(5000);
+            startGrids(gridCount());
 
-        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    checkJobSubmit(configSingleAddress());
-                    return null;
-                }
-            },
-            GridServerUnreachableException.class, "Failed to connect to any of the servers in list");
+            GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        checkJobSubmit(configSingleAddress());
+                        return null;
+                    }
+                },
+                GridServerUnreachableException.class, "Failed to connect to any of the servers in list");
+        }
+        finally {
+            FileSystem fs = FileSystem.get(configSingleAddress());
 
-        startGrid(0);
-
-        awaitPartitionMapExchange();
+            fs.close();
+        }
     }
 
     /**
@@ -187,17 +193,28 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
      */
     @SuppressWarnings("ConstantConditions")
     public void testMixedAddrs() throws Exception {
-        beforeJob();
+        try {
+            restPort = REST_PORT;
 
-        stopGrid(1);
+            startGrids(gridCount());
 
-        U.sleep(5000);
+            beforeJob();
 
-        checkJobSubmit(configMixed());
+            stopGrid(1);
 
-        startGrid(1);
+            U.sleep(5000);
 
-        awaitPartitionMapExchange();
+            checkJobSubmit(configMixed());
+
+            startGrid(1);
+
+            awaitPartitionMapExchange();
+        }
+        finally {
+            FileSystem fs = FileSystem.get(configMixed());
+
+            fs.close();
+        }
     }
 
     /**

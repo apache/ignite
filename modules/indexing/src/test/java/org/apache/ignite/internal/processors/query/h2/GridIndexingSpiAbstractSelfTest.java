@@ -40,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -354,9 +355,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         String[] aliases = {"N1", "A1", "N2", "A2"};
         Object[] vals = { "Valera", 19, "Kolya", 25};
 
-        assertTrue(fieldsRes.iterator().hasNext());
+        IgniteSpiCloseableIterator<List<?>> it = fieldsRes.iterator();
 
-        List<?> fields = fieldsRes.iterator().next();
+        assertTrue(it.hasNext());
+
+        List<?> fields = it.next();
 
         assertEquals(4, fields.size());
 
@@ -367,7 +370,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
             assertEquals(vals[i++], f);
         }
 
-        assertFalse(fieldsRes.iterator().hasNext());
+        assertFalse(it.hasNext());
 
         // Remove
         spi.remove(typeAA.space(), key(2), aa(2, "Valera", 19));

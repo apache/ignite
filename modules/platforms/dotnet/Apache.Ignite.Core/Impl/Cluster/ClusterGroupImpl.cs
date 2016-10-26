@@ -608,7 +608,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// </summary>
         public void ResetMetrics()
         {
-            DoOutOp(OpResetMetrics);
+            DoOutInOp(OpResetMetrics);
         }
 
         /// <summary>

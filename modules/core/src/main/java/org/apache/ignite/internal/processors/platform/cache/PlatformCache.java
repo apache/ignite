@@ -389,7 +389,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public long processOutLong(int type) throws IgniteCheckedException {
+    @Override public long processInLongOutLong(int type) throws IgniteCheckedException {
         switch (type) {
             case OP_CLEAR_CACHE:
                 cache.clear();
@@ -1078,15 +1078,6 @@ public class PlatformCache extends PlatformAbstractTarget {
                 return TRUE;
             }
 
-            case OP_CLEAR_CACHE:
-                cache.clear();
-
-                return TRUE;
-
-            case OP_REMOVE_ALL2:
-                cache.removeAll();
-
-                return TRUE;
             case OP_REBALANCE: {
                 PlatformFutureUtils.listen(platformCtx, cache.rebalance().chain(new C1<IgniteFuture, Object>() {
                     @Override public Object apply(IgniteFuture fut) {
@@ -1096,6 +1087,16 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 return TRUE;
             }
+
+            case OP_CLEAR_CACHE:
+                cache.clear();
+
+                return TRUE;
+
+            case OP_REMOVE_ALL2:
+                cache.removeAll();
+
+                return TRUE;
         }
         return super.processInLongOutLong(type, val);
     }

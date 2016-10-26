@@ -134,7 +134,7 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public long processOutLong(int type) throws IgniteCheckedException {
+    @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         switch (type) {
             case OP_CLOSE:
                 atomicRef.close();
@@ -145,7 +145,6 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
                 return atomicRef.removed() ? TRUE : FALSE;
         }
 
-        return super.processOutLong(type);
+        return super.processInLongOutLong(type, val);
     }
 }
-

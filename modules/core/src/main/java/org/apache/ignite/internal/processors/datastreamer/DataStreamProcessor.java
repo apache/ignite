@@ -21,12 +21,10 @@ import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.DelayQueue;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
-import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -37,7 +35,6 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.stream.StreamReceiver;
@@ -45,23 +42,12 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 
 /**
- * Data stream processor.
+ *
  */
 public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
-    /** Data streamer separate pool feature major version. */
-    private static final int DATA_STREAMER_POOL_MAJOR_VER = 1;
-
-    /** Data streamer separate pool feature minor version. */
-    private static final int DATA_STREAMER_POOL_MINOR_VER = 6;
-
-    /** Data streamer separate pool feature maintenance version. */
-    private static final int DATA_STREAMER_POOL_MAINTENANCE_VER = 10;
-
-    /** Default pool for data streamer messages processing. */
-    public static final byte DFLT_POLICY = GridIoPolicy.PUBLIC_POOL;
-
     /** Loaders map (access is not supposed to be highly concurrent). */
     private Collection<DataStreamerImpl> ldrs = new GridConcurrentHashSet<>();
 
@@ -232,15 +218,13 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                 IgniteInternalFuture<?> fut = ctx.cache().context().exchange().affinityReadyFuture(rmtAffVer);
 
                 if (fut != null && !fut.isDone()) {
-                    final byte plc = threadIoPolicy();
-
                     fut.listen(new CI1<IgniteInternalFuture<?>>() {
                         @Override public void apply(IgniteInternalFuture<?> t) {
                             ctx.closure().runLocalSafe(new Runnable() {
                                 @Override public void run() {
                                     processRequest(nodeId, req);
                                 }
-                            }, plc);
+                            }, false);
                         }
                     });
 
@@ -356,7 +340,12 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         DataStreamerResponse res = new DataStreamerResponse(reqId, errBytes, forceLocDep);
 
         try {
-            ctx.io().send(nodeId, resTopic, res, threadIoPolicy());
+            Byte plc = GridIoManager.currentPolicy();
+
+            if (plc == null)
+                plc = PUBLIC_POOL;
+
+            ctx.io().send(nodeId, resTopic, res, plc);
         }
         catch (IgniteCheckedException e) {
             if (ctx.discovery().alive(nodeId))
@@ -364,59 +353,6 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
             else if (log.isDebugEnabled())
                 log.debug("Node has left the grid: " + nodeId);
         }
-    }
-
-    /**
-     * Get IO policy.
-     *
-     * @return IO policy.
-     */
-    private static byte threadIoPolicy() {
-        Byte plc = GridIoManager.currentPolicy();
-
-        if (plc == null)
-            plc = DFLT_POLICY;
-
-        return plc;
-    }
-
-    /**
-     * Get IO policy for particular node.
-     *
-     * @param node Node.
-     * @return Policy.
-     */
-    public static byte ioPolicy(ClusterNode node) {
-        assert node != null;
-
-        if (node.isLocal() || node.version().greaterThanEqual(
-            DATA_STREAMER_POOL_MAJOR_VER,
-            DATA_STREAMER_POOL_MINOR_VER,
-            DATA_STREAMER_POOL_MAINTENANCE_VER))
-            return GridIoPolicy.DATA_STREAMER_POOL;
-        else
-            return DFLT_POLICY;
-    }
-
-    /**
-     * Get IO policy for particular node with provided resolver.
-     *
-     * @param rslvr Resolver.
-     * @param node Node.
-     * @return IO policy.
-     */
-    public static byte ioPolicy(@Nullable IgniteClosure<ClusterNode, Byte> rslvr, ClusterNode node) {
-        assert node != null;
-
-        Byte res = null;
-
-        if (rslvr != null)
-            res = rslvr.apply(node);
-
-        if (res == null)
-            res = ioPolicy(node);
-
-        return res;
     }
 
     /** {@inheritDoc} */

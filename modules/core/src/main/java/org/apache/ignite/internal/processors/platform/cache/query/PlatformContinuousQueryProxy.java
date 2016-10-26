@@ -47,7 +47,7 @@ public class PlatformContinuousQueryProxy extends PlatformAbstractTarget  {
     }
 
     /** {@inheritDoc} */
-    @Override public long processOutLong(int type) throws IgniteCheckedException {
+    @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         qry.close();
 
         return 0;
