@@ -36,8 +36,6 @@ IgniteDestroyJvm @86
 IgniteTargetOutObject @91 
 IgniteProcessorExtensions @97
 IgniteProcessorAtomicLong @98
-IgniteListenableCancel @110
-IgniteListenableIsCancelled @111
 IgniteProcessorCreateCacheFromConfig @114
 IgniteProcessorGetOrCreateCacheFromConfig @115
 IgniteProcessorGetIgniteConfiguration @116
