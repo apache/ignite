@@ -223,7 +223,7 @@ public class BinaryContext {
     private final ConcurrentMap<String, BinaryInternalMapper> cls2Mappers = new ConcurrentHashMap8<>(0);
 
     /** Affinity key field names. */
-    private final ConcurrentMap<Integer, BinaryIdentity> typeIdentities = new ConcurrentHashMap8<>(0);
+    private final ConcurrentMap<Integer, BinaryIdentity> identities = new ConcurrentHashMap8<>(0);
 
     /** */
     private BinaryMetadataHandler metaHnd;
@@ -1120,7 +1120,7 @@ public class BinaryContext {
             throw duplicateTypeIdException(clsName, id);
 
         if (identity != null) {
-            if (typeIdentities.put(id, identity) != null)
+            if (identities.put(id, identity) != null)
                 throw duplicateTypeIdException(clsName, id);
         }
 
@@ -1241,7 +1241,7 @@ public class BinaryContext {
      * @return Type identity.
      */
     public BinaryIdentity identity(int typeId) {
-        return typeIdentities.get(typeId);
+        return identities.get(typeId);
     }
 
     /**
