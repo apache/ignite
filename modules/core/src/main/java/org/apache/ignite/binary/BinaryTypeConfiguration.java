@@ -21,6 +21,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Defines configuration properties for a specific binary type. Providing per-type
@@ -154,16 +155,16 @@ public class BinaryTypeConfiguration {
      *
      * @return Identity.
      */
-    public BinaryIdentity getIdentity() {
+    @Nullable public BinaryIdentity getIdentity() {
         return identity;
     }
 
     /**
-     * Sets type identity.
+     * Sets identity.
      *
      * @param identity Identity.
      */
-    public void setIdentity(BinaryIdentity identity) {
+    public void setIdentity(@Nullable BinaryIdentity identity) {
         this.identity = identity;
     }
 

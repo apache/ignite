@@ -25,6 +25,7 @@ import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.binary.BinaryIdentity;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Configuration object for Ignite Binary Objects.
@@ -124,16 +125,16 @@ public class BinaryConfiguration {
      *
      * @return Identity.
      */
-    public BinaryIdentity getIdentity() {
+    @Nullable public BinaryIdentity getIdentity() {
         return identity;
     }
 
     /**
-     * Sets type identity.
+     * Sets identity.
      *
      * @param identity Identity.
      */
-    public void setIdentity(BinaryIdentity identity) {
+    public void setIdentity(@Nullable BinaryIdentity identity) {
         this.identity = identity;
     }
 
