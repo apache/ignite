@@ -46,7 +46,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteCheckedException;
@@ -1055,7 +1054,8 @@ public class GridNioServer<T> {
             if (!DISABLE_PARK && writer) {
                 desc = ((GridSelectorNioSessionImpl)key.attachment()).outRecoveryDescriptor();
 
-                pendingAcks0 = desc.messagesRequests().size() % desc.ackSendThreshold();
+                if (desc != null)
+                    pendingAcks0 = desc.messagesRequests().size() % desc.ackSendThreshold();
             }
 
             ReadableByteChannel sockCh = (ReadableByteChannel)key.channel();
@@ -1131,7 +1131,8 @@ public class GridNioServer<T> {
             if (!DISABLE_PARK && writer) {
                 desc = ((GridSelectorNioSessionImpl)key.attachment()).outRecoveryDescriptor();
 
-                pendingAcks0 = desc.messagesRequests().size() % desc.ackSendThreshold();
+                if (desc != null)
+                    pendingAcks0 = desc.messagesRequests().size() % desc.ackSendThreshold();
             }
 
             if (sslFilter != null)
@@ -1405,7 +1406,7 @@ public class GridNioServer<T> {
                     req = ses.pollFuture();
 
                     if (req == null && buf.position() == 0) {
-                        if (ses.procWrite.get()) {
+                        if (!this.writer || ses.procWrite.get()) {
                             ses.procWrite.set(false);
 
                             if (ses.writeQueue().isEmpty()) {
@@ -1731,6 +1732,9 @@ public class GridNioServer<T> {
                                         SelectionKey.OP_READ | SelectionKey.OP_WRITE,
                                         ses);
 
+                                    // New session is registered with OP_WRITE interest.
+                                    writeSesCnt++;
+
                                     ses.key(key);
 
                                     f.onDone(true);
@@ -1744,6 +1748,13 @@ public class GridNioServer<T> {
                                         SelectionKey key = ses.key();
 
                                         assert key.channel() != null : key;
+
+                                        // Cancelling key with OP_WRITE interest - need to decrement counter.
+                                        if ((key.interestOps() & SelectionKey.OP_WRITE) != 0) {
+                                            writeSesCnt--;
+
+                                            assert writeSesCnt >= 0 : writeSesCnt;
+                                        }
 
                                         f.movedSocketChannel((SocketChannel)key.channel());
 
@@ -2257,6 +2268,12 @@ public class GridNioServer<T> {
 
                 // Shutdown input and output so that remote client will see correct socket close.
                 Socket sock = ((SocketChannel)key.channel()).socket();
+
+                if (key.isValid() && (key.interestOps() & SelectionKey.OP_WRITE) != 0) {
+                    writeSesCnt--;
+
+                    assert writeSesCnt >= 0 : writeSesCnt;
+                }
 
                 try {
                     try {

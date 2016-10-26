@@ -192,7 +192,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
 
             startGridsMultiThreaded(5, 5);
 
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 5; i++) {
                 log.info("Iteration: " + i);
 
                 final AtomicInteger idx = new AtomicInteger();
@@ -203,7 +203,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
 
                         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                        int msgs = rnd.nextInt(1000);
+                        int msgs = rnd.nextInt(500, 600);
 
                         for (int i = 0; i < msgs; i++) {
                             int sndTo = rnd.nextInt(10);
@@ -212,7 +212,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
 
                             IgniteCompute compute = node.compute(node.cluster().forNode(sntToNode));
 
-                            compute.call(new DummyCallable(new byte[rnd.nextInt(1024)]));
+                            compute.call(new DummyCallable(new byte[rnd.nextInt(rnd.nextInt(256, 1024))]));
                         }
 
                         return null;
