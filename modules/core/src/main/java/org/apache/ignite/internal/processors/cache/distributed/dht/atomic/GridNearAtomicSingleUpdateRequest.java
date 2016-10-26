@@ -60,15 +60,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
     /** Partition of key. */
     protected int partId;
 
-    /** Conflict version. */
-    protected GridCacheVersion conflictVer;
-
-    /** Conflict TTL. */
-    protected long conflictTtl = CU.TTL_NOT_CHANGED;
-
-    /** Conflict expire time. */
-    protected long conflictExpireTime = CU.EXPIRE_TIME_CALCULATE;
-
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -157,6 +148,9 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
         boolean primary) {
         assert op != TRANSFORM;
         assert val != null || op == DELETE;
+        assert conflictTtl < 0 : conflictTtl;
+        assert conflictExpireTime < 0 : conflictExpireTime;
+        assert conflictVer == null : conflictVer;
 
         this.key = key;
         partId = key.partition();
@@ -168,14 +162,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
         }
 
         hasPrimary |= primary;
-
-        this.conflictVer = conflictVer;
-
-        if (conflictTtl >= 0)
-            this.conflictTtl = conflictTtl;
-
-        if (conflictExpireTime >= 0)
-            this.conflictExpireTime = conflictExpireTime;
     }
 
     /** {@inheritDoc} */
@@ -218,21 +204,21 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
     @Nullable @Override public GridCacheVersion conflictVersion(int idx) {
         assert idx == 0 : idx;
 
-        return conflictVer;
+        return null;
     }
 
     /** {@inheritDoc} */
     @Override public long conflictTtl(int idx) {
         assert idx == 0 : idx;
 
-        return conflictTtl;
+        return CU.TTL_NOT_CHANGED;
     }
 
     /** {@inheritDoc} */
     @Override public long conflictExpireTime(int idx) {
         assert idx == 0 : idx;
 
-        return conflictExpireTime;
+        return CU.EXPIRE_TIME_CALCULATE;
     }
 
     /**
@@ -247,7 +233,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
 
         prepareMarshalCacheObject(key, cctx);
 
-        if (op != TRANSFORM)
+        if (op != TRANSFORM && val != null)
             prepareMarshalCacheObject(val, cctx);
     }
 
@@ -259,7 +245,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
 
         key.finishUnmarshal(cctx.cacheObjectContext(), ldr);
 
-        if (op != TRANSFORM)
+        if (op != TRANSFORM && val != null)
             val.finishUnmarshal(cctx.cacheObjectContext(), ldr);
 
         key.partition(partId);
@@ -281,36 +267,18 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
 
         switch (writer.state()) {
             case 19:
-                if (!writer.writeLong("conflictExpireTime", conflictExpireTime))
-                    return false;
-
-                writer.incrementState();
-
-            case 20:
-                if (!writer.writeLong("conflictTtl", conflictTtl))
-                    return false;
-
-                writer.incrementState();
-
-            case 21:
-                if (!writer.writeMessage("conflictVer", conflictVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 22:
                 if (!writer.writeMessage("key", key))
                     return false;
 
                 writer.incrementState();
 
-            case 23:
+            case 20:
                 if (!writer.writeInt("partId", partId))
                     return false;
 
                 writer.incrementState();
 
-            case 24:
+            case 21:
                 if (!writer.writeMessage("val", val))
                     return false;
 
@@ -333,30 +301,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
 
         switch (reader.state()) {
             case 19:
-                conflictExpireTime = reader.readLong("conflictExpireTime");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 20:
-                conflictTtl = reader.readLong("conflictTtl");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 21:
-                conflictVer = reader.readMessage("conflictVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 22:
                 key = reader.readMessage("key");
 
                 if (!reader.isLastRead())
@@ -364,7 +308,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
 
                 reader.incrementState();
 
-            case 23:
+            case 20:
                 partId = reader.readInt("partId");
 
                 if (!reader.isLastRead())
@@ -372,7 +316,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
 
                 reader.incrementState();
 
-            case 24:
+            case 21:
                 val = reader.readMessage("val");
 
                 if (!reader.isLastRead())
@@ -400,7 +344,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 25;
+        return 22;
     }
 
     /** {@inheritDoc} */

@@ -154,7 +154,9 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
         long conflictExpireTime,
         @Nullable GridCacheVersion conflictVer,
         boolean primary) {
-
+        assert conflictTtl < 0 : conflictTtl;
+        assert conflictExpireTime < 0 : conflictExpireTime;
+        assert conflictVer == null : conflictVer;
         assert val instanceof EntryProcessor : val;
 
         entryProcessor = (EntryProcessor<Object, Object, Object>)val;
@@ -164,13 +166,6 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
 
         hasPrimary |= primary;
 
-        this.conflictVer = conflictVer;
-
-        if (conflictTtl >= 0)
-            this.conflictTtl = conflictTtl;
-
-        if (conflictExpireTime >= 0)
-            this.conflictExpireTime = conflictExpireTime;
     }
 
     /** {@inheritDoc} */
@@ -264,13 +259,13 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
         }
 
         switch (writer.state()) {
-            case 25:
+            case 22:
                 if (!writer.writeByteArray("entryProcessorBytes", entryProcessorBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 26:
+            case 23:
                 if (!writer.writeObjectArray("invokeArgsBytes", invokeArgsBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
@@ -292,7 +287,7 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
             return false;
 
         switch (reader.state()) {
-            case 25:
+            case 22:
                 entryProcessorBytes = reader.readByteArray("entryProcessorBytes");
 
                 if (!reader.isLastRead())
@@ -300,7 +295,7 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
 
                 reader.incrementState();
 
-            case 26:
+            case 23:
                 invokeArgsBytes = reader.readObjectArray("invokeArgsBytes", MessageCollectionItemType.BYTE_ARR, byte[].class);
 
                 if (!reader.isLastRead())
@@ -315,7 +310,7 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 27;
+        return 24;
     }
 
     /** {@inheritDoc} */

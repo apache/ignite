@@ -46,7 +46,7 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessage implements GridCacheDeployable,
-    GridNearAtomicUpdateRequestInt {
+    GridNearAtomicUpdateRequest {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -71,7 +71,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
     private Object val;
 
     /** Not null is operation is mapped to single node. */
-    private GridNearAtomicUpdateRequestInt req;
+    private GridNearAtomicUpdateRequest req;
 
     /**
      * @param cctx Cache context.
@@ -131,7 +131,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
     @Override public boolean onNodeLeft(UUID nodeId) {
         GridNearAtomicUpdateResponse res = null;
 
-        GridNearAtomicUpdateRequestInt req;
+        GridNearAtomicUpdateRequest req;
 
         synchronized (mux) {
             req = this.req != null && this.req.nodeId().equals(nodeId) ? this.req : null;
@@ -198,7 +198,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
     @Override public void onResult(UUID nodeId, GridNearAtomicUpdateResponse res, boolean nodeErr) {
-        GridNearAtomicUpdateRequestInt req;
+        GridNearAtomicUpdateRequest req;
 
         AffinityTopologyVersion remapTopVer = null;
 
@@ -374,7 +374,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
      * @param req Update request.
      * @param res Update response.
      */
-    private void updateNear(GridNearAtomicUpdateRequestInt req, GridNearAtomicUpdateResponse res) {
+    private void updateNear(GridNearAtomicUpdateRequest req, GridNearAtomicUpdateResponse res) {
         assert nearEnabled;
 
         if (res.remapKeys() != null || !req.hasPrimary())
@@ -612,7 +612,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             }
         }
         else {
-            req = new GridNearAtomicUpdateRequest(
+            req = new GridNearAtomicFullUpdateRequest(
                 cctx.cacheId(),
                 primary.id(),
                 futVer,

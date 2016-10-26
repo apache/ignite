@@ -30,9 +30,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicFullUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateTransformRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequest;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -95,7 +95,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
             TestCommunicationSpi commSpi = (TestCommunicationSpi)grid(0).configuration().getCommunicationSpi();
             commSpi.resetCount();
 
-            commSpi.registerMessage(GridNearAtomicUpdateRequest.class);
+            commSpi.registerMessage(GridNearAtomicFullUpdateRequest.class);
             commSpi.registerMessage(GridDhtAtomicUpdateRequest.class);
             commSpi.registerMessage(GridNearAtomicSingleUpdateRequest.class);
             commSpi.registerMessage(GridNearAtomicSingleUpdateTransformRequest.class);
@@ -105,7 +105,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
             for (int i = 0; i < putCnt; i++)
                 jcache(0).put(i, i);
 
-            assertEquals(0, commSpi.messageCount(GridNearAtomicUpdateRequest.class));
+            assertEquals(0, commSpi.messageCount(GridNearAtomicFullUpdateRequest.class));
             assertEquals(putCnt, commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class));
             assertEquals(0, commSpi.messageCount(GridNearAtomicSingleUpdateTransformRequest.class));
         }
@@ -127,7 +127,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
 
             commSpi.resetCount();
 
-            commSpi.registerMessage(GridNearAtomicUpdateRequest.class);
+            commSpi.registerMessage(GridNearAtomicFullUpdateRequest.class);
             commSpi.registerMessage(GridNearAtomicSingleUpdateRequest.class);
             commSpi.registerMessage(GridNearAtomicSingleUpdateTransformRequest.class);
 
