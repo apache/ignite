@@ -134,6 +134,6 @@ public class PlatformAtomicLong extends PlatformAbstractTarget {
                 return atomicLong.getAndSet(val);
         }
 
-        return super.processOutLong(type);
+        return super.processInLongOutLong(type, val);
     }
 }
