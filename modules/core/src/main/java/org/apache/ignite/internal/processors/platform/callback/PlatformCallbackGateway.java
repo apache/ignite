@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.platform.callback;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.platform.PlatformTargetProxy;
-import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunctionTarget;
 import org.apache.ignite.internal.util.GridStripedSpinBusyLock;
 
 /**

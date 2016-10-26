@@ -33,7 +33,7 @@ public interface PlatformTargetProxy {
      * @return Result.
      * @throws Exception If case of failure.
      */
-    public long inLongOutLong(int type, long val) throws Exception;
+    long inLongOutLong(int type, long val) throws Exception;
 
     /**
      * Operation accepting memory stream and returning long value.
@@ -43,7 +43,7 @@ public interface PlatformTargetProxy {
      * @return Result.
      * @throws Exception If case of failure.
      */
-    public long inStreamOutLong(int type, long memPtr) throws Exception;
+    long inStreamOutLong(int type, long memPtr) throws Exception;
 
     /**
      * Operation accepting memory stream and returning object.
@@ -53,7 +53,7 @@ public interface PlatformTargetProxy {
      * @return Result.
      * @throws Exception If case of failure.
      */
-    public Object inStreamOutObject(int type, long memPtr) throws Exception;
+    Object inStreamOutObject(int type, long memPtr) throws Exception;
 
     /**
      * Operation accepting one memory stream and returning result to another memory stream.
@@ -63,7 +63,7 @@ public interface PlatformTargetProxy {
      * @param outMemPtr Output memory pointer.
      * @throws Exception In case of failure.
      */
-    public void inStreamOutStream(int type, long inMemPtr, long outMemPtr) throws Exception;
+    void inStreamOutStream(int type, long inMemPtr, long outMemPtr) throws Exception;
 
     /**
      * Operation accepting an object and a memory stream and returning result to another memory stream and an object.
@@ -75,7 +75,7 @@ public interface PlatformTargetProxy {
      * @return Result.
      * @throws Exception In case of failure.
      */
-    public Object inObjectStreamOutObjectStream(int type, @Nullable Object arg, long inMemPtr, long outMemPtr)
+    Object inObjectStreamOutObjectStream(int type, @Nullable Object arg, long inMemPtr, long outMemPtr)
         throws Exception;
 
     /**
@@ -85,7 +85,7 @@ public interface PlatformTargetProxy {
      * @param memPtr Memory pointer.
      * @throws Exception In case of failure.
      */
-    public void outStream(int type, long memPtr) throws Exception;
+    void outStream(int type, long memPtr) throws Exception;
 
     /**
      * Operation returning object result.
@@ -94,7 +94,7 @@ public interface PlatformTargetProxy {
      * @return Result.
      * @throws Exception If failed.
      */
-    public Object outObject(int type) throws Exception;
+    Object outObject(int type) throws Exception;
 
     /**
      * Start listening for the future.
@@ -104,7 +104,7 @@ public interface PlatformTargetProxy {
      * @throws IgniteCheckedException In case of failure.
      */
     @SuppressWarnings("UnusedDeclaration")
-    public void listenFuture(final long futId, int typ) throws Exception;
+    void listenFuture(final long futId, int typ) throws Exception;
 
     /**
      * Start listening for the future for specific operation type.
@@ -115,12 +115,12 @@ public interface PlatformTargetProxy {
      * @throws IgniteCheckedException In case of failure.
      */
     @SuppressWarnings("UnusedDeclaration")
-    public void listenFutureForOperation(final long futId, int typ, int opId) throws Exception;
+    void listenFutureForOperation(final long futId, int typ, int opId) throws Exception;
 
     /**
      * Returns the underlying target.
      *
      * @return Underlying target.
      */
-    public PlatformTarget unwrap();
+    PlatformTarget unwrap();
 }
