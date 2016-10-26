@@ -197,7 +197,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         int orderBase = start + schemaOff + fieldIdLen;
         int orderMultiplier = fieldIdLen + fieldOffLen;
 
-        return new BinarySerializedFieldComparer(ctx, null, ptr, start, orderBase, orderMultiplier, fieldOffLen);
+        return new BinarySerializedFieldComparer(this, null, ptr, start, orderBase, orderMultiplier, fieldOffLen);
     }
 
     /** {@inheritDoc} */

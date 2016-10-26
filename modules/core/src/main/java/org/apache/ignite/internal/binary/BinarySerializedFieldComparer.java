@@ -17,16 +17,18 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
-import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Compares fiels in serialized form when possible.
  */
 public class BinarySerializedFieldComparer {
-    /** Context. */
-    private final BinaryContext ctx;
+    /** Position: not found. */
+    private static final int POS_NOT_FOUND = -1;
+
+    /** Original object. */
+    private final BinaryObjectExImpl obj;
 
     /** Pointer to data (onheap). */
     private final byte[] arr;
@@ -46,12 +48,16 @@ public class BinarySerializedFieldComparer {
     /** Field offset length. */
     private final int fieldOffLen;
 
+    /** Current field order. */
+    private int curFieldOrder;
+
     /** Current field offset. */
     private int curFieldPos;
 
     /**
      * Constructor.
      *
+     * @param obj Original object.
      * @param arr Array.
      * @param ptr Pointer.
      * @param startOff Start offset.
@@ -59,11 +65,11 @@ public class BinarySerializedFieldComparer {
      * @param orderMultiplier Order multiplier.
      * @param fieldOffLen Field offset length.
      */
-    public BinarySerializedFieldComparer(BinaryContext ctx, byte[] arr, long ptr, int startOff, int orderBase,
+    public BinarySerializedFieldComparer(BinaryObjectExImpl obj, byte[] arr, long ptr, int startOff, int orderBase,
         int orderMultiplier, int fieldOffLen) {
         assert arr != null && ptr == 0L || arr == null && ptr != 0L;
 
-        this.ctx = ctx;
+        this.obj = obj;
         this.arr = arr;
         this.ptr = ptr;
         this.startOff = startOff;
@@ -78,17 +84,29 @@ public class BinarySerializedFieldComparer {
      * @param order Field order.
      */
     public void findField(int order) {
+        curFieldOrder = order;
+
         if (order == BinarySchema.ORDER_NOT_FOUND)
-            curFieldPos = -1;
+            curFieldPos = POS_NOT_FOUND;
+        else {
+            int pos = orderBase + order * orderMultiplier;
 
-        int curFieldOffPos = orderBase + order * orderMultiplier;
+            if (fieldOffLen == BinaryUtils.OFFSET_1) {
+                byte val = offheap() ? BinaryPrimitives.readByte(ptr, pos) : BinaryPrimitives.readByte(arr, pos);
 
-        if (fieldOffLen == BinaryUtils.OFFSET_1)
-            curFieldPos = startOff + ((int)BinaryPrimitives.readByte(arr, curFieldOffPos) & 0xFF);
-        else if (fieldOffLen == BinaryUtils.OFFSET_2)
-            curFieldPos = startOff + ((int)BinaryPrimitives.readShort(arr, curFieldOffPos) & 0xFFFF);
-        else
-            curFieldPos = startOff + BinaryPrimitives.readInt(arr, curFieldOffPos);
+                curFieldPos = startOff + ((int)val & 0xFF);
+            }
+            else if (fieldOffLen == BinaryUtils.OFFSET_2) {
+                short val = offheap() ? BinaryPrimitives.readShort(ptr, pos) : BinaryPrimitives.readShort(arr, pos);
+
+                curFieldPos = startOff + ((int)val & 0xFFFF);
+            }
+            else {
+                int val = offheap() ? BinaryPrimitives.readInt(ptr, pos) : BinaryPrimitives.readInt(arr, pos);
+
+                curFieldPos = startOff + val;
+            }
+        }
     }
 
     /**
@@ -97,7 +115,7 @@ public class BinarySerializedFieldComparer {
      * @return Field type.
      */
     private byte fieldType() {
-        if (curFieldPos == -1)
+        if (curFieldPos == POS_NOT_FOUND)
             return GridBinaryMarshaller.NULL;
         else
             return offheap() ?
@@ -112,6 +130,67 @@ public class BinarySerializedFieldComparer {
     }
 
     /**
+     * Get current field.
+     *
+     * @return Current field.
+     */
+    private Object currentField() {
+        return obj.fieldByOrder(curFieldOrder);
+    }
+
+    /**
+     * Read byte value.
+     *
+     * @param off Offset.
+     * @return Value.
+     */
+    private byte readByte(int off) {
+        if (offheap())
+            return BinaryPrimitives.readByte(ptr, curFieldPos + off);
+        else
+            return arr[curFieldPos + off];
+    }
+
+    /**
+     * Read short value.
+     *
+     * @param off Offset.
+     * @return Value.
+     */
+    private short readShort(int off) {
+        if (offheap())
+            return BinaryPrimitives.readShort(ptr, curFieldPos + off);
+        else
+            return BinaryPrimitives.readShort(arr, curFieldPos + off);
+    }
+
+    /**
+     * Read int value.
+     *
+     * @param off Offset.
+     * @return Value.
+     */
+    private int readInt(int off) {
+        if (offheap())
+            return BinaryPrimitives.readInt(ptr, curFieldPos + off);
+        else
+            return BinaryPrimitives.readInt(arr, curFieldPos + off);
+    }
+
+    /**
+     * Read long value.
+     *
+     * @param offset Offset.
+     * @return Value.
+     */
+    private long readLong(int offset) {
+        if (offheap())
+            return BinaryPrimitives.readLong(ptr, curFieldPos + offset);
+        else
+            return BinaryPrimitives.readLong(arr, curFieldPos + offset);
+    }
+
+    /**
      * Compare fields.
      *
      * @param c1 First comparer.
@@ -119,153 +198,100 @@ public class BinarySerializedFieldComparer {
      * @return {@code True} if both fields are equal.
      */
     public static boolean equals(BinarySerializedFieldComparer c1, BinarySerializedFieldComparer c2) {
-        assert c1.offheap() && c2.offheap() || !c1.offheap() && !c2.offheap();
-
-        if (c1.offheap())
-            return equalsOffheap(c1, c2);
-        else
-            return equalsOnheap(c1, c2);
-    }
-
-    /**
-     * Compare fields of onheap objects.
-     *
-     * @param c1 First comparer.
-     * @param c2 Second comparer.
-     * @return {@code True} if both fields are equal.
-     */
-    private static boolean equalsOnheap(BinarySerializedFieldComparer c1, BinarySerializedFieldComparer c2) {
         // Compare field types.
-        byte typ1 = c1.fieldType();
-        byte typ2 = c2.fieldType();
+        byte typ = c1.fieldType();
 
-        if (typ1 != typ2)
+        if (typ != c2.fieldType())
             return false;
 
         // Switch by type and compare.
-        switch (typ1) {
+        switch (typ) {
             case GridBinaryMarshaller.BYTE:
-            case GridBinaryMarshaller.BOOLEAN: {
-                byte val1 = GridUnsafe.getByte(c1.arr, c1.curFieldPos + 1);
-                byte val2 = GridUnsafe.getByte(c2.arr, c2.curFieldPos + 1);
-
-                return val1 == val2;
-            }
+            case GridBinaryMarshaller.BOOLEAN:
+                return c1.readByte(1) == c2.readByte(1);
 
             case GridBinaryMarshaller.SHORT:
-            case GridBinaryMarshaller.CHAR: {
-                short val1 = BinaryPrimitives.readShort(c1.arr, c1.curFieldPos + 1);
-                short val2 = BinaryPrimitives.readShort(c2.arr, c2.curFieldPos + 1);
-
-                return val1 == val2;
-            }
+            case GridBinaryMarshaller.CHAR:
+                return c1.readShort(1) == c2.readShort(1);
 
             case GridBinaryMarshaller.INT:
-            case GridBinaryMarshaller.FLOAT: {
-                int val1 = BinaryPrimitives.readInt(c1.arr, c1.curFieldPos + 1);
-                int val2 = BinaryPrimitives.readInt(c2.arr, c2.curFieldPos + 1);
-
-                return val1 == val2;
-            }
+            case GridBinaryMarshaller.FLOAT:
+                return c1.readInt(1) == c2.readInt(1);
 
             case GridBinaryMarshaller.LONG:
             case GridBinaryMarshaller.DOUBLE:
-            case GridBinaryMarshaller.DATE: {
-                long val1 = BinaryPrimitives.readLong(c1.arr, c1.curFieldPos + 1);
-                long val2 = BinaryPrimitives.readLong(c2.arr, c2.curFieldPos + 1);
+            case GridBinaryMarshaller.DATE:
+                return c1.readLong(1) == c2.readLong(1);
 
-                return val1 == val2;
-            }
+            case GridBinaryMarshaller.TIMESTAMP:
+                return c1.readLong(1) == c2.readLong(1) && c1.readInt(1 + 8) == c2.readInt(1 + 8);
 
-            case GridBinaryMarshaller.TIMESTAMP: {
-                long longVal1 = BinaryPrimitives.readLong(c1.arr, c1.curFieldPos + 1);
-                long longVal2 = BinaryPrimitives.readLong(c2.arr, c2.curFieldPos + 1);
+            case GridBinaryMarshaller.UUID:
+                return c1.readLong(1) == c2.readLong(1) && c1.readLong(1 + 8) == c2.readLong(1 + 8);
 
-                if (longVal1 == longVal2) {
-                    int intVal1 = BinaryPrimitives.readInt(c1.arr, c1.curFieldPos + 1 + 8);
-                    int intVal2 = BinaryPrimitives.readInt(c2.arr, c2.curFieldPos + 1 + 8);
+            case GridBinaryMarshaller.STRING:
+                return compareByteArrays(c1, c2, 1);
 
-                    return intVal1 == intVal2;
-                }
-
-                return false;
-            }
-
-            case GridBinaryMarshaller.UUID: {
-                long longVal1 = BinaryPrimitives.readLong(c1.arr, c1.curFieldPos + 1);
-                long longVal2 = BinaryPrimitives.readLong(c2.arr, c2.curFieldPos + 1);
-
-                if (longVal1 == longVal2) {
-                    longVal1 = BinaryPrimitives.readLong(c1.arr, c1.curFieldPos + 1 + 8);
-                    longVal2 = BinaryPrimitives.readLong(c2.arr, c2.curFieldPos + 1 + 8);
-
-                    return longVal1 == longVal2;
-                }
-
-                return false;
-            }
-
-            case GridBinaryMarshaller.STRING: {
-                int len1 = BinaryPrimitives.readInt(c1.arr, c1.curFieldPos + 1);
-                int len2 = BinaryPrimitives.readInt(c2.arr, c2.curFieldPos + 1);
-
-                return len1 == len2 && compareData(c1.arr, c1.curFieldPos + 5, c2.arr, c2.curFieldPos + 5, len1);
-            }
-
-            case GridBinaryMarshaller.DECIMAL: {
-                int scale1 = BinaryPrimitives.readInt(c1.arr, c1.curFieldPos + 1);
-                int scale2 = BinaryPrimitives.readInt(c2.arr, c2.curFieldPos + 1);
-
-                if (scale1 == scale2) {
-                    int len1 = BinaryPrimitives.readInt(c1.arr, c1.curFieldPos + 5);
-                    int len2 = BinaryPrimitives.readInt(c2.arr, c2.curFieldPos + 5);
-
-                    return len1 == len2 && compareData(c1.arr, c1.curFieldPos + 9, c2.arr, c2.curFieldPos + 9, len1);
-                }
-
-                return false;
-            }
+            case GridBinaryMarshaller.DECIMAL:
+                return c1.readInt(1) == c2.readInt(1) && compareByteArrays(c1, c2, 5);
 
             case GridBinaryMarshaller.NULL:
                 return true;
 
-            default: {
-                Object val1 = BinaryUtils.unmarshal(BinaryHeapInputStream.create(c1.arr, c1.curFieldPos), c1.ctx, null);
-                Object val2 = BinaryUtils.unmarshal(BinaryHeapInputStream.create(c2.arr, c2.curFieldPos), c2.ctx, null);
-
-                return F.eq(val1, val2);
-            }
+            default:
+                return F.eq(c1.currentField(), c2.currentField());
         }
     }
 
     /**
-     * Compare data in two arrays.
+     * Compare byte arrays.
      *
-     * @param a1 Array 1.
-     * @param off1 Offset 1.
-     * @param a2 Array 2.
-     * @param off2 Offset 2.
-     * @param len Length.
+     * @param c1 Comparer 1.
+     * @param c2 Comparer 2.
+     * @param off Offset (where length is located).
      * @return {@code True} if equal.
      */
-    private static boolean compareData(byte[] a1, int off1, byte[] a2, int off2, int len) {
-        for (int i = 0; i < len; i++) {
-            if (a1[off1 + i] != a2[off2 + i])
-                return false;
+    private static boolean compareByteArrays(BinarySerializedFieldComparer c1, BinarySerializedFieldComparer c2,
+        int off) {
+        int len = c1.readInt(off);
+
+        if (len != c2.readInt(off))
+            return false;
+        else {
+            off += 4;
+
+            if (c1.offheap()) {
+                if (c2.offheap())
+                    // Case 1: both offheap.
+                    return GridUnsafeMemory.compare(c1.ptr + off, c2.ptr + off, len);
+            }
+            else {
+                if (!c2.offheap()) {
+                    // Case 2: both onheap.
+                    for (int i = 0; i < len; i++) {
+                        if (c1.arr[off + i] != c2.arr[off + i])
+                            return false;
+                    }
+
+                    return true;
+                }
+                else {
+                    // Swap.
+                    BinarySerializedFieldComparer tmp = c1;
+                    c1 = c2;
+                    c2 = tmp;
+                }
+            }
+
+            // Case 3: offheap vs onheap.
+            assert c1.offheap() && !c2.offheap();
+
+            for (int i = 0; i < len; i++) {
+                if (BinaryPrimitives.readByte(c1.ptr, off + i) != c2.arr[off + i])
+                    return false;
+            }
+
+            return true;
         }
-
-        return true;
-    }
-
-    /**
-     * Compare fields of offheap objects.
-     *
-     * @param c1 First comparer.
-     * @param c2 Second comparer.
-     * @return {@code True} if both fields are equal.
-     */
-    private static boolean equalsOffheap(BinarySerializedFieldComparer c1, BinarySerializedFieldComparer c2) {
-        // TODO: Implement
-        throw new UnsupportedOperationException("Should not be called!");
     }
 }

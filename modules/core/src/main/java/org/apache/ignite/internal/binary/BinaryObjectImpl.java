@@ -306,7 +306,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         int orderBase = start + schemaOff + fieldIdLen;
         int orderMultiplier = fieldIdLen + fieldOffLen;
 
-        return new BinarySerializedFieldComparer(ctx, arr, 0L, start, orderBase, orderMultiplier, fieldOffLen);
+        return new BinarySerializedFieldComparer(this, arr, 0L, start, orderBase, orderMultiplier, fieldOffLen);
     }
 
     /** {@inheritDoc} */
