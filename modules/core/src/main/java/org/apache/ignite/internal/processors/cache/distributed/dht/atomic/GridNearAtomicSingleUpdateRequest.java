@@ -155,7 +155,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
         long conflictExpireTime,
         @Nullable GridCacheVersion conflictVer,
         boolean primary) {
-
         assert op != TRANSFORM;
         assert val != null || op == DELETE;
 

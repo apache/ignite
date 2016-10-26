@@ -135,8 +135,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
 
             for (int i = 0; i < putCnt; i++) {
                 jcache(0).invoke(i, new CacheEntryProcessor<Object, Object, Object>() {
-                    @Override
-                    public Object process(MutableEntry<Object, Object> entry,
+                    @Override public Object process(MutableEntry<Object, Object> entry,
                         Object... objects) throws EntryProcessorException {
                         return 2;
                     }
@@ -162,7 +161,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
             throws IgniteSpiException {
             AtomicInteger cntr = cntMap.get(((GridIoMessage)msg).message().getClass());
-            System.out.println(((GridIoMessage)msg).message().getClass());
+
             if (cntr != null)
                 cntr.incrementAndGet();
 

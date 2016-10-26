@@ -30,107 +30,110 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ *
+ */
 public interface GridNearAtomicUpdateRequestInt {
     /**
      * @return Mapped node ID.
      */
-    UUID nodeId();
+    public UUID nodeId();
 
     /**
      * @param nodeId Node ID.
      */
-    void nodeId(UUID nodeId);
+    public void nodeId(UUID nodeId);
 
     /**
      * @return Subject ID.
      */
-    UUID subjectId();
+    public UUID subjectId();
 
     /**
      * @return Task name hash.
      */
-    int taskNameHash();
+    public int taskNameHash();
 
     /**
      * @return Future version.
      */
-    GridCacheVersion futureVersion();
+    public GridCacheVersion futureVersion();
 
     /**
      * @return Flag indicating whether this is fast-map udpate.
      */
-    boolean fastMap();
+    public boolean fastMap();
 
     /**
      * @return Update version for fast-map request.
      */
-    GridCacheVersion updateVersion();
+    public GridCacheVersion updateVersion();
 
     /**
      * @return Topology locked flag.
      */
-    boolean topologyLocked();
+    public boolean topologyLocked();
 
     /**
      * @return {@code True} if request sent from client node.
      */
-    boolean clientRequest();
+    public boolean clientRequest();
 
     /**
      * @return Cache write synchronization mode.
      */
-    CacheWriteSynchronizationMode writeSynchronizationMode();
+    public CacheWriteSynchronizationMode writeSynchronizationMode();
 
     /**
      * @return Expiry policy.
      */
-    ExpiryPolicy expiry();
+    public ExpiryPolicy expiry();
 
     /**
      * @return Return value flag.
      */
-    boolean returnValue();
+    public boolean returnValue();
 
     /**
      * @return Filter.
      */
-    @Nullable CacheEntryPredicate[] filter();
+    @Nullable public CacheEntryPredicate[] filter();
 
     /**
      * @return Skip write-through to a persistent storage.
      */
-    boolean skipStore();
+    public boolean skipStore();
 
     /**
      * @return Keep binary flag.
      */
-    boolean keepBinary();
+    public boolean keepBinary();
 
     /**
      * @return Update operation.
      */
-    GridCacheOperation operation();
+    public GridCacheOperation operation();
 
     /**
      * @return Optional arguments for entry processor.
      */
-    @Nullable Object[] invokeArguments();
+    @Nullable public Object[] invokeArguments();
 
     /**
      * @return Flag indicating whether this request contains primary keys.
      */
-    boolean hasPrimary();
+    public boolean hasPrimary();
 
     /**
      * @param res Response.
      * @return {@code True} if current response was {@code null}.
      */
-    boolean onResponse(GridNearAtomicUpdateResponse res);
+    public boolean onResponse(GridNearAtomicUpdateResponse res);
 
     /**
      * @return Response.
      */
-    @Nullable GridNearAtomicUpdateResponse response();
+    @Nullable public GridNearAtomicUpdateResponse response();
 
     /**
      * @param key Key to add.
@@ -140,7 +143,7 @@ public interface GridNearAtomicUpdateRequestInt {
      * @param conflictVer Conflict version (optional).
      * @param primary If given key is primary on this mapping.
      */
-    void addUpdateEntry(KeyCacheObject key,
+    public void addUpdateEntry(KeyCacheObject key,
         @Nullable Object val,
         long conflictTtl,
         long conflictExpireTime,
@@ -150,30 +153,30 @@ public interface GridNearAtomicUpdateRequestInt {
     /**
      * @return Keys for this update request.
      */
-    List<KeyCacheObject> keys();
+    public List<KeyCacheObject> keys();
 
     /**
      * @return Values for this update request.
      */
-    List<?> values();
+    public List<?> values();
 
     /**
      * @param idx Key index.
      * @return Value.
      */
-    @SuppressWarnings("unchecked") CacheObject value(int idx);
+    public CacheObject value(int idx);
 
     /**
      * @param idx Key index.
      * @return Entry processor.
      */
-    @SuppressWarnings("unchecked") EntryProcessor<Object, Object, Object> entryProcessor(int idx);
+    public EntryProcessor<Object, Object, Object> entryProcessor(int idx);
 
     /**
      * @param idx Index to get.
      * @return Write value - either value, or transform closure.
      */
-    CacheObject writeValue(int idx);
+    public CacheObject writeValue(int idx);
 
     /**
      * @return Message ID.
@@ -185,35 +188,35 @@ public interface GridNearAtomicUpdateRequestInt {
      *
      * @return Topology version.
      */
-    AffinityTopologyVersion topologyVersion();
+    public AffinityTopologyVersion topologyVersion();
 
     /**
      * @return Conflict versions.
      */
-    @Nullable List<GridCacheVersion> conflictVersions();
+    @Nullable public List<GridCacheVersion> conflictVersions();
 
     /**
      * @param idx Index.
      * @return Conflict version.
      */
-    @Nullable GridCacheVersion conflictVersion(int idx);
+    @Nullable public GridCacheVersion conflictVersion(int idx);
 
     /**
      * @param idx Index.
      * @return Conflict TTL.
      */
-    long conflictTtl(int idx);
+    public long conflictTtl(int idx);
 
     /**
      * @param idx Index.
      * @return Conflict expire time.
      */
-    long conflictExpireTime(int idx);
+    public long conflictExpireTime(int idx);
 
     /**
      * Cleanup values.
      *
      * @param clearKeys If {@code true} clears keys.
      */
-    void cleanup(boolean clearKeys);
+    public void cleanup(boolean clearKeys);
 }

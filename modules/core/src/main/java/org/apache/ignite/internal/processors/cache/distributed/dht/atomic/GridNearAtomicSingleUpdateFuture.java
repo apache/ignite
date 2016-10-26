@@ -60,7 +60,8 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
  */
 public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpdateFuture {
     // TODO: 24.10.16 add correct version
-    public static final IgniteProductVersion SINGLE_UPDATE_REQUEST = IgniteProductVersion.fromString("1.8.0");
+    /** */
+    private static final IgniteProductVersion SINGLE_UPDATE_REQUEST = IgniteProductVersion.fromString("1.8.0");
 
     /** Keys */
     private Object key;
@@ -649,7 +650,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
      * @return {@code true} if target node supports {@link GridNearAtomicSingleUpdateRequest}
      */
     private boolean canUseSingleRequest(ClusterNode node) {
-        return node.version().compareTo(SINGLE_UPDATE_REQUEST) >= 0;
+        return node.version().compareToIgnoreTimestamp(SINGLE_UPDATE_REQUEST) >= 0;
     }
 
     /** {@inheritDoc} */
