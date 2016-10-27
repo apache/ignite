@@ -1872,7 +1872,7 @@ public class GridNioServer<T> {
                             processSelectedKeysOptimized(selectedKeys.flip());
                     }
 
-                    if (!changeReqs.isEmpty() || (!DISABLE_PARK && writer))
+                    if (!changeReqs.isEmpty() || (!DISABLE_PARK && writer && pendingAcks == 0))
                         continue;
 
                     select = true;

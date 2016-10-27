@@ -559,6 +559,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
                                 return false;
                         }
                     }
+
                     return true;
                 }
             }, getTestTimeout()) : "Clients: " + clients;
