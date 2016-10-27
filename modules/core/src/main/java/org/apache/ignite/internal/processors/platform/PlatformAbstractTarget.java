@@ -43,6 +43,9 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
     /** Constant: ERROR. */
     protected static final int ERROR = -1;
 
+    /** */
+    private static final int OP_META = -1;
+
     /** Context. */
     protected final PlatformContext platformCtx;
 
@@ -75,7 +78,13 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
         try (PlatformMemory mem = platformCtx.memory().get(memPtr)) {
             BinaryRawReaderEx reader = platformCtx.reader(mem);
 
-            return processInStreamOutLong(type, reader, mem);
+            if (type == OP_META) {
+                platformCtx.processMetadata(reader);
+
+                return TRUE;
+            }
+            else
+                return processInStreamOutLong(type, reader, mem);
         }
         catch (Exception e) {
             throw convertException(e);
@@ -338,7 +347,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @return Dummy value which is never returned.
      * @throws IgniteCheckedException Exception to be thrown.
      */
-    private <T> T throwUnsupported(int type) throws IgniteCheckedException {
+    protected <T> T throwUnsupported(int type) throws IgniteCheckedException {
         throw new IgniteCheckedException("Unsupported operation type: " + type);
     }
 
