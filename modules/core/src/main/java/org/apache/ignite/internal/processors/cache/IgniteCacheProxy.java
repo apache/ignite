@@ -87,6 +87,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
@@ -2307,9 +2308,19 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     public void restart() {
         GridFutureAdapter<Void> restartFut = new GridFutureAdapter<>();
 
-        GridFutureAdapter<Void> currentFut = this.restartFut.get();
+        final GridFutureAdapter<Void> currentFut = this.restartFut.get();
 
-        this.restartFut.compareAndSet(currentFut, restartFut);
+        boolean changed = this.restartFut.compareAndSet(currentFut, restartFut);
+
+        if (changed && currentFut != null)
+            restartFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
+                @Override public void apply(IgniteInternalFuture<Void> future) {
+                    if (future.error() != null)
+                        currentFut.onDone(future.error());
+                    else
+                        currentFut.onDone();
+                }
+            });
     }
 
     /**
