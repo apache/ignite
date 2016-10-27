@@ -20,6 +20,7 @@ package org.apache.ignite;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import javax.cache.CacheException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -234,8 +235,9 @@ public interface Ignite extends AutoCloseable {
      *
      * @param cacheCfgs Collection of cache configuration to use.
      * @return Collection of instances of started caches.
+     * @throws CacheException if one of created caches exists or other error occurs
      */
-    public Collection<IgniteCache> createCaches(Collection<CacheConfiguration> cacheCfgs);
+    public Collection<IgniteCache> createCaches(Collection<CacheConfiguration> cacheCfgs) throws CacheException;
 
     /**
      * Dynamically starts new cache using template configuration.
@@ -279,8 +281,9 @@ public interface Ignite extends AutoCloseable {
      *
      * @param cacheCfgs Collection of cache configuration to use.
      * @return Collection of existing or newly created caches.
+     * @throws CacheException if error occurs
      */
-    public Collection<IgniteCache> getOrCreateCaches(Collection<CacheConfiguration> cacheCfgs);
+    public Collection<IgniteCache> getOrCreateCaches(Collection<CacheConfiguration> cacheCfgs) throws CacheException;
 
     /**
      * Adds cache configuration template.
@@ -354,8 +357,9 @@ public interface Ignite extends AutoCloseable {
      * Stops dynamically started caches.
      *
      * @param cacheNames Collection of cache names to stop.
+     * @throws CacheException if error occurs
      */
-    public void destroyCaches(Collection<String> cacheNames);
+    public void destroyCaches(Collection<String> cacheNames) throws CacheException;
 
     /**
      * Gets an instance of {@link IgniteCache} API. {@code IgniteCache} is a fully-compatible
