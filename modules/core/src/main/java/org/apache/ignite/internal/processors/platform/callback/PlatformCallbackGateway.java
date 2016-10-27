@@ -429,7 +429,7 @@ public class PlatformCallbackGateway {
      * @param memPtr Stream pointer.
      * @param keepBinary Binary flag.
      */
-    public void dataStreamerStreamReceiverInvoke(long ptr, Object cache, long memPtr, boolean keepBinary) {
+    public void dataStreamerStreamReceiverInvoke(long ptr, PlatformTargetProxy cache, long memPtr, boolean keepBinary) {
         enter();
 
         try {

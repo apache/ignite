@@ -226,7 +226,7 @@ public class PlatformCallbackUtils {
      * @param memPtr Stream pointer.
      * @param keepBinary Binary flag.
      */
-    static native void dataStreamerStreamReceiverInvoke(long envPtr, long ptr, Object cache, long memPtr,
+    static native void dataStreamerStreamReceiverInvoke(long envPtr, long ptr, PlatformTargetProxy cache, long memPtr,
         boolean keepBinary);
 
     /**
