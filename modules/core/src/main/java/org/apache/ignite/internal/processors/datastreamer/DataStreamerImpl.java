@@ -1125,7 +1125,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      * @throws IgniteCheckedException If failed.
      */
     public void closeEx(boolean cancel) throws IgniteCheckedException {
-        closeEx(cancel, null);
+        IgniteCheckedException err = closeEx(cancel, null);
+
+        if (err != null)
+            throw err; // Throws at close().
     }
 
     /**
@@ -1133,9 +1136,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      * @param err Error.
      * @throws IgniteCheckedException If failed.
      */
-    public void closeEx(boolean cancel, IgniteCheckedException err) throws IgniteCheckedException {
+    private IgniteCheckedException closeEx(boolean cancel, IgniteCheckedException err) throws IgniteCheckedException {
         if (!closed.compareAndSet(false, true))
-            return;
+            return null;
 
         busyLock.block();
 
@@ -1164,13 +1167,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         long failed = failCntr.longValue();
 
-        if (failed > 0)
+        if (failed > 0 && err == null)
             err = new IgniteCheckedException("Some of DataStreamer operations failed. [failedCount=" + failed + "]");
 
         fut.onDone(err);
 
-        if (err != null)
-            throw err;
+        return err;
     }
 
     /**
