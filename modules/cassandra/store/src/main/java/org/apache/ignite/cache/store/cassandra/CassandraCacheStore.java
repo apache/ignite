@@ -96,8 +96,11 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
 
     /** {@inheritDoc} */
     @Override public void loadCache(IgniteBiInClosure<K, V> clo, Object... args) throws CacheLoaderException {
-        if (clo == null || args == null || args.length == 0)
+        if (clo == null)
             return;
+
+        if (args == null || args.length == 0)
+            args = new String[] {"select * from " + controller.getPersistenceSettings().getKeyspace() + "." + cassandraTable() + ";"};
 
         ExecutorService pool = null;
 
