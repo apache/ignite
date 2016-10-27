@@ -30,7 +30,7 @@ import java.util.HashMap;
  * Identity implementation which use the list of provided fields to calculate the hash code and to perform equality
  * checks.
  */
-public class BinaryFieldIdentityResolver implements BinaryIdentityResolver {
+public class BinaryFieldIdentityResolver extends BinaryAbstractIdentityResolver {
     /** Mutex for synchronization. */
     private final Object mux = new Object();
 
@@ -79,11 +79,7 @@ public class BinaryFieldIdentityResolver implements BinaryIdentityResolver {
     }
 
     /** {@inheritDoc} */
-    @Override public int hashCode(BinaryObject obj) {
-        assert obj != null;
-        assert !(obj instanceof BinaryEnumObjectImpl);
-        assert fieldNames != null;
-
+    @Override public int hashCode0(BinaryObject obj) {
         if (obj instanceof BinaryObjectExImpl) {
             BinaryObjectExImpl obj0 = (BinaryObjectExImpl)obj;
 
@@ -96,6 +92,8 @@ public class BinaryFieldIdentityResolver implements BinaryIdentityResolver {
                 return accessor.hashCode(obj0);
             }
         }
+        else if (obj instanceof BinaryEnumObjectImpl)
+            throw new BinaryObjectException("Field identity resolver cannot be used with enums: " + obj);
 
         // Handle regular case.
         int hash = 0;
@@ -110,67 +108,72 @@ public class BinaryFieldIdentityResolver implements BinaryIdentityResolver {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(BinaryObject o1, BinaryObject o2) {
-        assert fieldNames != null;
+    @Override public boolean equals0(BinaryObject o1, BinaryObject o2) {
+        if (o1 instanceof BinaryObjectExImpl && o2 instanceof BinaryObjectExImpl) {
+            BinaryObjectExImpl ex1 = (BinaryObjectExImpl) o1;
+            BinaryObjectExImpl ex2 = (BinaryObjectExImpl) o2;
 
-        if (o1 == null)
-            return o2 == null;
-        else if (o2 == null)
-            return false;
+            int typeId = ex1.typeId();
 
-        assert o1 instanceof BinaryObjectExImpl;
-        assert o2 instanceof BinaryObjectExImpl;
+            if (typeId != ex2.typeId())
+                return false;
 
-        if (o1 == o2)
-            return true;
+            if (ex1.hasSchema() && ex2.hasSchema()) {
+                // Optimistic case: both objects have schemas.
+                int schemaId1 = ex1.schemaId();
+                int schemaId2 = ex2.schemaId();
 
-        BinaryObjectExImpl ex1 = (BinaryObjectExImpl)o1;
-        BinaryObjectExImpl ex2 = (BinaryObjectExImpl)o2;
+                FieldAccessor accessor1 = accessor(ex1, typeId, schemaId1);
 
-        int typeId = ex1.typeId();
+                FieldAccessor accessor2;
 
-        if (typeId != ex2.typeId())
-            return false;
+                if (schemaId1 == schemaId2)
+                    accessor2 = accessor1;
+                else
+                    accessor2 = accessor(ex2, typeId, schemaId2);
 
-        if (ex1.hasSchema() && ex2.hasSchema()) {
-            int schemaId1 = ex1.schemaId();
-            int schemaId2 = ex2.schemaId();
+                // Even better case: compare fields without deserialization.
+                BinarySerializedFieldComparer comp1 = ex1.createFieldComparer();
+                BinarySerializedFieldComparer comp2 = ex2.createFieldComparer();
 
-            // Optimistic case: both objects have schemas.
-            FieldAccessor accessor1 = accessor(ex1, typeId, schemaId1);
+                for (int i = 0; i < fieldNames.length; i++) {
+                    comp1.findField(accessor1.orders[i]);
+                    comp2.findField(accessor2.orders[i]);
 
-            FieldAccessor accessor2;
+                    if (!BinarySerializedFieldComparer.equals(comp1, comp2))
+                        return false;
+                }
 
-            if (schemaId1 == schemaId2)
-                accessor2 = accessor1;
+                return true;
+            }
             else
-                accessor2 = accessor(ex2, typeId, schemaId2);
-
-            // Even better case: compare fields without deserialization.
-            BinarySerializedFieldComparer comp1 = ex1.createFieldComparer();
-            BinarySerializedFieldComparer comp2 = ex2.createFieldComparer();
-
-            for (int i = 0; i < fieldNames.length; i++) {
-                comp1.findField(accessor1.orders[i]);
-                comp2.findField(accessor2.orders[i]);
-
-                if (!BinarySerializedFieldComparer.equals(comp1, comp2))
-                    return false;
-            }
+                // Pessimistic case: object of unknown types, or without schemas. Have to read fields in usual way.
+                return equalsSlow(ex1, ex2);
         }
-        else {
-            // Pessimistic case: object of unknown types, or without schemas. Have to read fields in usual way.
-            BinaryType typ = ex1.type();
 
-            for (String fieldName : fieldNames) {
-                BinaryFieldImpl field = (BinaryFieldImpl)typ.field(fieldName);
+        if (o1 instanceof BinaryEnumObjectImpl)
+            throw new BinaryObjectException("Field identity resolver cannot be used with enums: " + o1);
 
-                Object val1 = field.value(ex1);
-                Object val2 = field.value(ex2);
+        if (o2 instanceof BinaryEnumObjectImpl)
+            throw new BinaryObjectException("Field identity resolver cannot be used with enums: " + o2);
 
-                if (!F.eq(val1, val2))
-                    return false;
-            }
+        return o1.type().typeId() == o2.type().typeId() && equalsSlow(o1, o2);
+    }
+
+    /**
+     * Slow-path equals routine: regular fields comparison.
+     *
+     * @param o1 Object 1.
+     * @param o2 Object 2.
+     * @return Result.
+     */
+    private boolean equalsSlow(BinaryObject o1, BinaryObject o2) {
+        for (String fieldName : fieldNames) {
+            Object val1 = o1.field(fieldName);
+            Object val2 = o2.field(fieldName);
+
+            if (!F.eq(val1, val2))
+                return false;
         }
 
         return true;
@@ -278,19 +281,6 @@ public class BinaryFieldIdentityResolver implements BinaryIdentityResolver {
          */
         private boolean applicableTo(int expTypeId, int expSchemaId) {
             return typeId == expTypeId && schemaId == expSchemaId;
-        }
-
-        /**
-         * Get field on the given index.
-         *
-         * @param obj Object.
-         * @param idx Index.
-         * @return Field value.
-         */
-        private Object field(BinaryObjectExImpl obj, int idx) {
-            int order = orders[idx];
-
-            return obj.fieldByOrder(order);
         }
 
         /**
