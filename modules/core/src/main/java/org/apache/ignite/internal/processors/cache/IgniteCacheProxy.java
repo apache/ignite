@@ -2341,6 +2341,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         internalProxy = new GridCacheProxyImpl<>(ctx, delegate, opCtx);
 
         restartFut.onDone();
+
+        this.restartFut.compareAndSet(restartFut, null);
     }
 
     /** {@inheritDoc} */
