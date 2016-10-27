@@ -152,6 +152,62 @@ namespace ignite
 
         SqlResult Statement::InternalSetAttribute(int attr, void* value, SQLINTEGER valueLen)
         {
+            switch (attr)
+            {
+                case SQL_ATTR_ROW_ARRAY_SIZE:
+                {
+                    SQLULEN val = reinterpret_cast<SQLULEN>(value);
+
+                    LOG_MSG("SQL_ATTR_ROW_ARRAY_SIZE: %d\n", val);
+
+                    if (val != 1)
+                    {
+                        AddStatusRecord(SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                            "Fetching of more than one row by call is not supported.");
+
+                        return SQL_RESULT_ERROR;
+                    }
+
+                    break;
+                }
+
+                case SQL_ATTR_ROWS_FETCHED_PTR:
+                {
+                    SetRowsFetchedPtr(reinterpret_cast<size_t*>(value));
+
+                    break;
+                }
+
+                case SQL_ATTR_ROW_STATUS_PTR:
+                {
+                    SetRowStatusesPtr(reinterpret_cast<uint16_t*>(value));
+
+                    break;
+                }
+
+                case SQL_ATTR_PARAM_BIND_OFFSET_PTR:
+                {
+                    SetParamBindOffsetPtr(reinterpret_cast<int*>(value));
+
+                    break;
+                }
+
+                case SQL_ATTR_ROW_BIND_OFFSET_PTR:
+                {
+                    SetColumnBindOffsetPtr(reinterpret_cast<int*>(value));
+
+                    break;
+                }
+
+                default:
+                {
+                    AddStatusRecord(SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                        "Specified attribute is not supported.");
+
+                    return SQL_RESULT_ERROR;
+                }
+            }
+
             return SQL_RESULT_SUCCESS;
         }
 

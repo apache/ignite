@@ -124,7 +124,7 @@ namespace ignite
              * @param value Value pointer.
              * @param valueLen Value length.
              */
-            void SetAttribute(int attr, void* value, SQLINTEGER  valueLen);
+            void SetAttribute(int attr, void* value, SQLINTEGER valueLen);
 
             /**
              * Get number of binded parameters.

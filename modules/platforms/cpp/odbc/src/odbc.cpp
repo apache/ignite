@@ -943,53 +943,9 @@ namespace ignite
         if (!statement)
             return SQL_INVALID_HANDLE;
 
-        switch (attr)
-        {
-            case SQL_ATTR_ROW_ARRAY_SIZE:
-            {
-                SQLULEN val = reinterpret_cast<SQLULEN>(value);
+        statement->SetAttribute(attr, value, valueLen);
 
-                LOG_MSG("Value: %d\n", val);
-
-                if (val != 1)
-                    return SQL_ERROR;
-
-                break;
-            }
-
-            case SQL_ATTR_ROWS_FETCHED_PTR:
-            {
-                statement->SetRowsFetchedPtr(reinterpret_cast<size_t*>(value));
-
-                break;
-            }
-
-            case SQL_ATTR_ROW_STATUS_PTR:
-            {
-                statement->SetRowStatusesPtr(reinterpret_cast<uint16_t*>(value));
-
-                break;
-            }
-
-            case SQL_ATTR_PARAM_BIND_OFFSET_PTR:
-            {
-                statement->SetParamBindOffsetPtr(reinterpret_cast<int*>(value));
-
-                break;
-            }
-
-            case SQL_ATTR_ROW_BIND_OFFSET_PTR:
-            {
-                statement->SetColumnBindOffsetPtr(reinterpret_cast<int*>(value));
-
-                break;
-            }
-
-            default:
-                return SQL_ERROR;
-        }
-
-        return SQL_SUCCESS;
+        return statement->GetDiagnosticRecords().GetReturnCode();
     }
 
     SQLRETURN SQLPrimaryKeys(SQLHSTMT       stmt,
