@@ -30,7 +30,7 @@ import java.util.HashMap;
  * Identity implementation which use the list of provided fields to calculate the hash code and to perform equality
  * checks.
  */
-public final class BinaryFieldIdentityResolver implements BinaryIdentityResolver {
+public class BinaryFieldIdentityResolver implements BinaryIdentityResolver {
     /** Mutex for synchronization. */
     private final Object mux = new Object();
 

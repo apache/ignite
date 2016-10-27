@@ -78,6 +78,20 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
     }
 
     /**
+     * Get offset of data begin.
+     *
+     * @return Field value.
+     */
+    public abstract int dataStartOffset();
+
+    /**
+     * Get offset of the footer begin.
+     *
+     * @return Field value.
+     */
+    public abstract int footerStartOffset();
+
+    /**
      * Get field by offset.
      *
      * @param fieldOffset Field offset.

@@ -18,6 +18,7 @@
 package org.apache.ignite.binary;
 
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryObjectExImpl;
 import org.apache.ignite.internal.binary.BinaryPrimitives;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -50,21 +51,21 @@ public class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver 
         int hash = 1;
 
         if (obj instanceof BinaryObjectExImpl) {
-            BinaryObjectExImpl obj0 = (BinaryObjectExImpl)obj;
+            BinaryObjectExImpl ex = (BinaryObjectExImpl)obj;
 
-            int start = 0; // TODO;
-            int end = 100; // TODO
+            int start = ex.dataStartOffset();
+            int end = ex.footerStartOffset();
 
-            if (obj0.hasArray()) {
+            if (ex.hasArray()) {
                 // Handle heap object.
-                byte[] data = obj0.array();
+                byte[] data = ex.array();
 
                 for (int i = start; i < end; i++)
                     hash = 31 * hash + data[i];
             }
             else {
                 // Handle offheap object.
-                long ptr = obj0.offheapAddress();
+                long ptr = ex.offheapAddress();
 
                 for (int i = start; i < end; i++)
                     hash = 31 * hash + BinaryPrimitives.readByte(ptr, i);
@@ -74,10 +75,10 @@ public class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver 
             int ord = obj.enumOrdinal();
 
             // Construct hash as if it was an int serialized in little-endian form.
-            hash = 31 * hash + ord & 0x000000FF;
-            hash = 31 * hash + ord & 0x0000FF00;
-            hash = 31 * hash + ord & 0x00FF0000;
-            hash = 31 * hash + ord & 0xFF000000;
+            hash = 31 * hash + (ord & 0x000000FF);
+            hash = 31 * hash + (ord & 0x0000FF00);
+            hash = 31 * hash + (ord & 0x00FF0000);
+            hash = 31 * hash + (ord & 0xFF000000);
         }
         else
             throw new BinaryObjectException("Array identity resolver cannot be used with provided BinaryObject " +
@@ -88,9 +89,128 @@ public class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver 
 
     /** {@inheritDoc} */
     @Override protected boolean equals0(BinaryObject o1, BinaryObject o2) {
-        // TODO
+        if (o1 instanceof BinaryObjectEx && o2 instanceof BinaryObjectEx) {
+            BinaryObjectEx ex1 = (BinaryObjectEx)o1;
+            BinaryObjectEx ex2 = (BinaryObjectEx)o2;
 
-        return false;
+            if (ex1.typeId() != ex2.typeId())
+                return false;
+
+            if (ex1 instanceof BinaryObjectExImpl) {
+                // Handle regular object.
+                assert ex2 instanceof BinaryObjectExImpl;
+
+                BinaryObjectExImpl exx1 = (BinaryObjectExImpl)ex1;
+                BinaryObjectExImpl exx2 = (BinaryObjectExImpl)ex2;
+
+                if (exx1.hasArray())
+                    return exx2.hasArray() ? equalsHeap(exx1, exx2) : equalsHeapOffheap(exx1, exx2);
+                else
+                    return exx2.hasArray() ? equalsHeapOffheap(exx2, exx1) : equalsOffheap(exx1, exx2);
+            }
+            else {
+                // Handle enums.
+                assert ex1 instanceof BinaryEnumObjectImpl;
+                assert ex2 instanceof BinaryEnumObjectImpl;
+
+                return ex1.enumOrdinal() == ex2.enumOrdinal();
+            }
+        }
+
+        BinaryObject o = o1 instanceof BinaryObjectEx ? o2 : o1;
+
+        throw new BinaryObjectException("Array identity resolver cannot be used with provided BinaryObject " +
+            "implementation: " + o.getClass().getName());
+    }
+
+    /**
+     * Compare two heap objects.
+     *
+     * @param o1 Object 1.
+     * @param o2 Object 2.
+     * @return Result.
+     */
+    private static boolean equalsHeap(BinaryObjectExImpl o1, BinaryObjectExImpl o2) {
+        byte[] arr1 = o1.array();
+        byte[] arr2 = o2.array();
+
+        assert arr1 != null && arr2 != null;
+
+        int i = o1.dataStartOffset();
+        int j = o2.dataStartOffset();
+
+        int end = o1.footerStartOffset();
+
+        // Check length.
+        if (end - i != o2.footerStartOffset() - j)
+            return false;
+
+        for (; i < end; i++, j++) {
+            if (arr1[i] != arr2[j])
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Compare heap and offheap objects.
+     *
+     * @param o1 Object 1 (heap).
+     * @param o2 Object 2 (offheap).
+     * @return Result.
+     */
+    private static boolean equalsHeapOffheap(BinaryObjectExImpl o1, BinaryObjectExImpl o2) {
+        byte[] arr1 = o1.array();
+        long ptr2 = o2.offheapAddress();
+
+        assert arr1 != null && ptr2 != 0;
+
+        int i = o1.dataStartOffset();
+        int j = o2.dataStartOffset();
+
+        int end = o1.footerStartOffset();
+
+        // Check length.
+        if (end - i != o2.footerStartOffset() - j)
+            return false;
+
+        for (; i < end; i++, j++) {
+            if (arr1[i] != BinaryPrimitives.readByte(ptr2, j))
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Compare two offheap objects.
+     *
+     * @param o1 Object 1.
+     * @param o2 Object 2.
+     * @return Result.
+     */
+    private static boolean equalsOffheap(BinaryObjectExImpl o1, BinaryObjectExImpl o2) {
+        long ptr1 = o1.offheapAddress();
+        long ptr2 = o2.offheapAddress();
+
+        assert ptr1 != 0 && ptr2 != 0;
+
+        int i = o1.dataStartOffset();
+        int j = o2.dataStartOffset();
+
+        int end = o1.footerStartOffset();
+
+        // Check length.
+        if (end - i != o2.footerStartOffset() - j)
+            return false;
+
+        for (; i < end; i++, j++) {
+            if (BinaryPrimitives.readByte(ptr1, i) != BinaryPrimitives.readByte(ptr2, j))
+                return false;
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */
