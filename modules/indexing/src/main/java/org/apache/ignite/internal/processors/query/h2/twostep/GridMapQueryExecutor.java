@@ -35,6 +35,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
@@ -678,10 +679,22 @@ public class GridMapQueryExecutor {
     private void onNextPageRequest(ClusterNode node, GridQueryNextPageRequest req) {
         NodeResults nodeRess = qryRess.get(node.id());
 
-        QueryResults qr = nodeRess == null ? null : nodeRess.results().get(req.queryRequestId());
+        if (nodeRess == null) {
+            sendError(node, req.queryRequestId(), new CacheException("No node result found for request: " + req));
 
-        if (qr == null || qr.canceled)
+            return;
+        } else if (nodeRess.cancelled(req.queryRequestId())) {
+            sendError(node, req.queryRequestId(), new QueryCancelledException());
+
+            return;
+        }
+
+        QueryResults qr = nodeRess.results().get(req.queryRequestId());
+
+        if (qr == null)
             sendError(node, req.queryRequestId(), new CacheException("No query result found for request: " + req));
+        else if (qr.canceled)
+            sendError(node, req.queryRequestId(), new QueryCancelledException());
         else
             sendNextPage(nodeRess, node, qr, req.query(), req.pageSize());
     }
