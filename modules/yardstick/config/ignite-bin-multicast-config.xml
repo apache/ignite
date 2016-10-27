@@ -67,7 +67,7 @@
                             <property name="typeName" value="BinaryKeyWithFieldsIdentity"/>
 
                             <property name="identity">
-                                <bean class="org.apache.ignite.binary.BinaryFieldListIdentity">
+                                <bean class="org.apache.ignite.binary.BinaryFieldIdentityResolver">
                                     <property name="fieldNames">
                                         <list>
                                             <value>f1</value>

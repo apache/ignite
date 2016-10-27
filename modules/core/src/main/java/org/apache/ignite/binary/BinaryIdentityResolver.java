@@ -17,10 +17,12 @@
 
 package org.apache.ignite.binary;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Interface to compute hash codes for new binary objects and compare them for equality.
  */
-public interface BinaryIdentity {
+public interface BinaryIdentityResolver {
     /**
      * Compute hash code for binary object.
      *
@@ -36,5 +38,5 @@ public interface BinaryIdentity {
      * @param o2 Second object.
      * @return {@code True} if both objects are equal.
      */
-    public boolean equals(BinaryObject o1, BinaryObject o2);
+    public boolean equals(@Nullable BinaryObject o1, @Nullable BinaryObject o2);
 }

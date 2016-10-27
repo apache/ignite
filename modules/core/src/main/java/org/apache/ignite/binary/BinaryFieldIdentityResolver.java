@@ -30,7 +30,7 @@ import java.util.HashMap;
  * Identity implementation which use the list of provided fields to calculate the hash code and to perform equality
  * checks.
  */
-public final class BinaryFieldListIdentity implements BinaryIdentity {
+public final class BinaryFieldIdentityResolver implements BinaryIdentityResolver {
     /** Mutex for synchronization. */
     private final Object mux = new Object();
 
@@ -46,7 +46,7 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
     /**
      * Default constructor.
      */
-    public BinaryFieldListIdentity() {
+    public BinaryFieldIdentityResolver() {
         // No-op.
     }
 
@@ -55,7 +55,7 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
      *
      * @param other Other instance.
      */
-    public BinaryFieldListIdentity(BinaryFieldListIdentity other) {
+    public BinaryFieldIdentityResolver(BinaryFieldIdentityResolver other) {
         fieldNames = other.fieldNames;
     }
 
@@ -72,7 +72,7 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
      * @param fieldNames Field names.
      * @return {@code this} for chaining.
      */
-    public BinaryFieldListIdentity setFieldNames(String... fieldNames) {
+    public BinaryFieldIdentityResolver setFieldNames(String... fieldNames) {
         this.fieldNames = fieldNames;
 
         return this;
@@ -112,14 +112,17 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
     /** {@inheritDoc} */
     @Override public boolean equals(BinaryObject o1, BinaryObject o2) {
         assert fieldNames != null;
-        assert o1 != null;
+
+        if (o1 == null)
+            return o2 == null;
+        else if (o2 == null)
+            return false;
+
         assert o1 instanceof BinaryObjectExImpl;
+        assert o2 instanceof BinaryObjectExImpl;
 
         if (o1 == o2)
             return true;
-
-        if (o2 == null || !(o2 instanceof BinaryObjectExImpl))
-            return false;
 
         BinaryObjectExImpl ex1 = (BinaryObjectExImpl)o1;
         BinaryObjectExImpl ex2 = (BinaryObjectExImpl)o2;
@@ -143,27 +146,16 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
             else
                 accessor2 = accessor(ex2, typeId, schemaId2);
 
-            if (ex1.hasArray() && ex2.hasArray()) {
-                // Even better case: compare fields without deserialization.
-                BinarySerializedFieldComparer comp1 = ex1.createFieldComparer();
-                BinarySerializedFieldComparer comp2 = ex2.createFieldComparer();
+            // Even better case: compare fields without deserialization.
+            BinarySerializedFieldComparer comp1 = ex1.createFieldComparer();
+            BinarySerializedFieldComparer comp2 = ex2.createFieldComparer();
 
-                for (int i = 0; i < fieldNames.length; i++) {
-                    comp1.findField(accessor1.orders[i]);
-                    comp2.findField(accessor2.orders[i]);
+            for (int i = 0; i < fieldNames.length; i++) {
+                comp1.findField(accessor1.orders[i]);
+                comp2.findField(accessor2.orders[i]);
 
-                    if (!BinarySerializedFieldComparer.equals(comp1, comp2))
-                        return false;
-                }
-            }
-            else {
-                for (int i = 0; i < fieldNames.length; i++) {
-                    Object val1 = accessor1.field(ex1, i);
-                    Object val2 = accessor2.field(ex2, i);
-
-                    if (!F.eq(val1, val2))
-                        return false;
-                }
+                if (!BinarySerializedFieldComparer.equals(comp1, comp2))
+                    return false;
             }
         }
         else {
@@ -249,7 +241,7 @@ public final class BinaryFieldListIdentity implements BinaryIdentity {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(BinaryFieldListIdentity.class, this);
+        return S.toString(BinaryFieldIdentityResolver.class, this);
     }
 
     /**

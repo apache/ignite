@@ -26,7 +26,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryIdentity;
+import org.apache.ignite.binary.BinaryIdentityResolver;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
@@ -148,7 +148,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
 
         BinaryObjectExImpl otherPo = (BinaryObjectExImpl)other;
 
-        BinaryIdentity identity = context().identity(typeId());
+        BinaryIdentityResolver identity = context().identity(typeId());
 
         // Equivalence relation has to be symmetrical, so it should not matter which identity we choose
         if (identity == null)

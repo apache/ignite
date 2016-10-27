@@ -41,7 +41,7 @@ import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryIdentity;
+import org.apache.ignite.binary.BinaryIdentityResolver;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.binary.BinaryWriter;
@@ -60,7 +60,7 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
-import org.apache.ignite.binary.BinaryFieldListIdentity;
+import org.apache.ignite.binary.BinaryFieldIdentityResolver;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -129,7 +129,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         binTypes.add(new BinaryTypeConfiguration() {{
             setTypeName("FieldsHashedKey");
 
-            BinaryFieldListIdentity id = new BinaryFieldListIdentity();
+            BinaryFieldIdentityResolver id = new BinaryFieldIdentityResolver();
             id.setFieldNames("fld1", "fld3");
 
             setIdentity(id);
@@ -138,13 +138,13 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         binTypes.add(new BinaryTypeConfiguration() {{
             setTypeName("CustomHashedKey");
 
-            setIdentity(new Identity());
+            setIdentity(new IdentityResolver());
         }});
 
         binTypes.add(new BinaryTypeConfiguration() {{
             setTypeName("ComplexBinaryFieldsListHashedKey");
 
-            BinaryFieldListIdentity id = new BinaryFieldListIdentity();
+            BinaryFieldIdentityResolver id = new BinaryFieldIdentityResolver();
             id.setFieldNames("secondField", "thirdField");
 
             setIdentity(id);
@@ -1378,7 +1378,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      *
      */
-    private final static class Identity implements BinaryIdentity {
+    private final static class IdentityResolver implements BinaryIdentityResolver {
         /** {@inheritDoc} */
         @Override public int hashCode(BinaryObject builder) {
             return (Integer) builder.field("fld1") * 31 / 5;

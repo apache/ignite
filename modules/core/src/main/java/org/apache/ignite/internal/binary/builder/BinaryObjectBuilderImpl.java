@@ -21,7 +21,7 @@ import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryIdentity;
+import org.apache.ignite.binary.BinaryIdentityResolver;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
@@ -193,7 +193,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             short flags = BinaryPrimitives.readShort(arr, GridBinaryMarshaller.FLAGS_POS);
 
             if (BinaryUtils.isFlagSet(flags, BinaryUtils.FLAG_EMPTY_HASH_CODE)) {
-                BinaryIdentity identity = ctx.identity(typeId());
+                BinaryIdentityResolver identity = ctx.identity(typeId());
 
                 if (identity != null) {
                     // Reset missing hash code flag

@@ -44,7 +44,7 @@ public class BinaryTypeConfiguration {
     private BinarySerializer serializer;
 
     /** Identity. */
-    private BinaryIdentity identity;
+    private BinaryIdentityResolver identity;
 
     /** Enum flag. */
     private boolean isEnum;
@@ -155,7 +155,7 @@ public class BinaryTypeConfiguration {
      *
      * @return Identity.
      */
-    @Nullable public BinaryIdentity getIdentity() {
+    @Nullable public BinaryIdentityResolver getIdentity() {
         return identity;
     }
 
@@ -164,7 +164,7 @@ public class BinaryTypeConfiguration {
      *
      * @param identity Identity.
      */
-    public void setIdentity(@Nullable BinaryIdentity identity) {
+    public void setIdentity(@Nullable BinaryIdentityResolver identity) {
         this.identity = identity;
     }
 
