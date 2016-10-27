@@ -38,9 +38,6 @@ import org.jetbrains.annotations.Nullable;
 @SuppressWarnings({"UnusedDeclaration"})
 public class PlatformClusterGroup extends PlatformAbstractTarget {
     /** */
-    private static final int OP_ALL_METADATA = 1;
-
-    /** */
     private static final int OP_FOR_ATTRIBUTE = 2;
 
     /** */
@@ -57,9 +54,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
     /** */
     private static final int OP_FOR_NODE_IDS = 7;
-
-    /** */
-    private static final int OP_METADATA = 8;
 
     /** */
     private static final int OP_METRICS = 9;
@@ -130,11 +124,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
                 break;
 
-            case OP_ALL_METADATA:
-                platformCtx.writeAllMetadata(writer);
-
-                break;
-
             default:
                 super.processOutStream(type, writer);
         }
@@ -197,14 +186,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 }
 
                 platformCtx.writeClusterMetrics(writer, metrics);
-
-                break;
-            }
-
-            case OP_METADATA: {
-                int typeId = reader.readInt();
-
-                platformCtx.writeMetadata(writer, typeId);
 
                 break;
             }
