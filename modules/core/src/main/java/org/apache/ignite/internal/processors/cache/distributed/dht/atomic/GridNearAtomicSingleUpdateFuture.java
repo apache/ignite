@@ -577,7 +577,6 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                     op,
                     retval,
                     invokeArgs,
-                    filter,
                     subjId,
                     taskNameHash,
                     skipStore,
@@ -586,24 +585,45 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                     cctx.deploymentEnabled());
             }
             else {
-                req = new GridNearAtomicSingleUpdateRequest(
-                    cctx.cacheId(),
-                    primary.id(),
-                    futVer,
-                    false,
-                    updVer,
-                    topVer,
-                    topLocked,
-                    syncMode,
-                    op,
-                    retval,
-                    filter,
-                    subjId,
-                    taskNameHash,
-                    skipStore,
-                    keepBinary,
-                    cctx.kernalContext().clientNode(),
-                    cctx.deploymentEnabled());
+                if (filter == null || filter.length == 0) {
+                    req = new GridNearAtomicSingleUpdateRequest(
+                        cctx.cacheId(),
+                        primary.id(),
+                        futVer,
+                        false,
+                        updVer,
+                        topVer,
+                        topLocked,
+                        syncMode,
+                        op,
+                        retval,
+                        subjId,
+                        taskNameHash,
+                        skipStore,
+                        keepBinary,
+                        cctx.kernalContext().clientNode(),
+                        cctx.deploymentEnabled());
+                }
+                else {
+                    req = new GridNearAtomicSingleUpdateFilterRequest(
+                        cctx.cacheId(),
+                        primary.id(),
+                        futVer,
+                        false,
+                        updVer,
+                        topVer,
+                        topLocked,
+                        syncMode,
+                        op,
+                        retval,
+                        filter,
+                        subjId,
+                        taskNameHash,
+                        skipStore,
+                        keepBinary,
+                        cctx.kernalContext().clientNode(),
+                        cctx.deploymentEnabled());
+                }
             }
         }
         else {

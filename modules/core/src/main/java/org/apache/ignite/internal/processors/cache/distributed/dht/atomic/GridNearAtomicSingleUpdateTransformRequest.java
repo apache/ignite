@@ -27,7 +27,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -86,7 +85,6 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
      * @param op Cache update operation.
      * @param retval Return value required flag.
      * @param invokeArgs Optional arguments for entry processor.
-     * @param filter Optional filter for atomic check.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param skipStore Skip write-through to a persistent storage.
@@ -106,7 +104,6 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
         GridCacheOperation op,
         boolean retval,
         @Nullable Object[] invokeArgs,
-        @Nullable CacheEntryPredicate[] filter,
         @Nullable UUID subjId,
         int taskNameHash,
         boolean skipStore,
@@ -125,7 +122,6 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
             syncMode,
             op,
             retval,
-            filter,
             subjId,
             taskNameHash,
             skipStore,
@@ -257,13 +253,13 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
         }
 
         switch (writer.state()) {
-            case 15:
+            case 14:
                 if (!writer.writeByteArray("entryProcessorBytes", entryProcessorBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 16:
+            case 15:
                 if (!writer.writeObjectArray("invokeArgsBytes", invokeArgsBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
@@ -285,7 +281,7 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
             return false;
 
         switch (reader.state()) {
-            case 15:
+            case 14:
                 entryProcessorBytes = reader.readByteArray("entryProcessorBytes");
 
                 if (!reader.isLastRead())
@@ -293,7 +289,7 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
 
                 reader.incrementState();
 
-            case 16:
+            case 15:
                 invokeArgsBytes = reader.readObjectArray("invokeArgsBytes", MessageCollectionItemType.BYTE_ARR, byte[].class);
 
                 if (!reader.isLastRead())
@@ -308,7 +304,7 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 17;
+        return 16;
     }
 
     /** {@inheritDoc} */

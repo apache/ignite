@@ -19,62 +19,34 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-/**
- *
- */
-public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNearAtomicAbstractUpdateRequest {
-
-    public static final CacheEntryPredicate[] NO_FILTER = new CacheEntryPredicate[0];
-
-    /** Fast map flag. */
-    @GridDirectTransient
-    protected boolean fastMap;
-
-    /** Flag indicating whether request contains primary keys. */
-    @GridDirectTransient
-    protected boolean hasPrimary;
-
-    /** Topology locked flag. Set if atomic update is performed inside TX or explicit lock. */
-    @GridDirectTransient
-    protected boolean topLocked;
-
-    /** Skip write-through to a persistent storage. */
-    @GridDirectTransient
-    protected boolean skipStore;
-
+public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingleUpdateRequest {
     /** */
-    @GridDirectTransient
-    protected boolean clientReq;
+    private static final long serialVersionUID = 0L;
 
-    /** Keep binary flag. */
-    @GridDirectTransient
-    protected boolean keepBinary;
-
-    /** Return value flag. */
-    @GridDirectTransient
-    protected boolean retval;
-
-    /** compressed boolean flags */
-    protected byte flags;
+    /** Filter. */
+    private CacheEntryPredicate[] filter;
 
     /**
      * Empty constructor required by {@link Externalizable}.
      */
-    protected GridNearAtomicAbstractSingleUpdateRequest() {
+    public GridNearAtomicSingleUpdateFilterRequest() {
         // No-op.
     }
 
@@ -91,6 +63,7 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
      * @param syncMode Synchronization mode.
      * @param op Cache update operation.
      * @param retval Return value required flag.
+     * @param filter Optional filter for atomic check.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param skipStore Skip write-through to a persistent storage.
@@ -98,7 +71,7 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
      * @param clientReq Client node request flag.
      * @param addDepInfo Deployment info flag.
      */
-    protected GridNearAtomicAbstractSingleUpdateRequest(
+    public GridNearAtomicSingleUpdateFilterRequest(
         int cacheId,
         UUID nodeId,
         GridCacheVersion futVer,
@@ -109,6 +82,7 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
         boolean retval,
+        @Nullable CacheEntryPredicate[] filter,
         @Nullable UUID subjId,
         int taskNameHash,
         boolean skipStore,
@@ -120,103 +94,65 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
             cacheId,
             nodeId,
             futVer,
+            fastMap,
             updateVer,
             topVer,
+            topLocked,
             syncMode,
             op,
+            retval,
             subjId,
             taskNameHash,
+            skipStore,
+            keepBinary,
+            clientReq,
             addDepInfo
         );
 
-        this.fastMap = fastMap;
-        this.topLocked = topLocked;
-        this.retval = retval;
-        this.skipStore = skipStore;
-        this.keepBinary = keepBinary;
-        this.clientReq = clientReq;
+        this.filter = filter;
     }
 
     /**
-     * @return Flag indicating whether this is fast-map udpate.
+     * @return Filter.
      */
-    @Override public boolean fastMap() {
-        return fastMap;
-    }
-
-    /**
-     * @return Topology locked flag.
-     */
-    @Override public boolean topologyLocked() {
-        return topLocked;
-    }
-
-    /**
-     * @return {@code True} if request sent from client node.
-     */
-    @Override public boolean clientRequest() {
-        return clientReq;
-    }
-
-    /**
-     * @return Return value flag.
-     */
-    @Override public boolean returnValue() {
-        return retval;
-    }
-
-    /**
-     * @return Skip write-through to a persistent storage.
-     */
-    @Override public boolean skipStore() {
-        return skipStore;
-    }
-
-    /**
-     * @return Keep binary flag.
-     */
-    @Override public boolean keepBinary() {
-        return keepBinary;
-    }
-
-    /**
-     * @return Flag indicating whether this request contains primary keys.
-     */
-    @Override public boolean hasPrimary() {
-        return hasPrimary;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public CacheEntryPredicate[] filter() {
-        return NO_FILTER;
+    @Override @Nullable public CacheEntryPredicate[] filter() {
+        return filter;
     }
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        flags = (byte)(
-            (fastMap ? 1 : 0) +
-                (hasPrimary ? 1 << 1 : 0) +
-                (topLocked ? 1 << 2 : 0) +
-                (skipStore ? 1 << 3 : 0) +
-                (clientReq ? 1 << 4 : 0) +
-                (keepBinary ? 1 << 5 : 0) +
-                (retval ? 1 << 6 : 0)
-        );
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+        if (filter != null) {
+            boolean hasFilter = false;
+
+            for (CacheEntryPredicate p : filter) {
+                if (p != null) {
+                    hasFilter = true;
+
+                    p.prepareMarshal(cctx);
+                }
+            }
+
+            if (!hasFilter)
+                filter = null;
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        fastMap = (flags & 1) > 0;
-        hasPrimary = (flags & 1 << 1) > 0;
-        topLocked = (flags & 1 << 2) > 0;
-        skipStore = (flags & 1 << 3) > 0;
-        clientReq = (flags & 1 << 4) > 0;
-        keepBinary = (flags & 1 << 5) > 0;
-        retval = (flags & 1 << 6) > 0;
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+        if (filter != null) {
+            for (CacheEntryPredicate p : filter) {
+                if (p != null)
+                    p.finishUnmarshal(cctx, ldr);
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -234,8 +170,8 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
         }
 
         switch (writer.state()) {
-            case 10:
-                if (!writer.writeByte("flags", flags))
+            case 14:
+                if (!writer.writeObjectArray("filter", filter, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -256,8 +192,8 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
             return false;
 
         switch (reader.state()) {
-            case 10:
-                flags = reader.readByte("flags");
+            case 14:
+                filter = reader.readObjectArray("filter", MessageCollectionItemType.MSG, CacheEntryPredicate.class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -266,11 +202,23 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
 
         }
 
-        return reader.afterMessageRead(GridNearAtomicAbstractSingleUpdateRequest.class);
+        return reader.afterMessageRead(GridNearAtomicSingleUpdateFilterRequest.class);
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        return 127;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 11;
+        return 15;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridNearAtomicSingleUpdateFilterRequest.class, this, "filter", Arrays.toString(filter),
+            "parent", super.toString());
+    }
+
 }

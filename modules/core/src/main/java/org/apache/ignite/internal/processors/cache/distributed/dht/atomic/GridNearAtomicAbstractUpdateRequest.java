@@ -21,19 +21,15 @@ import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
@@ -75,9 +71,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
     /** Task name hash. */
     protected int taskNameHash;
 
-    /** Filter. */
-    protected CacheEntryPredicate[] filter;
-
     /** */
     @GridDirectTransient
     private GridNearAtomicUpdateResponse res;
@@ -99,7 +92,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
      * @param topVer Topology version.
      * @param syncMode Synchronization mode.
      * @param op Cache update operation.
-     * @param filter Optional filter for atomic check.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param addDepInfo Deployment info flag.
@@ -112,7 +104,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
         @NotNull AffinityTopologyVersion topVer,
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
-        @Nullable CacheEntryPredicate[] filter,
         @Nullable UUID subjId,
         int taskNameHash,
         boolean addDepInfo
@@ -127,7 +118,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
         this.topVer = topVer;
         this.syncMode = syncMode;
         this.op = op;
-        this.filter = filter;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.addDepInfo = addDepInfo;
@@ -202,13 +192,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
     }
 
     /**
-     * @return Filter.
-     */
-    @Override @Nullable public CacheEntryPredicate[] filter() {
-        return filter;
-    }
-
-    /**
      * @return Update operation.
      */
     @Override public GridCacheOperation operation() {
@@ -254,42 +237,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        if (filter != null) {
-            boolean hasFilter = false;
-
-            for (CacheEntryPredicate p : filter) {
-                if (p != null) {
-                    hasFilter = true;
-
-                    p.prepareMarshal(cctx);
-                }
-            }
-
-            if (!hasFilter)
-                filter = null;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        if (filter != null) {
-            for (CacheEntryPredicate p : filter) {
-                if (p != null)
-                    p.finishUnmarshal(cctx, ldr);
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -305,48 +252,42 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeObjectArray("filter", filter, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
                 if (!writer.writeMessage("futVer", futVer))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 4:
                 if (!writer.writeByte("op", op != null ? (byte)op.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 5:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
+            case 6:
                 if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
-            case 8:
+            case 7:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 9:
+            case 8:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
+            case 9:
                 if (!writer.writeMessage("updateVer", updateVer))
                     return false;
 
@@ -369,14 +310,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
 
         switch (reader.state()) {
             case 3:
-                filter = reader.readObjectArray("filter", MessageCollectionItemType.MSG, CacheEntryPredicate.class);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
                 futVer = reader.readMessage("futVer");
 
                 if (!reader.isLastRead())
@@ -384,7 +317,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
 
                 reader.incrementState();
 
-            case 5:
+            case 4:
                 byte opOrd;
 
                 opOrd = reader.readByte("op");
@@ -396,7 +329,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
 
                 reader.incrementState();
 
-            case 6:
+            case 5:
                 subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
@@ -404,7 +337,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
 
                 reader.incrementState();
 
-            case 7:
+            case 6:
                 byte syncModeOrd;
 
                 syncModeOrd = reader.readByte("syncMode");
@@ -416,7 +349,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
 
                 reader.incrementState();
 
-            case 8:
+            case 7:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -424,7 +357,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
 
                 reader.incrementState();
 
-            case 9:
+            case 8:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
@@ -432,7 +365,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
 
                 reader.incrementState();
 
-            case 10:
+            case 9:
                 updateVer = reader.readMessage("updateVer");
 
                 if (!reader.isLastRead())
@@ -447,6 +380,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 11;
+        return 10;
     }
 }

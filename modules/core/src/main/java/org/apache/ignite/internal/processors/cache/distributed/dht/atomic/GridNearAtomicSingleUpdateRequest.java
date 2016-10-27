@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -27,7 +26,6 @@ import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -81,7 +79,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
      * @param syncMode Synchronization mode.
      * @param op Cache update operation.
      * @param retval Return value required flag.
-     * @param filter Optional filter for atomic check.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param skipStore Skip write-through to a persistent storage.
@@ -100,7 +97,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
         boolean retval,
-        @Nullable CacheEntryPredicate[] filter,
         @Nullable UUID subjId,
         int taskNameHash,
         boolean skipStore,
@@ -119,7 +115,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
             syncMode,
             op,
             retval,
-            filter,
             subjId,
             taskNameHash,
             skipStore,
@@ -264,19 +259,19 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
         }
 
         switch (writer.state()) {
-            case 12:
+            case 11:
                 if (!writer.writeMessage("key", key))
                     return false;
 
                 writer.incrementState();
 
-            case 13:
+            case 12:
                 if (!writer.writeInt("partId", partId))
                     return false;
 
                 writer.incrementState();
 
-            case 14:
+            case 13:
                 if (!writer.writeMessage("val", val))
                     return false;
 
@@ -298,7 +293,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
             return false;
 
         switch (reader.state()) {
-            case 12:
+            case 11:
                 key = reader.readMessage("key");
 
                 if (!reader.isLastRead())
@@ -306,7 +301,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
 
                 reader.incrementState();
 
-            case 13:
+            case 12:
                 partId = reader.readInt("partId");
 
                 if (!reader.isLastRead())
@@ -314,7 +309,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
 
                 reader.incrementState();
 
-            case 14:
+            case 13:
                 val = reader.readMessage("val");
 
                 if (!reader.isLastRead())
@@ -342,12 +337,11 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 15;
+        return 14;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNearAtomicSingleUpdateRequest.class, this, "filter", Arrays.toString(filter),
-            "parent", super.toString());
+        return S.toString(GridNearAtomicSingleUpdateRequest.class, this, "parent", super.toString());
     }
 }
