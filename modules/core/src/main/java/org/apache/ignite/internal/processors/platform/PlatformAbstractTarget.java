@@ -60,16 +60,16 @@ public abstract class PlatformAbstractTarget implements PlatformTarget, Platform
         log = platformCtx.kernalContext().log(PlatformAbstractTarget.class);
     }
 
-    /** {@inheritDoc} */
-    @Override public Exception convertException(Exception e) {
-        return e;
-    }
-
     /**
      * @return Context.
      */
     public PlatformContext platformContext() {
         return platformCtx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Exception convertException(Exception e) {
+        return e;
     }
 
     /** {@inheritDoc} */
