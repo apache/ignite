@@ -49,6 +49,8 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
  *
  */
 public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSingleUpdateRequest {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /** Optional arguments for entry processor. */
     @GridDirectTransient

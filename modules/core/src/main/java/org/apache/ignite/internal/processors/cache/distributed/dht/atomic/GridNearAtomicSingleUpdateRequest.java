@@ -50,6 +50,8 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
  *
  */
 public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpdateRequest {
+    /** */
+    private static final long serialVersionUID = 0L;
     /** Key to update. */
     @GridToStringInclude
     protected KeyCacheObject key;
