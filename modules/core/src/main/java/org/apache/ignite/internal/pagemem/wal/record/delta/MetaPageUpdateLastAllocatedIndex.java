@@ -24,36 +24,36 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.PageMetaIO;
 /**
  *
  */
-public class MetaPageUpdateLastSuccessfulBackupId extends PageDeltaRecord {
+public class MetaPageUpdateLastAllocatedIndex extends PageDeltaRecord {
     /** */
-    private final long lastSuccessfulBackupId;
+    private final int lastAllocatedIndex;
 
     /**
      * @param pageId Meta page ID.
      */
-    public MetaPageUpdateLastSuccessfulBackupId(int cacheId, long pageId, long lastSuccessfulBackupId) {
+    public MetaPageUpdateLastAllocatedIndex(int cacheId, long pageId, int lastAllocatedIndex) {
         super(cacheId, pageId);
 
-        this.lastSuccessfulBackupId = lastSuccessfulBackupId;
+        this.lastAllocatedIndex = lastAllocatedIndex;
     }
 
     /** {@inheritDoc} */
     @Override public void applyDelta(ByteBuffer buf) throws IgniteCheckedException {
         PageMetaIO io = PageMetaIO.VERSIONS.forPage(buf);
 
-        io.setLastSuccessfulBackupId(buf, lastSuccessfulBackupId);
+        io.setLastAllocatedIndex(buf, lastAllocatedIndex);
     }
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return RecordType.META_PAGE_UPDATE_LAST_SUCCESSFUL_BACKUP_ID;
+        return RecordType.META_PAGE_UPDATE_NEXT_BACKUP_ID;
     }
 
     /**
      * @return Root ID.
      */
-    public long lastSuccessfulBackupId() {
-        return lastSuccessfulBackupId;
+    public int lastAllocatedIndex() {
+        return lastAllocatedIndex;
     }
 }
 

@@ -39,8 +39,14 @@ public class PageMetaIO extends PageIO {
     /** Next backup id offset. */
     private static final int NEXT_BACKUP_ID_OFF = LAST_SUCCESSFUL_FULL_BACKUP_ID_OFF + 8;
 
+    /** Last allocated index offset. */
+    private static final int LAST_ALLOCATED_INDEX_OFF = NEXT_BACKUP_ID_OFF + 8;
+
+    /** Previous allocated index offset. */
+    private static final int PREVIOUS_ALLOCATED_INDEX_OFF = LAST_ALLOCATED_INDEX_OFF + 4;
+
     /** End of page meta. */
-    static final int END_OF_PAGE_META = NEXT_BACKUP_ID_OFF + 8;
+    static final int END_OF_PAGE_META = PREVIOUS_ALLOCATED_INDEX_OFF + 4;
 
     /** */
     public static final IOVersions<PageMetaIO> VERSIONS = new IOVersions<>(
@@ -71,6 +77,7 @@ public class PageMetaIO extends PageIO {
         setLastSuccessfulFullBackupId(buf, 0);
         setLastSuccessfulBackupId(buf, 0);
         setNextBackupId(buf, 1);
+        setLastAllocatedIndex(buf, 0);
     }
 
     /**
@@ -141,6 +148,36 @@ public class PageMetaIO extends PageIO {
      */
     public void setNextBackupId(@NotNull ByteBuffer buf, long nextBackupId) {
         buf.putLong(NEXT_BACKUP_ID_OFF, nextBackupId);
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param lastAllocatedIdx Last allocated index.
+     */
+    public void setLastAllocatedIndex(@NotNull ByteBuffer buf, int lastAllocatedIdx) {
+        buf.putInt(LAST_ALLOCATED_INDEX_OFF, lastAllocatedIdx);
+    }
+
+    /**
+     * @param buf Buffer.
+     */
+    public int getLastAllocatedIndex(@NotNull ByteBuffer buf) {
+        return buf.getInt(LAST_ALLOCATED_INDEX_OFF);
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param previousAllocatedIdx Last allocated index.
+     */
+    public void setPreviousAllocatedIndex(@NotNull ByteBuffer buf, int previousAllocatedIdx) {
+        buf.putInt(PREVIOUS_ALLOCATED_INDEX_OFF, previousAllocatedIdx);
+    }
+
+    /**
+     * @param buf Buffer.
+     */
+    public int getPreviousAllocatedIndex(@NotNull ByteBuffer buf) {
+        return buf.getInt(PREVIOUS_ALLOCATED_INDEX_OFF);
     }
 
     /**

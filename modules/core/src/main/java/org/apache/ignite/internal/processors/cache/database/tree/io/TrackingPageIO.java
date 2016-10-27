@@ -114,7 +114,7 @@ public class TrackingPageIO extends PageIO {
         assert nextBackupId != lastSuccessfulBackupId : "nextBackupId = " + nextBackupId +
             ", lastSuccessfulBackupId = " + lastSuccessfulBackupId;
 
-        long last = buf.getLong(LAST_BACKUP_OFFSET);
+        long last = getLastBackupId(buf);
 
         assert last <= nextBackupId : "last = " + last + ", nextBackupId = " + nextBackupId;
 
@@ -166,6 +166,10 @@ public class TrackingPageIO extends PageIO {
         }
     }
 
+    public long getLastBackupId(ByteBuffer buf) {
+        return buf.getLong(LAST_BACKUP_OFFSET);
+    }
+
     /**
      * Check that pageId was marked as changed between previous backup finish and current backup start.
      *
@@ -204,7 +208,7 @@ public class TrackingPageIO extends PageIO {
      * @return count of pages which were marked as change for given backupId
      */
     public short countOfChangedPage(ByteBuffer buf, long backupId, int pageSize) {
-        long dif = buf.getLong(LAST_BACKUP_OFFSET) - backupId;
+        long dif = getLastBackupId(buf) - backupId;
 
         if (dif != 0 && dif != 1)
             return -1;

@@ -21,6 +21,9 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageMetaIO;
 
+/**
+ *
+ */
 public class MetaPageUpdateLastSuccessfulFullBackupId extends PageDeltaRecord {
     /** */
     private final long lastSuccessfulFullBackupId;
