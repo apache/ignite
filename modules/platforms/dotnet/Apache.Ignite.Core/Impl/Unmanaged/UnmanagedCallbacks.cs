@@ -194,7 +194,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         // TODO: A set of common callback methods, similar to OutIn* methods
         // Analyze which of them are we going to use most.. not necessary the same set is required
         // However, one uber-method should probably be present
-        // * We never return objects to Java
+        // * We return objects from Java via handle registry. Can't do this via streams, need a separate param.
+        // * We can't return an object from Callback, so the result is always "long"
 
 
         // Smallest delegate:
