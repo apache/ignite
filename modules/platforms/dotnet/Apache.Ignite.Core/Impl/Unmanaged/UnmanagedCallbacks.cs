@@ -194,6 +194,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         // TODO: A set of common callback methods, similar to OutIn* methods
         // Analyze which of them are we going to use most.. not necessary the same set is required
         // However, one uber-method should probably be present
+        // * We never return objects to Java
+
+
+        // Smallest delegate:
+        private delegate long InLongOutLongDelegate(void* target, int type, long val);
+
+        // Biggest method:
+        private delegate long InObjectStreamOutStreamDelegate(void* target, int type, long inMemPtr, long outMemPtr, void* arg);
 
         /// <summary>
         /// Constructor.
