@@ -118,6 +118,15 @@ namespace ignite
             void UnbindAllParameters();
 
             /**
+             * Set statement attribute.
+             *
+             * @param attr Attribute type.
+             * @param value Value pointer.
+             * @param valueLen Value length.
+             */
+            void SetAttribute(int attr, void* value, SQLINTEGER  valueLen);
+
+            /**
              * Get number of binded parameters.
              *
              * @return Number of binded parameters.
@@ -354,6 +363,17 @@ namespace ignite
              * @return Operation result.
              */
             SqlResult InternalBindParameter(uint16_t paramIdx, const app::Parameter& param);
+
+            /**
+             * Set statement attribute.
+             * Internal call.
+             *
+             * @param attr Attribute type.
+             * @param value Value pointer.
+             * @param valueLen Value length.
+             * @return Operation result.
+             */
+            SqlResult InternalSetAttribute(int attr, void* value, SQLINTEGER valueLen);
 
             /**
              * Get value of the column in the result set.

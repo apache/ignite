@@ -145,6 +145,16 @@ namespace ignite
             paramBindings.clear();
         }
 
+        void Statement::SetAttribute(int attr, void* value, SQLINTEGER valueLen)
+        {
+            IGNITE_ODBC_API_CALL(InternalSetAttribute(attr, value, valueLen));
+        }
+
+        SqlResult Statement::InternalSetAttribute(int attr, void* value, SQLINTEGER valueLen)
+        {
+            return SQL_RESULT_SUCCESS;
+        }
+
         uint16_t Statement::GetParametersNumber()
         {
             IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
