@@ -191,6 +191,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private delegate void ConsoleWriteDelegate(sbyte* chars, int charsLen, bool isErr);
 
+        // TODO: A set of common callback methods, similar to OutIn* methods
+        // Analyze which of them are we going to use most.. not necessary the same set is required
+        // However, one uber-method should probably be present
+
         /// <summary>
         /// Constructor.
         /// </summary>
