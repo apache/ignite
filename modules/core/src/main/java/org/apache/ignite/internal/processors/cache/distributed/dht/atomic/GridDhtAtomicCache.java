@@ -1252,7 +1252,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         CacheEntryPredicate[] filters = CU.filterArray(filter);
 
-        if (conflictPutVal == null && conflictRmvVer == null && !isFastMap(filters, op)) {
+        if (conflictPutVal == null &&
+            conflictRmvVer == null &&
+            (opCtx == null || opCtx.expiry() == null) &&
+            !isFastMap(filters, op)) {
             return new GridNearAtomicSingleUpdateFuture(
                 ctx,
                 this,
@@ -1263,7 +1266,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 invokeArgs,
                 retval,
                 false,
-                opCtx != null ? opCtx.expiry() : null,
                 filters,
                 ctx.subjectIdPerCall(null, opCtx),
                 ctx.kernalContext().job().currentTaskNameHash(),

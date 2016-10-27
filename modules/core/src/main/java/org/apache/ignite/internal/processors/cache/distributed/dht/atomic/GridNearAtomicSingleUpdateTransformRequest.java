@@ -22,7 +22,6 @@ import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -86,7 +85,6 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
      * @param syncMode Synchronization mode.
      * @param op Cache update operation.
      * @param retval Return value required flag.
-     * @param expiryPlc Expiry policy.
      * @param invokeArgs Optional arguments for entry processor.
      * @param filter Optional filter for atomic check.
      * @param subjId Subject ID.
@@ -107,7 +105,6 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
         boolean retval,
-        @Nullable ExpiryPolicy expiryPlc,
         @Nullable Object[] invokeArgs,
         @Nullable CacheEntryPredicate[] filter,
         @Nullable UUID subjId,
@@ -128,7 +125,6 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
             syncMode,
             op,
             retval,
-            expiryPlc,
             filter,
             subjId,
             taskNameHash,
@@ -261,13 +257,13 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
         }
 
         switch (writer.state()) {
-            case 22:
+            case 15:
                 if (!writer.writeByteArray("entryProcessorBytes", entryProcessorBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 23:
+            case 16:
                 if (!writer.writeObjectArray("invokeArgsBytes", invokeArgsBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
@@ -289,7 +285,7 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
             return false;
 
         switch (reader.state()) {
-            case 22:
+            case 15:
                 entryProcessorBytes = reader.readByteArray("entryProcessorBytes");
 
                 if (!reader.isLastRead())
@@ -297,7 +293,7 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
 
                 reader.incrementState();
 
-            case 23:
+            case 16:
                 invokeArgsBytes = reader.readObjectArray("invokeArgsBytes", MessageCollectionItemType.BYTE_ARR, byte[].class);
 
                 if (!reader.isLastRead())
@@ -312,7 +308,7 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 24;
+        return 17;
     }
 
     /** {@inheritDoc} */

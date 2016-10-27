@@ -36,11 +36,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -57,6 +59,28 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
 public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdateRequest {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Fast map flag. */
+    protected boolean fastMap;
+
+    /** Topology locked flag. Set if atomic update is performed inside TX or explicit lock. */
+    protected boolean topLocked;
+
+    /** Flag indicating whether request contains primary keys. */
+    protected boolean hasPrimary;
+
+    /** Skip write-through to a persistent storage. */
+    protected boolean skipStore;
+
+    /** */
+    protected boolean clientReq;
+
+    /** Keep binary flag. */
+    protected boolean keepBinary;
+
+    /** Return value flag. */
+    protected boolean retval;
+
     /** Keys to update. */
     @GridToStringInclude
     @GridDirectCollection(KeyCacheObject.class)
@@ -94,6 +118,13 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
     /** Entry processor arguments bytes. */
     protected byte[][] invokeArgsBytes;
+
+    /** Expiry policy. */
+    @GridDirectTransient
+    protected ExpiryPolicy expiryPlc;
+
+    /** Expiry policy bytes. */
+    protected byte[] expiryPlcBytes;
 
     /** Maximum possible size of inner collections. */
     @GridDirectTransient
@@ -156,30 +187,30 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
             cacheId,
             nodeId,
             futVer,
-            fastMap,
             updateVer,
             topVer,
-            topLocked,
             syncMode,
             op,
-            retval,
-            expiryPlc,
             filter,
             subjId,
             taskNameHash,
-            skipStore,
-            keepBinary,
-            clientReq,
             addDepInfo
         );
+
+        this.fastMap = fastMap;
+        this.topLocked = topLocked;
+        this.retval = retval;
+        this.skipStore = skipStore;
+        this.keepBinary = keepBinary;
+        this.clientReq = clientReq;
+
+        this.invokeArgs = invokeArgs;
+        this.expiryPlc = expiryPlc;
 
         // By default ArrayList expands to array of 10 elements on first add. We cannot guess how many entries
         // will be added to request because of unknown affinity distribution. However, we DO KNOW how many keys
         // participate in request. As such, we know upper bound of all collections in request. If this bound is lower
         // than 10, we use it.
-
-        this.invokeArgs = invokeArgs;
-
         initSize = Math.min(maxEntryCnt, 10);
 
         keys = new ArrayList<>(initSize);
@@ -338,12 +369,64 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         return invokeArgs;
     }
 
+    /**
+     * @return Flag indicating whether this is fast-map udpate.
+     */
+    @Override public boolean fastMap() {
+        return fastMap;
+    }
+
+    /**
+     * @return Topology locked flag.
+     */
+    @Override public boolean topologyLocked() {
+        return topLocked;
+    }
+
+    /**
+     * @return {@code True} if request sent from client node.
+     */
+    @Override public boolean clientRequest() {
+        return clientReq;
+    }
+
+    /**
+     * @return Return value flag.
+     */
+    @Override public boolean returnValue() {
+        return retval;
+    }
+
+    /**
+     * @return Skip write-through to a persistent storage.
+     */
+    @Override public boolean skipStore() {
+        return skipStore;
+    }
+
+    /**
+     * @return Keep binary flag.
+     */
+    @Override public boolean keepBinary() {
+        return keepBinary;
+    }
+
+    /**
+     * @return Flag indicating whether this request contains primary keys.
+     */
+    @Override public boolean hasPrimary() {
+        return hasPrimary;
+    }
+
     /** {@inheritDoc}
      * @param ctx*/
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+        if (expiryPlc != null && expiryPlcBytes == null)
+            expiryPlcBytes = CU.marshal(cctx, new IgniteExternalizableExpiryPolicy(expiryPlc));
 
         prepareMarshalCacheObjects(keys, cctx);
 
@@ -362,11 +445,21 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
             prepareMarshalCacheObjects(vals, cctx);
     }
 
+    /**
+     * @return Expiry policy.
+     */
+    @Override public ExpiryPolicy expiry() {
+        return expiryPlc;
+    }
+
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+        if (expiryPlcBytes != null && expiryPlc == null)
+            expiryPlc = ctx.marshaller().unmarshal(expiryPlcBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         finishUnmarshalCacheObjects(keys, cctx, ldr);
 
@@ -403,44 +496,92 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         }
 
         switch (writer.state()) {
-            case 19:
+            case 11:
+                if (!writer.writeBoolean("clientReq", clientReq))
+                    return false;
+
+                writer.incrementState();
+
+            case 12:
                 if (!writer.writeMessage("conflictExpireTimes", conflictExpireTimes))
                     return false;
 
                 writer.incrementState();
 
-            case 20:
+            case 13:
                 if (!writer.writeMessage("conflictTtls", conflictTtls))
                     return false;
 
                 writer.incrementState();
 
-            case 21:
+            case 14:
                 if (!writer.writeCollection("conflictVers", conflictVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 22:
+            case 15:
                 if (!writer.writeCollection("entryProcessorsBytes", entryProcessorsBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
-            case 23:
+            case 16:
+                if (!writer.writeByteArray("expiryPlcBytes", expiryPlcBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 17:
+                if (!writer.writeBoolean("fastMap", fastMap))
+                    return false;
+
+                writer.incrementState();
+
+            case 18:
+                if (!writer.writeBoolean("hasPrimary", hasPrimary))
+                    return false;
+
+                writer.incrementState();
+
+            case 19:
                 if (!writer.writeObjectArray("invokeArgsBytes", invokeArgsBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
-            case 24:
+            case 20:
+                if (!writer.writeBoolean("keepBinary", keepBinary))
+                    return false;
+
+                writer.incrementState();
+
+            case 21:
                 if (!writer.writeCollection("keys", keys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 25:
+            case 22:
                 if (!writer.writeCollection("partIds", partIds, MessageCollectionItemType.INT))
+                    return false;
+
+                writer.incrementState();
+
+            case 23:
+                if (!writer.writeBoolean("retval", retval))
+                    return false;
+
+                writer.incrementState();
+
+            case 24:
+                if (!writer.writeBoolean("skipStore", skipStore))
+                    return false;
+
+                writer.incrementState();
+
+            case 25:
+                if (!writer.writeBoolean("topLocked", topLocked))
                     return false;
 
                 writer.incrementState();
@@ -467,7 +608,15 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
             return false;
 
         switch (reader.state()) {
-            case 19:
+            case 11:
+                clientReq = reader.readBoolean("clientReq");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 12:
                 conflictExpireTimes = reader.readMessage("conflictExpireTimes");
 
                 if (!reader.isLastRead())
@@ -475,7 +624,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 20:
+            case 13:
                 conflictTtls = reader.readMessage("conflictTtls");
 
                 if (!reader.isLastRead())
@@ -483,7 +632,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 21:
+            case 14:
                 conflictVers = reader.readCollection("conflictVers", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -491,7 +640,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 22:
+            case 15:
                 entryProcessorsBytes = reader.readCollection("entryProcessorsBytes", MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
@@ -499,7 +648,31 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 23:
+            case 16:
+                expiryPlcBytes = reader.readByteArray("expiryPlcBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 17:
+                fastMap = reader.readBoolean("fastMap");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 18:
+                hasPrimary = reader.readBoolean("hasPrimary");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 19:
                 invokeArgsBytes = reader.readObjectArray("invokeArgsBytes", MessageCollectionItemType.BYTE_ARR, byte[].class);
 
                 if (!reader.isLastRead())
@@ -507,7 +680,15 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 24:
+            case 20:
+                keepBinary = reader.readBoolean("keepBinary");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 21:
                 keys = reader.readCollection("keys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -515,8 +696,32 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 25:
+            case 22:
                 partIds = reader.readCollection("partIds", MessageCollectionItemType.INT);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 23:
+                retval = reader.readBoolean("retval");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 24:
+                skipStore = reader.readBoolean("skipStore");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 25:
+                topLocked = reader.readBoolean("topLocked");
 
                 if (!reader.isLastRead())
                     return false;

@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -49,7 +48,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 /**
  *
  */
-public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpdateRequest {
+public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSingleUpdateRequest {
     /** */
     private static final long serialVersionUID = 0L;
     /** Key to update. */
@@ -82,7 +81,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
      * @param syncMode Synchronization mode.
      * @param op Cache update operation.
      * @param retval Return value required flag.
-     * @param expiryPlc Expiry policy.
      * @param filter Optional filter for atomic check.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
@@ -102,7 +100,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
         boolean retval,
-        @Nullable ExpiryPolicy expiryPlc,
         @Nullable CacheEntryPredicate[] filter,
         @Nullable UUID subjId,
         int taskNameHash,
@@ -122,7 +119,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
             syncMode,
             op,
             retval,
-            expiryPlc,
             filter,
             subjId,
             taskNameHash,
@@ -268,19 +264,19 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
         }
 
         switch (writer.state()) {
-            case 19:
+            case 12:
                 if (!writer.writeMessage("key", key))
                     return false;
 
                 writer.incrementState();
 
-            case 20:
+            case 13:
                 if (!writer.writeInt("partId", partId))
                     return false;
 
                 writer.incrementState();
 
-            case 21:
+            case 14:
                 if (!writer.writeMessage("val", val))
                     return false;
 
@@ -302,7 +298,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
             return false;
 
         switch (reader.state()) {
-            case 19:
+            case 12:
                 key = reader.readMessage("key");
 
                 if (!reader.isLastRead())
@@ -310,7 +306,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
 
                 reader.incrementState();
 
-            case 20:
+            case 13:
                 partId = reader.readInt("partId");
 
                 if (!reader.isLastRead())
@@ -318,7 +314,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
 
                 reader.incrementState();
 
-            case 21:
+            case 14:
                 val = reader.readMessage("val");
 
                 if (!reader.isLastRead())
@@ -346,7 +342,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 22;
+        return 15;
     }
 
     /** {@inheritDoc} */
