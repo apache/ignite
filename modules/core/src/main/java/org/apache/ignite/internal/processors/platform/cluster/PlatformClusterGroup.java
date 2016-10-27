@@ -17,21 +17,20 @@
 
 package org.apache.ignite.internal.processors.platform.cluster;
 
+import java.util.Collection;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.cluster.ClusterGroupEx;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.cluster.ClusterGroupEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collection;
-import java.util.UUID;
 
 /**
  * Interop projection.
@@ -60,7 +59,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     private static final int OP_FOR_NODE_IDS = 7;
 
     /** */
-    private static final int OP_GET_META = 8;
+    private static final int OP_METADATA = 8;
 
     /** */
     private static final int OP_METRICS = 9;
@@ -106,9 +105,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
     /** */
     private static final int OP_FOR_SERVERS = 23;
-
-    /** */
-    private static final int OP_PUT_META = 24;
 
     /** Projection. */
     private final ClusterGroupEx prj;
@@ -205,7 +201,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 break;
             }
 
-            case OP_GET_META: {
+            case OP_METADATA: {
                 int typeId = reader.readInt();
 
                 platformCtx.writeMetadata(writer, typeId);
@@ -240,11 +236,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
         switch (type) {
             case OP_PING_NODE:
                 return pingNode(reader.readUuid()) ? TRUE : FALSE;
-
-            case OP_PUT_META:
-                platformCtx.processMetadata(reader);
-
-                return TRUE;
 
             default:
                 return super.processInStreamOutLong(type, reader);
