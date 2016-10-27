@@ -75,7 +75,6 @@ public class DataStreamerTimeoutTest extends GridCommonAbstractTest {
 
     /**
      * Test timeout on {@code DataStreamer.addData()} method
-     *
      * @throws Exception If fail.
      */
     public void testTimeoutOnCloseMethod() throws Exception {
@@ -116,21 +115,21 @@ public class DataStreamerTimeoutTest extends GridCommonAbstractTest {
     public void testTimeoutOnAddData() throws Exception {
         failOn = 1;
 
-        int res = timeoutOnAddData();
+        int processed = timeoutOnAddData();
 
-        assertTrue(res == (failOn + 1) || res == failOn);
+        assertTrue(processed == (failOn + 1) || processed == failOn);
 
         failOn = ENTRY_AMOUNT / 2;
 
-        res = timeoutOnAddData();
+        processed = timeoutOnAddData();
 
-        assertTrue(res == (failOn + 1) || res == failOn);
+        assertTrue(processed == (failOn + 1) || processed == failOn);
 
         failOn = ENTRY_AMOUNT;
 
-        res = timeoutOnAddData();
+        processed = timeoutOnAddData();
 
-        assertTrue(res == (failOn + 1) || res == failOn);
+        assertTrue(processed == (failOn + 1) || processed == failOn);
     }
 
     /**

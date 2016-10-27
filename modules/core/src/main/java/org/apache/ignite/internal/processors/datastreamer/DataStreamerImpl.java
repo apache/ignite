@@ -1513,9 +1513,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                         locFuts.add(callFut);
 
-                        final GridFutureAdapter waitFut = (loc || allowOverride) ?
-                            null :
-                            cctx.mvcc().addDataStreamerFuture();
+                        final GridFutureAdapter waitFut =
+                            (loc || allowOverride) ?
+                                null :
+                                cctx.mvcc().addDataStreamerFuture();
 
                         callFut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
                             @Override public void apply(IgniteInternalFuture<Object> t) {
@@ -1880,9 +1881,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             GridCacheContext cctx = internalCache.context();
 
-            AffinityTopologyVersion topVer = cctx.isLocal() ?
-                cctx.affinity().affinityTopologyVersion() :
-                cctx.topology().topologyVersion();
+            AffinityTopologyVersion topVer =
+                cctx.isLocal() ?
+                    cctx.affinity().affinityTopologyVersion() :
+                    cctx.topology().topologyVersion();
 
             GridCacheVersion ver = cctx.versions().isolatedStreamerVersion();
 
