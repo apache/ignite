@@ -374,7 +374,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** {@inheritDoc} */
     @Override public PlatformTargetProxy atomicReference(String name, long memPtr, boolean create)
         throws IgniteException {
-        return proxy(PlatformAtomicReference.createInstance(platformCtx, name, memPtr, create));
+        PlatformAtomicReference ref = PlatformAtomicReference.createInstance(platformCtx, name, memPtr, create);
+
+        return ref != null ? proxy(ref) : null;
     }
 
     /** {@inheritDoc} */
