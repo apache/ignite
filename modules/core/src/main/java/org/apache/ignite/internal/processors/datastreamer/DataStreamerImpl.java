@@ -49,6 +49,7 @@ import org.apache.ignite.IgniteDataStreamerTimeoutException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -342,6 +343,17 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         fut = new DataStreamerFuture(this);
 
         publicFut = new IgniteCacheFutureImpl<>(fut);
+
+        boolean client = ctx.config().isClientMode();
+
+        GridCacheAdapter cache = ctx.cache().internalCache(cacheName);
+
+        if (client && cache == null) { // Possible, cache is not configured on client node.
+            CacheConfiguration cfg = ctx.cache().cacheDescriptor(CU.cacheId(cacheName)).cacheConfiguration();
+
+            if (cfg.getCacheMode() != CacheMode.LOCAL)
+                ctx.grid().getOrCreateCache(cfg);
+        }
     }
 
     /**
@@ -527,6 +539,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> addData(Collection<? extends Map.Entry<K, V>> entries) {
+        if (cancelled)
+            throw new IllegalStateException("DataStreamer cancelled, new data can't be processed.");
+
         A.notEmpty(entries, "entries");
 
         checkSecurityPermission(SecurityPermission.CACHE_PUT);
@@ -592,7 +607,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      */
     public IgniteFuture<?> addDataInternal(Collection<? extends DataStreamerEntry> entries) {
         if (cancelled)
-            throw new CacheException("DataStreamer cancelled, new data can't be processed.");
+            throw new IllegalStateException("DataStreamer cancelled, new data can't be processed.");
 
         enterBusy();
 
@@ -707,18 +722,14 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             boolean initPda = ctx.deploy().enabled() && jobPda == null;
 
-            boolean client = ctx.config().isClientMode();
+            GridCacheAdapter cache = ctx.cache().internalCache(cacheName);
 
-            GridCacheContext cctx = client ? null : ctx.cache().internalCache(cacheName).context();
+            GridCacheContext cctx = cache != null ? cache.context() : null;
 
             AffinityTopologyVersion topVer =
-                client ?
-                    ctx.cache().context().exchange().clientTopology(
-                        CU.cacheId(cacheName),
-                        ctx.cache().context().exchange().lastTopologyFuture()).topologyVersion() :
-                    cctx.isLocal() ?
-                        AffinityTopologyVersion.NONE :
-                        cctx.topology().topologyVersion();
+                cctx == null || cctx.isLocal() ?
+                    AffinityTopologyVersion.NONE :
+                    cctx.topology().topologyVersion();
 
             for (DataStreamerEntry entry : entries) {
                 List<ClusterNode> nodes;
@@ -929,7 +940,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         if (!allowOverwrite())
             res = cctx.isLocal() ?
                 aff.mapKeyToPrimaryAndBackups(cacheName, key, topVer) :
-                cctx.topology().nodes(cctx.affinity().partition(key), topVer);
+                cctx.topology().nodes(key.partition(), topVer);
         else {
             ClusterNode node = aff.mapKeyToNode(cacheName, key, topVer);
 

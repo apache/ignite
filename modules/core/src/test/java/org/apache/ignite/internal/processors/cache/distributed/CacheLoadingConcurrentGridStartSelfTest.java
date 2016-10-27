@@ -56,6 +56,15 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /** Keys count */
     private static int KEYS_CNT = 1_000_000;
 
+    /** Client. */
+    private volatile boolean client;
+
+    /** Client config. */
+    private volatile boolean clientConfig;
+
+    /** Allow override. */
+    protected volatile boolean allowOverride;
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -69,7 +78,14 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
 
         ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestCacheStoreAdapter()));
 
-        cfg.setCacheConfiguration(ccfg);
+        if (client && getTestGridName(0).equals(gridName)) {
+            cfg.setClientMode(true);
+
+            if (clientConfig)
+                cfg.setCacheConfiguration(ccfg);
+        }
+        else
+            cfg.setCacheConfiguration(ccfg);
 
         return cfg;
     }
@@ -109,12 +125,51 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed
      */
+    public void testLoadCacheWithDataStreamerSequentialClient() throws Exception {
+        client = true;
+
+        try {
+            loadCacheWithDataStreamerSequential();
+        }
+        finally {
+            client = false;
+        }
+    }
+
+    /**
+     * @throws Exception if failed
+     */
+    public void testLoadCacheWithDataStreamerSequentialClientWithConfig() throws Exception {
+        client = true;
+        clientConfig = true;
+
+        try {
+            loadCacheWithDataStreamerSequential();
+        }
+        finally {
+            client = false;
+            clientConfig = false;
+        }
+    }
+
+    /**
+     * @throws Exception if failed
+     */
     public void testLoadCacheWithDataStreamerSequential() throws Exception {
+        loadCacheWithDataStreamerSequential();
+    }
+
+    /**
+     * @throws Exception if failed
+     */
+    private void loadCacheWithDataStreamerSequential() throws Exception {
+        startGrid(1);
+
         Ignite g0 = startGrid(0);
 
         IgniteInternalFuture<Object> fut = runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                for (int i = 1; i < GRIDS_CNT; i++)
+                for (int i = 2; i < GRIDS_CNT; i++)
                     startGrid(i);
 
                 return null;
@@ -126,6 +181,8 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
         IgniteInClosure<Ignite> f = new IgniteInClosure<Ignite>() {
             @Override public void apply(Ignite grid) {
                 try (IgniteDataStreamer<Integer, String> dataStreamer = grid.dataStreamer(null)) {
+                    dataStreamer.allowOverwrite(allowOverride);
+
                     for (int i = 0; i < KEYS_CNT; i++) {
                         set.add(dataStreamer.addData(i, "Data"));
 
@@ -147,11 +204,15 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
 
         IgniteCache<Integer, String> cache = grid(0).cache(null);
 
-        if (cache.size(CachePeekMode.PRIMARY) != KEYS_CNT) {
+        long size = cache.size(CachePeekMode.PRIMARY);
+
+        if (size != KEYS_CNT) {
             Set<Integer> failedKeys = new LinkedHashSet<>();
 
             for (int i = 0; i < KEYS_CNT; i++)
                 if (!cache.containsKey(i)) {
+                    log.info("Actual cache size: " + size);
+
                     for (Ignite ignite : G.allGrids()) {
                         IgniteEx igniteEx = (IgniteEx)ignite;
 

@@ -230,13 +230,16 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                 @Override public Object call() throws Exception {
                     Collection<IgniteFuture<?>> futs = new ArrayList<>(cnt);
 
-                    for (int i = 0; i < cnt; i++) {
-                        int idx = idxGen.getAndIncrement();
+                    try {
+                        for (int i = 0; i < cnt; i++) {
+                            int idx = idxGen.getAndIncrement();
 
-                        futs.add(ldr.addData(idx, idx));
+                            futs.add(ldr.addData(idx, idx));
+                        }
                     }
-
-                    l1.countDown();
+                    finally {
+                        l1.countDown();
+                    }
 
                     for (IgniteFuture<?> fut : futs)
                         fut.get();
