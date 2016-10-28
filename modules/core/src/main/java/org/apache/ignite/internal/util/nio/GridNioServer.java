@@ -94,9 +94,6 @@ public class GridNioServer<T> {
     /** */
     public static final String IGNITE_IO_BALANCE_RANDOM_BALANCE = "IGNITE_IO_BALANCE_RANDOM_BALANCER";
 
-    /** */
-    private static final boolean DISABLE_PARK = IgniteSystemProperties.getBoolean("DISABLE_PARK", false);
-
     /** Default session write timeout. */
     public static final int DFLT_SES_WRITE_TIMEOUT = 5000;
 
@@ -119,17 +116,10 @@ public class GridNioServer<T> {
     private static final boolean DISABLE_KEYSET_OPTIMIZATION =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_NO_SELECTOR_OPTS);
 
-    /** */
-    private static final int SELECTOR_SPINS =
-        IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_SELECTOR_SPINS, 128);
-
     /**
      *
      */
     static {
-        // TODO
-        System.out.println(">>> Disable park: " + DISABLE_PARK);
-
         // This is a workaround for JDK bug (NPE in Selector.open()).
         // http://bugs.sun.com/view_bug.do?bug_id=6427854
         try {
@@ -139,6 +129,14 @@ public class GridNioServer<T> {
             // No-op.
         }
     }
+
+    /** */
+    private final long selectorSpins =
+        IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_SELECTOR_SPINS, 0);
+
+    /** */
+    private final boolean disablePark =
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_SELECTOR_PARK, false);
 
     /** Accept worker thread. */
     @GridToStringExclude
@@ -440,6 +438,20 @@ public class GridNioServer<T> {
      */
     public InetSocketAddress localAddress() {
         return locAddr;
+    }
+
+    /**
+     * @return {@code True} if park is disabled.
+     */
+    public boolean parkDisabled() {
+        return disablePark;
+    }
+
+    /**
+     * @return Selector spins.
+     */
+    public long selectorSpins() {
+        return selectorSpins;
     }
 
     /**
@@ -1051,7 +1063,7 @@ public class GridNioServer<T> {
 
             GridNioRecoveryDescriptor desc = null;
 
-            if (!DISABLE_PARK && writer) {
+            if (!disablePark && writer) {
                 desc = ((GridSelectorNioSessionImpl)key.attachment()).outRecoveryDescriptor();
 
                 if (desc != null)
@@ -1110,7 +1122,7 @@ public class GridNioServer<T> {
                 close(ses, e);
             }
 
-            if (!DISABLE_PARK && pendingAcks0 != -1) {
+            if (!disablePark && pendingAcks0 != -1) {
                 assert desc != null;
 
                 pendingAcks -= pendingAcks0 - (desc.messagesRequests().size() % desc.ackSendThreshold());
@@ -1128,7 +1140,7 @@ public class GridNioServer<T> {
 
             GridNioRecoveryDescriptor desc = null;
 
-            if (!DISABLE_PARK && writer) {
+            if (!disablePark && writer) {
                 desc = ((GridSelectorNioSessionImpl)key.attachment()).outRecoveryDescriptor();
 
                 if (desc != null)
@@ -1140,7 +1152,7 @@ public class GridNioServer<T> {
             else
                 processWrite0(key);
 
-            if (!DISABLE_PARK && pendingAcks0 != -1) {
+            if (!disablePark && pendingAcks0 != -1) {
                 assert desc != null;
 
                 pendingAcks += (desc.messagesRequests().size() % desc.ackSendThreshold()) - pendingAcks0;
@@ -1661,7 +1673,7 @@ public class GridNioServer<T> {
 
             if (select)
                 selector.wakeup();
-            else if (!DISABLE_PARK && park)
+            else if (!disablePark && park)
                 LockSupport.unpark(clientThreads[idx]);
         }
 
@@ -1847,7 +1859,7 @@ public class GridNioServer<T> {
                         }
                     }
 
-                    if (!DISABLE_PARK && writer && writeSesCnt == 0 && pendingAcks == 0) {
+                    if (!disablePark && writer && writeSesCnt == 0 && pendingAcks == 0) {
                         park = true;
 
                         try {
@@ -1861,7 +1873,7 @@ public class GridNioServer<T> {
 
                     int res = 0;
 
-                    for (int i = 0; i < SELECTOR_SPINS && res == 0; i++)
+                    for (long i = 0; i < selectorSpins && res == 0; i++)
                         res = selector.selectNow();
 
                     if (res > 0) {
@@ -1873,7 +1885,7 @@ public class GridNioServer<T> {
                     }
 
                     if (!changeReqs.isEmpty() ||
-                        (!DISABLE_PARK && writer && pendingAcks == 0 && SELECTOR_SPINS != 0))
+                        (!disablePark && writer && pendingAcks == 0 && selectorSpins != 0))
                         continue;
 
                     select = true;

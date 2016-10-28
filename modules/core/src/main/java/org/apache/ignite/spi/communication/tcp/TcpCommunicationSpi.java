@@ -2018,8 +2018,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                 // Ack Port the TCP server was bound to.
                 if (log.isInfoEnabled())
-                    log.info("Successfully bound communication NIO server to TCP port [port=" + boundTcpPort +
-                        ", locHost=" + locHost + ", selectorsCnt=" + selectorsCnt + ']');
+                    log.info("Successfully bound communication NIO server to TCP port " +
+                        "[port=" + boundTcpPort + ", locHost=" + locHost + ", selectorsCnt=" + selectorsCnt +
+                        ", parkDisabled=" + srvr.parkDisabled() + ", selectorSpins=" + srvr.selectorSpins() + ']');
 
                 srvr.idleTimeout(idleConnTimeout);
 

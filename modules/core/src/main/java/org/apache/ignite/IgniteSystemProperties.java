@@ -431,9 +431,16 @@ public final class IgniteSystemProperties {
 
     /**
      * Defines how many non-blocking {@code selector.selectNow()} should be made before
-     * falling into {@code selector.select(long)} in NIO server.
+     * falling into {@code selector.select(long)} in NIO server. Long value. Default is {@code 0}.
+     * Can be set to {@code Long.MAX_VALUE} so selector thread will never block.
      */
     public static final String IGNITE_SELECTOR_SPINS = "IGNITE_SELECTOR_SPINS";
+
+    /**
+     * When {@code true} writer workers in {@code GridNioServer} should use only {@code Selector.select()},
+     * otherwise use {@code LockSupport.park()} when possible. Default is {@code false}.
+     */
+    public static final String IGNITE_DISABLE_SELECTOR_PARK = "IGNITE_DISABLE_SELECTOR_PARK";
 
     /**
      * System property to specify period in milliseconds between calls of the SQL statements cache cleanup task.
