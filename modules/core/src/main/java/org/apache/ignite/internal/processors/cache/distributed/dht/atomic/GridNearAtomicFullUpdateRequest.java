@@ -164,7 +164,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
      * @param addDepInfo Deployment info flag.
      * @param maxEntryCnt Maximum entries count.
      */
-    public GridNearAtomicFullUpdateRequest(
+    GridNearAtomicFullUpdateRequest(
         int cacheId,
         UUID nodeId,
         GridCacheVersion futVer,

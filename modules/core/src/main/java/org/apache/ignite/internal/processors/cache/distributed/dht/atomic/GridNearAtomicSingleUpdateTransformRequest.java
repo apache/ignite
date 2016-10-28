@@ -158,8 +158,7 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
         this.key = key;
         partId = key.partition();
 
-        hasPrimary |= primary;
-
+        hasPrimary(hasPrimary() | primary);
     }
 
     /** {@inheritDoc} */

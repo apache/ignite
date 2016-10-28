@@ -29,8 +29,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicFullUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateFilterRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateTransformRequest;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -96,9 +96,9 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
             commSpi.resetCount();
 
             commSpi.registerMessage(GridNearAtomicFullUpdateRequest.class);
-            commSpi.registerMessage(GridDhtAtomicUpdateRequest.class);
             commSpi.registerMessage(GridNearAtomicSingleUpdateRequest.class);
             commSpi.registerMessage(GridNearAtomicSingleUpdateTransformRequest.class);
+            commSpi.registerMessage(GridNearAtomicSingleUpdateFilterRequest.class);
 
             int putCnt = 15;
 
@@ -108,6 +108,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
             assertEquals(0, commSpi.messageCount(GridNearAtomicFullUpdateRequest.class));
             assertEquals(putCnt, commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class));
             assertEquals(0, commSpi.messageCount(GridNearAtomicSingleUpdateTransformRequest.class));
+            assertEquals(0, commSpi.messageCount(GridNearAtomicSingleUpdateFilterRequest.class));
         }
         finally {
             stopAllGrids();
@@ -130,6 +131,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
             commSpi.registerMessage(GridNearAtomicFullUpdateRequest.class);
             commSpi.registerMessage(GridNearAtomicSingleUpdateRequest.class);
             commSpi.registerMessage(GridNearAtomicSingleUpdateTransformRequest.class);
+            commSpi.registerMessage(GridNearAtomicSingleUpdateFilterRequest.class);
 
             int putCnt = 15;
 
@@ -142,8 +144,43 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
                 });
             }
 
+            /* will have some GridNearAtomicFullUpdateRequest */
             assertEquals(0, commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class));
             assertEquals(putCnt, commSpi.messageCount(GridNearAtomicSingleUpdateTransformRequest.class));
+            assertEquals(0, commSpi.messageCount(GridNearAtomicSingleUpdateFilterRequest.class));
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSingleFilterMessage() throws Exception {
+        startGrids(2);
+
+        try {
+            awaitPartitionMapExchange();
+
+            TestCommunicationSpi commSpi = (TestCommunicationSpi)grid(0).configuration().getCommunicationSpi();
+
+            commSpi.resetCount();
+
+            commSpi.registerMessage(GridNearAtomicFullUpdateRequest.class);
+            commSpi.registerMessage(GridNearAtomicSingleUpdateRequest.class);
+            commSpi.registerMessage(GridNearAtomicSingleUpdateTransformRequest.class);
+            commSpi.registerMessage(GridNearAtomicSingleUpdateFilterRequest.class);
+
+            int putCnt = 15;
+
+            for (int i = 0; i < putCnt; i++)
+                jcache(0).putIfAbsent(i, i);
+
+            assertEquals(0, commSpi.messageCount(GridNearAtomicFullUpdateRequest.class));
+            assertEquals(0, commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class));
+            assertEquals(0, commSpi.messageCount(GridNearAtomicSingleUpdateTransformRequest.class));
+            assertEquals(putCnt, commSpi.messageCount(GridNearAtomicSingleUpdateFilterRequest.class));
         }
         finally {
             stopAllGrids();

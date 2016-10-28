@@ -153,7 +153,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
             this.val = (CacheObject)val;
         }
 
-        hasPrimary |= primary;
+        hasPrimary(hasPrimary() | primary);
     }
 
     /** {@inheritDoc} */

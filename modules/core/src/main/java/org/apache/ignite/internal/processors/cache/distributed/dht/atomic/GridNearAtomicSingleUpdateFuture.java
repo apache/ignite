@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
+import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -100,6 +101,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         @Nullable Object[] invokeArgs,
         final boolean retval,
         final boolean rawRetval,
+        @Nullable ExpiryPolicy expiryPlc,
         final CacheEntryPredicate[] filter,
         UUID subjId,
         int taskNameHash,
@@ -108,7 +110,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         int remapCnt,
         boolean waitTopFut
     ) {
-        super(cctx, cache, syncMode, op, invokeArgs, retval, rawRetval, null, filter, subjId, taskNameHash,
+        super(cctx, cache, syncMode, op, invokeArgs, retval, rawRetval, expiryPlc, filter, subjId, taskNameHash,
             skipStore, keepBinary, remapCnt, waitTopFut);
 
         assert subjId != null;
@@ -665,7 +667,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
      * @return {@code true} if target node supports {@link GridNearAtomicSingleUpdateRequest}
      */
     private boolean canUseSingleRequest(ClusterNode node) {
-        return node.version().compareToIgnoreTimestamp(SINGLE_UPDATE_REQUEST) >= 0;
+        return expiryPlc == null && node.version().compareToIgnoreTimestamp(SINGLE_UPDATE_REQUEST) >= 0;
     }
 
     /** {@inheritDoc} */

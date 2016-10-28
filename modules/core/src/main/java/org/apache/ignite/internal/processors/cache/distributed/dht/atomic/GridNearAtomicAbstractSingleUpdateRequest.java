@@ -20,13 +20,10 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -40,33 +37,26 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
     /** */
     private static final CacheEntryPredicate[] NO_FILTER = new CacheEntryPredicate[0];
 
-    /** Fast map flag. */
-    @GridDirectTransient
-    protected boolean fastMap;
+    /** Fast map flag mask. */
+    private static final int FAST_MAP_FLAG_MASK = 0x1;
 
     /** Flag indicating whether request contains primary keys. */
-    @GridDirectTransient
-    protected boolean hasPrimary;
+    private static final int HAS_PRIMARY_FLAG_MASK = 0x2;
 
     /** Topology locked flag. Set if atomic update is performed inside TX or explicit lock. */
-    @GridDirectTransient
-    protected boolean topLocked;
+    private static final int TOP_LOCKED_FLAG_MASK = 0x4;
 
     /** Skip write-through to a persistent storage. */
-    @GridDirectTransient
-    protected boolean skipStore;
+    private static final int SKIP_STORE_FLAG_MASK = 0x8;
 
     /** */
-    @GridDirectTransient
-    protected boolean clientReq;
+    private static final int CLIENT_REQ_FLAG_MASK = 0x10;
 
     /** Keep binary flag. */
-    @GridDirectTransient
-    protected boolean keepBinary;
+    private static final int KEEP_BINARY_FLAG_MASK = 0x20;
 
     /** Return value flag. */
-    @GridDirectTransient
-    protected boolean retval;
+    private static final int RET_VAL_FLAG_MASK = 0x40;
 
     /** compressed boolean flags */
     protected byte flags;
@@ -129,61 +119,110 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
             addDepInfo
         );
 
-        this.fastMap = fastMap;
-        this.topLocked = topLocked;
-        this.retval = retval;
-        this.skipStore = skipStore;
-        this.keepBinary = keepBinary;
-        this.clientReq = clientReq;
+        fastMap(fastMap);
+        topologyLocked(topLocked);
+        returnValue(retval);
+        skipStore(skipStore);
+        keepBinary(keepBinary);
+        clientRequest(clientReq);
     }
 
     /**
      * @return Flag indicating whether this is fast-map udpate.
      */
     @Override public boolean fastMap() {
-        return fastMap;
+        return isFlag(FAST_MAP_FLAG_MASK);
+    }
+
+    /**
+     * Sets fastMap flag value.
+     */
+    public void fastMap(boolean val) {
+        setFlag(val, FAST_MAP_FLAG_MASK);
     }
 
     /**
      * @return Topology locked flag.
      */
     @Override public boolean topologyLocked() {
-        return topLocked;
+        return isFlag(TOP_LOCKED_FLAG_MASK);
+    }
+
+    /**
+     * Sets topologyLocked flag value.
+     */
+    public void topologyLocked(boolean val) {
+        setFlag(val, TOP_LOCKED_FLAG_MASK);
     }
 
     /**
      * @return {@code True} if request sent from client node.
      */
     @Override public boolean clientRequest() {
-        return clientReq;
+        return isFlag(CLIENT_REQ_FLAG_MASK);
+    }
+
+    /**
+     * Sets clientRequest flag value.
+     */
+    public void clientRequest(boolean val) {
+        setFlag(val, CLIENT_REQ_FLAG_MASK);
     }
 
     /**
      * @return Return value flag.
      */
     @Override public boolean returnValue() {
-        return retval;
+        return isFlag(RET_VAL_FLAG_MASK);
+    }
+
+    /**
+     * Sets returnValue flag value.
+     */
+    public void returnValue(boolean val) {
+        setFlag(val, RET_VAL_FLAG_MASK);
     }
 
     /**
      * @return Skip write-through to a persistent storage.
      */
     @Override public boolean skipStore() {
-        return skipStore;
+        return isFlag(SKIP_STORE_FLAG_MASK);
+    }
+
+    /**
+     * Sets skipStore flag value.
+     */
+    public void skipStore(boolean val) {
+        setFlag(val, SKIP_STORE_FLAG_MASK);
     }
 
     /**
      * @return Keep binary flag.
      */
     @Override public boolean keepBinary() {
-        return keepBinary;
+        return isFlag(KEEP_BINARY_FLAG_MASK);
+    }
+
+    /**
+     * Sets keepBinary flag value.
+     */
+    public void keepBinary(boolean val) {
+        setFlag(val, KEEP_BINARY_FLAG_MASK);
     }
 
     /**
      * @return Flag indicating whether this request contains primary keys.
      */
     @Override public boolean hasPrimary() {
-        return hasPrimary;
+        return isFlag(HAS_PRIMARY_FLAG_MASK);
+    }
+
+    /**
+     * Sets hasPrimary flag value.
+     */
+    public void hasPrimary(boolean val) {
+        setFlag(val, HAS_PRIMARY_FLAG_MASK);
     }
 
     /** {@inheritDoc} */
@@ -191,32 +230,24 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
         return NO_FILTER;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        flags = (byte)(
-            (fastMap ? 1 : 0) +
-                (hasPrimary ? 1 << 1 : 0) +
-                (topLocked ? 1 << 2 : 0) +
-                (skipStore ? 1 << 3 : 0) +
-                (clientReq ? 1 << 4 : 0) +
-                (keepBinary ? 1 << 5 : 0) +
-                (retval ? 1 << 6 : 0)
-        );
+    /**
+     * Sets flag mask.
+     *
+     * @param flag Set or clear.
+     * @param mask Mask.
+     */
+    private void setFlag(boolean flag, int mask) {
+        flags = flag ? (byte)(flags | mask) : (byte)(flags & ~mask);
     }
 
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        fastMap = (flags & 1) > 0;
-        hasPrimary = (flags & 1 << 1) > 0;
-        topLocked = (flags & 1 << 2) > 0;
-        skipStore = (flags & 1 << 3) > 0;
-        clientReq = (flags & 1 << 4) > 0;
-        keepBinary = (flags & 1 << 5) > 0;
-        retval = (flags & 1 << 6) > 0;
+    /**
+     * Reads flag mask.
+     *
+     * @param mask Mask to read.
+     * @return Flag value.
+     */
+    private boolean isFlag(int mask) {
+        return (flags & mask) != 0;
     }
 
     /** {@inheritDoc} */
