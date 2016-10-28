@@ -83,8 +83,8 @@ namespace Apache.Ignite.Examples.Misc
 
                             Console.WriteLine(">>> Client has reconnected successfully");
 
-                            //Workaround.
-                            System.Threading.Thread.Sleep(3000);
+                            // TODO
+                            Thread.Sleep(3000);
 
                             // Updating the reference to the cache. The client reconnected to the new cluster.
                             cache = ignite.GetOrCreateCache<int, string>(CacheName);
