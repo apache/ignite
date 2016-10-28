@@ -62,29 +62,32 @@ namespace Apache.Ignite.Examples.Misc
 
                         cache.Put(key, "val" + key);
 
-                        Thread.Sleep(3000);
+                        // TODO: How do we cause client disconnect?
+                        // This should be testable;
+                        // The example should be runnable from start to end.
+                        Thread.Sleep(1000);
 
                         Console.WriteLine(">>> Put value with key:" + key);
                     }
                     catch (CacheException e)
                     {
-                        if (e.InnerException is ClientDisconnectedException)
+                        var disconnectedException = e.InnerException as ClientDisconnectedException;
+
+                        if (disconnectedException != null)
                         {
                             Console.WriteLine(">>> Client disconnected from the cluster");
 
-                            ClientDisconnectedException ex = (ClientDisconnectedException)e.InnerException;
-
-                            var task = ex.ClientReconnectTask;
+                            var task = disconnectedException.ClientReconnectTask;
 
                             Console.WriteLine(">>> Waiting while client gets reconnected to the cluster");
 
-                            while (!task.IsCompleted) // workaround.
+                            while (!task.IsCompleted) // workaround. // TODO: ???
                                 task.Wait();
 
                             Console.WriteLine(">>> Client has reconnected successfully");
 
                             // TODO
-                            Thread.Sleep(3000);
+                            //Thread.Sleep(3000);
 
                             // Updating the reference to the cache. The client reconnected to the new cluster.
                             cache = ignite.GetOrCreateCache<int, string>(CacheName);
