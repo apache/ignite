@@ -739,6 +739,8 @@ public class BinaryClassDescriptor {
                                 schemaReg.addSchema(newSchema.schemaId(), newSchema);
                             }
                         }
+
+                        postWriteHashCode(writer, obj);
                     }
                     finally {
                         writer.popSchema();
@@ -756,6 +758,7 @@ public class BinaryClassDescriptor {
                         writer.schemaId(stableSchema.schemaId());
 
                         postWrite(writer, obj);
+                        postWriteHashCode(writer, obj);
                     }
                     finally {
                         writer.popSchema();
@@ -853,18 +856,26 @@ public class BinaryClassDescriptor {
      */
     private void postWrite(BinaryWriterExImpl writer, Object obj) {
         if (obj instanceof CacheObjectImpl)
-            // No need to call "postWriteHashCode" here becuase we do not care about hash code.
             writer.postWrite(userType, registered, 0, false);
         else if (obj instanceof BinaryObjectEx) {
             boolean flagSet = ((BinaryObjectEx)obj).isFlagSet(BinaryUtils.FLAG_EMPTY_HASH_CODE);
 
             writer.postWrite(userType, registered, obj.hashCode(), !flagSet);
-            writer.postWriteHashCode(registered ? null : cls.getName());
         }
-        else {
+        else
             writer.postWrite(userType, registered, obj.hashCode(), overridesHashCode);
+    }
+
+    /**
+     * Post-write routine for hash code.
+     *
+     * @param writer Writer.
+     * @param obj Object.
+     */
+    private void postWriteHashCode(BinaryWriterExImpl writer, Object obj) {
+        // No need to call "postWriteHashCode" here because we do not care about hash code.
+        if (!(obj instanceof CacheObjectImpl))
             writer.postWriteHashCode(registered ? null : cls.getName());
-        }
     }
 
     /**

@@ -336,7 +336,34 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         BinaryIdentityResolver identity = ctx.identity(typeId);
 
         if (identity != null) {
-            // TODO.
+            if (out.hasArray()) {
+                // Heap.
+                byte[] data = out.array();
+
+                BinaryObjectImpl obj = new BinaryObjectImpl(ctx, data, start);
+
+                short flags = BinaryPrimitives.readShort(data, start + GridBinaryMarshaller.FLAGS_POS);
+
+                BinaryPrimitives.writeShort(data, start + GridBinaryMarshaller.FLAGS_POS,
+                    (short) (flags & ~BinaryUtils.FLAG_EMPTY_HASH_CODE));
+
+                BinaryPrimitives.writeInt(data, start + GridBinaryMarshaller.HASH_CODE_POS, identity.hashCode(obj));
+            }
+            else {
+                // Offheap.
+                long ptr = out.rawOffheapPointer();
+
+                assert ptr != 0;
+
+                BinaryObjectOffheapImpl obj = new BinaryObjectOffheapImpl(ctx, ptr, start, out.capacity());
+
+                short flags = BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS);
+
+                BinaryPrimitives.writeShort(ptr, start + GridBinaryMarshaller.FLAGS_POS,
+                    (short) (flags & ~BinaryUtils.FLAG_EMPTY_HASH_CODE));
+
+                BinaryPrimitives.writeInt(ptr, start + GridBinaryMarshaller.HASH_CODE_POS, identity.hashCode(obj));
+            }
         }
     }
 
@@ -352,8 +379,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Byte array.
      */
     public void write(byte[] val) {
-        assert val != null;
-
         out.writeByteArray(val);
     }
 
@@ -363,8 +388,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param len Length.
      */
     public void write(byte[] val, int off, int len) {
-        assert val != null;
-
         out.write(val, off, len);
     }
 

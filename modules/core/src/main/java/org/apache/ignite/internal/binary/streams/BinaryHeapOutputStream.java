@@ -209,4 +209,9 @@ public final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
 
         shift(8);
     }
+
+    /** {@inheritDoc} */
+    @Override public int capacity() {
+        return data.length;
+    }
 }

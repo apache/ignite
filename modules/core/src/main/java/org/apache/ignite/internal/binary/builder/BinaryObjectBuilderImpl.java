@@ -21,11 +21,9 @@ import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryIdentityResolver;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
-import org.apache.ignite.internal.binary.BinaryPrimitives;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryContext;
@@ -188,23 +186,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
             byte[] arr = writer.array();
 
-            BinaryObject res = new BinaryObjectImpl(ctx, arr, 0);
-
-            short flags = BinaryPrimitives.readShort(arr, GridBinaryMarshaller.FLAGS_POS);
-
-            if (BinaryUtils.isFlagSet(flags, BinaryUtils.FLAG_EMPTY_HASH_CODE)) {
-                BinaryIdentityResolver identity = ctx.identity(typeId());
-
-                if (identity != null) {
-                    // Reset missing hash code flag
-                    BinaryPrimitives.writeShort(arr, GridBinaryMarshaller.FLAGS_POS,
-                        (short) (flags & ~BinaryUtils.FLAG_EMPTY_HASH_CODE));
-
-                    BinaryPrimitives.writeInt(arr, GridBinaryMarshaller.HASH_CODE_POS, identity.hashCode(res));
-                }
-            }
-
-            return res;
+            return new BinaryObjectImpl(ctx, arr, 0);
         }
     }
 
