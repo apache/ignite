@@ -31,11 +31,13 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -44,12 +46,13 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
  * Tests for cache data loading during simultaneous grids start.
  */
-public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractTest {
+public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractTest implements Serializable {
     /** Grids count */
     private static int GRIDS_CNT = 5;
 
@@ -59,8 +62,8 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /** Client. */
     private volatile boolean client;
 
-    /** Client config. */
-    private volatile boolean clientCfg;
+    /** Config. */
+    private volatile boolean configured;
 
     /** Allow override. */
     protected volatile boolean allowOverwrite;
@@ -78,14 +81,24 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
 
         ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestCacheStoreAdapter()));
 
-        if (client && getTestGridName(0).equals(gridName)) {
-            cfg.setClientMode(true);
+        if (getTestGridName(0).equals(gridName)) {
+            if (client)
+                cfg.setClientMode(true);
 
-            if (clientCfg)
+            if (configured)
                 cfg.setCacheConfiguration(ccfg);
         }
         else
             cfg.setCacheConfiguration(ccfg);
+
+        if (!configured)
+            ccfg.setNodeFilter(new P1<ClusterNode>() {
+                @Override public boolean apply(ClusterNode node) {
+                    String name = node.attribute(ATTR_GRID_NAME).toString();
+
+                    return !getTestGridName(0).equals(name);
+                }
+            });
 
         return cfg;
     }
@@ -99,16 +112,23 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
      * @throws Exception if failed
      */
     public void testLoadCacheWithDataStreamer() throws Exception {
-        IgniteInClosure<Ignite> f = new IgniteInClosure<Ignite>() {
-            @Override public void apply(Ignite grid) {
-                try (IgniteDataStreamer<Integer, String> dataStreamer = grid.dataStreamer(null)) {
-                    for (int i = 0; i < KEYS_CNT; i++)
-                        dataStreamer.addData(i, Integer.toString(i));
-                }
-            }
-        };
+        configured = true;
 
-        loadCache(f);
+        try {
+            IgniteInClosure<Ignite> f = new IgniteInClosure<Ignite>() {
+                @Override public void apply(Ignite grid) {
+                    try (IgniteDataStreamer<Integer, String> dataStreamer = grid.dataStreamer(null)) {
+                        for (int i = 0; i < KEYS_CNT; i++)
+                            dataStreamer.addData(i, Integer.toString(i));
+                    }
+                }
+            };
+
+            loadCache(f);
+        }
+        finally {
+            configured = false;
+        }
     }
 
     /**
@@ -143,14 +163,14 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
      */
     public void testLoadCacheWithDataStreamerSequentialClientWithConfig() throws Exception {
         client = true;
-        clientCfg = true;
+        configured = true;
 
         try {
             loadCacheWithDataStreamerSequential();
         }
         finally {
             client = false;
-            clientCfg = false;
+            configured = false;
         }
     }
 
@@ -159,6 +179,20 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
      */
     public void testLoadCacheWithDataStreamerSequential() throws Exception {
         loadCacheWithDataStreamerSequential();
+    }
+
+    /**
+     * @throws Exception if failed
+     */
+    public void testLoadCacheWithDataStreamerSequentialWithConfig() throws Exception {
+        configured = true;
+
+        try {
+            loadCacheWithDataStreamerSequential();
+        }
+        finally {
+            configured = false;
+        }
     }
 
     /**

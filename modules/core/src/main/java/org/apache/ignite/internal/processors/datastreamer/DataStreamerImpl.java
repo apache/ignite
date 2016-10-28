@@ -344,11 +344,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         publicFut = new IgniteCacheFutureImpl<>(fut);
 
-        boolean client = ctx.config().isClientMode();
-
         GridCacheAdapter cache = ctx.cache().internalCache(cacheName);
 
-        if (client && cache == null) { // Possible, cache is not configured on client node.
+        if (cache == null) { // Possible, cache is not configured on node.
             assert ccfg != null;
 
             if (ccfg.getCacheMode() != CacheMode.LOCAL)
