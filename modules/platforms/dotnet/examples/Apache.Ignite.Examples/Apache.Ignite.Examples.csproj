@@ -59,6 +59,7 @@
     <Compile Include="Datagrid\TransactionExample.cs" />
     <Compile Include="Events\EventsExample.cs" />
     <Compile Include="Messaging\MessagingExample.cs" />
+    <Compile Include="Misc\ClientReconnectExample.cs" />
     <Compile Include="Misc\LifecycleExample.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\IMapService.cs" />
