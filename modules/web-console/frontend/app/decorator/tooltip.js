@@ -28,12 +28,15 @@ angular.module('mgcrea.ngStrap.tooltip')
             let tipElementEntered = false;
 
             config.onShow = ($tooltip) => {
-                $tooltip.$element.on('mouseenter', () => tipElementEntered = true);
-                $tooltip.$element.on('mouseleave', () => {
-                    tipElementEntered = false;
+                // Workaround for tooltip detection.
+                if ($tooltip.$element && $tooltip.$options.trigger === 'click hover') {
+                    $tooltip.$element.on('mouseenter', () => tipElementEntered = true);
+                    $tooltip.$element.on('mouseleave', () => {
+                        tipElementEntered = false;
 
-                    $tooltip.leave();
-                });
+                        $tooltip.leave();
+                    });
+                }
             };
 
             const $tooltip = $delegate(element, config);

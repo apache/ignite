@@ -123,7 +123,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             indexType: {type: String, enum: ['SORTED', 'FULLTEXT', 'GEOSPATIAL']},
             fields: [{name: String, direction: Boolean}]
         }],
-        demo: Boolean
+        generatePojo: Boolean
     });
 
     DomainModelSchema.index({valueType: 1, space: 1}, {unique: true});
@@ -147,9 +147,6 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             },
             IGFS: {
                 igfs: {type: ObjectId, ref: 'Igfs'}
-            },
-            OnNodes: {
-                nodeIds: [String]
             },
             Custom: {
                 className: String
@@ -199,7 +196,8 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
                 dialect: {
                     type: String,
                     enum: ['Generic', 'Oracle', 'DB2', 'SQLServer', 'MySQL', 'PostgreSQL', 'H2']
-                }
+                },
+                sqlEscapeAll: Boolean
             },
             CacheJdbcBlobStoreFactory: {
                 connectVia: {type: String, enum: ['URL', 'DataSource']},
@@ -218,7 +216,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
                 deleteQuery: String
             },
             CacheHibernateBlobStoreFactory: {
-                hibernateProperties: [String]
+                hibernateProperties: [{name: String, value: String}]
             }
         },
         storeKeepBinary: Boolean,
@@ -248,8 +246,8 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         readFromBackup: Boolean,
         copyOnRead: Boolean,
         maxConcurrentAsyncOperations: Number,
-        nearCacheEnabled: Boolean,
         nearConfiguration: {
+            enabled: Boolean,
             nearStartSize: Number,
             nearEvictionPolicy: {
                 kind: {type: String, enum: ['LRU', 'FIFO', 'SORTED']},
@@ -270,7 +268,28 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
                 }
             }
         },
-        demo: Boolean
+        clientNearConfiguration: {
+            enabled: Boolean,
+            nearStartSize: Number,
+            nearEvictionPolicy: {
+                kind: {type: String, enum: ['LRU', 'FIFO', 'SORTED']},
+                LRU: {
+                    batchSize: Number,
+                    maxMemorySize: Number,
+                    maxSize: Number
+                },
+                FIFO: {
+                    batchSize: Number,
+                    maxMemorySize: Number,
+                    maxSize: Number
+                },
+                SORTED: {
+                    batchSize: Number,
+                    maxMemorySize: Number,
+                    maxSize: Number
+                }
+            }
+        }
     });
 
     CacheSchema.index({name: 1, space: 1}, {unique: true});
@@ -370,7 +389,50 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
                 addresses: [String]
             },
             S3: {
-                bucketName: String
+                bucketName: String,
+                clientConfiguration: {
+                    protocol: {type: String, enum: ['HTTP', 'HTTPS']},
+                    maxConnections: Number,
+                    userAgent: String,
+                    localAddress: String,
+                    proxyHost: String,
+                    proxyPort: Number,
+                    proxyUsername: String,
+                    proxyDomain: String,
+                    proxyWorkstation: String,
+                    retryPolicy: {
+                        kind: {type: String, enum: ['Default', 'DefaultMaxRetries', 'DynamoDB', 'DynamoDBMaxRetries', 'Custom', 'CustomClass']},
+                        DefaultMaxRetries: {
+                            maxErrorRetry: Number
+                        },
+                        DynamoDBMaxRetries: {
+                            maxErrorRetry: Number
+                        },
+                        Custom: {
+                            retryCondition: String,
+                            backoffStrategy: String,
+                            maxErrorRetry: Number,
+                            honorMaxErrorRetryInClientConfig: Boolean
+                        },
+                        CustomClass: {
+                            className: String
+                        }
+                    },
+                    maxErrorRetry: Number,
+                    socketTimeout: Number,
+                    connectionTimeout: Number,
+                    requestTimeout: Number,
+                    useReaper: Boolean,
+                    useGzip: Boolean,
+                    signerOverride: String,
+                    preemptiveBasicProxyAuth: Boolean,
+                    connectionTTL: Number,
+                    connectionMaxIdleMillis: Number,
+                    useTcpKeepAlive: Boolean,
+                    dnsResolver: String,
+                    responseMetadataCacheSize: Number,
+                    secureRandom: String
+                }
             },
             Cloud: {
                 credential: String,
@@ -463,6 +525,17 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         igfsThreadPoolSize: Number,
         igfss: [{type: ObjectId, ref: 'Igfs'}],
         includeEventTypes: [String],
+        eventStorage: {
+            kind: {type: String, enum: ['Memory', 'Custom']},
+            Memory: {
+                expireAgeMs: Number,
+                expireCount: Number,
+                filter: String
+            },
+            Custom: {
+                className: String
+            }
+        },
         managementThreadPoolSize: Number,
         marshaller: {
             kind: {type: String, enum: ['OptimizedMarshaller', 'JdkMarshaller']},
@@ -628,6 +701,122 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         cacheKeyConfiguration: [{
             typeName: String,
             affinityKeyFieldName: String
+        }],
+        checkpointSpi: [{
+            kind: {type: String, enum: ['FS', 'Cache', 'S3', 'JDBC', 'Custom']},
+            FS: {
+                directoryPaths: [String],
+                checkpointListener: String
+            },
+            Cache: {
+                cache: {type: ObjectId, ref: 'Cache'},
+                checkpointListener: String
+            },
+            S3: {
+                awsCredentials: {
+                    kind: {type: String, enum: ['Basic', 'Properties', 'Anonymous', 'BasicSession', 'Custom']},
+                    Properties: {
+                        path: String
+                    },
+                    Custom: {
+                        className: String
+                    }
+                },
+                bucketNameSuffix: String,
+                clientConfiguration: {
+                    protocol: {type: String, enum: ['HTTP', 'HTTPS']},
+                    maxConnections: Number,
+                    userAgent: String,
+                    localAddress: String,
+                    proxyHost: String,
+                    proxyPort: Number,
+                    proxyUsername: String,
+                    proxyDomain: String,
+                    proxyWorkstation: String,
+                    retryPolicy: {
+                        kind: {type: String, enum: ['Default', 'DefaultMaxRetries', 'DynamoDB', 'DynamoDBMaxRetries', 'Custom']},
+                        DefaultMaxRetries: {
+                            maxErrorRetry: Number
+                        },
+                        DynamoDBMaxRetries: {
+                            maxErrorRetry: Number
+                        },
+                        Custom: {
+                            retryCondition: String,
+                            backoffStrategy: String,
+                            maxErrorRetry: Number,
+                            honorMaxErrorRetryInClientConfig: Boolean
+                        }
+                    },
+                    maxErrorRetry: Number,
+                    socketTimeout: Number,
+                    connectionTimeout: Number,
+                    requestTimeout: Number,
+                    useReaper: Boolean,
+                    useGzip: Boolean,
+                    signerOverride: String,
+                    preemptiveBasicProxyAuth: Boolean,
+                    connectionTTL: Number,
+                    connectionMaxIdleMillis: Number,
+                    useTcpKeepAlive: Boolean,
+                    dnsResolver: String,
+                    responseMetadataCacheSize: Number,
+                    secureRandom: String
+                },
+                checkpointListener: String
+            },
+            JDBC: {
+                dataSourceBean: String,
+                dialect: {
+                    type: String,
+                    enum: ['Generic', 'Oracle', 'DB2', 'SQLServer', 'MySQL', 'PostgreSQL', 'H2']
+                },
+                user: String,
+                checkpointTableName: String,
+                keyFieldName: String,
+                keyFieldType: String,
+                valueFieldName: String,
+                valueFieldType: String,
+                expireDateFieldName: String,
+                expireDateFieldType: String,
+                numberOfRetries: Number,
+                checkpointListener: String
+            },
+            Custom: {
+                className: String
+            }
+        }],
+        loadBalancingSpi: [{
+            kind: {type: String, enum: ['RoundRobin', 'Adaptive', 'WeightedRandom', 'Custom']},
+            RoundRobin: {
+                perTask: Boolean
+            },
+            Adaptive: {
+                loadProbe: {
+                    kind: {type: String, enum: ['Job', 'CPU', 'ProcessingTime', 'Custom']},
+                    Job: {
+                        useAverage: Boolean
+                    },
+                    CPU: {
+                        useAverage: Boolean,
+                        useProcessors: Boolean,
+                        processorCoefficient: Number
+                    },
+                    ProcessingTime: {
+                        useAverage: Boolean
+                    },
+                    Custom: {
+                        className: String
+                    }
+                }
+            },
+            WeightedRandom: {
+                nodeWeight: Number,
+                useWeights: Boolean
+            },
+            Custom: {
+                className: String
+            }
         }]
     });
 

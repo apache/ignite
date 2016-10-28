@@ -16,19 +16,28 @@
  */
 
 import gulp from 'gulp';
+import ll from 'gulp-ll';
 import jade from 'gulp-jade';
-import sequence from 'gulp-sequence';
 
-import { jadePaths, jadeModulePaths, destDir } from '../paths';
+import { jadeViewsPaths, jadeAppModulePaths, jadeModulePaths, destDir } from '../paths';
 
 const jadeOptions = {
-    basedir: './'
+    basedir: './',
+    cache: true
 };
 
-gulp.task('jade', (cb) => sequence('jade:source', 'jade:ignite_modules', cb));
+ll.tasks(['jade:views', 'jade:app', 'jade:ignite_modules']);
 
-gulp.task('jade:source', () =>
-    gulp.src(jadePaths)
+gulp.task('jade', ['jade:views', 'jade:app', 'jade:ignite_modules']);
+
+gulp.task('jade:views', () =>
+    gulp.src(jadeViewsPaths)
+        .pipe(jade(jadeOptions))
+        .pipe(gulp.dest(destDir))
+);
+
+gulp.task('jade:app', () =>
+    gulp.src(jadeAppModulePaths)
         .pipe(jade(jadeOptions))
         .pipe(gulp.dest(destDir))
 );
