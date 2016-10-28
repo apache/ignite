@@ -82,6 +82,11 @@ hr {
   vertical-align: middle;
 }
 
+.table .ui-grid-settings {
+    float: left;
+    padding-right: 10px;
+}
+
 ul.navbar-nav, .sidebar-nav {
     li.active > a {
         color: $link-color;
@@ -359,6 +364,13 @@ h1, h2, h3, h4, h5, h6 {
     margin-right: -2px;
 }
 
+// Modal icon
+.modal-header h4 > i.fa {
+    cursor: default;
+    float: left;
+    line-height: $modal-title-line-height;
+}
+
 .modal .modal-dialog {
     width: 650px;
 }
@@ -623,7 +635,7 @@ button.form-control {
         margin-top: 30px;
     }
 
-    .btn-group {
+    .btn-group:last-of-type {
         margin-right: 0;
     }
 
@@ -665,6 +677,16 @@ button.form-control {
         border-top: 1px solid $ignite-border-color;
 
         padding: 10px 10px;
+
+        input[type="checkbox"] {
+            line-height: 20px;
+            margin-right: 5px;
+        }
+
+        label {
+            line-height: 20px !important;
+            vertical-align: middle;
+        }
     }
 
     .sql-result {
@@ -686,6 +708,16 @@ button.form-control {
 
         .total {
             padding: 10px 10px;
+
+            input[type="checkbox"] {
+                line-height: 20px;
+                margin-right: 5px;
+            }
+
+            label {
+                line-height: 20px !important;
+                vertical-align: middle;
+            }
         }
 
         .table {
@@ -1318,12 +1350,6 @@ label {
     margin: 0 5px;
 }
 
-.fieldButton {
-    float: right;
-    margin-left: 5px;
-    margin-right: 0;
-}
-
 .fa {
     cursor: pointer;
 }
@@ -1639,13 +1665,18 @@ th[st-sort] {
     z-index: 900;
 
     a {
+        color: $input-color-placeholder;
         background-color: white;
         margin-left: 5px;
         font-size: 0.9em;
     }
 
-    .inactive {
-        color: $input-color-placeholder;
+    a + a {
+        margin-left: 10px
+    }
+
+    a.active {
+        color: $brand-primary;
     }
 }
 
@@ -2168,5 +2199,31 @@ html,body,.splash-screen {
         height: 325px;
         margin: 0;
         padding: 0;
+    }
+}
+
+// Fix for incorrect tooltip placement after fast show|hide.
+.tooltip.ng-leave {
+    transition: none !important; /* Disable transitions. */
+    animation: none 0s !important; /* Disable keyframe animations. */
+}
+
+// Fix for incorrect dropdown placement.
+.select.dropdown-menu.ng-leave {
+    transition: none !important; /* Disable transitions. */
+    animation: none 0s !important; /* Disable keyframe animations. */
+}
+.disable-animations {
+    // Use this for transitions
+    &.ng-enter,
+    &.ng-leave,
+    &.ng-animate {
+        -webkit-transition: none !important;
+        transition: none !important;
+    }
+    // Use this for keyframe animations
+    &.ng-animate {
+        -webkit-animation: none 0s;
+        animation: none 0s;
     }
 }

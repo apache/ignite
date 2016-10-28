@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-import templateUrl from './ui-ace-xml.jade';
-import controller from './ui-ace-xml.controller';
+import templateUrl from './ui-ace-sharp.jade';
+import controller from './ui-ace-sharp.controller';
 
-export default ['igniteUiAceXml', ['GeneratorXml', (generator) => {
+export default ['igniteUiAceSharp', ['IgniteSharpTransformer', (generator) => {
     const link = (scope, $el, attrs, [ctrl, igniteUiAceTabs, formCtrl, ngModelCtrl]) => {
         if (formCtrl && ngModelCtrl)
             formCtrl.$removeControl(ngModelCtrl);
@@ -57,7 +57,7 @@ export default ['igniteUiAceXml', ['GeneratorXml', (generator) => {
                             return acc;
                         }, []);
 
-                        return generator.clusterCaches(caches, null, true, generator.clusterGeneral(cluster)).asString();
+                        return generator.clusterCaches(cluster, caches, null, true).asString();
                     };
 
                     break;
@@ -71,13 +71,12 @@ export default ['igniteUiAceXml', ['GeneratorXml', (generator) => {
                             return acc;
                         }, []);
 
-                        return generator.igfss(igfss).asString();
+                        return generator.igfss(igfss, 'cfg').asString();
                     };
 
                     break;
 
                 case 'cacheStore':
-                case 'cacheQuery':
                     ctrl.generator = (cache) => {
                         const domains = _.reduce(scope.detail, (acc, domain) => {
                             if (_.includes(cache.domains, domain.value))
@@ -86,20 +85,7 @@ export default ['igniteUiAceXml', ['GeneratorXml', (generator) => {
                             return acc;
                         }, []);
 
-                        return generator[method](cache, domains).asString();
-                    };
-
-                    break;
-
-                case 'cacheNodeFilter':
-                    ctrl.generator = (cache) => {
-                        const igfss = _.reduce(scope.detail, (acc, igfs) => {
-                            acc.push(igfs.igfs);
-
-                            return acc;
-                        }, []);
-
-                        return generator.cacheNodeFilter(cache, igfss).asString();
+                        return generator.cacheStore(cache, domains).asString();
                     };
 
                     break;
@@ -142,6 +128,6 @@ export default ['igniteUiAceXml', ['GeneratorXml', (generator) => {
         templateUrl,
         controller,
         controllerAs: 'ctrl',
-        require: ['igniteUiAceXml', '?^igniteUiAceTabs', '?^form', '?ngModel']
+        require: ['igniteUiAceSharp', '?^igniteUiAceTabs', '?^form', '?ngModel']
     };
 }]];

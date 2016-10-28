@@ -41,10 +41,10 @@ include ../../app/helpers/jade/mixins.jade
                         +advanced-options-toggle-default
 
                         div(ng-show='ui.expanded')
-                            
                             include ../../app/modules/states/configuration/clusters/atomic.jade
                             include ../../app/modules/states/configuration/clusters/binary.jade
                             include ../../app/modules/states/configuration/clusters/cache-key-cfg.jade
+                            include ../../app/modules/states/configuration/clusters/checkpoint.jade
                             include ../../app/modules/states/configuration/clusters/collision.jade
                             include ../../app/modules/states/configuration/clusters/communication.jade
                             include ../../app/modules/states/configuration/clusters/connector.jade
@@ -53,6 +53,7 @@ include ../../app/helpers/jade/mixins.jade
                             include ../../app/modules/states/configuration/clusters/events.jade
                             include ../../app/modules/states/configuration/clusters/failover.jade
                             include ../../app/modules/states/configuration/clusters/igfs.jade
+                            include ../../app/modules/states/configuration/clusters/load-balancing.jade
                             include ../../app/modules/states/configuration/clusters/logger.jade
                             include ../../app/modules/states/configuration/clusters/marshaller.jade
                             include ../../app/modules/states/configuration/clusters/metrics.jade
