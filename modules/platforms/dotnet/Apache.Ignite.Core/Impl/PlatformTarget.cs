@@ -26,7 +26,6 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
-    using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Unmanaged;
@@ -48,9 +47,6 @@ namespace Apache.Ignite.Core.Impl
 
         /** */
         protected const int Error = -1;
-
-        /** */
-        private const int OpMeta = -1;
 
         /** */
         public const int OpNone = -2;
@@ -824,66 +820,6 @@ namespace Apache.Ignite.Core.Impl
         internal void FinishMarshal(BinaryWriter writer)
         {
             _marsh.FinishMarshal(writer);
-        }
-
-        /// <summary>
-        /// Put binary types to Grid.
-        /// </summary>
-        /// <param name="types">Binary types.</param>
-        internal void PutBinaryTypes(ICollection<BinaryType> types)
-        {
-            DoOutOp(OpMeta, stream =>
-            {
-                BinaryWriter w = _marsh.StartMarshal(stream);
-
-                w.WriteInt(types.Count);
-
-                foreach (var meta in types)
-                {
-                    w.WriteInt(meta.TypeId);
-                    w.WriteString(meta.TypeName);
-                    w.WriteString(meta.AffinityKeyFieldName);
-
-                    IDictionary<string, int> fields = meta.GetFieldsMap();
-
-                    w.WriteInt(fields.Count);
-
-                    foreach (var field in fields)
-                    {
-                        w.WriteString(field.Key);
-                        w.WriteInt(field.Value);
-                    }
-
-                    w.WriteBoolean(meta.IsEnum);
-
-                    // Send schemas
-                    var desc = meta.Descriptor;
-                    Debug.Assert(desc != null);
-
-                    var count = 0;
-                    var countPos = stream.Position;
-                    w.WriteInt(0);  // Reserve for count
-
-                    foreach (var schema in desc.Schema.GetAll())
-                    {
-                        w.WriteInt(schema.Key);
-
-                        var ids = schema.Value;
-                        w.WriteInt(ids.Length);
-
-                        foreach (var id in ids)
-                            w.WriteInt(id);
-
-                        count++;
-                    }
-
-                    stream.WriteInt(countPos, count);
-                }
-
-                _marsh.FinishMarshal(w);
-            });
-
-            _marsh.OnBinaryTypesSent(types);
         }
 
         /// <summary>

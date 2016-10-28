@@ -72,6 +72,9 @@ namespace Apache.Ignite.Core.Impl
         /** Binary. */
         private readonly Binary.Binary _binary;
 
+        /** Binary processor. */
+        private readonly BinaryProcessor _binaryProc;
+
         /** Cached proxy. */
         private readonly IgniteProxy _proxy;
 
@@ -125,6 +128,8 @@ namespace Apache.Ignite.Core.Impl
             _prj = new ClusterGroupImpl(proc, UU.ProcessorProjection(proc), marsh, this, null);
 
             _binary = new Binary.Binary(marsh);
+
+            _binaryProc = new BinaryProcessor(proc, marsh);
 
             _proxy = new IgniteProxy(this);
 
@@ -745,7 +750,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="metas">Metadata.</param>
         internal void PutBinaryTypes(ICollection<BinaryType> metas)
         {
-            _prj.PutBinaryTypes(metas);
+            _binaryProc.PutBinaryTypes(metas);
         }
 
         /** <inheritDoc /> */
