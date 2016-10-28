@@ -19,7 +19,9 @@
         .modal-content
             .modal-header
                 button.close(ng-click='confirmCancel()' aria-hidden='true') &times;
-                h4.modal-title Confirmation
+                h4.modal-title 
+                    i.fa.fa-question-circle-o
+                    | Confirmation
             .modal-body(ng-show='content')
                 p(ng-bind-html='content' style='text-align: center;')
             .modal-footer

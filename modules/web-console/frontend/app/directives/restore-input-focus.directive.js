@@ -15,7 +15,10 @@
  * limitations under the License.
  */
 
-// TODO IGNITE-2052: need move $generatorXml to services.
-export default ['GeneratorXml', () => {
-    return $generatorXml;
+export default [() => {
+    return ($scope, $element) => {
+        $element.on('click', () => {
+            $element.siblings('.input-tip').find('input').focus();
+        });
+    };
 }];

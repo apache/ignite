@@ -15,7 +15,23 @@
  * limitations under the License.
  */
 
-.select.dropdown-menu.ng-leave {
-    transition: none !important; /* disable transitions */
-    animation: none 0s !important; /* disable keyframe animations */
-}
+export default ['$timeout', '$parse', ($timeout, $parse) => {
+    return ($scope, $element, $attrs) => {
+        const handlerCheckFocusOut = (FocusClick) => {
+            if ($element.find(FocusClick.target).length)
+                return;
+
+            $parse($attrs.igniteOnFocusOut)($scope);
+
+            $timeout();
+        };
+
+        window.addEventListener('click', handlerCheckFocusOut, true);
+        window.addEventListener('focusin', handlerCheckFocusOut, true);
+
+        $scope.$on('$destroy', () => {
+            window.removeEventListener('click', handlerCheckFocusOut, true);
+            window.removeEventListener('focusin', handlerCheckFocusOut, true);
+        });
+    };
+}];
