@@ -41,7 +41,7 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
      *
      * @param platformCtx Context.
      */
-    protected PlatformBinaryProcessor(PlatformContext platformCtx) {
+    public PlatformBinaryProcessor(PlatformContext platformCtx) {
         super(platformCtx);
     }
 
