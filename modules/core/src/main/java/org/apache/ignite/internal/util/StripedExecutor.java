@@ -62,6 +62,13 @@ public class StripedExecutor {
     }
 
     /**
+     * @return Stripes count.
+     */
+    public int stripes() {
+        return cnt;
+    }
+
+    /**
      * Execute command.
      *
      * @param idx Index.

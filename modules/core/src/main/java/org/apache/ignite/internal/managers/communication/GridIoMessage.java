@@ -339,11 +339,6 @@ public class GridIoMessage implements Message {
             return -1;
     }
 
-    // TODO
-    public boolean response() {
-        return false;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridIoMessage.class, this);

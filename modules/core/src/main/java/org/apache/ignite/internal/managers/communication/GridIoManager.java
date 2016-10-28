@@ -993,7 +993,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (STRIPED) {
             int part = msg.partition();
 
-            striped.execute(part != -1 ? part : ThreadLocalRandom.current().nextInt(2048), c);
+            striped.execute(part != -1 ? part : ThreadLocalRandom.current().nextInt(striped.stripes()), c);
 
             return;
         }
