@@ -33,7 +33,6 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
@@ -129,7 +128,7 @@ namespace Apache.Ignite.Core.Impl
 
             _binary = new Binary.Binary(marsh);
 
-            _binaryProc = new BinaryProcessor(proc, marsh);
+            _binaryProc = new BinaryProcessor(UU.ProcessorBinaryProcessor(proc), marsh);
 
             _proxy = new IgniteProxy(this);
 
@@ -750,15 +749,6 @@ namespace Apache.Ignite.Core.Impl
         internal IgniteConfiguration Configuration
         {
             get { return _cfg; }
-        }
-
-        /// <summary>
-        /// Put metadata to Grid.
-        /// </summary>
-        /// <param name="metas">Metadata.</param>
-        internal void PutBinaryTypes(ICollection<BinaryType> metas)
-        {
-            _binaryProc.PutBinaryTypes(metas);
         }
 
         /// <summary>

@@ -161,7 +161,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             var ignite = Ignite;
 
             if (ignite != null && metas != null && metas.Count > 0)
-                ignite.PutBinaryTypes(metas);
+            {
+                ignite.BinaryProcessor.PutBinaryTypes(metas);
+            }
         }
 
         /// <summary>
@@ -290,7 +292,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             GetBinaryTypeHandler(desc);  // ensure that handler exists
 
             if (Ignite != null)
-                Ignite.PutBinaryTypes(new[] {new BinaryType(desc)});
+            {
+                ICollection<BinaryType> metas = new[] {new BinaryType(desc)};
+                Ignite.BinaryProcessor.PutBinaryTypes(metas);
+            }
         }
 
         /// <summary>
