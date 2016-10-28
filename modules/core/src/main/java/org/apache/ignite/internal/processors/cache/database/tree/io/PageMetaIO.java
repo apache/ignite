@@ -42,11 +42,11 @@ public class PageMetaIO extends PageIO {
     /** Last allocated index offset. */
     private static final int LAST_ALLOCATED_INDEX_OFF = NEXT_BACKUP_ID_OFF + 8;
 
-    /** Previous allocated index offset. */
-    private static final int PREVIOUS_ALLOCATED_INDEX_OFF = LAST_ALLOCATED_INDEX_OFF + 4;
+    /** Candidate allocated index offset. */
+    private static final int CANDIDATE_ALLOCATED_INDEX_OFF = LAST_ALLOCATED_INDEX_OFF + 4;
 
     /** End of page meta. */
-    static final int END_OF_PAGE_META = PREVIOUS_ALLOCATED_INDEX_OFF + 4;
+    static final int END_OF_PAGE_META = CANDIDATE_ALLOCATED_INDEX_OFF + 4;
 
     /** */
     public static final IOVersions<PageMetaIO> VERSIONS = new IOVersions<>(
@@ -169,15 +169,15 @@ public class PageMetaIO extends PageIO {
      * @param buf Buffer.
      * @param previousAllocatedIdx Last allocated index.
      */
-    public void setPreviousAllocatedIndex(@NotNull ByteBuffer buf, int previousAllocatedIdx) {
-        buf.putInt(PREVIOUS_ALLOCATED_INDEX_OFF, previousAllocatedIdx);
+    public void setCandidateAllocatedIndex(@NotNull ByteBuffer buf, int previousAllocatedIdx) {
+        buf.putInt(CANDIDATE_ALLOCATED_INDEX_OFF, previousAllocatedIdx);
     }
 
     /**
      * @param buf Buffer.
      */
-    public int getPreviousAllocatedIndex(@NotNull ByteBuffer buf) {
-        return buf.getInt(PREVIOUS_ALLOCATED_INDEX_OFF);
+    public int getCandidateAllocatedIndex(@NotNull ByteBuffer buf) {
+        return buf.getInt(CANDIDATE_ALLOCATED_INDEX_OFF);
     }
 
     /**
