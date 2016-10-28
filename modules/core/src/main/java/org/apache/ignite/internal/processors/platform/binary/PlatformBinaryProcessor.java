@@ -37,7 +37,7 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
     private static final int OP_PUT_META = 3;
 
     /** */
-    private static final int OP_PUT_SCHEMA = 4;
+    private static final int OP_GET_SCHEMA = 4;
 
     /**
      * Constructor.
@@ -79,7 +79,7 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
                 break;
             }
 
-            case OP_PUT_SCHEMA: {
+            case OP_GET_SCHEMA: {
                 int typeId = reader.readInt();
                 int schemaId = reader.readInt();
 

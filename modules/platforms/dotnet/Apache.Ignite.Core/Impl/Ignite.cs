@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Impl
     /// <summary>
     /// Native Ignite wrapper.
     /// </summary>
-    internal class Ignite : IIgnite, IClusterGroupEx, ICluster
+    internal class Ignite : IIgnite, ICluster
     {
         /** */
         private readonly IgniteConfiguration _cfg;
@@ -522,7 +522,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public void ResetMetrics()
         {
-            UU.TargetInLongOutLong(_prj.Target, ClusterGroupImpl.OpResetMetrics, 0);
+            _prj.ResetMetrics();
         }
 
         /** <inheritdoc /> */
@@ -737,6 +737,14 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
+        /// Gets the binary processor.
+        /// </summary>
+        internal BinaryProcessor BinaryProcessor
+        {
+            get { return _binaryProc; }
+        }
+
+        /// <summary>
         /// Configuration.
         /// </summary>
         internal IgniteConfiguration Configuration
@@ -751,12 +759,6 @@ namespace Apache.Ignite.Core.Impl
         internal void PutBinaryTypes(ICollection<BinaryType> metas)
         {
             _binaryProc.PutBinaryTypes(metas);
-        }
-
-        /** <inheritDoc /> */
-        public IBinaryType GetBinaryType(int typeId)
-        {
-            return _prj.GetBinaryType(typeId);
         }
 
         /// <summary>

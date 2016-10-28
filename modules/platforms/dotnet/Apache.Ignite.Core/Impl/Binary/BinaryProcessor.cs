@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 {
     using System.Collections.Generic;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Unmanaged;
 
@@ -34,7 +35,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             GetMeta = 1,
             GetAllMeta = 2,
-            PutMeta = 3
+            PutMeta = 3,
+            GetSchema = 4
         }
 
         /// <summary>
@@ -45,6 +47,54 @@ namespace Apache.Ignite.Core.Impl.Binary
         public BinaryProcessor(IUnmanagedTarget target, Marshaller marsh) : base(target, marsh)
         {
             // No-op.
+        }
+
+        /// <summary>
+        /// Gets metadata for specified type.
+        /// </summary>
+        public IBinaryType GetBinaryType(int typeId)
+        {
+            return DoOutInOp<IBinaryType>((int) Op.GetMeta,
+                writer => writer.WriteInt(typeId),
+                stream =>
+                {
+                    var reader = Marshaller.StartUnmarshal(stream, false);
+
+                    return reader.ReadBoolean() ? new BinaryType(reader) : null;
+                }
+            );
+        }
+
+        /// <summary>
+        /// Gets metadata for all known types.
+        /// </summary>
+        public List<IBinaryType> GetBinaryTypes()
+        {
+            return DoInOp((int) Op.GetAllMeta, s =>
+            {
+                var reader = Marshaller.StartUnmarshal(s);
+
+                var size = reader.ReadInt();
+
+                var res = new List<IBinaryType>(size);
+
+                for (var i = 0; i < size; i++)
+                    res.Add(reader.ReadBoolean() ? new BinaryType(reader) : null);
+
+                return res;
+            });
+        }
+
+        /// <summary>
+        /// Gets the schema.
+        /// </summary>
+        public int[] GetSchema(int typeId, int schemaId)
+        {
+            return DoOutInOp<int[]>((int) Op.GetSchema, writer =>
+            {
+                writer.WriteInt(typeId);
+                writer.WriteInt(schemaId);
+            });
         }
 
         /// <summary>

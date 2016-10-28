@@ -29,7 +29,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Compute;
     using Apache.Ignite.Core.Impl.Events;
@@ -43,7 +42,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
     /// <summary>
     /// Ignite projection implementation.
     /// </summary>
-    internal class ClusterGroupImpl : PlatformTarget, IClusterGroupEx
+    internal class ClusterGroupImpl : PlatformTarget, IClusterGroup
     {
         /** Attribute: platform. */
         private const string AttrPlatform = "org.apache.ignite.platform";
@@ -53,9 +52,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
 
         /** Initial topver; invalid from Java perspective, so update will be triggered when this value is met. */
         private const int TopVerInit = 0;
-
-        /** */
-        private const int OpAllMetadata = 1;
 
         /** */
         private const int OpForAttribute = 2;
@@ -76,9 +72,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
         private const int OpForNodeIds = 7;
 
         /** */
-        private const int OpMetadata = 8;
-
-        /** */
         private const int OpMetrics = 9;
 
         /** */
@@ -97,13 +90,10 @@ namespace Apache.Ignite.Core.Impl.Cluster
         private const int OpTopology = 14;
 
         /** */
-        private const int OpSchema = 15;
-
-        /** */
         private const int OpForRemotes = 17;
 
         /** */
-        public const int OpForDaemons = 18;
+        private const int OpForDaemons = 18;
 
         /** */
         private const int OpForRandom = 19;
@@ -115,10 +105,10 @@ namespace Apache.Ignite.Core.Impl.Cluster
         private const int OpForYoungest = 21;
         
         /** */
-        public const int OpResetMetrics = 22;
+        private const int OpResetMetrics = 22;
         
         /** */
-        public const int OpForServers = 23;
+        private const int OpForServers = 23;
         
         /** Initial Ignite instance. */
         private readonly Ignite _ignite;
@@ -508,6 +498,14 @@ namespace Apache.Ignite.Core.Impl.Cluster
         }
 
         /// <summary>
+        /// Resets the metrics.
+        /// </summary>
+        public void ResetMetrics()
+        {
+            DoOutInOp(OpResetMetrics);
+        }
+
+        /// <summary>
         /// Creates new Cluster Group from given native projection.
         /// </summary>
         /// <param name="prj">Native projection.</param>
@@ -552,52 +550,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
             Debug.Assert(_nodes != null, "At least one topology update should have occurred.");
 
             return _nodes;
-        }
-
-        /** <inheritDoc /> */
-        public IBinaryType GetBinaryType(int typeId)
-        {
-            return DoOutInOp<IBinaryType>(OpMetadata,
-                writer => writer.WriteInt(typeId),
-                stream =>
-                {
-                    var reader = Marshaller.StartUnmarshal(stream, false);
-
-                    return reader.ReadBoolean() ? new BinaryType(reader) : null;
-                }
-            );
-        }
-
-        /// <summary>
-        /// Gets metadata for all known types.
-        /// </summary>
-        public List<IBinaryType> GetBinaryTypes()
-        {
-            return DoInOp(OpAllMetadata, s =>
-            {
-                var reader = Marshaller.StartUnmarshal(s);
-
-                var size = reader.ReadInt();
-
-                var res = new List<IBinaryType>(size);
-
-                for (var i = 0; i < size; i++)
-                    res.Add(reader.ReadBoolean() ? new BinaryType(reader) : null);
-
-                return res;
-            });
-        }
-
-        /// <summary>
-        /// Gets the schema.
-        /// </summary>
-        public int[] GetSchema(int typeId, int schemaId)
-        {
-            return DoOutInOp<int[]>(OpSchema, writer =>
-            {
-                writer.WriteInt(typeId);
-                writer.WriteInt(schemaId);
-            });
         }
     }
 }

@@ -270,7 +270,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             if (Ignite != null)
             {
-                IBinaryType meta = Ignite.GetBinaryType(typeId);
+                IBinaryType meta = Ignite.BinaryProcessor.GetBinaryType(typeId);
 
                 if (meta != null)
                     return meta;
