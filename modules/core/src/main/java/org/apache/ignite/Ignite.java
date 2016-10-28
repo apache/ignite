@@ -221,8 +221,9 @@ public interface Ignite extends AutoCloseable {
      *
      * @param cacheCfg Cache configuration to use.
      * @return Instance of started cache.
+     * @throws CacheException if a cache with the same name already exists
      */
-    public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg);
+    public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg) throws CacheException;
 
     /**
      * Dynamically starts new caches with the given cache configurations.
@@ -249,8 +250,9 @@ public interface Ignite extends AutoCloseable {
      *
      * @param cacheName Cache name.
      * @return Instance of started cache.
+     * @throws CacheException if a cache with the same name already exists
      */
-    public <K, V> IgniteCache<K, V> createCache(String cacheName);
+    public <K, V> IgniteCache<K, V> createCache(String cacheName) throws CacheException;
 
     /**
      * Gets existing cache with the given name or creates new one with the given configuration.
@@ -261,16 +263,18 @@ public interface Ignite extends AutoCloseable {
      *
      * @param cacheCfg Cache configuration to use.
      * @return Existing or newly created cache.
+     * @throws CacheException if error occurs
      */
-    public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg);
+    public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg) throws CacheException;
 
     /**
      * Gets existing cache with the given name or creates new one using template configuration.
      *
      * @param cacheName Cache name.
      * @return Existing or newly created cache.
+     * @throws CacheException if error occurs
      */
-    public <K, V> IgniteCache<K, V> getOrCreateCache(String cacheName);
+    public <K, V> IgniteCache<K, V> getOrCreateCache(String cacheName) throws CacheException;
 
     /**
      * Gets existing caches with the given name or created one with the given configuration.
@@ -289,8 +293,9 @@ public interface Ignite extends AutoCloseable {
      * Adds cache configuration template.
      *
      * @param cacheCfg Cache configuration template.
+     * @throws CacheException if error occurs
      */
-    public <K, V> void addCacheConfiguration(CacheConfiguration<K, V> cacheCfg);
+    public <K, V> void addCacheConfiguration(CacheConfiguration<K, V> cacheCfg) throws CacheException;
 
     /**
      * Dynamically starts new cache with the given cache configuration.
@@ -304,10 +309,11 @@ public interface Ignite extends AutoCloseable {
      * @param cacheCfg Cache configuration to use.
      * @param nearCfg Near cache configuration to use on local node in case it is not an
      *      affinity node.
+     * @throws CacheException If a cache with the same name already exists in the grid
      * @return Instance of started cache.
      */
     public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg,
-        NearCacheConfiguration<K, V> nearCfg);
+        NearCacheConfiguration<K, V> nearCfg) throws CacheException;
 
     /**
      * Gets existing cache with the given cache configuration or creates one if it does not exist.
@@ -322,9 +328,10 @@ public interface Ignite extends AutoCloseable {
      * @param cacheCfg Cache configuration.
      * @param nearCfg Near cache configuration for client.
      * @return {@code IgniteCache} instance.
+     * @throws CacheException If error occurs
      */
     public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg,
-        NearCacheConfiguration<K, V> nearCfg);
+        NearCacheConfiguration<K, V> nearCfg) throws CacheException;
 
     /**
      * Starts a near cache on local node if cache was previously started with one of the
@@ -334,8 +341,10 @@ public interface Ignite extends AutoCloseable {
      * @param cacheName Cache name.
      * @param nearCfg Near cache configuration.
      * @return Cache instance.
+     * @throws CacheException If error occurs
      */
-    public <K, V> IgniteCache<K, V> createNearCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg);
+    public <K, V> IgniteCache<K, V> createNearCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg)
+        throws CacheException;
 
     /**
      * Gets existing near cache with the given name or creates a new one.
@@ -343,15 +352,18 @@ public interface Ignite extends AutoCloseable {
      * @param cacheName Cache name.
      * @param nearCfg Near configuration.
      * @return {@code IgniteCache} instance.
+     * @throws CacheException If error occurs
      */
-    public <K, V> IgniteCache<K, V> getOrCreateNearCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg);
+    public <K, V> IgniteCache<K, V> getOrCreateNearCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg)
+        throws CacheException;
 
     /**
      * Stops dynamically started cache.
      *
      * @param cacheName Cache name to stop.
+     * @throws CacheException If error occurs
      */
-    public void destroyCache(String cacheName);
+    public void destroyCache(String cacheName) throws CacheException;
 
     /**
      * Stops dynamically started caches.
@@ -367,8 +379,9 @@ public interface Ignite extends AutoCloseable {
      *
      * @param name Cache name.
      * @return Instance of the cache for the specified name.
+     * @throws CacheException If error occurs
      */
-    public <K, V> IgniteCache<K, V> cache(@Nullable String name);
+    public <K, V> IgniteCache<K, V> cache(@Nullable String name) throws CacheException;
 
     /**
      * Gets the collection of names of currently available caches.
@@ -394,8 +407,9 @@ public interface Ignite extends AutoCloseable {
      *
      * @param cacheName Cache name ({@code null} for default cache).
      * @return Data streamer.
+     * @throws IllegalStateException If grid is stopping
      */
-    public <K, V> IgniteDataStreamer<K, V> dataStreamer(@Nullable String cacheName);
+    public <K, V> IgniteDataStreamer<K, V> dataStreamer(@Nullable String cacheName) throws IllegalStateException;
 
     /**
      * Gets an instance of IGFS (Ignite In-Memory File System). If one is not
@@ -409,7 +423,7 @@ public interface Ignite extends AutoCloseable {
      * @return IGFS instance.
      * @throws IllegalArgumentException If IGFS with such name is not configured.
      */
-    public IgniteFileSystem fileSystem(String name);
+    public IgniteFileSystem fileSystem(String name) throws IllegalArgumentException;
 
     /**
      * Gets all instances of IGFS (Ignite In-Memory File System).
