@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -26,13 +29,17 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class GridQueryCancel {
     /** */
+    private static final Runnable EMPTY = new Runnable() {
+        @Override public void run() {
+            // No-op.
+        }
+    };
+
+    /** */
     private volatile boolean cancelled;
 
     /** */
-    private volatile boolean completed;
-
-    /** */
-    private volatile Runnable clo;
+    private final GridFutureAdapter<Runnable> cancelFut = new GridFutureAdapter<>();
 
     /**
      * Sets a cancel closure. The closure must be idempotent to multiple invocations.
@@ -40,29 +47,24 @@ public class GridQueryCancel {
      * @param clo Clo.
      */
     public void set(Runnable clo) throws QueryCancelledException{
+        assert clo != null;
+
         checkCancelled();
 
-        this.clo = clo;
+        cancelFut.onDone(clo);
     }
 
     /**
-     * Spins until a query is completed.
-     * Only one thread can enter this method.
-     * This is guaranteed by {@link org.apache.ignite.internal.processors.cache.QueryCursorImpl}
+     * Waits until query will enter cancellable state and executes cancel closure.
      */
     public void cancel() {
         cancelled = true;
 
-        int attempt = 0;
-
-        while (!completed) {
-            if (clo != null) clo.run();
-
-            try {
-                U.sleep(++attempt * 10);
-            } catch (IgniteInterruptedCheckedException ignored) {
-                return;
-            }
+        try {
+            cancelFut.get().run();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -79,6 +81,6 @@ public class GridQueryCancel {
      * The method must be called then a query is completed by any reason, typically in final block.
      */
     public void setCompleted() {
-        completed = true;
+        cancelFut.onDone(EMPTY);
     }
 }

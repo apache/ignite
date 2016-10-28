@@ -161,7 +161,7 @@ public class GridMapQueryExecutor {
                     return;
 
                 for (QueryResults ress : nodeRess.results().values())
-                    ress.cancel();
+                    ress.cancel(true);
             }
         }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
@@ -239,7 +239,7 @@ public class GridMapQueryExecutor {
         if (results == null)
             return;
 
-        results.cancel();
+        results.cancel(true);
     }
 
     /**
@@ -554,7 +554,7 @@ public class GridMapQueryExecutor {
 
                     nodeRess.results().remove(reqId);
 
-                    return;
+                    throw new QueryCancelledException();
                 }
 
                 // Run queries.
@@ -616,7 +616,7 @@ public class GridMapQueryExecutor {
             if (qr != null) {
                 nodeRess.results().remove(reqId, qr);
 
-                qr.cancel();
+                qr.cancel(false);
             }
 
             if (X.hasCause(e, GridH2RetryException.class))
@@ -891,7 +891,7 @@ public class GridMapQueryExecutor {
         /**
          * Cancels the query.
          */
-        void cancel() {
+        void cancel(boolean forceQryCancel) {
             if (canceled)
                 return;
 
@@ -906,10 +906,12 @@ public class GridMapQueryExecutor {
                     continue;
                 }
 
-                GridQueryCancel cancel = cancels[i];
+                if (forceQryCancel) {
+                    GridQueryCancel cancel = cancels[i];
 
-                if (cancel != null)
-                    cancel.cancel();
+                    if (cancel != null)
+                        cancel.cancel();
+                }
             }
         }
     }
