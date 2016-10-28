@@ -60,10 +60,10 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     private volatile boolean client;
 
     /** Client config. */
-    private volatile boolean clientConfig;
+    private volatile boolean clientCfg;
 
     /** Allow override. */
-    protected volatile boolean allowOverride;
+    protected volatile boolean allowOverwrite;
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -81,7 +81,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
         if (client && getTestGridName(0).equals(gridName)) {
             cfg.setClientMode(true);
 
-            if (clientConfig)
+            if (clientCfg)
                 cfg.setCacheConfiguration(ccfg);
         }
         else
@@ -141,14 +141,14 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
      */
     public void testLoadCacheWithDataStreamerSequentialClientWithConfig() throws Exception {
         client = true;
-        clientConfig = true;
+        clientCfg = true;
 
         try {
             loadCacheWithDataStreamerSequential();
         }
         finally {
             client = false;
-            clientConfig = false;
+            clientCfg = false;
         }
     }
 
@@ -181,7 +181,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
         IgniteInClosure<Ignite> f = new IgniteInClosure<Ignite>() {
             @Override public void apply(Ignite grid) {
                 try (IgniteDataStreamer<Integer, String> dataStreamer = grid.dataStreamer(null)) {
-                    dataStreamer.allowOverwrite(allowOverride);
+                    dataStreamer.allowOverwrite(allowOverwrite);
 
                     for (int i = 0; i < KEYS_CNT; i++) {
                         set.add(dataStreamer.addData(i, "Data"));
@@ -200,7 +200,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
         fut.get();
 
         for (IgniteFuture res : set)
-            assert res.get() == null;
+            assertNull(res.get());
 
         IgniteCache<Integer, String> cache = grid(0).cache(null);
 
@@ -226,9 +226,10 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
                             ignite.cache(null).localPeek(i, CachePeekMode.ONHEAP));
                     }
 
-                    for (int j = i; j < i + 10000; j++)
+                    for (int j = i; j < i + 10000; j++) {
                         if (!cache.containsKey(j))
                             failedKeys.add(j);
+                    }
 
                     break;
                 }
