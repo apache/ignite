@@ -330,7 +330,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 Buffer buf = bufMappings.get(nodeId);
 
                 if (buf != null)
-                    buf.onResponse(res);
+                    buf.onResponse(res, nodeId);
 
                 else if (log.isDebugEnabled())
                     log.debug("Ignoring response since node has left [nodeId=" + nodeId + ", ");
@@ -725,8 +725,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             GridCacheContext cctx = cache != null ? cache.context() : null;
 
             AffinityTopologyVersion topVer =
-                cctx == null || cctx.isLocal() ?
-                    AffinityTopologyVersion.NONE :
+                allowOverwrite() || cctx == null || cctx.isLocal() ?
+                    ctx.cache().context().exchange().readyAffinityVersion() :
                     cctx.topology().topologyVersion();
 
             for (DataStreamerEntry entry : entries) {
@@ -1717,8 +1717,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         /**
          * @param res Response.
+         * @param nodeId Node id.
          */
-        void onResponse(DataStreamerResponse res) {
+        void onResponse(DataStreamerResponse res, UUID nodeId) {
             if (log.isDebugEnabled())
                 log.debug("Received data load response: " + res);
 
@@ -1739,9 +1740,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 try {
                     GridPeerDeployAware jobPda0 = jobPda;
 
-                    err = ctx.config().getMarshaller().unmarshal(
-                        errBytes,
-                        U.resolveClassLoader(jobPda0 != null ? jobPda0.classLoader() : null, ctx.config()));
+                    err = new IgniteCheckedException("DataStreamer request failed. [node=" + nodeId + "]",
+                        ctx.config().getMarshaller().unmarshal(
+                            errBytes,
+                            U.resolveClassLoader(jobPda0 != null ? jobPda0.classLoader() : null, ctx.config())));
                 }
                 catch (IgniteCheckedException e) {
                     f.onDone(null, new IgniteCheckedException("Failed to unmarshal response.", e));
