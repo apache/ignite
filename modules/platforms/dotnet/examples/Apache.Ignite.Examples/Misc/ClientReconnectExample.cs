@@ -41,6 +41,8 @@ namespace Apache.Ignite.Examples.Misc
         [STAThread]
         public static void Main()
         {
+            // TODO: Start two nodes within a process instead of using Apache.Ignite.exe
+
             Console.WriteLine();
             Console.WriteLine(">>> Client reconnect example started.");
 
