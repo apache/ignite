@@ -45,7 +45,7 @@ public class BinaryConfiguration {
     private BinarySerializer serializer;
 
     /** Identity. */
-    private BinaryIdentityResolver identity;
+    private BinaryIdentityResolver identityRslvr;
 
     /** Types. */
     private Collection<BinaryTypeConfiguration> typeCfgs;
@@ -125,17 +125,17 @@ public class BinaryConfiguration {
      *
      * @return Identity.
      */
-    @Nullable public BinaryIdentityResolver getIdentity() {
-        return identity;
+    @Nullable public BinaryIdentityResolver getIdentityResolver() {
+        return identityRslvr;
     }
 
     /**
-     * Sets identity.
+     * Sets identity resolver.
      *
-     * @param identity Identity.
+     * @param identityRslvr Identity resolver.
      */
-    public void setIdentity(@Nullable BinaryIdentityResolver identity) {
-        this.identity = identity;
+    public void setIdentityResolver(@Nullable BinaryIdentityResolver identityRslvr) {
+        this.identityRslvr = identityRslvr;
     }
 
     /**

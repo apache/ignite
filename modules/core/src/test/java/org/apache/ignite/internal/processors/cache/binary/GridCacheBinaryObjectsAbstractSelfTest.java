@@ -132,13 +132,13 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             BinaryFieldIdentityResolver id = new BinaryFieldIdentityResolver();
             id.setFieldNames("fld1", "fld3");
 
-            setIdentity(id);
+            setIdentityResolver(id);
         }});
 
         binTypes.add(new BinaryTypeConfiguration() {{
             setTypeName("CustomHashedKey");
 
-            setIdentity(new IdentityResolver());
+            setIdentityResolver(new IdentityResolver());
         }});
 
         binTypes.add(new BinaryTypeConfiguration() {{
@@ -147,7 +147,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             BinaryFieldIdentityResolver id = new BinaryFieldIdentityResolver();
             id.setFieldNames("secondField", "thirdField");
 
-            setIdentity(id);
+            setIdentityResolver(id);
         }});
 
         BinaryConfiguration binCfg = new BinaryConfiguration();

@@ -400,7 +400,7 @@ public class BinaryContext {
             binaryCfg.getNameMapper(),
             binaryCfg.getIdMapper(),
             binaryCfg.getSerializer(),
-            binaryCfg.getIdentity(),
+            binaryCfg.getIdentityResolver(),
             binaryCfg.getTypeConfigurations()
         );
 
@@ -441,7 +441,7 @@ public class BinaryContext {
                 BinaryIdMapper idMapper = U.firstNotNull(typeCfg.getIdMapper(), globalIdMapper);
                 BinaryNameMapper nameMapper = U.firstNotNull(typeCfg.getNameMapper(), globalNameMapper);
                 BinarySerializer serializer = U.firstNotNull(typeCfg.getSerializer(), globalSerializer);
-                BinaryIdentityResolver identity = U.firstNotNull(typeCfg.getIdentity(), globalIdentity);
+                BinaryIdentityResolver identity = U.firstNotNull(typeCfg.getIdentityResolver(), globalIdentity);
 
                 BinaryInternalMapper mapper = resolveMapper(nameMapper, idMapper);
 
