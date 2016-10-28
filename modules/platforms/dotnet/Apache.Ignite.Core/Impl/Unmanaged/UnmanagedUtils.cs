@@ -409,8 +409,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return target.ChangeTarget(res);
         }
 
-
-
         #endregion
 
         #region NATIVE METHODS: TARGET
