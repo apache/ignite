@@ -79,6 +79,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryReq
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteFuture;
@@ -788,8 +789,7 @@ public class GridReduceQueryExecutor {
      * @return {@code true} if exception is caused by cancel.
      */
     private boolean wasCancelled(CacheException e) {
-        return e.getSuppressed() != null && e.getSuppressed().length > 0 &&
-            e.getSuppressed()[0] instanceof QueryCancelledException;
+        return X.hasSuppressed(e, QueryCancelledException.class);
     }
 
     /**
