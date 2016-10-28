@@ -61,7 +61,8 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestCyrillicChars()
         {
-            var srcFiles = GetDotNetSourceDir().GetFiles("*.cs", SearchOption.AllDirectories);
+            var srcFiles = GetDotNetSourceDir().GetFiles("*.cs", SearchOption.AllDirectories)
+                  .Where(x => x.Name != "BinaryStringTest.cs" && x.Name != "BinarySelfTest.cs");
 
             CheckFiles(srcFiles, x => x.Contains('\u0441') || x.Contains('\u0421'), "Files with Cyrillic 'C': ");
         }

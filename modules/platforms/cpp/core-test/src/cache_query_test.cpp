@@ -772,7 +772,7 @@ struct CacheQueryTestSuiteFixture
     /** Person cache accessor. */
     Cache<int, QueryPerson> GetPersonCache()
     {
-        return grid.GetCache<int, QueryPerson>("cache");
+        return grid.GetCache<int, QueryPerson>("QueryPerson");
     }
 
     /** Relation cache accessor. */

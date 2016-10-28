@@ -101,6 +101,13 @@ public class HadoopPlannerMockJob implements HadoopJob {
         throwUnsupported();
     }
 
+    /** {@inheritDoc} */
+    @Override public String igniteWorkDirectory() {
+        throwUnsupported();
+
+        return null;
+    }
+
     /**
      * Throw {@link UnsupportedOperationException}.
      */

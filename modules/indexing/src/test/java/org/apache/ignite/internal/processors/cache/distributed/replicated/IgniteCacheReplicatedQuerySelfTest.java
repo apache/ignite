@@ -53,6 +53,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testsuites.IgniteIgnore;
 import org.apache.ignite.transactions.Transaction;
 import org.springframework.util.ReflectionUtils;
 
@@ -354,9 +355,8 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     /**
      * @throws Exception If failed.
      */
+    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-613", forceFailure = true)
     public void testNodeLeft() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-613");
-
         Ignite g = startGrid("client");
 
         try {

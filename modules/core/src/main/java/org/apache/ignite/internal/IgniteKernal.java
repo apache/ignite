@@ -126,6 +126,7 @@ import org.apache.ignite.internal.processors.offheap.GridOffHeapProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformNoopProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
+import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.port.GridPortProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -666,6 +667,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param mgmtExecSvc Management executor service.
      * @param igfsExecSvc IGFS executor service.
      * @param restExecSvc Reset executor service.
+     * @param affExecSvc Affinity executor service.
+     * @param idxExecSvc Indexing executor service.
      * @param errHnd Error handler to use for notification about startup problems.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
@@ -679,6 +682,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ExecutorService mgmtExecSvc,
         ExecutorService igfsExecSvc,
         ExecutorService restExecSvc,
+        ExecutorService affExecSvc,
+        @Nullable ExecutorService idxExecSvc,
         IgniteStripedThreadPoolExecutor callbackExecSvc,
         GridAbsClosure errHnd)
         throws IgniteCheckedException
@@ -784,6 +789,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 mgmtExecSvc,
                 igfsExecSvc,
                 restExecSvc,
+                affExecSvc,
+                idxExecSvc,
                 callbackExecSvc,
                 plugins);
 
@@ -792,8 +799,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             ClusterProcessor clusterProc = new ClusterProcessor(ctx);
 
             startProcessor(clusterProc);
-
-            fillNodeAttributes(clusterProc.updateNotifierEnabled());
 
             U.onGridStart();
 
@@ -826,6 +831,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             addHelper(HADOOP_HELPER.createIfInClassPath(ctx, false));
 
             startProcessor(new IgnitePluginProcessor(ctx, cfg, plugins));
+
+            startProcessor(new PoolProcessor(ctx));
 
             // Off-heap processor has no dependencies.
             startProcessor(new GridOffHeapProcessor(ctx));
@@ -895,6 +902,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 provider.start(ctx.plugins().pluginContextForProvider(provider));
             }
+
+            fillNodeAttributes(clusterProc.updateNotifierEnabled());
 
             gw.writeLock();
 

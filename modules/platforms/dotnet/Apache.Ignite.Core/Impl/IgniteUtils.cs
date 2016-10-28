@@ -394,7 +394,7 @@ namespace Apache.Ignite.Core.Impl
         /// Creates a uniquely named, empty temporary directory on disk and returns the full path of that directory.
         /// </summary>
         /// <returns>The full path of the temporary directory.</returns>
-        private static string GetTempDirectoryName()
+        internal static string GetTempDirectoryName()
         {
             while (true)
             {

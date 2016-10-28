@@ -2668,10 +2668,17 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         ClassProperty(Member member) {
             this.member = member;
 
-            name = member instanceof Method && member.getName().startsWith("get") && member.getName().length() > 3 ?
-                member.getName().substring(3) : member.getName();
+            name = member.getName();
 
-            ((AccessibleObject) member).setAccessible(true);
+            if (member instanceof Method) {
+                if (member.getName().startsWith("get") && member.getName().length() > 3)
+                    name = member.getName().substring(3);
+
+                if (member.getName().startsWith("is") && member.getName().length() > 2)
+                    name = member.getName().substring(2);
+            }
+
+            ((AccessibleObject)member).setAccessible(true);
         }
 
         /**
