@@ -148,7 +148,7 @@ public class SingleConsumerSpinCircularBuffer<T> {
      * @param t Element to put.
      * @return Current size.
      */
-    public int put(T t) {
+    public int add(T t) {
         long writePos0;
 
         for (;;) {

@@ -1879,7 +1879,7 @@ public class GridNioServer<T> {
                     select = true;
 
                     try {
-                        if (!changeReqs.isEmpty())
+                        if (!changeReqs.isEmpty() && SELECTOR_SPINS != 0)
                             continue;
 
                         // Wake up every 2 seconds to check if closed.

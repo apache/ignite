@@ -333,13 +333,15 @@ public class GridIoMessage implements Message {
     public int partition() {
         if (msg instanceof GridNearAtomicUpdateRequest)
             return ((GridNearAtomicUpdateRequest)msg).partition();
+        else if (msg instanceof GridDhtAtomicUpdateRequest)
+            return ((GridDhtAtomicUpdateRequest)msg).partition();
         else
             return -1;
     }
 
+    // TODO
     public boolean response() {
-        return msg instanceof GridNearAtomicUpdateResponse ||
-            msg instanceof GridDhtAtomicUpdateResponse;
+        return false;
     }
 
     /** {@inheritDoc} */

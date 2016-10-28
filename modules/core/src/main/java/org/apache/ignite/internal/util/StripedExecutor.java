@@ -17,8 +17,12 @@
 
 package org.apache.ignite.internal.util;
 
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -31,6 +35,7 @@ public class StripedExecutor {
     /** Stripes. */
     private final Stripe[] stripes;
 
+    /** */
     private volatile boolean inited;
 
     /**
@@ -44,7 +49,7 @@ public class StripedExecutor {
         stripes = new Stripe[cnt];
 
         for (int i = 0; i < cnt; i++) {
-            Stripe stripe = new Stripe();
+            Stripe stripe = new StripeConcurrentQueue();
 
             stripes[i] = stripe;
 
@@ -78,13 +83,16 @@ public class StripedExecutor {
             stripe.awaitStop();
     }
 
+    /**
+     * @param log Logger to dump to.
+     */
     public void dumpStats(IgniteLogger log) {
         StringBuilder sb = new StringBuilder("Stats ");
 
         for (int i = 0; i < stripes.length; i++) {
             sb.append(i)
                 .append(" [cnt=").append(stripes[i].cnt)
-                .append(", qSize=").append(stripes[i].queue.size())
+                .append(", qSize=").append(stripes[i].queueSize())
                 .append("]; ");
 
             stripes[i].cnt = 0;
@@ -97,17 +105,14 @@ public class StripedExecutor {
     /**
      * Stripe.
      */
-    private static class Stripe implements Runnable {
-        /** Queue. */
-//        private final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
-        private final SingleConsumerSpinCircularBuffer<Runnable> queue = new SingleConsumerSpinCircularBuffer<>(256);
-
+    private static abstract class Stripe implements Runnable {
         /** Stopping flag. */
         private volatile boolean stopping;
 
         /** Thread executing the loop. */
-        private Thread thread;
+        protected Thread thread;
 
+        /** */
         private volatile long cnt;
 
         /**
@@ -117,7 +122,6 @@ public class StripedExecutor {
             thread = new Thread(this);
 
             thread.setName("stripe-" + idx);
-            thread.setDaemon(true);
 
             thread.start();
         }
@@ -151,7 +155,7 @@ public class StripedExecutor {
                 Runnable cmd;
 
                 try {
-                    cmd = queue.take();
+                    cmd = take();
                 }
                 catch (InterruptedException e) {
                     stopping = true;
@@ -187,9 +191,106 @@ public class StripedExecutor {
          *
          * @param cmd Command.
          */
+        abstract void execute(Runnable cmd);
+
+        /**
+         * @return Next runnable.
+         * @throws InterruptedException If interrupted.
+         */
+        abstract Runnable take() throws InterruptedException;
+
+        /**
+         * @return Queue size.
+         */
+        abstract int queueSize();
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Stripe.class, this);
+        }
+    }
+
+    /**
+     * Stripe.
+     */
+    private static class StripeSpinCircularBuffer extends Stripe {
+        /** Queue. */
+        private final SingleConsumerSpinCircularBuffer<Runnable> queue = new SingleConsumerSpinCircularBuffer<>(256);
+
+        /** {@inheritDoc} */
+        @Override Runnable take() throws InterruptedException {
+            return queue.take();
+        }
+
+        /** {@inheritDoc} */
         void execute(Runnable cmd) {
-//            queue.add(cmd);
-            queue.put(cmd);
+            queue.add(cmd);
+        }
+
+        /** {@inheritDoc} */
+        @Override int queueSize() {
+            return queue.size();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(StripeSpinCircularBuffer.class, this, super.toString());
+        }
+    }
+
+    /**
+     * Stripe.
+     */
+    private static class StripeConcurrentQueue extends Stripe {
+        /** Queue. */
+        private final Queue<Runnable> queue = new ConcurrentLinkedQueue<>();
+
+        /** */
+        private volatile boolean parked;
+
+        /** {@inheritDoc} */
+        @Override Runnable take() throws InterruptedException {
+            Runnable r = queue.poll();
+
+            if (r != null)
+                return r;
+
+            parked = true;
+
+            try {
+                for (;;) {
+                    r = queue.poll();
+
+                    if (r != null)
+                        return r;
+
+                    LockSupport.park();
+
+                    if (Thread.interrupted())
+                        throw new InterruptedException();
+                }
+            }
+            finally {
+                parked = false;
+            }
+        }
+
+        /** {@inheritDoc} */
+        void execute(Runnable cmd) {
+            queue.add(cmd);
+
+            if (parked)
+                LockSupport.unpark(thread);
+        }
+
+        /** {@inheritDoc} */
+        @Override int queueSize() {
+            return queue.size();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(StripeConcurrentQueue.class, this, super.toString());
         }
     }
 }

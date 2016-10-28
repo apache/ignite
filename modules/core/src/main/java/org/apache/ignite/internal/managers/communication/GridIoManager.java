@@ -34,6 +34,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -275,7 +276,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         if (STRIPED) {
             striped = new StripedExecutor(Runtime.getRuntime().availableProcessors());
-            responseExec = new StripedExecutor(1);
 
             // TODO
             Thread t = new Thread(new Runnable() {
@@ -732,9 +732,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (striped != null)
             striped.stop();
 
-        if (responseExec != null)
-            responseExec.stop();
-
         Arrays.fill(ioPools, null);
     }
 
@@ -954,7 +951,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     StripedExecutor striped;
-    StripedExecutor responseExec;
 
     /**
      * @param nodeId Node ID.
@@ -995,20 +991,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
 
         if (STRIPED) {
-            if (msg.partition() != -1) {
-                striped.execute(
-                    msg.partition(),
-                    c);
+            int part = msg.partition();
 
-                return;
-            }
-            else if (msg.response()) {
-                responseExec.execute(
-                    0,
-                    c);
+            striped.execute(part != -1 ? part : ThreadLocalRandom.current().nextInt(2048), c);
 
-                return;
-            }
+            return;
         }
 
         try {
