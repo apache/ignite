@@ -1516,7 +1516,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         final GridFutureAdapter waitFut =
                             (loc || allowOverride) ?
                                 null :
-                                cctx.mvcc().addDataStreamerFuture();
+                                cctx.mvcc().addDataStreamerFuture(topVer);
 
                         callFut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
                             @Override public void apply(IgniteInternalFuture<Object> t) {

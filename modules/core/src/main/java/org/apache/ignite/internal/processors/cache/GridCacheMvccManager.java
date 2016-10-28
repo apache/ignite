@@ -111,7 +111,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         new ConcurrentHashMap8<>();
 
     /** Pending data streamer futures. */
-    private final GridConcurrentHashSet<IgniteInternalFuture<?>> dataStreamerFuts = new GridConcurrentHashSet<>();
+    private final GridConcurrentHashSet<DataStreamerFuture> dataStreamerFuts = new GridConcurrentHashSet<>();
 
     /** */
     private final ConcurrentMap<IgniteUuid, GridCacheFuture<?>> futs = new ConcurrentHashMap8<>();
@@ -451,6 +451,13 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @return Collection of pending data streamer futures.
+     */
+    public Collection<DataStreamerFuture> dataStreamerFutures() {
+        return dataStreamerFuts;
+    }
+
+    /**
      * Gets future by given future ID.
      *
      * @param futVer Future ID.
@@ -481,9 +488,10 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @param topVer Topology version.
      */
-    public GridFutureAdapter addDataStreamerFuture() {
-        final GridFutureAdapter fut = new DataStreamerFuture();
+    public GridFutureAdapter addDataStreamerFuture(AffinityTopologyVersion topVer) {
+        final DataStreamerFuture fut = new DataStreamerFuture(topVer);
 
         boolean add = dataStreamerFuts.add(fut);
 
@@ -1337,6 +1345,14 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** Topology version. Instance field for toString method only. */
+        @GridToStringInclude
+        private final AffinityTopologyVersion topVer;
+
+        public DataStreamerFuture(AffinityTopologyVersion topVer) {
+            this.topVer = topVer;
+        }
+
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable Void res, @Nullable Throwable err) {
             if (super.onDone(res, err)) {
@@ -1346,6 +1362,11 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
             }
 
             return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(DataStreamerFuture.class, this, super.toString());
         }
     }
 }

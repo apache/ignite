@@ -343,7 +343,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                         req.keepBinary(),
                         updater);
 
-                    waitFut = allowOverride ? null : cctx.mvcc().addDataStreamerFuture();
+                    waitFut = allowOverride ? null : cctx.mvcc().addDataStreamerFuture(topVer);
                 }
                 else
                     fut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
