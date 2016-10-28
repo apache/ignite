@@ -483,15 +483,11 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     /**
      */
     public GridFutureAdapter addDataStreamerFuture() {
-        final GridFutureAdapter fut = new GridFutureAdapter();
+        final GridFutureAdapter fut = new DataStreamerFuture();
 
-        fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
-            @Override public void apply(IgniteInternalFuture e) {
-                dataStreamerFuts.remove(fut);
-            }
-        });
+        boolean add = dataStreamerFuts.add(fut);
 
-        dataStreamerFuts.add(fut);
+        assert add;
 
         return fut;
     }
@@ -1331,6 +1327,25 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
             return ClusterTopologyCheckedException.class.isAssignableFrom(cls) ||
                 CachePartialUpdateCheckedException.class.isAssignableFrom(cls);
+        }
+    }
+
+    /**
+     *
+     */
+    private class DataStreamerFuture extends GridFutureAdapter<Void> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override public boolean onDone(@Nullable Void res, @Nullable Throwable err) {
+            if (super.onDone(res, err)) {
+                dataStreamerFuts.remove(this);
+
+                return true;
+            }
+
+            return false;
         }
     }
 }

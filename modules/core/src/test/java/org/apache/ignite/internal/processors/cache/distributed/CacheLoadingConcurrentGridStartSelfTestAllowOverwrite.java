@@ -20,11 +20,11 @@ package org.apache.ignite.internal.processors.cache.distributed;
 /**
  *
  */
-public class CacheLoadingConcurrentGridStartSelfTestAllowOverride extends CacheLoadingConcurrentGridStartSelfTest {
+public class CacheLoadingConcurrentGridStartSelfTestAllowOverwrite extends CacheLoadingConcurrentGridStartSelfTest {
     /**
      * Default constructor.
      */
-    public CacheLoadingConcurrentGridStartSelfTestAllowOverride() {
-        allowOverride = true;
+    public CacheLoadingConcurrentGridStartSelfTestAllowOverwrite() {
+        allowOverwrite = true;
     }
 }
