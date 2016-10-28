@@ -1661,7 +1661,7 @@ public class GridNioServer<T> {
 
             if (select)
                 selector.wakeup();
-            else if (park)
+            else if (!DISABLE_PARK && park)
                 LockSupport.unpark(clientThreads[idx]);
         }
 
@@ -1872,14 +1872,14 @@ public class GridNioServer<T> {
                             processSelectedKeysOptimized(selectedKeys.flip());
                     }
 
-                    if ((!changeReqs.isEmpty() || (!DISABLE_PARK && writer && pendingAcks == 0)) &&
-                        SELECTOR_SPINS != 0)
+                    if (!changeReqs.isEmpty() ||
+                        (!DISABLE_PARK && writer && pendingAcks == 0 && SELECTOR_SPINS != 0))
                         continue;
 
                     select = true;
 
                     try {
-                        if (!changeReqs.isEmpty() && SELECTOR_SPINS != 0)
+                        if (!changeReqs.isEmpty())
                             continue;
 
                         // Wake up every 2 seconds to check if closed.
