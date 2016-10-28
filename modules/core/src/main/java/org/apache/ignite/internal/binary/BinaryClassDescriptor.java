@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryIdentityResolver;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
@@ -852,14 +853,18 @@ public class BinaryClassDescriptor {
      */
     private void postWrite(BinaryWriterExImpl writer, Object obj) {
         if (obj instanceof CacheObjectImpl)
+            // No need to call "postWriteHashCode" here becuase we do not care about hash code.
             writer.postWrite(userType, registered, 0, false);
         else if (obj instanceof BinaryObjectEx) {
             boolean flagSet = ((BinaryObjectEx)obj).isFlagSet(BinaryUtils.FLAG_EMPTY_HASH_CODE);
 
             writer.postWrite(userType, registered, obj.hashCode(), !flagSet);
+            writer.postWriteHashCode(registered ? null : cls.getName());
         }
-        else
+        else {
             writer.postWrite(userType, registered, obj.hashCode(), overridesHashCode);
+            writer.postWriteHashCode(registered ? null : cls.getName());
+        }
     }
 
     /**
