@@ -910,7 +910,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 @Override public void run() {
                     try {
                         stmt.cancel();
-                    } catch (SQLException ignored) {
+                    }
+                    catch (SQLException ignored) {
                         // No-op.
                     }
                 }
@@ -928,9 +929,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteCheckedException("Failed to execute SQL query.", e);
         }
         finally {
-            if(cancel != null)
-                cancel.setCompleted();
-
             if (timeoutMillis > 0)
                 ((Session)((JdbcConnection)conn).getSession()).setQueryTimeout(0);
         }
@@ -1088,13 +1086,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final GridQueryCancel cancel) {
         return new Iterable<List<?>>() {
             @Override public Iterator<List<?>> iterator() {
-                try {
-                    return rdcQryExec.query(cctx, qry, keepCacheObj, enforceJoinOrder, timeoutMillis, cancel);
-                }
-                finally {
-                    if (cancel != null)
-                        cancel.setCompleted();
-                }
+                return rdcQryExec.query(cctx, qry, keepCacheObj, enforceJoinOrder, timeoutMillis, cancel);
             }
         };
     }

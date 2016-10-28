@@ -636,15 +636,6 @@ public class GridMapQueryExecutor {
                 for (int i = 0; i < reserved.size(); i++)
                     reserved.get(i).release();
             }
-
-            // Ensure all cancels state is correct.
-            if (qr != null)
-                for (int i = 0; i < qr.cancels.length; i++) {
-                    GridQueryCancel cancel = qr.cancels[i];
-
-                    if (cancel != null)
-                        cancel.setCompleted();
-                }
         }
     }
 

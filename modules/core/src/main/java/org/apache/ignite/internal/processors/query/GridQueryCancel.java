@@ -17,70 +17,59 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.cache.query.QueryCancelledException;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.internal.U;
+
+import static org.apache.ignite.internal.processors.query.GridQueryCancel.State.CANCEL_REQUESTED;
+import static org.apache.ignite.internal.processors.query.GridQueryCancel.State.CANCELLABLE;
 
 /**
  * Holds query cancel state.
  */
 public class GridQueryCancel {
     /** */
-    private static final Runnable EMPTY = new Runnable() {
-        @Override public void run() {
-            // No-op.
-        }
-    };
+    private final static AtomicReferenceFieldUpdater<GridQueryCancel, State> STATE_UPDATER =
+        AtomicReferenceFieldUpdater.newUpdater(GridQueryCancel.class, State.class, "state");
 
     /** */
-    private volatile boolean cancelled;
+    private volatile State state = null;
 
     /** */
-    private final GridFutureAdapter<Runnable> cancelFut = new GridFutureAdapter<>();
+    private volatile Runnable clo;
 
     /**
-     * Sets a cancel closure. The closure must be idempotent to multiple invocations.
+     * Sets a cancel closure.
      *
      * @param clo Clo.
      */
-    public void set(Runnable clo) throws QueryCancelledException{
+    public void set(Runnable clo) throws QueryCancelledException {
         assert clo != null;
 
-        checkCancelled();
+        this.clo = clo;
 
-        cancelFut.onDone(clo);
+        if (!STATE_UPDATER.compareAndSet(this, null, CANCELLABLE))
+            throw new QueryCancelledException();
     }
 
     /**
-     * Waits until query will enter cancellable state and executes cancel closure.
+     * Executes cancel closure if a query is in appropriate state.
      */
     public void cancel() {
-        cancelled = true;
-
-        try {
-            cancelFut.get().run();
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        if (!STATE_UPDATER.compareAndSet(this, null, CANCEL_REQUESTED))
+            clo.run();
     }
 
     /**
      * Stops query execution if a user requested cancel.
      */
     public void checkCancelled() throws QueryCancelledException{
-        if (cancelled)
+        if (state==CANCEL_REQUESTED)
             throw new QueryCancelledException();
     }
 
-    /**
-     * Sets completed state.
-     * The method must be called then a query is completed by any reason, typically in final block.
-     */
-    public void setCompleted() {
-        cancelFut.onDone(EMPTY);
+    /** Query cancel state */
+    protected enum State {
+        /** Cancel requested. */CANCEL_REQUESTED,
+        /** Query in cancellable state. */CANCELLABLE,
     }
 }
