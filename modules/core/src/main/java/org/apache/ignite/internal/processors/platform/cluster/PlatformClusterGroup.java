@@ -74,9 +74,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     private static final int OP_TOPOLOGY = 14;
 
     /** */
-    private static final int OP_SCHEMA = 15;
-
-    /** */
     private static final int OP_FOR_OTHERS = 16;
 
     /** */
@@ -194,15 +191,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 long topVer = reader.readLong();
 
                 platformCtx.writeNodes(writer, topology(topVer));
-
-                break;
-            }
-
-            case OP_SCHEMA: {
-                int typeId = reader.readInt();
-                int schemaId = reader.readInt();
-
-                platformCtx.writeSchema(writer, typeId, schemaId);
 
                 break;
             }
