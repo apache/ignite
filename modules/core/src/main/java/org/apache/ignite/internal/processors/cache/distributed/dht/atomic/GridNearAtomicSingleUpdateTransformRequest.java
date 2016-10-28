@@ -92,7 +92,7 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
      * @param clientReq Client node request flag.
      * @param addDepInfo Deployment info flag.
      */
-    public GridNearAtomicSingleUpdateTransformRequest(
+    GridNearAtomicSingleUpdateTransformRequest(
         int cacheId,
         UUID nodeId,
         GridCacheVersion futVer,
@@ -218,8 +218,6 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
         if (entryProcessorBytes != null && entryProcessor == null)
             entryProcessor = ctx.marshaller().unmarshal(
                 entryProcessorBytes,
@@ -235,6 +233,7 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
     /** {@inheritDoc} */
     @Override public void cleanup(boolean clearKey) {
         super.cleanup(clearKey);
+
         entryProcessor = null;
     }
 

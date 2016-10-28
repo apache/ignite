@@ -36,6 +36,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ *
+ */
 public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingleUpdateRequest {
     /** */
     private static final long serialVersionUID = 0L;
@@ -71,7 +74,7 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
      * @param clientReq Client node request flag.
      * @param addDepInfo Deployment info flag.
      */
-    public GridNearAtomicSingleUpdateFilterRequest(
+    GridNearAtomicSingleUpdateFilterRequest(
         int cacheId,
         UUID nodeId,
         GridCacheVersion futVer,
@@ -109,6 +112,8 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
             addDepInfo
         );
 
+        assert filter != null && filter.length > 0;
+
         this.filter = filter;
     }
 
@@ -145,9 +150,9 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
         if (filter != null) {
+            GridCacheContext cctx = ctx.cacheContext(cacheId);
+
             for (CacheEntryPredicate p : filter) {
                 if (p != null)
                     p.finishUnmarshal(cctx, ldr);
@@ -220,5 +225,4 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
         return S.toString(GridNearAtomicSingleUpdateFilterRequest.class, this, "filter", Arrays.toString(filter),
             "parent", super.toString());
     }
-
 }

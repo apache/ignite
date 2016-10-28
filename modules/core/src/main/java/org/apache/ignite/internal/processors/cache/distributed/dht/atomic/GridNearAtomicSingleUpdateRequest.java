@@ -86,7 +86,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
      * @param clientReq Client node request flag.
      * @param addDepInfo Deployment info flag.
      */
-    public GridNearAtomicSingleUpdateRequest(
+    GridNearAtomicSingleUpdateRequest(
         int cacheId,
         UUID nodeId,
         GridCacheVersion futVer,
@@ -122,7 +122,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
             clientReq,
             addDepInfo
         );
-
     }
 
     /**

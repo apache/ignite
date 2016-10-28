@@ -37,8 +37,8 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNearAtomicAbstractUpdateRequest {
-
-    public static final CacheEntryPredicate[] NO_FILTER = new CacheEntryPredicate[0];
+    /** */
+    private static final CacheEntryPredicate[] NO_FILTER = new CacheEntryPredicate[0];
 
     /** Fast map flag. */
     @GridDirectTransient
