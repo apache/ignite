@@ -78,6 +78,7 @@ public class PageMetaIO extends PageIO {
         setLastSuccessfulBackupId(buf, 0);
         setNextBackupId(buf, 1);
         setLastAllocatedIndex(buf, 0);
+        setCandidateAllocatedIndex(buf, 0);
     }
 
     /**

@@ -17,25 +17,26 @@
 
 package org.apache.ignite.internal.pagemem.wal.record.delta;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageMetaIO;
 
+import java.nio.ByteBuffer;
+
 /**
  *
  */
-public class MetaPageUpdateLastAllocatedIndex extends PageDeltaRecord {
+public class MetaPageUpdateCandidateAllocatedIndex extends PageDeltaRecord {
     /** */
-    private final int lastAllocatedIdx;
+    private final int candidateAllocatedIdx;
 
     /**
      * @param pageId Meta page ID.
      */
-    public MetaPageUpdateLastAllocatedIndex(int cacheId, long pageId, int lastAllocatedIdx) {
+    public MetaPageUpdateCandidateAllocatedIndex(int cacheId, long pageId, int candidateAllocatedIdx) {
         super(cacheId, pageId);
 
-        this.lastAllocatedIdx = lastAllocatedIdx;
+        this.candidateAllocatedIdx = candidateAllocatedIdx;
     }
 
     /** {@inheritDoc} */
@@ -44,19 +45,19 @@ public class MetaPageUpdateLastAllocatedIndex extends PageDeltaRecord {
 
         PageMetaIO io = PageMetaIO.VERSIONS.forVersion(PageIO.getVersion(buf));
 
-        io.setLastAllocatedIndex(buf, lastAllocatedIdx);
+        io.setCandidateAllocatedIndex(buf, candidateAllocatedIdx);
     }
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return RecordType.META_PAGE_UPDATE_LAST_ALLOCATED_INDEX;
+        return RecordType.META_PAGE_UPDATE_CANDIDATE_ALLOCATED_INDEX;
     }
 
     /**
      * @return Root ID.
      */
-    public int lastAllocatedIndex() {
-        return lastAllocatedIdx;
+    public int candidateAllocatedIndex() {
+        return candidateAllocatedIdx;
     }
 }
 

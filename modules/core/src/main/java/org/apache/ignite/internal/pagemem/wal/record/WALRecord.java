@@ -142,7 +142,13 @@ public abstract class WALRecord {
         META_PAGE_UPDATE_LAST_SUCCESSFUL_FULL_BACKUP_ID,
 
         /** Meta page update next backup id. */
-        META_PAGE_UPDATE_NEXT_BACKUP_ID
+        META_PAGE_UPDATE_NEXT_BACKUP_ID,
+
+        /** Meta page update last allocated index. */
+        META_PAGE_UPDATE_LAST_ALLOCATED_INDEX,
+
+        /** Meta page update candidate allocated index. */
+        META_PAGE_UPDATE_CANDIDATE_ALLOCATED_INDEX
         ;
 
         /** */
