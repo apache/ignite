@@ -1345,7 +1345,7 @@ public class GridReduceQueryExecutor {
                 latch.countDown();
 
             for (GridMergeIndex idx : idxs) // Fail all merge indexes.
-                idx.fail(nodeId);
+                idx.fail(nodeId, o instanceof CacheException ? (CacheException) o : null);
         }
 
         /**

@@ -20,19 +20,20 @@ package org.apache.ignite.internal.processors.query;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.cache.query.QueryCancelledException;
 
-import static org.apache.ignite.internal.processors.query.GridQueryCancel.State.CANCEL_REQUESTED;
-import static org.apache.ignite.internal.processors.query.GridQueryCancel.State.CANCELLABLE;
-
 /**
  * Holds query cancel state.
  */
 public class GridQueryCancel {
-    /** */
-    private final static AtomicReferenceFieldUpdater<GridQueryCancel, State> STATE_UPDATER =
-        AtomicReferenceFieldUpdater.newUpdater(GridQueryCancel.class, State.class, "state");
+    /** No-op runnable. */
+    private static final Runnable NO_OP = new Runnable() {
+        @Override public void run() {
+            // No-op.
+        }
+    };
 
     /** */
-    private volatile State state = null;
+    private static final AtomicReferenceFieldUpdater<GridQueryCancel, Runnable> STATE_UPDATER =
+        AtomicReferenceFieldUpdater.newUpdater(GridQueryCancel.class, Runnable.class, "clo");
 
     /** */
     private volatile Runnable clo;
@@ -45,31 +46,31 @@ public class GridQueryCancel {
     public void set(Runnable clo) throws QueryCancelledException {
         assert clo != null;
 
-        this.clo = clo;
+        while(true) {
+            Runnable tmp = this.clo;
 
-        if (!STATE_UPDATER.compareAndSet(this, null, CANCELLABLE))
-            throw new QueryCancelledException();
+            if (STATE_UPDATER.compareAndSet(this, tmp, clo)) {
+                if (tmp == NO_OP)
+                    throw new QueryCancelledException();
+
+                return;
+            }
+        }
     }
 
     /**
      * Executes cancel closure if a query is in appropriate state.
      */
     public void cancel() {
-        if (!STATE_UPDATER.compareAndSet(this, null, CANCEL_REQUESTED))
+        if (!STATE_UPDATER.compareAndSet(this, null, NO_OP))
             clo.run();
     }
 
     /**
      * Stops query execution if a user requested cancel.
      */
-    public void checkCancelled() throws QueryCancelledException{
-        if (state==CANCEL_REQUESTED)
+    public void checkCancelled() throws QueryCancelledException {
+        if (clo == NO_OP)
             throw new QueryCancelledException();
-    }
-
-    /** Query cancel state */
-    protected enum State {
-        /** Cancel requested. */CANCEL_REQUESTED,
-        /** Query in cancellable state. */CANCELLABLE,
     }
 }

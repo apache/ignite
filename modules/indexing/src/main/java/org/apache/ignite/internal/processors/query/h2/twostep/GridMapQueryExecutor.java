@@ -591,7 +591,7 @@ public class GridMapQueryExecutor {
                     if (qr.canceled) {
                         qr.result(i).close();
 
-                        return;
+                        throw new QueryCancelledException();
                     }
 
                     // Send the first page.
