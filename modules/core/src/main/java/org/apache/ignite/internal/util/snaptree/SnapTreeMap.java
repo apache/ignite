@@ -35,6 +35,8 @@
 
 package org.apache.ignite.internal.util.snaptree;
 
+import org.apache.ignite.internal.util.*;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -102,7 +104,9 @@ import java.util.concurrent.ConcurrentNavigableMap;
  *  @author Nathan Bronson
  */
 @SuppressWarnings("ALL")
-public class SnapTreeMap<K,V> extends AbstractMap<K,V> implements ConcurrentNavigableMap<K,V>, Cloneable, Serializable {
+public class SnapTreeMap<K, V> extends AbstractMap<K, V> implements ConcurrentNavigableMap<K, V>, Cloneable,
+    Serializable, IgniteTree<K, V> {
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -2341,7 +2345,30 @@ public class SnapTreeMap<K,V> extends AbstractMap<K,V> implements ConcurrentNavi
         return new SubMap(this, null, null, false, null, null, false, true);
     }
 
-    private static class SubMap<K,V> extends AbstractMap<K,V> implements ConcurrentNavigableMap<K,V>, Serializable {
+    //////////////// IgniteTree
+
+    /** {@inheritDoc} */
+    @Override public IgniteTree<K, V> headTree(final K toKey, final boolean inclusive) {
+        return new SubMap<K,V>(this, null, null, false, toKey, comparable(toKey), inclusive, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteTree<K, V> tailTree(final K fromKey, final boolean inclusive) {
+        return new SubMap<K,V>(this, fromKey, comparable(fromKey), inclusive, null, null, false, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteTree<K, V> subTree(final K fromKey, final boolean fromInclusive, final K toKey,
+        final boolean toInclusive) {
+        final Comparable<? super K> fromCmp = comparable(fromKey);
+        if (fromCmp.compareTo(toKey) > 0) {
+            throw new IllegalArgumentException();
+        }
+        return new SubMap<K,V>(this, fromKey, fromCmp, fromInclusive, toKey, comparable(toKey), toInclusive, false);
+    }
+
+    private static class SubMap<K, V> extends AbstractMap<K, V> implements ConcurrentNavigableMap<K, V>, Serializable,
+        IgniteTree<K, V> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2862,6 +2889,24 @@ public class SnapTreeMap<K,V> extends AbstractMap<K,V> implements ConcurrentNavi
 
             minCmp = minKey == null ? null : m.comparable(minKey);
             maxCmp = maxKey == null ? null : m.comparable(maxKey);
+        }
+
+        /////// IgniteTree
+
+        /** {@inheritDoc} */
+        @Override public IgniteTree<K, V> headTree(final K toKey, final boolean inclusive) {
+            return headMap(toKey, inclusive);
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteTree<K, V> tailTree(final K fromKey, final boolean inclusive) {
+            return tailMap(fromKey, inclusive);
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteTree<K, V> subTree(final K fromKey, final boolean fromInclusive, final K toKey,
+            final boolean toInclusive) {
+            return subMap(fromKey, fromInclusive, toKey, toInclusive);
         }
     }
 

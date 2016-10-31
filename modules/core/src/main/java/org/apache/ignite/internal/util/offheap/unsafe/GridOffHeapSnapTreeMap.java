@@ -55,6 +55,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -106,8 +107,9 @@ import org.jsr166.ConcurrentHashMap8;
  *  @author Nathan Bronson
  */
 @SuppressWarnings("ALL")
-public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer,V extends GridOffHeapSmartPointer>
-    extends AbstractMap<K,V> implements ConcurrentNavigableMap<K, V>, Cloneable, AutoCloseable, GridReservable {
+public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends GridOffHeapSmartPointer>
+    extends AbstractMap<K, V>
+    implements ConcurrentNavigableMap<K, V>, Cloneable, AutoCloseable, GridReservable, IgniteTree<K, V> {
     /** This is a special value that indicates that an optimistic read failed. */
     private static final GridOffHeapSmartPointer SpecialRetry = new GridOffHeapSmartPointer() {
         @Override public long pointer() {
@@ -3820,10 +3822,32 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer,V extends 
         return new SubMap(this, null, null, false, null, null, false, true);
     }
 
+    //////////////// IgniteTree
+
+    /** {@inheritDoc} */
+    @Override public IgniteTree<K, V> headTree(final K toKey, final boolean inclusive) {
+        return new SubMap(this, null, null, false, toKey, comparable(toKey), inclusive, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteTree<K, V> tailTree(final K fromKey, final boolean inclusive) {
+        return new SubMap(this, fromKey, comparable(fromKey), inclusive, null, null, false, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteTree<K, V> subTree(final K fromKey, final boolean fromInclusive, final K toKey,
+        final boolean toInclusive) {
+        final Comparable<? super K> fromCmp = comparable(fromKey);
+        if (fromCmp.compareTo(toKey) > 0) {
+            throw new IllegalArgumentException();
+        }
+        return new SubMap(this, fromKey, fromCmp, fromInclusive, toKey, comparable(toKey), toInclusive, false);
+    }
+
     /**
      * Submap.
      */
-    private class SubMap extends AbstractMap<K,V> implements ConcurrentNavigableMap<K,V> {
+    private class SubMap extends AbstractMap<K,V> implements ConcurrentNavigableMap<K,V>, IgniteTree<K, V> {
         /** */
         private final GridOffHeapSnapTreeMap<K,V> m;
 
@@ -4428,6 +4452,26 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer,V extends 
         /** {@inheritDoc} */
         @Override public NavigableSet<K> descendingKeySet() {
             return descendingMap().navigableKeySet();
+        }
+
+        /////////// IgniteTree
+
+        /** {@inheritDoc} */
+        @Override public IgniteTree<K, V> headTree(K toKey, boolean inclusive) {
+            return headMap(toKey, inclusive);
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteTree<K, V> tailTree(K fromKey, boolean inclusive) {
+            return tailMap(fromKey, inclusive);
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteTree<K, V> subTree(final K fromKey,
+            final boolean fromInclusive,
+            final K toKey,
+            final boolean toInclusive) {
+            return subMap(fromKey, fromInclusive, toKey, toInclusive);
         }
     }
 

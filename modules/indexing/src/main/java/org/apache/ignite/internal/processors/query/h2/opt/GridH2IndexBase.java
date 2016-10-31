@@ -17,16 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.Future;
@@ -52,7 +43,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRange
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
-import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.GridFilteredIterator;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
@@ -465,11 +456,19 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
                 if (msg.bounds() != null) {
                     // This is the first request containing all the search rows.
-                    ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> snapshot0 = qctx.getSnapshot(idxId);
+                    Object snapshot0 = qctx.getSnapshot(idxId);
 
                     assert !msg.bounds().isEmpty() : "empty bounds";
 
-                    src = new RangeSource(msg.bounds(), snapshot0, qctx.filter());
+                    IgniteTree snapshotTree;
+
+                    if (snapshot0 instanceof IgniteTree)
+                        snapshotTree = (IgniteTree)snapshot0;
+                    else
+                        snapshotTree = new IgniteNavigableMapTree(
+                            (NavigableMap<GridSearchRowPointer, GridH2Row>) snapshot0);
+
+                    src = new RangeSource(msg.bounds(), snapshotTree, qctx.filter());
                 }
                 else {
                     // This is request to fetch next portion of data.
@@ -1371,7 +1370,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
         Iterator<GridH2Row> curRange = emptyIterator();
 
         /** */
-        final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree;
+        final IgniteTree tree;
 
         /** */
         final IndexingQueryFilter filter;
@@ -1383,7 +1382,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
          */
         RangeSource(
             Iterable<GridH2RowRangeBounds> bounds,
-            ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree,
+            IgniteTree tree,
             IndexingQueryFilter filter
         ) {
             this.filter = filter;
@@ -1443,7 +1442,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 SearchRow first = toSearchRow(bounds.first());
                 SearchRow last = toSearchRow(bounds.last());
 
-                ConcurrentNavigableMap<GridSearchRowPointer,GridH2Row> t = tree != null ? tree : treeForRead();
+                IgniteTree t = tree != null ? tree : treeForRead();
 
                 curRange = doFind0(t, first, true, last, filter);
 
@@ -1462,7 +1461,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
     /**
      * @return Snapshot for current thread if there is one.
      */
-    protected ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> treeForRead() {
+    protected IgniteTree treeForRead() {
         throw new UnsupportedOperationException();
     }
 
@@ -1474,7 +1473,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param filter Filter.
      * @return Iterator over rows in given range.
      */
-    protected Iterator<GridH2Row> doFind0(ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> t,
+    protected Iterator<GridH2Row> doFind0(IgniteTree t,
         @Nullable SearchRow first,
         boolean includeFirst,
         @Nullable SearchRow last,
@@ -1539,6 +1538,63 @@ public abstract class GridH2IndexBase extends BaseIndex {
             assert !isValRequired || val != null;
 
             return fltr.apply(key, val);
+        }
+    }
+
+    /**
+     * Adapter from {@link NavigableMap} to {@link IgniteTree}.
+     */
+    protected static class IgniteNavigableMapTree implements IgniteTree<GridSearchRowPointer, GridH2Row> {
+        private NavigableMap<GridSearchRowPointer, GridH2Row> tree;
+
+        /**
+         * @param map the {@link NavigableMap} which should be adapted.
+         */
+        public IgniteNavigableMapTree(final NavigableMap<GridSearchRowPointer, GridH2Row> map) {
+            this.tree = map;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridH2Row put(final GridSearchRowPointer key, final GridH2Row value) {
+            return tree.put(key, value);
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridH2Row get(final Object key) {
+            return tree.get(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridH2Row remove(final Object key) {
+            return tree.remove(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int size() {
+            return tree.size();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<GridH2Row> values() {
+            return tree.values();
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public IgniteTree<GridSearchRowPointer, GridH2Row> headTree(GridSearchRowPointer toKey, boolean inclusive) {
+            return new IgniteNavigableMapTree(tree.headMap(toKey, inclusive));
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public IgniteTree<GridSearchRowPointer, GridH2Row> tailTree(GridSearchRowPointer fromKey, boolean inclusive) {
+            return new IgniteNavigableMapTree(tree.tailMap(fromKey, inclusive));
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteTree<GridSearchRowPointer, GridH2Row> subTree(GridSearchRowPointer fromKey,
+            boolean fromInclusive, GridSearchRowPointer toKey, boolean toInclusive) {
+            return new IgniteNavigableMapTree(tree.subMap(fromKey, fromInclusive, toKey, toInclusive));
         }
     }
 }

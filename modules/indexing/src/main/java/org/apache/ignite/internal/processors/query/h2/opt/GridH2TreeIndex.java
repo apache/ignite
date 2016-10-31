@@ -23,7 +23,8 @@ import java.util.List;
 import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import org.apache.ignite.internal.util.GridEmptyIterator;
+
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSnapTreeMap;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.snaptree.SnapTreeMap;
@@ -48,7 +49,7 @@ import org.jetbrains.annotations.Nullable;
 @SuppressWarnings("ComparatorNotSerializable")
 public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridSearchRowPointer> {
     /** */
-    private final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree;
+    private final IgniteTree<GridSearchRowPointer, GridH2Row> tree;
 
     /** */
     private final boolean snapshotEnabled;
@@ -91,7 +92,8 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
                 };
             }
             else {
-                tree = new ConcurrentSkipListMap<>(
+                tree = new IgniteNavigableMapTree(
+                    new ConcurrentSkipListMap<>(
                         new Comparator<GridSearchRowPointer>() {
                             @Override public int compare(GridSearchRowPointer o1, GridSearchRowPointer o2) {
                                 if (o1 instanceof ComparableRow)
@@ -103,7 +105,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
                                 return compareRows(o1, o2);
                             }
                         }
-                );
+                ));
             }
         }
         else {
@@ -148,11 +150,11 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     }
 
     /** {@inheritDoc} */
-    protected final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> treeForRead() {
+    protected final IgniteTree treeForRead() {
         if (!snapshotEnabled)
             return tree;
 
-        ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> res = threadLocalSnapshot();
+        IgniteTree res = threadLocalSnapshot();
 
         if (res == null)
             res = tree;
@@ -268,14 +270,14 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
      */
     @SuppressWarnings("unchecked")
     private Iterator<GridH2Row> doFind(@Nullable SearchRow first, boolean includeFirst, @Nullable SearchRow last) {
-        ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> t = treeForRead();
+        IgniteTree t = treeForRead();
 
         return doFind0(t, first, includeFirst, last, threadLocalFilter());
     }
 
     /** {@inheritDoc} */
     @Override protected final Iterator<GridH2Row> doFind0(
-        ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> t,
+        IgniteTree t,
         @Nullable SearchRow first,
         boolean includeFirst,
         @Nullable SearchRow last,
@@ -283,7 +285,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     ) {
         includeFirst &= first != null;
 
-        NavigableMap<GridSearchRowPointer, GridH2Row> range = subTree(t, comparable(first, includeFirst ? -1 : 1),
+        IgniteTree<GridSearchRowPointer, GridH2Row> range = subTree(t, comparable(first, includeFirst ? -1 : 1),
             comparable(last, 1));
 
         if (range == null)
@@ -310,30 +312,30 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     /**
      * Takes sup-map from given one.
      *
-     * @param map Map.
+     * @param tree Tree.
      * @param first Lower bound.
      * @param last Upper bound.
      * @return Sub-map.
      */
     @SuppressWarnings({"IfMayBeConditional", "TypeMayBeWeakened"})
-    private NavigableMap<GridSearchRowPointer, GridH2Row> subTree(NavigableMap<GridSearchRowPointer, GridH2Row> map,
+    private IgniteTree subTree(IgniteTree tree,
         @Nullable GridSearchRowPointer first, @Nullable GridSearchRowPointer last) {
         // We take exclusive bounds because it is possible that one search row will be equal to multiple key rows
         // in tree and we must return them all.
         if (first == null) {
             if (last == null)
-                return map;
+                return tree;
             else
-                return map.headMap(last, false);
+                return tree.headTree(last, false);
         }
         else {
             if (last == null)
-                return map.tailMap(first, false);
+                return tree.tailTree(first, false);
             else {
                 if (compare(first, last) > 0)
                     return null;
 
-                return map.subMap(first, false, last, false);
+                return tree.subTree(first, false, last, false);
             }
         }
     }
