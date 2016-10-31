@@ -62,9 +62,6 @@ public class IgniteSemaphoreExample {
             // Make name of semaphore.
             final String semaphoreName = UUID.randomUUID().toString();
 
-            // Initialize semaphore.
-            IgniteSemaphore semaphore = ignite.semaphore(semaphoreName, 0, false, true);
-
             // Start consumers on all cluster nodes.
             for (int i = 0; i < NUM_CONSUMERS; i++)
                 ignite.compute().withAsync().run(new Consumer(semaphoreName));
@@ -126,10 +123,10 @@ public class IgniteSemaphoreExample {
             System.out.println("Producer finished [nodeId=" + Ignition.ignite().cluster().localNode().id() + ']');
 
             // Gets the syncing semaphore
-            IgniteSemaphore sem = Ignition.ignite().semaphore(SEM_NAME, 0, true, true);
+            IgniteSemaphore sync = Ignition.ignite().semaphore(SEM_NAME, 0, true, true);
 
             // Signals the master thread
-            sem.release();
+            sync.release();
         }
     }
 

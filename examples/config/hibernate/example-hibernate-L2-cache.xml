@@ -32,7 +32,7 @@
         <property name="connection.url">jdbc:h2:mem:example;DB_CLOSE_DELAY=-1</property>
 
         <!-- Drop and re-create the database schema on startup. -->
-        <property name="hbm2ddl.auto">create</property>
+        <property name="hbm2ddl.auto">update</property>
 
         <!-- Enable L2 cache. -->
         <property name="cache.use_second_level_cache">true</property>
