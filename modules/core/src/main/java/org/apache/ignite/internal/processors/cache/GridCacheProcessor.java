@@ -577,22 +577,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheSharedManager mgr : sharedCtx.managers())
             mgr.start(sharedCtx);
 
+        CacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
+
+        Set<String> internalCaches = internalCachesNames();
+
+        for (int i = 0; i < cfgs.length; i++) {
+            if (CU.isSystemCache(cfgs[i].getName()))
+                registerCache(internalCaches, cfgs[i]);
+        }
+
         if (globalState == CacheState.ACTIVE) {
-            CacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
-
-            Set<String> internalCaches = internalCachesNames();
-
-            for (int i = 0; i < cfgs.length; i++) {
-                if (ctx.config().isDaemon() && !CU.isMarshallerCache(cfgs[i].getName()))
-                    continue;
-
-                CacheConfiguration<?, ?> cfg = new CacheConfiguration(cfgs[i]);
-
-                cfgs[i] = cfg; // Replace original configuration value.
-
-                registerCache(internalCaches, cfg);
-            }
-
             if (sharedCtx.pageStore() != null) {
                 Set<String> savedCacheNames = sharedCtx.pageStore().savedCacheNames();
 
@@ -611,15 +605,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         registerCache(internalCaches, cfg);
                     }
                 }
-            }
-        }else {
-            CacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
-
-            Set<String> internalCaches = internalCachesNames();
-
-            for (int i = 0; i < cfgs.length; i++) {
-               if (CU.isSystemCache(cfgs[i].getName()))
-                   registerCache(internalCaches, cfgs[i]);
             }
         }
 
