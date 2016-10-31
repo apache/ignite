@@ -1060,7 +1060,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param globalState Global state to set.
      */
-    public void globalState(CacheState globalState) {
+    public void globalState(CacheState globalState) throws IgniteCheckedException {
+        if (this.globalState == CacheState.INACTIVE && globalState == CacheState.ACTIVE)
+            sharedCtx.database().onKernalStart(false);
+
         this.globalState = globalState;
     }
 
