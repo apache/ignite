@@ -23,6 +23,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,7 +32,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NavigableMap;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
@@ -110,6 +110,10 @@ public class GridReduceQueryExecutor {
     /** */
     private static final IgniteProductVersion DISTRIBUTED_JOIN_SINCE = IgniteProductVersion.fromString("1.7.0");
 
+    public static final int DEFAULT_QUERY_LOCAL_PARALLELISM_LEVEL = 8;
+
+    public final int queryLocalParallelismLevel = DEFAULT_QUERY_LOCAL_PARALLELISM_LEVEL;
+
     /** */
     private GridKernalContext ctx;
 
@@ -160,7 +164,7 @@ public class GridReduceQueryExecutor {
     private final GridSpinBusyLock busyLock;
 
     /** */
-    private final CIX2<ClusterNode,Message> locNodeHnd = new CIX2<ClusterNode,Message>() {
+    private final CIX2<ClusterNode, Message> locNodeHnd = new CIX2<ClusterNode, Message>() {
         @Override public void applyx(ClusterNode locNode, Message msg) {
             h2.mapQueryExecutor().onMessage(locNode.id(), msg);
         }
@@ -252,7 +256,7 @@ public class GridReduceQueryExecutor {
             if (processed && log.isDebugEnabled())
                 log.debug("Processed response: " + nodeId + "->" + ctx.localNodeId() + " " + msg);
         }
-        catch(Throwable th) {
+        catch (Throwable th) {
             U.error(log, "Failed to process message: " + msg, th);
         }
     }
@@ -284,6 +288,7 @@ public class GridReduceQueryExecutor {
     private void onNextPage(final ClusterNode node, GridQueryNextPageResponse msg) {
         final long qryReqId = msg.queryRequestId();
         final int qry = msg.query();
+        final int threadIdx = msg.threadIdx();
 
         final QueryRun r = runs.get(qryReqId);
 
@@ -316,7 +321,7 @@ public class GridReduceQueryExecutor {
                     }
 
                     try {
-                        GridQueryNextPageRequest msg0 = new GridQueryNextPageRequest(qryReqId, qry, pageSize);
+                        GridQueryNextPageRequest msg0 = new GridQueryNextPageRequest(qryReqId, qry, threadIdx, pageSize);
 
                         if (node.isLocal())
                             h2.mapQueryExecutor().onMessage(ctx.localNodeId(), msg0);
@@ -392,7 +397,7 @@ public class GridReduceQueryExecutor {
      * @param cacheId Cache ID.
      * @return Cache context.
      */
-    private GridCacheContext<?,?> cacheContext(Integer cacheId) {
+    private GridCacheContext<?, ?> cacheContext(Integer cacheId) {
         return ctx.cache().context().cacheContext(cacheId);
     }
 
@@ -414,7 +419,7 @@ public class GridReduceQueryExecutor {
 
         if (!F.isEmpty(extraSpaces)) {
             for (int i = 0; i < extraSpaces.size(); i++) {
-                GridCacheContext<?,?> extraCctx = cacheContext(extraSpaces.get(i));
+                GridCacheContext<?, ?> extraCctx = cacheContext(extraSpaces.get(i));
 
                 String extraSpace = extraCctx.name();
 
@@ -478,7 +483,7 @@ public class GridReduceQueryExecutor {
         boolean keepPortable,
         boolean enforceJoinOrder
     ) {
-        for (int attempt = 0;; attempt++) {
+        for (int attempt = 0; ; attempt++) {
             if (attempt != 0) {
                 try {
                     Thread.sleep(attempt * 10); // Wait for exchange.
@@ -494,7 +499,8 @@ public class GridReduceQueryExecutor {
 
             final String space = cctx.name();
 
-            final QueryRun r = new QueryRun(h2.connectionForSpace(space), qry.mapQueries().size(), qry.pageSize());
+            final QueryRun r = new QueryRun(h2.connectionForSpace(space),
+                qry.mapQueries().size(), qry.pageSize());
 
             AffinityTopologyVersion topVer = h2.readyTopologyVersion();
 
@@ -554,12 +560,12 @@ public class GridReduceQueryExecutor {
                 else
                     idx = GridMergeIndexUnsorted.createDummy(ctx);
 
-                idx.setSources(nodes);
+                idx.setSources(nodes, queryLocalParallelismLevel);
 
                 r.idxs.add(idx);
             }
 
-            r.latch = new CountDownLatch(r.idxs.size() * nodes.size());
+            r.latch = new CountDownLatch(r.idxs.size() * nodes.size() * queryLocalParallelismLevel);
 
             runs.put(qryReqId, r);
 
@@ -589,27 +595,56 @@ public class GridReduceQueryExecutor {
                 if (oldStyle && distributedJoins)
                     throw new CacheException("Failed to enable distributed joins. Topology contains older data nodes.");
 
-                if (send(nodes,
-                    oldStyle ?
-                        new GridQueryRequest(qryReqId,
-                            r.pageSize,
-                            space,
-                            mapQrys,
-                            topVer,
-                            extraSpaces(space, qry.spaces()),
-                            null) :
-                        new GridH2QueryRequest()
-                            .requestId(qryReqId)
-                            .topologyVersion(topVer)
-                            .pageSize(r.pageSize)
-                            .caches(qry.caches())
-                            .tables(distributedJoins ? qry.tables() : null)
-                            .partitions(convert(partsMap))
-                            .queries(mapQrys)
-                            .flags(distributedJoins ? GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS : 0),
-                    oldStyle && partsMap != null ? new ExplicitPartitionsSpecializer(partsMap) : null,
-                    distributedJoins)
-                ) {
+                boolean send = true;
+
+                int threadCnt = partsMap != null ? 1 : queryLocalParallelismLevel;
+
+                final Map<UUID, int[]>[] splitPartsMap = new Map[queryLocalParallelismLevel];
+
+                if (partsMap == null) {
+                    for (int i = 0; i < queryLocalParallelismLevel; i++)
+                        splitPartsMap[i] = new HashMap<>();
+
+                    for (ClusterNode node : nodes) {
+                        int[] primeParts = toIntArray(cctx.affinity().primaryPartitions(node.id(), topVer));
+
+                        int partsPerThread = primeParts.length / queryLocalParallelismLevel;
+
+                        for (int i = 0, idx = 0; i < queryLocalParallelismLevel; i++, idx += partsPerThread) {
+                            int to = (primeParts.length < idx + partsPerThread) ? primeParts.length : idx + partsPerThread;
+
+                            splitPartsMap[i].put(node.id(), Arrays.copyOfRange(primeParts, idx, to));
+                        }
+                    }
+                }
+
+                final Map<UUID, int[]> parts = convert(partsMap);
+
+                for (int threadIdx = 0; threadIdx < threadCnt; threadIdx++) {
+                    send &= send(nodes,
+                        oldStyle ?
+                            new GridQueryRequest(qryReqId,
+                                r.pageSize,
+                                space,
+                                mapQrys,
+                                topVer,
+                                extraSpaces(space, qry.spaces()),
+                                null) :
+                            new GridH2QueryRequest()
+                                .requestId(qryReqId)
+                                .topologyVersion(topVer)
+                                .pageSize(r.pageSize)
+                                .caches(qry.caches())
+                                .tables(distributedJoins ? qry.tables() : null)
+                                .partitions(partsMap != null ? parts: splitPartsMap[threadIdx])
+                                .queries(mapQrys)
+                                .threadIdx(threadIdx)
+                                .flags(distributedJoins ? GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS : 0),
+                        oldStyle && partsMap != null ? new ExplicitPartitionsSpecializer(partsMap) : null,
+                        distributedJoins || queryLocalParallelismLevel > 1);
+                }
+
+                if (send) {
                     awaitAllReplies(r, nodes);
 
                     Object state = r.state.get();
@@ -740,12 +775,21 @@ public class GridReduceQueryExecutor {
         }
     }
 
+    private int[] toIntArray(Set<Integer> partitions) {
+        int i = 0;
+        int[] primaryPartitions = new int[partitions.size()];
+
+        for (Integer p : partitions)
+            primaryPartitions[i++] = p;
+        return primaryPartitions;
+    }
+
     /**
      * @param idxs Merge indexes.
      * @return {@code true} If all remote data was fetched.
      */
     private static boolean allIndexesFetched(List<GridMergeIndex> idxs) {
-        for (int i = 0; i <  idxs.size(); i++) {
+        for (int i = 0; i < idxs.size(); i++) {
             if (!idxs.get(i).fetchedAll())
                 return false;
         }
@@ -881,7 +925,7 @@ public class GridReduceQueryExecutor {
      * @param cctx Cache context.
      * @return Owning nodes or {@code null} if we can't find owners for some partitions.
      */
-    private Set<ClusterNode> replicatedUnstableDataNodes(GridCacheContext<?,?> cctx) {
+    private Set<ClusterNode> replicatedUnstableDataNodes(GridCacheContext<?, ?> cctx) {
         assert cctx.isReplicated() : cctx.name() + " must be replicated";
 
         String space = cctx.name();
@@ -915,7 +959,7 @@ public class GridReduceQueryExecutor {
      * @return Partition mapping or {@code null} if we can't calculate it due to repartitioning and we need to retry.
      */
     @SuppressWarnings("unchecked")
-    private Map<ClusterNode, IntArray> partitionedUnstableDataNodes(final GridCacheContext<?,?> cctx,
+    private Map<ClusterNode, IntArray> partitionedUnstableDataNodes(final GridCacheContext<?, ?> cctx,
         List<Integer> extraSpaces) {
         assert !cctx.isReplicated() && !cctx.isLocal() : cctx.name() + " must be partitioned";
 
@@ -939,7 +983,7 @@ public class GridReduceQueryExecutor {
         Set<ClusterNode>[] partLocs = new Set[partsCnt];
 
         // Fill partition locations for main cache.
-        for (int p = 0, parts =  cctx.affinity().partitions(); p < parts; p++) {
+        for (int p = 0, parts = cctx.affinity().partitions(); p < parts; p++) {
             List<ClusterNode> owners = cctx.topology().owners(p);
 
             if (F.isEmpty(owners)) {
@@ -961,7 +1005,7 @@ public class GridReduceQueryExecutor {
                 if (extraCctx.isReplicated() || extraCctx.isLocal())
                     continue;
 
-                for (int p = 0, parts =  extraCctx.affinity().partitions(); p < parts; p++) {
+                for (int p = 0, parts = extraCctx.affinity().partitions(); p < parts; p++) {
                     List<ClusterNode> owners = extraCctx.topology().owners(p);
 
                     if (F.isEmpty(owners)) {
@@ -984,7 +1028,7 @@ public class GridReduceQueryExecutor {
 
             // Filter nodes where not all the replicated caches loaded.
             for (int i = 0; i < extraSpaces.size(); i++) {
-                GridCacheContext<?,?> extraCctx = cacheContext(extraSpaces.get(i));
+                GridCacheContext<?, ?> extraCctx = cacheContext(extraSpaces.get(i));
 
                 if (!extraCctx.isReplicated())
                     continue;
@@ -1131,7 +1175,7 @@ public class GridReduceQueryExecutor {
      * @param partsMap Partitions map.
      * @return Copy of message with partitions set.
      */
-    private Message copy(Message msg, ClusterNode node, Map<ClusterNode,IntArray> partsMap) {
+    private Message copy(Message msg, ClusterNode node, Map<ClusterNode, IntArray> partsMap) {
         assert partsMap != null;
 
         GridQueryRequest res = new GridQueryRequest((GridQueryRequest)msg);
@@ -1167,7 +1211,7 @@ public class GridReduceQueryExecutor {
 
         Map<UUID, int[]> res = U.newHashMap(m.size());
 
-        for (Map.Entry<ClusterNode,IntArray> entry : m.entrySet())
+        for (Map.Entry<ClusterNode, IntArray> entry : m.entrySet())
             res.put(entry.getKey().id(), toArray(entry.getValue()));
 
         return res;
@@ -1185,20 +1229,20 @@ public class GridReduceQueryExecutor {
         try {
             Session ses = (Session)conn.getSession();
 
-            CreateTableData data  = new CreateTableData();
+            CreateTableData data = new CreateTableData();
 
             data.tableName = "T___";
             data.schema = ses.getDatabase().getSchema(ses.getCurrentSchemaName());
             data.create = true;
 
             if (!explain) {
-                LinkedHashMap<String,?> colsMap = qry.columns();
+                LinkedHashMap<String, ?> colsMap = qry.columns();
 
                 assert colsMap != null;
 
                 ArrayList<Column> cols = new ArrayList<>(colsMap.size());
 
-                for (Map.Entry<String,?> e : colsMap.entrySet()) {
+                for (Map.Entry<String, ?> e : colsMap.entrySet()) {
                     String alias = e.getKey();
                     GridSqlType t = (GridSqlType)e.getValue();
 
@@ -1336,14 +1380,14 @@ public class GridReduceQueryExecutor {
     /**
      *
      */
-    private class ExplicitPartitionsSpecializer implements IgniteBiClosure<ClusterNode,Message,Message> {
+    private class ExplicitPartitionsSpecializer implements IgniteBiClosure<ClusterNode, Message, Message> {
         /** */
-        private final Map<ClusterNode,IntArray> partsMap;
+        private final Map<ClusterNode, IntArray> partsMap;
 
         /**
          * @param partsMap Partitions map.
          */
-        private ExplicitPartitionsSpecializer(Map<ClusterNode,IntArray> partsMap) {
+        private ExplicitPartitionsSpecializer(Map<ClusterNode, IntArray> partsMap) {
             this.partsMap = partsMap;
         }
 

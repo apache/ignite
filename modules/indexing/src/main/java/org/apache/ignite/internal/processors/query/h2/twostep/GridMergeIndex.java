@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +59,10 @@ public abstract class GridMergeIndex extends BaseIndex {
     private final AtomicInteger expRowsCnt = new AtomicInteger(0);
 
     /** Remaining rows per source node ID. */
-    private Map<UUID, Counter> remainingRows;
+    private Map<UUID, Counter[]> remainingRows;
+
+    /** */
+    private AtomicInteger waitCountersInit;
 
     /** */
     private final AtomicBoolean lastSubmitted = new AtomicBoolean();
@@ -142,15 +144,24 @@ public abstract class GridMergeIndex extends BaseIndex {
      * Set source nodes.
      *
      * @param nodes Nodes.
+     * @param threadsCnt threads per node
      */
-    public void setSources(Collection<ClusterNode> nodes) {
+    public void setSources(Collection<ClusterNode> nodes, int threadsCnt) {
         assert remainingRows == null;
 
         remainingRows = U.newHashMap(nodes.size());
 
+        waitCountersInit = new AtomicInteger(threadsCnt * nodes.size());
+
         for (ClusterNode node : nodes) {
-            if (remainingRows.put(node.id(), new Counter()) != null)
+            Counter[] counters = new Counter[threadsCnt];
+
+            for (int i = 0; i < threadsCnt; i++)
+                counters[i] = new Counter();
+
+            if (remainingRows.put(node.id(), counters) != null)
                 throw new IllegalStateException("Duplicate node id: " + node.id());
+
         }
     }
 
@@ -191,7 +202,7 @@ public abstract class GridMergeIndex extends BaseIndex {
         if (pageRowsCnt != 0)
             addPage0(page);
 
-        Counter cnt = remainingRows.get(page.source());
+        Counter cnt = remainingRows.get(page.source())[page.res.threadIdx()];
 
         int allRows = page.response().allRows();
 
@@ -204,18 +215,12 @@ public abstract class GridMergeIndex extends BaseIndex {
             // We need this separate flag to handle case when the first source contains only one page
             // and it will signal that all remaining counters are zero and fetch is finished.
             cnt.initialized = true;
+
+            waitCountersInit.decrementAndGet();
         }
 
         if (cnt.addAndGet(-pageRowsCnt) == 0) { // Result can be negative in case of race between messages, it is ok.
-            boolean last = true;
-
-            for (Counter c : remainingRows.values()) { // Check all the sources.
-                if (c.get() != 0 || !c.initialized) {
-                    last = false;
-
-                    break;
-                }
-            }
+            boolean last = waitCountersInit.get() == 0;
 
             if (last && lastSubmitted.compareAndSet(false, true)) {
                 addPage0(new GridResultPage(null, page.source(), null) {
@@ -236,7 +241,7 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @param page Page.
      */
     protected void fetchNextPage(GridResultPage page) {
-        if (remainingRows.get(page.source()).get() != 0)
+        if (remainingRows.get(page.source())[page.res.threadIdx()].get() != 0)
             page.fetchNextPage();
     }
 

@@ -42,6 +42,9 @@ public class GridQueryNextPageResponse implements Message {
     private long qryReqId;
 
     /** */
+    private int threadIdx;
+
+    /** */
     private int qry;
 
     /** */
@@ -73,6 +76,7 @@ public class GridQueryNextPageResponse implements Message {
 
     /**
      * @param qryReqId Query request ID.
+     * @param threadIdx thread index.
      * @param qry Query.
      * @param page Page.
      * @param allRows All rows count.
@@ -80,12 +84,13 @@ public class GridQueryNextPageResponse implements Message {
      * @param vals Values for rows in this page added sequentially.
      * @param plainRows Not marshalled rows for local node.
      */
-    public GridQueryNextPageResponse(long qryReqId, int qry, int page, int allRows, int cols,
+    public GridQueryNextPageResponse(long qryReqId, int threadIdx, int qry, int page, int allRows, int cols,
         Collection<Message> vals, Collection<?> plainRows) {
         assert vals != null ^ plainRows != null;
         assert cols > 0 : cols;
 
         this.qryReqId = qryReqId;
+        this.threadIdx = threadIdx;
         this.qry = qry;
         this.page = page;
         this.allRows = allRows;
@@ -99,6 +104,13 @@ public class GridQueryNextPageResponse implements Message {
      */
     public long queryRequestId() {
         return qryReqId;
+    }
+
+    /**
+     * @return Thread index.
+     */
+    public int threadIdx() {
+        return threadIdx;
     }
 
     /**
@@ -191,12 +203,18 @@ public class GridQueryNextPageResponse implements Message {
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeCollection("vals", vals, MessageCollectionItemType.MSG))
+                if (!writer.writeInt("threadIdx", threadIdx))
                     return false;
 
                 writer.incrementState();
 
             case 6:
+                if (!writer.writeCollection("vals", vals, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 7:
                 if (!writer.writeMessage("retry", retry))
                     return false;
 
@@ -256,7 +274,7 @@ public class GridQueryNextPageResponse implements Message {
                 reader.incrementState();
 
             case 5:
-                vals = reader.readCollection("vals", MessageCollectionItemType.MSG);
+                threadIdx = reader.readInt("threadIdx");
 
                 if (!reader.isLastRead())
                     return false;
@@ -264,6 +282,14 @@ public class GridQueryNextPageResponse implements Message {
                 reader.incrementState();
 
             case 6:
+                vals = reader.readCollection("vals", MessageCollectionItemType.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 7:
                 retry = reader.readMessage("retry");
 
                 if (!reader.isLastRead())
@@ -283,7 +309,7 @@ public class GridQueryNextPageResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 8;
     }
 
     /**

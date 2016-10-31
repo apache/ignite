@@ -54,6 +54,9 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     private long reqId;
 
     /** */
+    private int threadIdx;
+
+    /** */
     @GridToStringInclude
     @GridDirectCollection(Integer.class)
     private List<Integer> caches;
@@ -202,6 +205,23 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     }
 
     /**
+     *  @return thread index
+     */
+    public int threadIdx() {
+        return threadIdx;
+    }
+
+    /**
+     * @param threadIdx thread index
+     * @return {@code this}.
+     */
+    public GridH2QueryRequest threadIdx(int threadIdx) {
+        this.threadIdx = threadIdx;
+
+        return this;
+    }
+
+    /**
      * @param flags Flags.
      * @return {@code this}.
      */
@@ -286,12 +306,18 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeCollection("tbls", tbls, MessageCollectionItemType.STRING))
+                if (!writer.writeInt("threadIdx", threadIdx))
                     return false;
 
                 writer.incrementState();
 
             case 7:
+                if (!writer.writeCollection("tbls", tbls, MessageCollectionItemType.STRING))
+                    return false;
+
+                writer.incrementState();
+
+            case 8:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
@@ -359,7 +385,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 6:
-                tbls = reader.readCollection("tbls", MessageCollectionItemType.STRING);
+                threadIdx = reader.readInt("threadIdx");
 
                 if (!reader.isLastRead())
                     return false;
@@ -367,6 +393,14 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 7:
+                tbls = reader.readCollection("tbls", MessageCollectionItemType.STRING);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 8:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
@@ -386,7 +420,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 8;
+        return 9;
     }
 
     /** {@inheritDoc} */
