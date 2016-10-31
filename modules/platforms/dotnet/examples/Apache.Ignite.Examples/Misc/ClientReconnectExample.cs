@@ -152,12 +152,18 @@ namespace Apache.Ignite.Examples.Misc
                 // Stop the server to cause client node disconnect.
             }
 
+            Console.WriteLine(">>> Server node stopped.");
+
             // Wait for client to detect the disconnect.
             Thread.Sleep(2000);
+
+            Console.WriteLine(">>> Restarting server node...");
 
             // Start the server again.
             using (Ignition.Start(cfg))
             {
+                Console.WriteLine(">>> Server node restarted.");
+
                 Thread.Sleep(Timeout.Infinite);
             }
         }
