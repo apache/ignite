@@ -70,7 +70,6 @@ namespace Apache.Ignite.Core.Tests
             ex.ClientReconnectTask.Wait();
 
             // Refresh the cache instance and check that it works.
-            Thread.Sleep(2000);  // TODO: Why do we need this? What kind of a race is there?
             var cache1 = client.GetCache<int, int>(CacheName);
             Assert.AreEqual(0, cache1.GetSize());
 
