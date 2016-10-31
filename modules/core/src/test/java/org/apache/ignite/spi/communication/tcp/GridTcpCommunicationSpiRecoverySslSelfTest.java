@@ -15,37 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.closure;
-
-import org.jetbrains.annotations.Nullable;
+package org.apache.ignite.spi.communication.tcp;
 
 /**
- * This enumeration defines different types of closure
- * processing by the closure processor.
+ *
  */
-public enum GridClosurePolicy {
-    /** Public execution pool. */
-    PUBLIC_POOL,
-
-    /** P2P execution pool. */
-    P2P_POOL,
-
-    /** System execution pool. */
-    SYSTEM_POOL,
-
-    /** IGFS pool. */
-    IGFS_POOL;
-
-    /** Enum values. */
-    private static final GridClosurePolicy[] VALS = values();
-
+public class GridTcpCommunicationSpiRecoverySslSelfTest extends GridTcpCommunicationSpiRecoverySelfTest {
     /**
-     * Efficiently gets enumerated value from its ordinal.
-     *
-     * @param ord Ordinal value.
-     * @return Enumerated value.
+     * Default constructor.
      */
-    @Nullable public static GridClosurePolicy fromOrdinal(int ord) {
-        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    public GridTcpCommunicationSpiRecoverySslSelfTest() {
+        useSsl = true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return super.getTestTimeout() * 2;
     }
 }

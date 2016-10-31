@@ -859,6 +859,12 @@ public interface EventType {
     public static final int EVT_IGFS_FILE_PURGED = 127;
 
     /**
+     * Built-in event type: event for unhandled exception.
+     *
+     */
+    public static final int EVT_UNHANDLED_EXCEPTION = 128;
+
+    /**
      * All checkpoint events. This array can be directly passed into
      * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
      * subscribe to all checkpoint events.

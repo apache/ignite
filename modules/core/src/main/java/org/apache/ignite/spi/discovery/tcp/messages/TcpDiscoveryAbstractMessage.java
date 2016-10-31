@@ -99,6 +99,13 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     }
 
     /**
+     * @return
+     */
+    public boolean traceLogLevel() {
+        return false;
+    }
+
+    /**
      * Gets creator node.
      *
      * @return Creator node ID.

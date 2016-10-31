@@ -214,6 +214,11 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean traceLogLevel() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean highPriority() {
         return true;
     }

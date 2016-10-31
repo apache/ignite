@@ -40,6 +40,9 @@ namespace Apache.Ignite.Core.Impl
     internal abstract class PlatformTarget
     {
         /** */
+        protected const int False = 0;
+
+        /** */
         protected const int True = 1;
 
         /** */
@@ -309,6 +312,16 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
+        /// Perform out operation.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
+        /// <returns>Resulting object.</returns>
+        protected IUnmanagedTarget DoOutOpObject(int type)
+        {
+            return UU.TargetOutObject(_target, type);
+        }
+
+        /// <summary>
         /// Perform simple output operation accepting single argument.
         /// </summary>
         /// <param name="type">Operation type.</param>
@@ -479,27 +492,58 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="inAction">In action.</param>
         /// <param name="arg">Argument.</param>
         /// <returns>Result.</returns>
-        protected unsafe TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, TR> inAction, void* arg)
+        protected unsafe TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction,
+            Func<IBinaryStream, IUnmanagedTarget, TR> inAction, void* arg)
         {
-            using (PlatformMemoryStream outStream = IgniteManager.Memory.Allocate().GetStream())
+            PlatformMemoryStream outStream = null;
+            long outPtr = 0;
+
+            PlatformMemoryStream inStream = null;
+            long inPtr = 0;
+
+            try
             {
-                using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().GetStream())
+                if (outAction != null)
                 {
-                    BinaryWriter writer = _marsh.StartMarshal(outStream);
-
+                    outStream = IgniteManager.Memory.Allocate().GetStream();
+                    var writer = _marsh.StartMarshal(outStream);
                     outAction(writer);
-
                     FinishMarshal(writer);
+                    outPtr = outStream.SynchronizeOutput();
+                }
 
-                    UU.TargetInObjectStreamOutStream(_target, type, arg, outStream.SynchronizeOutput(), inStream.MemoryPointer);
+                if (inAction != null)
+                {
+                    inStream = IgniteManager.Memory.Allocate().GetStream();
+                    inPtr = inStream.MemoryPointer;
+                }
 
-                    inStream.SynchronizeInput();
+                var res = UU.TargetInObjectStreamOutObjectStream(_target, type, arg, outPtr, inPtr);
 
-                    return inAction(inStream);
+                if (inAction == null)
+                    return default(TR);
+
+                inStream.SynchronizeInput();
+
+                return inAction(inStream, res);
+
+            }
+            finally
+            {
+                try
+                {
+                    if (inStream != null)
+                        inStream.Dispose();
+
+                }
+                finally
+                {
+                    if (outStream != null)
+                        outStream.Dispose();
                 }
             }
         }
-        
+
         /// <summary>
         /// Perform out-in operation.
         /// </summary>
@@ -581,6 +625,17 @@ namespace Apache.Ignite.Core.Impl
                     return Unmarshal<TR>(inStream);
                 }
             }
+        }
+
+        /// <summary>
+        /// Perform simple out-in operation accepting two arguments.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
+        /// <param name="val">Value.</param>
+        /// <returns>Result.</returns>
+        protected long DoOutInOp(int type, long val = 0)
+        {
+            return UU.TargetInLongOutLong(_target, type, val);
         }
 
         #endregion

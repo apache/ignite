@@ -67,6 +67,21 @@ public class PlatformServices extends PlatformAbstractTarget {
     private static final int OP_DESCRIPTORS = 5;
 
     /** */
+    private static final int OP_WITH_ASYNC = 6;
+
+    /** */
+    private static final int OP_WITH_SERVER_KEEP_BINARY = 7;
+
+    /** */
+    private static final int OP_SERVICE_PROXY = 8;
+
+    /** */
+    private static final int OP_CANCEL = 9;
+
+    /** */
+    private static final int OP_CANCEL_ALL = 10;
+
+    /** */
     private static final byte PLATFORM_JAVA = 0;
 
     /** */
@@ -205,6 +220,14 @@ public class PlatformServices extends PlatformAbstractTarget {
                 return TRUE;
             }
 
+            case OP_CANCEL: {
+                String name = reader.readString();
+
+                services.cancel(name);
+
+                return TRUE;
+            }
+
             default:
                 return super.processInStreamOutLong(type, reader);
         }
@@ -239,7 +262,7 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected void processInObjectStreamOutStream(int type, Object arg, BinaryRawReaderEx reader,
+    @Override protected Object processInObjectStreamOutObjectStream(int type, Object arg, BinaryRawReaderEx reader,
         BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_INVOKE: {
@@ -268,12 +291,11 @@ public class PlatformServices extends PlatformAbstractTarget {
                     PlatformUtils.writeInvocationResult(writer, null, e);
                 }
 
-                return;
+                return null;
             }
-
-            default:
-                super.processInObjectStreamOutStream(type, arg, reader, writer);
         }
+
+        return super.processInObjectStreamOutObjectStream(type, arg, reader, writer);
     }
 
     /** {@inheritDoc} */
@@ -315,7 +337,58 @@ public class PlatformServices extends PlatformAbstractTarget {
         }
     }
 
-    /** <inheritDoc /> */
+    /** {@inheritDoc} */
+    @Override protected Object processOutObject(int type) throws IgniteCheckedException {
+        switch (type) {
+            case OP_WITH_ASYNC:
+                if (services.isAsync())
+                    return this;
+
+                return new PlatformServices(platformCtx, services.withAsync(), srvKeepBinary);
+
+            case OP_WITH_SERVER_KEEP_BINARY:
+                return srvKeepBinary ? this : new PlatformServices(platformCtx, services, true);
+        }
+
+        return super.processOutObject(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        switch (type) {
+            case OP_CANCEL_ALL:
+                services.cancelAll();
+
+                return TRUE;
+        }
+
+        return super.processInLongOutLong(type, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Object processInStreamOutObject(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+        switch (type) {
+            case OP_SERVICE_PROXY: {
+                String name = reader.readString();
+                boolean sticky = reader.readBoolean();
+
+                ServiceDescriptor d = findDescriptor(name);
+
+                if (d == null)
+                    throw new IgniteException("Failed to find deployed service: " + name);
+
+                Object proxy = PlatformService.class.isAssignableFrom(d.serviceClass())
+                    ? services.serviceProxy(name, PlatformService.class, sticky)
+                    : new GridServiceProxy<>(services.clusterGroup(), name, Service.class, sticky, 0,
+                        platformCtx.kernalContext());
+
+                return new ServiceProxyHolder(proxy, d.serviceClass());
+            }
+        }
+        return super.processInStreamOutObject(type, reader);
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
         return ((IgniteFutureImpl)services.future()).internalFuture();
     }
