@@ -309,7 +309,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         final DataStreamerRequest req,
         final StreamReceiver<K, V> updater,
         final Object topic) {
-        final boolean allowOverride = req.allowOverride();
+        final boolean allowOverwrite = !(updater instanceof DataStreamerImpl.IsolatedUpdater);
 
         try {
             GridCacheContext cctx = ctx.cache().internalCache(req.cacheName()).context();
@@ -318,7 +318,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
             GridFutureAdapter waitFut = null;
 
-            if (!allowOverride)
+            if (!allowOverwrite)
                 cctx.topology().readLock();
 
             try {
@@ -326,14 +326,14 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
                 AffinityTopologyVersion topVer = fut.topologyVersion();
 
-                if (!allowOverride && !topVer.equals(req.topologyVersion())) {
+                if (!allowOverwrite && !topVer.equals(req.topologyVersion())) {
                     Exception err = new IgniteCheckedException(
                         "DataStreamer will retry data transfer at stable topology. " +
                             "[reqTop=" + req.topologyVersion() + " ,topVer=" + topVer + ", node=remote]");
 
                     sendResponse(nodeId, topic, req.requestId(), err, req.forceLocalDeployment());
                 }
-                else if (allowOverride || fut.isDone()) {
+                else if (allowOverwrite || fut.isDone()) {
                     job = new DataStreamerUpdateJob(ctx,
                         log,
                         req.cacheName(),
@@ -343,7 +343,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                         req.keepBinary(),
                         updater);
 
-                    waitFut = allowOverride ? null : cctx.mvcc().addDataStreamerFuture(topVer);
+                    waitFut = allowOverwrite ? null : cctx.mvcc().addDataStreamerFuture(topVer);
                 }
                 else
                     fut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
@@ -353,7 +353,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                     });
             }
             finally {
-                if (!allowOverride)
+                if (!allowOverwrite)
                     cctx.topology().readUnlock();
             }
 
