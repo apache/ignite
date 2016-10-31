@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.cache.query.QueryCancelledException;
-
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import org.apache.ignite.cache.query.QueryCancelledException;
 
 /**
  * Holds query cancel state.

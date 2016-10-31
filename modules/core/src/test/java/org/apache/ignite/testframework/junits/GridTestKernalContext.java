@@ -17,17 +17,20 @@
 
 package org.apache.ignite.testframework.junits;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.GridTestUtils;
-
 import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.ExecutorService;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridComponent;
+import org.apache.ignite.internal.GridKernalContextImpl;
+import org.apache.ignite.internal.GridKernalGatewayImpl;
+import org.apache.ignite.internal.GridLoggerProxy;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Test context.

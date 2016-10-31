@@ -17,14 +17,13 @@
 
 package org.apache.ignite.cache.query;
 
+import java.util.concurrent.TimeUnit;
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import javax.cache.Cache;
-import java.util.concurrent.TimeUnit;
 
 /**
  * SQL Query.
