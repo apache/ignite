@@ -118,7 +118,7 @@ namespace Apache.Ignite.Core.Tests
 
                 Assert.IsTrue(ignite.GetCluster().ClientReconnectTask.IsCompleted);
 
-                var cache = ignite.CreateCache<int, int>("c");
+                var cache = ignite.CreateCache<int, int>(CacheName);
 
                 cache[1] = 1;
 
