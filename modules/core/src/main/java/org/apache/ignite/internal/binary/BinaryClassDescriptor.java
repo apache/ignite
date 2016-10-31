@@ -757,7 +757,8 @@ public class BinaryClassDescriptor {
                 break;
 
             case OBJECT:
-                if (schemaReg.schema(stableSchema.schemaId()) == null) {
+                if (userType && schemaReg.schema(stableSchema.schemaId()) == null) {
+                    // Update meta before write object with new schema
                     BinaryMetadata meta = new BinaryMetadata(typeId, typeName, stableFieldsMeta,
                         affKeyFieldName, Collections.singleton(stableSchema), false);
 

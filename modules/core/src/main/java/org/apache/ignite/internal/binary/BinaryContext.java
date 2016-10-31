@@ -1073,14 +1073,6 @@ public class BinaryContext {
     }
 
     /**
-     * @param cls Class.
-     * @return {@code True} is class is predefined.
-     */
-    public boolean isPredefinedType(Class<?> cls) {
-        return predefinedTypeNames.containsKey(SIMPLE_NAME_LOWER_CASE_MAPPER.typeName(cls.getName()));
-    }
-
-    /**
      * @param clsName Class name.
      * @param mapper ID mapper.
      * @param serializer Serializer.
