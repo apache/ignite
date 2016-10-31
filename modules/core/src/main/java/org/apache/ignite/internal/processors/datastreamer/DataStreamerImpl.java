@@ -203,7 +203,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             assert rmv;
 
             if (t.error() != null) {
-                LT.error(log, t.error(), "DataStreamer operation failed.");
+                LT.error(log, t.error(), "DataStreamer operation failed.", true);
 
                 failCntr.increment();
 
@@ -938,7 +938,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         if (!allowOverwrite())
             res = cctx.isLocal() ?
                 aff.mapKeyToPrimaryAndBackups(cacheName, key, topVer) :
-                cctx.topology().nodes(key.partition(), topVer);
+                cctx.topology().nodes(cctx.affinity().partition(key), topVer);
         else {
             ClusterNode node = aff.mapKeyToNode(cacheName, key, topVer);
 
