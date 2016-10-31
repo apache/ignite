@@ -110,8 +110,10 @@ public class GridReduceQueryExecutor {
     /** */
     private static final IgniteProductVersion DISTRIBUTED_JOIN_SINCE = IgniteProductVersion.fromString("1.7.0");
 
-    public static final int DEFAULT_QUERY_LOCAL_PARALLELISM_LEVEL = 8;
+    /** TODO: move to configuration */
+    public static final int DEFAULT_QUERY_LOCAL_PARALLELISM_LEVEL = 4;
 
+    /** */
     public final int queryLocalParallelismLevel = DEFAULT_QUERY_LOCAL_PARALLELISM_LEVEL;
 
     /** */
