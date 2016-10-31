@@ -65,7 +65,7 @@ namespace Apache.Ignite.Examples.Misc
 
                 Random rand = new Random();
 
-                while (true)
+                for (var i = 0; i < 10; i++)
                 {
                     try
                     {
@@ -89,22 +89,19 @@ namespace Apache.Ignite.Examples.Misc
 
                             Console.WriteLine(">>> Waiting while client gets reconnected to the cluster.");
 
-                            //while (!task.IsCompleted) // workaround. // TODO: ???
-                                task.Wait();
+                            task.Wait();
 
                             Console.WriteLine(">>> Client has reconnected successfully.");
 
-                            // TODO
-                            //Thread.Sleep(3000);
+                            // TODO: why is this required?
+                            Thread.Sleep(3000);
 
                             // Updating the reference to the cache. The client reconnected to the new cluster.
                             cache = ignite.GetCache<int, string>(CacheName);
                         }
                         else
                         {
-                            Console.WriteLine(e);
-
-                            break;
+                            throw;
                         }
                     }
 
