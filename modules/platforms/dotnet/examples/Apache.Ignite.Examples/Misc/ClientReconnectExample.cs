@@ -22,6 +22,7 @@ using Apache.Ignite.Core.Common;
 
 namespace Apache.Ignite.Examples.Misc
 {
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Events;
@@ -60,7 +61,7 @@ namespace Apache.Ignite.Examples.Misc
                     throw new Exception("Extra nodes detected. " +
                                         "ClientReconnectExample should be run without external nodes.");
 
-                var cache = ignite.GetOrCreateCache<int, string>(CacheName);
+                var cache = ignite.GetCache<int, string>(CacheName);
 
                 Random rand = new Random();
 
@@ -88,7 +89,7 @@ namespace Apache.Ignite.Examples.Misc
 
                             Console.WriteLine(">>> Waiting while client gets reconnected to the cluster.");
 
-                            while (!task.IsCompleted) // workaround. // TODO: ???
+                            //while (!task.IsCompleted) // workaround. // TODO: ???
                                 task.Wait();
 
                             Console.WriteLine(">>> Client has reconnected successfully.");
@@ -97,7 +98,7 @@ namespace Apache.Ignite.Examples.Misc
                             //Thread.Sleep(3000);
 
                             // Updating the reference to the cache. The client reconnected to the new cluster.
-                            cache = ignite.GetOrCreateCache<int, string>(CacheName);
+                            cache = ignite.GetCache<int, string>(CacheName);
                         }
                         else
                         {
@@ -134,6 +135,8 @@ namespace Apache.Ignite.Examples.Misc
                     }
                 },
 
+                CacheConfiguration = new[] {new CacheConfiguration(CacheName)},
+
                 IncludedEventTypes = new[] {EventType.NodeJoined}
             };
 
@@ -152,10 +155,13 @@ namespace Apache.Ignite.Examples.Misc
                 // Stop the server to cause client node disconnect.
             }
 
+            // Wait for client to detect the disconnect.
+            Thread.Sleep(2000);
+
             // Start the server again.
             using (Ignition.Start(cfg))
             {
-                Thread.Sleep(TimeSpan.MaxValue);
+                Thread.Sleep(Timeout.Infinite);
             }
         }
     }
