@@ -94,7 +94,7 @@ namespace Apache.Ignite.Examples.Misc
                             Console.WriteLine(">>> Client has reconnected successfully.");
 
                             // TODO: why is this required?
-                            Thread.Sleep(3000);
+                            //Thread.Sleep(3000);
 
                             // Updating the reference to the cache. The client reconnected to the new cluster.
                             cache = ignite.GetCache<int, string>(CacheName);
@@ -150,12 +150,13 @@ namespace Apache.Ignite.Examples.Misc
                 Thread.Sleep(2000);
 
                 // Stop the server to cause client node disconnect.
+                Console.WriteLine(">>> Stopping server node...");
             }
 
             Console.WriteLine(">>> Server node stopped.");
 
             // Wait for client to detect the disconnect.
-            Thread.Sleep(2000);
+            Thread.Sleep(5000);
 
             Console.WriteLine(">>> Restarting server node...");
 
