@@ -1741,7 +1741,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     GridPeerDeployAware jobPda0 = jobPda;
 
                     err = new IgniteCheckedException("DataStreamer request failed. [node=" + nodeId + "]",
-                        ctx.config().getMarshaller().unmarshal(
+                        (Throwable)ctx.config().getMarshaller().unmarshal(
                             errBytes,
                             U.resolveClassLoader(jobPda0 != null ? jobPda0.classLoader() : null, ctx.config())));
                 }
