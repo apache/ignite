@@ -18,10 +18,10 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
-    using System.Threading;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
@@ -54,6 +54,10 @@ namespace Apache.Ignite.Core.Tests
             var server = Ignition.Start(serverCfg);
             var client = Ignition.Start(clientCfg);
 
+            ClientReconnectEventArgs eventArgs = null;
+
+            client.ClientReconnected += (sender, args) => { eventArgs = args; };
+
             var cache = client.GetCache<int, int>(CacheName);
 
             cache[1] = 1;
@@ -68,6 +72,10 @@ namespace Apache.Ignite.Core.Tests
             // Start the server and wait for reconnect.
             Ignition.Start(serverCfg);
             ex.ClientReconnectTask.Wait();
+
+            // Check the event args.
+            Assert.IsNotNull(eventArgs);
+            Assert.IsTrue(eventArgs.HasClusterRestarted);
 
             // Refresh the cache instance and check that it works.
             var cache1 = client.GetCache<int, int>(CacheName);
