@@ -777,6 +777,7 @@ public class GridReduceQueryExecutor {
         }
     }
 
+    /** */
     private int[] toIntArray(Set<Integer> partitions) {
         int i = 0;
         int[] primaryPartitions = new int[partitions.size()];
