@@ -123,6 +123,8 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
                         for (int i = 0; i < KEYS_CNT; i++)
                             dataStreamer.addData(i, Integer.toString(i));
                     }
+
+                    log.info("Data loaded.");
                 }
             };
 
