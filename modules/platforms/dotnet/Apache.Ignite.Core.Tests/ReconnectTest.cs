@@ -78,6 +78,8 @@ namespace Apache.Ignite.Core.Tests
 
                 var inner = (ClientDisconnectedException) ex.InnerException;
 
+                Assert.IsNotNull(inner);
+
                 var clientReconnectTask = inner.ClientReconnectTask;
 
                 Assert.AreEqual(ignite.GetCluster().ClientReconnectTask, clientReconnectTask);
