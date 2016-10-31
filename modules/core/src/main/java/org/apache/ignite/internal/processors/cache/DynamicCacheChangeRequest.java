@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -82,6 +83,9 @@ public class DynamicCacheChangeRequest implements Serializable {
 
     /** */
     private transient boolean exchangeNeeded;
+
+    /** Save exception if was while processing. */
+    private transient IgniteCheckedException exception;
 
     /** */
     private transient AffinityTopologyVersion cacheFutTopVer;
@@ -339,5 +343,19 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DynamicCacheChangeRequest.class, this, "cacheName", cacheName());
+    }
+
+    /**
+     * @return exception Exception if was while processing.
+     */
+    public IgniteCheckedException getException() {
+        return exception;
+    }
+
+    /**
+     * @param exception Exception.
+     */
+    public void setException(IgniteCheckedException exception) {
+        this.exception = exception;
     }
 }

@@ -71,7 +71,6 @@ import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.backup.StartFullBackupAckDiscoveryMessage;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
@@ -727,15 +726,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ClusterNode locNode = ctx.discovery().localNode();
 
         try {
-            consistencyCheck();
-
-            for (DynamicCacheDescriptor desc : registeredCaches.values()) {
-                if (ctx.config().isDaemon() && !CU.isMarshallerCache(desc.cacheConfiguration().getName()))
-                    continue;
-
-                if (sharedCtx.pageStore() != null)
-                    sharedCtx.pageStore().initializeForCache(desc.cacheConfiguration());
-            }
+            CheckConsistency();
 
             if (globalState == CacheState.ACTIVE)
                 sharedCtx.database().onKernalStart(false);
@@ -830,7 +821,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private void consistencyCheck() throws IgniteCheckedException {
+    private void CheckConsistency() throws IgniteCheckedException {
         if (!ctx.config().isDaemon() && !getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
             for (ClusterNode n : ctx.discovery().remoteNodes()) {
                 if (n.attribute(ATTR_CONSISTENCY_CHECK_SKIPPED))
@@ -2740,7 +2731,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             }
             catch (IgniteCheckedException e) {
-                e.printStackTrace();
+                changeGlobal.setException(e);
             }
         }
 
