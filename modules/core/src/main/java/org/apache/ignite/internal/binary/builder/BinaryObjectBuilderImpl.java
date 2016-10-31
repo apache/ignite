@@ -129,6 +129,8 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      * @param start Start.
      */
     BinaryObjectBuilderImpl(BinaryBuilderReader reader, int start) {
+        assert reader != null;
+
         this.reader = reader;
         this.start = start;
         this.flags = reader.readShortPositioned(start + GridBinaryMarshaller.FLAGS_POS);
@@ -192,6 +194,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      * @param writer Writer.
      * @param serializer Serializer.
      */
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     void serializeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer serializer) {
         try {
             writer.preWrite(registeredType ? null : clsNameToWrite);
@@ -334,6 +337,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
             //noinspection NumberEquality
             writer.postWrite(true, registeredType, hashCode, isHashCodeSet);
+            writer.postWriteHashCode(registeredType ? null : clsNameToWrite);
 
             // Update metadata if needed.
             int schemaId = writer.schemaId();

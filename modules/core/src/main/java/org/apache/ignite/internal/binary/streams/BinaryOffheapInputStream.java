@@ -66,6 +66,11 @@ public class BinaryOffheapInputStream extends BinaryAbstractInputStream {
     }
 
     /** {@inheritDoc} */
+    @Override public int capacity() {
+        return cap;
+    }
+
+    /** {@inheritDoc} */
     @Override public byte[] array() {
         return arrayCopy();
     }
@@ -146,5 +151,10 @@ public class BinaryOffheapInputStream extends BinaryAbstractInputStream {
     /** {@inheritDoc} */
     @Override public long offheapPointer() {
         return forceHeap ? 0 : ptr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long rawOffheapPointer() {
+        return ptr;
     }
 }
