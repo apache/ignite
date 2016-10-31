@@ -1242,6 +1242,13 @@
                     </xs:documentation>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="failureDetectionTimeout" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>
+                        Failure detection timeout used by discovery and communication subsystems.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
         </xs:complexType>
     </xs:element>
 </xs:schema>
