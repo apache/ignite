@@ -169,6 +169,8 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(com.SocketSendBufferSize, resCom.SocketSendBufferSize);
                 Assert.AreEqual(com.TcpNoDelay, resCom.TcpNoDelay);
                 Assert.AreEqual(com.UnacknowledgedMessagesBufferSize, resCom.UnacknowledgedMessagesBufferSize);
+
+                Assert.AreEqual(cfg.FailureDetectionTimeout, resCfg.FailureDetectionTimeout);
             }
         }
 
@@ -385,6 +387,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(IgniteConfiguration.DefaultNetworkTimeout, cfg.NetworkTimeout);
             Assert.AreEqual(IgniteConfiguration.DefaultNetworkSendRetryCount, cfg.NetworkSendRetryCount);
             Assert.AreEqual(IgniteConfiguration.DefaultNetworkSendRetryDelay, cfg.NetworkSendRetryDelay);
+            Assert.AreEqual(IgniteConfiguration.DefaultFailureDetectionTimeout, cfg.FailureDetectionTimeout);
         }
 
         /// <summary>
@@ -491,7 +494,8 @@ namespace Apache.Ignite.Core.Tests
                     SlowClientQueueLimit = 98,
                     SocketSendBufferSize = 2045,
                     UnacknowledgedMessagesBufferSize = 3450
-                }
+                },
+                FailureDetectionTimeout = TimeSpan.FromSeconds(3.5)
             };
         }
     }
