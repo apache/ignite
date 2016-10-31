@@ -22,7 +22,9 @@ using Apache.Ignite.Core.Common;
 
 namespace Apache.Ignite.Examples.Misc
 {
-    using System.Configuration;
+    using Apache.Ignite.Core.Discovery.Tcp;
+    using Apache.Ignite.Core.Discovery.Tcp.Static;
+    using Apache.Ignite.Core.Events;
 
     /// <summary>
     /// This example demonstrates the usage of automatic client reconnect feature. 
@@ -43,16 +45,16 @@ namespace Apache.Ignite.Examples.Misc
         [STAThread]
         public static void Main()
         {
-            // TODO: Start two nodes within a process instead of using Apache.Ignite.exe
-
             Console.WriteLine();
             Console.WriteLine(">>> Client reconnect example started.");
+
+            ThreadPool.QueueUserWorkItem(_ => RunServer());
 
             Ignition.ClientMode = true;
 
             using (var ignite = Ignition.StartFromApplicationConfiguration())
             {
-                Console.WriteLine(">>> Client node connected to the cluster");
+                Console.WriteLine(">>> Client node connected to the cluster.");
 
                 var cache = ignite.GetOrCreateCache<int, string>(CacheName);
 
@@ -79,16 +81,16 @@ namespace Apache.Ignite.Examples.Misc
 
                         if (disconnectedException != null)
                         {
-                            Console.WriteLine(">>> Client disconnected from the cluster");
+                            Console.WriteLine(">>> Client disconnected from the cluster.");
 
                             var task = disconnectedException.ClientReconnectTask;
 
-                            Console.WriteLine(">>> Waiting while client gets reconnected to the cluster");
+                            Console.WriteLine(">>> Waiting while client gets reconnected to the cluster.");
 
                             while (!task.IsCompleted) // workaround. // TODO: ???
                                 task.Wait();
 
-                            Console.WriteLine(">>> Client has reconnected successfully");
+                            Console.WriteLine(">>> Client has reconnected successfully.");
 
                             // TODO
                             //Thread.Sleep(3000);
@@ -117,26 +119,40 @@ namespace Apache.Ignite.Examples.Misc
         /// </summary>
         private static void RunServer()
         {
-            // TODO: Use programmatic config instead?
-
-            // Get the Ignite configuration section from app.config.
-            var section = (IgniteConfigurationSection) ConfigurationManager.GetSection("igniteConfiguration");
-
-            // Create a new configuration based on app.config settings.
-            var cfg = new IgniteConfiguration(section.IgniteConfiguration)
+            var cfg = new IgniteConfiguration
             {
                 // Nodes within a single process are distinguished by GridName property.
-                GridName = "serverNode"
+                GridName = "serverNode",
+
+                // Discovery settings are the same as in app.config.
+                DiscoverySpi = new TcpDiscoverySpi
+                {
+                    IpFinder = new TcpDiscoveryStaticIpFinder
+                    {
+                        Endpoints = new[] {"127.0.0.1:47500"}
+                    }
+                },
+
+                IncludedEventTypes = new[] {EventType.NodeJoined}
             };
 
-            // Start a server, wait for client node to connect.
+            // Start a server node.
             using (var ignite = Ignition.Start(cfg))
             {
-                Thread.Sleep(5000);
-            } // Stop the server to cause client node disconnect.
+                Console.WriteLine(">>> Server node started.");
+
+                // Wait for the client node to join.
+                if (ignite.GetCluster().GetNodes().Count == 1)
+                    ignite.GetEvents().WaitForLocal(EventType.NodeJoined);
+
+                // Wait some time while client node performs cache operations.
+                Thread.Sleep(2000);
+
+                // Stop the server to cause client node disconnect.
+            }
 
             // Start the server again.
-            using (var ignite = Ignition.Start(cfg))
+            using (Ignition.Start(cfg))
             {
                 Thread.Sleep(TimeSpan.MaxValue);
             }

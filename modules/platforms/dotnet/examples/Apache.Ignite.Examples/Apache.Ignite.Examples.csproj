@@ -45,7 +45,6 @@
       <HintPath Condition="Exists('..\..\bin\Apache.Ignite.Linq.dll')">..\..\bin\Apache.Ignite.Linq.dll</HintPath>
     </Reference>
     <Reference Include="System" />
-    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
