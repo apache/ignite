@@ -608,37 +608,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private ExchangeType onCacheChangeRequest(boolean crd) throws IgniteCheckedException {
         assert !F.isEmpty(reqs) : this;
 
-        AffinityTopologyVersion topVer = topologyVersion();
-
-        DynamicCacheChangeRequest changeGlobal = reqs.iterator().next();
-
-        if (changeGlobal.globalStateChange()) {
-            List<DynamicCacheChangeRequest> startRequests = new ArrayList<>();
-
-            for (CacheConfiguration cfg : cctx.kernalContext().config().getCacheConfiguration()) {
-                if (!CU.isSystemCache(cfg.getName())) {
-                    DynamicCacheChangeRequest req = cctx.cache().createCacheChangeRequest(
-                        cfg, cfg.getName(), cfg.getNearConfiguration(), CacheType.USER, false
-                    );
-
-                    startRequests.add(req);
-                }
-            }
-
-            if (!F.isEmpty(startRequests)){
-                reqs.addAll(startRequests);
-
-                DynamicCacheChangeBatch batch = new DynamicCacheChangeBatch(reqs);
-
-                boolean topChange = cctx.cache().onCustomEvent(batch, topVer);
-
-                //todo check concurrent modification
-                cctx.discovery().updateDiscoCache(topVer, srvNodes);
-
-                assert topChange;
-            }
-        }
-
         boolean clientOnly = cctx.affinity().onCacheChangeRequest(this, crd, reqs);
 
         if (clientOnly) {

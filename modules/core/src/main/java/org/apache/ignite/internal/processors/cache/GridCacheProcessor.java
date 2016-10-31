@@ -2705,6 +2705,53 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         DynamicCacheChangeBatch batch,
         AffinityTopologyVersion topVer
     ) {
+
+        DynamicCacheChangeRequest changeGlobal = batch.requests().iterator().next();
+
+        if (changeGlobal.globalStateChange()) {
+            try {
+                List<DynamicCacheChangeRequest> startRequests = new ArrayList<>();
+
+                for (CacheConfiguration cfg : ctx.config().getCacheConfiguration()) {
+                    if (!CU.isSystemCache(cfg.getName())) {
+
+                        DynamicCacheChangeRequest req = createCacheChangeRequest(
+                            cfg, cfg.getName(), cfg.getNearConfiguration(), CacheType.USER, false
+                        );
+
+                        startRequests.add(req);
+
+                    }
+                }
+
+                if (sharedCtx.pageStore() != null) {
+                    Set<String> savedCacheNames = sharedCtx.pageStore().savedCacheNames();
+
+                    for (CacheConfiguration cfg : ctx.config().getCacheConfiguration())
+                        savedCacheNames.remove(cfg.getName());
+
+                    if (!ctx.config().isDaemon() && sharedCtx.database().persistenceEnabled() && !F.isEmpty(savedCacheNames)) {
+                        for (String name : savedCacheNames) {
+                            CacheConfiguration cfg = sharedCtx.pageStore().readConfiguration(name);
+
+                            DynamicCacheChangeRequest req = createCacheChangeRequest(
+                                cfg, cfg.getName(), cfg.getNearConfiguration(), CacheType.USER, false
+                            );
+
+                            startRequests.add(req);
+                        }
+                    }
+                }
+
+                if (!F.isEmpty(startRequests))
+                    batch.requests().addAll(startRequests);
+
+            }
+            catch (IgniteCheckedException e) {
+                e.printStackTrace();
+            }
+        }
+
         AffinityTopologyVersion newTopVer = null;
 
         boolean incMinorTopVer = false;
