@@ -17,7 +17,9 @@
 
 namespace Apache.Ignite.Core.Tests
 {
+    using System.Threading;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
@@ -28,13 +30,78 @@ namespace Apache.Ignite.Core.Tests
     [Category(TestUtils.CategoryIntensive)]
     public class ReconnectTest
     {
+        /** */
+        private const string CacheName = "cache";
+
         /// <summary>
         /// Tests the cluster restart scenario, where client is alive, but all servers restart.
         /// </summary>
         [Test]
         public void TestClusterRestart()
         {
-            
+            var clientCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                GridName = "client",
+                ClientMode = true
+            };
+
+            var evt = new AutoResetEvent(false);
+
+            ThreadPool.QueueUserWorkItem(_ => RunServer(evt));
+
+            using (var client = Ignition.Start(clientCfg))
+            {
+                var cache = client.GetCache<int, int>(CacheName);
+
+                cache[1] = 1;
+
+                // Stop the server.
+                evt.Set();
+
+                var cacheEx = Assert.Throws<CacheException>(() => cache.Get(1));
+                var ex = cacheEx.InnerException as ClientDisconnectedException;
+
+                Assert.IsNotNull(ex);
+
+                // Start the server and wait for reconnect.
+                evt.Set();
+                ex.ClientReconnectTask.Wait();
+
+                // Refresh the cache instance and check that it works.
+                var cache1 = client.GetCache<int, int>(CacheName);
+                Assert.AreEqual(0, cache1.GetSize());
+
+                cache1[1] = 2;
+                Assert.AreEqual(2, cache1[1]);
+
+                // Check that old cache instance does not work.
+                var cacheEx1 = Assert.Throws<CacheException>(() => cache.Get(1));
+                Assert.AreEqual("TODO", cacheEx1.Message);
+            }
+        }
+
+        /// <summary>
+        /// Runs the server node.
+        /// </summary>
+        private static void RunServer(WaitHandle evt)
+        {
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                CacheConfiguration = new[] {new CacheConfiguration(CacheName),}
+            };
+
+            using (var ignite = Ignition.Start(cfg))
+            {
+                ignite.WaitTopology(2);
+                evt.WaitOne();
+            }
+
+            evt.WaitOne();
+
+            using (Ignition.Start(cfg))
+            {
+                evt.WaitOne();
+            }
         }
 
         /// <summary>
