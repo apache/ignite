@@ -599,28 +599,30 @@ public class GridReduceQueryExecutor {
 
                 boolean send = true;
 
-                int threadCnt = partsMap != null ? 1 : queryLocalParallelismLevel;
+                final int threadCnt = queryLocalParallelismLevel;
 
-                final Map<UUID, int[]>[] splitPartsMap = new Map[queryLocalParallelismLevel];
+                Map<UUID, int[]>[] splitPartsMap;
+                final Map<UUID, int[]> parts = convert(partsMap);
 
-                if (partsMap == null) {
-                    for (int i = 0; i < queryLocalParallelismLevel; i++)
+                if(threadCnt >0) {
+                    splitPartsMap = new Map[threadCnt];
+
+                    for (int i = 0; i < threadCnt; i++)
                         splitPartsMap[i] = new HashMap<>();
 
                     for (ClusterNode node : nodes) {
-                        int[] primeParts = toIntArray(cctx.affinity().primaryPartitions(node.id(), topVer));
+                        int[] primeParts = (partsMap != null) ? parts.get(node.id()) :
+                            toIntArray(cctx.affinity().primaryPartitions(node.id(), topVer));
 
-                        int partsPerThread = primeParts.length / queryLocalParallelismLevel;
+                        int partsPerThread = primeParts.length / threadCnt;
 
-                        for (int i = 0, idx = 0; i < queryLocalParallelismLevel; i++, idx += partsPerThread) {
+                        for (int i = 0, idx = 0; i < threadCnt; i++, idx += partsPerThread) {
                             int to = (primeParts.length < idx + partsPerThread) ? primeParts.length : idx + partsPerThread;
 
                             splitPartsMap[i].put(node.id(), Arrays.copyOfRange(primeParts, idx, to));
                         }
                     }
                 }
-
-                final Map<UUID, int[]> parts = convert(partsMap);
 
                 for (int threadIdx = 0; threadIdx < threadCnt; threadIdx++) {
                     send &= send(nodes,
@@ -638,7 +640,7 @@ public class GridReduceQueryExecutor {
                                 .pageSize(r.pageSize)
                                 .caches(qry.caches())
                                 .tables(distributedJoins ? qry.tables() : null)
-                                .partitions(partsMap != null ? parts: splitPartsMap[threadIdx])
+                                .partitions(splitPartsMap == null ? parts : splitPartsMap[threadIdx])
                                 .queries(mapQrys)
                                 .threadIdx(threadIdx)
                                 .flags(distributedJoins ? GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS : 0),
