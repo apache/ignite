@@ -916,7 +916,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 }
             }
         }
-        catch (Throwable ex) {
+        catch (Exception ex) {
             resFut.onDone(new IgniteCheckedException("DataStreamer data loading failed.", ex));
         }
     }
