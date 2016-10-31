@@ -567,8 +567,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     "Deployment mode for cache is not CONTINUOUS or SHARED.");
         }
 
-        sharedCtx = createSharedContext(ctx, CU.startStoreSessionListeners(ctx,
-            ctx.config().getCacheStoreSessionListenerFactories()));
+        sharedCtx = createSharedContext(
+            ctx, CU.startStoreSessionListeners(ctx, ctx.config().getCacheStoreSessionListenerFactories())
+        );
 
         globalState = ctx.config().isActiveOnStart() ? CacheState.ACTIVE : CacheState.INACTIVE;
 
@@ -576,38 +577,49 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheSharedManager mgr : sharedCtx.managers())
             mgr.start(sharedCtx);
 
-        CacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
+        if (globalState == CacheState.ACTIVE) {
+            CacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
 
-        Set<String> internalCaches = internalCachesNames();
+            Set<String> internalCaches = internalCachesNames();
 
-        for (int i = 0; i < cfgs.length; i++) {
-            if (ctx.config().isDaemon() && !CU.isMarshallerCache(cfgs[i].getName()))
-                continue;
+            for (int i = 0; i < cfgs.length; i++) {
+                if (ctx.config().isDaemon() && !CU.isMarshallerCache(cfgs[i].getName()))
+                    continue;
 
-            CacheConfiguration<?, ?> cfg = new CacheConfiguration(cfgs[i]);
+                CacheConfiguration<?, ?> cfg = new CacheConfiguration(cfgs[i]);
 
-            cfgs[i] = cfg; // Replace original configuration value.
+                cfgs[i] = cfg; // Replace original configuration value.
 
-            registerCache(internalCaches, cfg);
-        }
+                registerCache(internalCaches, cfg);
+            }
 
-        if (sharedCtx.pageStore() != null) {
-            Set<String> savedCacheNames = sharedCtx.pageStore().savedCacheNames();
+            if (sharedCtx.pageStore() != null) {
+                Set<String> savedCacheNames = sharedCtx.pageStore().savedCacheNames();
 
-            for (CacheConfiguration cfg : cfgs)
-                savedCacheNames.remove(cfg.getName());
+                for (CacheConfiguration cfg : cfgs)
+                    savedCacheNames.remove(cfg.getName());
 
-            for (String name : internalCaches)
-                savedCacheNames.remove(name);
+                for (String name : internalCaches)
+                    savedCacheNames.remove(name);
 
-            if (!ctx.config().isDaemon() && sharedCtx.database().persistenceEnabled() && !F.isEmpty(savedCacheNames)) {
-                log.info("Will start persisted dynamic caches: " + savedCacheNames);
+                if (!ctx.config().isDaemon() && sharedCtx.database().persistenceEnabled() && !F.isEmpty(savedCacheNames)) {
+                    log.info("Will start persisted dynamic caches: " + savedCacheNames);
 
-                for (String name : savedCacheNames) {
-                    CacheConfiguration cfg = sharedCtx.pageStore().readConfiguration(name);
+                    for (String name : savedCacheNames) {
+                        CacheConfiguration cfg = sharedCtx.pageStore().readConfiguration(name);
 
-                    registerCache(internalCaches, cfg);
+                        registerCache(internalCaches, cfg);
+                    }
                 }
+            }
+        }else {
+            CacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
+
+            Set<String> internalCaches = internalCachesNames();
+
+            for (int i = 0; i < cfgs.length; i++) {
+               if (CU.isSystemCache(cfgs[i].getName()))
+                   registerCache(internalCaches, cfgs[i]);
             }
         }
 
@@ -2444,6 +2456,46 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param ccfg Ccfg.
+     * @param cacheName Cache name.
+     * @param nearCfg Near config.
+     * @param cacheType Cache type.
+     * @param failIfExists Fail if exists.
+     */
+    public DynamicCacheChangeRequest createCacheChangeRequest(
+        @Nullable CacheConfiguration ccfg,
+        String cacheName,
+        @Nullable NearCacheConfiguration nearCfg,
+        CacheType cacheType,
+        boolean failIfExists
+    ) throws IgniteCheckedException {
+        DynamicCacheDescriptor desc = registeredCaches.get(maskNull(cacheName));
+
+        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
+
+        req.failIfExists(failIfExists);
+
+        cloneCheckSerializable(ccfg);
+
+        req.deploymentId(IgniteUuid.randomUuid());
+
+        CacheConfiguration cfg = new CacheConfiguration(ccfg);
+
+        CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(cfg);
+
+        initialize(cfg, cacheObjCtx);
+
+        req.startCacheConfiguration(cfg);
+
+        if (nearCfg != null)
+            req.nearCacheConfiguration(nearCfg);
+
+        req.cacheType(cacheType);
+
+        return req;
+    }
+
+    /**
      * @param cacheName Cache name to destroy.
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @return Future that will be completed when cache is destroyed.
@@ -2627,8 +2679,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param topVer Current topology version.
      * @return {@code True} if minor topology version should be increased.
      */
-    public boolean onCustomEvent(DiscoveryCustomMessage msg,
-        AffinityTopologyVersion topVer) {
+    public boolean onCustomEvent(
+        DiscoveryCustomMessage msg,
+        AffinityTopologyVersion topVer
+    ) {
         if (msg instanceof CacheAffinityChangeMessage)
             return sharedCtx.affinity().onCustomEvent(((CacheAffinityChangeMessage)msg));
 
@@ -2636,7 +2690,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             ((StartFullBackupAckDiscoveryMessage)msg).error() == null)
             return true;
 
-        return msg instanceof DynamicCacheChangeBatch && onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
+        if (msg instanceof DynamicCacheChangeBatch)
+            return onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
+
+        return false;
     }
 
     /**
@@ -2644,8 +2701,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param topVer Current topology version.
      * @return {@code True} if minor topology version should be increased.
      */
-    private boolean onCacheChangeRequested(DynamicCacheChangeBatch batch,
-        AffinityTopologyVersion topVer) {
+    private boolean onCacheChangeRequested(
+        DynamicCacheChangeBatch batch,
+        AffinityTopologyVersion topVer
+    ) {
         AffinityTopologyVersion newTopVer = null;
 
         boolean incMinorTopVer = false;

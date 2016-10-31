@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
@@ -54,6 +55,7 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCach
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheState;
+import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -600,11 +602,42 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /**
      * @param crd Coordinator flag.
-     * @throws IgniteCheckedException If failed.
      * @return Exchange type.
+     * @throws IgniteCheckedException If failed.
      */
     private ExchangeType onCacheChangeRequest(boolean crd) throws IgniteCheckedException {
         assert !F.isEmpty(reqs) : this;
+
+        AffinityTopologyVersion topVer = topologyVersion();
+
+        DynamicCacheChangeRequest changeGlobal = reqs.iterator().next();
+
+        if (changeGlobal.globalStateChange()) {
+            List<DynamicCacheChangeRequest> startRequests = new ArrayList<>();
+
+            for (CacheConfiguration cfg : cctx.kernalContext().config().getCacheConfiguration()) {
+                if (!CU.isSystemCache(cfg.getName())) {
+                    DynamicCacheChangeRequest req = cctx.cache().createCacheChangeRequest(
+                        cfg, cfg.getName(), cfg.getNearConfiguration(), CacheType.USER, false
+                    );
+
+                    startRequests.add(req);
+                }
+            }
+
+            if (!F.isEmpty(startRequests)){
+                reqs.addAll(startRequests);
+
+                DynamicCacheChangeBatch batch = new DynamicCacheChangeBatch(reqs);
+
+                boolean topChange = cctx.cache().onCustomEvent(batch, topVer);
+
+                //todo check concurrent modification
+                cctx.discovery().updateDiscoCache(topVer, srvNodes);
+
+                assert topChange;
+            }
+        }
 
         boolean clientOnly = cctx.affinity().onCacheChangeRequest(this, crd, reqs);
 
@@ -1194,8 +1227,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             return err;
 
         if (cctx.shared().cache().globalState() == CacheState.INACTIVE)
-            return new CacheInvalidStateException("Failed to perform cache operation " +
-                "(cluster is not activated): " + cctx.name());
+            return new CacheInvalidStateException(
+                "Failed to perform cache operation (cluster is not activated): " + cctx.name());
 
         PartitionLossPolicy partLossPolicy = cctx.config().getPartitionLossPolicy();
 

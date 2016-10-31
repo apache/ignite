@@ -521,8 +521,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
                     assert customMsg != null;
 
-                    boolean incMinorTopVer = ctx.cache().onCustomEvent(customMsg,
-                        new AffinityTopologyVersion(topVer, minorTopVer));
+                    boolean incMinorTopVer = ctx.cache().onCustomEvent(
+                        customMsg, new AffinityTopologyVersion(topVer, minorTopVer)
+                    );
 
                     if (incMinorTopVer) {
                         minorTopVer++;
@@ -723,6 +724,20 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @param nodes Nodes.
+     */
+    public void updateDiscoCache(AffinityTopologyVersion topVer, Collection<ClusterNode> nodes){
+        DiscoCache cache = new DiscoCache(locNode, F.view(nodes, F.remoteNodes(locNode.id())));
+
+        discoCacheHist.put(topVer, cache);
+
+        boolean set = updateTopologyVersionIfGreater(topVer, cache);
+
+        assert set;
     }
 
     /**
