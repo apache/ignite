@@ -24,8 +24,8 @@ import org.apache.ignite.cache.query.QueryCancelledException;
  * Holds query cancel state.
  */
 public class GridQueryCancel {
-    /** No-op runnable. */
-    private static final Runnable NO_OP = new Runnable() {
+    /** No-op runnable indicating camcelled state. */
+    private static final Runnable CANCELLED = new Runnable() {
         @Override public void run() {
             // No-op.
         }
@@ -49,12 +49,11 @@ public class GridQueryCancel {
         while(true) {
             Runnable tmp = this.clo;
 
-            if (STATE_UPDATER.compareAndSet(this, tmp, clo)) {
-                if (tmp == NO_OP)
-                    throw new QueryCancelledException();
+            if (tmp == CANCELLED)
+                throw new QueryCancelledException();
 
+            if (STATE_UPDATER.compareAndSet(this, tmp, clo))
                 return;
-            }
         }
     }
 
@@ -62,7 +61,7 @@ public class GridQueryCancel {
      * Executes cancel closure if a query is in appropriate state.
      */
     public void cancel() {
-        if (!STATE_UPDATER.compareAndSet(this, null, NO_OP))
+        if (!STATE_UPDATER.compareAndSet(this, null, CANCELLED))
             clo.run();
     }
 
@@ -70,7 +69,7 @@ public class GridQueryCancel {
      * Stops query execution if a user requested cancel.
      */
     public void checkCancelled() throws QueryCancelledException {
-        if (clo == NO_OP)
+        if (clo == CANCELLED)
             throw new QueryCancelledException();
     }
 }
