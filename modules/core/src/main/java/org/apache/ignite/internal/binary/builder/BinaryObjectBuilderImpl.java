@@ -24,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -49,6 +50,10 @@ import org.jetbrains.annotations.Nullable;
 public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     /** */
     private static final Object REMOVED_FIELD_MARKER = new Object();
+
+    /** */
+    private static boolean FIELDS_SORTED_ORDER =
+        Boolean.getBoolean(IgniteSystemProperties.IGNITE_BINARY_SORT_OBJECT_FIELDS);
 
     /** */
     private final BinaryContext ctx;
@@ -522,7 +527,10 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         Object val = val0 == null ? new BinaryValueWithType(BinaryUtils.typeByClass(Object.class), null) : val0;
 
         if (assignedVals == null)
-            assignedVals = new TreeMap<>();
+            if (FIELDS_SORTED_ORDER)
+                assignedVals = new TreeMap<>();
+            else
+                assignedVals = new LinkedHashMap<>();
 
         Object oldVal = assignedVals.put(name, val);
 

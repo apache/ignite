@@ -629,14 +629,11 @@ public class BinaryContext {
                 );
 
                 if (descByCls.replace(cls, desc, desc0)) {
-                    Collection<BinarySchema> schemas =
-                        desc0.schema() != null ? Collections.singleton(desc.schema()) : null;
-
                     BinaryMetadata meta = new BinaryMetadata(desc0.typeId(),
                         desc0.typeName(),
                         desc0.fieldsMeta(),
                         desc0.affFieldKeyName(),
-                        schemas, desc0.isEnum());
+                        null, desc0.isEnum());
 
                     metaHnd.addMeta(desc0.typeId(), meta.wrap(this));
 
@@ -785,12 +782,9 @@ public class BinaryContext {
             registered
         );
 
-        if (!deserialize) {
-            Collection<BinarySchema> schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
-
+        if (!deserialize)
             metaHnd.addMeta(typeId,
-                new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, schemas, desc.isEnum()).wrap(this));
-        }
+                new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, null, desc.isEnum()).wrap(this));
 
         descByCls.put(cls, desc);
 
@@ -1079,6 +1073,14 @@ public class BinaryContext {
     }
 
     /**
+     * @param cls Class.
+     * @return {@code True} is class is predefined.
+     */
+    public boolean isPredefinedType(Class<?> cls) {
+        return predefinedTypeNames.containsKey(SIMPLE_NAME_LOWER_CASE_MAPPER.typeName(cls.getName()));
+    }
+
+    /**
      * @param clsName Class name.
      * @param mapper ID mapper.
      * @param serializer Serializer.
@@ -1123,7 +1125,6 @@ public class BinaryContext {
         cls2Mappers.put(clsName, mapper);
 
         Map<String, Integer> fieldsMeta = null;
-        Collection<BinarySchema> schemas = null;
 
         if (cls != null) {
             if (serializer == null) {
@@ -1148,7 +1149,6 @@ public class BinaryContext {
             );
 
             fieldsMeta = desc.fieldsMeta();
-            schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
 
             descByCls.put(cls, desc);
 
@@ -1157,7 +1157,7 @@ public class BinaryContext {
             predefinedTypes.put(id, desc);
         }
 
-        metaHnd.addMeta(id, new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, schemas, isEnum).wrap(this));
+        metaHnd.addMeta(id, new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, null, isEnum).wrap(this));
     }
 
     /**
