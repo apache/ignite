@@ -62,6 +62,7 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryArrayIdentityResolver;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheMemoryMode;
@@ -1444,8 +1445,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Key-value pair.
      * @throws IgniteCheckedException if failed.
      */
-    @SuppressWarnings({"unchecked", "ConstantConditions"})
-    private IgniteBiTuple<?, ?> rowToKeyValue(GridCacheContext cctx, GridQueryTypeDescriptor desc, Supplier keySupplier,
+    @SuppressWarnings({"unchecked", "ConstantConditions", "ResultOfMethodCallIgnored"})
+    private static IgniteBiTuple<?, ?> rowToKeyValue(GridCacheContext cctx, GridQueryTypeDescriptor desc, Supplier keySupplier,
         Supplier valSupplier, int keyColIdx, int valColIdx, GridSqlColumn[] cols, Object[] row)
         throws IgniteCheckedException {
 
@@ -1466,21 +1467,41 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         if (cctx.binaryMarshaller()) {
-            if (key instanceof BinaryObjectBuilder) {
+            if (key instanceof BinaryObjectBuilder)
                 key = ((BinaryObjectBuilder) key).build();
-
-                // TODO change/remove these statements when there's a way to generate hash codes for new binary objects
-                // We have to deserialize for the object to have hash code,
-                // but we do so only if we've constructed binary key ourselves.
-                if (keyColIdx == -1)
-                    key = ((BinaryObject) key).deserialize();
-            }
 
             if (val instanceof BinaryObjectBuilder)
                 val = ((BinaryObjectBuilder) val).build();
+
+            if (key instanceof BinaryObject)
+                key = updateHashCodeIfNeeded(cctx, (BinaryObject) key);
+
+            if (val instanceof BinaryObject)
+                val = updateHashCodeIfNeeded(cctx, (BinaryObject) val);
         }
 
         return new IgniteBiTuple<>(key, val);
+    }
+
+    /**
+     * Set hash code to binary object if it does not have one.
+     *
+     * @param cctx Cache context.
+     * @param binObj Binary object.
+     * @return Binary object with hash code set.
+     */
+    private static BinaryObject updateHashCodeIfNeeded(GridCacheContext cctx, BinaryObject binObj) {
+        if (U.isHashCodeEmpty(binObj)) {
+            int hash = BinaryArrayIdentityResolver.instance().hashCode(binObj);
+
+            // Empty hash code means no identity set for the type, therefore, we can safely set hash code
+            // via this Builder as it won't be overwritten.
+            return cctx.grid().binary().builder(binObj)
+                .hashCode(hash)
+                .build();
+        }
+        else
+            return binObj;
     }
 
     /**
@@ -1521,12 +1542,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         if (cctx.binaryMarshaller()) {
-            // We can't (yet) generate a hash code for a class that is not present locally and
-            // for which we don't have an explicitly set object in binary form.
-            if (key && colIdx == -1 && (cls == Object.class || !U.overridesEqualsAndHashCode(cls)))
-                throw new UnsupportedOperationException("Currently only local types with overridden equals/hashCode " +
-                    "methods may be used in keys construction from fields in SQL DML operations w/binary marshalling.");
-
             if (colIdx != -1) {
                 // If we have key or value explicitly present in query, create new builder upon them...
                 return new Supplier() {
