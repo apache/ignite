@@ -17,15 +17,6 @@
 
 package org.apache.ignite.binary;
 
-import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
-import org.apache.ignite.internal.binary.BinaryFieldImpl;
-import org.apache.ignite.internal.binary.BinaryObjectExImpl;
-import org.apache.ignite.internal.binary.BinarySerializedFieldComparer;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.util.HashMap;
-
 /**
  * Abstract identity resolver with common routines.
  */

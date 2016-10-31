@@ -186,7 +186,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
-    @Override public BinarySerializedFieldComparer createFieldComparer() {
+    @Override public BinarySerializedFieldComparator createFieldComparator() {
         int schemaOff = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
 
         short flags = BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS);
@@ -197,7 +197,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         int orderBase = start + schemaOff + fieldIdLen;
         int orderMultiplier = fieldIdLen + fieldOffLen;
 
-        return new BinarySerializedFieldComparer(this, null, ptr, start, orderBase, orderMultiplier, fieldOffLen);
+        return new BinarySerializedFieldComparator(this, null, ptr, start, orderBase, orderMultiplier, fieldOffLen);
     }
 
     /** {@inheritDoc} */

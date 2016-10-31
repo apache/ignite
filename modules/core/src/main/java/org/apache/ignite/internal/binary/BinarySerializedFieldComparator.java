@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * Compares fiels in serialized form when possible.
  */
-public class BinarySerializedFieldComparer {
+public class BinarySerializedFieldComparator {
     /** Position: not found. */
     private static final int POS_NOT_FOUND = -1;
 
@@ -65,7 +65,7 @@ public class BinarySerializedFieldComparer {
      * @param orderMultiplier Order multiplier.
      * @param fieldOffLen Field offset length.
      */
-    public BinarySerializedFieldComparer(BinaryObjectExImpl obj, byte[] arr, long ptr, int startOff, int orderBase,
+    public BinarySerializedFieldComparator(BinaryObjectExImpl obj, byte[] arr, long ptr, int startOff, int orderBase,
         int orderMultiplier, int fieldOffLen) {
         assert arr != null && ptr == 0L || arr == null && ptr != 0L;
 
@@ -180,14 +180,14 @@ public class BinarySerializedFieldComparer {
     /**
      * Read long value.
      *
-     * @param offset Offset.
+     * @param off Offset.
      * @return Value.
      */
-    private long readLong(int offset) {
+    private long readLong(int off) {
         if (offheap())
-            return BinaryPrimitives.readLong(ptr, curFieldPos + offset);
+            return BinaryPrimitives.readLong(ptr, curFieldPos + off);
         else
-            return BinaryPrimitives.readLong(arr, curFieldPos + offset);
+            return BinaryPrimitives.readLong(arr, curFieldPos + off);
     }
 
     /**
@@ -197,7 +197,7 @@ public class BinarySerializedFieldComparer {
      * @param c2 Second comparer.
      * @return {@code True} if both fields are equal.
      */
-    public static boolean equals(BinarySerializedFieldComparer c1, BinarySerializedFieldComparer c2) {
+    public static boolean equals(BinarySerializedFieldComparator c1, BinarySerializedFieldComparator c2) {
         // Compare field types.
         byte typ = c1.fieldType();
 
@@ -251,8 +251,8 @@ public class BinarySerializedFieldComparer {
      * @param off Offset (where length is located).
      * @return {@code True} if equal.
      */
-    private static boolean compareByteArrays(BinarySerializedFieldComparer c1, BinarySerializedFieldComparer c2,
-        int off) {
+    private static boolean compareByteArrays(BinarySerializedFieldComparator c1, BinarySerializedFieldComparator c2,
+                                             int off) {
         int len = c1.readInt(off);
 
         if (len != c2.readInt(off))
@@ -277,7 +277,7 @@ public class BinarySerializedFieldComparer {
                 }
                 else {
                     // Swap.
-                    BinarySerializedFieldComparer tmp = c1;
+                    BinarySerializedFieldComparator tmp = c1;
                     c1 = c2;
                     c2 = tmp;
                 }

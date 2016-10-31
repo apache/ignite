@@ -24,7 +24,7 @@ import org.apache.ignite.internal.binary.BinaryPrimitives;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * // TODO
+ * Byte array based binary identity resolver.
  */
 public class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver {
     /** Singleton instance */

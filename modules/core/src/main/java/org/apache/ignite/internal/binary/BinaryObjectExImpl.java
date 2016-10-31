@@ -94,17 +94,17 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
     /**
      * Get field by offset.
      *
-     * @param fieldOffset Field offset.
+     * @param order Field offset.
      * @return Field value.
      */
-    @Nullable public abstract <F> F fieldByOrder(int fieldOffset);
+    @Nullable public abstract <F> F fieldByOrder(int order);
 
     /**
      * Create field comparer.
      *
      * @return Comparer.
      */
-    public abstract BinarySerializedFieldComparer createFieldComparer();
+    public abstract BinarySerializedFieldComparator createFieldComparator();
 
     /**
      * @param ctx Reader context.
