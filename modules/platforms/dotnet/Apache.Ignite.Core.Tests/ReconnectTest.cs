@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.Threading;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
@@ -74,6 +75,8 @@ namespace Apache.Ignite.Core.Tests
             ex.ClientReconnectTask.Wait();
 
             // Check the event args.
+            Thread.Sleep(1);  // Wait for event handler
+
             Assert.IsNotNull(eventArgs);
             Assert.IsTrue(eventArgs.HasClusterRestarted);
 
