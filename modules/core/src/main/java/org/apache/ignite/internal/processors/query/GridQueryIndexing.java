@@ -29,7 +29,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -58,17 +57,6 @@ public interface GridQueryIndexing {
     public void stop() throws IgniteCheckedException;
 
     /**
-     * Runs two step query.
-     *
-     * @param cctx Cache context.
-     * @param qry Query.
-     * @param keepCacheObjects If {@code true}, cache objects representation will be preserved.
-     * @return Cursor.
-     */
-    public Iterable<List<?>> queryTwoStep(GridCacheContext<?,?> cctx, GridCacheTwoStepQuery qry,
-        boolean keepCacheObjects);
-
-    /**
      * Parses SQL query into two step query and executes it.
      *
      * @param cctx Cache context.
@@ -93,11 +81,14 @@ public interface GridQueryIndexing {
      * @param qry Query.
      * @param params Query parameters.
      * @param filters Space name and key filters.
+     * @param timeout Query timeout in milliseconds.
+     * @param cancel Query cancel.
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
-    public GridQueryFieldsResult queryFields(@Nullable String spaceName, String qry,
-        Collection<Object> params, IndexingQueryFilter filters) throws IgniteCheckedException;
+    public GridQueryFieldsResult execute(@Nullable String spaceName, String qry,
+        Collection<Object> params, IndexingQueryFilter filters, int timeout, GridQueryCancel cancel)
+        throws IgniteCheckedException;
 
     /**
      * Executes regular query.
@@ -241,4 +232,9 @@ public interface GridQueryIndexing {
      * @param reconnectFut Reconnect future.
      */
     public void onDisconnected(IgniteFuture<?> reconnectFut);
+
+    /**
+     * Cancels all executing queries.
+     */
+    public void cancelAllQueries();
 }

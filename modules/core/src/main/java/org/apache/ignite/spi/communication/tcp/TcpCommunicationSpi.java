@@ -90,6 +90,7 @@ import org.apache.ignite.internal.util.nio.GridShmemCommunicationClient;
 import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
 import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
+import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -131,6 +132,7 @@ import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
 
 /**
  * <tt>TcpCommunicationSpi</tt> is default communication SPI which uses
@@ -1779,8 +1781,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         // If configured TCP port is busy, find first available in range.
         for (int port = shmemPort; port < shmemPort + locPortRange; port++) {
             try {
+                IgniteConfiguration cfg = ignite.configuration();
+
                 IpcSharedMemoryServerEndpoint srv =
-                    new IpcSharedMemoryServerEndpoint(log, ignite.configuration().getNodeId(), gridName);
+                    new IpcSharedMemoryServerEndpoint(log, cfg.getNodeId(), gridName, cfg.getWorkDirectory());
 
                 srv.setPort(port);
 
@@ -2374,19 +2378,28 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     long rcvCnt = -1;
 
-                    SSLEngine sslEngine = null;
+                    Map<Integer, Object> meta = new HashMap<>();
+
+                    GridSslMeta sslMeta = null;
 
                     try {
                         ch.socket().connect(addr, (int)timeoutHelper.nextTimeoutChunk(connTimeout));
 
                         if (isSslEnabled()) {
-                            sslEngine = ignite.configuration().getSslContextFactory().create().createSSLEngine();
+                            meta.put(SSL_META.ordinal(), sslMeta = new GridSslMeta());
+
+                            SSLEngine sslEngine = ignite.configuration().getSslContextFactory().create().createSSLEngine();
 
                             sslEngine.setUseClientMode(true);
+
+                            sslMeta.sslEngine(sslEngine);
                         }
 
-                        rcvCnt = safeHandshake(ch, recoveryDesc, node.id(),
-                            timeoutHelper.nextTimeoutChunk(connTimeout0), sslEngine);
+                        rcvCnt = safeHandshake(ch,
+                            recoveryDesc,
+                            node.id(),
+                            timeoutHelper.nextTimeoutChunk(connTimeout0),
+                            sslMeta);
 
                         if (rcvCnt == -1)
                             return null;
@@ -2397,15 +2410,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     }
 
                     try {
-                        Map<Integer, Object> meta = new HashMap<>();
-
                         meta.put(NODE_ID_META, node.id());
-
-                        if (isSslEnabled()) {
-                            assert sslEngine != null;
-
-                            meta.put(GridNioSessionMetaKey.SSL_ENGINE.ordinal(), sslEngine);
-                        }
 
                         if (recoveryDesc != null) {
                             recoveryDesc.onHandshake(rcvCnt);
@@ -2558,7 +2563,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @param recovery Recovery descriptor if use recovery handshake, otherwise {@code null}.
      * @param rmtNodeId Remote node.
      * @param timeout Timeout for handshake.
-     * @param ssl SSL engine if used cryptography, otherwise {@code null}.
+     * @param sslMeta Session meta.
      * @throws IgniteCheckedException If handshake failed or wasn't completed withing timeout.
      * @return Handshake response.
      */
@@ -2568,7 +2573,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         @Nullable GridNioRecoveryDescriptor recovery,
         UUID rmtNodeId,
         long timeout,
-        @Nullable SSLEngine ssl
+        GridSslMeta sslMeta
     ) throws IgniteCheckedException {
         HandshakeTimeoutObject<T> obj = new HandshakeTimeoutObject<>(client, U.currentTimeMillis() + timeout);
 
@@ -2590,7 +2595,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     ByteBuffer buf;
 
                     if (isSslEnabled()) {
-                        sslHnd = new BlockingSslHandler(ssl, ch, directBuf, ByteOrder.nativeOrder(), log);
+                        assert sslMeta != null;
+
+                        sslHnd = new BlockingSslHandler(sslMeta.sslEngine(), ch, directBuf, ByteOrder.nativeOrder(), log);
 
                         if (!sslHnd.handshake())
                             throw new IgniteCheckedException("SSL handshake is not completed.");
@@ -2708,11 +2715,21 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                                 i += decode.remaining();
 
-                                buf.flip();
-                                buf.compact();
+                                buf.clear();
                             }
 
                             rcvCnt = decode.getLong(1);
+
+                            if (decode.limit() > 9) {
+                                decode.position(9);
+
+                                sslMeta.decodedBuffer(decode);
+                            }
+
+                            ByteBuffer inBuf = sslHnd.inputBuffer();
+
+                            if (inBuf.position() > 0)
+                                sslMeta.encodedBuffer(inBuf);
                         }
                         else {
                             buf = ByteBuffer.allocate(9);

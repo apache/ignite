@@ -718,7 +718,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      * Partition refresh callback.
      */
-    void refreshPartitions() {
+    private void refreshPartitions() {
         ClusterNode oldest = CU.oldestAliveCacheServerNode(cctx, AffinityTopologyVersion.NONE);
 
         if (oldest == null) {
@@ -735,7 +735,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         // If this is the oldest node.
         if (oldest.id().equals(cctx.localNodeId())) {
-            rmts = CU.remoteNodes(cctx, AffinityTopologyVersion.NONE);
+            GridDhtPartitionsExchangeFuture lastFut = lastInitializedFut;
+
+            // No need to send to nodes which did not finish their first exchange.
+            AffinityTopologyVersion rmtTopVer =
+                lastFut != null ? lastFut.topologyVersion() : AffinityTopologyVersion.NONE;
+
+            rmts = CU.remoteNodes(cctx, rmtTopVer);
 
             if (log.isDebugEnabled())
                 log.debug("Refreshing partitions from oldest node: " + cctx.localNodeId());

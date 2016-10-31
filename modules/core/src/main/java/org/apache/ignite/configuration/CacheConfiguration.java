@@ -191,6 +191,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default batch size for write-behind cache store. */
     public static final int DFLT_WRITE_BEHIND_BATCH_SIZE = 512;
 
+    /** Default maximum number of query iterators that can be stored. */
+    public static final int DFLT_MAX_QUERY_ITERATOR_CNT = 1024;
+
     /** Default value for load previous value flag. */
     public static final boolean DFLT_LOAD_PREV_VAL = false;
 
@@ -209,7 +212,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default size for onheap SQL row cache size. */
     public static final int DFLT_SQL_ONHEAP_ROW_CACHE_SIZE = 10 * 1024;
 
-    /** Default value for keep binary in store behavior .*/
+    /** Default value for keep binary in store behavior . */
     @SuppressWarnings({"UnnecessaryBoxing", "BooleanConstructorCall"})
     public static final Boolean DFLT_STORE_KEEP_BINARY = new Boolean(false);
 
@@ -333,6 +336,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Maximum batch size for write-behind cache store. */
     private int writeBehindBatchSize = DFLT_WRITE_BEHIND_BATCH_SIZE;
+
+    /** Maximum number of query iterators that can be stored. */
+    private int maxQryIterCnt = DFLT_MAX_QUERY_ITERATOR_CNT;
 
     /** Memory mode. */
     private CacheMemoryMode memMode = DFLT_MEMORY_MODE;
@@ -886,7 +892,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /**
      * Sets factory for persistent storage for cache data.
-
+     *
      * @param storeFactory Cache store factory.
      * @return {@code this} for chaining.
      */
@@ -1627,6 +1633,31 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setOffHeapMaxMemory(long offHeapMaxMem) {
         this.offHeapMaxMem = offHeapMaxMem;
+
+        return this;
+    }
+
+    /**
+     * Gets maximum number of query iterators that can be stored. Iterators are stored to
+     * support query pagination when each page of data is sent to user's node only on demand.
+     * Increase this property if you are running and processing lots of queries in parallel.
+     * <p>
+     * Default value is {@link #DFLT_MAX_QUERY_ITERATOR_CNT}.
+     *
+     * @return Maximum number of query iterators that can be stored.
+     */
+    public int getMaxQueryIteratorsCount() {
+        return maxQryIterCnt;
+    }
+
+    /**
+     * Sets maximum number of query iterators that can be stored.
+     *
+     * @param maxQryIterCnt Maximum number of query iterators that can be stored.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setMaxQueryIteratorsCount(int maxQryIterCnt) {
+        this.maxQryIterCnt = maxQryIterCnt;
 
         return this;
     }
@@ -2637,10 +2668,17 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         ClassProperty(Member member) {
             this.member = member;
 
-            name = member instanceof Method && member.getName().startsWith("get") && member.getName().length() > 3 ?
-                member.getName().substring(3) : member.getName();
+            name = member.getName();
 
-            ((AccessibleObject) member).setAccessible(true);
+            if (member instanceof Method) {
+                if (member.getName().startsWith("get") && member.getName().length() > 3)
+                    name = member.getName().substring(3);
+
+                if (member.getName().startsWith("is") && member.getName().length() > 2)
+                    name = member.getName().substring(2);
+            }
+
+            ((AccessibleObject)member).setAccessible(true);
         }
 
         /**
