@@ -17,11 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.QueryCancelledException;
@@ -29,10 +24,13 @@ import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 
-import static org.apache.ignite.internal.processors.cache.QueryCursorImpl.State.CLOSED;
-import static org.apache.ignite.internal.processors.cache.QueryCursorImpl.State.EXECUTION;
-import static org.apache.ignite.internal.processors.cache.QueryCursorImpl.State.IDLE;
-import static org.apache.ignite.internal.processors.cache.QueryCursorImpl.State.RESULT_READY;
+import javax.cache.CacheException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+
+import static org.apache.ignite.internal.processors.cache.QueryCursorImpl.State.*;
 
 /**
  * Query cursor implementation.
@@ -40,7 +38,7 @@ import static org.apache.ignite.internal.processors.cache.QueryCursorImpl.State.
 public class QueryCursorImpl<T> implements QueryCursorEx<T> {
     /** */
     private final static AtomicReferenceFieldUpdater<QueryCursorImpl, State> STATE_UPDATER =
-            AtomicReferenceFieldUpdater.newUpdater(QueryCursorImpl.class, State.class, "state");
+        AtomicReferenceFieldUpdater.newUpdater(QueryCursorImpl.class, State.class, "state");
 
     /** Query executor. */
     private Iterable<T> iterExec;

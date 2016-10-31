@@ -267,7 +267,7 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                                         continue;
 
                                     if (th.getMessage() != null &&
-                                            th.getMessage().startsWith("Failed to fetch data from node:")) {
+                                        th.getMessage().startsWith("Failed to fetch data from node:")) {
                                         failedOnRemoteFetch = true;
 
                                         break;

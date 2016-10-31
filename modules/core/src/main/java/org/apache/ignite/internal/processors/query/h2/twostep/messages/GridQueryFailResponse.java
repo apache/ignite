@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+
+import java.nio.ByteBuffer;
 
 /**
  * Error message.
@@ -113,13 +114,13 @@ public class GridQueryFailResponse implements Message {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeByte("failCode", failCode))
+                if (!writer.writeLong("qryReqId", qryReqId))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeLong("qryReqId", qryReqId))
+                if (!writer.writeByte("failCode", failCode))
                     return false;
 
                 writer.incrementState();
@@ -146,7 +147,7 @@ public class GridQueryFailResponse implements Message {
                 reader.incrementState();
 
             case 1:
-                failCode = reader.readByte("failCode");
+                qryReqId = reader.readLong("qryReqId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -154,7 +155,7 @@ public class GridQueryFailResponse implements Message {
                 reader.incrementState();
 
             case 2:
-                qryReqId = reader.readLong("qryReqId");
+                failCode = reader.readByte("failCode");
 
                 if (!reader.isLastRead())
                     return false;
