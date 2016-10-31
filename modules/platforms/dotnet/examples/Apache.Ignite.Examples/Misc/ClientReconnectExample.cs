@@ -22,6 +22,8 @@ using Apache.Ignite.Core.Common;
 
 namespace Apache.Ignite.Examples.Misc
 {
+    using System.Configuration;
+
     /// <summary>
     /// This example demonstrates the usage of automatic client reconnect feature. 
     /// Should be run with standalone Apache Ignite.NET node.
@@ -107,6 +109,36 @@ namespace Apache.Ignite.Examples.Misc
                 Console.WriteLine();
                 Console.WriteLine(">>> Example finished, press any key to exit ...");
                 Console.ReadKey();
+            }
+        }
+
+        /// <summary>
+        /// Runs the server node.
+        /// </summary>
+        private static void RunServer()
+        {
+            // TODO: Use programmatic config instead?
+
+            // Get the Ignite configuration section from app.config.
+            var section = (IgniteConfigurationSection) ConfigurationManager.GetSection("igniteConfiguration");
+
+            // Create a new configuration based on app.config settings.
+            var cfg = new IgniteConfiguration(section.IgniteConfiguration)
+            {
+                // Nodes within a single process are distinguished by GridName property.
+                GridName = "serverNode"
+            };
+
+            // Start a server, wait for client node to connect.
+            using (var ignite = Ignition.Start(cfg))
+            {
+                Thread.Sleep(5000);
+            } // Stop the server to cause client node disconnect.
+
+            // Start the server again.
+            using (var ignite = Ignition.Start(cfg))
+            {
+                Thread.Sleep(TimeSpan.MaxValue);
             }
         }
     }
