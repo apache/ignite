@@ -742,35 +742,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ClusterNode locNode = ctx.discovery().localNode();
 
         try {
-            if (!ctx.config().isDaemon() && !getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
-                for (ClusterNode n : ctx.discovery().remoteNodes()) {
-                    if (n.attribute(ATTR_CONSISTENCY_CHECK_SKIPPED))
-                        continue;
-
-                    checkTransactionConfiguration(n);
-
-                    DeploymentMode locDepMode = ctx.config().getDeploymentMode();
-                    DeploymentMode rmtDepMode = n.attribute(IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE);
-
-                    CU.checkAttributeMismatch(log, null, n.id(), "deploymentMode", "Deployment mode",
-                        locDepMode, rmtDepMode, true);
-
-                    for (DynamicCacheDescriptor desc : registeredCaches.values()) {
-                        CacheConfiguration rmtCfg = desc.remoteConfiguration(n.id());
-
-                        if (rmtCfg != null) {
-                            CacheConfiguration locCfg = desc.cacheConfiguration();
-
-                            checkCache(locCfg, rmtCfg, n);
-
-                            // Check plugin cache configurations.
-                            CachePluginManager pluginMgr = desc.pluginManager();
-
-                            pluginMgr.validateRemotes(rmtCfg, n);
-                        }
-                    }
-                }
-            }
+            consistencyCheck();
 
             for (DynamicCacheDescriptor desc : registeredCaches.values()) {
                 if (ctx.config().isDaemon() && !CU.isMarshallerCache(desc.cacheConfiguration().getName()))
@@ -780,7 +752,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     sharedCtx.pageStore().initializeForCache(desc.cacheConfiguration());
             }
 
-            sharedCtx.database().onKernalStart(false);
+            if (globalState == CacheState.ACTIVE)
+                sharedCtx.database().onKernalStart(false);
 
             // Start dynamic caches received from collect discovery data.
             for (DynamicCacheDescriptor desc : registeredCaches.values()) {
@@ -867,6 +840,41 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         assert caches.containsKey(CU.MARSH_CACHE_NAME) : "Marshaller cache should be started";
         assert ctx.config().isDaemon() || caches.containsKey(CU.UTILITY_CACHE_NAME) : "Utility cache should be started";
+    }
+
+    /**
+     *
+     */
+    private void consistencyCheck() throws IgniteCheckedException {
+        if (!ctx.config().isDaemon() && !getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
+            for (ClusterNode n : ctx.discovery().remoteNodes()) {
+                if (n.attribute(ATTR_CONSISTENCY_CHECK_SKIPPED))
+                    continue;
+
+                checkTransactionConfiguration(n);
+
+                DeploymentMode locDepMode = ctx.config().getDeploymentMode();
+                DeploymentMode rmtDepMode = n.attribute(IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE);
+
+                CU.checkAttributeMismatch(log, null, n.id(), "deploymentMode", "Deployment mode",
+                    locDepMode, rmtDepMode, true);
+
+                for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+                    CacheConfiguration rmtCfg = desc.remoteConfiguration(n.id());
+
+                    if (rmtCfg != null) {
+                        CacheConfiguration locCfg = desc.cacheConfiguration();
+
+                        checkCache(locCfg, rmtCfg, n);
+
+                        // Check plugin cache configurations.
+                        CachePluginManager pluginMgr = desc.pluginManager();
+
+                        pluginMgr.validateRemotes(rmtCfg, n);
+                    }
+                }
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -2705,10 +2713,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         DynamicCacheChangeBatch batch,
         AffinityTopologyVersion topVer
     ) {
-
         DynamicCacheChangeRequest changeGlobal = batch.requests().iterator().next();
 
-        if (changeGlobal.globalStateChange()) {
+        if (changeGlobal != null && changeGlobal.globalStateChange()) {
             try {
                 List<DynamicCacheChangeRequest> startRequests = new ArrayList<>();
 
