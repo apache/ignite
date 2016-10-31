@@ -29,10 +29,19 @@ namespace Apache.Ignite.Core.Tests
     public class ReconnectTest
     {
         /// <summary>
-        /// Tests the disconnected exception.
+        /// Tests the cluster restart scenario, where client is alive, but all servers restart.
         /// </summary>
         [Test]
-        public void TestDisconnectedException()
+        public void TestClusterRestart()
+        {
+            
+        }
+
+        /// <summary>
+        /// Tests the failed connection scenario, where servers are alive, but can't be contacted.
+        /// </summary>
+        [Test]
+        public void TestFailedConnection()
         {
             var cfg = new IgniteConfiguration
             {
