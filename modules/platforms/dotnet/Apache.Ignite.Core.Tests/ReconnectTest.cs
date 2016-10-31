@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Tests
 {
+    using System;
+    using System.Threading;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
@@ -68,6 +70,7 @@ namespace Apache.Ignite.Core.Tests
             ex.ClientReconnectTask.Wait();
 
             // Refresh the cache instance and check that it works.
+            Thread.Sleep(2000);  // TODO: Why do we need this? What kind of a race is there?
             var cache1 = client.GetCache<int, int>(CacheName);
             Assert.AreEqual(0, cache1.GetSize());
 
@@ -75,8 +78,8 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(2, cache1[1]);
 
             // Check that old cache instance does not work.
-            var cacheEx1 = Assert.Throws<CacheException>(() => cache.Get(1));
-            Assert.AreEqual("TODO", cacheEx1.Message);
+            var cacheEx1 = Assert.Throws<InvalidOperationException>(() => cache.Get(1));
+            Assert.AreEqual("Cache has been closed or destroyed: " + CacheName, cacheEx1.Message);
         }
 
         /// <summary>
