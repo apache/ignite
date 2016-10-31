@@ -1,0 +1,308 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
+import javax.cache.processor.EntryProcessor;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheAtomicFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.CI2;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+
+/**
+ * DHT atomic cache backup update future.
+ */
+public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapter<Void>
+    implements GridCacheAtomicFuture<Void> {
+
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** Logger. */
+    protected static IgniteLogger log;
+
+    /** Logger. */
+    protected static IgniteLogger msgLog;
+
+    /** Write version. */
+    protected final GridCacheVersion writeVer;
+
+    /** Cache context. */
+    protected final GridCacheContext cctx;
+
+    /** Future version. */
+    protected final GridCacheVersion futVer;
+
+    /** Completion callback. */
+    @GridToStringExclude
+    protected final CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb;
+
+    /** Update request. */
+    protected final GridNearAtomicUpdateRequest updateReq;
+
+    /** Update response. */
+    protected final GridNearAtomicUpdateResponse updateRes;
+
+    /** Force transform backup flag. */
+    protected boolean forceTransformBackups;
+
+    /** Mappings. */
+    @GridToStringInclude
+    protected final Map<UUID, GridDhtAtomicUpdateRequest> mappings;
+
+    /** */
+    protected final boolean waitForExchange;
+
+    /** Continuous query closures. */
+    protected Collection<CI1<Boolean>> cntQryClsrs;
+
+    /** Response count. */
+    private volatile int resCnt;
+
+    /**
+     * @param cctx Cache context.
+     * @param completionCb Callback to invoke when future is completed.
+     * @param writeVer Write version.
+     * @param updateReq Update request.
+     * @param updateRes Update response.
+     */
+    protected GridDhtAtomicAbstractUpdateFuture(
+        GridCacheContext cctx,
+        CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
+        GridCacheVersion writeVer,
+        GridNearAtomicUpdateRequest updateReq,
+        GridNearAtomicUpdateResponse updateRes,
+        int initialMappingsSize) {
+
+        this.cctx = cctx;
+
+        futVer = cctx.versions().next(updateReq.topologyVersion());
+        this.updateReq = updateReq;
+        this.completionCb = completionCb;
+        this.updateRes = updateRes;
+        this.writeVer = writeVer;
+
+        mappings = U.newHashMap(initialMappingsSize);
+        waitForExchange = !(updateReq.topologyLocked() || (updateReq.fastMap() && !updateReq.clientRequest()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<Void> completeFuture(AffinityTopologyVersion topVer) {
+        if (waitForExchange && updateReq.topologyVersion().compareTo(topVer) < 0)
+            return this;
+
+        return null;
+    }
+
+    /**
+     * @param clsr Continuous query closure.
+     */
+    public void addContinuousQueryClosure(CI1<Boolean> clsr) {
+        assert !isDone() : this;
+
+        if (cntQryClsrs == null)
+            cntQryClsrs = new ArrayList<>(10);
+
+        cntQryClsrs.add(clsr);
+    }
+
+    /**
+     * @param entry Entry to map.
+     * @param val Value to write.
+     * @param entryProcessor Entry processor.
+     * @param ttl TTL (optional).
+     * @param conflictExpireTime Conflict expire time (optional).
+     * @param conflictVer Conflict version (optional).
+     * @param addPrevVal If {@code true} sends previous value to backups.
+     * @param prevVal Previous value.
+     * @param updateCntr Partition update counter.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    public abstract void addWriteEntry(GridDhtCacheEntry entry,
+        @Nullable CacheObject val,
+        EntryProcessor<Object, Object, Object> entryProcessor,
+        long ttl,
+        long conflictExpireTime,
+        @Nullable GridCacheVersion conflictVer,
+        boolean addPrevVal,
+        @Nullable CacheObject prevVal,
+        long updateCntr);
+
+    /**
+     * @param readers Entry readers.
+     * @param entry Entry.
+     * @param val Value.
+     * @param entryProcessor Entry processor..
+     * @param ttl TTL for near cache update (optional).
+     * @param expireTime Expire time for near cache update (optional).
+     */
+    public abstract void addNearWriteEntries(Iterable<UUID> readers,
+        GridDhtCacheEntry entry,
+        @Nullable CacheObject val,
+        EntryProcessor<Object, Object, Object> entryProcessor,
+        long ttl,
+        long expireTime);
+
+    /**
+     * @return Write version.
+     */
+    GridCacheVersion writeVersion() {
+        return writeVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteUuid futureId() {
+        return futVer.asGridUuid();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheVersion version() {
+        return futVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean onNodeLeft(UUID nodeId) {
+        boolean res = registerResponse(nodeId);
+
+        if (res && msgLog.isDebugEnabled()) {
+            msgLog.debug("DTH update fut, node left [futId=" + futVer + ", writeVer=" + writeVer +
+                ", node=" + nodeId + ']');
+        }
+
+        return res;
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @return {@code True} if request found.
+     */
+    protected boolean registerResponse(UUID nodeId) {
+        int resCnt0;
+
+        GridDhtAtomicUpdateRequest req = mappings.get(nodeId);
+
+        if (req != null) {
+            synchronized (this) {
+                if (req.onResponse()) {
+                    resCnt0 = resCnt;
+
+                    resCnt0 += 1;
+
+                    resCnt = resCnt0;
+                }
+                else
+                    return false;
+            }
+
+            if (resCnt0 == mappings.size())
+                onDone();
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Sends requests to remote nodes.
+     */
+    public void map() {
+        if (!mappings.isEmpty()) {
+            for (GridDhtAtomicUpdateRequest req : mappings.values()) {
+                try {
+                    cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
+
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("DTH update fut, sent request [futId=" + futVer +
+                            ", writeVer=" + writeVer + ", node=" + req.nodeId() + ']');
+                    }
+                }
+                catch (ClusterTopologyCheckedException ignored) {
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("DTH update fut, failed to send request, node left [futId=" + futVer +
+                            ", writeVer=" + writeVer + ", node=" + req.nodeId() + ']');
+                    }
+
+                    registerResponse(req.nodeId());
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(msgLog, "Failed to send request [futId=" + futVer +
+                        ", writeVer=" + writeVer + ", node=" + req.nodeId() + ']');
+
+                    registerResponse(req.nodeId());
+                }
+            }
+        }
+        else
+            onDone();
+
+        // Send response right away if no ACKs from backup is required.
+        // Backups will send ACKs anyway, future will be completed after all backups have replied.
+        if (updateReq.writeSynchronizationMode() != FULL_SYNC)
+            completionCb.apply(updateReq, updateRes);
+    }
+
+    /**
+     * Deferred update response.
+     *
+     * @param nodeId Backup node ID.
+     */
+    public void onResult(UUID nodeId) {
+        if (log.isDebugEnabled())
+            log.debug("Received deferred DHT atomic update future result [nodeId=" + nodeId + ']');
+
+        registerResponse(nodeId);
+    }
+
+    /**
+     * Callback for backup update response.
+     *
+     * @param nodeId Backup node ID.
+     * @param updateRes Update response.
+     */
+    public abstract void onResult(UUID nodeId, GridDhtAtomicUpdateResponse updateRes);
+
+    /** {@inheritDoc} */
+    @Override public boolean trackable() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void markNotTrackable() {
+        // No-op.
+    }
+}

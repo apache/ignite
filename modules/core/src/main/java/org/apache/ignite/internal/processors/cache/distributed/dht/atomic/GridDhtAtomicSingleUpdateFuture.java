@@ -17,11 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.processor.EntryProcessor;
@@ -45,9 +41,9 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
- * DHT atomic cache backup update future.
+ *
  */
-public class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
+public class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -55,10 +51,10 @@ public class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Future keys. */
-    private final Collection<KeyCacheObject> keys;
+    private KeyCacheObject key;
 
     /** Entries with readers. */
-    private Map<KeyCacheObject, GridDhtCacheEntry> nearReadersEntries;
+    private GridDhtCacheEntry nearReaderEntry;
 
     /**
      * @param cctx Cache context.
@@ -67,21 +63,19 @@ public class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture
      * @param updateReq Update request.
      * @param updateRes Update response.
      */
-    public GridDhtAtomicUpdateFuture(
+    public GridDhtAtomicSingleUpdateFuture(
         GridCacheContext cctx,
         CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
         GridCacheVersion writeVer,
         GridNearAtomicUpdateRequest updateReq,
         GridNearAtomicUpdateResponse updateRes
     ) {
-        super(cctx, completionCb, writeVer, updateReq, updateRes, updateReq.keys().size());
+        super(cctx, completionCb, writeVer, updateReq, updateRes, cctx.grid().cluster().nodes().size());
 
         if (log == null) {
             msgLog = cctx.shared().atomicMessageLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridDhtAtomicUpdateFuture.class);
         }
-
-        keys = new ArrayList<>(updateReq.keys().size());
     }
 
     /** {@inheritDoc} */
@@ -104,7 +98,9 @@ public class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture
 
         CacheWriteSynchronizationMode syncMode = updateReq.writeSynchronizationMode();
 
-        keys.add(entry.key());
+        assert key == null || key.equals(entry.key()) : key;
+
+        key = entry.key();
 
         for (int i = 0; i < dhtNodes.size(); i++) {
             ClusterNode node = dhtNodes.get(i);
@@ -156,7 +152,8 @@ public class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture
         long expireTime) {
         CacheWriteSynchronizationMode syncMode = updateReq.writeSynchronizationMode();
 
-        keys.add(entry.key());
+        assert key == null || key.equals(entry.key()) : key;
+        key = entry.key();
 
         AffinityTopologyVersion topVer = updateReq.topologyVersion();
 
@@ -188,10 +185,7 @@ public class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture
                 mappings.put(nodeId, updateReq);
             }
 
-            if (nearReadersEntries == null)
-                nearReadersEntries = new HashMap<>();
-
-            nearReadersEntries.put(entry.key(), entry);
+            nearReaderEntry = entry;
 
             updateReq.addNearWriteValue(entry.key(),
                 val,
@@ -210,16 +204,12 @@ public class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture
             this.updateRes.addFailedKeys(updateRes.failedKeys(), updateRes.error());
 
         if (!F.isEmpty(updateRes.nearEvicted())) {
-            for (KeyCacheObject key : updateRes.nearEvicted()) {
-                GridDhtCacheEntry entry = nearReadersEntries.get(key);
-
-                try {
-                    entry.removeReader(nodeId, updateRes.messageId());
-                }
-                catch (GridCacheEntryRemovedException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("Entry with evicted reader was removed [entry=" + entry + ", err=" + e + ']');
-                }
+            try {
+                nearReaderEntry.removeReader(nodeId, updateRes.messageId());
+            }
+            catch (GridCacheEntryRemovedException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Entry with evicted reader was removed [entry=" + nearReaderEntry + ", err=" + e + ']');
             }
         }
 
@@ -233,10 +223,8 @@ public class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture
 
             boolean suc = err == null;
 
-            if (!suc) {
-                for (KeyCacheObject key : keys)
-                    updateRes.addFailedKey(key, err);
-            }
+            if (!suc)
+                updateRes.addFailedKey(key, err);
 
             if (cntQryClsrs != null) {
                 for (CI1<Boolean> clsr : cntQryClsrs)
@@ -254,6 +242,6 @@ public class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtAtomicUpdateFuture.class, this);
+        return S.toString(GridDhtAtomicSingleUpdateFuture.class, this);
     }
 }

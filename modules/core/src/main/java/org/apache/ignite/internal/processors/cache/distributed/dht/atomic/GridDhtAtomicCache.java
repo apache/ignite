@@ -1687,7 +1687,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         assert !req.returnValue() || (req.operation() == TRANSFORM || keys.size() == 1);
 
-        GridDhtAtomicUpdateFuture dhtFut = null;
+        GridDhtAtomicAbstractUpdateFuture dhtFut = null;
 
         boolean remap = false;
 
@@ -1910,7 +1910,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final GridNearAtomicUpdateResponse res,
         final List<GridDhtCacheEntry> locked,
         final GridCacheVersion ver,
-        @Nullable GridDhtAtomicUpdateFuture dhtFut,
+        @Nullable GridDhtAtomicAbstractUpdateFuture dhtFut,
         final CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
         final boolean replicate,
         final String taskName,
@@ -2333,7 +2333,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         GridNearAtomicUpdateResponse res,
         List<GridDhtCacheEntry> locked,
         GridCacheVersion ver,
-        @Nullable GridDhtAtomicUpdateFuture dhtFut,
+        @Nullable GridDhtAtomicAbstractUpdateFuture dhtFut,
         CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
         boolean replicate,
         String taskName,
@@ -2556,7 +2556,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @return Deleted entries.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    @Nullable private GridDhtAtomicUpdateFuture updatePartialBatch(
+    @Nullable private GridDhtAtomicAbstractUpdateFuture updatePartialBatch(
         final boolean hasNear,
         final int firstEntryIdx,
         final List<GridDhtCacheEntry> entries,
@@ -2566,7 +2566,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable final Map<KeyCacheObject, CacheObject> putMap,
         @Nullable final Collection<KeyCacheObject> rmvKeys,
         @Nullable final Map<KeyCacheObject, EntryProcessor<Object, Object, Object>> entryProcessorMap,
-        @Nullable GridDhtAtomicUpdateFuture dhtFut,
+        @Nullable GridDhtAtomicAbstractUpdateFuture dhtFut,
         final CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
         final GridNearAtomicUpdateRequest req,
         final GridNearAtomicUpdateResponse res,
@@ -3040,7 +3040,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param force If {@code true} then creates future without optimizations checks.
      * @return Backup update future or {@code null} if there are no backups.
      */
-    @Nullable private GridDhtAtomicUpdateFuture createDhtFuture(
+    @Nullable private GridDhtAtomicAbstractUpdateFuture createDhtFuture(
         GridCacheVersion writeVer,
         GridNearAtomicUpdateRequest updateReq,
         GridNearAtomicUpdateResponse updateRes,
@@ -3068,7 +3068,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         }
 
-        return new GridDhtAtomicUpdateFuture(ctx, completionCb, writeVer, updateReq, updateRes);
+        if (updateReq.keys().size() == 1)
+            return new GridDhtAtomicSingleUpdateFuture(ctx, completionCb, writeVer, updateReq, updateRes);
+        else
+            return new GridDhtAtomicUpdateFuture(ctx, completionCb, writeVer, updateReq, updateRes);
     }
 
     /**
@@ -3260,7 +3263,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     @SuppressWarnings("unchecked")
     private void processDhtAtomicUpdateResponse(UUID nodeId, GridDhtAtomicUpdateResponse res) {
-        GridDhtAtomicUpdateFuture updateFut = (GridDhtAtomicUpdateFuture)ctx.mvcc().atomicFuture(res.futureVersion());
+        GridDhtAtomicAbstractUpdateFuture updateFut = (GridDhtAtomicAbstractUpdateFuture)ctx.mvcc().atomicFuture(res.futureVersion());
 
         if (updateFut != null) {
             if (msgLog.isDebugEnabled()) {
@@ -3283,7 +3286,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @SuppressWarnings("unchecked")
     private void processDhtAtomicDeferredUpdateResponse(UUID nodeId, GridDhtAtomicDeferredUpdateResponse res) {
         for (GridCacheVersion ver : res.futureVersions()) {
-            GridDhtAtomicUpdateFuture updateFut = (GridDhtAtomicUpdateFuture)ctx.mvcc().atomicFuture(ver);
+            GridDhtAtomicAbstractUpdateFuture updateFut = (GridDhtAtomicAbstractUpdateFuture)ctx.mvcc().atomicFuture(ver);
 
             if (updateFut != null) {
                 if (msgLog.isDebugEnabled()) {
@@ -3339,7 +3342,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         private final Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted;
 
         /** */
-        private final GridDhtAtomicUpdateFuture dhtFut;
+        private final GridDhtAtomicAbstractUpdateFuture dhtFut;
 
         /**
          * @param retVal Return value.
@@ -3348,7 +3351,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
          */
         private UpdateSingleResult(GridCacheReturn retVal,
             Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted,
-            GridDhtAtomicUpdateFuture dhtFut) {
+            GridDhtAtomicAbstractUpdateFuture dhtFut) {
             this.retVal = retVal;
             this.deleted = deleted;
             this.dhtFut = dhtFut;
@@ -3371,7 +3374,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         /**
          * @return DHT future.
          */
-        public GridDhtAtomicUpdateFuture dhtFuture() {
+        public GridDhtAtomicAbstractUpdateFuture dhtFuture() {
             return dhtFut;
         }
     }
@@ -3384,7 +3387,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         private Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted;
 
         /** */
-        private GridDhtAtomicUpdateFuture dhtFut;
+        private GridDhtAtomicAbstractUpdateFuture dhtFut;
 
         /** */
         private boolean readersOnly;
@@ -3418,7 +3421,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         /**
          * @return DHT future.
          */
-        public GridDhtAtomicUpdateFuture dhtFuture() {
+        public GridDhtAtomicAbstractUpdateFuture dhtFuture() {
             return dhtFut;
         }
 
@@ -3439,7 +3442,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         /**
          * @param dhtFut DHT future.
          */
-        private void dhtFuture(@Nullable GridDhtAtomicUpdateFuture dhtFut) {
+        private void dhtFuture(@Nullable GridDhtAtomicAbstractUpdateFuture dhtFut) {
             this.dhtFut = dhtFut;
         }
 
