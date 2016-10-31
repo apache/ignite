@@ -118,6 +118,8 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
             IgniteInClosure<Ignite> f = new IgniteInClosure<Ignite>() {
                 @Override public void apply(Ignite grid) {
                     try (IgniteDataStreamer<Integer, String> dataStreamer = grid.dataStreamer(null)) {
+                        dataStreamer.allowOverwrite(allowOverwrite);
+
                         for (int i = 0; i < KEYS_CNT; i++)
                             dataStreamer.addData(i, Integer.toString(i));
                     }
