@@ -28,7 +28,7 @@ namespace Apache.Ignite.Examples.Misc
 
     /// <summary>
     /// This example demonstrates the usage of automatic client reconnect feature. 
-    /// Should be run with standalone Apache Ignite.NET node.
+    /// NOTE: There should be no other nodes running.
     /// <para />
     /// 1) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build).
     ///    Apache.Ignite.ExamplesDll.dll must appear in %IGNITE_HOME%/platforms/dotnet/examples/Apache.Ignite.ExamplesDll/bin/${Platform]/${Configuration} folder;
@@ -56,6 +56,10 @@ namespace Apache.Ignite.Examples.Misc
             {
                 Console.WriteLine(">>> Client node connected to the cluster.");
 
+                if (ignite.GetCluster().GetNodes().Count > 2)
+                    throw new Exception("Extra nodes detected. " +
+                                        "ClientReconnectExample should be run without external nodes.");
+
                 var cache = ignite.GetOrCreateCache<int, string>(CacheName);
 
                 Random rand = new Random();
@@ -68,10 +72,7 @@ namespace Apache.Ignite.Examples.Misc
 
                         cache.Put(key, "val" + key);
 
-                        // TODO: How do we cause client disconnect?
-                        // This should be testable;
-                        // The example should be runnable from start to end.
-                        Thread.Sleep(1000);
+                        Thread.Sleep(500);
 
                         Console.WriteLine(">>> Put value with key:" + key);
                     }
