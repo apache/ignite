@@ -38,6 +38,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -67,6 +68,9 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
 
     /** Allow override. */
     protected volatile boolean allowOverwrite;
+
+    /** Restarts. */
+    protected volatile boolean restarts;
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -188,6 +192,22 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed
      */
+    public void testLoadCacheWithDataStreamerSequentialWithConfigAndRestarts() throws Exception {
+        restarts = true;
+        configured = true;
+
+        try {
+            loadCacheWithDataStreamerSequential();
+        }
+        finally {
+            restarts = false;
+            configured = false;
+        }
+    }
+
+    /**
+     * @throws Exception if failed
+     */
     public void testLoadCacheWithDataStreamerSequentialWithConfig() throws Exception {
         configured = true;
 
@@ -206,6 +226,20 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
         startGrid(1);
 
         Ignite g0 = startGrid(0);
+
+        IgniteInternalFuture<Object> restartFut = runAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                while (restarts) {
+                    stopGrid(1);
+
+                    startGrid(1);
+
+                    U.sleep(100);
+                }
+
+                return null;
+            }
+        });
 
         IgniteInternalFuture<Object> fut = runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -237,7 +271,10 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
 
         log.info("Data loaded.");
 
+        restarts = false;
+
         fut.get();
+        restartFut.get();
 
         for (IgniteFuture res : set)
             assertNull(res.get());
