@@ -58,11 +58,19 @@ public class GridQueryCancel {
     }
 
     /**
-     * Executes cancel closure if a query is in appropriate state.
+     * Executes cancel closure.
      */
     public void cancel() {
-        if (!STATE_UPDATER.compareAndSet(this, null, CANCELLED))
-            clo.run();
+        while(true) {
+            Runnable tmp = this.clo;
+
+            if (STATE_UPDATER.compareAndSet(this, tmp, CANCELLED)) {
+                if (tmp != null)
+                    tmp.run();
+
+                return;
+            }
+        }
     }
 
     /**
