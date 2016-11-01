@@ -2031,6 +2031,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          *
          * @param msgs Message.
          * @param discardId Discarded message ID.
+         * @param customDiscardId Discarded custom event message ID.
          */
         void reset(
             @Nullable Collection<TcpDiscoveryAbstractMessage> msgs,
