@@ -29,7 +29,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Tests.Query;
     using Apache.Ignite.Core.Transactions;
@@ -991,10 +990,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                 key1 = PrimaryKeyForCache(Cache(1));
             }
 
-            var cache = cache0.WithExpiryPolicy(new ExpiryPolicy(null, null, null));
-
             // Test zero expiration.
-            cache = cache0.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero));
+            var cache = cache0.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero));
 
             cache.Put(key0, key0);
             cache.Put(key1, key1);
@@ -1930,7 +1927,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             };
 
             checkLock(cache.Lock(key));
-            checkLock(cache.LockAll(new[] { key, 1, 2, 3 }));
+            checkLock(cache.LockAll(new[] {key, 1, 2, 3}));
         }
 
         [Test]
@@ -2038,7 +2035,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /// <summary>
-        /// ENsure taht lock cannot be obtained by other threads.
+        /// Ensure that lock cannot be obtained by other threads.
         /// </summary>
         /// <param name="getLock">Get lock function.</param>
         /// <param name="sharedLock">Shared lock.</param>
@@ -2419,10 +2416,15 @@ namespace Apache.Ignite.Core.Tests.Cache
                 return;
 
             var tx = Transactions.TxStart();
-            
-            Assert.AreEqual(TransactionState.Active, tx.State);
 
-            tx.Rollback();
+            Assert.AreEqual(TransactionState.Active, tx.State);
+            Assert.AreEqual(Thread.CurrentThread.ManagedThreadId, tx.ThreadId);
+
+            tx.AddMeta("myMeta", 42);
+            Assert.AreEqual(42, tx.Meta<int>("myMeta"));
+            Assert.AreEqual(42, tx.RemoveMeta<int>("myMeta"));
+
+            tx.RollbackAsync().Wait();
 
             Assert.AreEqual(TransactionState.RolledBack, tx.State);
 
@@ -3346,7 +3348,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             return true;
         }
 
-        protected virtual bool LockingEnabled()
+        protected bool LockingEnabled()
         {
             return TxEnabled();
         }

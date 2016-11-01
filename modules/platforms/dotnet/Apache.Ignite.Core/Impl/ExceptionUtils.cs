@@ -205,6 +205,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="msg">Message.</param>
         /// <param name="stackTrace">Stack trace.</param>
         /// <returns>Exception.</returns>
+        [ExcludeFromCodeCoverage]  // Covered by a test in a separate process.
         public static Exception GetJvmInitializeException(string clsName, string msg, string stackTrace)
         {
             if (clsName != null)

@@ -62,6 +62,16 @@
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Binary\BinaryReaderWriterTest.cs" />
+    <Compile Include="Binary\IO\BinaryStreamsTest.cs" />
+    <Compile Include="Cache\Affinity\AffinityKeyTest.cs" />
+    <Compile Include="Cache\Affinity\AffinityTopologyVersionTest.cs" />
+    <Compile Include="Cache\CacheResultTest.cs" />
+    <Compile Include="Cache\Store\CacheStoreAdapterTest.cs" />
+    <Compile Include="Collections\MultiValueDictionaryTest.cs" />
+    <Compile Include="Collections\ReadOnlyCollectionTest.cs" />
+    <Compile Include="Collections\ReadOnlyDictionaryTest.cs" />
+    <Compile Include="Common\IgniteGuidTest.cs" />
     <Compile Include="Log\DefaultLoggerTest.cs" />
     <Compile Include="Log\Log4NetLoggerTest.cs" />
     <Compile Include="Log\NLogLoggerTest.cs" />
