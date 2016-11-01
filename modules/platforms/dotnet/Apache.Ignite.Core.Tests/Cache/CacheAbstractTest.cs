@@ -2506,7 +2506,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Action increment = () =>
             {
                 using (var tx = Transactions.TxStart(TransactionConcurrency.Pessimistic,
-                    TransactionIsolation.Serializable, TimeSpan.FromSeconds(0.5), 0))
+                    TransactionIsolation.RepeatableRead, TimeSpan.FromSeconds(0.5), 0))
                 {
                     cache[1]++;
 
@@ -2516,14 +2516,13 @@ namespace Apache.Ignite.Core.Tests.Cache
                 }
             };
 
-
             try
             {
                 Task.WaitAll(Task.Factory.StartNew(increment), Task.Factory.StartNew(increment));
             }
             catch (AggregateException aex)
             {
-                throw aex.InnerExceptions.First();
+                Assert.AreEqual(2, aex.InnerExceptions.Count);
             }
         }
 
