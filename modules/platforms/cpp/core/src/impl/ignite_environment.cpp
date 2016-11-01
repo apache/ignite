@@ -110,8 +110,6 @@ namespace ignite
 
         void IgniteEnvironment::Initialize()
         {
-            this->ctx = ctx;
-
             latch->CountDown();
 
             jobject binaryProc = Context()->ProcessorBinaryProcessor(proc.Get());
