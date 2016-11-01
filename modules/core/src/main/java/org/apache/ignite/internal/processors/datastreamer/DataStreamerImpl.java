@@ -724,8 +724,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             GridCacheContext cctx = cache != null ? cache.context() : null;
 
+            assert allowOverwrite() || cctx != null;
+
             AffinityTopologyVersion topVer =
-                allowOverwrite() || cctx == null || cctx.isLocal() ?
+                allowOverwrite() || cctx.isLocal() ?
                     ctx.cache().context().exchange().readyAffinityVersion() :
                     cctx.topology().topologyVersion();
 
