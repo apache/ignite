@@ -18,6 +18,8 @@
 namespace Apache.Ignite.Core.Transactions
 {
     using System;
+    using System.Runtime.Serialization;
+    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Indicates a deadlock within Ignite transaction.
@@ -26,7 +28,44 @@ namespace Apache.Ignite.Core.Transactions
     /// with timeout (see 
     /// <see cref="ITransactions.TxStart(TransactionConcurrency, TransactionIsolation, TimeSpan, int)"/> overload).
     /// </summary>
-    public class TransactionDeadlockException
+    [Serializable]
+    public class TransactionDeadlockException : IgniteException
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TransactionDeadlockException"/> class.
+        /// </summary>
+        public TransactionDeadlockException()
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TransactionDeadlockException"/> class.
+        /// </summary>
+        /// <param name="message">The message that describes the error.</param>
+        public TransactionDeadlockException(string message) : base(message)
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TransactionDeadlockException"/> class.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        /// <param name="cause">The cause.</param>
+        public TransactionDeadlockException(string message, Exception cause) : base(message, cause)
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TransactionDeadlockException"/> class.
+        /// </summary>
+        /// <param name="info">Serialization information.</param>
+        /// <param name="ctx">Streaming context.</param>
+        protected TransactionDeadlockException(SerializationInfo info, StreamingContext ctx) : base(info, ctx)
+        {
+            // No-op.
+        }
     }
 }
