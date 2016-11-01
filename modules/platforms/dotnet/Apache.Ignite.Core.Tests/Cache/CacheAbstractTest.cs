@@ -2531,11 +2531,14 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 Assert.AreEqual(2, aex.InnerExceptions.Count);
 
-                foreach (var e in aex.InnerExceptions)
-                {
-                    Console.WriteLine("==============");
-                    Console.WriteLine(e);
-                }
+                var timeoutEx = aex.InnerExceptions.OfType<TransactionTimeoutException>().Single();
+
+                Assert.IsTrue(timeoutEx.Message.StartsWith(
+                    "Failed to acquire lock within provided timeout for transaction [timeout=500"));
+
+                var deadlockEx = aex.InnerExceptions.OfType<TransactionDeadlockException>().Single();
+                
+                Assert.IsTrue(deadlockEx.Message.Trim().StartsWith("Deadlock detected:"));
             }
         }
 
