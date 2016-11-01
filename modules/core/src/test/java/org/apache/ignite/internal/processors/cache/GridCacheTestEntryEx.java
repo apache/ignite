@@ -63,8 +63,10 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     /**
      * @param ctx Context.
      * @param key Key.
+     *
+     * @throws IgniteCheckedException If failed.
      */
-    public GridCacheTestEntryEx(GridCacheContext ctx, Object key) {
+    public GridCacheTestEntryEx(GridCacheContext ctx, Object key) throws IgniteCheckedException {
         mvcc = new GridCacheMvcc(ctx);
 
         this.key = ctx.toCacheKeyObject(key);
@@ -74,8 +76,10 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
      * @param ctx Context.
      * @param key Key.
      * @param val Value.
+     *
+     * @throws IgniteCheckedException If failed.
      */
-    public GridCacheTestEntryEx(GridCacheContext ctx, Object key, Object val) {
+    public GridCacheTestEntryEx(GridCacheContext ctx, Object key, Object val) throws IgniteCheckedException {
         mvcc = new GridCacheMvcc(ctx);
 
         this.key = ctx.toCacheKeyObject(key);

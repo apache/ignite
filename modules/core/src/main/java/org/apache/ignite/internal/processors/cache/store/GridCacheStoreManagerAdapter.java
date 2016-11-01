@@ -453,16 +453,21 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                 IgniteBiInClosure<Object, Object> c = new CI2<Object, Object>() {
                     @SuppressWarnings("ConstantConditions")
                     @Override public void apply(Object k, Object val) {
-                        if (convert) {
-                            Object v = convert(val);
+                        try {
+                            if (convert) {
+                                Object v = convert(val);
 
-                            vis.apply(cctx.toCacheKeyObject(k), v);
+                                vis.apply(cctx.toCacheKeyObject(k), v);
+                            }
+                            else {
+                                IgniteBiTuple<Object, GridCacheVersion> v = (IgniteBiTuple<Object, GridCacheVersion>)val;
+
+                                if (v != null)
+                                    verVis.apply(cctx.toCacheKeyObject(k), v.get1(), v.get2());
+                            }
                         }
-                        else {
-                            IgniteBiTuple<Object, GridCacheVersion> v = (IgniteBiTuple<Object, GridCacheVersion>)val;
-
-                            if (v != null)
-                                verVis.apply(cctx.toCacheKeyObject(k), v.get1(), v.get2());
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to load from Store for cache: " + cctx.name(), e);
                         }
                     }
                 };
@@ -522,10 +527,14 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                         }
                         else
                             v = o;
+                        try{
+                            KeyCacheObject cacheKey = cctx.toCacheKeyObject(k);
 
-                        KeyCacheObject cacheKey = cctx.toCacheKeyObject(k);
-
-                        vis.apply(cacheKey, v, ver);
+                            vis.apply(cacheKey, v, ver);
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to load cache: " + cctx.name(), e);
+                        }
                     }
                 }, args);
 

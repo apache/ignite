@@ -533,6 +533,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         catch (IgniteDataStreamerTimeoutException e) {
             throw e;
         }
+        catch (IgniteCheckedException e){
+            return new IgniteFinishedFutureImpl<>(e);
+        }
         catch (IgniteException e) {
             return new IgniteFinishedFutureImpl<>(e);
         }
@@ -608,16 +611,20 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> addData(K key, V val) {
         A.notNull(key, "key");
+        try {
+            if (val == null)
+                checkSecurityPermission(SecurityPermission.CACHE_REMOVE);
+            else
+                checkSecurityPermission(SecurityPermission.CACHE_PUT);
 
-        if (val == null)
-            checkSecurityPermission(SecurityPermission.CACHE_REMOVE);
-        else
-            checkSecurityPermission(SecurityPermission.CACHE_PUT);
+            KeyCacheObject key0 = cacheObjProc.toCacheKeyObject(cacheObjCtx, null, key, true);
+            CacheObject val0 = cacheObjProc.toCacheObject(cacheObjCtx, val, true);
 
-        KeyCacheObject key0 = cacheObjProc.toCacheKeyObject(cacheObjCtx, null, key, true);
-        CacheObject val0 = cacheObjProc.toCacheObject(cacheObjCtx, val, true);
-
-        return addDataInternal(Collections.singleton(new DataStreamerEntry(key0, val0)));
+            return addDataInternal(Collections.singleton(new DataStreamerEntry(key0, val0)));
+        }
+        catch (IgniteCheckedException e){
+            throw CU.convertToCacheException(e);
+        }
     }
 
     /** {@inheritDoc} */

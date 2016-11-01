@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
@@ -327,8 +328,14 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
                 cause.retryReadyFuture(cctx.affinity().affinityReadyFuture(remapTopVer));
 
-                e.add(Collections.singleton(cctx.toCacheKeyObject(key)), cause);
-
+                try {
+                    e.add(Collections.singleton(cctx.toCacheKeyObject(key)), cause);
+                } catch (IgniteCheckedException ex){
+                    for (KeyCacheObject keyCacheObject : req.keys()) {
+                        if (keyCacheObject.value(cctx.cacheObjectContext(), false).equals(key))
+                            e.add(Collections.singleton(keyCacheObject), cause);
+                    }
+                }
                 onDone(e);
 
                 return;

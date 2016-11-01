@@ -83,8 +83,10 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
 
     /**
      * Tests remote candidates.
+     *
+     * @throws Exception If failed.
      */
-    public void testNearLocalsWithPending() {
+    public void testNearLocalsWithPending() throws Exception {
         GridCacheAdapter<String, String> cache = grid.internalCache();
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
@@ -117,8 +119,10 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
 
     /**
      * Tests remote candidates.
+     *
+     * @throws Exception If failed.
      */
-    public void testNearLocalsWithCommitted() {
+    public void testNearLocalsWithCommitted() throws Exception {
         GridCacheAdapter<String, String> cache = grid.internalCache();
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
@@ -150,8 +154,10 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
 
     /**
      * Tests remote candidates.
+     *
+     * @throws Exception If failed.
      */
-    public void testNearLocalsWithRolledback() {
+    public void testNearLocalsWithRolledback() throws Exception{
         GridCacheAdapter<String, String> cache = grid.internalCache();
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
@@ -183,8 +189,10 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
 
     /**
      * Tests remote candidates.
+     *
+     * @throws Exception If failed.
      */
-    public void testNearLocals() {
+    public void testNearLocals() throws Exception{
         GridCacheAdapter<String, String> cache = grid.internalCache();
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
@@ -213,8 +221,10 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
 
     /**
      * Tests remote candidates.
+     *
+     * @throws Exception If failed.
      */
-    public void testNearLocalsWithOwned() {
+    public void testNearLocalsWithOwned() throws Exception {
         GridCacheAdapter<String, String> cache = grid.internalCache();
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
@@ -371,8 +381,10 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
 
     /**
      * Tests salvageRemote method
+     *
+     * @throws Exception If failed.
      */
-    public void testSalvageRemote() {
+    public void testSalvageRemote() throws Exception{
         GridCacheAdapter<String, String> cache = grid.internalCache();
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");

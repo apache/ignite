@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cacheobject;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -67,9 +68,10 @@ public class IgniteCacheObjectProcessorSelfTest extends GridCommonAbstractTest {
             while (true) {
                 s.addData(1, 1);
                 s.flush();
+                Thread.sleep(1000);
             }
         }
-        catch (IgniteException e) {
+        catch (Exception e) {
             assertEquals("Failed to get partition: test", e.getMessage());
         }
     }

@@ -1814,7 +1814,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param obj Object.
      * @return Cache key object.
      */
-    public KeyCacheObject toCacheKeyObject(Object obj) {
+    public KeyCacheObject toCacheKeyObject(Object obj) throws IgniteCheckedException {
         assert validObjectForCache(obj) : obj;
 
         return cacheObjects().toCacheKeyObject(cacheObjCtx, this, obj, true);
@@ -1986,12 +1986,15 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Read-only collection of KeyCacheObject instances.
      */
     public Collection<KeyCacheObject> cacheKeysView(Collection<?> keys) {
-        return F.viewReadOnly(keys, new C1<Object, KeyCacheObject>() {
+        return F.viewReadOnly(keys, new C1<Object, KeyCacheObject>()  {
             @Override public KeyCacheObject apply(Object key) {
                 if (key == null)
                     throw new NullPointerException("Null key.");
-
-                return toCacheKeyObject(key);
+                try{
+                    return toCacheKeyObject(key);
+                }catch (IgniteCheckedException e){
+                    throw new IllegalStateException("Failed to find cache for key: " + key);
+                }
             }
         });
     }

@@ -64,9 +64,9 @@ public class GridCacheMvccFlagsTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
-    public void testAllTrueFlags() {
+    public void testAllTrueFlags() throws Exception{
         GridCacheAdapter<String, String> cache = grid.internalCache();
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
@@ -105,9 +105,9 @@ public class GridCacheMvccFlagsTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
-    public void testAllFalseFlags() {
+    public void testAllFalseFlags() throws Exception {
         GridCacheAdapter<String, String> cache = grid.internalCache();
 
         GridCacheTestEntryEx entry = new GridCacheTestEntryEx(cache.context(), "1");
