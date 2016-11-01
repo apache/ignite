@@ -2468,32 +2468,24 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             var cache = Cache();
 
-            var evt = new AutoResetEvent(false);
+            cache[1] = 1;
 
-            Func<ITransaction> txStart = () => Transactions.TxStart(TransactionConcurrency.Pessimistic, 
-                TransactionIsolation.Serializable, TimeSpan.FromSeconds(0.5), 0);
+            var barrier = new Barrier(2);
 
-            Task.Factory.StartNew(() =>
+            Action increment = () =>
             {
-                using (var tx = txStart())
+                using (var tx = Transactions.TxStart(TransactionConcurrency.Pessimistic, 
+                    TransactionIsolation.Serializable, TimeSpan.FromSeconds(0.5), 0))
                 {
-                    cache[1] = 1;
+                    barrier.SignalAndWait();
 
-                    evt.Set();
+                    cache[1]++;
 
                     tx.Commit();
                 }
+            };
 
-            });
-
-            using (var tx = txStart())
-            {
-                cache[1] = 1;
-
-                evt.WaitOne();
-
-                tx.Commit();
-            }
+            Task.WaitAll(Task.Factory.StartNew(increment), Task.Factory.StartNew(increment));
         }
 
         /// <summary>
