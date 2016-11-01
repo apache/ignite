@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler;
+package org.apache.ignite.internal.processors.rest.handlers.redis;
 
 import java.util.Collection;
 import org.apache.ignite.internal.IgniteInternalFuture;

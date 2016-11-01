@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.key;
+package org.apache.ignite.internal.processors.rest.handlers.redis.key;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -29,26 +29,26 @@ import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
-import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.GridRedisThruRestCommandHandler;
-import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.exception.GridRedisGenericException;
+import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisThruRestCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridRedisGenericException;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REMOVE_ALL;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.DEL;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_ALL;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.EXISTS;
 
 /**
- * Redis DEL command handler.
+ * Redis EXISTS command handler.
  */
-public class GridRedisDelCommandHandler extends GridRedisThruRestCommandHandler {
+public class GridRedisExistsCommandHandler extends GridRedisThruRestCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-        DEL
+        EXISTS
     );
 
     /** {@inheritDoc} */
-    public GridRedisDelCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
+    public GridRedisExistsCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
         super(ctx, hnd);
     }
 
@@ -68,7 +68,7 @@ public class GridRedisDelCommandHandler extends GridRedisThruRestCommandHandler 
 
         restReq.clientId(msg.clientId());
         restReq.key(msg.key());
-        restReq.command(CACHE_REMOVE_ALL);
+        restReq.command(CACHE_GET_ALL);
 
         List<String> keys = msg.auxMKeys();
         Map<Object, Object> mget = U.newHashMap(keys.size());
@@ -84,8 +84,7 @@ public class GridRedisDelCommandHandler extends GridRedisThruRestCommandHandler 
 
     /** {@inheritDoc} */
     @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
-        // It has to respond with the number of removed entries...
         return (restRes.getResponse() == null ? GridRedisProtocolParser.toInteger("0")
-            : GridRedisProtocolParser.toInteger(String.valueOf(params.size())));
+            : GridRedisProtocolParser.toInteger(((Map<Object, Object>)restRes.getResponse()).size()));
     }
 }

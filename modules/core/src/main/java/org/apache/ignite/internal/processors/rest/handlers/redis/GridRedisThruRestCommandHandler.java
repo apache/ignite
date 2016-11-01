@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler;
+package org.apache.ignite.internal.processors.rest.handlers.redis;
 
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
-import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.exception.GridRedisTypeException;
+import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridRedisTypeException;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.CX1;

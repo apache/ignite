@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.string;
+package org.apache.ignite.internal.processors.rest.handlers.redis.string;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -27,29 +27,25 @@ import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
-import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.GridRedisThruRestCommandHandler;
-import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.exception.GridRedisGenericException;
+import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisThruRestCommandHandler;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_AND_PUT;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.GETSET;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.STRLEN;
 
 /**
- * Redis GETSET command handler.
+ * Redis STRLEN command handler.
  */
-public class GridRedisGetSetCommandHandler extends GridRedisThruRestCommandHandler {
+public class GridRedisStrlenCommandHandler extends GridRedisThruRestCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-        GETSET
+        STRLEN
     );
 
-    /** Value position in Redis message. */
-    private static final int VAL_POS = 2;
-
     /** {@inheritDoc} */
-    public GridRedisGetSetCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
+    public GridRedisStrlenCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
         super(ctx, hnd);
     }
 
@@ -62,23 +58,23 @@ public class GridRedisGetSetCommandHandler extends GridRedisThruRestCommandHandl
     @Override public GridRestRequest asRestRequest(GridRedisMessage msg) throws IgniteCheckedException {
         assert msg != null;
 
-        if (msg.messageSize() < 3)
-            throw new GridRedisGenericException("Wrong syntax!");
-
         GridRestCacheRequest restReq = new GridRestCacheRequest();
 
         restReq.clientId(msg.clientId());
         restReq.key(msg.key());
-        restReq.value(msg.aux(VAL_POS));
 
-        restReq.command(CACHE_GET_AND_PUT);
+        restReq.command(CACHE_GET);
 
         return restReq;
     }
 
     /** {@inheritDoc} */
     @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
-        return (restRes.getResponse() == null ? GridRedisProtocolParser.nil()
-            : GridRedisProtocolParser.toBulkString(restRes.getResponse()));
+        if (restRes.getResponse() == null)
+            return GridRedisProtocolParser.toInteger("0");
+        else {
+            int len = String.valueOf(restRes.getResponse()).length();
+            return GridRedisProtocolParser.toInteger(String.valueOf(len));
+        }
     }
 }

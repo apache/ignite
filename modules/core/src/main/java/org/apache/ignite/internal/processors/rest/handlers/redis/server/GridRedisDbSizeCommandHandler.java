@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.string;
+package org.apache.ignite.internal.processors.rest.handlers.redis.server;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -27,25 +27,25 @@ import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
-import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.GridRedisThruRestCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisThruRestCommandHandler;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.GET;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_SIZE;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.DBSIZE;
 
 /**
- * Redis GET command handler.
+ * Redis DBSIZE command handler.
  */
-public class GridRedisGetCommandHandler extends GridRedisThruRestCommandHandler {
+public class GridRedisDbSizeCommandHandler extends GridRedisThruRestCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-        GET
+        DBSIZE
     );
 
     /** {@inheritDoc} */
-    public GridRedisGetCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
+    public GridRedisDbSizeCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
         super(ctx, hnd);
     }
 
@@ -62,15 +62,14 @@ public class GridRedisGetCommandHandler extends GridRedisThruRestCommandHandler 
 
         restReq.clientId(msg.clientId());
         restReq.key(msg.key());
-
-        restReq.command(CACHE_GET);
+        restReq.command(CACHE_SIZE);
 
         return restReq;
     }
 
     /** {@inheritDoc} */
     @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
-        return (restRes.getResponse() == null ? GridRedisProtocolParser.nil()
-            : GridRedisProtocolParser.toBulkString(restRes.getResponse()));
+        return (restRes.getResponse() == null ? GridRedisProtocolParser.toInteger("0")
+            : GridRedisProtocolParser.toInteger(String.valueOf(restRes.getResponse())));
     }
 }

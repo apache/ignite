@@ -1,4 +1,4 @@
-package org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.exception;
+package org.apache.ignite.internal.processors.rest.handlers.redis.exception;
 
 import org.apache.ignite.IgniteCheckedException;
 

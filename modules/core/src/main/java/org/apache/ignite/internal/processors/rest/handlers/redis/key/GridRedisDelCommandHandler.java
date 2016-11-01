@@ -15,11 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.server;
+package org.apache.ignite.internal.processors.rest.handlers.redis.key;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
@@ -27,25 +29,26 @@ import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
-import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.GridRedisThruRestCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisThruRestCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridRedisGenericException;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_SIZE;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.DBSIZE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REMOVE_ALL;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.DEL;
 
 /**
- * Redis DBSIZE command handler.
+ * Redis DEL command handler.
  */
-public class GridRedisDbSizeCommandHandler extends GridRedisThruRestCommandHandler {
+public class GridRedisDelCommandHandler extends GridRedisThruRestCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-        DBSIZE
+        DEL
     );
 
     /** {@inheritDoc} */
-    public GridRedisDbSizeCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
+    public GridRedisDelCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
         super(ctx, hnd);
     }
 
@@ -58,18 +61,31 @@ public class GridRedisDbSizeCommandHandler extends GridRedisThruRestCommandHandl
     @Override public GridRestRequest asRestRequest(GridRedisMessage msg) throws IgniteCheckedException {
         assert msg != null;
 
+        if (msg.messageSize() < 2)
+            throw new GridRedisGenericException("Wrong number of arguments");
+
         GridRestCacheRequest restReq = new GridRestCacheRequest();
 
         restReq.clientId(msg.clientId());
         restReq.key(msg.key());
-        restReq.command(CACHE_SIZE);
+        restReq.command(CACHE_REMOVE_ALL);
+
+        List<String> keys = msg.auxMKeys();
+        Map<Object, Object> mget = U.newHashMap(keys.size());
+        Iterator<String> mgetIt = keys.iterator();
+
+        while (mgetIt.hasNext())
+            mget.put(mgetIt.next(), null);
+
+        restReq.values(mget);
 
         return restReq;
     }
 
     /** {@inheritDoc} */
     @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
+        // It has to respond with the number of removed entries...
         return (restRes.getResponse() == null ? GridRedisProtocolParser.toInteger("0")
-            : GridRedisProtocolParser.toInteger(String.valueOf(restRes.getResponse())));
+            : GridRedisProtocolParser.toInteger(String.valueOf(params.size())));
     }
 }

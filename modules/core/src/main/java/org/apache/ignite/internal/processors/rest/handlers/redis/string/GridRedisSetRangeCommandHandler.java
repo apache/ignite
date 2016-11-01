@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.string;
+package org.apache.ignite.internal.processors.rest.handlers.redis.string;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -27,31 +27,33 @@ import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
-import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.GridRedisThruRestCommandHandler;
-import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.exception.GridRedisGenericException;
+import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisThruRestCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridRedisGenericException;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_APPEND;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PUT;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.APPEND;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.SETRANGE;
 
 /**
- * Redis APPEND command handler.
+ * Redis SETRANGE command handler.
  */
-public class GridRedisAppendCommandHandler extends GridRedisThruRestCommandHandler {
+public class GridRedisSetRangeCommandHandler extends GridRedisThruRestCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-        APPEND
+        SETRANGE
     );
 
-    /** Position of the value. */
-    private static final int VAL_POS = 2;
+    /** Offset position in Redis message among parameters. */
+    private static final int OFFSET_POS = 2;
+
+    /** Value position in Redis message. */
+    private static final int VAL_POS = 3;
 
     /** {@inheritDoc} */
-    public GridRedisAppendCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
+    public GridRedisSetRangeCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
         super(ctx, hnd);
     }
 
@@ -64,34 +66,55 @@ public class GridRedisAppendCommandHandler extends GridRedisThruRestCommandHandl
     @Override public GridRestRequest asRestRequest(GridRedisMessage msg) throws IgniteCheckedException {
         assert msg != null;
 
-        if (msg.messageSize() < 3)
-            throw new GridRedisGenericException("Wrong syntax!");
+        if (msg.messageSize() < 4)
+            throw new GridRedisGenericException("Wrong number of arguments");
 
-        GridRestCacheRequest appendReq = new GridRestCacheRequest();
-        GridRestCacheRequest getReq = new GridRestCacheRequest();
-
-        String val = msg.aux(VAL_POS);
-
-        appendReq.clientId(msg.clientId());
-        appendReq.key(msg.key());
-        appendReq.value(val);
-        appendReq.command(CACHE_APPEND);
-
-        if ((boolean)hnd.handle(appendReq).getResponse() == false) {
-            // append on on-existing key in REST returns false.
-            GridRestCacheRequest setReq = new GridRestCacheRequest();
-
-            setReq.clientId(msg.clientId());
-            setReq.key(msg.key());
-            setReq.value(val);
-            setReq.command(CACHE_PUT);
-
-            hnd.handle(setReq);
+        int offset;
+        try {
+            offset = Integer.parseInt(msg.aux(OFFSET_POS));
         }
+        catch (NumberFormatException e) {
+            throw new GridRedisGenericException("Offset is not an integer!");
+        }
+
+        String val = String.valueOf(msg.aux(VAL_POS));
+
+        GridRestCacheRequest getReq = new GridRestCacheRequest();
 
         getReq.clientId(msg.clientId());
         getReq.key(msg.key());
         getReq.command(CACHE_GET);
+
+        if (val.length() == 0)
+            return getReq;
+
+        Object resp = hnd.handle(getReq).getResponse();
+
+        int totalLen = offset + val.length();
+        if (offset < 0 || totalLen > 536870911)
+            throw new GridRedisGenericException("Offset is out of range!");
+
+        GridRestCacheRequest putReq = new GridRestCacheRequest();
+
+        putReq.clientId(msg.clientId());
+        putReq.key(msg.key());
+        putReq.command(CACHE_PUT);
+
+        if (resp == null) {
+            byte[] dst = new byte[totalLen];
+            System.arraycopy(val.getBytes(), 0, dst, offset, val.length());
+
+            putReq.value(new String(dst));
+        }
+        else {
+            String cacheVal = String.valueOf(resp);
+
+            cacheVal = cacheVal.substring(0, offset) + val;
+
+            putReq.value(cacheVal);
+        }
+
+        hnd.handle(putReq);
 
         return getReq;
     }
@@ -99,7 +122,7 @@ public class GridRedisAppendCommandHandler extends GridRedisThruRestCommandHandl
     /** {@inheritDoc} */
     @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
         if (restRes.getResponse() == null)
-            return GridRedisProtocolParser.nil();
+            return GridRedisProtocolParser.toInteger("0");
         else {
             int resLen = ((String)restRes.getResponse()).length();
             return GridRedisProtocolParser.toInteger(String.valueOf(resLen));
