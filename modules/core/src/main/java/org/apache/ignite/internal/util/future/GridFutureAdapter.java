@@ -33,7 +33,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -73,11 +72,6 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
 
     /** */
     private boolean ignoreInterrupts;
-
-    /** */
-    @SuppressWarnings({"UnusedDeclaration"})
-    @LoggerResource
-    private IgniteLogger log;
 
     /** */
     @GridToStringExclude
@@ -270,11 +264,11 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
             lsnr.apply(this);
         }
         catch (IllegalStateException e) {
-            U.error(log, "Failed to notify listener (is grid stopped?) [fut=" + this +
+            U.error(logger(), "Failed to notify listener (is grid stopped?) [fut=" + this +
                 ", lsnr=" + lsnr + ", err=" + e.getMessage() + ']', e);
         }
         catch (RuntimeException | Error e) {
-            U.error(log, "Failed to notify listener: " + lsnr, e);
+            U.error(logger(), "Failed to notify listener: " + lsnr, e);
 
             throw e;
         }
@@ -418,6 +412,13 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
         int s = getState();
 
         return s == INIT ? "INIT" : s == CANCELLED ? "CANCELLED" : "DONE";
+    }
+
+    /**
+     * @return Logger instance.
+     */
+    public IgniteLogger logger() {
+        return null;
     }
 
     /** {@inheritDoc} */
