@@ -93,9 +93,6 @@ namespace Apache.Ignite.Examples.Misc
 
                             Console.WriteLine(">>> Client has reconnected successfully.");
 
-                            // TODO: why is this required?
-                            //Thread.Sleep(3000);
-
                             // Updating the reference to the cache. The client reconnected to the new cluster.
                             cache = ignite.GetCache<int, string>(CacheName);
                         }
