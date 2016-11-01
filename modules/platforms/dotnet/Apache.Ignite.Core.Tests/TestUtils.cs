@@ -39,6 +39,9 @@ namespace Apache.Ignite.Core.Tests
         /** Indicates long running and/or memory/cpu intensive test. */
         public const string CategoryIntensive = "LONG_TEST";
 
+        /** Indicates examples tests. */
+        public const string CategoryExamples = "EXAMPLES_TEST";
+
         /** */
         public const int DfltBusywaitSleepInterval = 200;
 

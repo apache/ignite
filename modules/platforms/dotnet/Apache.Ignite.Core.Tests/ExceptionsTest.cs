@@ -122,6 +122,52 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests that all exceptions have mandatory constructors and are serializable.
+        /// </summary>
+        [Test]
+        public void TestAllExceptionsConstructors()
+        {
+            var types = typeof(IIgnite).Assembly.GetTypes().Where(x => x.IsSubclassOf(typeof(Exception)));
+
+            foreach (var type in types)
+            {
+                Assert.IsTrue(type.IsSerializable, "Exception is not serializable: " + type);
+
+                // Default ctor.
+                var defCtor = type.GetConstructor(new Type[0]);
+                Assert.IsNotNull(defCtor);
+
+                var ex = (Exception) defCtor.Invoke(new object[0]);
+                Assert.AreEqual(string.Format("Exception of type '{0}' was thrown.", type.FullName), ex.Message);
+
+                // Message ctor.
+                var msgCtor = type.GetConstructor(new[] {typeof(string)});
+                Assert.IsNotNull(msgCtor);
+
+                ex = (Exception) msgCtor.Invoke(new object[] {"myMessage"});
+                Assert.AreEqual("myMessage", ex.Message);
+
+                // Serialization.
+                var stream = new MemoryStream();
+                var formatter = new BinaryFormatter();
+
+                formatter.Serialize(stream, ex);
+                stream.Seek(0, SeekOrigin.Begin);
+
+                ex = (Exception) formatter.Deserialize(stream);
+                Assert.AreEqual("myMessage", ex.Message);
+
+                // Message+cause ctor.
+                var msgCauseCtor = type.GetConstructor(new[] { typeof(string), typeof(Exception) });
+                Assert.IsNotNull(msgCauseCtor);
+
+                ex = (Exception) msgCauseCtor.Invoke(new object[] {"myMessage", new Exception("innerEx")});
+                Assert.AreEqual("myMessage", ex.Message);
+                Assert.AreEqual("innerEx", ex.InnerException.Message);
+            }
+        }
+
+        /// <summary>
         /// Tests CachePartialUpdateException serialization.
         /// </summary>
         private static void TestPartialUpdateExceptionSerialization(Exception ex)

@@ -52,6 +52,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /** <inheritdoc /> */
+        [ExcludeFromCodeCoverage]
         public long Pointer
         {
             get { throw new NotSupportedException(); }
@@ -73,10 +74,13 @@ namespace Apache.Ignite.Core.Impl.Memory
         public int Length
         {
             get { return _size; }
+
+            [ExcludeFromCodeCoverage]
             set { throw new NotSupportedException(); }
         }
 
         /** <inheritdoc /> */
+        [ExcludeFromCodeCoverage]
         public void Reallocate(int cap)
         {
             throw new NotSupportedException();
