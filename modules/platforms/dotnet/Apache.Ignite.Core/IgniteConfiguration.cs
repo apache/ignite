@@ -90,6 +90,11 @@
         /// </summary>
         public static readonly TimeSpan DefaultNetworkSendRetryDelay = TimeSpan.FromMilliseconds(1000);
 
+        /// <summary>
+        /// Default failure detection timeout.
+        /// </summary>
+        public static readonly TimeSpan DefaultFailureDetectionTimeout = TimeSpan.FromSeconds(10);
+
         /** */
         private TimeSpan? _metricsExpireTime;
 
@@ -119,6 +124,9 @@
 
         /** */
         private bool? _clientMode;
+
+        /** */
+        private TimeSpan? _failureDetectionTimeout;
 
         /// <summary>
         /// Default network retry count.
@@ -195,6 +203,7 @@
             writer.WriteString(Localhost);
             writer.WriteBooleanNullable(_isDaemon);
             writer.WriteBooleanNullable(_isLateAffinityAssignment);
+            writer.WriteTimeSpanAsLongNullable(_failureDetectionTimeout);
 
             // Cache config
             var caches = CacheConfiguration;
@@ -329,6 +338,7 @@
             Localhost = r.ReadString();
             _isDaemon = r.ReadBooleanNullable();
             _isLateAffinityAssignment = r.ReadBooleanNullable();
+            _failureDetectionTimeout = r.ReadTimeSpanNullable();
 
             // Cache config
             var cacheCfgCount = r.ReadInt();
@@ -769,5 +779,16 @@
         /// or logs to console otherwise.
         /// </summary>
         public ILogger Logger { get; set; }
+
+        /// <summary>
+        /// Gets or sets the failure detection timeout used by <see cref="TcpDiscoverySpi"/> 
+        /// and <see cref="TcpCommunicationSpi"/>.
+        /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:10")]
+        public TimeSpan FailureDetectionTimeout
+        {
+            get { return _failureDetectionTimeout ?? DefaultFailureDetectionTimeout; }
+            set { _failureDetectionTimeout = value; }
+        }
     }
 }
