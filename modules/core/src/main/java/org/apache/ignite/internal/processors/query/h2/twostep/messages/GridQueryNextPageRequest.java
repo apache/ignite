@@ -172,7 +172,7 @@ public class GridQueryNextPageRequest implements Message {
                 reader.incrementState();
 
             case 3:
-                threadIdx = reader.readInt("threadId");
+                threadIdx = reader.readInt("threadIdx");
 
                 if (!reader.isLastRead())
                     return false;

@@ -577,7 +577,7 @@ public class GridMapQueryExecutor {
 
                     assert rs instanceof JdbcResultSet : rs.getClass();
 
-                    qr.addResult(qryIdx, qry, node.id(), rs);
+                    qr.addResult(qryIdx, qry, ctx.localNodeId(), rs);
 
                     if (qr.canceled) {
                         qr.result(qryIdx).close();
@@ -753,7 +753,6 @@ public class GridMapQueryExecutor {
                 reservations.remove(grpKey);
         }
     }
-
 
 
     /**

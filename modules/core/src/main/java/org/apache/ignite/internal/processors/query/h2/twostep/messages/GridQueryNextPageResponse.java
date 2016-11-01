@@ -203,19 +203,19 @@ public class GridQueryNextPageResponse implements Message {
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeInt("threadIdx", threadIdx))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
                 if (!writer.writeCollection("vals", vals, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
+            case 6:
                 if (!writer.writeMessage("retry", retry))
+                    return false;
+
+                writer.incrementState();
+
+            case 7:
+                if (!writer.writeInt("threadIdx", threadIdx))
                     return false;
 
                 writer.incrementState();
@@ -274,14 +274,6 @@ public class GridQueryNextPageResponse implements Message {
                 reader.incrementState();
 
             case 5:
-                threadIdx = reader.readInt("threadIdx");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
                 vals = reader.readCollection("vals", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -289,7 +281,7 @@ public class GridQueryNextPageResponse implements Message {
 
                 reader.incrementState();
 
-            case 7:
+            case 6:
                 retry = reader.readMessage("retry");
 
                 if (!reader.isLastRead())
@@ -297,6 +289,13 @@ public class GridQueryNextPageResponse implements Message {
 
                 reader.incrementState();
 
+            case 7:
+                threadIdx = reader.readInt("threadIdx");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridQueryNextPageResponse.class);

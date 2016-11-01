@@ -62,9 +62,6 @@ public abstract class GridMergeIndex extends BaseIndex {
     private Map<UUID, Counter[]> remainingRows;
 
     /** */
-    private AtomicInteger waitCountersInit;
-
-    /** */
     private final AtomicBoolean lastSubmitted = new AtomicBoolean();
 
     /**
@@ -151,8 +148,6 @@ public abstract class GridMergeIndex extends BaseIndex {
 
         remainingRows = U.newHashMap(nodes.size());
 
-        waitCountersInit = new AtomicInteger(threadsCnt * nodes.size());
-
         for (ClusterNode node : nodes) {
             Counter[] counters = new Counter[threadsCnt];
 
@@ -215,14 +210,17 @@ public abstract class GridMergeIndex extends BaseIndex {
             // We need this separate flag to handle case when the first source contains only one page
             // and it will signal that all remaining counters are zero and fetch is finished.
             cnt.initialized = true;
-
-            waitCountersInit.decrementAndGet();
         }
 
         if (cnt.addAndGet(-pageRowsCnt) == 0) { // Result can be negative in case of race between messages, it is ok.
-            boolean last = waitCountersInit.get() == 0;
+            for (Counter[] cntrs : remainingRows.values()) { // Check all the sources.
+                for(Counter c:cntrs) {
+                    if (c.get() != 0 || !c.initialized)
+                        return;
+                }
+            }
 
-            if (last && lastSubmitted.compareAndSet(false, true)) {
+            if (lastSubmitted.compareAndSet(false, true)) {
                 addPage0(new GridResultPage(null, page.source(), null) {
                     @Override public boolean isLast() {
                         return true;

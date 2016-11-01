@@ -306,22 +306,23 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeInt("threadIdx", threadIdx))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
                 if (!writer.writeCollection("tbls", tbls, MessageCollectionItemType.STRING))
                     return false;
 
                 writer.incrementState();
 
-            case 8:
+            case 7:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
+
+            case 8:
+                if (!writer.writeInt("threadIdx", threadIdx))
+                    return false;
+
+                writer.incrementState();
+
 
         }
 
@@ -385,14 +386,6 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 6:
-                threadIdx = reader.readInt("threadIdx");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
                 tbls = reader.readCollection("tbls", MessageCollectionItemType.STRING);
 
                 if (!reader.isLastRead())
@@ -400,7 +393,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
-            case 8:
+            case 7:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
@@ -408,6 +401,13 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
+            case 8:
+                threadIdx = reader.readInt("threadIdx");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridH2QueryRequest.class);
