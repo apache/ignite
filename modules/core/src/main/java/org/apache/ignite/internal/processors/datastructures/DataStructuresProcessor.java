@@ -61,6 +61,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.cache.CacheState;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -214,37 +215,39 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        utilityCache = (IgniteInternalCache)ctx.cache().utilityCache();
+        if (ctx.cache().globalState() == CacheState.ACTIVE){
+            utilityCache = (IgniteInternalCache)ctx.cache().utilityCache();
 
-        utilityDataCache = (IgniteInternalCache)ctx.cache().utilityCache();
+            utilityDataCache = (IgniteInternalCache)ctx.cache().utilityCache();
 
-        assert utilityCache != null;
+            assert utilityCache != null;
 
-        if (atomicCfg != null) {
-            IgniteInternalCache atomicsCache = ctx.cache().atomicsCache();
+            if (atomicCfg != null) {
+                IgniteInternalCache atomicsCache = ctx.cache().atomicsCache();
 
-            assert atomicsCache != null;
+                assert atomicsCache != null;
 
-            dsView = atomicsCache;
+                dsView = atomicsCache;
 
-            cntDownLatchView = atomicsCache;
+                cntDownLatchView = atomicsCache;
 
-            semView = atomicsCache;
+                semView = atomicsCache;
 
-            reentrantLockView = atomicsCache;
+                reentrantLockView = atomicsCache;
 
-            atomicLongView = atomicsCache;
+                atomicLongView = atomicsCache;
 
-            atomicRefView = atomicsCache;
+                atomicRefView = atomicsCache;
 
-            atomicStampedView = atomicsCache;
+                atomicStampedView = atomicsCache;
 
-            seqView = atomicsCache;
+                seqView = atomicsCache;
 
-            dsCacheCtx = atomicsCache.context();
+                dsCacheCtx = atomicsCache.context();
+            }
+
+            initLatch.countDown();
         }
-
-        initLatch.countDown();
     }
 
     /**

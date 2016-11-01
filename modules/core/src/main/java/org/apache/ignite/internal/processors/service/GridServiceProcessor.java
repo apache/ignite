@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheIteratorConverter;
+import org.apache.ignite.internal.processors.cache.CacheState;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
@@ -216,62 +217,64 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         if (ctx.isDaemon())
             return;
 
-        cache = ctx.cache().utilityCache();
+        if (ctx.cache().globalState() == CacheState.ACTIVE) {
+            cache = ctx.cache().utilityCache();
 
-        if (!ctx.clientNode())
-            ctx.event().addLocalEventListener(topLsnr, EVTS);
+            if (!ctx.clientNode())
+                ctx.event().addLocalEventListener(topLsnr, EVTS);
 
-        try {
-            if (ctx.deploy().enabled())
-                ctx.cache().context().deploy().ignoreOwnership(true);
+            try {
+                if (ctx.deploy().enabled())
+                    ctx.cache().context().deploy().ignoreOwnership(true);
 
-            if (!ctx.clientNode()) {
-                assert cache.context().affinityNode();
+                if (!ctx.clientNode()) {
+                    assert cache.context().affinityNode();
 
-                cache.context().continuousQueries().executeInternalQuery(new ServiceEntriesListener(),
-                    null,
-                    true,
-                    true,
-                    false);
-            }
-            else {
-                assert !ctx.isDaemon();
+                    cache.context().continuousQueries().executeInternalQuery(new ServiceEntriesListener(),
+                        null,
+                        true,
+                        true,
+                        false);
+                }
+                else {
+                    assert !ctx.isDaemon();
 
-                ctx.closure().runLocalSafe(new Runnable() {
-                    @Override public void run() {
-                        try {
-                            Iterable<CacheEntryEvent<?, ?>> entries =
-                                cache.context().continuousQueries().existingEntries(false, null);
+                    ctx.closure().runLocalSafe(new Runnable() {
+                        @Override public void run() {
+                            try {
+                                Iterable<CacheEntryEvent<?, ?>> entries =
+                                    cache.context().continuousQueries().existingEntries(false, null);
 
-                            onSystemCacheUpdated(entries);
+                                onSystemCacheUpdated(entries);
+                            }
+                            catch (IgniteCheckedException e) {
+                                U.error(log, "Failed to load service entries: " + e, e);
+                            }
                         }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to load service entries: " + e, e);
-                        }
-                    }
-                });
+                    });
+                }
             }
+            finally {
+                if (ctx.deploy().enabled())
+                    ctx.cache().context().deploy().ignoreOwnership(false);
+            }
+
+            ServiceConfiguration[] cfgs = ctx.config().getServiceConfiguration();
+
+            if (cfgs != null) {
+                Collection<IgniteInternalFuture<?>> futs = new ArrayList<>();
+
+                for (ServiceConfiguration c : ctx.config().getServiceConfiguration())
+                    futs.add(deploy(c));
+
+                // Await for services to deploy.
+                for (IgniteInternalFuture<?> f : futs)
+                    f.get();
+            }
+
+            if (log.isDebugEnabled())
+                log.debug("Started service processor.");
         }
-        finally {
-            if (ctx.deploy().enabled())
-                ctx.cache().context().deploy().ignoreOwnership(false);
-        }
-
-        ServiceConfiguration[] cfgs = ctx.config().getServiceConfiguration();
-
-        if (cfgs != null) {
-            Collection<IgniteInternalFuture<?>> futs = new ArrayList<>();
-
-            for (ServiceConfiguration c : ctx.config().getServiceConfiguration())
-                futs.add(deploy(c));
-
-            // Await for services to deploy.
-            for (IgniteInternalFuture<?> f : futs)
-                f.get();
-        }
-
-        if (log.isDebugEnabled())
-            log.debug("Started service processor.");
     }
 
     /** {@inheritDoc} */

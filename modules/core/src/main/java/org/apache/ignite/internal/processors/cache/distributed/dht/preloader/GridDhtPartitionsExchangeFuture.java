@@ -608,6 +608,20 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private ExchangeType onCacheChangeRequest(boolean crd) throws IgniteCheckedException {
         assert !F.isEmpty(reqs) : this;
 
+        // todo need refactoring, move to one method with closure
+        if (!F.isEmpty(reqs)) {
+            for (DynamicCacheChangeRequest req : reqs) {
+                if (req.globalStateChange()) {
+                    if (req.getException() != null)
+                        throw req.getException();
+
+                    cctx.cache().globalState(req.state());
+
+                    break;
+                }
+            }
+        }
+
         boolean clientOnly = cctx.affinity().onCacheChangeRequest(this, crd, reqs);
 
         if (clientOnly) {
@@ -690,16 +704,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     private void clientOnlyExchange() throws IgniteCheckedException {
         clientOnlyExchange = true;
-
-        if (!F.isEmpty(reqs)) {
-            for (DynamicCacheChangeRequest req : reqs) {
-                if (req.globalStateChange()) {
-                    cctx.cache().globalState(req.state());
-
-                    break;
-                }
-            }
-        }
 
         if (crd != null) {
             if (crd.isLocal()) {
@@ -790,17 +794,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     assert node != null;
 
                     cctx.database().startLocalBackup(backupMsg, node).get();
-                }
-            }
-        }
-
-        if (!F.isEmpty(reqs)) {
-            for (DynamicCacheChangeRequest req : reqs) {
-                if (req.globalStateChange()) {
-                    if (req.getException() != null)
-                        throw req.getException();
-
-                    cctx.cache().globalState(req.state());
                 }
             }
         }
