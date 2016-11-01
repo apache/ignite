@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
@@ -295,8 +296,8 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     private void validateLocalIgfsConfigurations(FileSystemConfiguration[] cfgs) throws IgniteCheckedException {
         Collection<String> cfgNames = new HashSet<>();
 
-        HashSet<String> dataCacheNames = new HashSet<>();
-        HashSet<String> metaCacheNames = new HashSet<>();
+        Collection<String> dataCacheNames = new HashSet<>();
+        Collection<String> metaCacheNames = new HashSet<>();
 
         for (FileSystemConfiguration cfg : cfgs) {
             String name = cfg.getName();
