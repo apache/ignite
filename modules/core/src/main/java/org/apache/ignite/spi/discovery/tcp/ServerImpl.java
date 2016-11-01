@@ -2004,7 +2004,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Discarded message ID. */
         private IgniteUuid discardId;
 
-        /** Discarded message ID. */
+        /** Discarded custom message ID. */
         private IgniteUuid customDiscardId;
 
         /**
@@ -2044,18 +2044,64 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             this.discardId = discardId;
             this.customDiscardId = customDiscardId;
+
+            cleanup();
         }
 
         /**
          * Discards message with provided ID and all before it.
          *
          * @param id Discarded message ID.
+         * @param custom {@code True} if discard for {@link TcpDiscoveryCustomEventMessage}.
          */
         void discard(IgniteUuid id, boolean custom) {
             if (custom)
                 customDiscardId = id;
             else
                 discardId = id;
+
+            cleanup();
+        }
+
+        /**
+         *
+         */
+        void cleanup() {
+            Iterator<TcpDiscoveryAbstractMessage> msgIt = msgs.iterator();
+
+            boolean skipMsg = discardId != null;
+            boolean skipCustomMsg = customDiscardId != null;
+
+            while (msgIt.hasNext()) {
+                TcpDiscoveryAbstractMessage msg0 = msgIt.next();
+
+                if (msg0 instanceof TcpDiscoveryCustomEventMessage) {
+                    if (skipCustomMsg) {
+                        assert customDiscardId != null;
+
+                        if (F.eq(customDiscardId, msg0.id()))
+                            skipCustomMsg = false;
+                        else
+                            msgIt.remove();
+
+                        continue;
+                    }
+                }
+                else {
+                    if (skipMsg) {
+                        assert discardId != null;
+
+                        if (F.eq(discardId, msg0.id()))
+                            skipMsg = false;
+                        else
+                            msgIt.remove();
+
+                        continue;
+                    }
+                }
+
+                break;
+            }
         }
 
         /**
