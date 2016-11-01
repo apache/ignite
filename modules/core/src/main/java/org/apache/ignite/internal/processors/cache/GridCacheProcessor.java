@@ -731,7 +731,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ClusterNode locNode = ctx.discovery().localNode();
 
         try {
-            CheckConsistency();
+            checkConsistency();
 
             if (globalState == CacheState.ACTIVE)
                 sharedCtx.database().onKernalStart(false);
@@ -832,7 +832,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private void CheckConsistency() throws IgniteCheckedException {
+    private void checkConsistency() throws IgniteCheckedException {
         if (!ctx.config().isDaemon() && !getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
             for (ClusterNode n : ctx.discovery().remoteNodes()) {
                 if (n.attribute(ATTR_CONSISTENCY_CHECK_SKIPPED))
@@ -2729,6 +2729,35 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param reqs Reqs.
+     * @param cfg Config.
+     * @param internalCaches Internal caches.
+     */
+    private void createRequest(
+        Collection<DynamicCacheChangeRequest> reqs,
+        CacheConfiguration cfg,
+        Set<String> internalCaches
+    ) throws IgniteCheckedException {
+        String cacheName=cfg.getName();
+
+        DynamicCacheChangeRequest req = createCacheChangeRequest(
+            cfg, cfg.getName(), cfg.getNearConfiguration(), false
+        );
+
+        if (CU.isUtilityCache(cacheName))
+            req.cacheType(CacheType.UTILITY);
+        else if (CU.isMarshallerCache(cacheName))
+            req.cacheType(CacheType.MARSHALLER);
+        else if (internalCaches.contains(cacheName))
+            req.cacheType(CacheType.INTERNAL);
+        else
+            req.cacheType(CacheType.USER);
+
+        reqs.add(req);
+
+    }
+
+    /**
      * @param batch Change request batch.
      * @param topVer Current topology version.
      * @return {@code True} if minor topology version should be increased.
@@ -2754,39 +2783,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         for (String name : savedCacheNames) {
                             CacheConfiguration cfg = sharedCtx.pageStore().readConfiguration(name);
 
-                            DynamicCacheChangeRequest req = createCacheChangeRequest(
-                                cfg, cfg.getName(), cfg.getNearConfiguration(), false
-                            );
-
-                            if (CU.isUtilityCache(name))
-                                req.cacheType(CacheType.UTILITY);
-                            else if (CU.isMarshallerCache(name))
-                                req.cacheType(CacheType.MARSHALLER);
-                            else if (internalCaches.contains(name))
-                                req.cacheType(CacheType.INTERNAL);
-                            else
-                                req.cacheType(CacheType.USER);
-
-                            startRequests.add(req);
+                            createRequest(startRequests, cfg, internalCaches);
                         }
                     }
                     for (CacheConfiguration cfg : ctx.config().getCacheConfiguration()) {
-                        if (!savedCacheNames.contains(cfg.getName())) {
-                            DynamicCacheChangeRequest req = createCacheChangeRequest(
-                                cfg, cfg.getName(), cfg.getNearConfiguration(), false
-                            );
-                            startRequests.add(req);
-                        }
+                        if (!savedCacheNames.contains(cfg.getName()))
+                            createRequest(startRequests, cfg, internalCaches);
                     }
                 }
                 else {
-                    for (CacheConfiguration cfg : ctx.config().getCacheConfiguration()) {
-                        DynamicCacheChangeRequest req = createCacheChangeRequest(
-                            cfg, cfg.getName(), cfg.getNearConfiguration(), false
-                        );
-
-                        startRequests.add(req);
-                    }
+                    for (CacheConfiguration cfg : ctx.config().getCacheConfiguration())
+                        createRequest(startRequests, cfg, internalCaches);
                 }
 
                 if (!F.isEmpty(startRequests))

@@ -43,7 +43,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     /** Local partitions. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<Integer, GridDhtPartitionMap2> parts;
+    private Map<Integer, GridDhtPartitionMap2> parts = new HashMap<>();
 
     /** Serialized partitions. */
     private byte[] partsBytes;
@@ -93,9 +93,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      * @param locMap Local partition map.
      */
     public void addLocalPartitionMap(int cacheId, GridDhtPartitionMap2 locMap) {
-        if (parts == null)
-            parts = new HashMap<>();
-
         parts.put(cacheId, locMap);
     }
 
