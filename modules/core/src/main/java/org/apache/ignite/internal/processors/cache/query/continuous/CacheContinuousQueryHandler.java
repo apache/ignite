@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
@@ -678,7 +679,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 if (evts != null && !evts.isEmpty())
                     entries0.addAll(evts);
             }
-            catch (IgniteCheckedException ex) {
+            catch (IgniteCheckedException | BinaryObjectException ex) {
                 if (ignoreClsNotFound)
                     assert internal;
                 else {

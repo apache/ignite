@@ -739,7 +739,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param shortMsg Short message.
      * @param ex Original Exception.
      */
-    public static void registerUnhandledException(GridCacheContext ctx, String shortMsg, IgniteCheckedException ex) {
+    public static void registerUnhandledException(GridCacheContext ctx, String shortMsg, Exception ex) {
         GridKernalContext kctx = ctx.kernalContext();
 
         kctx.exceptionRegistry().onException(shortMsg, ex);
