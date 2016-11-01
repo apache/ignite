@@ -178,7 +178,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         versions.add(IgniteProductVersion.fromString("1.7.0"));
         versions.add(IgniteProductVersion.fromString("1.7.1"));
         versions.add(IgniteProductVersion.fromString("1.7.2"));
-        versions.add(IgniteProductVersion.fromString("1.7.3"));
 
         SERVICE_TOP_CALLABLE_VER1 = Collections.unmodifiableSet(versions);
     }
