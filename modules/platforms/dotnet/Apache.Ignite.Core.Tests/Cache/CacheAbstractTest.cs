@@ -2456,9 +2456,48 @@ namespace Apache.Ignite.Core.Tests.Cache
                 // Expected
             }
         }
-        
+
         /// <summary>
-        /// Test thraed-locals leak.
+        /// Tests the transaction deadlock detection.
+        /// </summary>
+        [Test]
+        public void TestTxDeadlockDetection()
+        {
+            if (!TxEnabled())
+                return;
+
+            var cache = Cache();
+
+            var evt = new AutoResetEvent(false);
+
+            Func<ITransaction> txStart = () => Transactions.TxStart(TransactionConcurrency.Pessimistic, 
+                TransactionIsolation.Serializable, TimeSpan.FromSeconds(0.5), 0);
+
+            Task.Factory.StartNew(() =>
+            {
+                using (var tx = txStart())
+                {
+                    cache[1] = 1;
+
+                    evt.Set();
+
+                    tx.Commit();
+                }
+
+            });
+
+            using (var tx = txStart())
+            {
+                cache[1] = 1;
+
+                evt.WaitOne();
+
+                tx.Commit();
+            }
+        }
+
+        /// <summary>
+        /// Test thread-locals leak.
         /// </summary>
         [Test]
         [Category(TestUtils.CategoryIntensive)]
