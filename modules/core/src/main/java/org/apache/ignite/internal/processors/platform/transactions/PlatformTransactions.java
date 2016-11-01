@@ -169,18 +169,6 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processOutLong(int type) throws IgniteCheckedException {
-        switch (type) {
-            case OP_RESET_METRICS:
-                txs.resetMetrics();
-
-                return TRUE;
-        }
-        
-        return super.processOutLong(type);
-    }
-
-    /** {@inheritDoc} */
     @Override protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         switch (type) {
             case OP_COMMIT:
@@ -201,6 +189,11 @@ public class PlatformTransactions extends PlatformAbstractTarget {
 
             case OP_STATE:
                 return tx(val).state().ordinal();
+
+            case OP_RESET_METRICS:
+                txs.resetMetrics();
+
+                return TRUE;
         }
 
         return super.processInLongOutLong(type, val);

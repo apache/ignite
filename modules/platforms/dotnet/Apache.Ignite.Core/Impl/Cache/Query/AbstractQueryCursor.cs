@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         {
             try
             {
-                DoOutOp(OpIteratorClose);
+                DoOutInOp(OpIteratorClose);
             }
             finally 
             {
@@ -125,7 +125,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
                 throw new InvalidOperationException("Failed to get enumerator entries because " + 
                     "GetAll() method has already been called.");
 
-            DoOutOp(OpIterator);
+            DoOutInOp(OpIterator);
 
             _iterCalled = true;
 
