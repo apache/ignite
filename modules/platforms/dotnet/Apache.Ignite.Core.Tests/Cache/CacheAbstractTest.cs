@@ -2499,16 +2499,19 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             var cache = Cache();
 
-            cache[1] = 1;
+            var keys0 = Enumerable.Range(1, 100).ToArray();
+
+            cache.PutAll(keys0.ToDictionary(x => x, x => x));
 
             var barrier = new Barrier(2);
 
-            Action increment = () =>
+            Action<int[]> increment = keys =>
             {
                 using (var tx = Transactions.TxStart(TransactionConcurrency.Pessimistic,
                     TransactionIsolation.RepeatableRead, TimeSpan.FromSeconds(0.5), 0))
                 {
-                    cache[1]++;
+                    foreach (var key in keys)
+                        cache[key]++;
 
                     barrier.SignalAndWait(500);
 
@@ -2518,11 +2521,19 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             try
             {
-                Task.WaitAll(Task.Factory.StartNew(increment), Task.Factory.StartNew(increment));
+                // Increment keys within tx in different order to cause a deadlock.
+                Task.WaitAll(Task.Factory.StartNew(() => increment(keys0)),
+                    Task.Factory.StartNew(() => increment(keys0.Reverse().ToArray())));
             }
             catch (AggregateException aex)
             {
                 Assert.AreEqual(2, aex.InnerExceptions.Count);
+
+                foreach (var e in aex.InnerExceptions)
+                {
+                    Console.WriteLine("==============");
+                    Console.WriteLine(e);
+                }
             }
         }
 
