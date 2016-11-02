@@ -573,13 +573,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         globalState = ctx.config().isActiveOnStart() ? CacheState.ACTIVE : CacheState.INACTIVE;
 
         // Start shared managers.
-        for (GridCacheSharedManager mgr : sharedCtx.managers()) {
-            if (globalState == CacheState.INACTIVE && mgr instanceof IgniteWriteAheadLogManager)
-                continue;
-
+        for (GridCacheSharedManager mgr : sharedCtx.managers())
             mgr.start(sharedCtx);
-
-        }
 
         if (globalState == CacheState.ACTIVE) {
             CacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
@@ -739,8 +734,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         try {
             checkConsistency();
 
-            if (globalState == CacheState.ACTIVE)
+            if (globalState == CacheState.ACTIVE){
+                sharedCtx.wal().onKernalStart(false);
+
                 sharedCtx.database().onKernalStart(false);
+            }
 
             // Start dynamic caches received from collect discovery data.
             for (DynamicCacheDescriptor desc : registeredCaches.values()) {
@@ -795,7 +793,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     mgr instanceof IgniteWriteAheadLogManager))
                 continue;
 
-            if (sharedCtx.database() != mgr)
+            if (sharedCtx.database() != mgr && sharedCtx.wal() != mgr)
                 mgr.onKernalStart(false);
         }
 
@@ -1078,9 +1076,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param globalState Global state to set.
      */
     public void globalState(CacheState globalState) throws IgniteCheckedException {
-        if (this.globalState == CacheState.INACTIVE && globalState == CacheState.ACTIVE)
-            sharedCtx.wal().start(sharedCtx);
-
         this.globalState = globalState;
     }
 
@@ -1873,12 +1868,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             for (DynamicCacheChangeRequest req : reqs) {
                 if (req.globalStateChange()) {
                     try {
+                        sharedCtx.wal().onKernalStart(false);
+
                         sharedCtx.database().onKernalStart(false);
 
                         if (sharedCtx.pageStore() != null)
                             sharedCtx.pageStore().onKernalStart(false);
-
-                        sharedCtx.wal().onKernalStart(false);
 
                         ctx.marshallerContext().onMarshallerCacheStarted(ctx);
 
