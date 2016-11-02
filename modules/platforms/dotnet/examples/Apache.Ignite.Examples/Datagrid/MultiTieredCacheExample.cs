@@ -58,9 +58,9 @@ namespace Apache.Ignite.Examples.Datagrid
                         // Maximum number of entries that will be stored in Java heap. 
                         MaxSize = 10
                     },
-                    OffHeapMaxMemory = 1024*10 // 10 KB (maximum allowed off-heap space).
-
-                    // TODO: Configure swap (IGNITE-4126)
+                    OffHeapMaxMemory = 1024*10, // 10 KB (maximum allowed off-heap space).
+                    EnableSwap = true
+                    // TODO: Configure swap ? (IGNITE-4126)
                 };
 
                 ICache<int, byte[]> cache = ignite.GetOrCreateCache<int, byte[]>(cfg);
