@@ -2500,11 +2500,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 Assert.AreEqual(2, aex.InnerExceptions.Count);
 
-                var deadlockEx = aex.InnerExceptions.OfType<TransactionDeadlockException>().Single();
+                var deadlockEx = aex.InnerExceptions.OfType<TransactionDeadlockException>().First();
                 Assert.IsTrue(deadlockEx.Message.Trim().StartsWith("Deadlock detected:"), deadlockEx.Message);
-
-                var timeoutEx = aex.InnerExceptions.OfType<TransactionTimeoutException>().FirstOrDefault();
-                Assert.IsNotNull(timeoutEx);
             }
         }
 
