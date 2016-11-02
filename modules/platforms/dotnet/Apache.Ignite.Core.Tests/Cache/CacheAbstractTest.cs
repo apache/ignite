@@ -2490,19 +2490,15 @@ namespace Apache.Ignite.Core.Tests.Cache
                 }
             };
 
-            try
-            {
-                // Increment keys within tx in different order to cause a deadlock.
+            // Increment keys within tx in different order to cause a deadlock.
+            var aex = Assert.Throws<AggregateException>(() =>
                 Task.WaitAll(Task.Factory.StartNew(() => increment(keys0)),
-                    Task.Factory.StartNew(() => increment(keys0.Reverse().ToArray())));
-            }
-            catch (AggregateException aex)
-            {
-                Assert.AreEqual(2, aex.InnerExceptions.Count);
+                             Task.Factory.StartNew(() => increment(keys0.Reverse().ToArray()))));
 
-                var deadlockEx = aex.InnerExceptions.OfType<TransactionDeadlockException>().First();
-                Assert.IsTrue(deadlockEx.Message.Trim().StartsWith("Deadlock detected:"), deadlockEx.Message);
-            }
+            Assert.AreEqual(2, aex.InnerExceptions.Count);
+
+            var deadlockEx = aex.InnerExceptions.OfType<TransactionDeadlockException>().First();
+            Assert.IsTrue(deadlockEx.Message.Trim().StartsWith("Deadlock detected:"), deadlockEx.Message);
         }
 
         /// <summary>
