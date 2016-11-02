@@ -78,7 +78,7 @@ public class GridAffinityAssignmentCache {
     private final int partsCnt;
 
     /** Affinity calculation results cache: topology version => partition => nodes. */
-    private final ConcurrentNavigableMap<AffinityTopologyVersion, GridAffinityAssignment> affCache;
+    private final ConcurrentNavigableMap<AffinityTopologyVersion, HistoryAffinityAssignment> affCache;
 
     /** */
     private List<List<ClusterNode>> idealAssignment;
@@ -107,6 +107,9 @@ public class GridAffinityAssignmentCache {
     /** Full history size. */
     private final AtomicInteger fullHistSize = new AtomicInteger();
 
+    /** */
+    private final SimilarAffinityKey similarAffKey;
+
     /**
      * Constructs affinity cached calculations.
      *
@@ -127,6 +130,7 @@ public class GridAffinityAssignmentCache {
     {
         assert ctx != null;
         assert aff != null;
+        assert nodeFilter != null;
 
         this.ctx = ctx;
         this.aff = aff;
@@ -142,6 +146,12 @@ public class GridAffinityAssignmentCache {
         partsCnt = aff.partitions();
         affCache = new ConcurrentSkipListMap<>();
         head = new AtomicReference<>(new GridAffinityAssignment(AffinityTopologyVersion.NONE));
+
+        similarAffKey = new SimilarAffinityKey(aff.getClass(), nodeFilter.getClass(), backups, partsCnt);
+    }
+
+    public Object similarAffinityKey() {
+        return similarAffKey;
     }
 
     /**
@@ -170,7 +180,7 @@ public class GridAffinityAssignmentCache {
 
         GridAffinityAssignment assignment = new GridAffinityAssignment(topVer, affAssignment, idealAssignment);
 
-        affCache.put(topVer, assignment);
+        affCache.put(topVer, new HistoryAffinityAssignment(assignment));
         head.set(assignment);
 
         for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
@@ -300,7 +310,7 @@ public class GridAffinityAssignmentCache {
 
         GridAffinityAssignment assignmentCpy = new GridAffinityAssignment(topVer, aff);
 
-        affCache.put(topVer, assignmentCpy);
+        affCache.put(topVer, new HistoryAffinityAssignment(assignmentCpy));
         head.set(assignmentCpy);
 
         for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
@@ -328,7 +338,7 @@ public class GridAffinityAssignmentCache {
      * @return Affinity assignment.
      */
     public List<List<ClusterNode>> assignments(AffinityTopologyVersion topVer) {
-        GridAffinityAssignment aff = cachedAffinity(topVer);
+        AffinityAssignment aff = cachedAffinity(topVer);
 
         return aff.assignment();
     }
@@ -427,7 +437,7 @@ public class GridAffinityAssignmentCache {
      * @param topVer Topology version.
      * @return Cached affinity.
      */
-    public GridAffinityAssignment cachedAffinity(AffinityTopologyVersion topVer) {
+    public AffinityAssignment cachedAffinity(AffinityTopologyVersion topVer) {
         if (topVer.equals(AffinityTopologyVersion.NONE))
             topVer = lastVersion();
         else
@@ -435,7 +445,7 @@ public class GridAffinityAssignmentCache {
 
         assert topVer.topologyVersion() >= 0 : topVer;
 
-        GridAffinityAssignment cache = head.get();
+        AffinityAssignment cache = head.get();
 
         if (!cache.topologyVersion().equals(topVer)) {
             cache = affCache.get(topVer);
@@ -463,7 +473,7 @@ public class GridAffinityAssignmentCache {
      * @return {@code True} if primary changed or required affinity version not found in history.
      */
     public boolean primaryChanged(int part, AffinityTopologyVersion startVer, AffinityTopologyVersion endVer) {
-        GridAffinityAssignment aff = affCache.get(startVer);
+        AffinityAssignment aff = affCache.get(startVer);
 
         if (aff == null)
             return false;
@@ -475,7 +485,7 @@ public class GridAffinityAssignmentCache {
 
         ClusterNode primary = nodes.get(0);
 
-        for (GridAffinityAssignment assignment : affCache.tailMap(startVer, false).values()) {
+        for (AffinityAssignment assignment : affCache.tailMap(startVer, false).values()) {
             List<ClusterNode> nodes0 = assignment.assignment().get(part);
 
             if (nodes0.isEmpty())
@@ -549,10 +559,10 @@ public class GridAffinityAssignmentCache {
         }
 
         if (rmvCnt > 0) {
-            Iterator<GridAffinityAssignment> it = affCache.values().iterator();
+            Iterator<HistoryAffinityAssignment> it = affCache.values().iterator();
 
             while (it.hasNext() && rmvCnt > 0) {
-                GridAffinityAssignment aff0 = it.next();
+                AffinityAssignment aff0 = it.next();
 
                 it.remove();
 
@@ -600,6 +610,59 @@ public class GridAffinityAssignmentCache {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(AffinityReadyFuture.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class SimilarAffinityKey {
+        /** */
+        private final int backups;
+
+        /** */
+        private final Class<?> affFuncCls;
+
+        /** */
+        private final Class<?> filterCls;
+
+        /** */
+        private final int partsCnt;
+
+        /** */
+        private final int hash;
+
+        public SimilarAffinityKey(Class<?> affFuncCls, Class<?> filterCls, int backups, int partsCnt) {
+            this.backups = backups;
+            this.affFuncCls = affFuncCls;
+            this.filterCls = filterCls;
+            this.partsCnt = partsCnt;
+
+            int hash = backups;
+            hash = 31 * hash + affFuncCls.hashCode();
+            hash = 31 * hash + filterCls.hashCode();
+            hash= 31 * hash + partsCnt;
+
+            this.hash = hash;
+        }
+
+        @Override public int hashCode() {
+            return hash;
+        }
+
+        @Override public boolean equals(Object o) {
+            if (o == this)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            SimilarAffinityKey key = (SimilarAffinityKey)o;
+
+            return backups == key.backups &&
+                affFuncCls == key.affFuncCls &&
+                filterCls == key.filterCls &&
+                partsCnt == key.partsCnt;
         }
     }
 }

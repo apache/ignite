@@ -385,10 +385,16 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             }
 
             try {
+                AffinityAssignment assign0 = cctx.affinity().assignment(topVer);
+
+                GridAffinityAssignment assign = assign0 instanceof GridAffinityAssignment ?
+                    (GridAffinityAssignment)assign0 :
+                    new GridAffinityAssignment(topVer, assign0.assignment(), assign0.idealAssignment());
+
                 AffinityInfo info = new AffinityInfo(
                     cctx.config().getAffinity(),
                     cctx.config().getAffinityMapper(),
-                    new GridAffinityAssignment(topVer, cctx.affinity().assignment(topVer)),
+                    assign,
                     cctx.cacheObjectContext());
 
                 IgniteInternalFuture<AffinityInfo> old = affMap.putIfAbsent(key, new GridFinishedFuture<>(info));

@@ -508,6 +508,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         assert assignment != null;
 
+        final Map<Object, List<List<ClusterNode>>> affCache = new HashMap<>();
+
         forAllCaches(crd, new IgniteInClosureX<GridAffinityAssignmentCache>() {
             @Override public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
                 List<List<ClusterNode>> idealAssignment = aff.idealAssignment();
@@ -527,7 +529,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 else
                     newAssignment = idealAssignment;
 
-                aff.initialize(topVer, newAssignment);
+                aff.initialize(topVer, cachedAssignment(aff, newAssignment, affCache));
             }
         });
     }
@@ -561,6 +563,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         assert !F.isEmpty(affChange) : msg;
 
         final Map<Integer, IgniteUuid> deploymentIds = msg.cacheDeploymentIds();
+
+        final Map<Object, List<List<ClusterNode>>> affCache = new HashMap<>();
 
         forAllCaches(crd, new IgniteInClosureX<GridAffinityAssignmentCache>() {
             @Override public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
@@ -602,7 +606,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         assignment.set(part, nodes);
                     }
 
-                    aff.initialize(topVer, assignment);
+                    aff.initialize(topVer, cachedAssignment(aff, assignment, affCache));
                 }
                 else
                     aff.clientEventTopologyChange(exchFut.discoveryEvent(), topVer);
@@ -1206,6 +1210,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         throws IgniteCheckedException {
         AffinityTopologyVersion topVer = fut.topologyVersion();
 
+        final Map<Object, List<List<ClusterNode>>> affCache = new HashMap<>();
+
         if (!crd) {
             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                 if (cacheCtx.isLocal())
@@ -1213,7 +1219,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 boolean latePrimary = cacheCtx.rebalanceEnabled();
 
-                initAffinityOnNodeJoin(fut, cacheCtx.affinity().affinityCache(), null, latePrimary);
+                initAffinityOnNodeJoin(fut, cacheCtx.affinity().affinityCache(), null, latePrimary, affCache);
             }
 
             return null;
@@ -1227,7 +1233,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     boolean latePrimary = cache.rebalanceEnabled;
 
-                    initAffinityOnNodeJoin(fut, cache.affinity(), waitRebalanceInfo, latePrimary);
+                    initAffinityOnNodeJoin(fut, cache.affinity(), waitRebalanceInfo, latePrimary, affCache);
                 }
             });
 
@@ -1245,7 +1251,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     private void initAffinityOnNodeJoin(GridDhtPartitionsExchangeFuture fut,
         GridAffinityAssignmentCache aff,
         WaitRebalanceInfo rebalanceInfo,
-        boolean latePrimary)
+        boolean latePrimary,
+        Map<Object, List<List<ClusterNode>>> affCache)
         throws IgniteCheckedException
     {
         assert lateAffAssign;
@@ -1292,7 +1299,26 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         if (newAssignment == null)
             newAssignment = idealAssignment;
 
-        aff.initialize(fut.topologyVersion(), newAssignment);
+        aff.initialize(fut.topologyVersion(), cachedAssignment(aff, newAssignment, affCache));
+    }
+
+    /**
+     * @param aff
+     * @param assign
+     * @param affCache
+     * @return
+     */
+    private List<List<ClusterNode>> cachedAssignment(GridAffinityAssignmentCache aff,
+        List<List<ClusterNode>> assign,
+        Map<Object, List<List<ClusterNode>>> affCache) {
+        List<List<ClusterNode>> assign0 = affCache.get(aff.similarAffinityKey());
+
+        if (assign0 != null && assign0.equals(assign))
+            assign = assign0;
+        else
+            affCache.put(aff.similarAffinityKey(), assign);
+
+        return assign;
     }
 
     /**
