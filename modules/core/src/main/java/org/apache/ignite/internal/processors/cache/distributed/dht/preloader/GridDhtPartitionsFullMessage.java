@@ -61,6 +61,10 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     /** Topology version. */
     private AffinityTopologyVersion topVer;
 
+    /** */
+    @GridDirectTransient
+    private boolean compress;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -81,6 +85,10 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         assert id == null || topVer.equals(id.topologyVersion());
 
         this.topVer = topVer;
+    }
+
+    public void compress(boolean compress) {
+        this.compress = compress;
     }
 
     /**
@@ -137,6 +145,21 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
         if (partCntrs != null && partCntrsBytes == null)
             partCntrsBytes = U.marshal(ctx, partCntrs);
+
+        if (compress && !compressed()) {
+            try {
+                byte[] partsBytesZip = U.zip(partsBytes);
+                byte[] partCntrsBytesZip = U.zip(partCntrsBytes);
+
+                partsBytes = partsBytesZip;
+                partCntrsBytes = partCntrsBytesZip;
+
+                compressed(true);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(ctx.logger(getClass()), "Failed to compress partitions data: " + e, e);
+            }
+        }
     }
 
     /**
@@ -157,14 +180,22 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (partsBytes != null && parts == null)
-            parts = U.unmarshal(ctx, partsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+        if (partsBytes != null && parts == null) {
+            if (compressed())
+                parts = U.unmarshalZip(ctx.marshaller(), partsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            else
+                parts = U.unmarshal(ctx, partsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+        }
 
         if (parts == null)
             parts = new HashMap<>();
 
-        if (partCntrsBytes != null && partCntrs == null)
-            partCntrs = U.unmarshal(ctx, partCntrsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+        if (partCntrsBytes != null && partCntrs == null) {
+            if (compressed())
+                partCntrs = U.unmarshalZip(ctx.marshaller(), partCntrsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            else
+                partCntrs = U.unmarshal(ctx, partCntrsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+        }
 
         if (partCntrs == null)
             partCntrs = new HashMap<>();
@@ -185,19 +216,19 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         }
 
         switch (writer.state()) {
-            case 5:
+            case 6:
                 if (!writer.writeByteArray("partCntrsBytes", partCntrsBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 7:
                 if (!writer.writeByteArray("partsBytes", partsBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
+            case 8:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
@@ -219,7 +250,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             return false;
 
         switch (reader.state()) {
-            case 5:
+            case 6:
                 partCntrsBytes = reader.readByteArray("partCntrsBytes");
 
                 if (!reader.isLastRead())
@@ -227,7 +258,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
                 reader.incrementState();
 
-            case 6:
+            case 7:
                 partsBytes = reader.readByteArray("partsBytes");
 
                 if (!reader.isLastRead())
@@ -235,7 +266,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
                 reader.incrementState();
 
-            case 7:
+            case 8:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
@@ -255,7 +286,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 8;
+        return 9;
     }
 
     /** {@inheritDoc} */

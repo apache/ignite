@@ -935,7 +935,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         throws IgniteCheckedException {
         GridDhtPartitionsSingleMessage m = new GridDhtPartitionsSingleMessage(id,
             clientOnlyExchange,
-            cctx.versions().last());
+            cctx.versions().last(),
+            node.version().compareToIgnoreTimestamp(GridDhtPartitionsSingleMessage.PART_MAP_COMPRESS_SINCE) >= 0);
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (!cacheCtx.isLocal()) {
@@ -974,13 +975,22 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             topologyVersion());
 
         boolean useOldApi = false;
+        boolean compress = true;
 
         if (nodes != null) {
             for (ClusterNode node : nodes) {
-                if (node.version().compareTo(GridDhtPartitionMap2.SINCE) < 0)
+                if (node.version().compareTo(GridDhtPartitionMap2.SINCE) < 0) {
                     useOldApi = true;
+                    compress = false;
+
+                    break;
+                }
+                else if (node.version().compareToIgnoreTimestamp(GridDhtPartitionsAbstractMessage.PART_MAP_COMPRESS_SINCE) < 0)
+                    compress = false;
             }
         }
+
+        m.compress(compress);
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (!cacheCtx.isLocal()) {
