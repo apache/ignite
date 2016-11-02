@@ -617,6 +617,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                     cctx.cache().globalState(req.state());
 
+                    //todo check file lock
                     break;
                 }
             }

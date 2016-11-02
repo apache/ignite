@@ -587,8 +587,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             Set<String> internalCaches = internalCachesNames();
 
             for (int i = 0; i < cfgs.length; i++) {
-                if (CU.isSystemCache(cfgs[i].getName()))
-                    registerCache(internalCaches, cfgs[i]);
+                if (ctx.config().isDaemon() && !CU.isMarshallerCache(cfgs[i].getName()))
+                    continue;
+
+                CacheConfiguration<?, ?> cfg = new CacheConfiguration(cfgs[i]);
+
+                cfgs[i] = cfg; // Replace original configuration value.
+
+                registerCache(internalCaches, cfg);
             }
 
             if (sharedCtx.pageStore() != null) {
@@ -1076,29 +1082,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             sharedCtx.wal().start(sharedCtx);
 
         this.globalState = globalState;
-    }
-
-    /**
-     *
-     */
-    private void onKernalStartAfterActivate() throws IgniteCheckedException {
-        sharedCtx.database().onKernalStart(false);
-
-        if (sharedCtx.pageStore() != null)
-            sharedCtx.pageStore().onKernalStart(false);
-
-        sharedCtx.wal().onKernalStart(false);
-
-        ctx.marshallerContext().onMarshallerCacheStarted(ctx);
-
-        if (!ctx.config().isDaemon())
-            ctx.cacheObjects().onUtilityCacheStarted();
-
-        ctx.service().onUtilityCacheStarted();
-
-        ctx.service().onKernalStart();
-
-        ctx.dataStructures().onKernalStart();
     }
 
     /**
@@ -1890,7 +1873,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             for (DynamicCacheChangeRequest req : reqs) {
                 if (req.globalStateChange()) {
                     try {
-                        onKernalStartAfterActivate();
+                        sharedCtx.database().onKernalStart(false);
+
+                        if (sharedCtx.pageStore() != null)
+                            sharedCtx.pageStore().onKernalStart(false);
+
+                        sharedCtx.wal().onKernalStart(false);
+
+                        ctx.marshallerContext().onMarshallerCacheStarted(ctx);
+
+                        if (!ctx.config().isDaemon())
+                            ctx.cacheObjects().onUtilityCacheStarted();
+
+                        ctx.service().onUtilityCacheStarted();
+
+                        ctx.service().onKernalStart();
+
+                        ctx.dataStructures().onKernalStart();
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to start after activate.", e);
