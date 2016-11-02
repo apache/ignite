@@ -21,23 +21,21 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.concurrent.Callable;
-import javax.cache.CacheException;
-import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryArrayIdentityResolver;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -51,6 +49,17 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        BinaryConfiguration binCfg = new BinaryConfiguration();
+
+        binCfg.setIdentityResolver(BinaryArrayIdentityResolver.instance());
+
+        binCfg.setTypeConfigurations(Arrays.asList(
+            new BinaryTypeConfiguration() {{ setTypeName(Key.class.getName()); }},
+            new BinaryTypeConfiguration() {{ setTypeName(Key2.class.getName()); }}
+        ));
+
+        cfg.setBinaryConfiguration(binCfg);
 
         cfg.setPeerClassLoadingEnabled(false);
 

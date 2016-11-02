@@ -35,18 +35,6 @@ public class IgniteCacheBinaryMarshallerInsertSqlQuerySelfTest extends IgniteCac
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        // We have to register these types on the node we'll call 'get' on
-        CacheObjectBinaryProcessor binProc = (CacheObjectBinaryProcessor)grid(0).context().cacheObjects();
-
-        // Key types only!
-        binProc.registerType(Key.class);
-        binProc.registerType(Key2.class);
-    }
-
-    /** {@inheritDoc} */
     @Override protected Object createPerson(int id, String name) {
         return createPersonBinary(id, name);
     }
