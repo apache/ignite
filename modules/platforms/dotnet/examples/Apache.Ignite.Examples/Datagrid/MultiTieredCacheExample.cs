@@ -75,7 +75,7 @@ namespace Apache.Ignite.Examples.Datagrid
 
                     if (i%10 == 0)
                     {
-                        Console.WriteLine(">>> Cache entries created: {0}", i);
+                        Console.WriteLine(">>> Cache entries created: {0}", i + 1);
 
                         PrintCacheMetrics(cache);
                     }
