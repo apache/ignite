@@ -42,7 +42,6 @@
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.SwapSpace;
-    using Apache.Ignite.Core.SwapSpace.File;
     using Apache.Ignite.Core.Transactions;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
@@ -794,9 +793,7 @@
         }
 
         /// <summary>
-        /// Gets or sets the swap space SPI. When not set, <see cref="FileSwapSpaceSpi"/> is used.
-        /// <para />
-        /// Swapping takes effect when <see cref="CacheConfiguration.EnableSwap"/> is true.
+        /// Gets or sets the swap space SPI.
         /// </summary>
         public ISwapSpaceSpi SwapSpaceSpi { get; set; }
     }
