@@ -41,6 +41,7 @@
             <groupId>org.gridgain</groupId>
             <artifactId>ignite-shmem</artifactId>
             <version>1.0.0</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
@@ -60,7 +61,34 @@
             </testResource>
         </testResources>
 
+        <!-- Extract native libs from ignite-shmem-1.0.0.jar to target jar -->
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>unpack</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>org.gridgain</groupId>
+                                    <artifactId>ignite-shmem</artifactId>
+                                    <version>1.0.0</version>
+                                    <type>jar</type>
+                                    <includes>META-INF/native/**</includes>
+                                    <outputDirectory>${project.build.directory}/classes</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <!-- Generate the OSGi MANIFEST.MF for this bundle. -->
             <plugin>
                 <groupId>org.apache.felix</groupId>
