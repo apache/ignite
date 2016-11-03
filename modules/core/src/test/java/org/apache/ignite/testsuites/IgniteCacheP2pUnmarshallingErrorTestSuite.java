@@ -19,7 +19,11 @@ package org.apache.ignite.testsuites;
 
 import java.util.Set;
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingErrorTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingNearErrorTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingRebalanceErrorTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingTxErrorTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingContinuousQueryErrorTest;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
