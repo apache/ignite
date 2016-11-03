@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Cache
 {
+    using Apache.Ignite.Core.Cache.Configuration;
     using NUnit.Framework;
 
     /// <summary>
@@ -25,21 +26,48 @@ namespace Apache.Ignite.Core.Tests.Cache
     public class CacheSwapSpaceTest
     {
         /// <summary>
-        /// Fixture set up.
-        /// </summary>
-        [TestFixtureTearDown]
-        public void FixtureSetUp()
-        {
-            Ignition.Start(TestUtils.GetTestConfiguration());
-        }
-
-        /// <summary>
         /// Fixture tear down.
         /// </summary>
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
             Ignition.StopAll(true);
+        }
+
+        /// <summary>
+        /// Tests that swap space is disabled by default and cache can't have EnableSwap.
+        /// </summary>
+        [Test]
+        public void TestDisabledSwapSpace()
+        {
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration());
+
+            Assert.IsNull(cfg.SwapSpaceSpi);
+
+            using (var ignite = Ignition.Start(cfg))
+            {
+                Assert.IsNull(ignite.GetConfiguration().SwapSpaceSpi);
+
+                ignite.CreateCache<int, int>(new CacheConfiguration {EnableSwap = true});
+            }
+
+        }
+
+        /// <summary>
+        /// Tests the swap space.
+        /// </summary>
+        [Test]
+        public void TestSwapSpace()
+        {
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                // TODO
+            };
+
+            using (var ignite = Ignition.Start(cfg))
+            {
+                
+            }
         }
     }
 }
