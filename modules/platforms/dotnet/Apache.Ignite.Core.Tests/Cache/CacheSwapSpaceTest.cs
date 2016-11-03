@@ -19,9 +19,11 @@ namespace Apache.Ignite.Core.Tests.Cache
 {
     using System.IO;
     using System.Linq;
+    using System.Threading;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
+    using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.SwapSpace.File;
     using NUnit.Framework;
@@ -83,6 +85,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             using (var ignite = Ignition.Start(cfg))
             {
+                // Create cache with eviction and swap.
                 var cache = ignite.CreateCache<int, byte[]>(new CacheConfiguration("cache")
                 {
                     EnableSwap = true,
@@ -90,16 +93,26 @@ namespace Apache.Ignite.Core.Tests.Cache
                     {
                         MaxSize = 3
                     },
-                    OffHeapMaxMemory = 5 * 1024
+                    OffHeapMaxMemory = 5 * 1024,
                 });
 
+                // Populate to trigger eviction.
                 var data = Enumerable.Range(1, 1024).Select(x => (byte) x).ToArray();
 
                 for (int i = 0; i < 10; i++)
                     cache[i] = data;
 
+                // Check that swap files exist.
                 var files = Directory.GetFiles(_tempDir, "*.*", SearchOption.AllDirectories);
                 CollectionAssert.IsNotEmpty(files);
+                
+                // Wait for metrics update and check metrics.
+                Thread.Sleep(((TcpDiscoverySpi)ignite.GetConfiguration().DiscoverySpi).HeartbeatFrequency);
+
+                var metrics = cache.GetMetrics();
+
+                Assert.AreEqual(5, metrics.OffHeapEntriesCount);
+                Assert.AreEqual(2, metrics.OverflowSize);
             }
         }
     }
