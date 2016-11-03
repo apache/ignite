@@ -21,15 +21,16 @@
     <feature name="ignite-all" version="${project.version}" description="Apache Ignite :: All">
         <details>
             <![CDATA[Aggregate feature for installing all Apache Ignite module + their dependencies.
-            
+
             NOTE #1: Due to a bug in Apache Karaf (KARAF-4129), you must install the ignite-log4j feature explicitly and then either:
-            - manually refresh the pax-logging-api framework bundle  - or - 
+            - manually refresh the pax-logging-api framework bundle  - or -
             - restart the Apache Karaf container.
             You may safely ignore the 'Resource has no uri' exception if you follow this method.
 
             NOTE #2: This feature *does not* include components that depend on LGPL software (e.g. ignite-hibernate).]]>
         </details>
         <feature>ignite-core</feature>
+        <feature>ignite-shmem</feature>
         <feature>ignite-aop</feature>
         <feature>ignite-aws</feature>
         <feature>ignite-camel</feature>
@@ -64,9 +65,14 @@
     <feature name="ignite-aop" version="${project.version}" description="Apache Ignite :: AOP">
         <details><![CDATA[The Apache Ignite AOP module + dependencies.]]></details>
         <feature dependency="true" version="[${spring41.osgi.feature.version},4.2)">spring-aspects</feature>
-        <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.aopalliance/${aopalliance.bundle.version}</bundle>        
+        <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.aopalliance/${aopalliance.bundle.version}</bundle>
         <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.aspectj/${aspectj.bundle.version}</bundle>
         <bundle start="true">mvn:org.apache.ignite/ignite-aop/${project.version}</bundle>
+    </feature>
+
+    <feature name="ignite-shmem" version="${project.version}" description="Apache Ignite :: Shared Memory">
+        <details><![CDATA[The Apache Ignite Shared Memory module + dependencies.]]></details>
+        <bundle start="true">mvn:org.apache.ignite/ignite-shmem/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-aws" version="${project.version}" description="Apache Ignite :: AWS">
@@ -85,7 +91,7 @@
             Make sure to install the Apache Camel feature repository before installing this feature.
 
                 mvn:org.apache.camel.karaf/apache-camel/\${camel.version}/xml/features
-            
+
             Installing this feature will trigger the installation of the 'camel-core' feature from the Camel repository.]]>
         </details>
         <feature>camel-core</feature>
@@ -103,8 +109,8 @@
 
     <feature name="ignite-hibernate" version="${project.version}" description="Apache Ignite :: Hibernate">
         <details>
-            <![CDATA[The Apache Ignite Hibernate module + dependencies. 
-            
+            <![CDATA[The Apache Ignite Hibernate module + dependencies.
+
             Installing this feature will trigger the installation of the 'hibernate' feature from the Apache Karaf distribution.
 
             NOTE: Take into account that certain parts of Hibernate are offered under the LGPL license.]]>
@@ -115,8 +121,8 @@
 
     <feature name="ignite-indexing" version="${project.version}" description="Apache Ignite :: Indexing">
         <details>
-            <![CDATA[The Apache Ignite Indexing module + dependencies. This module is a fragment of ignite-core. 
-            
+            <![CDATA[The Apache Ignite Indexing module + dependencies. This module is a fragment of ignite-core.
+
             Be sure to refresh ignite-core manually in case it is not refreshed automatically.]]>
         </details>
         <bundle start="true" dependency="true">mvn:org.osgi/org.osgi.enterprise/${osgi.enterprise.version}</bundle>
@@ -142,10 +148,10 @@
 
     <feature name="ignite-jta" version="${project.version}" description="Apache Ignite :: JTA">
         <details>
-            <![CDATA[The Apache Ignite JTA module + dependencies. This module is a fragment of ignite-core. 
-            
+            <![CDATA[The Apache Ignite JTA module + dependencies. This module is a fragment of ignite-core.
+
             Be sure to refresh ignite-core manually in case it is not refreshed automatically.
-            
+
             Installing this feature will trigger the installation of the 'transaction' feature from the Apache Karaf distribution.]]>
         </details>
         <feature dependency="true">transaction</feature>
@@ -168,10 +174,10 @@
 
     <feature name="ignite-log4j" version="${project.version}" description="Apache Ignite :: log4j">
         <details>
-            <![CDATA[The Apache Ignite log4j module + dependencies. 
-            
-            This module installs an OSGi fragment that exposes extra packages from the Pax Logging bundle required by Ignite. 
-            
+            <![CDATA[The Apache Ignite log4j module + dependencies.
+
+            This module installs an OSGi fragment that exposes extra packages from the Pax Logging bundle required by Ignite.
+
             Be sure to refresh the Pax Logging bundles manually in case this does not happen automatically.]]>
         </details>
         <bundle dependency="true" start-level="8">mvn:org.apache.ignite/ignite-osgi-paxlogging/${project.version}</bundle>
@@ -187,17 +193,17 @@
         <bundle start="true" dependency="true">mvn:org.eclipse.paho/org.eclipse.paho.client.mqttv3/${paho.version}</bundle>
         <bundle start="true" dependency="true">wrap:mvn:com.github.rholder/guava-retrying/${guava.retrying.version}$Bundle-SymbolicName=guava-retrying&amp;Bundle-SymbolicName=guava-retrying&amp;Bundle-Version=${guava.retrying.version}</bundle>
         <bundle start="true">mvn:org.apache.ignite/ignite-mqtt/${project.version}</bundle>
-    </feature>   
+    </feature>
 
     <feature name="ignite-rest-http" version="${project.version}" description="Apache Ignite :: REST HTTP">
-         <!-- NOTICE: XOM cannot be included by default due to an incompatible license; 
+         <!-- NOTICE: XOM cannot be included by default due to an incompatible license;
                       please review its license model and install the dependency manually if you agree. -->
         <details>
-            <![CDATA[The Apache Ignite REST HTTP module + dependencies. 
-            
+            <![CDATA[The Apache Ignite REST HTTP module + dependencies.
+
             Installing this feature will trigger the installation of the 'http' feature from the Apache Karaf distribution.
-            
-            NOTE: Before using this feature you must review the license of the XOM bundle and install it manually if you accept it: 
+
+            NOTE: Before using this feature you must review the license of the XOM bundle and install it manually if you accept it:
             install -s mvn:xom/xom/1.2.5]]>
         </details>
         <feature dependency="true">http</feature>
@@ -244,16 +250,16 @@
 
     <feature name="ignite-spring" version="${project.version}" description="Apache Ignite :: Spring Support">
         <details>
-            <![CDATA[The Apache Ignite Spring integration module + dependencies. This module is a fragment of ignite-core. 
-            
+            <![CDATA[The Apache Ignite Spring integration module + dependencies. This module is a fragment of ignite-core.
+
             Be sure to refresh ignite-core in case it is not refreshed automatically.
-            
+
             This feature installs the following features from the Apache Karaf distribution:
               - spring
               - spring-aspects
               - spring-tx
               - spring-jdbc
-              
+
             With version range: [${spring41.osgi.feature.version},4.2).]]>
         </details>
         <feature dependency="true" version="[${spring41.osgi.feature.version},4.2)">spring</feature>
@@ -285,12 +291,12 @@
     <feature name="ignite-urideploy" version="${project.version}" description="Apache Ignite :: URI Deploy">
         <details>
             <![CDATA[The Apache Ignite URI Deploy module + dependencies.
-            
+
             This feature installs the following features from the Apache Karaf distribution:
               - spring
               - spring-aspects
               - spring-tx
-              
+
             With version range: [${spring41.osgi.feature.version},4.2).]]>
         </details>
         <feature prerequisite="true">wrap</feature>
@@ -305,7 +311,7 @@
     <feature name="ignite-web" version="${project.version}" description="Apache Ignite :: Web">
         <details>
             <![CDATA[The Apache Ignite Web module + dependencies.
-            
+
             This feature installs the 'http' feature from the Apache Karaf distribution.]]>
         </details>
         <feature dependency="true">http</feature>
