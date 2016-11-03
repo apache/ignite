@@ -100,7 +100,10 @@ public enum GridTopic {
     TOPIC_BACKUP,
 
     /** */
-    TOPIC_IO_TEST;
+    TOPIC_IO_TEST,
+
+    /** Topic active. */
+    TOPIC_ACTIVE;
 
     /** Enum values. */
     private static final GridTopic[] VALS = values();

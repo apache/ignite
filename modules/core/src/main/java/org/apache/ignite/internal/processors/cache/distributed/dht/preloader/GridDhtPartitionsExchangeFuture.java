@@ -37,7 +37,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
@@ -55,7 +54,6 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCach
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheState;
-import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -84,7 +82,10 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
-import static org.apache.ignite.cache.PartitionLossPolicy.*;
+import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_ALL;
+import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
+import static org.apache.ignite.cache.PartitionLossPolicy.READ_WRITE_ALL;
+import static org.apache.ignite.cache.PartitionLossPolicy.READ_WRITE_SAFE;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -449,7 +450,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         assert !dummy && !forcePreload : this;
 
         try {
-            srvNodes = new ArrayList<>(cctx.discovery().serverNodes(topologyVersion()));
+            AffinityTopologyVersion topVersion = topologyVersion();
+
+            srvNodes = new ArrayList<>(cctx.discovery().serverNodes(topVersion));
 
             remaining.addAll(F.nodeIds(F.view(srvNodes, F.remoteNodes(cctx.localNodeId()))));
 
@@ -478,8 +481,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
             else {
                 if (discoEvt.type() == EVT_NODE_JOINED) {
-                    Collection<DynamicCacheDescriptor> receivedCaches = cctx.cache().startReceivedCaches(
-                        topologyVersion());
+                    Collection<DynamicCacheDescriptor> receivedCaches = cctx.cache().startReceivedCaches(topVersion);
 
                     if (!discoEvt.eventNode().isLocal())
                         cctx.affinity().initStartedCaches(crdNode, this, receivedCaches);
@@ -525,7 +527,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 case NONE: {
                     initTopologies();
 
-                    onDone(topologyVersion());
+                    onDone(topVersion);
 
                     break;
                 }
@@ -607,21 +609,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     private ExchangeType onCacheChangeRequest(boolean crd) throws IgniteCheckedException {
         assert !F.isEmpty(reqs) : this;
-
-        // todo need refactoring, move to one method with closure
-        if (!F.isEmpty(reqs)) {
-            for (DynamicCacheChangeRequest req : reqs) {
-                if (req.globalStateChange()) {
-                    if (req.getException() != null)
-                        throw req.getException();
-
-                    cctx.cache().globalState(req.state());
-
-                    //todo check file lock
-                    break;
-                }
-            }
-        }
 
         boolean clientOnly = cctx.affinity().onCacheChangeRequest(this, crd, reqs);
 
