@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.SwapSpace.File
 {
+    using System;
     using System.ComponentModel;
 
     /// <summary>
@@ -26,7 +27,20 @@ namespace Apache.Ignite.Core.SwapSpace.File
     /// </summary>
     public class FileSwapSpaceSpi : ISwapSpaceSpi
     {
+        /// <summary>
+        /// Default value for <see cref="MaximumSparsity"/> property.
+        /// </summary>
         public const float DefaultMaximumSparsity = 0.5f;
+
+        /// <summary>
+        /// Default value for <see cref="WriteBufferSize"/> property.
+        /// </summary>
+        public const float DefaultWriteBufferSize = 64 * 1024;
+
+        /// <summary>
+        /// Default value for <see cref="MaximumWriteQueueSize"/> property.
+        /// </summary>
+        public const float DefaultMaximumWriteQueueSize = 1024 * 1024;
 
         /// <summary>
         /// Gets or sets the base directory.
@@ -49,12 +63,27 @@ namespace Apache.Ignite.Core.SwapSpace.File
         /// to be written to disk then specified size, SPI will block on write operation.
         /// </summary>
         /// <value>
-        /// The maximum size of the write queue in bytes.
+        /// The maximum size of the write queue, in bytes.
         /// </value>
+        [DefaultValue(DefaultMaximumWriteQueueSize)]
         public int MaximumWriteQueueSize { get; set; }
 
+        /// <summary>
+        /// Gets or sets the read stripes number. Defines number of file channels to be used concurrently. 
+        /// Default is <see cref="Environment.ProcessorCount"/>.
+        /// </summary>
+        /// <value>
+        /// Number of read stripes.
+        /// </value>
         public int ReadStripesNumber { get; set; }
 
+        /// <summary>
+        /// Gets or sets the size of the write buffer, in bytes. Write to disk occurs only when this buffer is full.
+        /// </summary>
+        /// <value>
+        /// The size of the write buffer, in bytes.
+        /// </value>
+        [DefaultValue(DefaultWriteBufferSize)]
         public int WriteBufferSize { get; set; }
     }
 }
