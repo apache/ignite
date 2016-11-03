@@ -17,8 +17,13 @@
 
 namespace Apache.Ignite.Core.Tests.Cache
 {
+    using System.IO;
+    using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Eviction;
+    using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.SwapSpace.File;
     using NUnit.Framework;
 
     /// <summary>
@@ -62,14 +67,36 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestSwapSpace()
         {
+            var dir = IgniteUtils.GetTempDirectoryName();
+
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                // TODO
+                SwapSpaceSpi = new FileSwapSpaceSpi
+                {
+                    BaseDirectory = dir
+                }
             };
 
             using (var ignite = Ignition.Start(cfg))
             {
-                
+                var cache = ignite.CreateCache<int, byte[]>(new CacheConfiguration("cache")
+                {
+                    EnableSwap = true,
+                    EvictionPolicy = new LruEvictionPolicy
+                    {
+                        MaxSize = 3
+                    },
+                    OffHeapMaxMemory = 5 * 1024
+                });
+
+                var data = Enumerable.Range(1, 1024).Select(x => (byte) x).ToArray();
+
+                for (int i = 0; i < 10; i++)
+                    cache[i] = data;
+
+                var files = Directory.GetFiles(dir);
+
+                CollectionAssert.IsNotEmpty(files);
             }
         }
     }
