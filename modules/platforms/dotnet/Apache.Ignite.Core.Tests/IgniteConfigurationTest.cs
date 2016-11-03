@@ -173,6 +173,14 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(com.UnacknowledgedMessagesBufferSize, resCom.UnacknowledgedMessagesBufferSize);
 
                 Assert.AreEqual(cfg.FailureDetectionTimeout, resCfg.FailureDetectionTimeout);
+
+                var swap = (FileSwapSpaceSpi) cfg.SwapSpaceSpi;
+                var resSwap = (FileSwapSpaceSpi) resCfg.SwapSpaceSpi;
+                Assert.AreEqual(swap.MaximumSparsity, resSwap.MaximumSparsity);
+                Assert.AreEqual(swap.BaseDirectory, resSwap.BaseDirectory);
+                Assert.AreEqual(swap.MaximumWriteQueueSize, resSwap.MaximumWriteQueueSize);
+                Assert.AreEqual(swap.ReadStripesNumber, resSwap.ReadStripesNumber);
+                Assert.AreEqual(swap.WriteBufferSize, resSwap.WriteBufferSize);
             }
         }
 
@@ -497,7 +505,15 @@ namespace Apache.Ignite.Core.Tests
                     SocketSendBufferSize = 2045,
                     UnacknowledgedMessagesBufferSize = 3450
                 },
-                FailureDetectionTimeout = TimeSpan.FromSeconds(3.5)
+                FailureDetectionTimeout = TimeSpan.FromSeconds(3.5),
+                SwapSpaceSpi = new FileSwapSpaceSpi
+                {
+                    ReadStripesNumber = 7,
+                    MaximumWriteQueueSize = 8,
+                    WriteBufferSize = 9,
+                    BaseDirectory = Path.GetTempPath(),
+                    MaximumSparsity = 11.22f
+                }
             };
         }
     }
