@@ -409,6 +409,19 @@
                     PessimisticTransactionLogLinger = TimeSpan.FromMilliseconds(r.ReadInt())
                 };
             }
+
+            // Swap
+            if (r.ReadBoolean())
+            {
+                SwapSpaceSpi = new FileSwapSpaceSpi
+                {
+                    BaseDirectory = r.ReadString(),
+                    MaximumSparsity = r.ReadFloat(),
+                    MaximumWriteQueueSize = r.ReadInt(),
+                    ReadStripesNumber = r.ReadInt(),
+                    WriteBufferSize = r.ReadInt()
+                };
+            }
         }
 
         /// <summary>
