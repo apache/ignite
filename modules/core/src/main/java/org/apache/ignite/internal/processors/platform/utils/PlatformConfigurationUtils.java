@@ -532,6 +532,18 @@ public class PlatformConfigurationUtils {
 
             cfg.setTransactionConfiguration(tx);
         }
+
+        if (in.readBoolean()) {
+            FileSwapSpaceSpi swap = new FileSwapSpaceSpi();
+
+            swap.setBaseDirectory(in.readString());
+            swap.setMaximumSparsity(in.readFloat());
+            swap.setMaxWriteQueueSize(in.readInt());
+            swap.setReadStripesNumber(in.readInt());
+            swap.setWriteBufferSize(in.readInt());
+
+            cfg.setSwapSpaceSpi(swap);
+        }
     }
 
     /**
@@ -923,6 +935,8 @@ public class PlatformConfigurationUtils {
         SwapSpaceSpi swap = cfg.getSwapSpaceSpi();
 
         if (swap instanceof FileSwapSpaceSpiMBean) {
+            w.writeBoolean(true);
+
             FileSwapSpaceSpiMBean fileSwap = (FileSwapSpaceSpiMBean)swap;
 
             w.writeString(fileSwap.getBaseDirectory());
@@ -931,6 +945,8 @@ public class PlatformConfigurationUtils {
             w.writeInt(fileSwap.getReadStripesNumber());
             w.writeInt(fileSwap.getWriteBufferSize());
         }
+        else
+            w.writeBoolean(false);
 
         w.writeString(cfg.getIgniteHome());
 
