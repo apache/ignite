@@ -609,7 +609,15 @@ namespace Apache.Ignite.Core.Tests
                 IsLateAffinityAssignment = false,
                 SpringConfigUrl = "test",
                 Logger = new IgniteNLogLogger(),
-                FailureDetectionTimeout = TimeSpan.FromMinutes(2)
+                FailureDetectionTimeout = TimeSpan.FromMinutes(2),
+                SwapSpaceSpi = new FileSwapSpaceSpi
+                {
+                    MaximumSparsity = 0.1f,
+                    MaximumWriteQueueSize = 55,
+                    WriteBufferSize = 66,
+                    ReadStripesNumber = 77,
+                    BaseDirectory = "test"
+                }
             };
         }
 
