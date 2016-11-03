@@ -31,6 +31,9 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// </summary>
     public class CacheSwapSpaceTest
     {
+        /** */
+        private readonly string _tempDir = IgniteUtils.GetTempDirectoryName();
+
         /// <summary>
         /// Fixture tear down.
         /// </summary>
@@ -38,6 +41,8 @@ namespace Apache.Ignite.Core.Tests.Cache
         public void FixtureTearDown()
         {
             Ignition.StopAll(true);
+
+            Directory.Delete(_tempDir);
         }
 
         /// <summary>
@@ -67,13 +72,12 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestSwapSpace()
         {
-            var dir = IgniteUtils.GetTempDirectoryName();
-
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SwapSpaceSpi = new FileSwapSpaceSpi
                 {
-                    BaseDirectory = dir
+                    BaseDirectory = _tempDir,
+                    WriteBufferSize = 64
                 }
             };
 
@@ -94,8 +98,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 for (int i = 0; i < 10; i++)
                     cache[i] = data;
 
-                var files = Directory.GetFiles(dir);
-
+                var files = Directory.GetFiles(_tempDir, "*.*", SearchOption.AllDirectories);
                 CollectionAssert.IsNotEmpty(files);
             }
         }
