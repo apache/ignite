@@ -17,20 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -90,9 +92,6 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
     /** */
     protected final boolean waitForExchange;
 
-    /** Continuous query closures. */
-    protected Collection<CI1<Boolean>> cntQryClsrs;
-
     /** Response count. */
     private volatile int resCnt;
 
@@ -138,14 +137,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
     /**
      * @param clsr Continuous query closure.
      */
-    public void addContinuousQueryClosure(CI1<Boolean> clsr) {
-        assert !isDone() : this;
-
-        if (cntQryClsrs == null)
-            cntQryClsrs = new ArrayList<>(10);
-
-        cntQryClsrs.add(clsr);
-    }
+    public abstract void addContinuousQueryClosure(CI1<Boolean> clsr);
 
     /**
      * @param entry Entry to map.
@@ -159,7 +151,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
      * @param updateCntr Partition update counter.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    public abstract void addWriteEntry(GridDhtCacheEntry entry,
+    public void addWriteEntry(GridDhtCacheEntry entry,
         @Nullable CacheObject val,
         EntryProcessor<Object, Object, Object> entryProcessor,
         long ttl,
@@ -167,7 +159,64 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
         @Nullable GridCacheVersion conflictVer,
         boolean addPrevVal,
         @Nullable CacheObject prevVal,
-        long updateCntr);
+        long updateCntr) {
+        AffinityTopologyVersion topVer = updateReq.topologyVersion();
+
+        List<ClusterNode> dhtNodes = cctx.dht().topology().nodes(entry.partition(), topVer);
+
+        if (log.isDebugEnabled())
+            log.debug("Mapping entry to DHT nodes [nodes=" + U.nodeIds(dhtNodes) + ", entry=" + entry + ']');
+
+        CacheWriteSynchronizationMode syncMode = updateReq.writeSynchronizationMode();
+
+        addKey(entry.key());
+
+        for (int i = 0; i < dhtNodes.size(); i++) {
+            ClusterNode node = dhtNodes.get(i);
+
+            UUID nodeId = node.id();
+
+            if (!nodeId.equals(cctx.localNodeId())) {
+                GridDhtAtomicUpdateRequest updateReq = mappings.get(nodeId);
+
+                if (updateReq == null) {
+                    updateReq = new GridDhtAtomicUpdateRequest(
+                        cctx.cacheId(),
+                        nodeId,
+                        futVer,
+                        writeVer,
+                        syncMode,
+                        topVer,
+                        forceTransformBackups,
+                        this.updateReq.subjectId(),
+                        this.updateReq.taskNameHash(),
+                        forceTransformBackups ? this.updateReq.invokeArguments() : null,
+                        cctx.deploymentEnabled(),
+                        this.updateReq.keepBinary(),
+                        this.updateReq.skipStore());
+
+                    mappings.put(nodeId, updateReq);
+                }
+
+                updateReq.addWriteValue(entry.key(),
+                    val,
+                    entryProcessor,
+                    ttl,
+                    conflictExpireTime,
+                    conflictVer,
+                    addPrevVal,
+                    entry.partition(),
+                    prevVal,
+                    updateCntr);
+            }
+        }
+    }
+
+    /**
+     * adds new key.
+     * @param key key.
+     */
+    protected abstract void addKey(KeyCacheObject key);
 
     /**
      * @param readers Entry readers.
@@ -177,12 +226,62 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
      * @param ttl TTL for near cache update (optional).
      * @param expireTime Expire time for near cache update (optional).
      */
-    public abstract void addNearWriteEntries(Iterable<UUID> readers,
+    public void addNearWriteEntries(Iterable<UUID> readers,
         GridDhtCacheEntry entry,
         @Nullable CacheObject val,
         EntryProcessor<Object, Object, Object> entryProcessor,
         long ttl,
-        long expireTime);
+        long expireTime) {
+        CacheWriteSynchronizationMode syncMode = updateReq.writeSynchronizationMode();
+
+        addKey(entry.key());
+
+        AffinityTopologyVersion topVer = updateReq.topologyVersion();
+
+        for (UUID nodeId : readers) {
+            GridDhtAtomicUpdateRequest updateReq = mappings.get(nodeId);
+
+            if (updateReq == null) {
+                ClusterNode node = cctx.discovery().node(nodeId);
+
+                // Node left the grid.
+                if (node == null)
+                    continue;
+
+                updateReq = new GridDhtAtomicUpdateRequest(
+                    cctx.cacheId(),
+                    nodeId,
+                    futVer,
+                    writeVer,
+                    syncMode,
+                    topVer,
+                    forceTransformBackups,
+                    this.updateReq.subjectId(),
+                    this.updateReq.taskNameHash(),
+                    forceTransformBackups ? this.updateReq.invokeArguments() : null,
+                    cctx.deploymentEnabled(),
+                    this.updateReq.keepBinary(),
+                    this.updateReq.skipStore());
+
+                mappings.put(nodeId, updateReq);
+            }
+
+            addNearReaderEntry(entry);
+
+            updateReq.addNearWriteValue(entry.key(),
+                val,
+                entryProcessor,
+                ttl,
+                expireTime);
+        }
+    }
+
+    /**
+     * adds new nearReader.
+     *
+     * @param entry GridDhtCacheEntry.
+     */
+    protected abstract void addNearReaderEntry(GridDhtCacheEntry entry);
 
     /**
      * @return Write version.

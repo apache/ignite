@@ -17,15 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
-import javax.cache.processor.EntryProcessor;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -35,7 +27,6 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -52,6 +43,9 @@ public class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdate
 
     /** Entries with readers. */
     private GridDhtCacheEntry nearReaderEntry;
+
+    /** Continuous query closure. */
+    private CI1<Boolean> cntQryClsr;
 
     /**
      * @param cctx Cache context.
@@ -71,120 +65,23 @@ public class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdate
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
-    public void addWriteEntry(GridDhtCacheEntry entry,
-        @Nullable CacheObject val,
-        EntryProcessor<Object, Object, Object> entryProcessor,
-        long ttl,
-        long conflictExpireTime,
-        @Nullable GridCacheVersion conflictVer,
-        boolean addPrevVal,
-        @Nullable CacheObject prevVal,
-        long updateCntr) {
-        AffinityTopologyVersion topVer = updateReq.topologyVersion();
+    @Override public void addContinuousQueryClosure(CI1<Boolean> clsr) {
+        assert !isDone() : this;
+        assert cntQryClsr == null : cntQryClsr;
 
-        List<ClusterNode> dhtNodes = cctx.dht().topology().nodes(entry.partition(), topVer);
-
-        if (log.isDebugEnabled())
-            log.debug("Mapping entry to DHT nodes [nodes=" + U.nodeIds(dhtNodes) + ", entry=" + entry + ']');
-
-        CacheWriteSynchronizationMode syncMode = updateReq.writeSynchronizationMode();
-
-        assert key == null || key.equals(entry.key()) : key;
-
-        key = entry.key();
-
-        for (int i = 0; i < dhtNodes.size(); i++) {
-            ClusterNode node = dhtNodes.get(i);
-
-            UUID nodeId = node.id();
-
-            if (!nodeId.equals(cctx.localNodeId())) {
-                GridDhtAtomicUpdateRequest updateReq = mappings.get(nodeId);
-
-                if (updateReq == null) {
-                    updateReq = new GridDhtAtomicUpdateRequest(
-                        cctx.cacheId(),
-                        nodeId,
-                        futVer,
-                        writeVer,
-                        syncMode,
-                        topVer,
-                        forceTransformBackups,
-                        this.updateReq.subjectId(),
-                        this.updateReq.taskNameHash(),
-                        forceTransformBackups ? this.updateReq.invokeArguments() : null,
-                        cctx.deploymentEnabled(),
-                        this.updateReq.keepBinary(),
-                        this.updateReq.skipStore());
-
-                    mappings.put(nodeId, updateReq);
-                }
-
-                updateReq.addWriteValue(entry.key(),
-                    val,
-                    entryProcessor,
-                    ttl,
-                    conflictExpireTime,
-                    conflictVer,
-                    addPrevVal,
-                    entry.partition(),
-                    prevVal,
-                    updateCntr);
-            }
-        }
+        cntQryClsr = clsr;
     }
 
     /** {@inheritDoc} */
-    public void addNearWriteEntries(Iterable<UUID> readers,
-        GridDhtCacheEntry entry,
-        @Nullable CacheObject val,
-        EntryProcessor<Object, Object, Object> entryProcessor,
-        long ttl,
-        long expireTime) {
-        CacheWriteSynchronizationMode syncMode = updateReq.writeSynchronizationMode();
+    @Override protected void addKey(KeyCacheObject key) {
+        assert this.key == null || this.key.equals(key) : this.key;
 
-        assert key == null || key.equals(entry.key()) : key;
-        key = entry.key();
+        this.key = key;
+    }
 
-        AffinityTopologyVersion topVer = updateReq.topologyVersion();
-
-        for (UUID nodeId : readers) {
-            GridDhtAtomicUpdateRequest updateReq = mappings.get(nodeId);
-
-            if (updateReq == null) {
-                ClusterNode node = cctx.discovery().node(nodeId);
-
-                // Node left the grid.
-                if (node == null)
-                    continue;
-
-                updateReq = new GridDhtAtomicUpdateRequest(
-                    cctx.cacheId(),
-                    nodeId,
-                    futVer,
-                    writeVer,
-                    syncMode,
-                    topVer,
-                    forceTransformBackups,
-                    this.updateReq.subjectId(),
-                    this.updateReq.taskNameHash(),
-                    forceTransformBackups ? this.updateReq.invokeArguments() : null,
-                    cctx.deploymentEnabled(),
-                    this.updateReq.keepBinary(),
-                    this.updateReq.skipStore());
-
-                mappings.put(nodeId, updateReq);
-            }
-
-            nearReaderEntry = entry;
-
-            updateReq.addNearWriteValue(entry.key(),
-                val,
-                entryProcessor,
-                ttl,
-                expireTime);
-        }
+    /** {@inheritDoc} */
+    @Override protected void addNearReaderEntry(GridDhtCacheEntry entry) {
+        nearReaderEntry = entry;
     }
 
     /** {@inheritDoc} */
@@ -218,10 +115,8 @@ public class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdate
             if (!suc)
                 updateRes.addFailedKey(key, err);
 
-            if (cntQryClsrs != null) {
-                for (CI1<Boolean> clsr : cntQryClsrs)
-                    clsr.apply(suc);
-            }
+            if (cntQryClsr != null)
+                cntQryClsr.apply(suc);
 
             if (updateReq.writeSynchronizationMode() == FULL_SYNC)
                 completionCb.apply(updateReq, updateRes);
