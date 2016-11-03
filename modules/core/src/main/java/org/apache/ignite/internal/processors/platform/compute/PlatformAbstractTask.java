@@ -157,6 +157,7 @@ public abstract class PlatformAbstractTask implements ComputeTask<Object, Void> 
                         writer.writeBoolean(false);
                         writer.writeString(e.getClass().getName());
                         writer.writeString(e.getMessage());
+                        writer.writeString(X.getFullStackTrace(e));
                     }
                     else {
                         writer.writeBoolean(true);

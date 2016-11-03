@@ -43,6 +43,12 @@ public class VisorQueryUtils {
     /** Prefix for node local key for SCAN near queries. */
     public static final String SCAN_NEAR_CACHE = "VISOR_SCAN_NEAR_CACHE";
 
+    /** Prefix for node local key for SCAN near queries. */
+    public static final String SCAN_CACHE_WITH_FILTER = "VISOR_SCAN_CACHE_WITH_FILTER";
+
+    /** Prefix for node local key for SCAN near queries. */
+    public static final String SCAN_CACHE_WITH_FILTER_CASE_SENSITIVE = "VISOR_SCAN_CACHE_WITH_FILTER_CASE_SENSITIVE";
+
     /** Columns for SCAN queries. */
     public static final Collection<VisorQueryField> SCAN_COL_NAMES = Arrays.asList(
         new VisorQueryField(null, null, "Key Class", ""), new VisorQueryField(null, null, "Key", ""),

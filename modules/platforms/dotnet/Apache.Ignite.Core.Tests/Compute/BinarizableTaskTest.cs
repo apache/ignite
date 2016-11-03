@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /** <inheritDoc /> */
             override public IDictionary<IComputeJob<BinarizableWrapper>, IClusterNode> Map(IList<IClusterNode> subgrid, BinarizableWrapper arg)
             {
-                Assert.AreEqual(3, subgrid.Count);
+                Assert.AreEqual(2, subgrid.Count);
                 Assert.NotNull(_grid);
 
                 var taskArg = arg;
@@ -114,15 +114,12 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 foreach (IClusterNode node in subgrid)
                 {
-                    if (!Grid3Name.Equals(node.GetAttribute<string>("org.apache.ignite.ignite.name"))) // Grid3 does not have cache.
+                    var job = new BinarizableJob
                     {
-                        var job = new BinarizableJob
-                        {
-                            Arg = new BinarizableWrapper {Item = ToBinary(_grid, new BinarizableJobArgument(200))}
-                        };
+                        Arg = new BinarizableWrapper {Item = ToBinary(_grid, new BinarizableJobArgument(200))}
+                    };
 
-                        jobs.Add(job, node);
-                    }
+                    jobs.Add(job, node);
                 }
 
                 Assert.AreEqual(2, jobs.Count);

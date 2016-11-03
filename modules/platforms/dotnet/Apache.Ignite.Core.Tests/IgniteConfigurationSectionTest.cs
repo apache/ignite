@@ -64,6 +64,38 @@ namespace Apache.Ignite.Core.Tests
             {
                 Assert.IsTrue(ignite.Name.StartsWith("myGrid"));
             }
+
+            using (var ignite = Ignition.StartFromApplicationConfiguration(
+                "igniteConfiguration3", "custom_app.config"))
+            {
+                Assert.AreEqual("myGrid3", ignite.Name);
+            }
+        }
+
+        /// <summary>
+        /// Tests the ignite start error.
+        /// </summary>
+        [Test]
+        public void TestIgniteStartError()
+        {
+            var ex = Assert.Throws<ConfigurationErrorsException>(() =>
+                Ignition.StartFromApplicationConfiguration("igniteConfiguration111"));
+
+            Assert.AreEqual("Could not find IgniteConfigurationSection with name 'igniteConfiguration111'", 
+                ex.Message);
+
+
+            ex = Assert.Throws<ConfigurationErrorsException>(() =>
+                Ignition.StartFromApplicationConfiguration("igniteConfiguration", "somefile"));
+
+            Assert.AreEqual("Specified config file does not exist: somefile", ex.Message);
+
+
+            ex = Assert.Throws<ConfigurationErrorsException>(() =>
+                Ignition.StartFromApplicationConfiguration("igniteConfiguration", "custom_app.config"));
+
+            Assert.AreEqual("Could not find IgniteConfigurationSection with name 'igniteConfiguration' " +
+                            "in file 'custom_app.config'", ex.Message);
         }
     }
 }

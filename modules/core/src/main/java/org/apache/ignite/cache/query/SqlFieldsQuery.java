@@ -56,6 +56,12 @@ public final class SqlFieldsQuery extends Query<List<?>> {
     /** Collocation flag. */
     private boolean collocated;
 
+    /** */
+    private boolean enforceJoinOrder;
+
+    /** */
+    private boolean distributedJoins;
+
     /**
      * Constructs SQL fields query.
      *
@@ -139,6 +145,53 @@ public final class SqlFieldsQuery extends Query<List<?>> {
         this.collocated = collocated;
 
         return this;
+    }
+
+    /**
+     * Checks if join order of tables if enforced.
+     *
+     * @return Flag value.
+     */
+    public boolean isEnforceJoinOrder() {
+        return enforceJoinOrder;
+    }
+
+    /**
+     * Sets flag to enforce join order of tables in the query. If set to {@code true}
+     * query optimizer will not reorder tables in join. By default is {@code false}.
+     * <p>
+     * It is not recommended to enable this property until you are sure that
+     * your indexes and the query itself are correct and tuned as much as possible but
+     * query optimizer still produces wrong join order.
+     *
+     * @param enforceJoinOrder Flag value.
+     * @return {@code this} For chaining.
+     */
+    public SqlFieldsQuery setEnforceJoinOrder(boolean enforceJoinOrder) {
+        this.enforceJoinOrder = enforceJoinOrder;
+
+        return this;
+    }
+
+    /**
+     * Specify if distributed joins are enabled for this query.
+     *
+     * @param distributedJoins Distributed joins enabled.
+     * @return {@code this} For chaining.
+     */
+    public SqlFieldsQuery setDistributedJoins(boolean distributedJoins) {
+        this.distributedJoins = distributedJoins;
+
+        return this;
+    }
+
+    /**
+     * Check if distributed joins are enabled for this query.
+     *
+     * @return {@code true} If distributed joind enabled.
+     */
+    public boolean isDistributedJoins() {
+        return distributedJoins;
     }
 
     /** {@inheritDoc} */

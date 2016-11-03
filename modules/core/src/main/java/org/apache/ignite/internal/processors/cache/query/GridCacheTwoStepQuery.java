@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -45,29 +46,66 @@ public class GridCacheTwoStepQuery {
     private boolean explain;
 
     /** */
-    private Set<String> spaces;
+    private Collection<String> spaces;
 
     /** */
-    private final boolean skipMergeTbl;
+    private Set<String> schemas;
+
+    /** */
+    private Set<String> tbls;
+
+    /** */
+    private boolean distributedJoins;
+
+    /** */
+    private boolean skipMergeTbl;
+
+    /** */
+    private List<Integer> caches;
+
+    /** */
+    private List<Integer> extraCaches;
 
     /**
-     * @param spaces All spaces accessed in query.
-     * @param rdc Reduce query.
-     * @param skipMergeTbl {@code True} if reduce query can skip merge table creation and
-     *      get data directly from merge index.
+     * @param schemas Schema names in query.
+     * @param tbls Tables in query.
      */
-    public GridCacheTwoStepQuery(Set<String> spaces, GridCacheSqlQuery rdc, boolean skipMergeTbl) {
-        assert rdc != null;
-
-        this.spaces = spaces;
-        this.rdc = rdc;
-        this.skipMergeTbl = skipMergeTbl;
+    public GridCacheTwoStepQuery(Set<String> schemas, Set<String> tbls) {
+        this.schemas = schemas;
+        this.tbls = tbls;
     }
+
+    /**
+     * Specify if distributed joins are enabled for this query.
+     *
+     * @param distributedJoins Distributed joins enabled.
+     */
+    public void distributedJoins(boolean distributedJoins) {
+        this.distributedJoins = distributedJoins;
+    }
+
+    /**
+     * Check if distributed joins are enabled for this query.
+     *
+     * @return {@code true} If distributed joind enabled.
+     */
+    public boolean distributedJoins() {
+        return distributedJoins;
+    }
+
+
     /**
      * @return {@code True} if reduce query can skip merge table creation and get data directly from merge index.
      */
     public boolean skipMergeTable() {
         return skipMergeTbl;
+    }
+
+    /**
+     * @param skipMergeTbl Skip merge table.
+     */
+    public void skipMergeTable(boolean skipMergeTbl) {
+        this.skipMergeTbl = skipMergeTbl;
     }
 
     /**
@@ -116,6 +154,13 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
+     * @param rdc Reduce query.
+     */
+    public void reduceQuery(GridCacheSqlQuery rdc) {
+        this.rdc = rdc;
+    }
+
+    /**
      * @return Map queries.
      */
     public List<GridCacheSqlQuery> mapQueries() {
@@ -123,17 +168,52 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
+     * @return Caches.
+     */
+    public List<Integer> caches() {
+        return caches;
+    }
+
+    /**
+     * @param caches Caches.
+     */
+    public void caches(List<Integer> caches) {
+        this.caches = caches;
+    }
+
+    /**
+     * @return Caches.
+     */
+    public List<Integer> extraCaches() {
+        return extraCaches;
+    }
+
+    /**
+     * @param extraCaches Caches.
+     */
+    public void extraCaches(List<Integer> extraCaches) {
+        this.extraCaches = extraCaches;
+    }
+
+    /**
      * @return Spaces.
      */
-    public Set<String> spaces() {
+    public Collection<String> spaces() {
         return spaces;
     }
 
     /**
      * @param spaces Spaces.
      */
-    public void spaces(Set<String> spaces) {
+    public void spaces(Collection<String> spaces) {
         this.spaces = spaces;
+    }
+
+    /**
+     * @return Schemas.
+     */
+    public Set<String> schemas() {
+        return schemas;
     }
 
     /**
@@ -143,12 +223,27 @@ public class GridCacheTwoStepQuery {
     public GridCacheTwoStepQuery copy(Object[] args) {
         assert !explain;
 
-        GridCacheTwoStepQuery cp = new GridCacheTwoStepQuery(spaces, rdc.copy(args), skipMergeTbl);
+        GridCacheTwoStepQuery cp = new GridCacheTwoStepQuery(schemas, tbls);
+
+        cp.caches = caches;
+        cp.extraCaches = extraCaches;
+        cp.spaces = spaces;
+        cp.rdc = rdc.copy(args);
+        cp.skipMergeTbl = skipMergeTbl;
         cp.pageSize = pageSize;
+        cp.distributedJoins = distributedJoins;
+
         for (int i = 0; i < mapQrys.size(); i++)
             cp.mapQrys.add(mapQrys.get(i).copy(args));
 
         return cp;
+    }
+
+    /**
+     * @return Tables.
+     */
+    public Set<String> tables() {
+        return tbls;
     }
 
     /** {@inheritDoc} */

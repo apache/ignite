@@ -116,7 +116,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.jetbrains.annotations.Nullable;
 
@@ -184,8 +184,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** */
     private IdentityHashMap<CacheStore, ThreadLocal> sesHolders = new IdentityHashMap<>();
 
-    /** Must use JDK marshaller since it is used by discovery to fire custom events. */
-    private Marshaller marshaller = new JdkMarshaller();
+    /** Must use JDK marsh since it is used by discovery to fire custom events. */
+    private final Marshaller marsh;
 
     /** Count down latch for caches. */
     private final CountDownLatch cacheStartedLatch = new CountDownLatch(1);
@@ -205,6 +205,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         caches = new ConcurrentHashMap<>();
         jCacheProxies = new ConcurrentHashMap<>();
         stopSeq = new LinkedList<>();
+
+        marsh = MarshallerUtils.jdkMarshaller(ctx.gridName());
     }
 
     /**
@@ -379,6 +381,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             U.warn(log, "AffinityFunction configuration parameter will be ignored for local cache [cacheName=" +
                 U.maskName(cc.getName()) + ']');
 
+        if (cc.getAffinity().partitions() > CacheConfiguration.MAX_PARTITIONS_COUNT)
+            throw new IgniteCheckedException("Cannot have more than " + CacheConfiguration.MAX_PARTITIONS_COUNT +
+                " partitions [cacheName=" + cc.getName() + ", partitions=" + cc.getAffinity().partitions() + ']');
+
         if (cc.getRebalanceMode() != CacheRebalanceMode.NONE)
             assertParameter(cc.getRebalanceBatchSize() > 0, "rebalanceBatchSize > 0");
 
@@ -392,9 +398,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         DeploymentMode depMode = c.getDeploymentMode();
 
         if (c.isPeerClassLoadingEnabled() && (depMode == PRIVATE || depMode == ISOLATED) &&
-            !CU.isSystemCache(cc.getName()))
-            throw new IgniteCheckedException("Cannot start cache in PRIVATE or ISOLATED deployment mode: " +
-                ctx.config().getDeploymentMode());
+            !CU.isSystemCache(cc.getName()) && !(c.getMarshaller() instanceof BinaryMarshaller))
+            throw new IgniteCheckedException("Cache can be started in PRIVATE or ISOLATED deployment mode only when" +
+                " BinaryMarshaller is used [depMode=" + ctx.config().getDeploymentMode() + ", marshaller=" +
+                c.getMarshaller().getClass().getName() + ']');
 
         if (cc.isWriteBehindEnabled()) {
             if (cfgStore == null)
@@ -726,9 +733,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void onKernalStart() throws IgniteCheckedException {
-        try {
-            ClusterNode locNode = ctx.discovery().localNode();
+        ClusterNode locNode = ctx.discovery().localNode();
 
+        try {
             if (!ctx.config().isDaemon() && !getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
                 for (ClusterNode n : ctx.discovery().remoteNodes()) {
                     if (n.attribute(ATTR_CONSISTENCY_CHECK_SKIPPED))
@@ -816,16 +823,24 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (!ctx.config().isDaemon())
             ctx.cacheObjects().onUtilityCacheStarted();
 
+        ctx.service().onUtilityCacheStarted();
+
         // Wait for caches in SYNC preload mode.
-        for (CacheConfiguration cfg : ctx.config().getCacheConfiguration()) {
-            GridCacheAdapter cache = caches.get(maskNull(cfg.getName()));
+        for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+            CacheConfiguration cfg = desc.cacheConfiguration();
 
-            if (cache != null) {
-                if (cfg.getRebalanceMode() == SYNC) {
-                    CacheMode cacheMode = cfg.getCacheMode();
+            IgnitePredicate filter = cfg.getNodeFilter();
 
-                    if (cacheMode == REPLICATED || (cacheMode == PARTITIONED && cfg.getRebalanceDelay() >= 0))
-                        cache.preloader().syncFuture().get();
+            if (desc.locallyConfigured() || desc.receivedOnDiscovery() && CU.affinityNode(locNode, filter)) {
+                GridCacheAdapter cache = caches.get(maskNull(cfg.getName()));
+
+                if (cache != null) {
+                    if (cfg.getRebalanceMode() == SYNC) {
+                        CacheMode cacheMode = cfg.getCacheMode();
+
+                        if (cacheMode == REPLICATED || (cacheMode == PARTITIONED && cfg.getRebalanceDelay() >= 0))
+                            cache.preloader().syncFuture().get();
+                    }
                 }
             }
         }
@@ -1854,6 +1869,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridCachePartitionExchangeManager exchMgr = new GridCachePartitionExchangeManager();
         GridCacheIoManager ioMgr = new GridCacheIoManager();
         CacheAffinitySharedManager topMgr = new CacheAffinitySharedManager();
+        GridCacheSharedTtlCleanupManager ttl = new GridCacheSharedTtlCleanupManager();
 
         CacheJtaManagerAdapter jta = JTA.createOptional();
 
@@ -1866,6 +1882,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             exchMgr,
             topMgr,
             ioMgr,
+            ttl,
             jta,
             storeSesLsnrs
         );
@@ -3545,7 +3562,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         if (ldr == null)
                             ldr = val.getCacheStoreFactory().getClass().getClassLoader();
 
-                        marshaller.unmarshal(marshaller.marshal(val.getCacheStoreFactory()),
+                        U.unmarshal(marsh, U.marshal(marsh, val.getCacheStoreFactory()),
                             U.resolveClassLoader(ldr, ctx.config()));
                     }
                     catch (IgniteCheckedException e) {
@@ -3555,7 +3572,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
 
                 try {
-                    return marshaller.unmarshal(marshaller.marshal(val), U.resolveClassLoader(ctx.config()));
+                    return U.unmarshal(marsh, U.marshal(marsh, val), U.resolveClassLoader(ctx.config()));
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteCheckedException("Failed to validate cache configuration " +
@@ -3597,7 +3614,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public <T> T clone(final T obj) throws IgniteCheckedException {
         return withBinaryContext(new IgniteOutClosureX<T>() {
             @Override public T applyx() throws IgniteCheckedException {
-                return marshaller.unmarshal(marshaller.marshal(obj), U.resolveClassLoader(ctx.config()));
+                return U.unmarshal(marsh, U.marshal(marsh, obj), U.resolveClassLoader(ctx.config()));
             }
         });
     }

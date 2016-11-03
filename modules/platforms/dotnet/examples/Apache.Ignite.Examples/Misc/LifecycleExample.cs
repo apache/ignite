@@ -23,6 +23,9 @@ using Apache.Ignite.Core.Resource;
 
 namespace Apache.Ignite.Examples.Misc
 {
+    using Apache.Ignite.Core.Discovery.Tcp;
+    using Apache.Ignite.Core.Discovery.Tcp.Static;
+
     /// <summary>
     /// This example shows how to provide your own <see cref="ILifecycleBean"/> implementation
     /// to be able to hook into Apache lifecycle. Example bean will output occurred lifecycle 
@@ -50,8 +53,14 @@ namespace Apache.Ignite.Examples.Misc
 
             var cfg = new IgniteConfiguration
             {
-                SpringConfigUrl = @"platforms\dotnet\examples\config\examples-config.xml",
-                LifecycleBeans = new List<ILifecycleBean> { lifecycleExampleBean }
+                DiscoverySpi = new TcpDiscoverySpi
+                {
+                    IpFinder = new TcpDiscoveryStaticIpFinder
+                    {
+                        Endpoints = new[] {"127.0.0.1:47500"}
+                    }
+                },
+                LifecycleBeans = new List<ILifecycleBean> {lifecycleExampleBean}
             };
 
             // Provide lifecycle bean to configuration.

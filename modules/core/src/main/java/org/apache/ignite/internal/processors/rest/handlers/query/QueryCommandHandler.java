@@ -278,12 +278,16 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
 
                         ((SqlQuery)qry).setArgs(req.arguments());
 
+                        ((SqlQuery)qry).setDistributedJoins(req.distributedJoins());
+
                         break;
 
                     case SQL_FIELDS:
                         qry = new SqlFieldsQuery(req.sqlQuery());
 
                         ((SqlFieldsQuery)qry).setArgs(req.arguments());
+
+                        ((SqlFieldsQuery)qry).setDistributedJoins(req.distributedJoins());
 
                         break;
 

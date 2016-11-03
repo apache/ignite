@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!-- 
+
+Creating NuGet package:
+1) Build Apache.Ignite.sln (AnyCPU configuration)
+2) Create package (use csproj instead of nuspec so that template substitution works): 
+   nuget pack Apache.Ignite.AspNet.csproj -Prop Configuration=Release -Prop Platform=AnyCPU
+
+-->
+
+<package >
+    <metadata>
+        <id>Apache.Ignite.AspNet</id>
+        <title>Apache Ignite ASP.NET Integration</title>
+        <!-- -->
+        <version>$version$</version>
+        <authors>Apache Ignite</authors>
+        <owners>Apache Software Foundation</owners>
+        <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+        <projectUrl>https://ignite.apache.org/</projectUrl>
+        <iconUrl>https://ignite.apache.org/images/logo_ignite_32_32.png</iconUrl>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>
+Apache Ignite ASP.NET Output Cache Provider: caches page output in a distributed in-memory cache.
+Ideal for web farms: share cached data between servers effortlessly.
+            
+More info: https://apacheignite-net.readme.io/
+        </description>
+        <summary>
+            Apache Ignite ASP.NET Integration
+        </summary>
+        <releaseNotes></releaseNotes>
+        <copyright>Copyright 2016</copyright>
+        <tags>OutputCacheProvider Apache Ignite In-Memory Distributed Computing SQL NoSQL Grid Map Reduce Cache</tags>
+        <dependencies>
+            <dependency id="Apache.Ignite" version="[$version$]" />
+        </dependencies>    
+    </metadata>
+</package>

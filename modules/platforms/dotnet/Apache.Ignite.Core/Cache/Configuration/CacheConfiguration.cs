@@ -23,14 +23,20 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System;
     using System.Collections.Generic;
     using System.ComponentModel;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Affinity;
+    using Apache.Ignite.Core.Cache.Affinity.Fair;
+    using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Cache.Affinity;
+    using Apache.Ignite.Core.Log;
 
     /// <summary>
     /// Defines grid cache configuration.
@@ -272,10 +278,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
             NearConfiguration = reader.ReadBoolean() ? new NearCacheConfiguration(reader) : null;
 
             EvictionPolicy = EvictionPolicyBase.Read(reader);
+            AffinityFunction = AffinityFunctionSerializer.Read(reader);
         }
 
         /// <summary>
-        /// Writes this instane to the specified writer.
+        /// Writes this instance to the specified writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
         internal void Write(IBinaryRawWriter writer)
@@ -344,6 +351,22 @@ namespace Apache.Ignite.Core.Cache.Configuration
                 writer.WriteBoolean(false);
 
             EvictionPolicyBase.Write(writer, EvictionPolicy);
+            AffinityFunctionSerializer.Write(writer, AffinityFunction);
+        }
+
+        /// <summary>
+        /// Validates this instance and outputs information to the log, if necessary.
+        /// </summary>
+        internal void Validate(ILogger log)
+        {
+            Debug.Assert(log != null);
+
+            var entities = QueryEntities;
+            if (entities != null)
+            {
+                foreach (var entity in entities)
+                    entity.Validate(log, string.Format("Validating cache configuration '{0}'", Name ?? ""));
+            }
         }
 
         /// <summary>
@@ -586,7 +609,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public bool ReadFromBackup { get; set; }
 
         /// <summary>
-        /// Gets or sets flag indicating whether copy of of the value stored in cache should be created
+        /// Gets or sets flag indicating whether copy of the value stored in cache should be created
         /// for cache operation implying return value. 
         /// </summary>
         [DefaultValue(DefaultCopyOnRead)]
@@ -659,5 +682,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Null value means disabled evictions.
         /// </summary>
         public IEvictionPolicy EvictionPolicy { get; set; }
+
+        /// <summary>
+        /// Gets or sets the affinity function to provide mapping from keys to nodes.
+        /// <para />
+        /// Predefined implementations:
+        /// <see cref="RendezvousAffinityFunction"/>, <see cref="FairAffinityFunction"/>.
+        /// </summary>
+        public IAffinityFunction AffinityFunction { get; set; }
     }
 }

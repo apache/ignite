@@ -22,7 +22,10 @@ namespace Apache.Ignite.Core.Tests
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Affinity.Fair;
+    using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.DataStructures.Configuration;
@@ -30,6 +33,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Discovery.Tcp.Multicast;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
 
@@ -68,6 +72,13 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new CacheConfiguration());
             CheckDefaultValueAttributes(new TcpDiscoveryMulticastIpFinder());
             CheckDefaultValueAttributes(new TcpCommunicationSpi());
+            CheckDefaultValueAttributes(new RendezvousAffinityFunction());
+            CheckDefaultValueAttributes(new FairAffinityFunction());
+            CheckDefaultValueAttributes(new NearCacheConfiguration());
+            CheckDefaultValueAttributes(new FifoEvictionPolicy());
+            CheckDefaultValueAttributes(new LruEvictionPolicy());
+            CheckDefaultValueAttributes(new AtomicConfiguration());
+            CheckDefaultValueAttributes(new TransactionConfiguration());
         }
 
         /// <summary>
@@ -116,7 +127,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(cfg.NetworkSendRetryCount, resCfg.NetworkSendRetryCount);
                 Assert.AreEqual(cfg.NetworkTimeout, resCfg.NetworkTimeout);
                 Assert.AreEqual(cfg.NetworkSendRetryDelay, resCfg.NetworkSendRetryDelay);
-                Assert.AreEqual(cfg.WorkDirectory, resCfg.WorkDirectory);
+                Assert.AreEqual(cfg.WorkDirectory.Trim('\\'), resCfg.WorkDirectory.Trim('\\'));
                 Assert.AreEqual(cfg.JvmClasspath, resCfg.JvmClasspath);
                 Assert.AreEqual(cfg.JvmOptions, resCfg.JvmOptions);
                 Assert.IsTrue(File.Exists(resCfg.JvmDllPath));
@@ -301,6 +312,27 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests the work directory.
+        /// </summary>
+        [Test]
+        public void TestWorkDirectory()
+        {
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                WorkDirectory = IgniteUtils.GetTempDirectoryName()
+            };
+
+            using (Ignition.Start(cfg))
+            {
+                var marshDir = Path.Combine(cfg.WorkDirectory, "marshaller");
+
+                Assert.IsTrue(Directory.Exists(marshDir));
+            }
+
+            Directory.Delete(cfg.WorkDirectory, true);
+        }
+
+        /// <summary>
         /// Tests the ip finders.
         /// </summary>
         /// <param name="ipFinder">The ip finder.</param>
@@ -369,7 +401,7 @@ namespace Apache.Ignite.Core.Tests
                 var propValue = prop.GetValue(obj, null);
 
                 if (attr != null)
-                    Assert.AreEqual(attr.Value, propValue);
+                    Assert.AreEqual(attr.Value, propValue, string.Format("{0}.{1}", obj.GetType(), prop.Name));
                 else if (prop.PropertyType.IsValueType)
                     Assert.AreEqual(Activator.CreateInstance(prop.PropertyType), propValue);
                 else

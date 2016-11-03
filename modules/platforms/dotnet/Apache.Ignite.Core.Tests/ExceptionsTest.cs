@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618
 namespace Apache.Ignite.Core.Tests 
 {
     using System;
@@ -27,7 +28,6 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl;
     using NUnit.Framework;
 
     /// <summary>
@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Tests
         {
             TestUtils.KillProcesses();
         }
-        
+
         /// <summary>
         /// After test.
         /// </summary>
@@ -61,40 +61,16 @@ namespace Apache.Ignite.Core.Tests
         {
             var grid = StartGrid();
 
-            try
-            {
-                grid.GetCache<object, object>("invalidCacheName");
+            Assert.Throws<ArgumentException>(() => grid.GetCache<object, object>("invalidCacheName"));
 
-                Assert.Fail();
-            }
-            catch (Exception e)
-            {
-                Assert.IsTrue(e is ArgumentException);
-            }
+            var e = Assert.Throws<ClusterGroupEmptyException>(() => grid.GetCluster().ForRemotes().GetMetrics());
 
-            try
-            {
-                grid.GetCluster().ForRemotes().GetMetrics();
-
-                Assert.Fail();
-            }
-            catch (Exception e)
-            {
-                Assert.IsTrue(e is ClusterGroupEmptyException);
-            }
+            Assert.IsTrue(e.InnerException.Message.StartsWith(
+                "class org.apache.ignite.cluster.ClusterGroupEmptyException: Cluster group is empty."));
 
             grid.Dispose();
 
-            try
-            {
-                grid.GetCache<object, object>("cache1");
-
-                Assert.Fail();
-            }
-            catch (Exception e)
-            {
-                Assert.IsTrue(e is InvalidOperationException);
-            }
+            Assert.Throws<InvalidOperationException>(() => grid.GetCache<object, object>("cache1"));
         }
 
         /// <summary>
@@ -139,7 +115,7 @@ namespace Apache.Ignite.Core.Tests
             TestPartialUpdateExceptionSerialization(new CachePartialUpdateException("Msg",
                 new object[]
                 {
-                    new SerializableEntry(1), 
+                    new SerializableEntry(1),
                     new SerializableEntry(2),
                     new SerializableEntry(3)
                 }));
@@ -159,17 +135,17 @@ namespace Apache.Ignite.Core.Tests
             stream.Seek(0, SeekOrigin.Begin);
 
             var ex0 = (Exception) formatter.Deserialize(stream);
-                
+
             var updateEx = ((CachePartialUpdateException) ex);
 
             try
             {
                 Assert.AreEqual(updateEx.GetFailedKeys<object>(),
-                    ((CachePartialUpdateException)ex0).GetFailedKeys<object>());
+                    ((CachePartialUpdateException) ex0).GetFailedKeys<object>());
             }
             catch (Exception e)
             {
-                if (typeof (IgniteException) != e.GetType())
+                if (typeof(IgniteException) != e.GetType())
                     throw;
             }
 
@@ -210,6 +186,39 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests that invalid spring URL results in a meaningful exception.
+        /// </summary>
+        [Test]
+        public void TestInvalidSpringUrl()
+        {
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                SpringConfigUrl = "z:\\invalid.xml"
+            };
+
+            var ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
+            Assert.IsTrue(ex.ToString().Contains("Spring XML configuration path is invalid: z:\\invalid.xml"));
+        }
+
+        /// <summary>
+        /// Tests that invalid configuration parameter results in a meaningful exception.
+        /// </summary>
+        [Test]
+        public void TestInvalidConfig()
+        {
+            var disco = TestUtils.GetStaticDiscovery();
+            disco.SocketTimeout = TimeSpan.FromSeconds(-1);  // set invalid timeout
+
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                DiscoverySpi = disco
+            };
+
+            var ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
+            Assert.IsTrue(ex.ToString().Contains("SPI parameter failed condition check: sockTimeout > 0"));
+        }
+
+        /// <summary>
         /// Tests CachePartialUpdateException keys propagation.
         /// </summary>
         private static void TestPartialUpdateException<TK>(bool async, Func<int, IIgnite, TK> keyFunc)
@@ -229,6 +238,8 @@ namespace Apache.Ignite.Core.Tests
                         // Do a lot of puts so that one fails during Ignite stop
                         for (var i = 0; i < 1000000; i++)
                         {
+                            // ReSharper disable once AccessToDisposedClosure
+                            // ReSharper disable once AccessToModifiedClosure
                             var dict = Enumerable.Range(1, 100).ToDictionary(k => keyFunc(k, grid), k => i);
 
                             if (async)

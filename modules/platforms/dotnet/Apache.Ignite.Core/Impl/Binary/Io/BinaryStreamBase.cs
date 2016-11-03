@@ -959,20 +959,6 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         public abstract int WriteString(char* chars, int charCnt, int byteCnt, Encoding encoding);
 
         /// <summary>
-        /// Internal string write routine.
-        /// </summary>
-        /// <param name="chars">Chars.</param>
-        /// <param name="charCnt">Chars count.</param>
-        /// <param name="byteCnt">Bytes count.</param>
-        /// <param name="enc">Encoding.</param>
-        /// <param name="data">Data.</param>
-        /// <returns>Amount of bytes written.</returns>
-        protected static int WriteString0(char* chars, int charCnt, int byteCnt, Encoding enc, byte* data)
-        {
-            return enc.GetBytes(chars, charCnt, data, byteCnt);
-        }
-
-        /// <summary>
         /// Write arbitrary data.
         /// </summary>
         /// <param name="src">Source array.</param>

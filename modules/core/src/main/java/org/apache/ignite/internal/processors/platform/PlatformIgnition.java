@@ -61,14 +61,17 @@ public class PlatformIgnition {
         Thread.currentThread().setContextClassLoader(PlatformProcessor.class.getClassLoader());
 
         try {
+            PlatformBootstrap bootstrap = bootstrap(factoryId);
+
+            // This should be done before Spring XML initialization so that redirected stream is picked up.
+            bootstrap.init();
+
             IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> cfg = configuration(springCfgPath);
 
             if (gridName != null)
                 cfg.get1().setGridName(gridName);
             else
                 gridName = cfg.get1().getGridName();
-
-            PlatformBootstrap bootstrap = bootstrap(factoryId);
 
             PlatformProcessor proc = bootstrap.start(cfg.get1(), cfg.get2(), envPtr, dataPtr);
 

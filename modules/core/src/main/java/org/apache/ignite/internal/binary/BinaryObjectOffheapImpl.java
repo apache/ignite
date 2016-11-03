@@ -145,11 +145,20 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public BinaryType type() throws BinaryObjectException {
-        if (ctx == null)
-            throw new BinaryObjectException("BinaryContext is not set for the object.");
+    @Override public boolean isFlagSet(short flag) {
+        short flags = BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS);
 
-        return ctx.metadata(typeId());
+        return BinaryUtils.isFlagSet(flags, flag);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public BinaryType type() throws BinaryObjectException {
+        return BinaryUtils.typeProxy(ctx, this);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public BinaryType rawType() throws BinaryObjectException {
+        return BinaryUtils.type(ctx, this);
     }
 
     /** {@inheritDoc} */

@@ -22,6 +22,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.h2.expression.Expression;
 import org.h2.table.Column;
 import org.h2.value.Value;
+import org.h2.value.ValueBoolean;
 import org.h2.value.ValueDouble;
 import org.h2.value.ValueLong;
 
@@ -42,6 +43,10 @@ public final class GridSqlType {
 
     /** */
     public static final GridSqlType UUID = new GridSqlType(Value.UUID, 0, Integer.MAX_VALUE, 36, "UUID");
+
+    /** */
+    public static final GridSqlType BOOLEAN = new GridSqlType(Value.BOOLEAN, 0, ValueBoolean.PRECISION,
+        ValueBoolean.DISPLAY_SIZE, "BOOLEAN");
 
     /** H2 type. */
     private final int type;

@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             int res = Execute();
 
-            Assert.AreEqual(2, res);
+            Assert.AreEqual(1, res);
 
             Assert.AreEqual(1, JobErrs.Count);
             Assert.IsNotNull(JobErrs.First() as GoodException);
@@ -120,7 +120,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             int res = Execute();
 
-            Assert.AreEqual(2, res);
+            Assert.AreEqual(1, res);
 
             Assert.AreEqual(1, JobErrs.Count);
             Assert.IsNotNull(JobErrs.First() as BadException); // Local job exception is not marshalled.
@@ -136,7 +136,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             int res = Execute();
 
-            Assert.AreEqual(3, res); // Local job result is not marshalled.
+            Assert.AreEqual(2, res); // Local job result is not marshalled.
 
             Assert.AreEqual(0, JobErrs.Count);
         }
@@ -153,13 +153,11 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(1, res);
 
-            Assert.AreEqual(2, JobErrs.Count);
+            Assert.AreEqual(1, JobErrs.Count);
 
             Assert.IsNotNull(JobErrs.ElementAt(0) as GoodException);
-            Assert.IsNotNull(JobErrs.ElementAt(1) as GoodException);
 
             Assert.AreEqual(ErrorMode.RmtJobErr, ((GoodException) JobErrs.ElementAt(0)).Mode);
-            Assert.AreEqual(ErrorMode.RmtJobErr, ((GoodException) JobErrs.ElementAt(1)).Mode);
         }
 
         /// <summary>
@@ -174,10 +172,9 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(1, res);
 
-            Assert.AreEqual(2, JobErrs.Count);
+            Assert.AreEqual(1, JobErrs.Count);
 
             Assert.IsNotNull(JobErrs.ElementAt(0) as IgniteException);
-            Assert.IsNotNull(JobErrs.ElementAt(1) as IgniteException);
         }
 
         /// <summary>
@@ -192,10 +189,9 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(1, res);
 
-            Assert.AreEqual(2, JobErrs.Count);
+            Assert.AreEqual(1, JobErrs.Count);
 
             Assert.IsNotNull(JobErrs.ElementAt(0) as IgniteException);
-            Assert.IsNotNull(JobErrs.ElementAt(1) as IgniteException);
         }
 
         /// <summary>
@@ -298,7 +294,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             int res = Execute();
 
-            Assert.AreEqual(3, res);
+            Assert.AreEqual(2, res);
         }
 
         /// <summary>

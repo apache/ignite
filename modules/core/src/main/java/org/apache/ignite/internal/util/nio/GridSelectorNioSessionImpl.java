@@ -264,6 +264,13 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
         return queueSize.get();
     }
 
+    /**
+     * @return Write requests.
+     */
+    Collection<GridNioFuture<?>> writeQueue() {
+        return queue;
+    }
+
     /** {@inheritDoc} */
     @Override public void recoveryDescriptor(GridNioRecoveryDescriptor recoveryDesc) {
         assert recoveryDesc != null;

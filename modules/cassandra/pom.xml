@@ -20,8 +20,7 @@
 <!--
     POM file.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -32,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-cassandra</artifactId>
-    <version>1.6.0-SNAPSHOT</version>
+    <version>1.8.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <properties>
@@ -165,7 +164,7 @@
             <groupId>org.apache.cassandra</groupId>
             <artifactId>cassandra-all</artifactId>
             <version>${cassandra-all.version}</version>
-            <scope>provided</scope>
+            <scope>test</scope>
             <exclusions>
                 <exclusion>
                     <artifactId>log4j-over-slf4j</artifactId>
@@ -272,59 +271,57 @@
                         </goals>
                         <configuration>
                             <target>
-                                <taskdef resource="net/sf/antcontrib/antlib.xml"/>
+                                <taskdef resource="net/sf/antcontrib/antlib.xml" />
                                 <if>
-                                    <available file="${project.build.directory}/test-classes" type="dir"/>
+                                    <available file="${project.build.directory}/test-classes" type="dir" />
                                     <then>
                                         <copy todir="${project.build.directory}/tests-package/lib">
                                             <fileset dir="${project.build.directory}">
-                                                <include name="*.jar"/>
+                                                <include name="*.jar" />
                                             </fileset>
                                         </copy>
 
                                         <jar destfile="${project.build.directory}/tests-package/lib/${project.artifactId}-${project.version}-tests.jar">
                                             <fileset dir="${project.build.directory}/test-classes">
-                                                <include name="**/*.class"/>
+                                                <include name="**/*.class" />
                                             </fileset>
                                         </jar>
 
                                         <copy todir="${project.build.directory}/tests-package/settings">
                                             <fileset dir="${project.build.directory}/test-classes">
-                                                <include name="**/*.properties"/>
-                                                <include name="**/*.xml"/>
+                                                <include name="**/*.properties" />
+                                                <include name="**/*.xml" />
                                             </fileset>
                                         </copy>
 
                                         <copy todir="${project.build.directory}/tests-package">
                                             <fileset dir="${project.build.testSourceDirectory}/../scripts">
-                                                <include name="**/*"/>
+                                                <include name="**/*" />
                                             </fileset>
                                         </copy>
 
                                         <fixcrlf srcdir="${project.build.directory}/tests-package" eol="lf" eof="remove">
-                                            <include name="*.sh"/>
+                                            <include name="*.sh" />
                                         </fixcrlf>
 
-                                        <copy todir="${project.build.directory}/tests-package" >
+                                        <copy todir="${project.build.directory}/tests-package">
                                             <fileset dir="${project.build.testSourceDirectory}/..">
-                                                <include name="bootstrap/**"/>
+                                                <include name="bootstrap/**" />
                                             </fileset>
                                         </copy>
 
                                         <fixcrlf srcdir="${project.build.directory}/tests-package/bootstrap" eol="lf" eof="remove">
-                                            <include name="**"/>
+                                            <include name="**" />
                                         </fixcrlf>
 
-                                        <zip destfile="${project.build.directory}/ignite-cassandra-tests-${project.version}.zip"
-                                             compress="true" whenempty="create" level="9" encoding="UTF-8"
-                                             useLanguageEncodingFlag="true" createUnicodeExtraFields="not-encodeable">
+                                        <zip destfile="${project.build.directory}/ignite-cassandra-tests-${project.version}.zip" compress="true" whenempty="create" level="9" encoding="UTF-8" useLanguageEncodingFlag="true" createUnicodeExtraFields="not-encodeable">
 
                                             <zipfileset dir="${project.build.directory}/tests-package" prefix="ignite-cassandra-tests">
-                                                <exclude name="**/*.sh"/>
+                                                <exclude name="**/*.sh" />
                                             </zipfileset>
 
                                             <zipfileset dir="${project.build.directory}/tests-package" prefix="ignite-cassandra-tests" filemode="555">
-                                                <include name="**/*.sh"/>
+                                                <include name="**/*.sh" />
                                             </zipfileset>
                                         </zip>
                                     </then>

@@ -28,6 +28,9 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
@@ -38,10 +41,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.*;
-import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
-import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
-import org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactoryNative;
-import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
+import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
+import org.apache.ignite.platform.dotnet.*;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiMBean;
@@ -175,6 +176,7 @@ public class PlatformConfigurationUtils {
             ccfg.setNearConfiguration(readNearConfiguration(in));
 
         ccfg.setEvictionPolicy(readEvictionPolicy(in));
+        ccfg.setAffinity(readAffinityFunction(in));
 
         return ccfg;
     }
@@ -228,6 +230,47 @@ public class PlatformConfigurationUtils {
     }
 
     /**
+     * Reads the eviction policy.
+     *
+     * @param in Stream.
+     * @return Affinity function.
+     */
+    public static PlatformAffinityFunction readAffinityFunction(BinaryRawReaderEx in) {
+        byte plcTyp = in.readByte();
+
+        if (plcTyp == 0)
+            return null;
+
+        int partitions = in.readInt();
+        boolean exclNeighbours = in.readBoolean();
+        byte overrideFlags = in.readByte();
+        Object userFunc = in.readObjectDetached();
+
+        AffinityFunction baseFunc = null;
+
+        switch (plcTyp) {
+            case 1: {
+                FairAffinityFunction f = new FairAffinityFunction();
+                f.setPartitions(partitions);
+                f.setExcludeNeighbors(exclNeighbours);
+                baseFunc = f;
+                break;
+            }
+            case 2: {
+                RendezvousAffinityFunction f = new RendezvousAffinityFunction();
+                f.setPartitions(partitions);
+                f.setExcludeNeighbors(exclNeighbours);
+                baseFunc = f;
+                break;
+            }
+            default:
+                assert plcTyp == 3;
+        }
+
+        return new PlatformAffinityFunction(userFunc, partitions, overrideFlags, baseFunc);
+    }
+
+    /**
      * Reads the near config.
      *
      * @param out Stream.
@@ -239,6 +282,60 @@ public class PlatformConfigurationUtils {
 
         out.writeInt(cfg.getNearStartSize());
         writeEvictionPolicy(out, cfg.getNearEvictionPolicy());
+    }
+
+    /**
+     * Writes the affinity functions.
+     *
+     * @param out Stream.
+     * @param f Affinity.
+     */
+    private static void writeAffinityFunction(BinaryRawWriter out, AffinityFunction f) {
+        if (f instanceof PlatformDotNetAffinityFunction)
+            f = ((PlatformDotNetAffinityFunction)f).getFunc();
+
+        if (f instanceof FairAffinityFunction) {
+            out.writeByte((byte) 1);
+
+            FairAffinityFunction f0 = (FairAffinityFunction) f;
+            out.writeInt(f0.getPartitions());
+            out.writeBoolean(f0.isExcludeNeighbors());
+            out.writeByte((byte) 0);  // override flags
+            out.writeObject(null);  // user func
+        } else if (f instanceof RendezvousAffinityFunction) {
+            out.writeByte((byte) 2);
+
+            RendezvousAffinityFunction f0 = (RendezvousAffinityFunction) f;
+            out.writeInt(f0.getPartitions());
+            out.writeBoolean(f0.isExcludeNeighbors());
+            out.writeByte((byte) 0);  // override flags
+            out.writeObject(null);  // user func
+        } else if (f instanceof PlatformAffinityFunction) {
+            PlatformAffinityFunction f0 = (PlatformAffinityFunction) f;
+            AffinityFunction baseFunc = f0.getBaseFunc();
+
+            if (baseFunc instanceof FairAffinityFunction) {
+                out.writeByte((byte) 1);
+                out.writeInt(f0.partitions());
+                out.writeBoolean(((FairAffinityFunction) baseFunc).isExcludeNeighbors());
+                out.writeByte(f0.getOverrideFlags());
+                out.writeObject(f0.getUserFunc());
+            } else if (baseFunc instanceof RendezvousAffinityFunction) {
+                out.writeByte((byte) 2);
+                out.writeInt(f0.partitions());
+                out.writeBoolean(((RendezvousAffinityFunction) baseFunc).isExcludeNeighbors());
+                out.writeByte(f0.getOverrideFlags());
+                out.writeObject(f0.getUserFunc());
+            } else {
+                out.writeByte((byte) 3);
+                out.writeInt(f0.partitions());
+                out.writeBoolean(false);  // exclude neighbors
+                out.writeByte(f0.getOverrideFlags());
+                out.writeObject(f0.getUserFunc());
+            }
+        } else {
+            out.writeByte((byte) 0);
+        }
     }
 
     /**
@@ -627,6 +724,7 @@ public class PlatformConfigurationUtils {
             writer.writeBoolean(false);
 
         writeEvictionPolicy(writer, ccfg.getEvictionPolicy());
+        writeAffinityFunction(writer, ccfg.getAffinity());
     }
 
     /**

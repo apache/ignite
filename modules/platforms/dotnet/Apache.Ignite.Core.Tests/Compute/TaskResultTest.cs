@@ -169,7 +169,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             ICollection<int> res = Grid1.GetCompute().Broadcast(new BinarizableOutFunc());
 
-            Assert.AreEqual(3, res.Count);
+            Assert.AreEqual(2, res.Count);
 
             foreach (int r in res)
                 Assert.AreEqual(10, r);
@@ -180,7 +180,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             ICollection<int> res = Grid1.GetCompute().Broadcast(new SerializableOutFunc());
 
-            Assert.AreEqual(3, res.Count);
+            Assert.AreEqual(2, res.Count);
 
             foreach (int r in res)
                 Assert.AreEqual(10, r);
@@ -191,7 +191,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             ICollection<int> res = Grid1.GetCompute().Broadcast(new BinarizableFunc(), 10);
 
-            Assert.AreEqual(3, res.Count);
+            Assert.AreEqual(2, res.Count);
 
             foreach (int r in res)
                 Assert.AreEqual(11, r);
@@ -202,7 +202,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             ICollection<int> res = Grid1.GetCompute().Broadcast(new SerializableFunc(), 10);
 
-            Assert.AreEqual(3, res.Count);
+            Assert.AreEqual(2, res.Count);
 
             foreach (int r in res)
                 Assert.AreEqual(11, r);
@@ -282,7 +282,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             {
                 _gridName = null;
 
-                Assert.AreEqual(3, subgrid.Count);
+                Assert.AreEqual(2, subgrid.Count);
 
                 bool local = arg.Item1;
                 T res = arg.Item2;

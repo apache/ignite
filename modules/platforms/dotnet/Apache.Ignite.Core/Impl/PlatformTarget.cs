@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
@@ -40,7 +41,13 @@ namespace Apache.Ignite.Core.Impl
     internal abstract class PlatformTarget
     {
         /** */
+        protected const int False = 0;
+
+        /** */
         protected const int True = 1;
+
+        /** */
+        protected const int Error = -1;
 
         /** */
         private const int OpMeta = -1;
@@ -256,6 +263,16 @@ namespace Apache.Ignite.Core.Impl
         /// Perform out operation.
         /// </summary>
         /// <param name="type">Operation type.</param>
+        /// <returns>Long result.</returns>
+        protected long DoOutOp(int type)
+        {
+            return UU.TargetOutLong(_target, type);
+        }
+
+        /// <summary>
+        /// Perform out operation.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
         /// <param name="action">Action to be performed on the stream.</param>
         /// <returns></returns>
         protected long DoOutOp(int type, Action<IBinaryStream> action)
@@ -306,6 +323,16 @@ namespace Apache.Ignite.Core.Impl
 
                 return UU.TargetInStreamOutObject(_target, type, stream.SynchronizeOutput());
             }
+        }
+
+        /// <summary>
+        /// Perform out operation.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
+        /// <returns>Resulting object.</returns>
+        protected IUnmanagedTarget DoOutOpObject(int type)
+        {
+            return UU.TargetOutObject(_target, type);
         }
 
         /// <summary>
@@ -470,7 +497,82 @@ namespace Apache.Ignite.Core.Impl
                 }
             }
         }
-        
+
+        /// <summary>
+        /// Perform out-in operation with a single stream.
+        /// </summary>
+        /// <typeparam name="TR">The type of the r.</typeparam>
+        /// <param name="type">Operation type.</param>
+        /// <param name="outAction">Out action.</param>
+        /// <param name="inAction">In action.</param>
+        /// <param name="inErrorAction">The action to read an error.</param>
+        /// <returns>
+        /// Result.
+        /// </returns>
+        protected TR DoOutInOpX<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, long, TR> inAction,
+            Func<IBinaryStream, Exception> inErrorAction)
+        {
+            Debug.Assert(inErrorAction != null);
+
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                var writer = _marsh.StartMarshal(stream);
+
+                outAction(writer);
+
+                FinishMarshal(writer);
+
+                var res = UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
+
+                if (res != Error && inAction == null)
+                    return default(TR);  // quick path for void operations
+
+                stream.SynchronizeInput();
+
+                stream.Seek(0, SeekOrigin.Begin);
+
+                if (res != Error)
+                    return inAction != null ? inAction(stream, res) : default(TR);
+
+                throw inErrorAction(stream);
+            }
+        }
+
+        /// <summary>
+        /// Perform out-in operation with a single stream.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
+        /// <param name="outAction">Out action.</param>
+        /// <param name="inErrorAction">The action to read an error.</param>
+        /// <returns>
+        /// Result.
+        /// </returns>
+        protected bool DoOutInOpX(int type, Action<BinaryWriter> outAction, 
+            Func<IBinaryStream, Exception> inErrorAction)
+        {
+            Debug.Assert(inErrorAction != null);
+
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                var writer = _marsh.StartMarshal(stream);
+
+                outAction(writer);
+
+                FinishMarshal(writer);
+
+                var res = UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
+
+                if (res != Error)
+                    return res == True;
+
+                stream.SynchronizeInput();
+
+                stream.Seek(0, SeekOrigin.Begin);
+
+                throw inErrorAction(stream);
+            }
+        }
+
         /// <summary>
         /// Perform out-in operation.
         /// </summary>
@@ -500,6 +602,66 @@ namespace Apache.Ignite.Core.Impl
             }
         }
         
+        /// <summary>
+        /// Perform out-in operation.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
+        /// <param name="outAction">Out action.</param>
+        /// <param name="inAction">In action.</param>
+        /// <param name="arg">Argument.</param>
+        /// <returns>Result.</returns>
+        protected unsafe TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction,
+            Func<IBinaryStream, IUnmanagedTarget, TR> inAction, void* arg)
+        {
+            PlatformMemoryStream outStream = null;
+            long outPtr = 0;
+
+            PlatformMemoryStream inStream = null;
+            long inPtr = 0;
+
+            try
+            {
+                if (outAction != null)
+                {
+                    outStream = IgniteManager.Memory.Allocate().GetStream();
+                    var writer = _marsh.StartMarshal(outStream);
+                    outAction(writer);
+                    FinishMarshal(writer);
+                    outPtr = outStream.SynchronizeOutput();
+                }
+
+                if (inAction != null)
+                {
+                    inStream = IgniteManager.Memory.Allocate().GetStream();
+                    inPtr = inStream.MemoryPointer;
+                }
+
+                var res = UU.TargetInObjectStreamOutObjectStream(_target, type, arg, outPtr, inPtr);
+
+                if (inAction == null)
+                    return default(TR);
+
+                inStream.SynchronizeInput();
+
+                return inAction(inStream, res);
+
+            }
+            finally
+            {
+                try
+                {
+                    if (inStream != null)
+                        inStream.Dispose();
+
+                }
+                finally
+                {
+                    if (outStream != null)
+                        outStream.Dispose();
+                }
+            }
+        }
+
         /// <summary>
         /// Perform out-in operation.
         /// </summary>
@@ -581,6 +743,113 @@ namespace Apache.Ignite.Core.Impl
                     return Unmarshal<TR>(inStream);
                 }
             }
+        }
+
+        /// <summary>
+        /// Perform simple out-in operation accepting two arguments.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
+        /// <param name="val">Value.</param>
+        /// <returns>Result.</returns>
+        protected long DoOutInOpLong(int type, long val)
+        {
+            return UU.TargetInLongOutLong(_target, type, val);
+        }
+
+        #endregion
+
+        #region Async operations
+
+        /// <summary>
+        /// Performs async operation.
+        /// </summary>
+        /// <param name="type">The type code.</param>
+        /// <param name="writeAction">The write action.</param>
+        /// <returns>Task for async operation</returns>
+        protected Task DoOutOpAsync(int type, Action<BinaryWriter> writeAction = null)
+        {
+            return DoOutOpAsync<object>(type, writeAction);
+        }
+
+        /// <summary>
+        /// Performs async operation.
+        /// </summary>
+        /// <typeparam name="T">Type of the result.</typeparam>
+        /// <param name="type">The type code.</param>
+        /// <param name="writeAction">The write action.</param>
+        /// <param name="keepBinary">Keep binary flag, only applicable to object futures. False by default.</param>
+        /// <param name="convertFunc">The function to read future result from stream.</param>
+        /// <returns>Task for async operation</returns>
+        protected Task<T> DoOutOpAsync<T>(int type, Action<BinaryWriter> writeAction = null, bool keepBinary = false,
+            Func<BinaryReader, T> convertFunc = null)
+        {
+            return GetFuture((futId, futType) => DoOutOp(type, w =>
+            {
+                if (writeAction != null)
+                    writeAction(w);
+                w.WriteLong(futId);
+                w.WriteInt(futType);
+            }), keepBinary, convertFunc).Task;
+        }
+
+        /// <summary>
+        /// Performs async operation.
+        /// </summary>
+        /// <typeparam name="T">Type of the result.</typeparam>
+        /// <param name="type">The type code.</param>
+        /// <param name="writeAction">The write action.</param>
+        /// <returns>Future for async operation</returns>
+        protected Future<T> DoOutOpObjectAsync<T>(int type, Action<IBinaryRawWriter> writeAction)
+        {
+            return GetFuture<T>((futId, futType) => DoOutOpObject(type, w =>
+            {
+                writeAction(w);
+                w.WriteLong(futId);
+                w.WriteInt(futType);
+            }));
+        }
+
+        /// <summary>
+        /// Performs async operation.
+        /// </summary>
+        /// <typeparam name="TR">Type of the result.</typeparam>
+        /// <typeparam name="T1">The type of the first arg.</typeparam>
+        /// <param name="type">The type code.</param>
+        /// <param name="val1">First arg.</param>
+        /// <returns>
+        /// Task for async operation
+        /// </returns>
+        protected Task<TR> DoOutOpAsync<T1, TR>(int type, T1 val1)
+        {
+            return GetFuture<TR>((futId, futType) => DoOutOp(type, w =>
+            {
+                w.WriteObject(val1);
+                w.WriteLong(futId);
+                w.WriteInt(futType);
+            })).Task;
+        }
+
+        /// <summary>
+        /// Performs async operation.
+        /// </summary>
+        /// <typeparam name="TR">Type of the result.</typeparam>
+        /// <typeparam name="T1">The type of the first arg.</typeparam>
+        /// <typeparam name="T2">The type of the second arg.</typeparam>
+        /// <param name="type">The type code.</param>
+        /// <param name="val1">First arg.</param>
+        /// <param name="val2">Second arg.</param>
+        /// <returns>
+        /// Task for async operation
+        /// </returns>
+        protected Task<TR> DoOutOpAsync<T1, T2, TR>(int type, T1 val1, T2 val2)
+        {
+            return GetFuture<TR>((futId, futType) => DoOutOp(type, w =>
+            {
+                w.WriteObject(val1);
+                w.WriteObject(val2);
+                w.WriteLong(futId);
+                w.WriteInt(futType);
+            })).Task;
         }
 
         #endregion
@@ -674,7 +943,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="keepBinary">Keep binary flag, only applicable to object futures. False by default.</param>
         /// <param name="convertFunc">The function to read future result from stream.</param>
         /// <returns>Created future.</returns>
-        protected Future<T> GetFuture<T>(Func<long, int, IUnmanagedTarget> listenAction, bool keepBinary = false,
+        private Future<T> GetFuture<T>(Func<long, int, IUnmanagedTarget> listenAction, bool keepBinary = false,
             Func<BinaryReader, T> convertFunc = null)
         {
             var futType = FutureType.Object;
@@ -690,7 +959,18 @@ namespace Apache.Ignite.Core.Impl
 
             var futHnd = _marsh.Ignite.HandleRegistry.Allocate(fut);
 
-            var futTarget = listenAction(futHnd, (int) futType);
+            IUnmanagedTarget futTarget;
+
+            try
+            {
+                futTarget = listenAction(futHnd, (int)futType);
+            }
+            catch (Exception)
+            {
+                _marsh.Ignite.HandleRegistry.Release(futHnd);
+
+                throw;
+            }
 
             fut.SetTarget(futTarget);
 
@@ -721,25 +1001,18 @@ namespace Apache.Ignite.Core.Impl
 
             var futHnd = _marsh.Ignite.HandleRegistry.Allocate(fut);
 
-            listenAction(futHnd, (int)futType);
+            try
+            {
+                listenAction(futHnd, (int)futType);
+            }
+            catch (Exception)
+            {
+                _marsh.Ignite.HandleRegistry.Release(futHnd);
+
+                throw;
+            }
 
             return fut;
-        }
-
-        /// <summary>
-        /// Creates a task to listen for the last async op.
-        /// </summary>
-        protected Task GetTask()
-        {
-            return GetTask<object>();
-        }
-
-        /// <summary>
-        /// Creates a task to listen for the last async op.
-        /// </summary>
-        protected Task<T> GetTask<T>()
-        {
-            return GetFuture<T>((futId, futTyp) => UU.TargetListenFuture(Target, futId, futTyp)).Task;
         }
 
         #endregion

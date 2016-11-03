@@ -96,7 +96,7 @@ public class JdbcStatement implements Statement {
         boolean loc = nodeId == null;
 
         JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(),
-            sql, loc, args, fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery());
+            sql, loc, args, fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
 
         try {
             JdbcQueryTask.QueryResult res =

@@ -25,13 +25,18 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.stream.kafka.TestKafkaBroker;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -203,7 +208,11 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
         assertEquals(EVENT_CNT, cache.size(CachePeekMode.PRIMARY));
 
         // Checks the events are transferred to Kafka broker.
-        checkDataDelivered(conditioned);
+        if (conditioned)
+            checkDataDelivered(EVENT_CNT * TOPICS.length / 2);
+        else
+            checkDataDelivered(EVENT_CNT * TOPICS.length);
+
     }
 
     /**
@@ -235,9 +244,10 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
     /**
      * Checks if events were delivered to Kafka server.
      *
-     * @param conditioned Flag indicating whether filtering is enabled.
+     * @param expectedEventsCnt Expected events count.
+     * @throws Exception If failed.
      */
-    private void checkDataDelivered(boolean conditioned) {
+    private void checkDataDelivered(final int expectedEventsCnt) throws Exception {
         Properties props = new Properties();
 
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBroker.getBrokerAddress());
@@ -250,23 +260,40 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
             "org.apache.ignite.stream.kafka.connect.serialization.CacheEventDeserializer");
 
-        KafkaConsumer<String, CacheEvent> consumer = new KafkaConsumer<>(props);
+        final KafkaConsumer<String, CacheEvent> consumer = new KafkaConsumer<>(props);
 
         consumer.subscribe(Arrays.asList(TOPICS));
 
-        int evtCnt = 0;
-        long start = System.currentTimeMillis();
+        final AtomicInteger evtCnt = new AtomicInteger();
 
         try {
-            while ((System.currentTimeMillis() - start) < 10000) {
-                ConsumerRecords<String, CacheEvent> records = consumer.poll(10);
-                for (ConsumerRecord<String, CacheEvent> record : records) {
-                    System.out.println("Event: offset = " + record.offset() + ", key = " + record.key()
-                        + ", value = " + record.value().toString());
+            // Wait for expected events count.
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    ConsumerRecords<String, CacheEvent> records = consumer.poll(10);
+                    for (ConsumerRecord<String, CacheEvent> record : records) {
+                        info("Record: " + record);
 
-                    evtCnt++;
+                        evtCnt.getAndIncrement();
+                    }
+                    return evtCnt.get() >= expectedEventsCnt;
                 }
-            }
+            }, 20_000);
+
+
+            info("Waiting for unexpected records for 5 secs.");
+
+            assertFalse(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    ConsumerRecords<String, CacheEvent> records = consumer.poll(10);
+                    for (ConsumerRecord<String, CacheEvent> record : records) {
+                        error("Unexpected record: " + record);
+
+                        evtCnt.getAndIncrement();
+                    }
+                    return evtCnt.get() > expectedEventsCnt;
+                }
+            }, 5_000));
         }
         catch (WakeupException e) {
             // ignore for shutdown.
@@ -274,10 +301,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
         finally {
             consumer.close();
 
-            if (conditioned)
-                assertEquals((EVENT_CNT * TOPICS.length) / 2, evtCnt);
-            else
-                assertEquals(EVENT_CNT * TOPICS.length, evtCnt);
+            assertEquals(expectedEventsCnt, evtCnt.get());
         }
     }
 
