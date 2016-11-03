@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
@@ -38,6 +39,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.text.MessageFormat;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -227,6 +229,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** */
     private GridTimeoutProcessor.CancelableTask stmtCacheCleanupTask;
 
+    // Class<java.time.LocalDateTime>
+    /** */
+    private static Class<?> LOCAL_DATE_TIME;
+    /** */
+    private static Method TO_TIMESTAMP;
+
     /**
      * Command in H2 prepared statement.
      */
@@ -243,6 +251,34 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         catch (NoSuchFieldException e) {
             throw new IllegalStateException("Check H2 version in classpath.", e);
+        }
+
+        /** Copied from H2 sources */
+        boolean isJava8DateApiPresent;
+        try {
+            LOCAL_DATE_TIME = Class.forName("java.time.LocalDateTime");
+            isJava8DateApiPresent = true;
+        }
+        catch (ClassNotFoundException e) {
+            // older than Java 8
+            isJava8DateApiPresent = false;
+        }
+
+        if (isJava8DateApiPresent) {
+            TO_TIMESTAMP = getMethod(Timestamp.class, "valueOf", LOCAL_DATE_TIME);
+        }
+    }
+
+    /** Copied from H2 sources */
+    private static Method getMethod(Class<?> clazz, String methodName,
+        Class<?>... parameterTypes) {
+        try {
+            return clazz.getMethod(methodName, parameterTypes);
+        }
+        catch (NoSuchMethodException e) {
+            throw new IllegalStateException("Java 8 or later but method " +
+                clazz.getName() + "#" + methodName + "(" +
+                Arrays.toString(parameterTypes) + ") is missing", e);
         }
     }
 
@@ -2847,7 +2883,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 case Value.BYTES:
                     return ValueBytes.get((byte[])obj);
                 case Value.JAVA_OBJECT:
-                    return ValueJavaObject.getNoCopy(obj, null, null);
+                    if (obj.getClass() == LOCAL_DATE_TIME)
+                    return ValueJavaObject.getNoCopy(toTimeStamp(obj), null, null);
+
+                return ValueJavaObject.getNoCopy(obj, null, null);
                 case Value.ARRAY:
                     Object[] arr = (Object[])obj;
 
@@ -2953,6 +2992,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     }
 
+    private Object toTimeStamp(Object obj){
+        try {
+            return TO_TIMESTAMP.invoke(null,obj);
+        }
+        catch (IllegalAccessException |InvocationTargetException e) {
+            throw new IllegalArgumentException("Can't convert object to java.util.Timestamp"+String.valueOf(obj), e);
+
+        }
+    }
+
     /**
      * Statement cache.
      */
@@ -2986,7 +3035,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /**
-         * The timestamp of the last usage of the cache. Used by {@link #cleanupStatementCache()} to remove unused caches.
+         * The timestamp of the last usage of the cache. Used by {@link #cleanupStatementCache()} to remove unused
+         * caches.
+         *
          * @return last usage timestamp
          */
         private long lastUsage() {
