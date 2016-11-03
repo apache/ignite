@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheGateway;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IgniteCacheFutureImpl;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -349,8 +350,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         if (cache == null) { // Possible, cache is not configured on node.
             assert ccfg != null;
 
-            if (ccfg.getCacheMode() != CacheMode.LOCAL)
-                ctx.grid().getOrCreateCache(ccfg);
+            if (ccfg.getCacheMode() == CacheMode.LOCAL)
+                throw new CacheException("Impossible to load Local cache configured remotely.");
+
+            ctx.grid().getOrCreateCache(ccfg);
         }
     }
 
@@ -723,199 +726,214 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             GridCacheAdapter cache = ctx.cache().internalCache(cacheName);
 
-            GridCacheContext cctx = cache != null ? cache.context() : null;
+            if (cache == null)
+                throw new IgniteCheckedException("Cache not created or already destroyed.");
 
-            assert allowOverwrite() || cctx != null;
+            GridCacheContext cctx = cache.context();
 
-            AffinityTopologyVersion topVer = allowOverwrite() || cctx.isLocal() ?
-                ctx.cache().context().exchange().readyAffinityVersion() :
-                cctx.topology().topologyVersion();
+            GridCacheGateway gate = null;
 
-            for (DataStreamerEntry entry : entries) {
-                List<ClusterNode> nodes;
+            if (!allowOverwrite() && !cctx.isLocal()) { // Cases where cctx required.
+                gate = cctx.gate();
 
-                try {
-                    KeyCacheObject key = entry.getKey();
-
-                    assert key != null;
-
-                    if (initPda) {
-                        if (cacheObjCtx.addDeploymentInfo())
-                            jobPda = new DataStreamerPda(key.value(cacheObjCtx, false),
-                                entry.getValue() != null ? entry.getValue().value(cacheObjCtx, false) : null,
-                                rcvr);
-                        else if (rcvr != null)
-                            jobPda = new DataStreamerPda(rcvr);
-
-                        initPda = false;
-                    }
-
-                    nodes = nodes(key, topVer, cctx);
-                }
-                catch (IgniteCheckedException e) {
-                    resFut.onDone(e);
-
-                    return;
-                }
-
-                if (F.isEmpty(nodes)) {
-                    resFut.onDone(new ClusterTopologyException("Failed to map key to node " +
-                        "(no nodes with cache found in topology) [infos=" + entries.size() +
-                        ", cacheName=" + cacheName + ']'));
-
-                    return;
-                }
-
-                for (ClusterNode node : nodes) {
-                    Collection<DataStreamerEntry> col = mappings.get(node);
-
-                    if (col == null)
-                        mappings.put(node, col = new ArrayList<>());
-
-                    col.add(entry);
-                }
+                gate.enter();
             }
 
-            for (final Map.Entry<ClusterNode, Collection<DataStreamerEntry>> e : mappings.entrySet()) {
-                final UUID nodeId = e.getKey().id();
+            try {
+                AffinityTopologyVersion topVer = allowOverwrite() || cctx.isLocal() ?
+                        ctx.cache().context().exchange().readyAffinityVersion() :
+                        cctx.topology().topologyVersion();
 
-                Buffer buf = bufMappings.get(nodeId);
+                for (DataStreamerEntry entry : entries) {
+                    List<ClusterNode> nodes;
 
-                if (buf == null) {
-                    Buffer old = bufMappings.putIfAbsent(nodeId, buf = new Buffer(e.getKey()));
+                    try {
+                        KeyCacheObject key = entry.getKey();
 
-                    if (old != null)
-                        buf = old;
+                        assert key != null;
+
+                        if (initPda) {
+                            if (cacheObjCtx.addDeploymentInfo())
+                                jobPda = new DataStreamerPda(key.value(cacheObjCtx, false),
+                                    entry.getValue() != null ? entry.getValue().value(cacheObjCtx, false) : null,
+                                    rcvr);
+                            else if (rcvr != null)
+                                jobPda = new DataStreamerPda(rcvr);
+
+                            initPda = false;
+                        }
+
+                        nodes = nodes(key, topVer, cctx);
+                    }
+                    catch (IgniteCheckedException e) {
+                        resFut.onDone(e);
+
+                        return;
+                    }
+
+                    if (F.isEmpty(nodes)) {
+                        resFut.onDone(new ClusterTopologyException("Failed to map key to node " +
+                            "(no nodes with cache found in topology) [infos=" + entries.size() +
+                            ", cacheName=" + cacheName + ']'));
+
+                        return;
+                    }
+
+                    for (ClusterNode node : nodes) {
+                        Collection<DataStreamerEntry> col = mappings.get(node);
+
+                        if (col == null)
+                            mappings.put(node, col = new ArrayList<>());
+
+                        col.add(entry);
+                    }
                 }
 
-                final Collection<DataStreamerEntry> entriesForNode = e.getValue();
+                for (final Map.Entry<ClusterNode, Collection<DataStreamerEntry>> e : mappings.entrySet()) {
+                    final UUID nodeId = e.getKey().id();
 
-                IgniteInClosure<IgniteInternalFuture<?>> lsnr = new IgniteInClosure<IgniteInternalFuture<?>>() {
-                    @Override public void apply(IgniteInternalFuture<?> t) {
-                        try {
-                            t.get();
+                    Buffer buf = bufMappings.get(nodeId);
 
-                            if (activeKeys != null) {
-                                for (DataStreamerEntry e : entriesForNode)
-                                    activeKeys.remove(new KeyCacheObjectWrapper(e.getKey()));
+                    if (buf == null) {
+                        Buffer old = bufMappings.putIfAbsent(nodeId, buf = new Buffer(e.getKey()));
 
-                                if (activeKeys.isEmpty())
+                        if (old != null)
+                            buf = old;
+                    }
+
+                    final Collection<DataStreamerEntry> entriesForNode = e.getValue();
+
+                    IgniteInClosure<IgniteInternalFuture<?>> lsnr = new IgniteInClosure<IgniteInternalFuture<?>>() {
+                        @Override public void apply(IgniteInternalFuture<?> t) {
+                            try {
+                                t.get();
+
+                                if (activeKeys != null) {
+                                    for (DataStreamerEntry e : entriesForNode)
+                                        activeKeys.remove(new KeyCacheObjectWrapper(e.getKey()));
+
+                                    if (activeKeys.isEmpty())
+                                        resFut.onDone();
+                                }
+                                else {
+                                    assert entriesForNode.size() == 1;
+
+                                    // That has been a single key,
+                                    // so complete result future right away.
                                     resFut.onDone();
+                                }
                             }
-                            else {
-                                assert entriesForNode.size() == 1;
+                            catch (IgniteClientDisconnectedCheckedException e1) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Future finished with disconnect error [nodeId=" + nodeId + ", err=" + e1 + ']');
 
-                                // That has been a single key,
-                                // so complete result future right away.
-                                resFut.onDone();
+                                resFut.onDone(e1);
                             }
-                        }
-                        catch (IgniteClientDisconnectedCheckedException e1) {
-                            if (log.isDebugEnabled())
-                                log.debug("Future finished with disconnect error [nodeId=" + nodeId + ", err=" + e1 + ']');
+                            catch (IgniteCheckedException e1) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Future finished with error [nodeId=" + nodeId + ", err=" + e1 + ']');
 
-                            resFut.onDone(e1);
-                        }
-                        catch (IgniteCheckedException e1) {
-                            if (log.isDebugEnabled())
-                                log.debug("Future finished with error [nodeId=" + nodeId + ", err=" + e1 + ']');
+                                if (cancelled) {
+                                    resFut.onDone(new IgniteCheckedException("Data streamer has been cancelled: " +
+                                        DataStreamerImpl.this, e1));
+                                }
+                                else if (remaps + 1 > maxRemapCnt) {
+                                    resFut.onDone(new IgniteCheckedException("Failed to finish operation (too many remaps): "
+                                        + remaps, e1));
+                                }
+                                else {
+                                    try {
+                                        remapSem.acquire();
 
-                            if (cancelled) {
-                                resFut.onDone(new IgniteCheckedException("Data streamer has been cancelled: " +
-                                    DataStreamerImpl.this, e1));
-                            }
-                            else if (remaps + 1 > maxRemapCnt) {
-                                resFut.onDone(new IgniteCheckedException("Failed to finish operation (too many remaps): "
-                                    + remaps, e1));
-                            }
-                            else {
-                                try {
-                                    remapSem.acquire();
-
-                                    final Runnable r = new Runnable() {
-                                        @Override public void run() {
-                                            try {
-                                                load0(entriesForNode, resFut, activeKeys, remaps + 1);
+                                        final Runnable r = new Runnable() {
+                                            @Override public void run() {
+                                                try {
+                                                    load0(entriesForNode, resFut, activeKeys, remaps + 1);
+                                                }
+                                                catch (Throwable ex) {
+                                                    resFut.onDone(
+                                                        new IgniteCheckedException("DataStreamer remapping failed. ", ex));
+                                                }
+                                                finally {
+                                                    remapSem.release();
+                                                }
                                             }
-                                            catch (Throwable ex) {
-                                                resFut.onDone(
-                                                    new IgniteCheckedException("DataStreamer remapping failed. ", ex));
-                                            }
-                                            finally {
-                                                remapSem.release();
-                                            }
-                                        }
-                                    };
+                                        };
 
-                                    dataToRemap.add(r);
+                                        dataToRemap.add(r);
 
-                                    if (remapOwning.get() == 0 && remapOwning.compareAndSet(0, 1)) {
-                                        ctx.closure().callLocalSafe(new GPC<Boolean>() {
-                                            @Override public Boolean call() {
-                                                boolean locked = true;
+                                        if (remapOwning.get() == 0 && remapOwning.compareAndSet(0, 1)) {
+                                            ctx.closure().callLocalSafe(new GPC<Boolean>() {
+                                                @Override public Boolean call() {
+                                                    boolean locked = true;
 
-                                                while (locked || !dataToRemap.isEmpty()) {
-                                                    if (!locked && !remapOwning.compareAndSet(0, 1))
-                                                        return false;
+                                                    while (locked || !dataToRemap.isEmpty()) {
+                                                        if (!locked && !remapOwning.compareAndSet(0, 1))
+                                                            return false;
 
-                                                    try {
-                                                        Runnable r = dataToRemap.poll();
+                                                        try {
+                                                            Runnable r = dataToRemap.poll();
 
-                                                        if (r != null)
-                                                            r.run();
-                                                    }
-                                                    finally {
-                                                        if (!dataToRemap.isEmpty())
-                                                            locked = true;
-                                                        else {
-                                                            boolean res = remapOwning.compareAndSet(1, 0);
+                                                            if (r != null)
+                                                                r.run();
+                                                        }
+                                                        finally {
+                                                            if (!dataToRemap.isEmpty())
+                                                                locked = true;
+                                                            else {
+                                                                boolean res = remapOwning.compareAndSet(1, 0);
 
-                                                            assert res;
+                                                                assert res;
 
-                                                            locked = false;
+                                                                locked = false;
+                                                            }
                                                         }
                                                     }
-                                                }
 
-                                                return true;
-                                            }
-                                        }, true);
+                                                    return true;
+                                                }
+                                            }, true);
+                                        }
                                     }
-                                }
-                                catch (InterruptedException e2) {
-                                    resFut.onDone(e2);
+                                    catch (InterruptedException e2) {
+                                        resFut.onDone(e2);
+                                    }
                                 }
                             }
                         }
+                    };
+
+                    final GridFutureAdapter<?> f;
+
+                    try {
+                        f = buf.update(entriesForNode, topVer, lsnr, remap);
                     }
-                };
+                    catch (IgniteInterruptedCheckedException e1) {
+                        resFut.onDone(e1);
 
-                final GridFutureAdapter<?> f;
+                        return;
+                    }
 
-                try {
-                    f = buf.update(entriesForNode, topVer, lsnr, remap);
-                }
-                catch (IgniteInterruptedCheckedException e1) {
-                    resFut.onDone(e1);
+                    if (ctx.discovery().node(nodeId) == null) {
+                        if (bufMappings.remove(nodeId, buf)) {
+                            final Buffer buf0 = buf;
 
-                    return;
-                }
+                            waitAffinityAndRun(new Runnable() {
+                                @Override public void run() {
+                                    buf0.onNodeLeft();
 
-                if (ctx.discovery().node(nodeId) == null) {
-                    if (bufMappings.remove(nodeId, buf)) {
-                        final Buffer buf0 = buf;
-
-                        waitAffinityAndRun(new Runnable() {
-                            @Override public void run() {
-                                buf0.onNodeLeft();
-
-                                if (f != null)
-                                    f.onDone(new ClusterTopologyCheckedException("Failed to wait for request completion " +
-                                        "(node has left): " + nodeId));
-                            }
-                        }, ctx.discovery().topologyVersion(), false);
+                                    if (f != null)
+                                        f.onDone(new ClusterTopologyCheckedException("Failed to wait for request completion " +
+                                            "(node has left): " + nodeId));
+                                }
+                            }, ctx.discovery().topologyVersion(), false);
+                        }
                     }
                 }
+            }
+            finally {
+                if (gate != null)
+                    gate.leave();
             }
         }
         catch (Exception ex) {

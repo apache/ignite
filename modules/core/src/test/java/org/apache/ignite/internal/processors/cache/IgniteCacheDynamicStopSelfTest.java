@@ -124,6 +124,8 @@ public class IgniteCacheDynamicStopSelfTest extends GridCommonAbstractTest {
             Thread.sleep(500);
 
             ignite(0).createCache(ccfg);
+
+            Thread.sleep(1000);
         }
         finally {
             stop.set(true);
