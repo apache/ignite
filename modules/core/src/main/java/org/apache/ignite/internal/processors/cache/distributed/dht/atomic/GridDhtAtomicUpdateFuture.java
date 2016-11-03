@@ -51,9 +51,6 @@ public class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Logger reference. */
-    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
-
     /** Future keys. */
     private final Collection<KeyCacheObject> keys;
 
@@ -75,11 +72,6 @@ public class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture
         GridNearAtomicUpdateResponse updateRes
     ) {
         super(cctx, completionCb, writeVer, updateReq, updateRes, updateReq.keys().size());
-
-        if (log == null) {
-            msgLog = cctx.shared().atomicMessageLogger();
-            log = U.logger(cctx.kernalContext(), logRef, GridDhtAtomicUpdateFuture.class);
-        }
 
         keys = new ArrayList<>(updateReq.keys().size());
     }

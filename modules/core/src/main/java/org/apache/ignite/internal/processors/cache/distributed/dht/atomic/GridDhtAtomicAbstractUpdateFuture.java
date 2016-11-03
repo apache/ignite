@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -48,12 +49,14 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapter<Void>
     implements GridCacheAtomicFuture<Void> {
-
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Logger. */
     protected static IgniteLogger log;
+
+    /** Logger reference. */
+    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Logger. */
     protected static IgniteLogger msgLog;
@@ -106,8 +109,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
         GridCacheVersion writeVer,
         GridNearAtomicUpdateRequest updateReq,
         GridNearAtomicUpdateResponse updateRes,
-        int initialMappingsSize) {
-
+        int initMappingsSize) {
         this.cctx = cctx;
 
         futVer = cctx.versions().next(updateReq.topologyVersion());
@@ -116,8 +118,13 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
         this.updateRes = updateRes;
         this.writeVer = writeVer;
 
-        mappings = U.newHashMap(initialMappingsSize);
+        mappings = U.newHashMap(initMappingsSize);
         waitForExchange = !(updateReq.topologyLocked() || (updateReq.fastMap() && !updateReq.clientRequest()));
+
+        if (log == null) {
+            msgLog = cctx.shared().atomicMessageLogger();
+            log = U.logger(cctx.kernalContext(), logRef, GridDhtAtomicUpdateFuture.class);
+        }
     }
 
     /** {@inheritDoc} */
