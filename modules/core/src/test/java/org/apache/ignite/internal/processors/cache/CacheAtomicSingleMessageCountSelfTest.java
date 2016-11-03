@@ -121,6 +121,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
      */
     public void testSingleTransformMessage() throws Exception {
         startGrids(2);
+
         int cacheId = ((IgniteKernal)grid(0)).internalCache(null).context().cacheId();
 
         try {
@@ -129,7 +130,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
             TestCommunicationSpi commSpi = (TestCommunicationSpi)grid(0).configuration().getCommunicationSpi();
 
             commSpi.resetCount();
-            commSpi.setFilterId(cacheId);
+            commSpi.filterCacheId(cacheId);
 
             commSpi.registerMessage(GridNearAtomicFullUpdateRequest.class);
             commSpi.registerMessage(GridNearAtomicSingleUpdateRequest.class);
@@ -196,22 +197,25 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
     private static class TestCommunicationSpi extends TcpCommunicationSpi {
         /** Counters map. */
         private Map<Class<?>, AtomicInteger> cntMap = new HashMap<>();
+
         /** Cache id to filter */
-        private AtomicInteger filterId = new AtomicInteger(-1);
+        private volatile Integer filterCacheId;
 
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
             throws IgniteSpiException {
 
             if (((GridIoMessage)msg).message() instanceof GridCacheMessage) {
-                int i = ((GridCacheMessage)((GridIoMessage)msg).message()).cacheId();
-                if (filterId.get() == -1 || filterId.get() == i) {
+                int msgCacheId = ((GridCacheMessage)((GridIoMessage)msg).message()).cacheId();
+
+                if (filterCacheId == null || filterCacheId == msgCacheId) {
                     AtomicInteger cntr = cntMap.get(((GridIoMessage)msg).message().getClass());
 
                     if (cntr != null)
                         cntr.incrementAndGet();
                 }
             }
+
             super.sendMessage(node, msg, ackC);
         }
 
@@ -242,11 +246,14 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
          */
         void resetCount() {
             cntMap.clear();
-            filterId.set(-1);
+            filterCacheId = null;
         }
 
-        public void setFilterId(int i) {
-            filterId.set(i);
+        /**
+         * @param cacheId Cache ID.
+         */
+        void filterCacheId(int cacheId) {
+            filterCacheId = cacheId;
         }
     }
 }
