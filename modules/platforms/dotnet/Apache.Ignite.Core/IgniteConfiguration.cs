@@ -299,7 +299,7 @@
                 writer.WriteInt((int) TransactionConfiguration.DefaultTransactionConcurrency);
                 writer.WriteInt((int) TransactionConfiguration.DefaultTransactionIsolation);
                 writer.WriteLong((long) TransactionConfiguration.DefaultTimeout.TotalMilliseconds);
-                writer.WriteLong((int) TransactionConfiguration.PessimisticTransactionLogLinger.TotalMilliseconds);
+                writer.WriteInt((int) TransactionConfiguration.PessimisticTransactionLogLinger.TotalMilliseconds);
             }
             else
                 writer.WriteBoolean(false);

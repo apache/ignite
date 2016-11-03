@@ -508,7 +508,7 @@ namespace Apache.Ignite.Core.Tests
                 FailureDetectionTimeout = TimeSpan.FromSeconds(3.5),
                 SwapSpaceSpi = new FileSwapSpaceSpi
                 {
-                    ReadStripesNumber = 7,
+                    ReadStripesNumber = 64,
                     MaximumWriteQueueSize = 8,
                     WriteBufferSize = 9,
                     BaseDirectory = Path.GetTempPath(),
