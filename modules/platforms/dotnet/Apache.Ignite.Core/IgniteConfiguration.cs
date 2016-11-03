@@ -42,6 +42,7 @@
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.SwapSpace;
+    using Apache.Ignite.Core.SwapSpace.File;
     using Apache.Ignite.Core.Transactions;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
@@ -299,6 +300,27 @@
                 writer.WriteInt((int) TransactionConfiguration.DefaultTransactionIsolation);
                 writer.WriteLong((long) TransactionConfiguration.DefaultTimeout.TotalMilliseconds);
                 writer.WriteLong((int) TransactionConfiguration.PessimisticTransactionLogLinger.TotalMilliseconds);
+            }
+            else
+                writer.WriteBoolean(false);
+
+            // Swap space
+            if (SwapSpaceSpi != null)
+            {
+                writer.WriteBoolean(true);
+
+                var fileSwap = SwapSpaceSpi as FileSwapSpaceSpi;
+
+                if (fileSwap != null)
+                {
+                    writer.WriteString(fileSwap.BaseDirectory);
+                    writer.WriteFloat(fileSwap.MaximumSparsity);
+                    writer.WriteInt(fileSwap.MaximumWriteQueueSize);
+                    writer.WriteInt(fileSwap.ReadStripesNumber);
+                    writer.WriteInt(fileSwap.WriteBufferSize);
+                }
+                else
+                    throw new InvalidOperationException("Unsupported swap space SPI: " + SwapSpaceSpi.GetType());
             }
             else
                 writer.WriteBoolean(false);
