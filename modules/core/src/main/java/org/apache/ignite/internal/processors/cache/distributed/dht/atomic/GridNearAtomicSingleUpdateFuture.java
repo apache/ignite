@@ -83,6 +83,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
      * @param invokeArgs Optional arguments for entry processor.
      * @param retval Return value require flag.
      * @param rawRetval {@code True} if should return {@code GridCacheReturn} as future result.
+     * @param expiryPlc Expiry policy explicitly specified for cache operation.
      * @param filter Entry filter.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
@@ -567,7 +568,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
         if (canUseSingleRequest(primary)) {
             if (op == TRANSFORM) {
-                req = new GridNearAtomicSingleUpdateTransformRequest(
+                req = new GridNearAtomicSingleUpdateInvokeRequest(
                     cctx.cacheId(),
                     primary.id(),
                     futVer,
@@ -664,7 +665,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
     /**
      * @param node Target node
-     * @return {@code true} if target node supports {@link GridNearAtomicSingleUpdateRequest}
+     * @return {@code True} can use 'single' update requests.
      */
     private boolean canUseSingleRequest(ClusterNode node) {
         return expiryPlc == null && node.version().compareToIgnoreTimestamp(SINGLE_UPDATE_REQUEST) >= 0;
