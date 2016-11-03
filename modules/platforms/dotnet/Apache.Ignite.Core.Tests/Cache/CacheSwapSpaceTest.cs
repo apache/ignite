@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Cache
 {
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using NUnit.Framework;
 
@@ -48,9 +49,11 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 Assert.IsNull(ignite.GetConfiguration().SwapSpaceSpi);
 
-                ignite.CreateCache<int, int>(new CacheConfiguration {EnableSwap = true});
-            }
+                var ex = Assert.Throws<CacheException>(
+                    () => ignite.CreateCache<int, int>(new CacheConfiguration {EnableSwap = true}));
 
+                Assert.IsTrue(ex.Message.EndsWith("has not swap SPI configured"));
+            }
         }
 
         /// <summary>
