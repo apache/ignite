@@ -328,8 +328,8 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
                 if (!allowOverwrite && !topVer.equals(req.topologyVersion())) {
                     Exception err = new IgniteCheckedException(
-                        "DataStreamer will retry data transfer at stable topology. " +
-                            "[reqTop=" + req.topologyVersion() + " ,topVer=" + topVer + ", node=remote]");
+                        "DataStreamer will retry data transfer at stable topology " +
+                            "[reqTop=" + req.topologyVersion() + ", topVer=" + topVer + ", node=remote]");
 
                     sendResponse(nodeId, topic, req.requestId(), err, req.forceLocalDeployment());
                 }
@@ -345,19 +345,20 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
                     waitFut = allowOverwrite ? null : cctx.mvcc().addDataStreamerFuture(topVer);
                 }
-                else
+                else {
                     fut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> e) {
                             localUpdate(nodeId, req, updater, topic);
                         }
                     });
+                }
             }
             finally {
                 if (!allowOverwrite)
                     cctx.topology().readUnlock();
             }
 
-            if (job != null)
+            if (job != null) {
                 try {
                     job.call();
 
@@ -367,9 +368,13 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                     if (waitFut != null)
                         waitFut.onDone();
                 }
+            }
         }
         catch (Throwable e) {
             sendResponse(nodeId, topic, req.requestId(), e, req.forceLocalDeployment());
+
+            if (e instanceof Error)
+                throw (Error)e;
         }
     }
 

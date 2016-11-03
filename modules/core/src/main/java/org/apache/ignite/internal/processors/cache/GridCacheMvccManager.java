@@ -60,7 +60,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -1349,7 +1348,10 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         @GridToStringInclude
         private final AffinityTopologyVersion topVer;
 
-        public DataStreamerFuture(AffinityTopologyVersion topVer) {
+        /**
+         * @param topVer Topology version.
+         */
+        DataStreamerFuture(AffinityTopologyVersion topVer) {
             this.topVer = topVer;
         }
 

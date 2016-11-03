@@ -119,7 +119,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUB
  */
 @SuppressWarnings("unchecked")
 public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed {
-    /** Default policy reoslver. */
+    /** Default policy resolver. */
     private static final DefaultIoPolicyResolver DFLT_IO_PLC_RSLVR = new DefaultIoPolicyResolver();
 
     /** Isolated receiver. */
@@ -693,7 +693,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             final boolean remap = remaps > 0;
 
-            if (!remap) // Failed data should be processed prior to new data.
+            if (!remap) { // Failed data should be processed prior to new data.
                 try {
                     if (remapSem.availablePermits() != REMAP_SEMAPHORE_PERMISSIONS_COUNT) {
                         remapSem.acquire(REMAP_SEMAPHORE_PERMISSIONS_COUNT); // Wait until failed data being processed.
@@ -704,6 +704,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 catch (InterruptedException e) {
                     log.error("Failed to wait for failed data processing.", e);
                 }
+            }
 
             if (!isWarningPrinted) {
                 synchronized (this) {
@@ -726,10 +727,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             assert allowOverwrite() || cctx != null;
 
-            AffinityTopologyVersion topVer =
-                allowOverwrite() || cctx.isLocal() ?
-                    ctx.cache().context().exchange().readyAffinityVersion() :
-                    cctx.topology().topologyVersion();
+            AffinityTopologyVersion topVer = allowOverwrite() || cctx.isLocal() ?
+                ctx.cache().context().exchange().readyAffinityVersion() :
+                cctx.topology().topologyVersion();
 
             for (DataStreamerEntry entry : entries) {
                 List<ClusterNode> nodes;
@@ -1168,7 +1168,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         long failed = failCntr.longValue();
 
         if (failed > 0 && err == null)
-            err = new IgniteCheckedException("Some of DataStreamer operations failed. [failedCount=" + failed + "]");
+            err = new IgniteCheckedException("Some of DataStreamer operations failed [failedCount=" + failed + "]");
 
         fut.onDone(err);
 
@@ -1515,10 +1515,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                         locFuts.add(callFut);
 
-                        final GridFutureAdapter waitFut =
-                            (loc || allowOverwrite) ?
-                                null :
-                                cctx.mvcc().addDataStreamerFuture(topVer);
+                        final GridFutureAdapter waitFut = (loc || allowOverwrite) ?
+                            null :
+                            cctx.mvcc().addDataStreamerFuture(topVer);
 
                         callFut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
                             @Override public void apply(IgniteInternalFuture<Object> t) {
@@ -1539,12 +1538,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                             }
                         });
                     }
-                    else
+                    else {
                         fut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
                             @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> e) {
                                 localUpdate(entries, reqTopVer, curFut);
                             }
                         });
+                    }
                 }
                 finally {
                     if (!loc && !allowOverwrite)
@@ -1552,7 +1552,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 }
             }
             catch (Throwable ex) {
-                curFut.onDone(new IgniteCheckedException("DataStreamer data handling failed.",ex));
+                curFut.onDone(new IgniteCheckedException("DataStreamer data handling failed.", ex));
             }
         }
 
@@ -1572,7 +1572,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             assert !entries.isEmpty();
             assert curFut != null;
 
-            if (!remap)
+            if (!remap) {
                 try {
                     incrementActiveTasks();
                 }
@@ -1581,6 +1581,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                     throw e;
                 }
+            }
 
             IgniteInternalFuture<Object> fut;
 
@@ -1741,7 +1742,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 try {
                     GridPeerDeployAware jobPda0 = jobPda;
 
-                    err = new IgniteCheckedException("DataStreamer request failed. [node=" + nodeId + "]",
+                    err = new IgniteCheckedException("DataStreamer request failed [node=" + nodeId + "]",
                         (Throwable)ctx.config().getMarshaller().unmarshal(
                             errBytes,
                             U.resolveClassLoader(jobPda0 != null ? jobPda0.classLoader() : null, ctx.config())));
@@ -1884,10 +1885,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             GridCacheContext cctx = internalCache.context();
 
-            AffinityTopologyVersion topVer =
-                cctx.isLocal() ?
-                    cctx.affinity().affinityTopologyVersion() :
-                    cctx.topology().topologyVersion();
+            AffinityTopologyVersion topVer = cctx.isLocal() ?
+                cctx.affinity().affinityTopologyVersion() :
+                cctx.topology().topologyVersion();
 
             GridCacheVersion ver = cctx.versions().isolatedStreamerVersion();
 
