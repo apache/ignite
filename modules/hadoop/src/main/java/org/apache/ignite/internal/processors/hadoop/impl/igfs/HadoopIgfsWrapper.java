@@ -389,7 +389,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
         // 3. Try connecting using shmem.
         boolean skipLocShmem = parameter(conf, PARAM_IGFS_ENDPOINT_NO_LOCAL_SHMEM, authority, false);
 
-        if (curDelegate == null && !skipLocShmem && !U.isWindows()) {
+        if (curDelegate == null && !skipLocShmem && U.hasSharedMemory()) {
             HadoopIgfsEx hadoop = null;
 
             try {
@@ -469,7 +469,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
             errMsg.a("[type=TCP, host=" + endpoint.host() + ", port=" + endpoint.port() + ", err=" + errTcp + "]] ");
 
             errMsg.a("(ensure that IGFS is running and have IPC endpoint enabled; ensure that " +
-                "ignite-shmem-1.0.0.jar is in Hadoop classpath if you use shared memory endpoint).");
+                "ignite-shmem module is in Hadoop classpath if you use shared memory endpoint).");
 
             throw new HadoopIgfsCommunicationException(errMsg.toString());
         }

@@ -164,6 +164,10 @@ public class IgfsServer {
 
         switch (typ) {
             case SHMEM: {
+                if (!U.hasSharedMemory())
+                    throw new IgniteCheckedException("Shared memory library is not available. Check that ignite-shmem " +
+                        "module is in classpath.");
+
                 IpcSharedMemoryServerEndpoint endpoint =
                     new IpcSharedMemoryServerEndpoint(igfsCtx.kernalContext().config().getWorkDirectory());
 

@@ -1773,7 +1773,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         if (boundTcpShmemPort >= 0)
             throw new IgniteCheckedException("Shared memory server was already created on port " + boundTcpShmemPort);
 
-        if (shmemPort == -1 || U.isWindows())
+        if (shmemPort == -1 || !U.hasSharedMemory())
             return null;
 
         IgniteCheckedException lastEx = null;
