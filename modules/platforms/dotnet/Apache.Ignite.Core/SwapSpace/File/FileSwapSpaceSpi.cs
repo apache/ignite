@@ -35,12 +35,28 @@ namespace Apache.Ignite.Core.SwapSpace.File
         /// <summary>
         /// Default value for <see cref="WriteBufferSize"/> property.
         /// </summary>
-        public const float DefaultWriteBufferSize = 64 * 1024;
+        public const int DefaultWriteBufferSize = 64 * 1024;
 
         /// <summary>
         /// Default value for <see cref="MaximumWriteQueueSize"/> property.
         /// </summary>
-        public const float DefaultMaximumWriteQueueSize = 1024 * 1024;
+        public const int DefaultMaximumWriteQueueSize = 1024 * 1024;
+
+        /// <summary>
+        /// Default value for <see cref="ReadStripesNumber"/> property.
+        /// </summary>
+        public static readonly int DefaultReadStripesNumber = Environment.ProcessorCount;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FileSwapSpaceSpi"/> class.
+        /// </summary>
+        public FileSwapSpaceSpi()
+        {
+            MaximumSparsity = DefaultMaximumSparsity;
+            MaximumWriteQueueSize = DefaultMaximumWriteQueueSize;
+            ReadStripesNumber = DefaultReadStripesNumber;
+            WriteBufferSize = DefaultWriteBufferSize;
+        }
 
         /// <summary>
         /// Gets or sets the base directory.
