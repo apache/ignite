@@ -163,6 +163,7 @@
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-shmem</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
