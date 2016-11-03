@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.SwapSpace.File
 {
+    using System.ComponentModel;
+
     /// <summary>
     /// File-based swap space SPI implementation which holds keys in memory and values on disk.
     /// It is intended for cases when value is bigger than 100 bytes, otherwise it will not 
@@ -24,6 +26,35 @@ namespace Apache.Ignite.Core.SwapSpace.File
     /// </summary>
     public class FileSwapSpaceSpi : ISwapSpaceSpi
     {
-        // TODO
+        public const float DefaultMaximumSparsity = 0.5f;
+
+        /// <summary>
+        /// Gets or sets the base directory.
+        /// </summary>
+        public string BaseDirectory { get; set; }
+
+        /// <summary>
+        /// Gets or sets the maximum sparsity. This property defines maximum acceptable
+        /// wasted file space to whole file size ratio.
+        /// When this ratio becomes higher than specified number compacting thread starts working.
+        /// </summary>
+        /// <value>
+        /// The maximum sparsity. Must be between 0 and 1.
+        /// </value>
+        [DefaultValue(DefaultMaximumSparsity)]
+        public float MaximumSparsity { get; set; }
+
+        /// <summary>
+        /// Gets or sets the maximum size of the write queue in bytes. If there are more values are waiting
+        /// to be written to disk then specified size, SPI will block on write operation.
+        /// </summary>
+        /// <value>
+        /// The maximum size of the write queue in bytes.
+        /// </value>
+        public int MaximumWriteQueueSize { get; set; }
+
+        public int ReadStripesNumber { get; set; }
+
+        public int WriteBufferSize { get; set; }
     }
 }
