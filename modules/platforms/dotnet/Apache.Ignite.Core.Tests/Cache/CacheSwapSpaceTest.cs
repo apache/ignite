@@ -74,6 +74,8 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestSwapSpace()
         {
+            const int entrySize = 1024;
+
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SwapSpaceSpi = new FileSwapSpaceSpi
@@ -93,11 +95,11 @@ namespace Apache.Ignite.Core.Tests.Cache
                     {
                         MaxSize = 3
                     },
-                    OffHeapMaxMemory = 5 * 1024,
+                    OffHeapMaxMemory = 5 * entrySize
                 });
 
                 // Populate to trigger eviction.
-                var data = Enumerable.Range(1, 1024).Select(x => (byte) x).ToArray();
+                var data = Enumerable.Range(1, entrySize).Select(x => (byte) x).ToArray();
 
                 for (int i = 0; i < 10; i++)
                     cache[i] = data;
@@ -111,8 +113,8 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 var metrics = cache.GetMetrics();
 
-                Assert.AreEqual(5, metrics.OffHeapEntriesCount);
-                Assert.AreEqual(2, metrics.OverflowSize);
+                Assert.AreEqual(4, metrics.OffHeapEntriesCount);  // Entry takes more space than the value
+                Assert.AreEqual(3, metrics.OverflowSize / entrySize);  // 10 - 3 - 4 = 3
             }
         }
     }
