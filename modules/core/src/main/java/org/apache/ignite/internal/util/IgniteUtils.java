@@ -9904,6 +9904,11 @@ public abstract class IgniteUtils {
             LOC_IGNITE_NAME.set(oldName);
     }
 
+    /**
+     * @param bytes Byte array to compress.
+     * @return Compressed bytes.
+     * @throws IgniteCheckedException If failed.
+     */
     public static byte[] zip(@Nullable byte[] bytes) throws IgniteCheckedException {
         try {
             if (bytes == null)

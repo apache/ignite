@@ -140,25 +140,37 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (parts != null && partsBytes == null)
-            partsBytes = U.marshal(ctx, parts);
+        boolean marshal = (parts != null && partsBytes == null) || (partCntrs != null && partCntrsBytes == null);
 
-        if (partCntrs != null && partCntrsBytes == null)
-            partCntrsBytes = U.marshal(ctx, partCntrs);
+        if (marshal) {
+            byte[] partsBytes0 = null;
+            byte[] partCntrsBytes0 = null;
 
-        if (compress && !compressed()) {
-            try {
-                byte[] partsBytesZip = U.zip(partsBytes);
-                byte[] partCntrsBytesZip = U.zip(partCntrsBytes);
+            if (parts != null && partsBytes == null)
+                partsBytes0 = U.marshal(ctx, parts);
 
-                partsBytes = partsBytesZip;
-                partCntrsBytes = partCntrsBytesZip;
+            if (partCntrs != null && partCntrsBytes == null)
+                partCntrsBytes0 = U.marshal(ctx, partCntrs);
 
-                compressed(true);
+            if (compress) {
+                assert !compressed();
+
+                try {
+                    byte[] partsBytesZip = U.zip(partsBytes0);
+                    byte[] partCntrsBytesZip = U.zip(partCntrsBytes0);
+
+                    partsBytes0 = partsBytesZip;
+                    partCntrsBytes0 = partCntrsBytesZip;
+
+                    compressed(true);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(ctx.logger(getClass()), "Failed to compress partitions data: " + e, e);
+                }
             }
-            catch (IgniteCheckedException e) {
-                U.error(ctx.logger(getClass()), "Failed to compress partitions data: " + e, e);
-            }
+
+            partsBytes = partsBytes0;
+            partCntrsBytes = partCntrsBytes0;
         }
     }
 
