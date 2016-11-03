@@ -59,6 +59,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -956,7 +957,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             ErrorCode.PARSE_ERROR_1);
 
                     if (singleUpdate != null)
-                        return new IgniteBiTuple<>(doSingleUpdate(cctx, singleUpdate, params), X.EMPTY_OBJECT_ARRAY);
+                        return new IgniteBiTuple<>(doSingleUpdate(cctx, singleUpdate, stmt, params), X.EMPTY_OBJECT_ARRAY);
                 }
 
                 GridSqlSelect map;
@@ -991,7 +992,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (stmt instanceof GridSqlUpdate)
                     return doUpdate(cctx, (GridSqlUpdate) stmt, cur);
                 else
-                    return doDelete(cctx, cur);
+                    return doDelete(cctx, (GridSqlDelete) stmt, cur);
             }
         }
         finally {
@@ -1004,13 +1005,28 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      *
      * @param cctx Cache context.
      * @param singleUpdate Triple {@code [key; value; new value]} to perform remove or replace with.
+     * @param stmt
      * @param params
      * @return 1 if an item was affected, 0 otherwise.
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
-    private static int doSingleUpdate(GridCacheContext cctx, GridTriple<GridSqlElement> singleUpdate, Object[] params)
-        throws IgniteCheckedException {
+    private static int doSingleUpdate(GridCacheContext cctx, GridTriple<GridSqlElement> singleUpdate,
+        GridSqlStatement stmt, Object[] params) throws IgniteCheckedException {
+        GridSqlElement target;
+
+        if (stmt instanceof GridSqlUpdate)
+            target = ((GridSqlUpdate) stmt).target();
+        else if (stmt instanceof GridSqlDelete)
+            target = ((GridSqlDelete) stmt).from();
+        else
+            throw createSqlException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
+                ErrorCode.PARSE_ERROR_1);
+
+        GridSqlTable tbl = gridTableForElement(target);
+
+        IgniteCache cache = cctx.grid().cache(tbl.schema());
+
         int res;
 
         Object key = getElementValue(singleUpdate.get1(), params);
@@ -1019,15 +1035,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (newVal != null) { // Single item UPDATE
             if (val == null) // No _val bound in source query
-                res = cctx.cache().replace(key, newVal) ? 1 : 0;
+                res = cache.replace(key, newVal) ? 1 : 0;
             else
-                res = cctx.cache().replace(key, val, newVal) ? 1 : 0;
+                res = cache.replace(key, val, newVal) ? 1 : 0;
         }
         else { // Single item DELETE
             if (val == null) // No _val bound in source query
-                res = cctx.cache().remove(key) ? 1 : 0;
+                res = cache.remove(key) ? 1 : 0;
             else
-                res = cctx.cache().remove(key, val) ? 1 : 0;
+                res = cache.remove(key, val) ? 1 : 0;
         }
 
         return res;
@@ -1238,9 +1254,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean hasKeyProps = false;
         boolean hasValProps = false;
 
-        GridH2Table tbl = gridTableForElement(gridStmt.into());
+        GridSqlTable tbl = gridTableForElement(gridStmt.into());
 
-        GridH2RowDescriptor desc = tbl.rowDescriptor();
+        GridH2RowDescriptor desc = tbl.dataTable().rowDescriptor();
 
         for (int i = 0; i < cols.length; i++) {
             if (cols[i].columnName().equalsIgnoreCase(KEY_FIELD_NAME)) {
@@ -1276,6 +1292,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             singleRow = gridStmt.rows().size() == 1;
             src = rowsCursorToRows(cursor);
         }
+
+        // Switch to cache specified in query.
+        cctx = cctx.shared().cacheContext(CU.cacheId(tbl.schema()));
 
         // If we have just one item to put, just do so
         if (singleRow) {
@@ -1314,9 +1333,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean hasKeyProps = false;
         boolean hasValProps = false;
 
-        GridH2Table tbl = gridTableForElement(ins.into());
+        GridSqlTable tbl = gridTableForElement(ins.into());
 
-        GridH2RowDescriptor desc = tbl.rowDescriptor();
+        GridH2RowDescriptor desc = tbl.dataTable().rowDescriptor();
 
         for (int i = 0; i < cols.length; i++) {
             if (cols[i].columnName().equalsIgnoreCase(KEY_FIELD_NAME)) {
@@ -1352,6 +1371,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             singleRow = ins.rows().size() == 1;
             src = rowsCursorToRows(cursor);
         }
+
+        // Switch to cache specified in query.
+        cctx = cctx.shared().cacheContext(CU.cacheId(tbl.schema()));
 
         // If we have just one item to put, just do so
         if (singleRow) {
@@ -1968,7 +1990,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         if (twoStepQry.singleUpdate() != null) {
-            int res = doSingleUpdate(cctx, twoStepQry.singleUpdate(), qry.getArgs());
+            int res = doSingleUpdate(cctx, twoStepQry.singleUpdate(), twoStepQry.initialStatement(), qry.getArgs());
             return new IgniteBiTuple<>(QueryCursorImpl.forUpdateResult(res), X.EMPTY_OBJECT_ARRAY);
         }
 
@@ -1994,7 +2016,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         IgniteBiTuple<Integer, Object[]> updateRes = null;
 
         if (twoStepQry.initialStatement() instanceof GridSqlDelete)
-            updateRes = doDelete(cctx, cursor);
+            updateRes = doDelete(cctx, (GridSqlDelete) twoStepQry.initialStatement(), cursor);
 
         if (twoStepQry.initialStatement() instanceof GridSqlUpdate)
             updateRes = doUpdate(cctx, (GridSqlUpdate) twoStepQry.initialStatement(), cursor);
@@ -2064,12 +2086,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * Perform DELETE operation on top of results of SELECT.
      * @param cctx Cache context.
+     * @param del DELETE statement.
      * @param cursor SELECT results.
      * @return Results of DELETE (number of items affected AND keys that failed to be updated).
      */
     @SuppressWarnings("unchecked")
-    private IgniteBiTuple<Integer, Object[]> doDelete(GridCacheContext cctx, QueryCursorImpl<List<?>> cursor)
+    private IgniteBiTuple<Integer, Object[]> doDelete(GridCacheContext cctx, GridSqlDelete del,
+        QueryCursorImpl<List<?>> cursor)
         throws IgniteCheckedException {
+        GridSqlTable tbl = gridTableForElement(del.from());
+
         // With DELETE, we have only two columns - key and value.
         int res = 0;
 
@@ -2087,7 +2113,33 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             res++;
         }
 
-        Map<Object, EntryProcessorResult<Boolean>> delRes = cctx.cache().invokeAll(m);
+        // Switch to cache specified in query.
+        cctx = cctx.shared().cacheContext(CU.cacheId(tbl.schema()));
+
+        CacheOperationContext opCtx = cctx.operationContextPerCall();
+
+        // Force keepBinary for operation context to avoid binary deserialization inside entry processor
+        if (cctx.binaryMarshaller()) {
+            CacheOperationContext newOpCtx = null;
+
+            if (opCtx == null)
+                // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
+                newOpCtx = new CacheOperationContext(false, null, true, null, false, null);
+            else if (!opCtx.isKeepBinary())
+                newOpCtx = opCtx.keepBinary();
+
+            if (newOpCtx != null)
+                cctx.operationContextPerCall(newOpCtx);
+        }
+
+        Map<Object, EntryProcessorResult<Boolean>> delRes;
+
+        try {
+            delRes = cctx.cache().invokeAll(m);
+        }
+        finally {
+            cctx.operationContextPerCall(opCtx);
+        }
 
         if (F.isEmpty(delRes))
             return new IgniteBiTuple<>(res, X.EMPTY_OBJECT_ARRAY);
@@ -2124,7 +2176,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private IgniteBiTuple<Integer, Object[]> doUpdate(GridCacheContext cctx, GridSqlUpdate update,
         QueryCursorImpl<List<?>> cursor) throws IgniteCheckedException {
 
-        GridH2Table gridTbl = gridTableForElement(update.target());
+        GridSqlTable tbl = gridTableForElement(update.target());
+
+        GridH2Table gridTbl = tbl.dataTable();
 
         GridH2RowDescriptor desc = gridTbl.rowDescriptor();
 
@@ -2225,8 +2279,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             res++;
         }
 
+        // Switch to cache specified in query.
+        cctx = cctx.shared().cacheContext(CU.cacheId(tbl.schema()));
+
         CacheOperationContext opCtx = cctx.operationContextPerCall();
 
+        // Force keepBinary for operation context to avoid binary deserialization inside entry processor
         if (bin) {
             CacheOperationContext newOpCtx = null;
 
@@ -2572,7 +2630,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param target Expression to extract the table from.
      * @return Back end table for this element.
      */
-    private GridH2Table gridTableForElement(GridSqlElement target) {
+    private static GridSqlTable gridTableForElement(GridSqlElement target) {
         Set<GridSqlTable> tbls = new HashSet<>();
 
         GridSqlQuerySplitter.collectAllGridTablesInTarget(target, tbls);
@@ -2580,9 +2638,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (tbls.size() != 1)
             throw createSqlException("Failed to determine target table", ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1);
 
-        GridSqlTable tbl = tbls.iterator().next();
-
-        return tbl.dataTable();
+        return tbls.iterator().next();
     }
 
     /**

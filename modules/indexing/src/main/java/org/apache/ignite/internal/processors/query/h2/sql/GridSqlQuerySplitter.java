@@ -167,7 +167,7 @@ public class GridSqlQuerySplitter {
      * @return Two step query.
      */
     public static GridCacheTwoStepQuery split(JdbcPreparedStatement stmt, Object[] params, Object[] injectKeysFilter,
-                                              boolean collocatedGrpBy, boolean distributedJoins) throws IgniteCheckedException {
+        boolean collocatedGrpBy, boolean distributedJoins) throws IgniteCheckedException {
         if (params == null)
             params = GridCacheSqlQuery.EMPTY_PARAMS;
 
@@ -252,7 +252,7 @@ public class GridSqlQuerySplitter {
      * @param distributedJoins If distributed joins enabled.    @return Two step query.
      */
     private static GridCacheTwoStepQuery splitUpdateQuery(Prepared prepared, Object[] params, Object[] keysFilter,
-                                                          boolean collocatedGrpBy, final boolean distributedJoins) throws IgniteCheckedException {
+        boolean collocatedGrpBy, final boolean distributedJoins) throws IgniteCheckedException {
         GridSqlStatement gridStmt = new GridSqlQueryParser().parse(prepared);
 
         X.ensureX(gridStmt instanceof GridSqlInsert || gridStmt instanceof GridSqlMerge ||
@@ -291,7 +291,7 @@ public class GridSqlQuerySplitter {
         if (!hasRows) // INSERT or MERGE from SELECT
             res = splitQuery(sel, params, collocatedGrpBy, distributedJoins);
         else {
-            res = new GridCacheTwoStepQuery(Collections.<String>emptySet(), Collections.<String>emptySet());
+            res = new GridCacheTwoStepQuery(new HashSet<String>(), new HashSet<String>());
 
             IntArray paramIdxs = new IntArray(params.length);
 
@@ -309,6 +309,8 @@ public class GridSqlQuerySplitter {
             // Statement left for clarity - currently update operations don't really care much about joins.
             res.distributedJoins(distributedJoins && !isCollocated(query(prepared)));
         }
+
+        collectAllTablesInFrom(target, res.schemas(), res.tables());
 
         res.initialStatement(gridStmt);
 
@@ -345,7 +347,7 @@ public class GridSqlQuerySplitter {
         GridTriple<GridSqlElement> singleUpdate = getSingleItemFilter(del);
 
         if (singleUpdate != null)
-            return twoStepQueryForSingleItem(del, singleUpdate);
+            return twoStepQueryForSingleItem(del, del.from(), singleUpdate);
 
         int paramsCnt = F.isEmpty(params) ? 0 : params.length;
         GridSqlSelect mapQry = mapQueryForDelete(del, !F.isEmpty(keysFilter) ? paramsCnt : null);
@@ -414,7 +416,7 @@ public class GridSqlQuerySplitter {
         GridTriple<GridSqlElement> singleUpdate = getSingleItemFilter(update);
 
         if (singleUpdate != null)
-            return twoStepQueryForSingleItem(update, singleUpdate);
+            return twoStepQueryForSingleItem(update, update.target(), singleUpdate);
 
         int paramsCnt = F.isEmpty(params) ? 0 : params.length;
         GridSqlSelect mapQry = mapQueryForUpdate(update, !F.isEmpty(keysFilter) ? paramsCnt: null);
@@ -431,14 +433,19 @@ public class GridSqlQuerySplitter {
 
     /**
      * @param stmt Initial statement.
+     * @param target Table or alias the statement points to.
      * @param singleUpdate Operation arguments.
      * @return Empty two step query that bears only initial statement and single operation arguments.
      */
     private static GridCacheTwoStepQuery twoStepQueryForSingleItem(GridSqlStatement stmt,
-        GridTriple<GridSqlElement> singleUpdate) {
+        GridSqlElement target, GridTriple<GridSqlElement> singleUpdate) {
+        Set<String> schemas = new HashSet<>();
+        Set<String> tbls = new HashSet<>();
+
+        collectAllTablesInFrom(target, schemas, tbls);
+
         // No need to do any more parsing - we know that this statement affects one item at most.
-        GridCacheTwoStepQuery res = new GridCacheTwoStepQuery(Collections.<String>emptySet(),
-            Collections.<String>emptySet());
+        GridCacheTwoStepQuery res = new GridCacheTwoStepQuery(schemas, tbls);
 
         res.initialStatement(stmt);
         res.singleUpdate(singleUpdate);
