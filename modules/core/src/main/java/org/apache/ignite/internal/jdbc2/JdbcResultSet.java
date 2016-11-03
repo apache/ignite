@@ -1484,9 +1484,11 @@ public class JdbcResultSet implements ResultSet {
         ensureHasCurrentRow();
 
         try {
-            T val = cls == String.class ? (T)String.valueOf(curr.get(colIdx - 1)) : (T)curr.get(colIdx - 1);
+            Object colValue = curr.get(colIdx - 1);
 
-            wasNull = val == null;
+            T val = cls == String.class ? (T)String.valueOf(colValue ) : (T)colValue ;
+
+            wasNull = colValue == null;
 
             return val;
         }
