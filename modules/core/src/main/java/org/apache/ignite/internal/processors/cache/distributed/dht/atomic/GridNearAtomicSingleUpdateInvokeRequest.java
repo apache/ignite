@@ -46,7 +46,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 /**
  *
  */
-public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSingleUpdateRequest {
+public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingleUpdateRequest {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -67,7 +67,7 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
     /**
      * Empty constructor required by {@link Externalizable}.
      */
-    public GridNearAtomicSingleUpdateTransformRequest() {
+    public GridNearAtomicSingleUpdateInvokeRequest() {
         // No-op.
     }
 
@@ -92,7 +92,7 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
      * @param clientReq Client node request flag.
      * @param addDepInfo Deployment info flag.
      */
-    GridNearAtomicSingleUpdateTransformRequest(
+    GridNearAtomicSingleUpdateInvokeRequest(
         int cacheId,
         UUID nodeId,
         GridCacheVersion futVer,
@@ -192,11 +192,7 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
         return invokeArgs;
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * @param ctx
-     */
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
@@ -297,7 +293,7 @@ public class GridNearAtomicSingleUpdateTransformRequest extends GridNearAtomicSi
 
         }
 
-        return reader.afterMessageRead(GridNearAtomicSingleUpdateTransformRequest.class);
+        return reader.afterMessageRead(GridNearAtomicSingleUpdateInvokeRequest.class);
     }
 
     /** {@inheritDoc} */

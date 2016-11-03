@@ -49,6 +49,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSingleUpdateRequest {
     /** */
     private static final long serialVersionUID = 0L;
+
     /** Key to update. */
     @GridToStringInclude
     protected KeyCacheObject key;
@@ -225,7 +226,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
 
         prepareMarshalCacheObject(key, cctx);
 
-        if (op != TRANSFORM && val != null)
+        if (val != null)
             prepareMarshalCacheObject(val, cctx);
     }
 
@@ -237,7 +238,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
 
         key.finishUnmarshal(cctx.cacheObjectContext(), ldr);
 
-        if (op != TRANSFORM && val != null)
+        if (val != null)
             val.finishUnmarshal(cctx.cacheObjectContext(), ldr);
 
         key.partition(partId);

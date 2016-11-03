@@ -117,9 +117,7 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
         this.filter = filter;
     }
 
-    /**
-     * @return Filter.
-     */
+    /** {@inheritDoc} */
     @Override @Nullable public CacheEntryPredicate[] filter() {
         return filter;
     }

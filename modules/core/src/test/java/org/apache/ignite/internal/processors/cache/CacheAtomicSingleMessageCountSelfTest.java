@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -32,7 +31,7 @@ import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicFullUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateFilterRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateTransformRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateInvokeRequest;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -42,6 +41,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -71,7 +71,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
         cCfg.setCacheMode(PARTITIONED);
         cCfg.setBackups(1);
         cCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cCfg.setAtomicWriteOrderMode(CacheAtomicWriteOrderMode.PRIMARY);
+        cCfg.setAtomicWriteOrderMode(PRIMARY);
 
         cfg.setCacheConfiguration(cCfg);
 
@@ -97,7 +97,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
 
             commSpi.registerMessage(GridNearAtomicFullUpdateRequest.class);
             commSpi.registerMessage(GridNearAtomicSingleUpdateRequest.class);
-            commSpi.registerMessage(GridNearAtomicSingleUpdateTransformRequest.class);
+            commSpi.registerMessage(GridNearAtomicSingleUpdateInvokeRequest.class);
             commSpi.registerMessage(GridNearAtomicSingleUpdateFilterRequest.class);
 
             int putCnt = 15;
@@ -107,7 +107,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
 
             assertEquals(0, commSpi.messageCount(GridNearAtomicFullUpdateRequest.class));
             assertEquals(putCnt, commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class));
-            assertEquals(0, commSpi.messageCount(GridNearAtomicSingleUpdateTransformRequest.class));
+            assertEquals(0, commSpi.messageCount(GridNearAtomicSingleUpdateInvokeRequest.class));
             assertEquals(0, commSpi.messageCount(GridNearAtomicSingleUpdateFilterRequest.class));
         }
         finally {
@@ -130,7 +130,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
 
             commSpi.registerMessage(GridNearAtomicFullUpdateRequest.class);
             commSpi.registerMessage(GridNearAtomicSingleUpdateRequest.class);
-            commSpi.registerMessage(GridNearAtomicSingleUpdateTransformRequest.class);
+            commSpi.registerMessage(GridNearAtomicSingleUpdateInvokeRequest.class);
             commSpi.registerMessage(GridNearAtomicSingleUpdateFilterRequest.class);
 
             int putCnt = 15;
@@ -146,7 +146,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
 
             /* will have some GridNearAtomicFullUpdateRequest */
             assertEquals(0, commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class));
-            assertEquals(putCnt, commSpi.messageCount(GridNearAtomicSingleUpdateTransformRequest.class));
+            assertEquals(putCnt, commSpi.messageCount(GridNearAtomicSingleUpdateInvokeRequest.class));
             assertEquals(0, commSpi.messageCount(GridNearAtomicSingleUpdateFilterRequest.class));
         }
         finally {
@@ -169,7 +169,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
 
             commSpi.registerMessage(GridNearAtomicFullUpdateRequest.class);
             commSpi.registerMessage(GridNearAtomicSingleUpdateRequest.class);
-            commSpi.registerMessage(GridNearAtomicSingleUpdateTransformRequest.class);
+            commSpi.registerMessage(GridNearAtomicSingleUpdateInvokeRequest.class);
             commSpi.registerMessage(GridNearAtomicSingleUpdateFilterRequest.class);
 
             int putCnt = 15;
@@ -179,7 +179,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
 
             assertEquals(0, commSpi.messageCount(GridNearAtomicFullUpdateRequest.class));
             assertEquals(0, commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class));
-            assertEquals(0, commSpi.messageCount(GridNearAtomicSingleUpdateTransformRequest.class));
+            assertEquals(0, commSpi.messageCount(GridNearAtomicSingleUpdateInvokeRequest.class));
             assertEquals(putCnt, commSpi.messageCount(GridNearAtomicSingleUpdateFilterRequest.class));
         }
         finally {
@@ -195,14 +195,14 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
         private Map<Class<?>, AtomicInteger> cntMap = new HashMap<>();
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
             throws IgniteSpiException {
             AtomicInteger cntr = cntMap.get(((GridIoMessage)msg).message().getClass());
 
             if (cntr != null)
                 cntr.incrementAndGet();
 
-            super.sendMessage(node, msg, ackClosure);
+            super.sendMessage(node, msg, ackC);
         }
 
         /**
@@ -210,7 +210,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
          *
          * @param cls Class to count.
          */
-        public void registerMessage(Class<?> cls) {
+        void registerMessage(Class<?> cls) {
             AtomicInteger cntr = cntMap.get(cls);
 
             if (cntr == null)
@@ -221,7 +221,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
          * @param cls Message type to get count.
          * @return Number of messages of given class.
          */
-        public int messageCount(Class<?> cls) {
+        int messageCount(Class<?> cls) {
             AtomicInteger cntr = cntMap.get(cls);
 
             return cntr == null ? 0 : cntr.get();
@@ -230,7 +230,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
         /**
          * Resets counter to zero.
          */
-        public void resetCount() {
+        void resetCount() {
             cntMap.clear();
         }
     }

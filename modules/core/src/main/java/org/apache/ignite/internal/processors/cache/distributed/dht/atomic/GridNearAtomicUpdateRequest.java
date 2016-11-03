@@ -184,8 +184,6 @@ public interface GridNearAtomicUpdateRequest {
     public long messageId();
 
     /**
-     * Gets topology version or -1 in case of topology version is not required for this message.
-     *
      * @return Topology version.
      */
     public AffinityTopologyVersion topologyVersion();

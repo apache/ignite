@@ -58,7 +58,7 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
     /** Return value flag. */
     private static final int RET_VAL_FLAG_MASK = 0x40;
 
-    /** compressed boolean flags */
+    /** Compressed boolean flags. */
     protected byte flags;
 
     /**
