@@ -18,6 +18,7 @@
 package org.apache.ignite.yardstick.cache.model;
 
 import java.io.Serializable;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
@@ -38,5 +39,10 @@ public class Account implements Serializable {
      */
     public int balance() {
         return balance;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(Account.class, this);
     }
 }

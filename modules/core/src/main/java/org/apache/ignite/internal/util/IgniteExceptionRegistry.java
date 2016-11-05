@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -156,7 +157,7 @@ public class IgniteExceptionRegistry {
      * Detailed info about suppressed error.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class ExceptionInfo implements Serializable {
+    public static class ExceptionInfo implements Serializable, LessNamingBean {
         /** */
         private static final long serialVersionUID = 0L;
 

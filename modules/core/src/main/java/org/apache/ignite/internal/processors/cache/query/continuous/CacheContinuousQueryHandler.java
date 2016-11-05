@@ -17,28 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.NavigableSet;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
-import javax.cache.event.CacheEntryEvent;
-import javax.cache.event.CacheEntryEventFilter;
-import javax.cache.event.CacheEntryUpdatedListener;
-import javax.cache.event.EventType;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -61,11 +39,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeploymentManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager.JCacheQueryLocalListener;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager.JCacheQueryRemoteFilter;
 import org.apache.ignite.internal.processors.continuous.GridContinuousBatch;
-import org.apache.ignite.internal.processors.continuous.GridContinuousBatchAdapter;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
+import org.apache.ignite.internal.processors.continuous.GridContinuousQueryBatch;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQueryFilter;
 import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
 import org.apache.ignite.internal.util.GridLongList;
@@ -82,8 +61,22 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedDeque8;
 
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryEventFilter;
+import javax.cache.event.CacheEntryUpdatedListener;
+import javax.cache.event.EventType;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
+
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
+import static org.apache.ignite.internal.processors.cache.GridCacheIoManager.registerUnhandledException;
 
 /**
  * Continuous query handler.
@@ -132,7 +125,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     private transient boolean skipPrimaryCheck;
 
     /** Backup queue. */
-    private transient Collection<CacheContinuousQueryEntry> backupQueue;
+    private transient volatile Collection<CacheContinuousQueryEntry> backupQueue;
 
     /** */
     private boolean locCache;
@@ -430,33 +423,48 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             }
 
             @Override public void cleanupBackupQueue(Map<Integer, Long> updateCntrs) {
-                Iterator<CacheContinuousQueryEntry> it = backupQueue.iterator();
+                Collection<CacheContinuousQueryEntry> backupQueue0 = backupQueue;
 
-                while (it.hasNext()) {
-                    CacheContinuousQueryEntry backupEntry = it.next();
+                if (backupQueue0 != null) {
+                    Iterator<CacheContinuousQueryEntry> it = backupQueue0.iterator();
 
-                    Long updateCntr = updateCntrs.get(backupEntry.partition());
+                    while (it.hasNext()) {
+                        CacheContinuousQueryEntry backupEntry = it.next();
 
-                    if (updateCntr != null && backupEntry.updateCounter() <= updateCntr)
-                        it.remove();
+                        Long updateCntr = updateCntrs.get(backupEntry.partition());
+
+                        if (updateCntr != null && backupEntry.updateCounter() <= updateCntr)
+                            it.remove();
+                    }
                 }
             }
 
             @Override public void flushBackupQueue(GridKernalContext ctx, AffinityTopologyVersion topVer) {
-                if (backupQueue.isEmpty())
+                Collection<CacheContinuousQueryEntry> backupQueue0 = backupQueue;
+
+                if (backupQueue0 == null)
                     return;
 
                 try {
-                    GridCacheContext<K, V> cctx = cacheContext(ctx);
+                    ClusterNode nodeId0 = ctx.discovery().node(nodeId);
 
-                    for (CacheContinuousQueryEntry e : backupQueue) {
-                        if (!e.isFiltered())
-                            prepareEntry(cctx, nodeId, e);
+                    if (nodeId0 != null) {
+                        GridCacheContext<K, V> cctx = cacheContext(ctx);
+
+                        for (CacheContinuousQueryEntry e : backupQueue0) {
+                            if (!e.isFiltered())
+                                prepareEntry(cctx, nodeId, e);
+
+                            e.topologyVersion(topVer);
+                        }
+
+                        ctx.continuous().addBackupNotification(nodeId, routineId, backupQueue0, topic);
                     }
+                    else
+                        // Node which start CQ leave topology. Not needed to put data to backup queue.
+                        backupQueue = null;
 
-                    ctx.continuous().addBackupNotification(nodeId, routineId, backupQueue, topic);
-
-                    backupQueue.clear();
+                    backupQueue0.clear();
                 }
                 catch (IgniteCheckedException e) {
                     U.error(ctx.log(getClass()), "Failed to send backup event notification to node: " + nodeId, e);
@@ -479,9 +487,13 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             }
 
             @Override public void onPartitionEvicted(int part) {
-                for (Iterator<CacheContinuousQueryEntry> it = backupQueue.iterator(); it.hasNext();) {
-                    if (it.next().partition() == part)
-                        it.remove();
+                Collection<CacheContinuousQueryEntry> backupQueue0 = backupQueue;
+
+                if (backupQueue0 != null) {
+                    for (Iterator<CacheContinuousQueryEntry> it = backupQueue0.iterator(); it.hasNext(); ) {
+                        if (it.next().partition() == part)
+                            it.remove();
+                    }
                 }
             }
 
@@ -545,11 +557,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     }
 
     /** {@inheritDoc} */
-    @Override public void onListenerRegistered(UUID routineId, GridKernalContext ctx) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public void unregister(UUID routineId, GridKernalContext ctx) {
         assert routineId != null;
         assert ctx != null;
@@ -581,12 +588,12 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         assert objs != null;
         assert ctx != null;
 
-        final List<CacheContinuousQueryEntry> entries = (List<CacheContinuousQueryEntry>)objs;
-
-        if (entries.isEmpty())
+        if (objs.isEmpty())
             return;
 
         if (asyncCallback) {
+            final List<CacheContinuousQueryEntry> entries = objs instanceof List ? (List)objs : new ArrayList(objs);
+
             IgniteStripedThreadPoolExecutor asyncPool = ctx.asyncCallbackPool();
 
             int threadId = asyncPool.threadId(entries.get(0).partition());
@@ -625,7 +632,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             }, threadId);
         }
         else
-            notifyCallback0(nodeId, ctx, entries);
+            notifyCallback0(nodeId, ctx, (Collection)objs);
     }
 
     /**
@@ -674,8 +681,17 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             catch (IgniteCheckedException ex) {
                 if (ignoreClsNotFound)
                     assert internal;
-                else
-                    U.error(ctx.log(getClass()), "Failed to unmarshal entry.", ex);
+                else {
+                    String shortMsg = "Failed to unmarshal entry.";
+
+                    U.error(ctx.log(getClass()), shortMsg, ex);
+
+                    GridCacheQueryManager qryMgr = cctx.queries();
+
+                    qryMgr.onUnhandledException();
+
+                    registerUnhandledException(cctx, shortMsg, ex);
+                }
             }
         }
 
@@ -740,7 +756,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         if (!primary && !internal && entry.updateCounter() != -1L /* Skip init query and expire entries */) {
             entry.markBackup();
 
-            backupQueue.add(entry);
+            Collection<CacheContinuousQueryEntry> backupQueue0 = backupQueue;
+
+            if (backupQueue0 != null)
+                backupQueue0.add(entry.forBackupQueue());
         }
 
         return notify;
@@ -765,12 +784,11 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 if (!locCache) {
                     Collection<CacheEntryEvent<? extends K, ? extends V>> evts = handleEvent(ctx, entry);
 
-                    if (!evts.isEmpty()) {
+                    if (!evts.isEmpty())
                         locLsnr.onUpdated(evts);
 
-                        if (!internal && !skipPrimaryCheck)
-                            sendBackupAcknowledge(ackBuf.onAcknowledged(entry), routineId, ctx);
-                    }
+                    if (!internal && !skipPrimaryCheck)
+                        sendBackupAcknowledge(ackBuf.onAcknowledged(entry), routineId, ctx);
                 }
                 else {
                     if (!entry.isFiltered())
@@ -931,7 +949,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
          * @param topVer Topology version.
          * @param initCntr Update counters.
          */
-        public PartitionRecovery(IgniteLogger log, AffinityTopologyVersion topVer, @Nullable Long initCntr) {
+        PartitionRecovery(IgniteLogger log, AffinityTopologyVersion topVer, @Nullable Long initCntr) {
             this.log = log;
 
             if (initCntr != null) {
@@ -1176,6 +1194,14 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     }
 
     /** {@inheritDoc} */
+    @Override public void onNodeLeft() {
+        Collection<CacheContinuousQueryEntry> backupQueue0 = backupQueue;
+
+        if (backupQueue0 != null)
+            backupQueue = null;
+    }
+
+    /** {@inheritDoc} */
     @Override public void p2pMarshal(GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
@@ -1196,7 +1222,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
     /** {@inheritDoc} */
     @Override public GridContinuousBatch createBatch() {
-        return new GridContinuousBatchAdapter();
+        return new GridContinuousQueryBatch();
     }
 
     /** {@inheritDoc} */
@@ -1345,7 +1371,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         @SuppressWarnings("unchecked")
         @Nullable synchronized IgniteBiTuple<Map<Integer, Long>, Set<AffinityTopologyVersion>>
         onAcknowledged(GridContinuousBatch batch) {
-            size += batch.size();
+            assert batch instanceof GridContinuousQueryBatch;
+
+            size += ((GridContinuousQueryBatch)batch).entriesCount();
 
             Collection<CacheContinuousQueryEntry> entries = (Collection)batch.collect();
 
@@ -1536,7 +1564,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
             depInfo = new GridDeploymentInfoBean(dep);
 
-            bytes = ctx.config().getMarshaller().marshal(obj);
+            bytes = U.marshal(ctx, obj);
         }
 
         /**
@@ -1554,7 +1582,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             if (dep == null)
                 throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
 
-            return ctx.config().getMarshaller().unmarshal(bytes, U.resolveClassLoader(dep.classLoader(), ctx.config()));
+            return U.unmarshal(ctx, bytes, U.resolveClassLoader(dep.classLoader(), ctx.config()));
         }
 
         /** {@inheritDoc} */

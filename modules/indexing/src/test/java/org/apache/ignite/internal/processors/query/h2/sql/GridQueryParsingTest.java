@@ -292,7 +292,10 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      * @param sql2 Sql 2.
      */
     private void assertSqlEquals(String sql1, String sql2) {
-        assertEquals(normalizeSql(sql1), normalizeSql(sql2));
+        String nsql1 = normalizeSql(sql1);
+        String nsql2 = normalizeSql(sql2);
+
+        assertEquals(nsql1, nsql2);
     }
 
     /**
@@ -301,7 +304,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     private static String normalizeSql(String sql) {
         return sql.toLowerCase()
             .replaceAll("/\\*(?:.|\r|\n)*?\\*/", " ")
-            .replaceAll("\\s*on\\s+1\\s*=\\s*1\\s*", " ")
+            .replaceAll("\\s*on\\s+1\\s*=\\s*1\\s*", " on true ")
             .replaceAll("\\s+", " ")
             .replaceAll("\\( +", "(")
             .replaceAll(" +\\)", ")")
@@ -314,9 +317,9 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     private void checkQuery(String qry) throws Exception {
         Prepared prepared = parse(qry);
 
-        GridSqlQueryParser ses = new GridSqlQueryParser();
+        GridSqlQuery gQry = new GridSqlQueryParser().parse(prepared);
 
-        String res = ses.parse(prepared).getSQL();
+        String res = gQry.getSQL();
 
         System.out.println(normalizeSql(res));
 

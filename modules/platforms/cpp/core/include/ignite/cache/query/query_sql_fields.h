@@ -47,7 +47,8 @@ namespace ignite
                  *
                  * @param sql SQL string.
                  */
-                SqlFieldsQuery(const std::string& sql) : sql(sql), pageSize(1024), loc(false), args()
+                SqlFieldsQuery(const std::string& sql) :
+                    sql(sql), pageSize(1024), loc(false), args()
                 {
                     // No-op.
                 }
@@ -58,7 +59,8 @@ namespace ignite
                  * @param sql SQL string.
                  * @param loc Whether query should be executed locally.
                  */
-                SqlFieldsQuery(const std::string& sql, bool loc) : sql(sql), pageSize(1024), loc(false), args()
+                SqlFieldsQuery(const std::string& sql, bool loc) :
+                    sql(sql), pageSize(1024), loc(false), args()
                 {
                     // No-op.
                 }
@@ -68,7 +70,8 @@ namespace ignite
                  *
                  * @param other Other instance.
                  */
-                SqlFieldsQuery(const SqlFieldsQuery& other) : sql(other.sql), pageSize(other.pageSize), loc(other.loc),
+                SqlFieldsQuery(const SqlFieldsQuery& other) :
+                    sql(other.sql), pageSize(other.pageSize), loc(other.loc),
                     args()
                 {
                     args.reserve(other.args.size());
@@ -106,7 +109,7 @@ namespace ignite
                     for (std::vector<QueryArgumentBase*>::iterator it = args.begin(); it != args.end(); ++it)
                         delete *it;
                 }
-                
+
                 /**
                  * Get SQL string.
                  *
@@ -169,6 +172,10 @@ namespace ignite
 
                 /**
                  * Add argument.
+                 *
+                 * Template argument type should be copy-constructable and
+                 * assignable. Also BinaryType class template should be specialized
+                 * for this type.
                  *
                  * @param arg Argument.
                  */

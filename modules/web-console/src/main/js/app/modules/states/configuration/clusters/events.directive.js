@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './events.jade!';
+import templateUrl from './events.jade';
 
 export default ['igniteConfigurationClustersEvents', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

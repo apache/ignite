@@ -19,12 +19,13 @@ package org.apache.ignite.internal.visor.cache;
 
 import java.io.Serializable;
 import org.apache.ignite.cache.CacheTypeFieldMetadata;
+import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Data transfer object for {@link CacheTypeFieldMetadata}.
  */
-public class VisorCacheTypeFieldMetadata implements Serializable {
+public class VisorCacheTypeFieldMetadata implements Serializable, LessNamingBean {
     /** */
     private static final long serialVersionUID = 0L;
 

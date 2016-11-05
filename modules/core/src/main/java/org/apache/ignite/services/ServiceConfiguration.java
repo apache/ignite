@@ -55,27 +55,27 @@ public class ServiceConfiguration implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Service name. */
-    private String name;
+    protected String name;
 
     /** Service instance. */
     @GridToStringExclude
     private Service svc;
 
     /** Total count. */
-    private int totalCnt;
+    protected int totalCnt;
 
     /** Max per-node count. */
-    private int maxPerNodeCnt;
+    protected int maxPerNodeCnt;
 
     /** Cache name. */
-    private String cacheName;
+    protected String cacheName;
 
     /** Affinity key. */
-    private Object affKey;
+    protected Object affKey;
 
     /** Node filter. */
     @GridToStringExclude
-    private IgnitePredicate<ClusterNode> nodeFilter;
+    protected IgnitePredicate<ClusterNode> nodeFilter;
 
     /**
      * Gets service name.

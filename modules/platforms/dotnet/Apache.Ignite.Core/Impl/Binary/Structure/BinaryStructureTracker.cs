@@ -108,10 +108,11 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
                     foreach (var u in _curStructUpdates)
                         metaHnd.OnFieldWrite(u.FieldId, u.FieldName, u.FieldType);
 
-                    var meta = metaHnd.OnObjectWriteFinished();
+                    var fields = metaHnd.OnObjectWriteFinished();
 
-                    if (meta != null)
-                        writer.SaveMetadata(_desc, meta);
+                    // A new schema may be added, but no new fields. 
+                    // In this case, we should still call SaveMetadata even if fields are null
+                    writer.SaveMetadata(_desc, fields);
                 }
             }
         }

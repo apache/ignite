@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './atomic.jade!';
+import templateUrl from './atomic.jade';
 
 export default ['igniteConfigurationClustersAtomic', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

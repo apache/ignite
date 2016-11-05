@@ -21,13 +21,17 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteSpring;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.jsr166.ConcurrentHashMap8;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 
 /**
  * Implementation of Spring cache abstraction based on Ignite cache.
@@ -133,7 +137,7 @@ import org.springframework.cache.CacheManager;
  * Ignite distribution, and all these nodes will participate
  * in caching the data.
  */
-public class SpringCacheManager implements CacheManager, InitializingBean {
+public class SpringCacheManager implements CacheManager, InitializingBean, ApplicationContextAware {
     /** Caches map. */
     private final ConcurrentMap<String, SpringCache> caches = new ConcurrentHashMap8<>();
 
@@ -154,6 +158,14 @@ public class SpringCacheManager implements CacheManager, InitializingBean {
 
     /** Ignite instance. */
     private Ignite ignite;
+
+    /** Spring context. */
+    private ApplicationContext springCtx;
+
+    /** {@inheritDoc} */
+    @Override public void setApplicationContext(ApplicationContext ctx) {
+        this.springCtx = ctx;
+    }
 
     /**
      * Gets configuration file path.
@@ -257,15 +269,15 @@ public class SpringCacheManager implements CacheManager, InitializingBean {
         }
 
         if (cfgPath != null)
-            ignite = Ignition.start(cfgPath);
+            ignite = IgniteSpring.start(cfgPath, springCtx);
         else if (cfg != null)
-            ignite = Ignition.start(cfg);
+            ignite = IgniteSpring.start(cfg, springCtx);
         else
             ignite = Ignition.ignite(gridName);
     }
 
     /** {@inheritDoc} */
-    @Override public org.springframework.cache.Cache getCache(String name) {
+    @Override public Cache getCache(String name) {
         assert ignite != null;
 
         SpringCache cache = caches.get(name);

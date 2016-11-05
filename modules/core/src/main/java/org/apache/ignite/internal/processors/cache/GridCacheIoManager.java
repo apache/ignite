@@ -17,47 +17,29 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.UnhandledExceptionEvent;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.dht.CacheGetFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
@@ -73,6 +55,12 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import java.util.*;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static org.apache.ignite.events.EventType.EVT_UNHANDLED_EXCEPTION;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 
 /**
@@ -92,7 +80,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     private int retryCnt;
 
     /** Indexed class handlers. */
-    private Map<Integer, IgniteBiInClosure[]> idxClsHandlers = new HashMap<>();
+    private volatile Map<Integer, IgniteBiInClosure[]> idxClsHandlers = new HashMap<>();
 
     /** Handler registry. */
     private ConcurrentMap<ListenerKey, IgniteBiInClosure<UUID, GridCacheMessage>>
@@ -113,7 +101,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
     /** Message listener. */
     private GridMessageListener lsnr = new GridMessageListener() {
-        @Override public void onMessage(final UUID nodeId, Object msg) {
+        @Override public void onMessage(final UUID nodeId, final Object msg) {
             if (log.isDebugEnabled())
                 log.debug("Received unordered cache communication message [nodeId=" + nodeId +
                     ", locId=" + cctx.localNodeId() + ", msg=" + msg + ']');
@@ -178,9 +166,19 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 AffinityTopologyVersion rmtAffVer = cacheMsg.topologyVersion();
 
                 if (locAffVer.compareTo(rmtAffVer) < 0) {
-                    if (log.isDebugEnabled())
-                        log.debug("Received message has higher affinity topology version [msg=" + msg +
-                            ", locTopVer=" + locAffVer + ", rmtTopVer=" + rmtAffVer + ']');
+                    IgniteLogger log = cacheMsg.messageLogger(cctx);
+
+                    if (log.isDebugEnabled()) {
+                        StringBuilder msg0 = new StringBuilder("Received message has higher affinity topology version [");
+
+                        appendMessageInfo(cacheMsg, nodeId, msg0);
+
+                        msg0.append(", locTopVer=").append(locAffVer).
+                            append(", rmtTopVer=").append(rmtAffVer).
+                            append(']');
+
+                        log.debug(msg0.toString());
+                    }
 
                     fut = cctx.exchange().affinityReadyFuture(rmtAffVer);
                 }
@@ -191,6 +189,17 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     @Override public void apply(IgniteInternalFuture<?> t) {
                         cctx.kernalContext().closure().runLocalSafe(new Runnable() {
                             @Override public void run() {
+                                IgniteLogger log = cacheMsg.messageLogger(cctx);
+
+                                if (log.isDebugEnabled()) {
+                                    StringBuilder msg0 = new StringBuilder("Process cache message after wait for " +
+                                        "affinity topology version [");
+
+                                    appendMessageInfo(cacheMsg, nodeId, msg0).append(']');
+
+                                    log.debug(msg0.toString());
+                                }
+
                                 handleMessage(nodeId, cacheMsg);
                             }
                         });
@@ -215,7 +224,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         IgniteBiInClosure<UUID, GridCacheMessage> c = null;
 
         if (msgIdx >= 0) {
-            IgniteBiInClosure[] cacheClsHandlers = idxClsHandlers.get(cacheMsg.cacheId());
+            Map<Integer, IgniteBiInClosure[]> idxClsHandlers0 = idxClsHandlers;
+
+            IgniteBiInClosure[] cacheClsHandlers = idxClsHandlers0.get(cacheMsg.cacheId());
 
             if (cacheClsHandlers != null)
                 c = cacheClsHandlers[msgIdx];
@@ -225,18 +236,30 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             c = clsHandlers.get(new ListenerKey(cacheMsg.cacheId(), cacheMsg.getClass()));
 
         if (c == null) {
+            IgniteLogger log = cacheMsg.messageLogger(cctx);
+
+            StringBuilder msg0 = new StringBuilder("Received message without registered handler (will ignore) [");
+
+            appendMessageInfo(cacheMsg, nodeId, msg0);
+
+            msg0.append(", locTopVer=").append(cctx.exchange().readyAffinityVersion()).
+                append(", msgTopVer=").append(cacheMsg.topologyVersion()).
+                append(", cacheDesc=").append(cctx.cache().cacheDescriptor(cacheMsg.cacheId())).
+                append(']');
+
+            msg0.append(U.nl()).append("Registered listeners:");
+
+            Map<Integer, IgniteBiInClosure[]> idxClsHandlers0 = idxClsHandlers;
+
+            for (Map.Entry<Integer, IgniteBiInClosure[]> e : idxClsHandlers0.entrySet())
+                msg0.append(U.nl()).append(e.getKey()).append("=").append(Arrays.toString(e.getValue()));
+
             if (cctx.kernalContext().isStopping()) {
                 if (log.isDebugEnabled())
-                    log.debug("Received message without registered handler (will ignore) [msg=" + cacheMsg +
-                        ", nodeId=" + nodeId + ']');
+                    log.debug(msg0.toString());
             }
-            else {
-                U.warn(log, "Received message without registered handler (will ignore) [msg=" + cacheMsg +
-                    ", nodeId=" + nodeId +
-                    ", locTopVer=" + cctx.exchange().readyAffinityVersion() +
-                    ", msgTopVer=" + cacheMsg.topologyVersion() +
-                    ", cacheDesc=" + cctx.cache().cacheDescriptor(cacheMsg.cacheId()) + ']');
-            }
+            else
+                U.error(log, msg0.toString());
 
             return;
         }
@@ -350,6 +373,99 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             U.error(log, "Failed to send response to node (is node still alive?) [nodeId=" + nodeId +
                 ",res=" + res + ']', e);
         }
+    }
+
+
+    /**
+     * @param cacheMsg Cache message.
+     * @param nodeId Node ID.
+     * @param builder Message builder.
+     * @return Message builder.
+     */
+    private StringBuilder appendMessageInfo(GridCacheMessage cacheMsg, UUID nodeId, StringBuilder builder) {
+        if (txId(cacheMsg) != null) {
+            builder.append("txId=").append(txId(cacheMsg)).
+                append(", dhtTxId=").append(dhtTxId(cacheMsg)).
+                append(", msg=").append(cacheMsg);
+        }
+        else if (atomicFututeId(cacheMsg) != null) {
+            builder.append("futId=").append(atomicFututeId(cacheMsg)).
+                append(", writeVer=").append(atomicWriteVersion(cacheMsg)).
+                append(", msg=").append(cacheMsg);
+        }
+        else
+            builder.append("msg=").append(cacheMsg);
+
+        builder.append(", node=").append(nodeId);
+
+        return builder;
+    }
+
+    /**
+     * @param cacheMsg Cache message.
+     * @return Transaction ID if applicable for message.
+     */
+    @Nullable private GridCacheVersion txId(GridCacheMessage cacheMsg) {
+        if (cacheMsg instanceof GridDhtTxPrepareRequest)
+            return ((GridDhtTxPrepareRequest)cacheMsg).nearXidVersion();
+        else if (cacheMsg instanceof GridNearTxPrepareRequest)
+            return ((GridNearTxPrepareRequest)cacheMsg).version();
+        else if (cacheMsg instanceof GridNearTxPrepareResponse)
+            return ((GridNearTxPrepareResponse)cacheMsg).version();
+        else if (cacheMsg instanceof GridNearTxFinishRequest)
+            return ((GridNearTxFinishRequest)cacheMsg).version();
+        else if (cacheMsg instanceof GridNearTxFinishResponse)
+            return ((GridNearTxFinishResponse)cacheMsg).xid();
+
+        return null;
+    }
+
+    /**
+     * @param cacheMsg Cache message.
+     * @return Transaction ID if applicable for message.
+     */
+    @Nullable private GridCacheVersion dhtTxId(GridCacheMessage cacheMsg) {
+        if (cacheMsg instanceof GridDhtTxPrepareRequest)
+            return ((GridDhtTxPrepareRequest)cacheMsg).version();
+        else if (cacheMsg instanceof GridDhtTxPrepareResponse)
+            return ((GridDhtTxPrepareResponse)cacheMsg).version();
+        else if (cacheMsg instanceof GridDhtTxFinishRequest)
+            return ((GridDhtTxFinishRequest)cacheMsg).version();
+        else if (cacheMsg instanceof GridDhtTxFinishResponse)
+            return ((GridDhtTxFinishResponse)cacheMsg).xid();
+
+        return null;
+    }
+
+    /**
+     * @param cacheMsg Cache message.
+     * @return Atomic future ID if applicable for message.
+     */
+    @Nullable private GridCacheVersion atomicFututeId(GridCacheMessage cacheMsg) {
+        if (cacheMsg instanceof GridNearAtomicUpdateRequest)
+            return ((GridNearAtomicUpdateRequest)cacheMsg).futureVersion();
+        else if (cacheMsg instanceof GridNearAtomicUpdateResponse)
+            return ((GridNearAtomicUpdateResponse) cacheMsg).futureVersion();
+        else if (cacheMsg instanceof GridDhtAtomicUpdateRequest)
+            return ((GridDhtAtomicUpdateRequest)cacheMsg).futureVersion();
+        else if (cacheMsg instanceof GridDhtAtomicUpdateResponse)
+            return ((GridDhtAtomicUpdateResponse) cacheMsg).futureVersion();
+
+        return null;
+    }
+
+
+    /**
+     * @param cacheMsg Cache message.
+     * @return Atomic future ID if applicable for message.
+     */
+    @Nullable private GridCacheVersion atomicWriteVersion(GridCacheMessage cacheMsg) {
+        if (cacheMsg instanceof GridNearAtomicUpdateRequest)
+            return ((GridNearAtomicUpdateRequest)cacheMsg).updateVersion();
+        else if (cacheMsg instanceof GridDhtAtomicUpdateRequest)
+            return ((GridDhtAtomicUpdateRequest)cacheMsg).writeVersion();
+
+        return null;
     }
 
     /**
@@ -559,6 +675,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
+            case 59:
+                // No additional actions required, just skipping default switch section,
+                // since UnhandledException already registered.
+                break;
+
             case 114: {
                 processMessage(nodeId,msg,c);// Will be handled by Rebalance Demander.
             }
@@ -603,10 +724,31 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
-            default:
-                throw new IgniteCheckedException("Failed to send response to node. Unsupported direct type [message="
-                    + msg + "]", msg.classError());
+            default:{
+                String shortMsg = "Failed to send response to node. Unsupported direct type [message=" + msg + "]";
+
+                IgniteCheckedException e = new IgniteCheckedException(shortMsg, msg.classError());
+
+                registerUnhandledException(ctx, shortMsg, e);
+            }
         }
+    }
+
+    /**
+     * @param ctx Grid cache context.
+     * @param shortMsg Short message.
+     * @param ex Original Exception.
+     */
+    public static void registerUnhandledException(GridCacheContext ctx, String shortMsg, IgniteCheckedException ex) {
+        GridKernalContext kctx = ctx.kernalContext();
+
+        kctx.exceptionRegistry().onException(shortMsg, ex);
+
+        ClusterNode node = ctx.discovery().localNode();
+
+        UnhandledExceptionEvent evt = new UnhandledExceptionEvent(node, shortMsg, ex, EVT_UNHANDLED_EXCEPTION);
+
+        kctx.event().record(evt);
     }
 
     /**
@@ -938,12 +1080,14 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         int msgIdx = messageIndex(type);
 
         if (msgIdx != -1) {
-            IgniteBiInClosure[] cacheClsHandlers = idxClsHandlers.get(cacheId);
+            Map<Integer, IgniteBiInClosure[]> idxClsHandlers0 = idxClsHandlers;
+
+            IgniteBiInClosure[] cacheClsHandlers = idxClsHandlers0.get(cacheId);
 
             if (cacheClsHandlers == null) {
                 cacheClsHandlers = new IgniteBiInClosure[GridCacheMessage.MAX_CACHE_MSG_LOOKUP_INDEX];
 
-                idxClsHandlers.put(cacheId, cacheClsHandlers);
+                idxClsHandlers0.put(cacheId, cacheClsHandlers);
             }
 
             if (cacheClsHandlers[msgIdx] != null)
@@ -951,6 +1095,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     ", type=" + type + ']');
 
             cacheClsHandlers[msgIdx] = c;
+
+            idxClsHandlers = idxClsHandlers0;
 
             return;
         }

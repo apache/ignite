@@ -22,7 +22,7 @@
         form(name='popoverForm' novalidate)
             .form-group(style='padding: 5px')
                 .col-sm-4
-                    input.form-control(id='paragraph-rate' ng-init='value = paragraph.rate.value' ng-model='value' type='number' min='1' required auto-focus)
+                    input.form-control(id='paragraph-rate' ng-init='value = paragraph.rate.value' ng-model='value' type='number' min='1' required ignite-auto-focus)
                 .col-sm-8(style='padding-left: 5px')
                     button.form-control.select-toggle(id='paragraph-unit' ng-init='unit = paragraph.rate.unit' ng-model='unit' required placeholder='Time unit' bs-select bs-options='item.value as item.label for item in timeUnit' data-container='false' tabindex='0')
             .form-actions(style='margin-top: 30px; padding: 5px')
