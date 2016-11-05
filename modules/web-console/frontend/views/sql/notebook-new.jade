@@ -19,7 +19,9 @@
         .modal-content
             .modal-header
                 button.close(ng-click='$hide()') &times;
-                h4.modal-title New SQL notebook
+                h4.modal-title
+                    i.fa.fa-file-o
+                    | New SQL notebook
             form.form-horizontal.modal-body.row(name='ui.inputForm' novalidate)
                 div
                     .col-sm-2
