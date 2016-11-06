@@ -43,6 +43,7 @@ import javax.management.JMException;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.CacheMode;
@@ -177,7 +178,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private CacheState globalState;
 
     /** Activate future. */
-    private volatile ActivateFuture activateFuture;
+    private volatile ActivateFuture activateFut;
 
     /** Pending cache starts. */
     private ConcurrentMap<UUID, IgniteInternalFuture> pendingFuts = new ConcurrentHashMap<>();
@@ -579,9 +580,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.io().addMessageListener(GridTopic.TOPIC_ACTIVATE, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg) {
-                if (msg instanceof ActivationMessageResponse && activateFuture != null)
-                    if (activateFuture.onConfirmation((ActivationMessageResponse)msg))
-                        activateFuture = null;
+                if (msg instanceof ActivationMessageResponse && activateFut != null)
+                    if (activateFut.onResponse((ActivationMessageResponse)msg)){
+                        if (activateFut.isDone())
+                            activateFut = null;
+                    }
             }
         });
 
@@ -1921,7 +1924,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                         U.error(log, e);
 
                                         //send fail to node which invoke activate
-                                        sendActivationResponse(req.initiatingNodeId(), e.getMessage());
+                                        sendActivationResponse(req.initiatingNodeId(), e);
 
                                         //send revert state, cancel task, destroy cache
                                     }
@@ -1937,7 +1940,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         U.error(log, e);
 
                         //send fail to node which invoke activate
-                        sendActivationResponse(req.initiatingNodeId(), e.getMessage());
+                        sendActivationResponse(req.initiatingNodeId(), e);
 
                         //send revert state, cancel task, destroy cache
                     }
@@ -2638,9 +2641,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public IgniteInternalFuture<?> changeGlobalState(CacheState state) {
         checkEmptyTransactions();
 
-        ActivateFuture fut = new ActivateFuture();
+        ActivateFuture fut = new ActivateFuture(ctx, log);
 
-        activateFuture = fut;
+        activateFut = fut;
 
         DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(UUID.randomUUID(), null, ctx.localNodeId());
 
@@ -4049,7 +4052,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public void beforeActivate(AffinityTopologyVersion topVer) {
         assert topVer != null;
 
-        if (activateFuture != null) {
+        if (activateFut != null) {
             List<ClusterNode> servNodes = ctx.discovery().serverNodes(topVer);
 
             List<UUID> ids = new ArrayList<>();
@@ -4057,22 +4060,24 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             for (ClusterNode node : servNodes)
                 ids.add(node.id());
 
-            activateFuture.setNodes(ids);
+            activateFut.setNodes(ids);
         }
     }
 
     /**
      * @param initNodeId Initialize node id.
-     * @param msg Message.
+     * @param ex Exception.
      */
-    private void sendActivationResponse(UUID initNodeId, String msg) {
-        ActivationMessageResponse actResp = new ActivationMessageResponse(ctx.localNodeId(), msg);
-
+    private void sendActivationResponse(UUID initNodeId, Throwable ex) {
         try {
+            ActivationMessageResponse actResp = new ActivationMessageResponse(
+                ctx.localNodeId(), ctx.config().getMarshaller().marshal(ex)
+            );
+
             ctx.io().send(initNodeId, GridTopic.TOPIC_ACTIVATE, actResp, (byte)0);
         }
         catch (IgniteCheckedException e) {
-            log.error("fail send activation response to " + initNodeId, e);
+            log.error("Fail send activation response to " + initNodeId, e);
         }
     }
 
@@ -4080,11 +4085,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      */
     private static class ActivateFuture extends GridFutureAdapter {
+        /** Context. */
+        private GridKernalContext ctx;
+
         /** Nodes. */
         private List<UUID> nodes;
 
         /** Responses. */
         private Map<UUID, ActivationMessageResponse> resps = new HashMap<>();
+
+        /** Logger. */
+        private IgniteLogger log;
+
+        /**
+         * @param ctx Context.
+         */
+        public ActivateFuture(GridKernalContext ctx, IgniteLogger log) {
+            this.ctx = ctx;
+            this.log = log;
+        }
 
         /**
          * @param nodes Nodes.
@@ -4096,20 +4115,33 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         /**
          * @param msg Message.
          */
-        public boolean onConfirmation(ActivationMessageResponse msg) {
+        public boolean onResponse(ActivationMessageResponse msg) {
             assert !F.isEmpty(nodes);
 
             resps.put(msg.getNodeId(), msg);
 
             if (resps.size() == nodes.size()) {
                 for (Map.Entry<UUID, ActivationMessageResponse> entry : resps.entrySet()) {
-                    String m = entry.getValue().getExceptionMsg();
+                    UUID fromNode = entry.getValue().getNodeId();
 
-                    if (m != null) {
+                    if (!nodes.contains(fromNode))
+                        log.warning("Unexpected response from node " + fromNode);
 
-                        Throwable e = new IgniteException(m);
+                    byte[] ex = entry.getValue().getErrBytes();
 
-                        onDone(e);
+                    if (ex != null) {
+                        Throwable err = null;
+
+                        try {
+                            err = ctx.config().getMarshaller().unmarshal(
+                                ex, U.resolveClassLoader(ctx.config())
+                            );
+                        }
+                        catch (IgniteCheckedException e) {
+                            onDone(new IgniteCheckedException("Failed to unmarshal response.", e));
+                        }
+
+                        onDone(err);
 
                         return true;
                     }

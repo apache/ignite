@@ -13,8 +13,8 @@ public class ActivationMessageResponse implements Message {
     /** Node id. */
     private UUID nodeId;
 
-    /** Ex message. */
-    private String exMsg;
+    /** Serialized error. */
+    private byte[] errBytes;
 
     /**
      * Default constructor.
@@ -25,11 +25,11 @@ public class ActivationMessageResponse implements Message {
 
     /**
      * @param nodeId Node id.
-     * @param exMsg Ex message.
+     * @param errBytes Error bytes.
      */
-    public ActivationMessageResponse(UUID nodeId, String exMsg) {
+    public ActivationMessageResponse(UUID nodeId, byte[] errBytes) {
         this.nodeId = nodeId;
-        this.exMsg = exMsg;
+        this.errBytes = errBytes;
     }
 
     /**
@@ -38,11 +38,12 @@ public class ActivationMessageResponse implements Message {
     public UUID getNodeId() {
         return nodeId;
     }
+
     /**
      *
      */
-    public String getExceptionMsg() {
-        return exMsg;
+    public byte[] getErrBytes() {
+        return errBytes;
     }
 
     /** {@inheritDoc} */
@@ -58,7 +59,7 @@ public class ActivationMessageResponse implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeString("exMsg", exMsg))
+                if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
                 writer.incrementState();
@@ -83,7 +84,7 @@ public class ActivationMessageResponse implements Message {
 
         switch (reader.state()) {
             case 0:
-                exMsg = reader.readString("exMsg");
+                errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
                     return false;
