@@ -147,7 +147,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
         final List<Integer> resultList = new ArrayList<>();
 
         while(myOutput.hasNext()){
-            Integer testKey = (Integer) myOutput.next().key();
+            Integer testKey = myOutput.next().key();
 
             X.println(">>> Printing iterator results: "+ testKey);
 
