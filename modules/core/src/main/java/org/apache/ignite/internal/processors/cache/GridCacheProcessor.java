@@ -63,6 +63,7 @@ import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridPerformanceSuggestions;
+import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -71,6 +72,7 @@ import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.backup.StartFullBackupAckDiscoveryMessage;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
@@ -173,6 +175,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** */
     private CacheState globalState;
+
+    /** Activate future. */
+    private volatile ActivateFuture activateFuture;
 
     /** Pending cache starts. */
     private ConcurrentMap<UUID, IgniteInternalFuture> pendingFuts = new ConcurrentHashMap<>();
@@ -571,6 +576,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         );
 
         globalState = ctx.config().isActiveOnStart() ? CacheState.ACTIVE : CacheState.INACTIVE;
+
+        ctx.io().addMessageListener(GridTopic.TOPIC_ACTIVATE, new GridMessageListener() {
+            @Override public void onMessage(UUID nodeId, Object msg) {
+                if (msg instanceof ActivationMessageResponse && activateFuture != null)
+                    activateFuture.onConfirmation((ActivationMessageResponse)msg);
+            }
+        });
 
         // Start shared managers.
         for (GridCacheSharedManager mgr : sharedCtx.managers())
@@ -1899,8 +1911,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                                         ctx.dataStructures().onKernalStart();
 
+                                        ActivationMessageResponse actResp = new ActivationMessageResponse(
+                                            ctx.localNodeId(), null
+                                        );
+
                                         //send ok status
-                                    }catch (IgniteCheckedException e){
+                                        ctx.io().send(
+                                            req.initiatingNodeId(), GridTopic.TOPIC_ACTIVATE,
+                                            actResp, (byte)0
+                                        );
+                                    }
+                                    catch (IgniteCheckedException e) {
                                         //send fail to node which invoke activate
 
                                         //send revert state, cancel task, destroy cache
@@ -2617,11 +2638,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public IgniteInternalFuture<?> changeGlobalState(CacheState state) {
         checkEmptyTransactions();
 
+        ActivateFuture fut = new ActivateFuture();
+
+        activateFuture = fut;
+
         DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(UUID.randomUUID(), null, ctx.localNodeId());
 
         t.state(state);
 
-        return F.first(initiateCacheChanges(F.asList(t), false));
+        F.first(initiateCacheChanges(F.asList(t), false));
+
+        return fut;
     }
 
     /**
@@ -4013,6 +4040,68 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public void removeNode(UUID nodeId) {
             // No-op.
+        }
+    }
+
+    /**
+     * @param topVer Topology version.
+     */
+    public void beforeActivate(AffinityTopologyVersion topVer) {
+        assert topVer != null;
+
+        if (activateFuture != null) {
+            List<ClusterNode> servNodes = ctx.discovery().serverNodes(topVer);
+
+            List<UUID> ids = new ArrayList<>();
+
+            for (ClusterNode node : servNodes)
+                ids.add(node.id());
+
+            activateFuture.setNodes(ids);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class ActivateFuture extends GridFutureAdapter {
+        /** Nodes. */
+        private List<UUID> nodes;
+
+        /** Responses. */
+        private Map<UUID, ActivationMessageResponse> resps = new HashMap<>();
+
+        /**
+         * @param nodes Nodes.
+         */
+        public void setNodes(List<UUID> nodes) {
+            this.nodes = nodes;
+        }
+
+        /**
+         * @param msg Message.
+         */
+        public void onConfirmation(ActivationMessageResponse msg) {
+            assert !F.isEmpty(nodes);
+
+            resps.put(msg.getNodeId(), msg);
+
+            if (resps.size() == nodes.size()) {
+
+                boolean fail = false;
+
+                for (Map.Entry<UUID, ActivationMessageResponse> entry : resps.entrySet()) {
+                    String m = entry.getValue().getExceptionMsg();
+
+                    if (m != null) {
+                        fail = true;
+                        onDone(new IgniteException(m));
+                    }
+                }
+
+                if (!fail)
+                    onDone();
+            }
         }
     }
 }

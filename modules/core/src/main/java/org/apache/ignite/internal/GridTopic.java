@@ -103,7 +103,7 @@ public enum GridTopic {
     TOPIC_IO_TEST,
 
     /** Topic active. */
-    TOPIC_ACTIVE;
+    TOPIC_ACTIVATE;
 
     /** Enum values. */
     private static final GridTopic[] VALS = values();
