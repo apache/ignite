@@ -175,6 +175,8 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
                     synchronized (ctx.getCheckpointLock()) {
                         for (CacheEvent evt : evts)
                             ctx.collect(evt);
+
+                        evts = new ArrayList<>(evtBatchSize);
                     }
                 }
             }

@@ -17,9 +17,13 @@
 
 package org.apache.ignite.source.flink;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.sink.SinkFunction;
+import org.apache.flink.contrib.streaming.DataStreamUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -29,9 +33,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Tests for {@link IgniteSource}.
@@ -112,7 +113,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
     private void checkIgniteSource(final int evtCount, int parallelismCnt, IgnitePredicate<CacheEvent> filter) throws Exception {
         Ignite ignite = G.ignite(GRID_NAME);
 
-        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
 
         env.getConfig().disableSysoutLogging();
         env.getConfig().registerTypeWithKryoSerializer(CacheEvent.class, CacheEventSerializer.class);
@@ -120,7 +121,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
         final IgniteSource igniteSrc = new IgniteSource(TEST_CACHE);
 
         igniteSrc.setIgnite(ignite);
-        igniteSrc.setEvtBatchSize(1);
+        igniteSrc.setEvtBatchSize(10);
         igniteSrc.setEvtBufTimeout(10);
 
         igniteSrc.start(filter, EventType.EVT_CACHE_OBJECT_PUT);
@@ -131,36 +132,36 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
 
         int cnt = 0;
 
-        final Map<Integer, Integer> eventMap = new HashMap<>();
+        final List<Integer> eventList = new ArrayList<>();
 
         while (cnt < evtCount)  {
             cache.put(cnt, cnt);
-            eventMap.put(cnt, cnt);
+
+            eventList.add(cnt);
 
             cnt++;
         }
 
-        X.println(">>> Printing stream results.");
+        Iterator<CacheEvent> myOutput = DataStreamUtils.collect(stream);
 
-        stream.print();
+        final List<Integer> resultList = new ArrayList<>();
 
-        stream.addSink(new SinkFunction<CacheEvent>() {
-            int sinkEvtCntr = 0;
+        while(myOutput.hasNext()){
+            Integer testKey = (Integer) myOutput.next().key();
 
-            @Override public void invoke(CacheEvent cacheEvt) throws Exception {
-                sinkEvtCntr++;
+            X.println(">>> Printing iterator results: "+ testKey);
 
-                assertNotNull(cacheEvt.newValue().toString());
-                Integer k = Integer.parseInt(cacheEvt.newValue().toString());
-                assertTrue(eventMap.containsKey(k));
+            assertTrue(eventList.contains(testKey));
 
-                if(sinkEvtCntr == evtCount)
-                    igniteSrc.stop();
-            }
-        });
+            resultList.add(testKey);
 
-        env.execute();
-        igniteSrc.stop();
+            if(testKey == (evtCount-1))
+                igniteSrc.stop();
+        }
+
+        Collections.sort(resultList);
+
+        assertEquals(eventList, resultList);
     }
 }
 
