@@ -747,6 +747,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             checkConsistency();
 
             if (globalState == CacheState.ACTIVE){
+                sharedCtx.database().fileLock();
+
                 sharedCtx.wal().onKernalStart(false);
 
                 sharedCtx.database().onKernalStart(false);
@@ -1922,6 +1924,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                         );
                                     }
                                     catch (IgniteCheckedException e) {
+                                        U.error(log, e);
+
                                         //send fail to node which invoke activate
 
                                         //send revert state, cancel task, destroy cache
@@ -1935,9 +1939,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     }
                     catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to start after activate.", e);
+                     /*   U.error(log, "Failed to start after activate.", e);*/
 
                         //send fail to node which invoke activate
+                        ActivationMessageResponse actResp = new ActivationMessageResponse(
+                            ctx.localNodeId(), e.getMessage()
+                        );
+
+                        try {
+                            ctx.io().send(
+                                req.initiatingNodeId(), GridTopic.TOPIC_ACTIVATE,
+                                actResp, (byte)0
+                            );
+                        }
+                        catch (IgniteCheckedException e1) {
+                            U.error(log, e1);
+                        }
 
                         //send revert state, cancel task, destroy cache
                     }
@@ -4087,7 +4104,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             resps.put(msg.getNodeId(), msg);
 
             if (resps.size() == nodes.size()) {
-
                 boolean fail = false;
 
                 for (Map.Entry<UUID, ActivationMessageResponse> entry : resps.entrySet()) {
@@ -4095,7 +4111,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     if (m != null) {
                         fail = true;
-                        onDone(new IgniteException(m));
+
+                        Throwable e = new IgniteException(m);
+
+                        onDone(e);
+
+                        break;
                     }
                 }
 
