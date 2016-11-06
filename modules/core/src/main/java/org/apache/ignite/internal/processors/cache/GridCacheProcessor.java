@@ -580,7 +580,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ctx.io().addMessageListener(GridTopic.TOPIC_ACTIVATE, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg) {
                 if (msg instanceof ActivationMessageResponse && activateFuture != null)
-                    activateFuture.onConfirmation((ActivationMessageResponse)msg);
+                    if (activateFuture.onConfirmation((ActivationMessageResponse)msg))
+                        activateFuture = null;
             }
         });
 
@@ -1913,20 +1914,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                                         ctx.dataStructures().onKernalStart();
 
-                                        ActivationMessageResponse actResp = new ActivationMessageResponse(
-                                            ctx.localNodeId(), null
-                                        );
-
                                         //send ok status
-                                        ctx.io().send(
-                                            req.initiatingNodeId(), GridTopic.TOPIC_ACTIVATE,
-                                            actResp, (byte)0
-                                        );
+                                        sendActivationResponse(req.initiatingNodeId(), null);
                                     }
                                     catch (IgniteCheckedException e) {
                                         U.error(log, e);
 
                                         //send fail to node which invoke activate
+                                        sendActivationResponse(req.initiatingNodeId(), e.getMessage());
 
                                         //send revert state, cancel task, destroy cache
                                     }
@@ -1939,22 +1934,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     }
                     catch (IgniteCheckedException e) {
-                     /*   U.error(log, "Failed to start after activate.", e);*/
+                        U.error(log, e);
 
                         //send fail to node which invoke activate
-                        ActivationMessageResponse actResp = new ActivationMessageResponse(
-                            ctx.localNodeId(), e.getMessage()
-                        );
-
-                        try {
-                            ctx.io().send(
-                                req.initiatingNodeId(), GridTopic.TOPIC_ACTIVATE,
-                                actResp, (byte)0
-                            );
-                        }
-                        catch (IgniteCheckedException e1) {
-                            U.error(log, e1);
-                        }
+                        sendActivationResponse(req.initiatingNodeId(), e.getMessage());
 
                         //send revert state, cancel task, destroy cache
                     }
@@ -4079,6 +4062,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param initNodeId Initialize node id.
+     * @param msg Message.
+     */
+    private void sendActivationResponse(UUID initNodeId, String msg) {
+        ActivationMessageResponse actResp = new ActivationMessageResponse(ctx.localNodeId(), msg);
+
+        try {
+            ctx.io().send(initNodeId, GridTopic.TOPIC_ACTIVATE, actResp, (byte)0);
+        }
+        catch (IgniteCheckedException e) {
+            log.error("fail send activation response to " + initNodeId, e);
+        }
+    }
+
+    /**
      *
      */
     private static class ActivateFuture extends GridFutureAdapter {
@@ -4098,31 +4096,31 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         /**
          * @param msg Message.
          */
-        public void onConfirmation(ActivationMessageResponse msg) {
+        public boolean onConfirmation(ActivationMessageResponse msg) {
             assert !F.isEmpty(nodes);
 
             resps.put(msg.getNodeId(), msg);
 
             if (resps.size() == nodes.size()) {
-                boolean fail = false;
-
                 for (Map.Entry<UUID, ActivationMessageResponse> entry : resps.entrySet()) {
                     String m = entry.getValue().getExceptionMsg();
 
                     if (m != null) {
-                        fail = true;
 
                         Throwable e = new IgniteException(m);
 
                         onDone(e);
 
-                        break;
+                        return true;
                     }
                 }
 
-                if (!fail)
-                    onDone();
+                onDone();
+
+                return true;
             }
+
+            return false;
         }
     }
 }
