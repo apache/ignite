@@ -203,7 +203,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             assert rmv;
 
-            if (t.error() != null) {
+            Throwable err = t.error();
+
+            if (err != null && !(err instanceof IgniteClientDisconnectedCheckedException)) {
                 LT.error(log, t.error(), "DataStreamer operation failed.", true);
 
                 failCntr.increment();
