@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-export default ['$scope', 'JavaTypes', 'GeneratorJava', function($scope, JavaTypes, generator) {
+export default ['$scope', 'JavaTypes', 'JavaTransformer', function($scope, JavaTypes, generator) {
     const ctrl = this;
 
     // Watchers definition.

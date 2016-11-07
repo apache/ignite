@@ -45,9 +45,10 @@ include ../../app/helpers/jade/mixins.jade
 
                         div(ng-show='ui.expanded')
                             include ../../app/modules/states/configuration/caches/concurrency.jade
+                            include ../../app/modules/states/configuration/caches/near-cache-client.jade
+                            include ../../app/modules/states/configuration/caches/near-cache-server.jade
                             include ../../app/modules/states/configuration/caches/node-filter.jade
                             include ../../app/modules/states/configuration/caches/rebalance.jade
-                            include ../../app/modules/states/configuration/caches/server-near-cache.jade
                             include ../../app/modules/states/configuration/caches/statistics.jade
 
                             +advanced-options-toggle-default

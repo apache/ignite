@@ -91,6 +91,7 @@
     <Compile Include="Discovery\Tcp\Multicast\Package-Info.cs" />
     <Compile Include="Discovery\Tcp\Package-Info.cs" />
     <Compile Include="Discovery\Tcp\Static\Package-Info.cs" />
+    <Compile Include="Impl\Binary\BinaryProcessor.cs" />
     <Compile Include="Impl\Binary\BinaryReflectiveSerializerInternal.cs" />
     <Compile Include="Impl\Binary\IBinarySerializerInternal.cs" />
     <Compile Include="Binary\Package-Info.cs" />
@@ -287,7 +288,6 @@
     <Compile Include="Impl\Cluster\ClusterGroupImpl.cs" />
     <Compile Include="Impl\Cluster\ClusterMetricsImpl.cs" />
     <Compile Include="Impl\Cluster\ClusterNodeImpl.cs" />
-    <Compile Include="Impl\Cluster\IClusterGroupEx.cs" />
     <Compile Include="Impl\Collections\CollectionExtensions.cs" />
     <Compile Include="Impl\Collections\MultiValueDictionary.cs" />
     <Compile Include="Impl\Collections\ReadOnlyCollection.cs" />
@@ -479,6 +479,7 @@
     <Compile Include="Transactions\Package-Info.cs" />
     <Compile Include="Transactions\TransactionConcurrency.cs" />
     <Compile Include="Transactions\TransactionConfiguration.cs" />
+    <Compile Include="Transactions\TransactionDeadlockException.cs" />
     <Compile Include="Transactions\TransactionHeuristicException.cs" />
     <Compile Include="Transactions\TransactionIsolation.cs" />
     <Compile Include="Transactions\TransactionOptimisticException.cs" />

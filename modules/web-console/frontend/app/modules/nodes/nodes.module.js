@@ -15,21 +15,13 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Cluster
-{
-    using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cluster;
+import angular from 'angular';
 
-    /// <summary>
-    /// Extended internal Ignite interface.
-    /// </summary>
-    internal interface IClusterGroupEx : IClusterGroup
-    {
-        /// <summary>
-        /// Gets protable metadata for type.
-        /// </summary>
-        /// <param name="typeId">Type ID.</param>
-        /// <returns>Metadata.</returns>
-        IBinaryType GetBinaryType(int typeId);
-    }
-}
+import './nodes-dialog.scss';
+
+import Nodes from './Nodes.service';
+import nodesDialogController from './nodes-dialog.controller';
+
+angular.module('ignite-console.nodes', [])
+    .service('IgniteNodes', Nodes)
+    .controller('nodesDialogController', nodesDialogController);

@@ -16,10 +16,80 @@
  */
 
 /**
- * Utility service for version.
+ * Utility service for version parsing and comparing
  */
-export default () => {
-    return {
-        ignite: '1.7.0'
-    };
-};
+const VERSION_MATCHER = /(\d+)\.(\d+)\.(\d+)([-.]([^0123456789][^-]+)(-SNAPSHOT)?)?(-(\d+))?(-([\da-f]+))?/i;
+
+const numberComparator = (a, b) => a > b ? 1 : a < b ? -1 : 0;
+
+export default class Version {
+    /**
+     * Tries to parse product version from it's string representation.
+     *
+     * @param {String} ver - String representation of version.
+     * @returns {{major: Number, minor: Number, maintenance: Number, stage: String, revTs: Number, revHash: String}} - Object that contains product version fields.
+     */
+    parse(ver) {
+        // Development or built from source ZIP.
+        ver = ver.replace(/(-DEV|-n\/a)$/i, '');
+
+        const [, major, minor, maintenance, stage, ...chunks] = ver.match(VERSION_MATCHER);
+
+        return {
+            major: parseInt(major, 10),
+            minor: parseInt(minor, 10),
+            maintenance: parseInt(maintenance, 10),
+            stage: (stage || '').substring(1),
+            revTs: chunks[2] ? parseInt(chunks[3], 10) : 0,
+            revHash: chunks[4] ? chunks[5] : null
+        };
+    }
+
+    /**
+     * Compare to version.
+     * @param a {String} first compared version.
+     * @param b {String} second compared version.
+     * @returns {Number} 1 if a > b, 0 if versions equals, -1 if a < b
+     */
+    compare(a, b) {
+        const pa = this.parse(a);
+        const pb = this.parse(b);
+
+        let res = numberComparator(pa.major, pb.major);
+
+        if (res !== 0)
+            return res;
+
+        res = numberComparator(pa.minor, pb.minor);
+
+        if (res !== 0)
+            return res;
+
+        res = numberComparator(pa.maintenance, pb.maintenance);
+
+        if (res !== 0)
+            return res;
+
+        return numberComparator(pa.revTs, pb.maintenance);
+    }
+
+    /**
+     * Return current product version.
+     * @returns {{ignite: string}}
+     */
+    productVersion() {
+        return {
+            ignite: '1.7.0'
+        };
+    }
+
+    /**
+     * Check if node version is newer or same
+     * @param {String} nodeVer
+     * @param {String} sinceVer
+     * @returns {Boolean}
+     */
+    since(nodeVer, sinceVer) {
+        return this.compare(nodeVer, sinceVer) >= 0;
+    }
+}

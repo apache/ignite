@@ -24,7 +24,8 @@ include ../../../../../app/helpers/jade/mixins.jade
         ignite-form-panel-chevron
         label Discovery
         ignite-form-field-tooltip.tipLabel
-            | TCP/IP discovery configuration
+            | TCP/IP discovery configuration#[br]
+            | #[a(href="https://apacheignite.readme.io/docs/cluster-config" target="_blank") More info]
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=form)
         .panel-body(ng-if='ui.isPanelLoaded("#{form}")')

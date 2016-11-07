@@ -15,7 +15,21 @@
  * limitations under the License.
  */
 
-// TODO IGNITE-2054: need move $generatorJava to services.
-export default ['GeneratorJava', () => {
-    return $generatorJava;
-}];
+package org.apache.ignite.cache.query;
+
+import org.apache.ignite.IgniteCheckedException;
+
+/**
+ * The exception is thrown if a query was cancelled or timed out while executing.
+ */
+public class QueryCancelledException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /**
+     * Default constructor.
+     */
+    public QueryCancelledException() {
+        super("The query was cancelled while executing.");
+    }
+}
