@@ -31,17 +31,20 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteJdbcDriver;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
@@ -60,11 +63,23 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
     private static final long RMV_DELAY = IgniteSystemProperties.getLong(
         IgniteSystemProperties.IGNITE_JDBC_DRIVER_CURSOR_REMOVE_DELAY, 600000);
 
+    /** How long to keep data streamers open. */
+    private static final long CLS_DELAY = IgniteSystemProperties.getLong(
+        IgniteSystemProperties.IGNITE_JDBC_DRIVER_STREAM_CLOSE_DELAY, 600000);
+
     /** Scheduler. */
     private static final ScheduledExecutorService SCHEDULER = Executors.newScheduledThreadPool(1);
 
     /** Open cursors. */
     private static final ConcurrentMap<UUID, Cursor> CURSORS = new ConcurrentHashMap<>();
+
+    /** Open streamers. */
+    private static final ConcurrentMap<UUID, IgniteDataStreamer<?, ?>> STREAMERS =
+        new ConcurrentHashMap<>();
+
+    /** Streamers' last usage time. */
+    private static final ConcurrentMap<UUID, Long> STREAM_USAGE_TIMES =
+        new ConcurrentHashMap<>();
 
     /** Ignite. */
     @IgniteInstanceResource
@@ -72,6 +87,9 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
 
     /** Uuid. */
     private final UUID uuid;
+
+    /** Uuid. */
+    private final UUID streamUuid;
 
     /** Cache name. */
     private final String cacheName;
@@ -109,13 +127,14 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
      * @param args Args.
      * @param fetchSize Fetch size.
      * @param uuid UUID.
+     * @param streamUuid UUID for DML streaming.
      * @param locQry Local query flag.
      * @param collocatedQry Collocated query flag.
      * @param distributedJoins Distributed joins flag.
      */
     public JdbcQueryTask(Ignite ignite, String cacheName, String sql,
                          Boolean isQry, boolean loc, Object[] args, int fetchSize, UUID uuid,
-                         Boolean locQry, boolean collocatedQry, boolean distributedJoins) {
+                         UUID streamUuid, Boolean locQry, boolean collocatedQry, boolean distributedJoins) {
         this.ignite = ignite;
         this.args = args;
         this.uuid = uuid;
@@ -124,6 +143,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
         this.isQry = isQry;
         this.fetchSize = fetchSize;
         this.loc = loc;
+        this.streamUuid = streamUuid;
         this.locQry = locQry;
         this.collocatedQry = collocatedQry;
         this.distributedJoins = distributedJoins;
@@ -155,6 +175,25 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
                     throw new SQLException("Cache not found [cacheName=" + cacheName + ']');
             }
 
+            IgniteDataStreamer<?, ?> streamer = null;
+
+            if (streamUuid != null) {
+                STREAM_USAGE_TIMES.put(streamUuid, U.currentTimeMillis());
+
+                streamer = STREAMERS.get(streamUuid);
+
+                if (streamer == null) {
+                    streamer = ignite.dataStreamer(cacheName);
+
+                    IgniteDataStreamer<?, ?> streamer0 = STREAMERS.putIfAbsent(streamUuid, streamer);
+
+                    if (streamer0 != null)
+                        streamer = streamer0;
+                    else
+                        scheduleStreamRemoval(streamUuid, CLS_DELAY);
+                }
+            }
+
             SqlFieldsQuery qry = (isQry != null ? new JdbcSqlFieldsQuery(sql, isQry) : new SqlFieldsQuery(sql))
                 .setArgs(args);
 
@@ -163,7 +202,25 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
             qry.setCollocated(collocatedQry);
             qry.setDistributedJoins(distributedJoins);
 
-            QueryCursorImpl<List<?>> qryCursor = (QueryCursorImpl<List<?>>)cache.query(qry);
+            QueryCursorImpl<List<?>> qryCursor;
+
+            if (streamer == null)
+                qryCursor = (QueryCursorImpl<List<?>>) cache.query(qry);
+            else {
+                IgniteKernal kernal = (IgniteKernal) ignite;
+
+                IgniteInternalCache internalCache = kernal.cachex(cacheName);
+
+                if (internalCache == null) {
+                    if (cacheName == null)
+                        throw new SQLException("Failed to execute query. No suitable caches found.");
+                    else
+                        throw new SQLException("Cache not found [cacheName=" + cacheName + ']');
+                }
+
+                qryCursor = (QueryCursorImpl<List<?>>) kernal.context().query()
+                    .streamQuery(internalCache.context(), streamer, qry);
+            }
 
             if (isQry == null)
                 isQry = qryCursor.isResultSet();
@@ -182,6 +239,8 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
 
             CURSORS.put(uuid, cursor = new Cursor(qryCursor, qryCursor.iterator()));
         }
+
+
 
         List<List<?>> rows = new ArrayList<>();
 
@@ -240,6 +299,45 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
                     }
                     else if (remove(uuid, c))
                         break;
+                }
+            }
+        }, delay, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Schedules removal of stored cursor in case of remote query execution.
+     *
+     * @param streamUuid Cursor UUID.
+     * @param delay Delay in milliseconds.
+     */
+    private void scheduleStreamRemoval(final UUID streamUuid, long delay) {
+        SCHEDULER.schedule(new CAX() {
+            @Override public void applyx() {
+                while (true) {
+                    IgniteDataStreamer s = STREAMERS.get(streamUuid);
+
+                    if (s == null)
+                        break;
+
+                    Long lastUsageTime = STREAM_USAGE_TIMES.get(streamUuid);
+
+                    assert lastUsageTime != null;
+
+                    // If the stream was accessed since last scheduling then reschedule.
+                    long untouchedTime = U.currentTimeMillis() - lastUsageTime;
+
+                    if (untouchedTime < CLS_DELAY) {
+                        scheduleStreamRemoval(streamUuid, CLS_DELAY - untouchedTime);
+
+                        break;
+                    }
+                    else if (STREAMERS.remove(streamUuid, s)) {
+                        s.close();
+
+                        STREAM_USAGE_TIMES.remove(streamUuid);
+
+                        break;
+                    }
                 }
             }
         }, delay, TimeUnit.MILLISECONDS);

@@ -59,10 +59,8 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
+
+import org.apache.ignite.*;
 import org.apache.ignite.binary.BinaryArrayIdentityResolver;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -159,6 +157,7 @@ import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.CommandInterface;
 import org.h2.command.Prepared;
+import org.h2.command.dml.Merge;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
 import org.h2.index.Index;
@@ -814,7 +813,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public GridQueryFieldsResult queryLocalSqlFields(@Nullable final String spaceName, final String qry,
-                                                               @Nullable final Collection<Object> params, final IndexingQueryFilter filters, boolean enforceJoinOrder)
+        @Nullable final Collection<Object> params, final IndexingQueryFilter filters, boolean enforceJoinOrder)
         throws IgniteCheckedException {
         Connection conn = connectionForSpace(spaceName);
 
@@ -860,6 +859,31 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
+    @Override public GridQueryFieldsResult streamQueryLocalSqlFields(@Nullable String spaceName, String qry,
+        @Nullable Collection<Object> params, IndexingQueryFilter filter, IgniteDataStreamer<?, ?> streamer,
+        boolean enforceJoinOrder) throws IgniteCheckedException {
+        assert streamer != null;
+
+        Connection conn = connectionForSpace(spaceName);
+
+        PreparedStatement stmt;
+
+        try {
+            stmt = prepareStatement(conn, qry, true);
+        }
+        catch (SQLException e) {
+            throw new IgniteSQLException(e);
+        }
+
+        IgniteBiTuple<Integer, Object[]> r = updateLocalSqlFields0(cacheContext(spaceName), stmt,
+            params != null ? params.toArray() : null, X.EMPTY_OBJECT_ARRAY, filter, streamer, enforceJoinOrder);
+
+        return new GridQueryFieldsResultAdapter(Collections.<GridQueryFieldMetadata>emptyList(),
+            new IgniteSingletonIterator(Collections.singletonList(r.get1())));
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     private GridQueryFieldsResult updateLocalSqlFields(final GridCacheContext cctx, final PreparedStatement stmt,
         final Object[] params, final IndexingQueryFilter filters, boolean enforceJoinOrder)
         throws IgniteCheckedException {
@@ -869,7 +893,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         for (int i = 0; i < DFLT_DML_RERUN_ATTEMPTS; i++) {
             IgniteBiTuple<Integer, Object[]> r = updateLocalSqlFields0(cctx, stmt, params, errKeys, filters,
-                enforceJoinOrder);
+                null, enforceJoinOrder);
 
             if (F.isEmpty(r.get2())) {
                 return new GridQueryFieldsResultAdapter(Collections.<GridQueryFieldMetadata>emptyList(),
@@ -893,20 +917,24 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param params Query params.
      * @param failedKeys Keys to restrict UPDATE and DELETE operations with. Null or empty array means no restriction.
      * @param filters Filters.
+     * @param streamer Data streamer.
      * @param enforceJoinOrder Enforce join order.
      * @return Pair [number of successfully processed items; keys that have failed to be processed]
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("ConstantConditions")
     private IgniteBiTuple<Integer, Object[]> updateLocalSqlFields0(final GridCacheContext cctx,
-                                                                   final PreparedStatement prepStmt, Object[] params, final Object[] failedKeys, final IndexingQueryFilter filters,
-                                                                   boolean enforceJoinOrder) throws IgniteCheckedException {
+        final PreparedStatement prepStmt, Object[] params, final Object[] failedKeys, final IndexingQueryFilter filters,
+        IgniteDataStreamer<?, ?> streamer, boolean enforceJoinOrder) throws IgniteCheckedException {
         Connection conn = connectionForSpace(cctx.name());
 
         initLocalQueryContext(conn, enforceJoinOrder, filters);
 
         try {
             Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement) prepStmt);
+
+            if (streamer != null && !(p instanceof Merge))
+                throw new IgniteSQLException("Data streamer works only with MERGE statements");
 
             GridSqlStatement stmt = new GridSqlQueryParser().parse(p);
 
@@ -938,7 +966,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 int res;
 
                 if (stmt instanceof GridSqlMerge)
-                    res = doMerge(cctx, (GridSqlMerge) stmt, cur);
+                    res = doMerge(cctx, (GridSqlMerge) stmt, streamer, cur);
                 else
                     res = doInsert(cctx, (GridSqlInsert) stmt, cur);
 
@@ -1233,12 +1261,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param cctx Cache context.
      * @param gridStmt Grid SQL statement.
      * @param cursor Cursor to take inserted data from.
+     *v
      * @return Number of items affected.
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
-    private int doMerge(GridCacheContext cctx, GridSqlMerge gridStmt, QueryCursorImpl<List<?>> cursor)
-        throws IgniteCheckedException {
+    private int doMerge(GridCacheContext cctx, GridSqlMerge gridStmt, IgniteDataStreamer streamer,
+        QueryCursorImpl<List<?>> cursor) throws IgniteCheckedException {
         // This check also protects us from attempts to update key or its fields directly -
         // when no key except cache key can be used, it will serve only for uniqueness checks,
         // not for updates, and hence will allow putting new pairs only.
@@ -1255,6 +1284,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean hasValProps = false;
 
         GridSqlTable tbl = gridTableForElement(gridStmt.into());
+
+        if (streamer != null && !F.eq(emptyIfNull(streamer.cacheName()), tbl.schema()))
+            throw createSqlException("Streamer's cache name does not match target table's schema",
+                    ErrorCode.INVALID_DATABASE_NAME_1);
 
         GridH2RowDescriptor desc = tbl.dataTable().rowDescriptor();
 
@@ -1300,18 +1333,43 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (singleRow) {
             IgniteBiTuple t = rowToKeyValue(cctx, desc.type(), keySupplier, valSupplier, keyColIdx, valColIdx, cols,
                 src.iterator().next().toArray());
-            cctx.cache().put(t.getKey(), t.getValue());
+
+            if (streamer == null)
+                cctx.cache().put(t.getKey(), t.getValue());
+            else
+                streamer.addData(t.getKey(), t.getValue());
+
             return 1;
         }
         else {
-            Map<Object, Object> rows = new LinkedHashMap<>();
-            for (List<?> row : src) {
-                IgniteBiTuple t = rowToKeyValue(cctx, desc.type(), keySupplier, valSupplier, keyColIdx, valColIdx, cols,
-                    row.toArray());
-                rows.put(t.getKey(), t.getValue());
+            if (streamer == null) {
+                Map<Object, Object> rows = new LinkedHashMap<>();
+
+                for (List<?> row : src) {
+                    IgniteBiTuple t = rowToKeyValue(cctx, desc.type(), keySupplier, valSupplier, keyColIdx, valColIdx,
+                        cols, row.toArray());
+
+                    rows.put(t.getKey(), t.getValue());
+                }
+
+                cctx.cache().putAll(rows);
+
+                return rows.size();
             }
-            cctx.cache().putAll(rows);
-            return rows.size();
+            else {
+                int cnt = 0;
+
+                for (List<?> row : src) {
+                    IgniteBiTuple t = rowToKeyValue(cctx, desc.type(), keySupplier, valSupplier, keyColIdx, valColIdx,
+                        cols, row.toArray());
+
+                    streamer.addData(t.getKey(), t.getValue());
+
+                    cnt++;
+                }
+
+                return cnt;
+            }
         }
     }
 
@@ -1827,7 +1885,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         int items = 0;
 
         for (int i = 0; i < DFLT_DML_RERUN_ATTEMPTS; i++) {
-            IgniteBiTuple<QueryCursorImpl<List<?>>, Object[]> r = queryTwoStep0(cctx, qry, errKeys);
+            IgniteBiTuple<QueryCursorImpl<List<?>>, Object[]> r = queryTwoStep0(cctx, qry, null, errKeys);
 
             if (F.isEmpty(r.get2())) {
                 if (items == 0)
@@ -1853,6 +1911,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             ErrorCode.CONCURRENT_UPDATE_1);
     }
 
+    /** {@inheritDoc} */
+    @Override public QueryCursor<List<?>> streamQueryTwoStep(GridCacheContext<?, ?> cctx,
+        IgniteDataStreamer<?, ?> streamer, SqlFieldsQuery qry) throws IgniteCheckedException {
+        assert streamer != null;
+
+        IgniteBiTuple<QueryCursorImpl<List<?>>, Object[]> r = queryTwoStep0(cctx, qry, streamer, X.EMPTY_OBJECT_ARRAY);
+
+        if (r.get1().isResultSet())
+            throw new IgniteSQLException("Unexpected result set in results of streamed MERGE");
+
+        int cnt = (Integer) r.get1().getAll().get(0).get(0);
+
+        return QueryCursorImpl.forUpdateResult(cnt);
+    }
+
     /**
      * Actually perform two-step query.
      *
@@ -1862,7 +1935,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Pair [Query results cursor; keys that have failed to be processed (for UPDATE and DELETE only)]
      */
     private IgniteBiTuple<QueryCursorImpl<List<?>>, Object[]> queryTwoStep0(GridCacheContext<?,?> cctx, SqlFieldsQuery qry,
-        Object[] failedKeys) throws IgniteCheckedException {
+        IgniteDataStreamer<?, ?> streamer, Object[] failedKeys) throws IgniteCheckedException {
         final String space = cctx.name();
         final String sqlQry = qry.getSql();
 
@@ -1994,6 +2067,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return new IgniteBiTuple<>(QueryCursorImpl.forUpdateResult(res), X.EMPTY_OBJECT_ARRAY);
         }
 
+        X.ensureX(twoStepQry.initialStatement() != null, "Source statement undefined");
+
+        if (streamer != null && !(twoStepQry.initialStatement() instanceof GridSqlMerge))
+            throw new IgniteSQLException("Data streamer works only with MERGE statements");
+
         if (log.isDebugEnabled())
             log.debug("Parsed query: `" + sqlQry + "` into two step query: " + twoStepQry);
 
@@ -2011,8 +2089,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             twoStepCache.putIfAbsent(cachedQryKey, cachedQry);
         }
 
-        X.ensureX(twoStepQry.initialStatement() != null, "Source statement undefined");
-
         IgniteBiTuple<Integer, Object[]> updateRes = null;
 
         if (twoStepQry.initialStatement() instanceof GridSqlDelete)
@@ -2022,12 +2098,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             updateRes = doUpdate(cctx, (GridSqlUpdate) twoStepQry.initialStatement(), cursor);
 
         if (twoStepQry.initialStatement() instanceof GridSqlMerge)
-            updateRes = new IgniteBiTuple<>(doMerge(cctx, (GridSqlMerge) twoStepQry.initialStatement(), cursor),
-                X.EMPTY_OBJECT_ARRAY);
+            updateRes = new IgniteBiTuple<>(doMerge(cctx, (GridSqlMerge) twoStepQry.initialStatement(), streamer,
+                cursor), X.EMPTY_OBJECT_ARRAY);
 
         if (twoStepQry.initialStatement() instanceof GridSqlInsert)
-            updateRes = new IgniteBiTuple<>(doInsert(cctx, (GridSqlInsert) twoStepQry.initialStatement(), cursor
-            ), X.EMPTY_OBJECT_ARRAY);
+            updateRes = new IgniteBiTuple<>(doInsert(cctx, (GridSqlInsert) twoStepQry.initialStatement(), cursor),
+                X.EMPTY_OBJECT_ARRAY);
 
         if (updateRes != null)
             return new IgniteBiTuple<>(QueryCursorImpl.forUpdateResult(updateRes.get1() - updateRes.get2().length),

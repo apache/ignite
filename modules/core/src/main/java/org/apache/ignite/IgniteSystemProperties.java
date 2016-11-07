@@ -398,6 +398,9 @@ public final class IgniteSystemProperties {
     /** JDBC driver cursor remove delay. */
     public static final String IGNITE_JDBC_DRIVER_CURSOR_REMOVE_DELAY = "IGNITE_JDBC_DRIVER_CURSOR_RMV_DELAY";
 
+    /** JDBC driver stream close delay. */
+    public static final String IGNITE_JDBC_DRIVER_STREAM_CLOSE_DELAY = "IGNITE_JDBC_DRIVER_STREAM_CLOSE_DELAY";
+
     /** Maximum number of nested listener calls before listener notification becomes asynchronous. */
     public static final String IGNITE_MAX_NESTED_LISTENER_CALLS = "IGNITE_MAX_NESTED_LISTENER_CALLS";
 
