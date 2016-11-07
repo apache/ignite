@@ -51,7 +51,7 @@ public class StripedExecutor {
         stripes = new Stripe[cnt];
 
         for (int i = 0; i < cnt; i++) {
-            Stripe stripe = new StripeConcurrentQueueNoPark();
+            Stripe stripe = new StripeConcurrentQueue();
 
             stripes[i] = stripe;
 
@@ -265,7 +265,7 @@ public class StripedExecutor {
         @Override Runnable take() throws InterruptedException {
             Runnable r;
 
-            for (int i = 0; i < 256; i++) {
+            for (int i = 0; i < 2048; i++) {
                 r = queue.poll();
 
                 if (r != null)
