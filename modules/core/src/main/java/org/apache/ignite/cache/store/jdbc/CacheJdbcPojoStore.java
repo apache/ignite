@@ -102,7 +102,8 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
             return prop.get(obj);
         }
         catch (Exception e) {
-            throw new CacheException("Failed to read object of class: " + typeName, e);
+            throw new CacheException("Failed to read object property [cache=" + U.maskName(cacheName) +
+                ", type=" + typeName + ", prop=" + fldName + "]", e);
         }
     }
 
@@ -262,7 +263,7 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
             return builder.build();
         }
         catch (SQLException e) {
-            throw new CacheException("Failed to read binary object", e);
+            throw new CacheException("Failed to read binary object: " + typeName, e);
         }
     }
 

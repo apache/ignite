@@ -374,7 +374,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         "crashed or left grid: " + CU.txString(tx));
                 }
             }
-            catch (IgniteTxOptimisticCheckedException ignore) {
+            catch (IgniteCheckedException ignore) {
                 if (log.isDebugEnabled())
                     log.debug("Optimistic failure while invalidating transaction (will rollback): " +
                         tx.xidVersion());
@@ -385,9 +385,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to rollback transaction: " + tx.xidVersion(), e);
                 }
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to invalidate transaction: " + tx, e);
             }
         }
         else if (state == MARKED_ROLLBACK) {

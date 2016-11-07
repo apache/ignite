@@ -95,7 +95,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private const int OpPrepareDotNet = 1;
 
         private delegate long CacheStoreCreateCallbackDelegate(void* target, long memPtr);
-        private delegate int CacheStoreInvokeCallbackDelegate(void* target, long objPtr, long memPtr, void* cb);
+        private delegate int CacheStoreInvokeCallbackDelegate(void* target, long objPtr, long memPtr);
         private delegate void CacheStoreDestroyCallbackDelegate(void* target, long objPtr);
         private delegate long CacheStoreSessionCreateCallbackDelegate(void* target, long storePtr);
 
@@ -152,7 +152,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void ServiceCancelCallbackDelegate(void* target, long svcPtr, long memPtr);
         private delegate void ServiceInvokeMethodCallbackDelegate(void* target, long svcPtr, long inMemPtr, long outMemPtr);
 
-        private delegate int СlusterNodeFilterApplyCallbackDelegate(void* target, long memPtr);
+        private delegate int ClusterNodeFilterApplyCallbackDelegate(void* target, long memPtr);
 
         private delegate void NodeInfoCallbackDelegate(void* target, long memPtr);
 
@@ -245,7 +245,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 serviceCancel = CreateFunctionPointer((ServiceCancelCallbackDelegate)ServiceCancel),
                 serviceInvokeMethod = CreateFunctionPointer((ServiceInvokeMethodCallbackDelegate)ServiceInvokeMethod),
 
-                clusterNodeFilterApply = CreateFunctionPointer((СlusterNodeFilterApplyCallbackDelegate)СlusterNodeFilterApply),
+                clusterNodeFilterApply = CreateFunctionPointer((ClusterNodeFilterApplyCallbackDelegate)ClusterNodeFilterApply),
                 
                 onStart = CreateFunctionPointer((OnStartCallbackDelegate)OnStart),
                 onStop = CreateFunctionPointer((OnStopCallbackDelegate)OnStop),
@@ -305,20 +305,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         }
 
         [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
-        private int CacheStoreInvoke(void* target, long objPtr, long memPtr, void* cb)
+        private int CacheStoreInvoke(void* target, long objPtr, long memPtr)
         {
             return SafeCall(() =>
             {
                 var t = _handleRegistry.Get<CacheStore>(objPtr, true);
 
-                IUnmanagedTarget cb0 = null;
-
-                if ((long) cb != 0)
-                    cb0 = new UnmanagedNonReleaseableTarget(_ctx, cb);
-
                 using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
-                    return t.Invoke(stream, cb0, _ignite);
+                    return t.Invoke(stream, _ignite);
                 }
             });
         }
@@ -993,7 +988,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private int СlusterNodeFilterApply(void* target, long memPtr)
+        private int ClusterNodeFilterApply(void* target, long memPtr)
         {
             return SafeCall(() =>
             {

@@ -326,6 +326,16 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
+     * Increment fails counter.
+     */
+    public void onUnhandledException() {
+        final boolean statsEnabled = cctx.config().isStatisticsEnabled();
+
+        if (statsEnabled)
+            metrics.incrementOnFails();
+    }
+
+    /**
      * Processes cache query request.
      *
      * @param sndId Sender node id.
@@ -690,7 +700,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         T2<String, List<Object>> resKey = null;
 
-        if (qry.clause() == null) {
+        if (qry.clause() == null && qry.type() != SPI) {
             assert !loc;
 
             throw new IgniteCheckedException("Received next page request after iterator was removed. " +
