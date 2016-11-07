@@ -679,6 +679,29 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     }
 
     /**
+     *
+     */
+    private void acquireRemapSemaphore() throws IgniteInterruptedCheckedException{
+        try {
+            if (remapSem.availablePermits() != REMAP_SEMAPHORE_PERMISSIONS_COUNT) {
+                // Wait until failed data being processed.
+                boolean res = remapSem.tryAcquire(REMAP_SEMAPHORE_PERMISSIONS_COUNT, timeout, TimeUnit.MILLISECONDS);
+
+                if (res)
+                    remapSem.release(REMAP_SEMAPHORE_PERMISSIONS_COUNT);
+                else
+                    throw new IgniteDataStreamerTimeoutException("Data streamer exceeded timeout " +
+                        "while was waiting for failed data resending finished.");
+            }
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new IgniteInterruptedCheckedException(e);
+        }
+    }
+
+    /**
      * @param entries Entries.
      * @param resFut Result future.
      * @param activeKeys Active keys.
@@ -696,16 +719,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             final boolean remap = remaps > 0;
 
             if (!remap) { // Failed data should be processed prior to new data.
-                try {
-                    if (remapSem.availablePermits() != REMAP_SEMAPHORE_PERMISSIONS_COUNT) {
-                        remapSem.acquire(REMAP_SEMAPHORE_PERMISSIONS_COUNT); // Wait until failed data being processed.
-
-                        remapSem.release(REMAP_SEMAPHORE_PERMISSIONS_COUNT);
-                    }
-                }
-                catch (InterruptedException e) {
-                    log.error("Failed to wait for failed data processing.", e);
-                }
+                acquireRemapSemaphore();
             }
 
             if (!isWarningPrinted) {
@@ -1417,16 +1431,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             List<DataStreamerEntry> entries0 = null;
             GridFutureAdapter<Object> curFut0 = null;
 
-            try {
-                if (remapSem.availablePermits() != REMAP_SEMAPHORE_PERMISSIONS_COUNT) {
-                    remapSem.acquire(REMAP_SEMAPHORE_PERMISSIONS_COUNT); // Wait until failed data being processed.
-
-                    remapSem.release(REMAP_SEMAPHORE_PERMISSIONS_COUNT);
-                }
-            }
-            catch (InterruptedException e) {
-                log.error("Failed to wait for failed data processing.", e);
-            }
+            acquireRemapSemaphore();
 
             synchronized (this) {
                 if (!entries.isEmpty()) {
