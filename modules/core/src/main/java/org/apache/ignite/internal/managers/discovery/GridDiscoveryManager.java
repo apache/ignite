@@ -727,20 +727,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
-     * @param topVer Topology version.
-     * @param nodes Nodes.
-     */
-    public void updateDiscoCache(AffinityTopologyVersion topVer, Collection<ClusterNode> nodes){
-        DiscoCache cache = new DiscoCache(locNode, F.view(nodes, F.remoteNodes(locNode.id())));
-
-        discoCacheHist.put(topVer, cache);
-
-        boolean set = updateTopologyVersionIfGreater(topVer, cache);
-
-        assert set;
-    }
-
-    /**
      * @param type Message type.
      * @param customMsg Custom message.
      * @return {@code True} if should not process message.

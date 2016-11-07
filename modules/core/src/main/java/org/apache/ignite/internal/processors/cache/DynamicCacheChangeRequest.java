@@ -84,9 +84,6 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** */
     private transient boolean exchangeNeeded;
 
-    /** Save exception if was while processing. */
-    private transient IgniteCheckedException exception;
-
     /** */
     private transient AffinityTopologyVersion cacheFutTopVer;
 
@@ -343,19 +340,5 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DynamicCacheChangeRequest.class, this, "cacheName", cacheName());
-    }
-
-    /**
-     * @return exception Exception if was while processing.
-     */
-    public IgniteCheckedException getException() {
-        return exception;
-    }
-
-    /**
-     * @param exception Exception.
-     */
-    public void setException(IgniteCheckedException exception) {
-        this.exception = exception;
     }
 }
