@@ -39,6 +39,7 @@
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.SwapSpace;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.SwapSpace;
@@ -305,25 +306,7 @@
                 writer.WriteBoolean(false);
 
             // Swap space
-            if (SwapSpaceSpi != null)
-            {
-                writer.WriteBoolean(true);
-
-                var fileSwap = SwapSpaceSpi as FileSwapSpaceSpi;
-
-                if (fileSwap != null)
-                {
-                    writer.WriteString(fileSwap.BaseDirectory);
-                    writer.WriteFloat(fileSwap.MaximumSparsity);
-                    writer.WriteInt(fileSwap.MaximumWriteQueueSize);
-                    writer.WriteInt(fileSwap.ReadStripesNumber);
-                    writer.WriteInt(fileSwap.WriteBufferSize);
-                }
-                else
-                    throw new InvalidOperationException("Unsupported swap space SPI: " + SwapSpaceSpi.GetType());
-            }
-            else
-                writer.WriteBoolean(false);
+            SwapSpaceSerializer.Write(writer, SwapSpaceSpi);
         }
 
         /// <summary>
@@ -411,17 +394,7 @@
             }
 
             // Swap
-            if (r.ReadBoolean())
-            {
-                SwapSpaceSpi = new FileSwapSpaceSpi
-                {
-                    BaseDirectory = r.ReadString(),
-                    MaximumSparsity = r.ReadFloat(),
-                    MaximumWriteQueueSize = r.ReadInt(),
-                    ReadStripesNumber = r.ReadInt(),
-                    WriteBufferSize = r.ReadInt()
-                };
-            }
+            SwapSpaceSpi = SwapSpaceSerializer.Read(r);
         }
 
         /// <summary>
