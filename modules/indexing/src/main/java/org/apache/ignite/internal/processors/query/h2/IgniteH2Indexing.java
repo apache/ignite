@@ -312,6 +312,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** */
     private GridSpinBusyLock busyLock;
 
+    private final static Set<Integer> WARNED_TYPES = Collections.newSetFromMap(new ConcurrentHashMap8<Integer, Boolean>());
+
     /** */
     private final ThreadLocal<ConnectionWrapper> connCache = new ThreadLocal<ConnectionWrapper>() {
         @Nullable @Override public ConnectionWrapper get() {
@@ -1526,7 +1528,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions", "ResultOfMethodCallIgnored"})
-    private static IgniteBiTuple<?, ?> rowToKeyValue(GridCacheContext cctx, GridQueryTypeDescriptor desc, Supplier keySupplier,
+    private IgniteBiTuple<?, ?> rowToKeyValue(GridCacheContext cctx, GridQueryTypeDescriptor desc, Supplier keySupplier,
         Supplier valSupplier, int keyColIdx, int valColIdx, GridSqlColumn[] cols, Object[] row)
         throws IgniteCheckedException {
 
@@ -1570,8 +1572,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param binObj Binary object.
      * @return Binary object with hash code set.
      */
-    private static BinaryObject updateHashCodeIfNeeded(GridCacheContext cctx, BinaryObject binObj) {
+    private BinaryObject updateHashCodeIfNeeded(GridCacheContext cctx, BinaryObject binObj) {
         if (U.isHashCodeEmpty(binObj)) {
+            if (WARNED_TYPES.add(binObj.type().typeId()))
+                U.warn(log, "Binary object's type does not have identity resolver explicitly set, therefore " +
+                    "BinaryArrayIdentityResolver is used to generate hash codes for its instances, and therefore " +
+                    "hash code of this binary object will most likely not match that of its non serialized form. " +
+                    "For finer control over identity of this type, please update your BinaryConfiguration accordingly." +
+                    " [typeId=" + binObj.type().typeId() + ", typeName=" + binObj.type().typeName() + ']');
+
             int hash = BinaryArrayIdentityResolver.instance().hashCode(binObj);
 
             // Empty hash code means no identity set for the type, therefore, we can safely set hash code
