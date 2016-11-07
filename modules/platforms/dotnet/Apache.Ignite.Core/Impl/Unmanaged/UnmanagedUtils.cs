@@ -402,6 +402,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
+        internal static IUnmanagedTarget ProcessorBinaryProcessor(IUnmanagedTarget target)
+        {
+            void* res = JNI.ProcessorBinaryProcessor(target.Context, target.Target);
+
+            return target.ChangeTarget(res);
+        }
+
         #endregion
 
         #region NATIVE METHODS: TARGET

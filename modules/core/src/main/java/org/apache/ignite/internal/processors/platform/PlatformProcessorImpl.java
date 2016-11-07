@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicLongImpl;
+import org.apache.ignite.internal.processors.platform.binary.PlatformBinaryProcessor;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtension;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinity;
@@ -500,6 +501,11 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
             default:
                 assert false;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget binaryProcessor() {
+        return new PlatformBinaryProcessor(platformCtx);
     }
 
     /**
