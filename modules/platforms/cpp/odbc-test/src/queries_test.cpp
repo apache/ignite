@@ -674,4 +674,115 @@ BOOST_AUTO_TEST_CASE(TestDataAtExecution)
     BOOST_CHECK(ret == SQL_NO_DATA);
 }
 
+BOOST_AUTO_TEST_CASE(TestNullFields)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+
+    SQLRETURN ret;
+
+    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5),
+        BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+
+    TestType inNull;
+
+    inNull.allNulls = true;
+
+    testCache.Put(1, in);
+    testCache.Put(2, inNull);
+    testCache.Put(3, in);
+
+    const size_t columnsCnt = 10;
+
+    SQLLEN columnLens[columnsCnt] = { 0 };
+
+    int8_t i8Column;
+    int16_t i16Column;
+    int32_t i32Column;
+    int64_t i64Column;
+    char strColumn[ODBC_BUFFER_SIZE];
+    float floatColumn;
+    double doubleColumn;
+    bool boolColumn;
+    SQL_DATE_STRUCT dateColumn;
+    SQL_TIMESTAMP_STRUCT timestampColumn;
+
+    // Binding columns.
+    ret = SQLBindCol(stmt, 1, SQL_C_STINYINT, &i8Column, 0, &columnLens[0]);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLBindCol(stmt, 2, SQL_C_SSHORT, &i16Column, 0, &columnLens[1]);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLBindCol(stmt, 3, SQL_C_SLONG, &i32Column, 0, &columnLens[2]);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLBindCol(stmt, 4, SQL_C_SBIGINT, &i64Column, 0, &columnLens[3]);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLBindCol(stmt, 5, SQL_C_CHAR, &strColumn, ODBC_BUFFER_SIZE, &columnLens[4]);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLBindCol(stmt, 6, SQL_C_FLOAT, &floatColumn, 0, &columnLens[5]);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLBindCol(stmt, 7, SQL_C_DOUBLE, &doubleColumn, 0, &columnLens[6]);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLBindCol(stmt, 8, SQL_C_BIT, &boolColumn, 0, &columnLens[7]);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLBindCol(stmt, 9, SQL_C_DATE, &dateColumn, 0, &columnLens[9]);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLBindCol(stmt, 10, SQL_C_TIMESTAMP, &timestampColumn, 0, &columnLens[10]);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    SQLCHAR request[] = "SELECT i8Field, i16Field, i32Field, i64Field, strField, "
+        "floatField, doubleField, boolField, dateField, timestampField FROM TestType ORDER BY _key";
+
+    ret = SQLExecDirect(stmt, request, SQL_NTS);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    // Fetching the first non-null row.
+    ret = SQLFetch(stmt);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    // Checking that columns are not null.
+    for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
+        BOOST_CHECK_NE(columnLens[i], SQL_NULL_DATA);
+
+    // Fetching null row.
+    ret = SQLFetch(stmt);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    // Checking that columns are null.
+    for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
+        BOOST_CHECK_EQUAL(columnLens[i], SQL_NULL_DATA);
+
+    // Fetching the last non-null row.
+    ret = SQLFetch(stmt);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    // Checking that columns are not null.
+    for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
+        BOOST_CHECK_NE(columnLens[i], SQL_NULL_DATA);
+
+    ret = SQLFetch(stmt);
+    BOOST_CHECK(ret == SQL_NO_DATA);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
