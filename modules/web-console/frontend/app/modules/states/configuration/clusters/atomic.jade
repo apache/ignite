@@ -25,7 +25,8 @@ include ../../../../../app/helpers/jade/mixins.jade
         label Atomic configuration
         ignite-form-field-tooltip.tipLabel
             | Configuration for atomic data structures#[br]
-            | Atomics are distributed across the cluster, essentially enabling performing atomic operations (such as increment-and-get or compare-and-set) with the same globally-visible value
+            | Atomics are distributed across the cluster, essentially enabling performing atomic operations (such as increment-and-get or compare-and-set) with the same globally-visible value#[br]
+            | #[a(href="https://apacheignite.readme.io/docs/atomic-types" target="_blank") More info]
         ignite-form-revert 
     .panel-collapse(role='tabpanel' bs-collapse-target='' id=form)
         .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
