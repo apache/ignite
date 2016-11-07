@@ -21,36 +21,53 @@ namespace Apache.Ignite.Core.Impl.SwapSpace
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.SwapSpace;
     using Apache.Ignite.Core.SwapSpace.File;
+    using Apache.Ignite.Core.SwapSpace.Noop;
 
     /// <summary>
     /// SwapSpace config serializer.
     /// </summary>
-    internal class SwapSpaceSerializer
+    internal static class SwapSpaceSerializer
     {
+        /// <summary>
+        /// SwapSpace type.
+        /// </summary>
+        private enum Type : byte
+        {
+            None,
+            File,
+            Noop
+        }
+
         /// <summary>
         /// Writes the configuration to writer.
         /// </summary>
         public static void Write(IBinaryRawWriter writer, ISwapSpaceSpi spi)
         {
-            if (spi != null)
+            var fileSwap = spi as FileSwapSpaceSpi;
+
+            if (spi == null)
             {
-                writer.WriteBoolean(true);
+                writer.WriteByte((byte) Type.None);
+            }
+            else if (fileSwap != null)
+            {
+                writer.WriteByte((byte) Type.File);
 
-                var fileSwap = spi as FileSwapSpaceSpi;
+                writer.WriteString(fileSwap.BaseDirectory);
+                writer.WriteFloat(fileSwap.MaximumSparsity);
+                writer.WriteInt(fileSwap.MaximumWriteQueueSize);
+                writer.WriteInt(fileSwap.ReadStripesNumber);
+                writer.WriteInt(fileSwap.WriteBufferSize);
 
-                if (fileSwap != null)
-                {
-                    writer.WriteString(fileSwap.BaseDirectory);
-                    writer.WriteFloat(fileSwap.MaximumSparsity);
-                    writer.WriteInt(fileSwap.MaximumWriteQueueSize);
-                    writer.WriteInt(fileSwap.ReadStripesNumber);
-                    writer.WriteInt(fileSwap.WriteBufferSize);
-                }
-                else
-                    throw new InvalidOperationException("Unsupported swap space SPI: " + spi.GetType());
+            }
+            else if (spi is NoopSwapSpaceSpi)
+            {
+                writer.WriteByte((byte) Type.Noop);
             }
             else
-                writer.WriteBoolean(false);
+            {
+                throw new InvalidOperationException("Unsupported swap space SPI: " + spi.GetType());
+            }
         }
 
         /// <summary>
@@ -58,19 +75,29 @@ namespace Apache.Ignite.Core.Impl.SwapSpace
         /// </summary>
         public static ISwapSpaceSpi Read(IBinaryRawReader reader)
         {
-            if (reader.ReadBoolean())
-            {
-                return new FileSwapSpaceSpi
-                {
-                    BaseDirectory = reader.ReadString(),
-                    MaximumSparsity = reader.ReadFloat(),
-                    MaximumWriteQueueSize = reader.ReadInt(),
-                    ReadStripesNumber = reader.ReadInt(),
-                    WriteBufferSize = reader.ReadInt()
-                };
-            }
+            var type = (Type)reader.ReadByte();
 
-            return null;
+            switch (type)
+            {
+                case Type.None:
+                    return null;
+
+                case Type.File:
+                    return new FileSwapSpaceSpi
+                    {
+                        BaseDirectory = reader.ReadString(),
+                        MaximumSparsity = reader.ReadFloat(),
+                        MaximumWriteQueueSize = reader.ReadInt(),
+                        ReadStripesNumber = reader.ReadInt(),
+                        WriteBufferSize = reader.ReadInt()
+                    };
+
+                case Type.Noop:
+                    return new NoopSwapSpaceSpi();
+
+                default:
+                    throw new ArgumentOutOfRangeException("Invalid Swap Space SPI type: " + type);
+            }
         }
     }
 }
