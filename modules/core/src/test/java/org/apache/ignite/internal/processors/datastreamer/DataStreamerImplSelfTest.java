@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -105,7 +106,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
             try {
                 dataLdr.close(true);
             }
-            catch (IllegalStateException ignore) {
+            catch (CacheException | IllegalStateException ignore) {
                 // This is ok to ignore this exception as test is racy by it's nature -
                 // grid is stopping in different thread.
             }
