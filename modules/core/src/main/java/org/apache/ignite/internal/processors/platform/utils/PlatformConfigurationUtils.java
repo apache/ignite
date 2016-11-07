@@ -72,6 +72,15 @@ import java.util.Map;
  */
 @SuppressWarnings("unchecked")
 public class PlatformConfigurationUtils {
+    /** */
+    private static final byte SWAP_TYP_NONE = 0;
+
+    /** */
+    private static final byte SWAP_TYP_FILE = 1;
+
+    /** */
+    private static final byte SWAP_TYP_NOOP = 2;
+
     /**
      * Write .Net configuration to the stream.
      *
@@ -537,7 +546,7 @@ public class PlatformConfigurationUtils {
         byte swapType = in.readByte();
 
         switch (swapType) {
-            case 1: {
+            case SWAP_TYP_FILE: {
                 FileSwapSpaceSpi swap = new FileSwapSpaceSpi();
 
                 swap.setBaseDirectory(in.readString());
@@ -551,14 +560,14 @@ public class PlatformConfigurationUtils {
                 break;
             }
 
-            case 2: {
+            case SWAP_TYP_NOOP: {
                 cfg.setSwapSpaceSpi(new NoopSwapSpaceSpi());
 
                 break;
             }
 
             default:
-                assert swapType == 0;
+                assert swapType == SWAP_TYP_NONE;
         }
     }
 
@@ -951,7 +960,7 @@ public class PlatformConfigurationUtils {
         SwapSpaceSpi swap = cfg.getSwapSpaceSpi();
 
         if (swap instanceof FileSwapSpaceSpiMBean) {
-            w.writeBoolean(true);
+            w.writeByte(SWAP_TYP_FILE);
 
             FileSwapSpaceSpiMBean fileSwap = (FileSwapSpaceSpiMBean)swap;
 
@@ -961,8 +970,12 @@ public class PlatformConfigurationUtils {
             w.writeInt(fileSwap.getReadStripesNumber());
             w.writeInt(fileSwap.getWriteBufferSize());
         }
-        else
-            w.writeBoolean(false);
+        else if (swap instanceof NoopSwapSpaceSpi) {
+            w.writeByte(SWAP_TYP_NOOP);
+        }
+        else {
+            w.writeByte(SWAP_TYP_NONE);
+        }
 
         w.writeString(cfg.getIgniteHome());
 
