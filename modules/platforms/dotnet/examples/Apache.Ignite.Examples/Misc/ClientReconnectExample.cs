@@ -61,19 +61,15 @@ namespace Apache.Ignite.Examples.Misc
 
                 var cache = ignite.GetCache<int, string>(CacheName);
 
-                Random rand = new Random();
-
                 for (var i = 0; i < 10; i++)
                 {
                     try
                     {
-                        int key = rand.Next(10000);
-
-                        cache.Put(key, "val" + key);
-
+                        cache.Put(i, "val" + i);
+                        
                         Thread.Sleep(500);
 
-                        Console.WriteLine(">>> Put value with key:" + key);
+                        Console.WriteLine(">>> Put value with key:" + i);
                     }
                     catch (CacheException e)
                     {
