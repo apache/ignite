@@ -580,11 +580,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.io().addMessageListener(GridTopic.TOPIC_ACTIVATE, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg) {
-                if (msg instanceof ActivationMessageResponse && activateFut != null)
-                    if (activateFut.onResponse((ActivationMessageResponse)msg)){
-                        if (activateFut.isDone())
-                            activateFut = null;
-                    }
+                if (msg instanceof ActivationMessageResponse && activateFut != null) {
+                    activateFut.onResponse((ActivationMessageResponse)msg);
+
+                    if (activateFut.isDone())
+                        activateFut = null;
+                }
             }
         });
 
@@ -2546,7 +2547,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param nearCfg Near config.
      * @param failIfExists Fail if exists.
      */
-    public DynamicCacheChangeRequest createCacheChangeRequest(
+    private DynamicCacheChangeRequest createCacheChangeRequest(
         @Nullable CacheConfiguration ccfg,
         String cacheName,
         @Nullable NearCacheConfiguration nearCfg,
@@ -4097,6 +4098,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         /** Logger. */
         private IgniteLogger log;
 
+        /** Default time out. */
+        private int timeOut = 5_000;
+
         /**
          * @param ctx Context.
          */
@@ -4115,7 +4119,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         /**
          * @param msg Message.
          */
-        public boolean onResponse(ActivationMessageResponse msg) {
+        public void onResponse(ActivationMessageResponse msg) {
             assert !F.isEmpty(nodes);
 
             resps.put(msg.getNodeId(), msg);
@@ -4143,16 +4147,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         onDone(err);
 
-                        return true;
+                        break;
                     }
                 }
 
                 onDone();
-
-                return true;
             }
+        }
 
-            return false;
+        /** {@inheritDoc} */
+        @Override public Object get() throws IgniteCheckedException {
+            return get(timeOut);
         }
     }
 }
