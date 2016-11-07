@@ -47,7 +47,8 @@ namespace Apache.Ignite.Examples.Misc
             Console.WriteLine();
             Console.WriteLine(">>> Client reconnect example started.");
 
-            ThreadPool.QueueUserWorkItem(_ => RunServer());
+            var evt = new ManualResetEvent(false);
+            ThreadPool.QueueUserWorkItem(_ => RunServer(evt));
 
             Ignition.ClientMode = true;
 
@@ -98,6 +99,9 @@ namespace Apache.Ignite.Examples.Misc
 
                 }
 
+                // Stop the server node.
+                evt.Set();
+
                 Console.WriteLine();
                 Console.WriteLine(">>> Example finished, press any key to exit ...");
                 Console.ReadKey();
@@ -107,7 +111,8 @@ namespace Apache.Ignite.Examples.Misc
         /// <summary>
         /// Runs the server node.
         /// </summary>
-        private static void RunServer()
+        /// <param name="evt"></param>
+        private static void RunServer(WaitHandle evt)
         {
             var cfg = new IgniteConfiguration
             {
@@ -139,12 +144,7 @@ namespace Apache.Ignite.Examples.Misc
 
                 // Wait some time while client node performs cache operations.
                 Thread.Sleep(2000);
-
-                // Stop the server to cause client node disconnect.
-                Console.WriteLine(">>> Stopping server node...");
             }
-
-            Console.WriteLine(">>> Server node stopped.");
 
             // Wait for client to detect the disconnect.
             Thread.Sleep(5000);
@@ -154,9 +154,7 @@ namespace Apache.Ignite.Examples.Misc
             // Start the server again.
             using (Ignition.Start(cfg))
             {
-                Console.WriteLine(">>> Server node restarted.");
-
-                Thread.Sleep(Timeout.Infinite);
+                evt.WaitOne();
             }
         }
     }
