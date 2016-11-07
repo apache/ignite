@@ -473,8 +473,11 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
         if (curDelegate == null && !F.isEmpty(igniteCliCfgPath)) {
             HadoopIgfsEx hadoop = null;
 
+            boolean prevCliMode = Ignition.isClientMode();
+
             try {
                 Ignite ignite0;
+
                 boolean cliStarted0 = false;
 
                 try {
@@ -484,20 +487,17 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
 
                     cliStarted0 = true;
                 } catch (IgniteException e) {
-                    if (e.getMessage().contains("Ignite instance with this name has already been started")) {
-                        IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> cfg =
-                            IgnitionEx.loadConfiguration(igniteCliCfgPath);
+                    IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> cfg =
+                        IgnitionEx.loadConfiguration(igniteCliCfgPath);
 
-                        // Try to get ignite instance if it is already started
-                        ignite0 = Ignition.ignite(cfg.get1().getGridName());
-                    }
-                    else if (e.getMessage().contains("Default Ignite instance has already been started"))
-                        ignite0 = Ignition.ignite();
-                    else
+                    // Try to get ignite instance if it is already started
+                    ignite0 = Ignition.ignite(cfg.get1().getGridName());
+
+                    if (ignite0 == null)
                         throw e;
                 }
                 finally {
-                    Ignition.setClientMode(false);
+                    Ignition.setClientMode(prevCliMode);
                 }
 
                 final Ignite ignite = ignite0;
