@@ -40,11 +40,11 @@ public class IgfsClientExistsCallable extends IgfsClientAbstractCallable<Boolean
      * Constructor.
      *
      * @param igfsName IGFS name.
-     * @param userName IGFS user name.
+     * @param user IGFS user name.
      * @param path Path.
      */
-    public IgfsClientExistsCallable(@Nullable String igfsName, @Nullable String userName, IgfsPath path) {
-        super(igfsName, userName, path);
+    public IgfsClientExistsCallable(@Nullable String igfsName, @Nullable String user, IgfsPath path) {
+        super(igfsName, user, path);
     }
 
     /** {@inheritDoc} */

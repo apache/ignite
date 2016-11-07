@@ -43,11 +43,11 @@ public class IgfsClientMetaInfoForPathCallable extends IgfsClientAbstractCallabl
      * Constructor.
      *
      * @param igfsName IGFS name.
-     * @param userName IGFS user name.
+     * @param user IGFS user name.
      * @param path Path.
      */
-    public IgfsClientMetaInfoForPathCallable(@Nullable String igfsName, @Nullable String userName, IgfsPath path) {
-        super(igfsName, userName, path);
+    public IgfsClientMetaInfoForPathCallable(@Nullable String igfsName, @Nullable String user, IgfsPath path) {
+        super(igfsName, user, path);
     }
 
     /** {@inheritDoc} */

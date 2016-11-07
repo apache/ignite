@@ -50,7 +50,7 @@ public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>
     protected IgfsPath path;
 
     /** User name. */
-    protected String userName;
+    protected String user;
 
     /** Injected instance. */
     @SuppressWarnings("UnusedDeclaration")
@@ -68,13 +68,13 @@ public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>
      * Constructor.
      *
      * @param igfsName IGFS name.
-     * @param userName IGFS user name.
+     * @param user IGFS user name.
      * @param path Path.
      */
-    protected IgfsClientAbstractCallable(@Nullable String igfsName, @Nullable String userName, @Nullable IgfsPath path) {
+    protected IgfsClientAbstractCallable(@Nullable String igfsName, @Nullable String user, @Nullable IgfsPath path) {
         this.igfsName = igfsName;
         this.path = path;
-        this.userName = userName;
+        this.user = user;
     }
 
     /** {@inheritDoc} */
@@ -83,10 +83,10 @@ public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>
 
         final IgfsEx igfs = (IgfsEx)ignite.fileSystem(igfsName);
 
-        if (userName != null) {
+        if (user != null) {
             final GridTuple<Exception> ex = F.t(null);
 
-            T res = IgfsUserContext.doAs(userName, new IgniteOutClosure<T>() {
+            T res = IgfsUserContext.doAs(user, new IgniteOutClosure<T>() {
                 @Override public T apply() {
                     try {
                         return call0(igfs.context());
@@ -120,7 +120,7 @@ public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>
         BinaryRawWriter rawWriter = writer.rawWriter();
 
         rawWriter.writeString(igfsName);
-        rawWriter.writeString(userName);
+        rawWriter.writeString(user);
         IgfsUtils.writePath(rawWriter, path);
 
         writeBinary0(rawWriter);
@@ -131,7 +131,7 @@ public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>
         BinaryRawReader rawReader = reader.rawReader();
 
         igfsName = rawReader.readString();
-        userName = rawReader.readString();
+        user = rawReader.readString();
         path = IgfsUtils.readPath(rawReader);
 
         readBinary0(rawReader);

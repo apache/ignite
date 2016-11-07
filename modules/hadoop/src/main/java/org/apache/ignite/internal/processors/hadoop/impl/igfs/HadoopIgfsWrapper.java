@@ -560,7 +560,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
                 errMsg.a("[type=TCP, host=" + endpoint.host() + ", port=" + endpoint.port() + ", err=" + errTcp + "]] ");
 
             if (errClient != null)
-                errMsg.a("[type=IgniteClient, cfg=" + igniteCliCfgPath + ", err=" + errClient + "]] ");
+                errMsg.a("[type=CLIENT, cfg=" + igniteCliCfgPath + ", err=" + errClient + "]] ");
 
             errMsg.a("(ensure that IGFS is running and have IPC endpoint enabled; ensure that " +
                 "ignite-shmem-1.0.0.jar is in Hadoop classpath if you use shared memory endpoint).");

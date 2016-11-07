@@ -47,13 +47,13 @@ public class IgfsClientRenameCallable extends IgfsClientAbstractCallable<Void> {
      * Constructor.
      *
      * @param igfsName IGFS name.
-     * @param userName IGFS user name.
+     * @param user IGFS user name.
      * @param srcPath Source path.
      * @param destPath Destination path.
      */
-    public IgfsClientRenameCallable(@Nullable String igfsName, @Nullable String userName,
+    public IgfsClientRenameCallable(@Nullable String igfsName, @Nullable String user,
         IgfsPath srcPath, IgfsPath destPath) {
-        super(igfsName, userName, srcPath);
+        super(igfsName, user, srcPath);
 
         this.destPath = destPath;
     }

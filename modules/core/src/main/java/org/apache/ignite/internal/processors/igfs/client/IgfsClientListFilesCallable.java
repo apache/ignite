@@ -43,11 +43,11 @@ public class IgfsClientListFilesCallable extends IgfsClientAbstractCallable<Coll
      * Constructor.
      *
      * @param igfsName IGFS name.
-     * @param userName IGFS user name.
+     * @param user IGFS user name.
      * @param path Path.
      */
-    public IgfsClientListFilesCallable(@Nullable String igfsName, @Nullable String userName, IgfsPath path) {
-        super(igfsName, userName, path);
+    public IgfsClientListFilesCallable(@Nullable String igfsName, @Nullable String user, IgfsPath path) {
+        super(igfsName, user, path);
     }
 
     /** {@inheritDoc} */
