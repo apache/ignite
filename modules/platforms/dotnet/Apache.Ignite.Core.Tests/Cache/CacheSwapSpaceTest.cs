@@ -83,12 +83,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             using (var ignite = Ignition.Start(cfg))
             {
                 Assert.IsInstanceOf<NoopSwapSpaceSpi>(ignite.GetConfiguration().SwapSpaceSpi);
-
-                var cache = ignite.CreateCache<int, int>(new CacheConfiguration {EnableSwap = true});
-
-                cache[1] = 1;
-
-                Assert.AreEqual(1, cache[1]);
             }
         }
 
