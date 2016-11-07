@@ -1,6 +1,11 @@
-﻿Microsoft Visual Studio Solution File, Format Version 11.00
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ignite-examples", "ignite-examples.vcxproj", "{34935DEC-80FC-4168-AA52-3DBFF4F79B6B}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "putget-example", "..\..\putget-example\project\vs\putget-example.vcxproj", "{34935DEC-80FC-4168-AA52-3DBFF4F79B6B}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "odbc-example", "..\..\odbc-example\project\vs\odbc-example.vcxproj", "{56839DFF-6C03-416B-BC5F-DDC6EBF8512D}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "query-example", "..\..\query-example\project\vs\query-example.vcxproj", "{9FB34AB4-01DD-4C6F-99BF-681019D0E4DD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -12,6 +17,14 @@ Global
 		{34935DEC-80FC-4168-AA52-3DBFF4F79B6B}.Release|x64.Build.0 = Release|x64
 		{34935DEC-80FC-4168-AA52-3DBFF4F79B6B}.Release|x86.ActiveCfg = Release|Win32
 		{34935DEC-80FC-4168-AA52-3DBFF4F79B6B}.Release|x86.Build.0 = Release|Win32
+		{56839DFF-6C03-416B-BC5F-DDC6EBF8512D}.Release|x64.ActiveCfg = Release|x64
+		{56839DFF-6C03-416B-BC5F-DDC6EBF8512D}.Release|x64.Build.0 = Release|x64
+		{56839DFF-6C03-416B-BC5F-DDC6EBF8512D}.Release|x86.ActiveCfg = Release|Win32
+		{56839DFF-6C03-416B-BC5F-DDC6EBF8512D}.Release|x86.Build.0 = Release|Win32
+		{9FB34AB4-01DD-4C6F-99BF-681019D0E4DD}.Release|x64.ActiveCfg = Release|x64
+		{9FB34AB4-01DD-4C6F-99BF-681019D0E4DD}.Release|x64.Build.0 = Release|x64
+		{9FB34AB4-01DD-4C6F-99BF-681019D0E4DD}.Release|x86.ActiveCfg = Release|Win32
+		{9FB34AB4-01DD-4C6F-99BF-681019D0E4DD}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

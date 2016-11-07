@@ -183,4 +183,97 @@ BOOST_AUTO_TEST_CASE(TestSharedPointer)
     delete target;    
 }
 
+struct SharedPointerTargetFromThis : public EnableSharedFromThis<SharedPointerTargetFromThis>
+{
+    bool& deleted;
+
+    SharedPointerTargetFromThis(bool& deleted) : deleted(deleted)
+    {
+        deleted = false;
+    }
+};
+
+void DeleteSharedPointerTarget(SharedPointerTargetFromThis* ptr)
+{
+    ptr->deleted = true;
+    delete ptr;
+}
+
+BOOST_AUTO_TEST_CASE(TestEnableSharedFromThis)
+{
+    typedef SharedPointerTargetFromThis TestT;
+
+    bool deleted;
+
+    // 1. Test the simple scenario.
+    TestT* target = new TestT(deleted);
+    BOOST_CHECK(!deleted);
+
+    SharedPointer<TestT>* ptr1 = new SharedPointer<TestT>(target, DeleteSharedPointerTarget);
+    BOOST_CHECK(!deleted);
+
+    delete ptr1;
+    BOOST_CHECK(deleted);
+
+    // 2. Test copy ctor.
+    target = new TestT(deleted);
+    BOOST_CHECK(!deleted);
+
+    ptr1 = new SharedPointer<TestT>(target, DeleteSharedPointerTarget);
+    BOOST_CHECK(!deleted);
+
+    SharedPointer<TestT>* ptr2 = new SharedPointer<TestT>(*ptr1);
+    BOOST_CHECK(!deleted);
+
+    delete ptr1;
+    BOOST_CHECK(!deleted);
+
+    delete ptr2;
+    BOOST_CHECK(deleted);
+
+    // 3. Test assignment logic.
+    target = new TestT(deleted);
+    BOOST_CHECK(!deleted);
+
+    ptr1 = new SharedPointer<TestT>(target, DeleteSharedPointerTarget);
+    BOOST_CHECK(!deleted);
+
+    SharedPointer<TestT> ptr3 = *ptr1;
+    BOOST_CHECK(!deleted);
+
+    delete ptr1;
+    BOOST_CHECK(!deleted);
+
+    ptr3 = SharedPointer<TestT>();
+    BOOST_CHECK(deleted);
+
+    // 4. Test self-assignment.
+    target = new TestT(deleted);
+    BOOST_CHECK(!deleted);
+
+    ptr1 = new SharedPointer<TestT>(target, DeleteSharedPointerTarget);
+
+    *ptr1 = *ptr1;
+
+    delete ptr1;
+
+    BOOST_CHECK(deleted);
+
+    // 5. Test shared from this
+    target = new TestT(deleted);
+    BOOST_CHECK(!deleted);
+
+    ptr1 = new SharedPointer<TestT>(target, DeleteSharedPointerTarget);
+    BOOST_CHECK(!deleted);
+
+    ptr3 = target->SharedFromThis();
+    BOOST_CHECK(!deleted);
+
+    delete ptr1;
+    BOOST_CHECK(!deleted);
+
+    ptr3 = SharedPointer<TestT>();
+    BOOST_CHECK(deleted);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

@@ -33,6 +33,7 @@ import org.apache.ignite.examples.datastructures.IgniteAtomicSequenceExample;
 import org.apache.ignite.examples.datastructures.IgniteAtomicStampedExample;
 import org.apache.ignite.examples.datastructures.IgniteCountDownLatchExample;
 import org.apache.ignite.examples.datastructures.IgniteQueueExample;
+import org.apache.ignite.examples.datastructures.IgniteLockExample;
 import org.apache.ignite.examples.datastructures.IgniteSemaphoreExample;
 import org.apache.ignite.examples.datastructures.IgniteSetExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
@@ -95,6 +96,13 @@ public class CacheExamplesSelfTest extends GridAbstractExamplesTest {
      */
     public void testCacheSemaphoreExample() throws Exception {
         IgniteSemaphoreExample.main(EMPTY_ARGS);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheLockExample() throws Exception {
+        IgniteLockExample.main(EMPTY_ARGS);
     }
 
     /**

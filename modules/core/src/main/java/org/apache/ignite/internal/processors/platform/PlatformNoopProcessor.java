@@ -45,7 +45,9 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public PlatformContext context() {
-        return null;
+        throw new IgniteException("Platforms are not available [nodeId=" + ctx.grid().localNode().id() + "] " +
+            "(Use Apache.Ignite.Core.Ignition.Start() or Apache.Ignite.exe to start Ignite.NET nodes; " +
+            "ignite::Ignition::Start() or ignite.exe to start Ignite C++ nodes).");
     }
 
     /** {@inheritDoc} */
@@ -150,6 +152,11 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
+    @Override public void getCacheNames(long memPtr) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public PlatformTarget atomicSequence(String name, long initVal, boolean create) throws IgniteException {
         return null;
     }
@@ -157,5 +164,25 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     /** {@inheritDoc} */
     @Override public PlatformTarget atomicReference(String name, long memPtr, boolean create) throws IgniteException {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget createNearCache(@Nullable String cacheName, long memPtr) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget getOrCreateNearCache(@Nullable String cacheName, long memPtr) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean loggerIsLevelEnabled(int level) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void loggerLog(int level, String message, String category, String errorInfo) {
+        // No-op.
     }
 }

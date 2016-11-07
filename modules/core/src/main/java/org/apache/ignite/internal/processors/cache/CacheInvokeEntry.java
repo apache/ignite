@@ -40,44 +40,53 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
     /** Entry version. */
     private GridCacheVersion ver;
 
+    /** Cache entry instance. */
+    private GridCacheEntryEx entry;
+
     /**
-     * @param cctx Cache context.
+     * Constructor.
+     *
      * @param keyObj Key cache object.
      * @param valObj Cache object value.
      * @param ver Entry version.
+     * @param keepBinary Keep binary flag.
+     * @param entry Original entry.
      */
-    public CacheInvokeEntry(GridCacheContext cctx,
-        KeyCacheObject keyObj,
+    public CacheInvokeEntry(KeyCacheObject keyObj,
         @Nullable CacheObject valObj,
         GridCacheVersion ver,
-        boolean keepBinary
+        boolean keepBinary,
+        GridCacheEntryEx entry
     ) {
-        super(cctx, keyObj, valObj, keepBinary);
+        super(entry.context(), keyObj, valObj, keepBinary);
 
         this.hadVal = valObj != null;
         this.ver = ver;
+        this.entry = entry;
     }
 
     /**
-     * @param ctx Cache context.
      * @param keyObj Key cache object.
      * @param key Key value.
      * @param valObj Value cache object.
      * @param val Value.
      * @param ver Entry version.
+     * @param keepBinary Keep binary flag.
+     * @param entry Grid cache entry.
      */
-    public CacheInvokeEntry(GridCacheContext<K, V> ctx,
-        KeyCacheObject keyObj,
+    public CacheInvokeEntry(KeyCacheObject keyObj,
         @Nullable K key,
         @Nullable CacheObject valObj,
         @Nullable V val,
         GridCacheVersion ver,
-        boolean keepBinary
+        boolean keepBinary,
+        GridCacheEntryEx entry
     ) {
-        super(ctx, keyObj, key, valObj, val, keepBinary);
+        super(entry.context(), keyObj, key, valObj, val, keepBinary);
 
         this.hadVal = valObj != null || val != null;
         this.ver = ver;
+        this.entry = entry;
     }
 
     /** {@inheritDoc} */
@@ -122,11 +131,23 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
         return op != Operation.NONE;
     }
 
+    /**
+     * @return Cache entry instance.
+     */
+    public GridCacheEntryEx entry() {
+        return entry;
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> cls) {
         if (cls.isAssignableFrom(CacheEntry.class) && ver != null)
             return (T)new CacheEntryImplEx<>(getKey(), getValue(), ver);
+
+        final T res = cctx.plugin().unwrapCacheEntry(this, cls);
+
+        if (res != null)
+            return res;
 
         return super.unwrap(cls);
     }

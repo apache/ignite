@@ -154,6 +154,7 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public Guid? RemoteListen<T>(int bufSize = 1, TimeSpan? interval = null, bool autoUnsubscribe = true,
             IEventFilter<T> localListener = null, IEventFilter<T> remoteFilter = null, params int[] types)
             where T : IEvent
@@ -187,6 +188,7 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public Guid? RemoteListen<T>(int bufSize = 1, TimeSpan? interval = null, bool autoUnsubscribe = true,
             IEventFilter<T> localListener = null, IEventFilter<T> remoteFilter = null, IEnumerable<int> types = null)
             where T : IEvent
@@ -195,6 +197,7 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public void StopRemoteListen(Guid opId)
         {
             DoOutOp((int) Op.StopRemoteListen, writer =>

@@ -21,16 +21,26 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  *
@@ -94,21 +104,36 @@ public class IgniteCachePrimarySyncTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPutGet() throws Exception {
-        checkPutGet(ignite(SRVS).cache("cache1"));
+        Ignite ignite = ignite(SRVS);
 
-        checkPutGet(ignite(SRVS).cache("cache2"));
+        checkPutGet(ignite.cache("cache1"), null, null, null);
+
+        checkPutGet(ignite.cache("cache2"), null, null, null);
+
+        checkPutGet(ignite.cache("cache2"), ignite.transactions(), OPTIMISTIC, REPEATABLE_READ);
+
+        checkPutGet(ignite.cache("cache2"), ignite.transactions(), OPTIMISTIC, SERIALIZABLE);
+
+        checkPutGet(ignite.cache("cache2"), ignite.transactions(), PESSIMISTIC, READ_COMMITTED);
     }
 
     /**
      * @param cache Cache.
+     * @param txs Transactions instance if explicit transaction should be used.
+     * @param concurrency Transaction concurrency.
+     * @param isolation Transaction isolation.
      */
-    private void checkPutGet(IgniteCache<Object, Object> cache) {
+    private void checkPutGet(IgniteCache<Object, Object> cache,
+        @Nullable IgniteTransactions txs,
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation) {
         log.info("Check cache: " + cache.getName());
 
         final int KEYS = 50;
 
         for (int iter = 0; iter < 100; iter++) {
-            log.info("Iteration: " + iter);
+            if (iter % 10 == 0)
+                log.info("Iteration: " + iter);
 
             for (int i = 0; i < KEYS; i++)
                 cache.remove(i);
@@ -118,12 +143,20 @@ public class IgniteCachePrimarySyncTest extends GridCommonAbstractTest {
             for (int i = 0; i < KEYS; i++)
                 putBatch.put(i, iter);
 
-            cache.putAll(putBatch);
+            if (txs != null) {
+                try (Transaction tx = txs.txStart(concurrency, isolation)) {
+                    cache.putAll(putBatch);
+
+                    tx.commit();
+                }
+            }
+            else
+                cache.putAll(putBatch);
 
             Map<Object, Object> vals = cache.getAll(putBatch.keySet());
 
             for (int i = 0; i < KEYS; i++)
-                assertNotNull(vals.get(i));
+                assertEquals(iter, vals.get(i));
         }
     }
 }

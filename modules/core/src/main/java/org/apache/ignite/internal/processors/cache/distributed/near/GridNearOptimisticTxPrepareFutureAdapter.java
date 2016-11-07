@@ -40,8 +40,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
      * @param cctx Context.
      * @param tx Transaction.
      */
-    public GridNearOptimisticTxPrepareFutureAdapter(GridCacheSharedContext cctx,
-        GridNearTxLocal tx) {
+    public GridNearOptimisticTxPrepareFutureAdapter(GridCacheSharedContext cctx, GridNearTxLocal tx) {
         super(cctx, tx);
 
         assert tx.optimistic() : tx;
@@ -52,21 +51,15 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
         // Obtain the topology version to use.
         long threadId = Thread.currentThread().getId();
 
-        AffinityTopologyVersion topVer = null;
-
-        if (tx.system()) {
-            topVer = tx.topologyVersionSnapshot();
-
-            if (topVer == null)
-                topVer = cctx.exchange().readyAffinityVersion();
-        }
-
-        if (topVer == null)
-            topVer = cctx.mvcc().lastExplicitLockTopologyVersion(threadId);
+        AffinityTopologyVersion topVer = cctx.mvcc().lastExplicitLockTopologyVersion(threadId);
 
         // If there is another system transaction in progress, use it's topology version to prevent deadlock.
-        if (topVer == null && tx.system())
+        if (topVer == null && tx.system()) {
             topVer = cctx.tm().lockedTopologyVersion(threadId, tx);
+
+            if (topVer == null)
+                topVer = tx.topologyVersionSnapshot();
+        }
 
         if (topVer != null) {
             tx.topologyVersion(topVer);
@@ -178,7 +171,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
     protected static class KeyLockFuture extends GridFutureAdapter<GridNearTxPrepareResponse> {
         /** */
         @GridToStringInclude
-        private Collection<IgniteTxKey> lockKeys = new GridConcurrentHashSet<>();
+        protected Collection<IgniteTxKey> lockKeys = new GridConcurrentHashSet<>();
 
         /** */
         private volatile boolean allKeysAdded;

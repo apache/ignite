@@ -31,6 +31,10 @@ import org.apache.ignite.resources.SpringApplicationContextResource;
  * {@link Factory} implementation for {@link CacheJdbcPojoStore}.
  *
  * Use this factory to pass {@link CacheJdbcPojoStore} to {@link CacheConfiguration}.
+ * <p>
+ * Please note, that {@link CacheJdbcPojoStoreFactory#setDataSource(DataSource)} is deprecated and
+ * {@link CacheJdbcPojoStoreFactory#setDataSourceFactory(Factory)} or
+ * {@link CacheJdbcPojoStoreFactory#setDataSourceBean(String)} should be used instead.
  *
  * <h2 class="header">Spring Example</h2>
  * <pre name="code" class="xml">
@@ -107,7 +111,7 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
     public static final int DFLT_PARALLEL_LOAD_CACHE_MINIMUM_THRESHOLD = 512;
 
     /** Maximum batch size for writeAll and deleteAll operations. */
-    private int batchSizw = DFLT_BATCH_SIZE;
+    private int batchSize = DFLT_BATCH_SIZE;
 
     /** Name of data source bean. */
     private String dataSrcBean;
@@ -119,7 +123,7 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
     private int maxPoolSize = Runtime.getRuntime().availableProcessors();
 
     /** Maximum write attempts in case of database error. */
-    private int maxWriteAttempts = DFLT_WRITE_ATTEMPTS;
+    private int maxWrtAttempts = DFLT_WRITE_ATTEMPTS;
 
     /** Parallel load cache minimum threshold. If {@code 0} then load sequentially. */
     private int parallelLoadCacheMinThreshold = DFLT_PARALLEL_LOAD_CACHE_MINIMUM_THRESHOLD;
@@ -127,11 +131,20 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
     /** Hash calculator.  */
     private JdbcTypeHasher hasher = JdbcTypeDefaultHasher.INSTANCE;
 
+    /** Types transformer.  */
+    private JdbcTypesTransformer transformer = JdbcTypesDefaultTransformer.INSTANCE;
+
     /** Types that store could process. */
     private JdbcType[] types;
 
     /** Data source. */
     private transient DataSource dataSrc;
+
+    /** Data source factory. */
+    private Factory<DataSource> dataSrcFactory;
+
+    /** Flag indicating that table and field names should be escaped in all SQL queries created by JDBC POJO store. */
+    private boolean sqlEscapeAll;
 
     /** Application context. */
     @SpringApplicationContextResource
@@ -141,35 +154,38 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
     @Override public CacheJdbcPojoStore<K, V> create() {
         CacheJdbcPojoStore<K, V> store = new CacheJdbcPojoStore<>();
 
-        store.setBatchSize(batchSizw);
+        store.setBatchSize(batchSize);
         store.setDialect(dialect);
         store.setMaximumPoolSize(maxPoolSize);
-        store.setMaximumWriteAttempts(maxWriteAttempts);
+        store.setMaximumWriteAttempts(maxWrtAttempts);
         store.setParallelLoadCacheMinimumThreshold(parallelLoadCacheMinThreshold);
         store.setTypes(types);
+        store.setHasher(hasher);
+        store.setTransformer(transformer);
+        store.setSqlEscapeAll(sqlEscapeAll);
 
         if (dataSrc != null)
             store.setDataSource(dataSrc);
-        else {
-            if (dataSrcBean != null) {
-                if (appCtx == null)
-                    throw new IgniteException("Spring application context resource is not injected.");
+        else if (dataSrcBean != null) {
+            if (appCtx == null)
+                throw new IgniteException("Spring application context resource is not injected.");
 
-                IgniteSpringHelper spring;
+            IgniteSpringHelper spring;
 
-                try {
-                    spring = IgniteComponentType.SPRING.create(false);
+            try {
+                spring = IgniteComponentType.SPRING.create(false);
 
-                    DataSource data = spring.loadBeanFromAppContext(appCtx, dataSrcBean);
+                DataSource data = spring.loadBeanFromAppContext(appCtx, dataSrcBean);
 
-                    store.setDataSource(data);
-                }
-                catch (Exception e) {
-                    throw new IgniteException("Failed to load bean in application context [beanName=" + dataSrcBean +
-                        ", igniteConfig=" + appCtx + ']', e);
-                }
+                store.setDataSource(data);
+            }
+            catch (Exception e) {
+                throw new IgniteException("Failed to load bean in application context [beanName=" + dataSrcBean +
+                    ", igniteConfig=" + appCtx + ']', e);
             }
         }
+        else if (dataSrcFactory != null)
+            store.setDataSource(dataSrcFactory.create());
 
         return store;
     }
@@ -181,6 +197,7 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
      * @return {@code This} for chaining.
      * @see CacheJdbcPojoStore#setDataSource(DataSource)
      */
+    @Deprecated
     public CacheJdbcPojoStoreFactory<K, V> setDataSource(DataSource dataSrc) {
         this.dataSrc = dataSrc;
 
@@ -193,7 +210,7 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
      * @return Maximum batch size.
      */
     public int getBatchSize() {
-        return batchSizw;
+        return batchSize;
     }
 
     /**
@@ -203,7 +220,7 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
      * @return {@code This} for chaining.
      */
     public CacheJdbcPojoStoreFactory setBatchSize(int batchSize) {
-        this.batchSizw = batchSize;
+        this.batchSize = batchSize;
 
         return this;
     }
@@ -277,7 +294,7 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
      * @return Maximum number of write attempts.
      */
     public int getMaximumWriteAttempts() {
-        return maxWriteAttempts;
+        return maxWrtAttempts;
     }
 
     /**
@@ -287,7 +304,7 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
      * @return {@code This} for chaining.
      */
     public CacheJdbcPojoStoreFactory setMaximumWriteAttempts(int maxWrtAttempts) {
-        this.maxWriteAttempts = maxWrtAttempts;
+        this.maxWrtAttempts = maxWrtAttempts;
 
         return this;
     }
@@ -351,6 +368,75 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
      */
     public CacheJdbcPojoStoreFactory setHasher(JdbcTypeHasher hasher) {
         this.hasher = hasher;
+
+        return this;
+    }
+
+    /**
+     * Gets types transformer.
+     *
+     * @return Types transformer.
+     */
+    public JdbcTypesTransformer getTransformer() {
+        return transformer;
+    }
+
+    /**
+     * Sets types transformer.
+     *
+     * @param transformer Types transformer.
+     * @return {@code This} for chaining.
+     */
+    public CacheJdbcPojoStoreFactory setTransformer(JdbcTypesTransformer transformer) {
+        this.transformer = transformer;
+
+        return this;
+    }
+
+    /**
+     * Gets factory for underlying datasource.
+     *
+     * @return Cache store factory.
+     */
+    @SuppressWarnings("unchecked")
+    public Factory<DataSource> getDataSourceFactory() {
+        return dataSrcFactory;
+    }
+
+    /**
+     * Sets factory for underlying datasource.
+
+     * @param dataSrcFactory Datasource factory.
+     * @return {@code this} for chaining.
+     */
+    @SuppressWarnings("unchecked")
+    public CacheJdbcPojoStoreFactory<K, V> setDataSourceFactory(Factory<DataSource> dataSrcFactory) {
+        this.dataSrcFactory = dataSrcFactory;
+
+        return this;
+    }
+
+    /**
+     * If {@code true} all the SQL table and field names will be escaped with double quotes like
+     * ({@code "tableName"."fieldsName"}). This enforces case sensitivity for field names and
+     * also allows having special characters in table and field names.
+     *
+     * @return Flag value.
+     */
+    public boolean isSqlEscapeAll() {
+        return sqlEscapeAll;
+    }
+
+    /**
+     * If {@code true} all the SQL table and field names will be escaped with double quotes like
+     * ({@code "tableName"."fieldsName"}). This enforces case sensitivity for field names and
+     * also allows having special characters in table and field names.
+     *
+     * @param sqlEscapeAll Flag value.
+     * @return {@code this} for chaining.
+     */
+    public CacheJdbcPojoStoreFactory<K, V> setSqlEscapeAll(boolean sqlEscapeAll) {
+        this.sqlEscapeAll = sqlEscapeAll;
 
         return this;
     }

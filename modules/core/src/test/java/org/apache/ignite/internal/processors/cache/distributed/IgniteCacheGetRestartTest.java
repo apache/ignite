@@ -42,6 +42,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
@@ -160,6 +161,8 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
                 ignite(SRVS).createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
 
             try (IgniteDataStreamer<Object, Object> streamer = ignite(0).dataStreamer(ccfg.getName())) {
+                streamer.allowOverwrite(true);
+
                 for (int i = 0; i < KEYS; i++)
                     streamer.addData(i, i);
             }
@@ -274,6 +277,7 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
             ccfg.setNearConfiguration(new NearCacheConfiguration<>());
 
         ccfg.setRebalanceMode(ASYNC);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         return ccfg;
     }

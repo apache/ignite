@@ -70,7 +70,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(GRID_CNT);
+        startGridsMultiThreaded(GRID_CNT, true);
     }
 
     /** {@inheritDoc} */
@@ -91,7 +91,9 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
 
             info("Node: " + g.cluster().localNode().id());
             info("Entries: " + cache.entries());
-            info("DHT entries: " + cache.context().near().dht().entries());
+
+            if (cache.context().isNear())
+                info("DHT entries: " + cache.context().near().dht().entries());
 
             assertEquals("Cache is not empty, node [entries=" + c.localEntries() + ", grid=" + g.name() + ']',
                 0, c.localSize());

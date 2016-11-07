@@ -41,6 +41,8 @@ import org.apache.ignite.internal.processors.cache.CacheStoreUsageMultinodeDynam
 import org.apache.ignite.internal.processors.cache.CacheStoreUsageMultinodeStaticStartAtomicTest;
 import org.apache.ignite.internal.processors.cache.CacheStoreUsageMultinodeStaticStartTxTest;
 import org.apache.ignite.internal.processors.cache.CacheSwapUnswapGetTest;
+import org.apache.ignite.internal.processors.cache.CacheSwapUnswapGetTestSmallQueueSize;
+import org.apache.ignite.internal.processors.cache.CacheTxNotAllowReadFromBackupTest;
 import org.apache.ignite.internal.processors.cache.CrossCacheLockTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMarshallingNodeJoinSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateAtomicNearEnabledSelfTest;
@@ -65,8 +67,10 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationDefau
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationTemplateTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheDynamicStopSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheGetCustomCollectionsSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheInvokeReadThroughSingleNodeTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheInvokeReadThroughTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLoadRebalanceEvictionSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheReadThroughStoreCallTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxCopyOnReadDisabledTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxLocalPeekModesTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxLocalStoreValueTest;
@@ -87,13 +91,17 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCacheTypesTest;
 import org.apache.ignite.internal.processors.cache.IgniteStartCacheInTransactionAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteStartCacheInTransactionSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteSystemCacheOnClientTest;
+import org.apache.ignite.internal.processors.cache.MarshallerCacheJobRunNodeRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAffinityEarlyTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheGetFutureHangsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheNoValueClassOnServerNodeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheCreatePutMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheCreatePutTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePrimarySyncTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheReadFromBackupTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheSingleGetMessageTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCacheWriteSynchronizationModesMultithreadedTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCachePrimarySyncTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtTxPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheLockFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheMultiTxLockSelfTest;
@@ -202,7 +210,9 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(IgniteCacheTxLocalPeekModesTest.class);
         suite.addTestSuite(IgniteCacheTxReplicatedPeekModesTest.class);
 
+        suite.addTestSuite(IgniteCacheInvokeReadThroughSingleNodeTest.class);
         suite.addTestSuite(IgniteCacheInvokeReadThroughTest.class);
+        suite.addTestSuite(IgniteCacheReadThroughStoreCallTest.class);
         suite.addTestSuite(GridCacheVersionMultinodeTest.class);
 
         suite.addTestSuite(IgniteCacheNearReadCommittedTest.class);
@@ -255,6 +265,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(CacheGetEntryPessimisticReadCommittedSeltTest.class);
         suite.addTestSuite(CacheGetEntryPessimisticRepeatableReadSeltTest.class);
         suite.addTestSuite(CacheGetEntryPessimisticSerializableSeltTest.class);
+        suite.addTestSuite(CacheTxNotAllowReadFromBackupTest.class);
 
         suite.addTestSuite(CacheStopAndDestroySelfTest.class);
 
@@ -294,6 +305,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(CacheVersionedEntryReplicatedTransactionalOffHeapSelfTest.class);
 
         suite.addTestSuite(CacheSwapUnswapGetTest.class);
+        suite.addTestSuite(CacheSwapUnswapGetTestSmallQueueSize.class);
 
         suite.addTestSuite(GridCacheDhtTxPreloadSelfTest.class);
         suite.addTestSuite(GridCacheNearTxPreloadSelfTest.class);
@@ -311,6 +323,11 @@ public class IgniteCacheTestSuite4 extends TestSuite {
 
         suite.addTestSuite(IgniteCacheGetCustomCollectionsSelfTest.class);
         suite.addTestSuite(IgniteCacheLoadRebalanceEvictionSelfTest.class);
+        suite.addTestSuite(IgniteCachePrimarySyncTest.class);
+        suite.addTestSuite(IgniteTxCachePrimarySyncTest.class);
+        suite.addTestSuite(IgniteTxCacheWriteSynchronizationModesMultithreadedTest.class);
+
+        suite.addTestSuite(MarshallerCacheJobRunNodeRestartTest.class);
 
         return suite;
     }

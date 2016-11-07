@@ -36,10 +36,8 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
 import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -58,7 +56,6 @@ import java.util.concurrent.ConcurrentMap;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 import static org.apache.ignite.igfs.IgfsMode.PROXY;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGFS;
 
@@ -95,10 +92,12 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (ctx.config().isDaemon())
+        IgniteConfiguration igniteCfg = ctx.config();
+
+        if (igniteCfg.isDaemon())
             return;
 
-        FileSystemConfiguration[] cfgs = ctx.config().getFileSystemConfiguration();
+        FileSystemConfiguration[] cfgs = igniteCfg.getFileSystemConfiguration();
 
         assert cfgs != null && cfgs.length > 0;
 
@@ -108,10 +107,27 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
         for (FileSystemConfiguration cfg : cfgs) {
             FileSystemConfiguration cfg0 = new FileSystemConfiguration(cfg);
 
+            boolean metaClient = true;
+
+            CacheConfiguration[] cacheCfgs = igniteCfg.getCacheConfiguration();
+
+            if (cacheCfgs != null) {
+                for (CacheConfiguration cacheCfg : cacheCfgs) {
+                    if (F.eq(cacheCfg.getName(), cfg.getMetaCacheName())) {
+                        metaClient = false;
+
+                        break;
+                    }
+                }
+            }
+
+            if (igniteCfg.isClientMode() != null && igniteCfg.isClientMode())
+                metaClient = true;
+
             IgfsContext igfsCtx = new IgfsContext(
                 ctx,
                 cfg0,
-                new IgfsMetaManager(cfg0.isRelaxedConsistency()),
+                new IgfsMetaManager(cfg0.isRelaxedConsistency(), metaClient),
                 new IgfsDataManager(),
                 new IgfsServerManager(),
                 new IgfsFragmentizerManager());
@@ -126,29 +142,26 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("IGFS processor started.");
 
-        IgniteConfiguration gridCfg = ctx.config();
-
         // Node doesn't have IGFS if it:
         // is daemon;
         // doesn't have configured IGFS;
         // doesn't have configured caches.
-        if (gridCfg.isDaemon() || F.isEmpty(gridCfg.getFileSystemConfiguration()) ||
-            F.isEmpty(gridCfg.getCacheConfiguration()))
+        if (igniteCfg.isDaemon() || F.isEmpty(igniteCfg.getFileSystemConfiguration()) ||
+            F.isEmpty(igniteCfg.getCacheConfiguration()))
             return;
 
         final Map<String, CacheConfiguration> cacheCfgs = new HashMap<>();
 
-        F.forEach(gridCfg.getCacheConfiguration(), new CI1<CacheConfiguration>() {
-            @Override public void apply(CacheConfiguration c) {
-                cacheCfgs.put(c.getName(), c);
-            }
-        });
+        assert igniteCfg.getCacheConfiguration() != null;
+
+        for (CacheConfiguration ccfg : igniteCfg.getCacheConfiguration())
+            cacheCfgs.put(ccfg.getName(), ccfg);
 
         Collection<IgfsAttributes> attrVals = new ArrayList<>();
 
-        assert gridCfg.getFileSystemConfiguration() != null;
+        assert igniteCfg.getFileSystemConfiguration() != null;
 
-        for (FileSystemConfiguration igfsCfg : gridCfg.getFileSystemConfiguration()) {
+        for (FileSystemConfiguration igfsCfg : igniteCfg.getFileSystemConfiguration()) {
             CacheConfiguration cacheCfg = cacheCfgs.get(igfsCfg.getDataCacheName());
 
             if (cacheCfg == null)
@@ -164,7 +177,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             attrVals.add(new IgfsAttributes(
                 igfsCfg.getName(),
                 igfsCfg.getBlockSize(),
-                ((IgfsGroupDataBlocksKeyMapper)affMapper).groupSize(),
+                ((IgfsGroupDataBlocksKeyMapper)affMapper).getGroupSize(),
                 igfsCfg.getMetaCacheName(),
                 igfsCfg.getDataCacheName(),
                 igfsCfg.getDefaultMode(),
@@ -298,8 +311,9 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             if (GridQueryProcessor.isEnabled(dataCacheCfg))
                 throw new IgniteCheckedException("IGFS data cache cannot start with enabled query indexing.");
 
-            if (dataCacheCfg.getAtomicityMode() != TRANSACTIONAL)
-                throw new IgniteCheckedException("Data cache should be transactional: " + cfg.getDataCacheName());
+            if (dataCacheCfg.getAtomicityMode() != TRANSACTIONAL && cfg.isFragmentizerEnabled())
+                throw new IgniteCheckedException("Data cache should be transactional: " + cfg.getDataCacheName() +
+                    " when fragmentizer is enabled");
 
             if (metaCacheCfg == null)
                 throw new IgniteCheckedException("Metadata cache is not configured locally for IGFS: " + cfg);
@@ -330,28 +344,6 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                     throw new IgniteCheckedException("IGFS endpoint thread count must be positive: " +
                         ipcCfg.getThreadCount());
             }
-
-            long maxSpaceSize = cfg.getMaxSpaceSize();
-
-            if (maxSpaceSize > 0) {
-                // Max space validation.
-                long maxHeapSize = Runtime.getRuntime().maxMemory();
-                long offHeapSize = dataCacheCfg.getOffHeapMaxMemory();
-
-                if (offHeapSize < 0 && maxSpaceSize > maxHeapSize)
-                    // Offheap is disabled.
-                    throw new IgniteCheckedException("Maximum IGFS space size cannot be greater that size of available heap " +
-                        "memory [maxHeapSize=" + maxHeapSize + ", maxIgfsSpaceSize=" + maxSpaceSize + ']');
-                else if (offHeapSize > 0 && maxSpaceSize > maxHeapSize + offHeapSize)
-                    // Offheap is enabled, but limited.
-                    throw new IgniteCheckedException("Maximum IGFS space size cannot be greater than size of available heap " +
-                        "memory and offheap storage [maxHeapSize=" + maxHeapSize + ", offHeapSize=" + offHeapSize +
-                        ", maxIgfsSpaceSize=" + maxSpaceSize + ']');
-            }
-
-            if (cfg.getMaxSpaceSize() == 0 && dataCacheCfg.getMemoryMode() == OFFHEAP_VALUES)
-                U.warn(log, "IGFS max space size is not specified but data cache values are stored off-heap (max " +
-                    "space will be limited to 80% of max JVM heap size): " + cfg.getName());
 
             boolean secondary = cfg.getDefaultMode() == PROXY;
 
@@ -451,6 +443,18 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             }
     }
 
+    /**
+     * Check IGFS property equality on local and remote nodes.
+     *
+     * @param name Property human readable name.
+     * @param propName Property name/
+     * @param rmtNodeId Remote node ID.
+     * @param rmtVal Remote value.
+     * @param locVal Local value.
+     * @param igfsName IGFS name.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
     private void checkSame(String name, String propName, UUID rmtNodeId, Object rmtVal, Object locVal, String igfsName)
         throws IgniteCheckedException {
         if (!F.eq(rmtVal, locVal))

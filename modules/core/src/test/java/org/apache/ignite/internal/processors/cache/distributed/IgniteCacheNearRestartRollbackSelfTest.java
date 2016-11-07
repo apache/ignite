@@ -77,8 +77,11 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
 
         cfg.setCacheConfiguration(cacheConfiguration(gridName));
 
-        if (getTestGridName(3).equals(gridName))
+        if (getTestGridName(3).equals(gridName)) {
             cfg.setClientMode(true);
+
+            discoSpi.setForceServerMode(true);
+        }
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
@@ -158,19 +161,28 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
             boolean invoke = false;
 
             while (!fut.isDone()) {
-                updateCache(tester, currVal, invoke, false, keys);
+                try {
+                    updateCache(tester, currVal, invoke, false, keys);
 
-                updateCache(tester, currVal + 1, invoke, true, keys);
+                    updateCache(tester, currVal + 1, invoke, true, keys);
 
-                invoke = !invoke;
-                currVal++;
+                    invoke = !invoke;
+                    currVal++;
 
-                synchronized (lastUpdateTs) {
-                    lastUpdateTs.set(System.currentTimeMillis());
+                    synchronized (lastUpdateTs) {
+                        lastUpdateTs.set(System.currentTimeMillis());
 
-                    lastUpdateTs.notifyAll();
+                        lastUpdateTs.notifyAll();
+                    }
+                }
+                catch (Throwable e) {
+                    log.error("Update failed: " + e, e);
+
+                    throw e;
                 }
             }
+
+            fut.get();
         }
         finally {
             stopAllGrids();

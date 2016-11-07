@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
  * Cache key affinity which maps keys to nodes. This interface is utilized for
@@ -47,6 +48,7 @@ import org.apache.ignite.cluster.ClusterNode;
  * {@link AffinityKeyMapped @AffinityKeyMapped} documentation.
  * @see AffinityKeyMapped
  * @see AffinityKeyMapper
+ * @see IgniteConfiguration#isLateAffinityAssignment()
  */
 public interface AffinityFunction extends Serializable {
     /**

@@ -18,11 +18,13 @@
 namespace Apache.Ignite.Core.Impl.Services
 {
     using System;
+    using System.Collections;
     using System.Diagnostics;
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Services;
 
     /// <summary>
@@ -36,7 +38,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="writer">Writer.</param>
         /// <param name="method">Method.</param>
         /// <param name="arguments">Arguments.</param>
-        public static void WriteProxyMethod(BinaryWriter writer, MethodBase method, object[] arguments)
+        /// <param name="platform">The platform.</param>
+        public static void WriteProxyMethod(BinaryWriter writer, MethodBase method, object[] arguments, 
+            Platform platform)
         {
             Debug.Assert(writer != null);
             Debug.Assert(method != null);
@@ -48,8 +52,21 @@ namespace Apache.Ignite.Core.Impl.Services
                 writer.WriteBoolean(true);
                 writer.WriteInt(arguments.Length);
 
-                foreach (var arg in arguments)
-                    writer.WriteObject(arg);
+                if (platform == Platform.DotNet)
+                {
+                    // Write as is
+                    foreach (var arg in arguments)
+                        writer.WriteObject(arg);
+                }
+                else
+                {
+                    // Other platforms do not support Serializable, need to convert arrays and collections
+                    var methodArgs = method.GetParameters();
+                    Debug.Assert(methodArgs.Length == arguments.Length);
+
+                    for (int i = 0; i < arguments.Length; i++)
+                        WriteArgForPlatforms(writer, methodArgs[i], arguments[i]);
+                }
             }
             else
                 writer.WriteBoolean(false);
@@ -135,6 +152,46 @@ namespace Apache.Ignite.Core.Impl.Services
                                                  "Examine BinaryCause for details.", binErr)
                 : new ServiceInvocationException("Proxy method invocation failed with an exception. " +
                                                  "Examine InnerException for details.", (Exception) err);
+        }
+
+        /// <summary>
+        /// Writes the argument in platform-compatible format.
+        /// </summary>
+        private static void WriteArgForPlatforms(BinaryWriter writer, ParameterInfo param, object arg)
+        {
+            var hnd = GetPlatformArgWriter(param, arg);
+
+            if (hnd != null)
+                hnd(writer, arg);
+            else
+                writer.WriteObject(arg);
+        }
+
+        /// <summary>
+        /// Gets arg writer for platform-compatible service calls.
+        /// </summary>
+        private static Action<BinaryWriter, object> GetPlatformArgWriter(ParameterInfo param, object arg)
+        {
+            var type = param.ParameterType;
+
+            // Unwrap nullable
+            type = Nullable.GetUnderlyingType(type) ?? type;
+
+            if (arg == null || type.IsPrimitive)
+                return null;
+
+            var handler = BinarySystemHandlers.GetWriteHandler(type);
+
+            if (handler != null && !handler.IsSerializable)
+                return null;
+
+            if (type.IsArray)
+                return (writer, o) => writer.WriteArrayInternal((Array) o);
+
+            if (arg is ICollection)
+                return (writer, o) => writer.WriteCollection((ICollection) o);
+
+            return null;
         }
     }
 }

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.rest.handlers.query;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -29,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -45,6 +47,7 @@ import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandle
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
@@ -215,22 +218,31 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
         assert SUPPORTED_COMMANDS.contains(req.command());
         assert req instanceof RestQueryRequest : "Invalid type of query request.";
 
+        if (req.command() != CLOSE_SQL_QUERY) {
+            Integer pageSize = ((RestQueryRequest) req).pageSize();
+
+            if (pageSize == null)
+                return new GridFinishedFuture<>(
+                        new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("pageSize"))
+                );
+        }
+
         switch (req.command()) {
             case EXECUTE_SQL_QUERY:
             case EXECUTE_SQL_FIELDS_QUERY:
             case EXECUTE_SCAN_QUERY: {
                 return ctx.closure().callLocalSafe(
-                    new ExecuteQueryCallable(ctx, (RestQueryRequest)req, qryCurs), false);
+                        new ExecuteQueryCallable(ctx, (RestQueryRequest) req, qryCurs), false);
             }
 
             case FETCH_SQL_QUERY: {
                 return ctx.closure().callLocalSafe(
-                    new FetchQueryCallable((RestQueryRequest)req, qryCurs), false);
+                        new FetchQueryCallable((RestQueryRequest) req, qryCurs), false);
             }
 
             case CLOSE_SQL_QUERY: {
                 return ctx.closure().callLocalSafe(
-                    new CloseQueryCallable((RestQueryRequest)req, qryCurs), false);
+                        new CloseQueryCallable((RestQueryRequest) req, qryCurs), false);
             }
         }
 
@@ -263,6 +275,7 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
         @Override public GridRestResponse call() throws Exception {
             final long qryId = qryIdGen.getAndIncrement();
 
@@ -275,12 +288,16 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
 
                         ((SqlQuery)qry).setArgs(req.arguments());
 
+                        ((SqlQuery)qry).setDistributedJoins(req.distributedJoins());
+
                         break;
 
                     case SQL_FIELDS:
                         qry = new SqlFieldsQuery(req.sqlQuery());
 
                         ((SqlFieldsQuery)qry).setArgs(req.arguments());
+
+                        ((SqlFieldsQuery)qry).setDistributedJoins(req.distributedJoins());
 
                         break;
 
@@ -346,7 +363,10 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
             catch (Exception e) {
                 removeQueryCursor(qryId, qryCurs);
 
-                return new GridRestResponse(GridRestResponse.STATUS_FAILED, e.getMessage());
+                SQLException sqlErr = X.cause(e, SQLException.class);
+
+                return new GridRestResponse(GridRestResponse.STATUS_FAILED,
+                    sqlErr != null ? sqlErr.getMessage() : e.getMessage());
             }
         }
 

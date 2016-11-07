@@ -32,4 +32,13 @@ public class FairAffinityFunctionBackupFilterSelfTest extends AffinityFunctionBa
 
         return aff;
     }
+
+    /** {@inheritDoc} */
+    @Override protected AffinityFunction affinityFunctionWithAffinityBackupFilter() {
+        FairAffinityFunction aff = new FairAffinityFunction(false);
+
+        aff.setAffinityBackupFilter(affinityBackupFilter);
+
+        return aff;
+    }
 }

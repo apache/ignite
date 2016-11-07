@@ -22,6 +22,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.jetbrains.annotations.Nullable;
 
+import javax.cache.Cache;
+
 /**
  * Cache plugin provider is a point for processing of properties 
  * which provide specific {@link CachePluginConfiguration}.
@@ -63,6 +65,15 @@ public interface CachePluginProvider<C extends CachePluginConfiguration> {
      * @return Ignite component or {@code null} if component is not supported.
      */
     @Nullable public <T> T createComponent(Class<T> cls);
+
+    /**
+     * Unwrap entry to specified type. For details see {@code javax.cache.Cache.Entry.unwrap(Class)}.
+     *
+     * @param entry Mutable entry to unwrap.
+     * @param cls Type of the expected component.
+     * @return New instance of underlying type or {@code null} if it's not available.
+     */
+    @Nullable public <T, K, V> T unwrapCacheEntry(Cache.Entry<K, V> entry, Class<T> cls);
 
     /**
      * Validates cache plugin configuration in process of cache creation. Throw exception if validation failed.

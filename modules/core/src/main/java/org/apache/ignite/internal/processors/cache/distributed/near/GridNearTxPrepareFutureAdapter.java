@@ -74,10 +74,14 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     /** Logger. */
     protected static IgniteLogger log;
 
+    /** Logger. */
+    protected static IgniteLogger msgLog;
+
     /** Context. */
     protected GridCacheSharedContext<?, ?> cctx;
 
     /** Future ID. */
+    @GridToStringInclude
     protected IgniteUuid futId;
 
     /** Transaction. */
@@ -109,8 +113,10 @@ public abstract class GridNearTxPrepareFutureAdapter extends
 
         futId = IgniteUuid.randomUuid();
 
-        if (log == null)
+        if (log == null) {
+            msgLog = cctx.txFinishMessageLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridNearTxPrepareFutureAdapter.class);
+        }
     }
 
     /** {@inheritDoc} */
@@ -131,6 +137,13 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     /** {@inheritDoc} */
     @Override public boolean trackable() {
         return trackable;
+    }
+
+    /**
+     * @return Transaction.
+     */
+    public IgniteInternalTx tx() {
+        return tx;
     }
 
     /**
@@ -155,7 +168,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
         Map<UUID, Collection<UUID>> map = txMapping.transactionNodes();
 
         if (map.size() == 1) {
-            Map.Entry<UUID, Collection<UUID>> entry = F.firstEntry(map);
+            Map.Entry<UUID, Collection<UUID>> entry = map.entrySet().iterator().next();
 
             assert entry != null;
 
@@ -209,7 +222,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
                 }
                 catch (GridCacheEntryRemovedException ignored) {
                     // Retry.
-                    txEntry.cached(cacheCtx.cache().entryEx(txEntry.key()));
+                    txEntry.cached(cacheCtx.cache().entryEx(txEntry.key(), tx.topologyVersion()));
                 }
             }
         }

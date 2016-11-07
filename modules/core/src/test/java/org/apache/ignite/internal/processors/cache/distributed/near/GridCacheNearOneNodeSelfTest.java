@@ -59,8 +59,8 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
 
         jcache().removeAll();
 
-        assertEquals("DHT entries: " + dht().entries(), 0, dht().size());
-        assertEquals("Near entries: " + near().entries(), 0, near().size());
+        assertEquals("DHT entries: " + dht().entrySet(), 0, dht().size());
+        assertEquals("Near entries: " + near().entrySet(), 0, near().size());
         assertEquals(0, jcache().size());
     }
 

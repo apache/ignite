@@ -15,12 +15,14 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_CACHE_QUERY_IMPL
-#define _IGNITE_CACHE_QUERY_IMPL
+#ifndef _IGNITE_IMPL_CACHE_QUERY_QUERY_IMPL
+#define _IGNITE_IMPL_CACHE_QUERY_QUERY_IMPL
 
-#include "ignite/ignite_error.h"
+#include <ignite/ignite_error.h>
+
 #include "ignite/impl/ignite_environment.h"
 #include "ignite/impl/operations.h"
+#include "ignite/impl/cache/query/query_batch.h"
 
 namespace ignite
 {
@@ -57,7 +59,7 @@ namespace ignite
                      * @param err Error.
                      * @return True if exists.
                      */
-                    bool HasNext(IgniteError* err);
+                    bool HasNext(IgniteError& err);
 
                     /**
                      * Get next object.
@@ -65,7 +67,7 @@ namespace ignite
                      * @param op Operation.
                      * @param err Error.
                      */
-                    void GetNext(OutputOperation& op, IgniteError* err);
+                    void GetNext(OutputOperation& op, IgniteError& err);
 
                     /**
                      * Get next row.
@@ -73,7 +75,7 @@ namespace ignite
                      * @param err Error.
                      * @return Output row.
                      */
-                    QueryFieldsRowImpl* GetNextRow(IgniteError* err);
+                    QueryFieldsRowImpl* GetNextRow(IgniteError& err);
 
                     /**
                      * Get all cursor entries.
@@ -81,7 +83,7 @@ namespace ignite
                      * @param op Operation.
                      * @param err Error.
                      */
-                    void GetAll(OutputOperation& op, IgniteError* err);
+                    void GetAll(OutputOperation& op, IgniteError& err);
 
                 private:
                     /** Environment. */
@@ -90,14 +92,17 @@ namespace ignite
                     /** Handle to Java object. */
                     jobject javaRef;
 
+                    /** Current result batch. */
+                    QueryBatch* batch;
+
+                    /** Whether cursor has no more elements available. */
+                    bool endReached;
+
                     /** Whether iteration methods were called. */
                     bool iterCalled;
 
                     /** Whether GetAll() method was called. */
                     bool getAllCalled;
-
-                    /** Whether next entry is available. */
-                    bool hasNext;
 
                     IGNITE_NO_COPY_ASSIGNMENT(QueryCursorImpl);
 
@@ -107,7 +112,15 @@ namespace ignite
                      * @param err Error.
                      * @return True in case of success, false if an error is thrown.
                      */
-                    bool CreateIteratorIfNeeded(IgniteError* err);
+                    bool CreateIteratorIfNeeded(IgniteError& err);
+
+                   /**
+                     * Get next result batch if update is needed.
+                     *
+                     * @param err Error.
+                     * @return True if operation has been successful.
+                     */
+                    bool GetNextBatchIfNeeded(IgniteError& err);
 
                     /**
                      * Check whether Java-side iterator has next element.
@@ -115,11 +128,11 @@ namespace ignite
                      * @param err Error.
                      * @return True if the next element is available.
                      */
-                    bool IteratorHasNext(IgniteError* err);
+                    bool IteratorHasNext(IgniteError& err);
                 };
             }
         }
     }
 }
 
-#endif
+#endif //_IGNITE_IMPL_CACHE_QUERY_QUERY_IMPL

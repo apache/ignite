@@ -63,7 +63,7 @@ public class GridSqlOperation extends GridSqlElement {
     /**
      * @return Operation type.
      */
-    public GridSqlOperationType opType() {
+    public GridSqlOperationType operationType() {
         return opType;
     }
 

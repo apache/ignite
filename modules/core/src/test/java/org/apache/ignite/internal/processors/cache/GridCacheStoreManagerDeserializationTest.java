@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Serializable;
+import java.util.Map;
+import javax.cache.Cache;
+import javax.cache.integration.CacheLoaderException;
+import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -40,13 +45,10 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ConcurrentHashMap8;
 
-import javax.cache.Cache;
-import javax.cache.integration.CacheLoaderException;
-import javax.cache.integration.CacheWriterException;
-import java.io.Serializable;
-import java.util.Map;
-
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Checks whether storing to local store doesn't cause binary objects unmarshalling,
@@ -66,19 +68,25 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
     /** Test cache name. */
     protected static final String CACHE_NAME = "cache_name";
 
-    /** Cache mode. */
+    /**
+     * @return Cache mode.
+     */
     protected CacheMode cacheMode() {
-        return CacheMode.PARTITIONED;
+        return PARTITIONED;
     }
 
-    /** Cache write order mode. */
-    protected CacheAtomicWriteOrderMode cacheAtomicWriteOrderMode() {
-        return CacheAtomicWriteOrderMode.PRIMARY;
+    /**
+     * @return Cache write order mode.
+     */
+    private CacheAtomicWriteOrderMode cacheAtomicWriteOrderMode() {
+        return PRIMARY;
     }
 
-    /** Cache synchronization mode. */
+    /**
+     * @return Cache synchronization mode.
+     */
     private CacheWriteSynchronizationMode cacheWriteSynchronizationMode() {
-        return CacheWriteSynchronizationMode.FULL_SYNC;
+        return FULL_SYNC;
     }
 
     /** {@inheritDoc} */
@@ -142,7 +150,7 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
     /**
      * Check whether test objects are stored correctly via stream API.
      *
-     * @throws Exception
+     * @throws Exception If failed.
      */
     public void testStream() throws Exception {
         final Ignite grid = startGrid();
@@ -167,7 +175,7 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
      * {@link org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry#clearInternal(
      * GridCacheVersion, boolean, GridCacheObsoleteEntryExtras)}
      *
-     * @throws Exception
+     * @throws Exception If failed.
      */
     public void testPartitionMove() throws Exception {
         final Ignite grid = startGrid("binaryGrid1");
@@ -205,7 +213,7 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
     /**
      * Check whether binary objects are stored without unmarshalling via stream API.
      *
-     * @throws Exception
+     * @throws Exception If failed.
      */
     public void testBinaryStream() throws Exception {
         final Ignite grid = startGrid("binaryGrid");
@@ -271,6 +279,7 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
 
         for (int i = 0; i < 1; i++) {
             builder.setField("id", i);
+            builder.hashCode(i);
 
             entity = builder.build();
 

@@ -37,6 +37,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * synchronization, if needed.
  * @see GridFunc#tv(Object...)
  */
+@Deprecated
 public class GridTupleV implements Iterable<Object>, Externalizable, Cloneable {
     /** */
     private static final long serialVersionUID = 0L;

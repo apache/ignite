@@ -36,9 +36,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.retryTopologySafe;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.retryTopologySafe;
 
 /**
  * Cache atomic reference implementation.
@@ -51,7 +51,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
     private static final ThreadLocal<IgniteBiTuple<GridKernalContext, String>> stash =
         new ThreadLocal<IgniteBiTuple<GridKernalContext, String>>() {
             @Override protected IgniteBiTuple<GridKernalContext, String> initialValue() {
-                return F.t2();
+                return new IgniteBiTuple<>();
             }
         };
 

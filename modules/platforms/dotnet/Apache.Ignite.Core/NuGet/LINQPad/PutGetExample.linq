@@ -25,13 +25,13 @@
 /// with binary values. Note that binary object can be retrieved in
 /// fully-deserialized form or in binary object format using special
 /// cache projection.
+/// 
+/// Requirements:
+/// * Java Runtime Environment (JRE): http://www.oracle.com/technetwork/java/javase/downloads/index.html (x86 for regular LINQPad, x64 for AnyCPU LINQPad)
 /// </summary>
 
 void Main()
 {
-	if (!Environment.Is64BitProcess)
-		throw new Exception("x64 LINQPad is required to run this sample (see AnyCPU build: http://www.linqpad.net/Download.aspx)");	
-
 	// Force new LINQPad query process to reinit JVM
 	Util.NewProcess = true;
 	
@@ -42,7 +42,7 @@ void Main()
     using (var ignite = Ignition.Start(cfg))
     {
         // Create new cache
-        var cache = ignite.CreateCache<int, Organization>("orgs");
+        var cache = ignite.GetOrCreateCache<int, Organization>("orgs");
 
         // Put data entry to cache
         cache.Put(1, new Organization {Name = "Apache", Type="Private"});

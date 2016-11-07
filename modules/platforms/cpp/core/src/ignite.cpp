@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include <ignite/common/java.h>
+#include <ignite/jni/java.h>
 
 #include "ignite/impl/ignite_impl.h"
 #include "ignite/ignite.h"
@@ -38,6 +38,16 @@ namespace ignite
     const char* Ignite::GetName() const
     {
         return impl.Get()->GetName();
+    }
+
+    transactions::Transactions Ignite::GetTransactions()
+    {
+        using ignite::common::concurrent::SharedPointer;
+        using ignite::impl::transactions::TransactionsImpl;
+
+        SharedPointer<TransactionsImpl> txImpl = impl.Get()->GetTransactions();
+
+        return transactions::Transactions(txImpl);
     }
 }
 

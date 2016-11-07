@@ -69,6 +69,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_CACHE;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_CFG;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_COLLOCATED;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_DISTRIBUTED_JOINS;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_LOCAL;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_NODE_ID;
 
@@ -76,6 +77,9 @@ import static org.apache.ignite.IgniteJdbcDriver.PROP_NODE_ID;
  * JDBC connection implementation.
  */
 public class JdbcConnection implements Connection {
+    /** Null stub. */
+    private static final String NULL = "null";
+
     /**
      * Ignite nodes cache.
      *
@@ -110,6 +114,9 @@ public class JdbcConnection implements Connection {
     /** Collocated query flag. */
     private boolean collocatedQry;
 
+    /** Distributed joins flag. */
+    private boolean distributedJoins;
+
     /** Statements. */
     final Set<JdbcStatement> statements = new HashSet<>();
 
@@ -129,6 +136,7 @@ public class JdbcConnection implements Connection {
         this.cacheName = props.getProperty(PROP_CACHE);
         this.locQry = Boolean.parseBoolean(props.getProperty(PROP_LOCAL));
         this.collocatedQry = Boolean.parseBoolean(props.getProperty(PROP_COLLOCATED));
+        this.distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS));
 
         String nodeIdProp = props.getProperty(PROP_NODE_ID);
 
@@ -136,7 +144,9 @@ public class JdbcConnection implements Connection {
             this.nodeId = UUID.fromString(nodeIdProp);
 
         try {
-            cfg = props.getProperty(PROP_CFG);
+            String cfgUrl = props.getProperty(PROP_CFG);
+
+            cfg = cfgUrl == null || cfgUrl.isEmpty() ? NULL : cfgUrl;
 
             ignite = getIgnite(cfg);
 
@@ -169,7 +179,15 @@ public class JdbcConnection implements Connection {
                     fut = old;
                 else {
                     try {
-                        Ignite ignite = Ignition.start(loadConfiguration(cfgUrl));
+                        Ignite ignite;
+
+                        if (NULL.equals(cfg)) {
+                            Ignition.setClientMode(true);
+
+                            ignite = Ignition.start();
+                        }
+                        else
+                            ignite = Ignition.start(loadConfiguration(cfgUrl));
 
                         fut.onDone(ignite);
                     }
@@ -200,6 +218,8 @@ public class JdbcConnection implements Connection {
 
             if (cfg.getGridName() == null)
                 cfg.setGridName("ignite-jdbc-driver-" + UUID.randomUUID().toString());
+
+            cfg.setClientMode(true); // Force client mode.
 
             return cfg;
         }
@@ -691,6 +711,13 @@ public class JdbcConnection implements Connection {
     }
 
     /**
+     * @return Distributed joins flag.
+     */
+    boolean isDistributedJoins() {
+        return distributedJoins;
+    }
+
+    /**
      * Ensures that connection is not closed.
      *
      * @throws SQLException If connection is closed.
@@ -733,7 +760,7 @@ public class JdbcConnection implements Connection {
 
         /** {@inheritDoc} */
         @Override public Boolean call() {
-            return ignite.cache(cacheName) != null;
+            return cacheName == null || ignite.cache(cacheName) != null;
         }
     }
 

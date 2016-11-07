@@ -281,6 +281,12 @@ namespace Apache.Ignite.Core.Impl.Cluster
         }
 
         /** <inheritDoc /> */
+        public IClusterGroup ForDaemons()
+        {
+            return GetClusterGroup(UU.ProjectionForDaemons(Target));
+        }
+
+        /** <inheritDoc /> */
         public IClusterGroup ForHost(IClusterNode node)
         {
             IgniteArgumentCheck.NotNull(node, "node");
@@ -309,6 +315,12 @@ namespace Apache.Ignite.Core.Impl.Cluster
         public IClusterGroup ForYoungest()
         {
             return GetClusterGroup(UU.ProjectionForYoungest(Target));
+        }
+
+        /** <inheritDoc /> */
+        public IClusterGroup ForServers()
+        {
+            return GetClusterGroup(UU.ProjectionForServers(Target));
         }
 
         /** <inheritDoc /> */

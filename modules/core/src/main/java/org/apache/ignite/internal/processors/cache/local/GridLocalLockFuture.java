@@ -19,13 +19,15 @@ package org.apache.ignite.internal.processors.cache.local;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -33,14 +35,18 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
+import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -93,7 +99,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     private LockTimeoutObject timeoutObj;
 
     /** Lock timeout. */
-    private long timeout;
+    private final long timeout;
 
     /** Filter. */
     private CacheEntryPredicate[] filter;
@@ -121,6 +127,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
         CacheEntryPredicate[] filter) {
         assert keys != null;
         assert cache != null;
+        assert (tx != null && timeout >= 0) || tx == null;
 
         this.cctx = cctx;
         this.cache = cache;
@@ -174,16 +181,9 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     }
 
     /**
-     * @return Lock version.
-     */
-    GridCacheVersion lockVersion() {
-        return lockVer;
-    }
-
-    /**
      * @return Entries.
      */
-    List<GridLocalCacheEntry> entries() {
+    private List<GridLocalCacheEntry> entries() {
         return entries;
     }
 
@@ -410,18 +410,6 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
         }
     }
 
-    /**
-     * Checks for errors.
-     *
-     * @throws IgniteCheckedException If execution failed.
-     */
-    private void checkError() throws IgniteCheckedException {
-        Throwable err0 = err;
-
-        if (err0 != null)
-            throw U.cast(err0);
-    }
-
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return futId.hashCode();
@@ -444,12 +432,53 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings({"ThrowableInstanceNeverThrown"})
+        @SuppressWarnings({"ThrowableInstanceNeverThrown", "ForLoopReplaceableByForEach"})
         @Override public void onTimeout() {
             if (log.isDebugEnabled())
                 log.debug("Timed out waiting for lock response: " + this);
 
-            onComplete(false);
+            if (inTx() && cctx.tm().deadlockDetectionEnabled()) {
+                Set<IgniteTxKey> keys = new HashSet<>();
+
+                List<GridLocalCacheEntry> entries = entries();
+
+                for (int i = 0; i < entries.size(); i++) {
+                    GridLocalCacheEntry e = entries.get(i);
+
+                    List<GridCacheMvccCandidate> mvcc = e.mvccAllLocal();
+
+                    if (mvcc == null)
+                        continue;
+
+                    GridCacheMvccCandidate cand = mvcc.get(0);
+
+                    if (cand.owner() && cand.tx() && !cand.version().equals(tx.xidVersion()))
+                        keys.add(e.txKey());
+                }
+
+                IgniteInternalFuture<TxDeadlock> fut = cctx.tm().detectDeadlock(tx, keys);
+
+                fut.listen(new IgniteInClosure<IgniteInternalFuture<TxDeadlock>>() {
+                    @Override public void apply(IgniteInternalFuture<TxDeadlock> fut) {
+                        try {
+                            TxDeadlock deadlock = fut.get();
+
+                            if (deadlock != null)
+                                ERR_UPD.compareAndSet(GridLocalLockFuture.this, null,
+                                    new TransactionDeadlockException(deadlock.toString(cctx.shared())));
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.warn(log, "Failed to detect deadlock.", e);
+
+                            ERR_UPD.compareAndSet(GridLocalLockFuture.this, null, e);
+                        }
+
+                        onComplete(false);
+                    }
+                });
+            }
+            else
+                onComplete(false);
         }
 
         /** {@inheritDoc} */

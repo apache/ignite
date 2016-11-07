@@ -26,6 +26,7 @@ import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -98,6 +99,10 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     /** Values to update. */
     @GridDirectCollection(CacheObject.class)
     private List<CacheObject> vals;
+
+    /** Partitions of keys. */
+    @GridDirectCollection(int.class)
+    private List<Integer> partIds;
 
     /** Entry processors. */
     @GridDirectTransient
@@ -246,6 +251,8 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         initSize = Math.min(maxEntryCnt, 10);
 
         keys = new ArrayList<>(initSize);
+
+        partIds = new ArrayList<>(initSize);
     }
 
     /** {@inheritDoc} */
@@ -384,12 +391,13 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         if (op == TRANSFORM) {
             assert val instanceof EntryProcessor : val;
 
-            entryProcessor = (EntryProcessor<Object, Object, Object>) val;
+            entryProcessor = (EntryProcessor<Object, Object, Object>)val;
         }
 
         assert val != null || op == DELETE;
 
         keys.add(key);
+        partIds.add(key.partition());
 
         if (entryProcessor != null) {
             if (entryProcessors == null)
@@ -652,11 +660,23 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
         if (expiryPlcBytes != null && expiryPlc == null)
             expiryPlc = ctx.marshaller().unmarshal(expiryPlcBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+
+        if (partIds != null && !partIds.isEmpty()) {
+            assert partIds.size() == keys.size();
+
+            for (int i = 0; i < keys.size(); i++)
+                keys.get(i).partition(partIds.get(i));
+        }
     }
 
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+        return ctx.atomicMessageLogger();
     }
 
     /** {@inheritDoc} */
@@ -812,6 +832,11 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
                 writer.incrementState();
 
+            case 26:
+                if (!writer.writeCollection("partIds", partIds, MessageCollectionItemType.INT))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -1020,6 +1045,14 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
                 reader.incrementState();
 
+            case 26:
+                partIds = reader.readCollection("partIds", MessageCollectionItemType.INT);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridNearAtomicUpdateRequest.class);
@@ -1048,7 +1081,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 26;
+        return 27;
     }
 
     /** {@inheritDoc} */

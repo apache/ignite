@@ -1,0 +1,53 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include ../../app/helpers/jade/mixins.jade
+
+.docs-header
+    h1 Configure Ignite Caches
+.docs-body(ng-controller='cachesController')
+    ignite-information
+        ul
+            li Configure #[a(href='https://apacheignite.readme.io/docs/data-grid' target='_blank') memory] settings
+            li Configure persistence
+    div(ignite-loading='loadingCachesScreen' ignite-loading-text='Loading caches...' ignite-loading-position='top')
+        div(ng-show='ui.ready')
+            hr
+            +main-table('caches', 'caches', 'cacheName', 'selectItem(row)', '{{$index + 1}}) {{row.label}}', 'label')
+            .padding-top-dflt(bs-affix)
+                .panel-tip-container(data-placement='bottom' bs-tooltip='' data-title='Create new cache')
+                    button.btn.btn-primary(id='new-item' ng-click='createItem()') Add cache
+                +save-remove-clone-undo-buttons('cache')
+                hr
+            .bs-affix-fix
+            div(bs-collapse='' data-allow-multiple='true' ng-model='ui.activePanels')
+                form.form-horizontal(name='ui.inputForm' novalidate ng-if='contentVisible()')
+                    .panel-group
+                        include ../../app/modules/states/configuration/caches/general.jade
+                        include ../../app/modules/states/configuration/caches/memory.jade
+                        include ../../app/modules/states/configuration/caches/query.jade
+                        include ../../app/modules/states/configuration/caches/store.jade
+
+                        +advanced-options-toggle-default
+
+                        div(ng-show='ui.expanded')
+                            include ../../app/modules/states/configuration/caches/concurrency.jade
+                            include ../../app/modules/states/configuration/caches/node-filter.jade
+                            include ../../app/modules/states/configuration/caches/rebalance.jade
+                            include ../../app/modules/states/configuration/caches/server-near-cache.jade
+                            include ../../app/modules/states/configuration/caches/statistics.jade
+
+                            +advanced-options-toggle-default

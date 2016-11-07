@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Services;
     using Apache.Ignite.Core.Services;
@@ -165,7 +166,8 @@ namespace Apache.Ignite.Core.Tests.Services
             var ex = Assert.Throws<InvalidOperationException>(() => prx.MissingMethod());
 
             Assert.AreEqual("Failed to invoke proxy: there is no method 'MissingMethod'" +
-                            " in type 'Apache.Ignite.Core.Tests.Services.ServiceProxyTest+TestIgniteService'", ex.Message);
+                            " in type 'Apache.Ignite.Core.Tests.Services.ServiceProxyTest+TestIgniteService'" +
+                            " with 0 arguments", ex.Message);
         }
 
         /// <summary>
@@ -268,7 +270,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 // 1) Write to a stream
                 inStream.WriteBool(SrvKeepBinary);  // WriteProxyMethod does not do this, but Java does
 
-                ServiceProxySerializer.WriteProxyMethod(_marsh.StartMarshal(inStream), method, args);
+                ServiceProxySerializer.WriteProxyMethod(_marsh.StartMarshal(inStream), method, args, Platform.DotNet);
 
                 inStream.SynchronizeOutput();
 
@@ -283,8 +285,10 @@ namespace Apache.Ignite.Core.Tests.Services
                 var result = ServiceProxyInvoker.InvokeServiceMethod(_svc, mthdName, mthdArgs);
 
                 ServiceProxySerializer.WriteInvocationResult(outStream, _marsh, result.Key, result.Value);
-                
-                _marsh.StartMarshal(outStream).WriteString("unused");  // fake Java exception details
+
+                var writer = _marsh.StartMarshal(outStream);
+                writer.WriteString("unused");  // fake Java exception details
+                writer.WriteString("unused");  // fake Java exception details
 
                 outStream.SynchronizeOutput();
 

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -24,6 +26,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -34,17 +37,11 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import net.sf.json.JSON;
-import net.sf.json.JSONException;
-import net.sf.json.JSONSerializer;
-import net.sf.json.JsonConfig;
-import net.sf.json.processors.JsonValueProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
-import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskResultBean;
 import org.apache.ignite.internal.processors.rest.request.DataStructuresRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestLogRequest;
@@ -68,31 +65,29 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXECUTE
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
 
 /**
- * Jetty REST handler. The following URL format is supported:
- * {@code /ignite?cmd=cmdName&param1=abc&param2=123}
+ * Jetty REST handler. The following URL format is supported: {@code /ignite?cmd=cmdName&param1=abc&param2=123}
  */
 public class GridJettyRestHandler extends AbstractHandler {
-    /** JSON value processor that does not transform input object. */
-    private static final JsonValueProcessor SKIP_STR_VAL_PROC = new JsonValueProcessor() {
-        @Override public Object processArrayValue(Object o, JsonConfig jsonConfig) {
-            return o;
-        }
-
-        @Override public Object processObjectValue(String s, Object o, JsonConfig jsonConfig) {
-            return o;
-        }
-    };
+    /** Used to sent request charset. */
+    private static final String CHARSET = StandardCharsets.UTF_8.name();
 
     /** Logger. */
     private final IgniteLogger log;
+
     /** Authentication checker. */
     private final IgniteClosure<String, Boolean> authChecker;
+
     /** Request handlers. */
     private GridRestProtocolHandler hnd;
+
     /** Default page. */
     private volatile String dfltPage;
+
     /** Favicon. */
     private volatile byte[] favicon;
+
+    /** Mapper from Java object to JSON. */
+    private final ObjectMapper jsonMapper;
 
     /**
      * Creates new HTTP requests handler.
@@ -108,6 +103,7 @@ public class GridJettyRestHandler extends AbstractHandler {
         this.hnd = hnd;
         this.log = log;
         this.authChecker = authChecker;
+        this.jsonMapper = new GridJettyObjectMapper();
 
         // Init default page and favicon.
         try {
@@ -137,14 +133,14 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @param key Key.
      * @param params Parameters map.
      * @param dfltVal Default value.
-     * @return Long value from parameters map or {@code dfltVal} if null
-     *     or not exists.
+     * @return Long value from parameters map or {@code dfltVal} if null or not exists.
      * @throws IgniteCheckedException If parsing failed.
      */
-    @Nullable private static Long longValue(String key, Map<String, Object> params, Long dfltVal) throws IgniteCheckedException {
+    @Nullable private static Long longValue(String key, Map<String, Object> params,
+        Long dfltVal) throws IgniteCheckedException {
         assert key != null;
 
-        String val = (String) params.get(key);
+        String val = (String)params.get(key);
 
         try {
             return val == null ? dfltVal : Long.valueOf(val);
@@ -160,17 +156,16 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @param key Key.
      * @param params Parameters map.
      * @param dfltVal Default value.
-     * @return Integer value from parameters map or {@code dfltVal} if null
-     *     or not exists.
+     * @return Integer value from parameters map or {@code dfltVal} if null or not exists.
      * @throws IgniteCheckedException If parsing failed.
      */
-    @Nullable private static Integer intValue(String key, Map<String, Object> params, Integer dfltVal) throws IgniteCheckedException {
+    private static int intValue(String key, Map<String, Object> params, int dfltVal) throws IgniteCheckedException {
         assert key != null;
 
-        String val = (String) params.get(key);
+        String val = (String)params.get(key);
 
         try {
-            return val == null ? dfltVal : Integer.valueOf(val);
+            return val == null ? dfltVal : Integer.parseInt(val);
         }
         catch (NumberFormatException ignore) {
             throw new IgniteCheckedException("Failed to parse parameter of Integer type [" + key + "=" + val + "]");
@@ -182,14 +177,13 @@ public class GridJettyRestHandler extends AbstractHandler {
      *
      * @param key Key.
      * @param params Parameters map.
-     * @return UUID value from parameters map or {@code null} if null
-     *     or not exists.
+     * @return UUID value from parameters map or {@code null} if null or not exists.
      * @throws IgniteCheckedException If parsing failed.
      */
     @Nullable private static UUID uuidValue(String key, Map<String, Object> params) throws IgniteCheckedException {
         assert key != null;
 
-        String val = (String) params.get(key);
+        String val = (String)params.get(key);
 
         try {
             return val == null ? null : UUID.fromString(val);
@@ -208,7 +202,7 @@ public class GridJettyRestHandler extends AbstractHandler {
         InputStream in = getClass().getResourceAsStream("rest.html");
 
         if (in != null) {
-            LineNumberReader rdr = new LineNumberReader(new InputStreamReader(in));
+            LineNumberReader rdr = new LineNumberReader(new InputStreamReader(in, CHARSET));
 
             try {
                 StringBuilder buf = new StringBuilder(2048);
@@ -217,7 +211,7 @@ public class GridJettyRestHandler extends AbstractHandler {
                     buf.append(line);
 
                     if (!line.endsWith(" "))
-                        buf.append(" ");
+                        buf.append(' ');
                 }
 
                 dfltPage = buf.toString();
@@ -368,39 +362,35 @@ public class GridJettyRestHandler extends AbstractHandler {
                 throw (Error)e;
         }
 
-        JsonConfig cfg = new GridJettyJsonConfig();
-
-        // Workaround for not needed transformation of string into JSON object.
-        if (cmdRes.getResponse() instanceof String)
-            cfg.registerJsonValueProcessor(cmdRes.getClass(), "response", SKIP_STR_VAL_PROC);
-
-        // Workaround for not needed transformation of result field string into JSON object at GridClientTaskResultBean.
-        if (cmdRes.getResponse() instanceof GridClientTaskResultBean
-            && ((GridClientTaskResultBean)cmdRes.getResponse()).getResult() instanceof String)
-            cfg.registerJsonValueProcessor(cmdRes.getResponse().getClass(), "result", SKIP_STR_VAL_PROC);
-
-        JSON json;
+        String json;
 
         try {
-            json = JSONSerializer.toJSON(cmdRes, cfg);
+            json = jsonMapper.writeValueAsString(cmdRes);
         }
-        catch (JSONException e) {
-            U.error(log, "Failed to convert response to JSON: " + cmdRes, e);
+        catch (JsonProcessingException e1) {
+            U.error(log, "Failed to convert response to JSON: " + cmdRes, e1);
 
-            json = JSONSerializer.toJSON(new GridRestResponse(STATUS_FAILED, e.getMessage()), cfg);
+            GridRestResponse resFailed = new GridRestResponse(STATUS_FAILED, e1.getMessage());
+
+            try {
+                json = jsonMapper.writeValueAsString(resFailed);
+            }
+            catch (JsonProcessingException e2) {
+                json = "{\"successStatus\": \"1\", \"error:\" \"" + e2.getMessage() + "\"}}";
+            }
         }
 
         try {
             if (log.isDebugEnabled())
-                log.debug("Parsed command response into JSON object: " + json.toString(2));
+                log.debug("Parsed command response into JSON object: " + json);
 
-            res.getWriter().write(json.toString());
+            res.getWriter().write(json);
 
             if (log.isDebugEnabled())
                 log.debug("Processed HTTP request [action=" + act + ", jsonRes=" + cmdRes + ", req=" + req + ']');
         }
         catch (IOException e) {
-            U.error(log, "Failed to send HTTP response: " + json.toString(2), e);
+            U.error(log, "Failed to send HTTP response: " + json, e);
         }
     }
 
@@ -510,10 +500,10 @@ public class GridJettyRestHandler extends AbstractHandler {
             case NODE: {
                 GridRestTopologyRequest restReq0 = new GridRestTopologyRequest();
 
-                restReq0.includeMetrics(Boolean.parseBoolean((String) params.get("mtr")));
-                restReq0.includeAttributes(Boolean.parseBoolean((String) params.get("attr")));
+                restReq0.includeMetrics(Boolean.parseBoolean((String)params.get("mtr")));
+                restReq0.includeAttributes(Boolean.parseBoolean((String)params.get("attr")));
 
-                restReq0.nodeIp((String) params.get("ip"));
+                restReq0.nodeIp((String)params.get("ip"));
 
                 restReq0.nodeId(uuidValue("id", params));
 
@@ -527,12 +517,12 @@ public class GridJettyRestHandler extends AbstractHandler {
             case NOOP: {
                 GridRestTaskRequest restReq0 = new GridRestTaskRequest();
 
-                restReq0.taskId((String) params.get("id"));
-                restReq0.taskName((String) params.get("name"));
+                restReq0.taskId((String)params.get("id"));
+                restReq0.taskName((String)params.get("name"));
 
                 restReq0.params(values("p", params));
 
-                restReq0.async(Boolean.parseBoolean((String) params.get("async")));
+                restReq0.async(Boolean.parseBoolean((String)params.get("async")));
 
                 restReq0.timeout(longValue("timeout", params, 0L));
 
@@ -544,7 +534,7 @@ public class GridJettyRestHandler extends AbstractHandler {
             case LOG: {
                 GridRestLogRequest restReq0 = new GridRestLogRequest();
 
-                restReq0.path((String) params.get("path"));
+                restReq0.path((String)params.get("path"));
 
                 restReq0.from(intValue("from", params, -1));
                 restReq0.to(intValue("to", params, -1));
@@ -569,12 +559,17 @@ public class GridJettyRestHandler extends AbstractHandler {
 
                 restReq0.arguments(values("arg", params).toArray());
 
-                restReq0.typeName((String) params.get("type"));
+                restReq0.typeName((String)params.get("type"));
 
-                String pageSize = (String) params.get("pageSize");
+                String pageSize = (String)params.get("pageSize");
 
                 if (pageSize != null)
                     restReq0.pageSize(Integer.parseInt(pageSize));
+
+                String distributedJoins = (String)params.get("distributedJoins");
+
+                if (distributedJoins != null)
+                    restReq0.distributedJoins(Boolean.parseBoolean(distributedJoins));
 
                 restReq0.cacheName((String)params.get("cacheName"));
 
@@ -612,7 +607,7 @@ public class GridJettyRestHandler extends AbstractHandler {
             case FETCH_SQL_QUERY: {
                 RestQueryRequest restReq0 = new RestQueryRequest();
 
-                String qryId = (String) params.get("qryId");
+                String qryId = (String)params.get("qryId");
 
                 if (qryId != null)
                     restReq0.queryId(Long.parseLong(qryId));
@@ -632,7 +627,7 @@ public class GridJettyRestHandler extends AbstractHandler {
             case CLOSE_SQL_QUERY: {
                 RestQueryRequest restReq0 = new RestQueryRequest();
 
-                String qryId = (String) params.get("qryId");
+                String qryId = (String)params.get("qryId");
 
                 if (qryId != null)
                     restReq0.queryId(Long.parseLong(qryId));
@@ -659,7 +654,7 @@ public class GridJettyRestHandler extends AbstractHandler {
             restReq.credentials(cred);
         }
 
-        String clientId = (String) params.get("clientId");
+        String clientId = (String)params.get("clientId");
 
         try {
             if (clientId != null)
@@ -669,7 +664,7 @@ public class GridJettyRestHandler extends AbstractHandler {
             // Ignore invalid client id. Rest handler will process this logic.
         }
 
-        String destId = (String) params.get("destId");
+        String destId = (String)params.get("destId");
 
         try {
             if (destId != null)
@@ -679,7 +674,7 @@ public class GridJettyRestHandler extends AbstractHandler {
             // Don't fail - try to execute locally.
         }
 
-        String sesTokStr = (String) params.get("sessionToken");
+        String sesTokStr = (String)params.get("sessionToken");
 
         try {
             if (sesTokStr != null)
@@ -699,7 +694,7 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @param params Parameters map.
      * @return Values.
      */
-    @Nullable protected List<Object> values(String keyPrefix, Map<String, Object> params) {
+    protected List<Object> values(String keyPrefix, Map<String, Object> params) {
         assert keyPrefix != null;
 
         List<Object> vals = new LinkedList<>();
@@ -720,15 +715,14 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @param req Request.
      * @return Command.
      */
-    @Nullable GridRestCommand command(ServletRequest req) {
+    @Nullable private GridRestCommand command(ServletRequest req) {
         String cmd = req.getParameter("cmd");
 
         return cmd == null ? null : GridRestCommand.fromKey(cmd.toLowerCase());
     }
 
     /**
-     * Parses HTTP parameters in an appropriate format and return back map of
-     * values to predefined list of names.
+     * Parses HTTP parameters in an appropriate format and return back map of values to predefined list of names.
      *
      * @param req Request.
      * @return Map of parsed parameters.

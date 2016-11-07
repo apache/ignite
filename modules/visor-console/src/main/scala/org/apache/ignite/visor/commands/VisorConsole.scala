@@ -62,6 +62,7 @@ class VisorConsole {
         org.apache.ignite.visor.commands.ack.VisorAckCommand
         org.apache.ignite.visor.commands.alert.VisorAlertCommand
         org.apache.ignite.visor.commands.cache.VisorCacheClearCommand
+        org.apache.ignite.visor.commands.cache.VisorCacheResetCommand
         org.apache.ignite.visor.commands.cache.VisorCacheCommand
         org.apache.ignite.visor.commands.cache.VisorCacheSwapCommand
         org.apache.ignite.visor.commands.config.VisorConfigurationCommand
@@ -146,7 +147,10 @@ class VisorConsole {
         batchCommand.foreach(commands => batchStream = Some(commands.replaceAll(";", "\n")))
 
         val inputStream = batchStream match {
-            case Some(cmd) => new ByteArrayInputStream((cmd + "\nquit\n").getBytes("UTF-8"))
+            case Some(cmd) =>
+                visor.batchMode = true
+
+                new ByteArrayInputStream((cmd + "\nquit\n").getBytes("UTF-8"))
             case None => new FileInputStream(FileDescriptor.in)
         }
 

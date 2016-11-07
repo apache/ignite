@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Apache.Ignite.Core.Log;
 
     /// <summary>
     /// Provides mapping between Java and .NET basic types.
@@ -43,7 +44,17 @@ namespace Apache.Ignite.Core.Impl.Binary
             {typeof (double), "java.lang.Double"},
             {typeof (string), "java.lang.String"},
             {typeof (decimal), "java.math.BigDecimal"},
-            {typeof (Guid), "java.util.UUID"}
+            {typeof (Guid), "java.util.UUID"},
+            {typeof (DateTime), "java.sql.Timestamp"}
+        };
+
+        /** */
+        private static readonly Dictionary<Type, Type> IndirectMappingTypes = new Dictionary<Type, Type>
+        {
+            {typeof (sbyte), typeof (byte)},
+            {typeof (ushort), typeof (short)},
+            {typeof (uint), typeof (int)},
+            {typeof (ulong), typeof (long)}
         };
 
         /** */
@@ -51,7 +62,17 @@ namespace Apache.Ignite.Core.Impl.Binary
             NetToJava.GroupBy(x => x.Value).ToDictionary(g => g.Key, g => g.First().Key);
 
         /** */
-        private static readonly string MappedTypes = string.Join(", ", NetToJava.Keys.Select(x => x.Name));
+        private static readonly Dictionary<string, string> JavaPrimitiveToType = new Dictionary<string, string>
+        {
+            {"boolean", "java.lang.Boolean"},
+            {"byte", "java.lang.Byte"},
+            {"short", "java.lang.Short"},
+            {"char", "java.lang.Character"},
+            {"int", "java.lang.Integer"},
+            {"long", "java.lang.Long"},
+            {"float", "java.lang.Float"},
+            {"double", "java.lang.Double"},
+        };
 
         /// <summary>
         /// Gets the corresponding Java type name.
@@ -61,9 +82,44 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (type == null)
                 return null;
 
+            // Unwrap nullable.
+            type = Nullable.GetUnderlyingType(type) ?? type;
+
             string res;
 
             return NetToJava.TryGetValue(type, out res) ? res : null;
+        }
+
+        /// <summary>
+        /// Logs a warning for indirectly mapped types.
+        /// </summary>
+        public static void LogIndirectMappingWarning(Type type, ILogger log, string logInfo)
+        {
+            if (type == null)
+                return;
+
+            var directType = GetDirectlyMappedType(type);
+
+            if (directType == type)
+                return;
+
+            log.Warn("{0}: Type '{1}' maps to Java type '{2}' using unchecked conversion. " +
+                     "This may cause issues in SQL queries. " +
+                     "You can use '{3}' instead to achieve direct mapping.",
+                logInfo, type, NetToJava[type], directType);
+        }
+
+        /// <summary>
+        /// Gets the compatible type that maps directly to Java.
+        /// </summary>
+        public static Type GetDirectlyMappedType(Type type)
+        {
+            // Unwrap nullable.
+            var unwrapType = Nullable.GetUnderlyingType(type) ?? type;
+
+            Type directType;
+
+            return IndirectMappingTypes.TryGetValue(unwrapType, out directType) ? directType : type;
         }
 
         /// <summary>
@@ -76,17 +132,13 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (string.IsNullOrEmpty(javaTypeName))
                 return null;
 
+            string fullJavaTypeName;
+
+            JavaPrimitiveToType.TryGetValue(javaTypeName, out fullJavaTypeName);
+
             Type res;
 
-            return JavaToNet.TryGetValue(javaTypeName, out res) ? res : null;
-        }
-
-        /// <summary>
-        /// Gets the supported types as a comma-separated string.
-        /// </summary>
-        public static string SupportedTypesString
-        {
-            get { return MappedTypes; }
+            return JavaToNet.TryGetValue(fullJavaTypeName ?? javaTypeName, out res) ? res : null;
         }
     }
 }

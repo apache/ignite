@@ -38,6 +38,9 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
     /** Constant: FALSE. */
     protected static final int FALSE = 0;
 
+    /** Constant: ERROR. */
+    protected static final int ERROR = -1;
+
     /** */
     private static final int OP_META = -1;
 
@@ -69,7 +72,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
                 return TRUE;
             }
             else
-                return processInStreamOutLong(type, reader);
+                return processInStreamOutLong(type, reader, mem);
         }
         catch (Exception e) {
             throw convertException(e);
@@ -232,6 +235,18 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      */
     protected long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
         return throwUnsupported(type);
+    }
+
+    /**
+     * Process IN operation.
+     *
+     * @param type Type.
+     * @param reader Binary reader.
+     * @return Result.
+     * @throws IgniteCheckedException In case of exception.
+     */
+    protected long processInStreamOutLong(int type, BinaryRawReaderEx reader, PlatformMemory mem) throws IgniteCheckedException {
+        return processInStreamOutLong(type, reader);
     }
 
     /**

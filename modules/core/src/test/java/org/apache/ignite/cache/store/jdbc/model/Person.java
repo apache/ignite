@@ -18,6 +18,7 @@
 package org.apache.ignite.cache.store.jdbc.model;
 
 import java.io.Serializable;
+import java.sql.Date;
 
 /**
  * Person definition.
@@ -33,6 +34,9 @@ public class Person implements Serializable {
 
     /** Value for orgId. */
     private Integer orgId;
+
+    /** Value for birthday. */
+    private Date birthday;
 
     /** Value for name. */
     private String name;
@@ -53,11 +57,13 @@ public class Person implements Serializable {
     public Person(
         Integer id,
         Integer orgId,
+        Date birthday,
         String name,
         Integer salary
     ) {
         this.id = id;
         this.orgId = orgId;
+        this.birthday = birthday;
         this.name = name;
         this.salary = salary;
     }
@@ -96,6 +102,24 @@ public class Person implements Serializable {
      */
     public void setOrgId(Integer orgId) {
         this.orgId = orgId;
+    }
+
+    /**
+     * Gets birthday.
+     *
+     * @return Value for birthday.
+     */
+    public Date getBirthday() {
+        return birthday;
+    }
+
+    /**
+     * Sets birthday.
+     *
+     * @param birthday New value for birthday.
+     */
+    public void setBirthday(Date birthday) {
+        this.birthday = birthday;
     }
 
     /**
@@ -172,6 +196,7 @@ public class Person implements Serializable {
     @Override public String toString() {
         return "Person [id=" + id +
             ", orgId=" + orgId +
+            ", birthday=" + birthday.getTime() +
             ", name=" + name +
             "]";
     }

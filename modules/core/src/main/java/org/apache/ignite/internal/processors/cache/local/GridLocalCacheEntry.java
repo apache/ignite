@@ -176,33 +176,6 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
         return owner;
     }
 
-    /**
-     *
-     * @param ver Candidate version.
-     * @return Current owner.
-     */
-    @Nullable public GridCacheMvccCandidate readyLocal(GridCacheVersion ver) {
-        GridCacheMvccCandidate prev = null;
-        GridCacheMvccCandidate owner = null;
-
-        synchronized (this) {
-            GridCacheMvcc mvcc = mvccExtras();
-
-            if (mvcc != null) {
-                prev = mvcc.localOwner();
-
-                owner = mvcc.readyLocal(ver);
-
-                if (mvcc.isEmpty())
-                    mvccExtras(null);
-            }
-        }
-
-        checkOwnerChanged(prev, owner);
-
-        return owner;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean tmLock(IgniteInternalTx tx,
         long timeout,

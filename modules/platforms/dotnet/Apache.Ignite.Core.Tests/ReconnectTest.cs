@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-#pragma warning disable 618  // Deprecated SpringConfigUrl
 namespace Apache.Ignite.Core.Tests
 {
     using Apache.Ignite.Core.Cache;
@@ -26,6 +25,7 @@ namespace Apache.Ignite.Core.Tests
     /// <summary>
     /// Client reconnect tests.
     /// </summary>
+    [Category(TestUtils.CategoryIntensive)]
     public class ReconnectTest
     {
         /// <summary>
@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var cfg = new IgniteConfiguration
             {
-                SpringConfigUrl = "config\\compute\\compute-grid1.xml",
+                SpringConfigUrl = "config\\reconnect-test.xml",
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions()
             };
@@ -47,9 +47,14 @@ namespace Apache.Ignite.Core.Tests
 
             using (var ignite = Ignition.Start(cfg))
             {
+                var reconnected = 0;
+                var disconnected = 0;
+                ignite.ClientDisconnected += (sender, args) => { disconnected++; };
+                ignite.ClientReconnected += (sender, args) => { reconnected += args.HasClusterRestarted ? 10 : 1; };
+
                 Assert.IsTrue(ignite.GetCluster().ClientReconnectTask.IsCompleted);
 
-                var cache = ignite.GetCache<int, int>(null);
+                var cache = ignite.CreateCache<int, int>("c");
 
                 cache[1] = 1;
 
@@ -58,11 +63,17 @@ namespace Apache.Ignite.Core.Tests
 
                 var ex = Assert.Throws<CacheException>(() => cache.Get(1));
 
+                Assert.IsTrue(ex.ToString().Contains(
+                    "javax.cache.CacheException: class org.apache.ignite.IgniteClientDisconnectedException: " +
+                    "Operation has been cancelled (client node disconnected)"));
+
                 var inner = (ClientDisconnectedException) ex.InnerException;
 
                 var clientReconnectTask = inner.ClientReconnectTask;
 
                 Assert.AreEqual(ignite.GetCluster().ClientReconnectTask, clientReconnectTask);
+                Assert.AreEqual(1, disconnected);
+                Assert.AreEqual(0, reconnected);
 
                 // Resume process to reconnect
                 proc.Resume();
@@ -70,6 +81,8 @@ namespace Apache.Ignite.Core.Tests
                 clientReconnectTask.Wait();
 
                 Assert.AreEqual(1, cache[1]);
+                Assert.AreEqual(1, disconnected);
+                Assert.AreEqual(1, reconnected);
             }
         }
 

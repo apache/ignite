@@ -369,7 +369,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
             GridCacheAdapter cache = grid.internalCache(null);
 
-            GridCacheMapEntry entry = cache.map().getEntry(key);
+            GridCacheMapEntry entry = cache.map().getEntry(cache.context().toCacheKeyObject(key));
 
             log.info("Entry: " + entry);
 
@@ -378,11 +378,11 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
                 assertEquals("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', putBefore,
                     entry.hasValue());
                 assertEquals("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', putBefore ? 1 : null,
-                    entry.rawGetOrUnmarshal(false));
+                    entry.rawGetOrUnmarshal(false).value(cache.ctx.cacheObjectContext(), false));
             }
 
             if (cache.isNear()) {
-                entry = ((GridNearCacheAdapter)cache).dht().map().getEntry(key);
+                entry = ((GridNearCacheAdapter)cache).dht().map().getEntry(cache.context().toCacheKeyObject(key));
 
                 log.info("Dht entry: " + entry);
 
@@ -391,7 +391,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
                     assertEquals("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', putBefore,
                         entry.hasValue());
                     assertEquals("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', putBefore ? 1 : null,
-                        entry.rawGetOrUnmarshal(false));
+                        entry.rawGetOrUnmarshal(false).value(cache.ctx.cacheObjectContext(), false));
                 }
             }
         }

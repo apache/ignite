@@ -20,6 +20,7 @@ package org.apache.ignite.internal.binary;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
@@ -84,13 +85,13 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         BinaryContext ctx = binaryContext(marsh);
 
-        Map<Integer, Class> typeIds = U.field(ctx, "userTypes");
+        ConcurrentMap<Integer, BinaryInternalMapper> types = U.field(ctx, "typeId2Mapper");
 
-        assertEquals(3, typeIds.size());
+        assertEquals(3, types.size());
 
-        assertTrue(typeIds.containsKey(typeId(CLASS1_FULL_NAME, nameMapper, mapper)));
-        assertTrue(typeIds.containsKey(typeId(CLASS2_FULL_NAME, nameMapper, mapper)));
-        assertTrue(typeIds.containsKey(typeId(INNER_CLASS_FULL_NAME, nameMapper, mapper)));
+        assertTrue(types.containsKey(typeId(CLASS1_FULL_NAME, nameMapper, mapper)));
+        assertTrue(types.containsKey(typeId(CLASS2_FULL_NAME, nameMapper, mapper)));
+        assertTrue(types.containsKey(typeId(INNER_CLASS_FULL_NAME, nameMapper, mapper)));
     }
 
     /**
@@ -157,13 +158,13 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         BinaryContext ctx = binaryContext(marsh);
 
-        Map<Integer, Class> typeIds = U.field(ctx, "userTypes");
+        ConcurrentMap<Integer, BinaryInternalMapper> types = U.field(ctx, "typeId2Mapper");
 
-        assertEquals(3, typeIds.size());
+        assertEquals(3, types.size());
 
-        assertTrue(typeIds.containsKey(typeId(CLASS1_FULL_NAME, nameMapper, idMapper)));
-        assertTrue(typeIds.containsKey(typeId(CLASS2_FULL_NAME, nameMapper, idMapper)));
-        assertTrue(typeIds.containsKey(typeId(INNER_CLASS_FULL_NAME, nameMapper, idMapper)));
+        assertTrue(types.containsKey(typeId(CLASS1_FULL_NAME, nameMapper, idMapper)));
+        assertTrue(types.containsKey(typeId(CLASS2_FULL_NAME, nameMapper, idMapper)));
+        assertTrue(types.containsKey(typeId(INNER_CLASS_FULL_NAME, nameMapper, idMapper)));
     }
 
     /**
@@ -346,13 +347,13 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         BinaryContext ctx = binaryContext(marsh);
 
-        Map<Integer, Class> typeIds = U.field(ctx, "userTypes");
+        ConcurrentMap<Integer, BinaryInternalMapper> types = U.field(ctx, "typeId2Mapper");
 
-        assertEquals(3, typeIds.size());
+        assertEquals(3, types.size());
 
-        assertTrue(typeIds.containsKey(typeId(CLASS1_FULL_NAME, nameMapper, mapper)));
-        assertTrue(typeIds.containsKey(typeId(INNER_CLASS_FULL_NAME, nameMapper, mapper)));
-        assertTrue(typeIds.containsKey("type2".hashCode()));
+        assertTrue(types.containsKey(typeId(CLASS1_FULL_NAME, nameMapper, mapper)));
+        assertTrue(types.containsKey(typeId(INNER_CLASS_FULL_NAME, nameMapper, mapper)));
+        assertTrue(types.containsKey("type2".hashCode()));
 
         Map<String, org.apache.ignite.internal.binary.BinaryInternalMapper> typeMappers = U.field(ctx, "cls2Mappers");
 
@@ -387,12 +388,12 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         BinaryContext ctx = binaryContext(marsh);
 
-        Map<Integer, Class> typeIds = U.field(ctx, "userTypes");
+        ConcurrentMap<Integer, BinaryInternalMapper> types = U.field(ctx, "typeId2Mapper");
 
-        assertEquals(3, typeIds.size());
+        assertEquals(3, types.size());
 
-        assertTrue(typeIds.containsKey(typeId(CLASS1_FULL_NAME, nameMapper, idMapper)));
-        assertTrue(typeIds.containsKey(typeId(CLASS2_FULL_NAME, nameMapper, idMapper)));
+        assertTrue(types.containsKey(typeId(CLASS1_FULL_NAME, nameMapper, idMapper)));
+        assertTrue(types.containsKey(typeId(CLASS2_FULL_NAME, nameMapper, idMapper)));
     }
 
     /**
@@ -460,12 +461,12 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         BinaryContext ctx = binaryContext(marsh);
 
-        Map<Integer, Class> typeIds = U.field(ctx, "userTypes");
+        ConcurrentMap<Integer, BinaryInternalMapper> types = U.field(ctx, "typeId2Mapper");
 
-        assertEquals(3, typeIds.size());
+        assertEquals(3, types.size());
 
-        assertTrue(typeIds.containsKey(typeId(CLASS1_FULL_NAME, nameMapper, idMapper)));
-        assertTrue(typeIds.containsKey(typeId(CLASS2_FULL_NAME, nameMapper, idMapper)));
+        assertTrue(types.containsKey(typeId(CLASS1_FULL_NAME, nameMapper, idMapper)));
+        assertTrue(types.containsKey(typeId(CLASS2_FULL_NAME, nameMapper, idMapper)));
     }
 
     /**
@@ -580,11 +581,11 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         BinaryContext ctx = binaryContext(marsh);
 
-        Map<Integer, Class> typeIds = U.field(ctx, "userTypes");
+        ConcurrentMap<Integer, BinaryInternalMapper> types = U.field(ctx, "typeId2Mapper");
 
-        assertEquals(3, typeIds.size());
+        assertEquals(3, types.size());
 
-        assertTrue(typeIds.containsKey(typeId(CLASS1_FULL_NAME, nameMapper, idMapper)));
+        assertTrue(types.containsKey(typeId(CLASS1_FULL_NAME, nameMapper, idMapper)));
 
         Map<String, org.apache.ignite.internal.binary.BinaryInternalMapper> typeMappers = U.field(ctx, "cls2Mappers");
 

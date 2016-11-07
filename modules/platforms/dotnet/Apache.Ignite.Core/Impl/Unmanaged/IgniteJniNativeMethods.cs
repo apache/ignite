@@ -61,6 +61,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorGetOrCreateCacheFromConfig")]
         public static extern void* ProcessorGetOrCreateCacheFromConfig(void* ctx, void* obj, long memPtr);
 
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorCreateNearCache")]
+        public static extern void* ProcessorCreateNearCache(void* ctx, void* obj, sbyte* name, long memPtr);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorGetOrCreateNearCache")]
+        public static extern void* ProcessorGetOrCreateNearCache(void* ctx, void* obj, sbyte* name, long memPtr);
+
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorDestroyCache")]
         public static extern void ProcessorDestroyCache(void* ctx, void* obj, sbyte* name);
 
@@ -103,6 +109,16 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorGetIgniteConfiguration")]
         public static extern void ProcessorGetIgniteConfiguration(void* ctx, void* obj, long memPtr);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorGetCacheNames")]
+        public static extern void ProcessorGetCacheNames(void* ctx, void* obj, long memPtr);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorLoggerIsLevelEnabled")]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool ProcessorLoggerIsLevelEnabled(void* ctx, void* obj, int level);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorLoggerLog")]
+        public static extern void ProcessorLoggerLog(void* ctx, void* obj, int level, sbyte* messsage, sbyte* category, sbyte* errorInfo);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetInStreamOutLong")]
         public static extern long TargetInStreamOutLong(void* ctx, void* target, int opType, long memPtr);
@@ -264,6 +280,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProjectionForYoungest")]
         public static extern void* ProjectionForYoungest(void* ctx, void* obj);
 
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProjectionForServers")]
+        public static extern void* ProjectionForServers(void* ctx, void* obj);
+
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProjectionResetMetrics")]
         public static extern void ProjectionResetMetrics(void* ctx, void* obj);
 
@@ -417,5 +436,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteListenableIsCancelled")]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool ListenableIsCancelled(void* ctx, void* target);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteSetConsoleHandler")]
+        public static extern void SetConsoleHandler(void* consoleHandler);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteRemoveConsoleHandler")]
+        public static extern int RemoveConsoleHandler(void* consoleHandler);
     }
 }

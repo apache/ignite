@@ -911,7 +911,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      *
      * @return Collection of cached values.
      */
-    public Collection<V> values();
+    public Iterable<V> values();
 
     /**
      * Gets set of all entries cached on this node. You can remove
@@ -1454,6 +1454,14 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public long localSizeLong(CachePeekMode[] peekModes) throws IgniteCheckedException;
 
     /**
+     * @param partition partition.
+     * @param peekModes Peek modes.
+     * @return Local cache size as a long value.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long localSizeLong(int partition, CachePeekMode[] peekModes) throws IgniteCheckedException;
+
+    /**
      * @param peekModes Peek modes.
      * @return Global cache size.
      * @throws IgniteCheckedException If failed.
@@ -1468,6 +1476,14 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public long sizeLong(CachePeekMode[] peekModes) throws IgniteCheckedException;
 
     /**
+     * @param partition partition
+     * @param peekModes Peek modes.
+     * @return Global cache size as a long value.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long sizeLong(int partition, CachePeekMode[] peekModes) throws IgniteCheckedException;
+
+    /**
      * @param peekModes Peek modes.
      * @return Future.
      */
@@ -1478,6 +1494,13 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Future.
      */
     public IgniteInternalFuture<Long> sizeLongAsync(CachePeekMode[] peekModes);
+
+    /**
+     * @param partition partiton
+     * @param peekModes Peek modes.
+     * @return Future.
+     */
+    public IgniteInternalFuture<Long> sizeLongAsync(int partition, CachePeekMode[] peekModes);
 
     /**
      * Gets size of near cache key set. This method will return count of all entries in near
@@ -1683,85 +1706,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public IgniteInternalFuture<?> removeAllConflictAsync(Map<KeyCacheObject, GridCacheVersion> drMap) throws IgniteCheckedException;
 
     /**
-     * Asynchronously stores given key-value pair in cache only if only if the previous value is equal to the
-     * {@code 'oldVal'} passed in.
-     * <p>
-     * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
-     * <p>
-     * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#write(javax.cache.Cache.Entry)} method.
-     * <h2 class="header">Transactions</h2>
-     * This method is transactional and will enlist the entry into ongoing transaction
-     * if there is one.
-     *
-     * @param key Key to store in cache.
-     * @param oldVal Old value to match.
-     * @param newVal Value to be associated with the given key.
-     * @return Future for the replace operation. The future will return object containing actual old value and success
-     *      flag.
-     * @throws NullPointerException If either key or value are {@code null}.
-     */
-    public IgniteInternalFuture<GridCacheReturn> replacexAsync(K key, V oldVal, V newVal);
-
-    /**
-     * Stores given key-value pair in cache only if only if the previous value is equal to the
-     * {@code 'oldVal'} passed in.
-     * <p>
-     * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
-     * <p>
-     * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#write(javax.cache.Cache.Entry)} method.
-     * <h2 class="header">Transactions</h2>
-     * This method is transactional and will enlist the entry into ongoing transaction
-     * if there is one.
-     *
-     * @param key Key to store in cache.
-     * @param oldVal Old value to match.
-     * @param newVal Value to be associated with the given key.
-     * @return Object containing actual old value and success flag.
-     * @throws NullPointerException If either key or value are {@code null}.
-     * @throws IgniteCheckedException If replace operation failed.
-     */
-    public GridCacheReturn replacex(K key, V oldVal, V newVal) throws IgniteCheckedException;
-
-    /**
-     * Removes given key mapping from cache if one exists and value is equal to the passed in value.
-     * <p>
-     * If write-through is enabled, the value will be removed from {@link CacheStore}
-     * via {@link CacheStore#delete(Object)} method.
-     * <h2 class="header">Transactions</h2>
-     * This method is transactional and will enlist the entry into ongoing transaction
-     * if there is one.
-     *
-     * @param key Key whose mapping is to be removed from cache.
-     * @param val Value to match against currently cached value.
-     * @return Object containing actual old value and success flag.
-     * @throws NullPointerException if the key or value is {@code null}.
-     * @throws IgniteCheckedException If remove failed.
-     */
-    public GridCacheReturn removex(K key, V val) throws IgniteCheckedException;
-
-    /**
-     * Asynchronously removes given key mapping from cache if one exists and value is equal to the passed in value.
-     * <p>
-     * This method will return {@code true} if remove did occur, which means that all optionally
-     * provided filters have passed and there was something to remove, {@code false} otherwise.
-     * <p>
-     * If write-through is enabled, the value will be removed from {@link CacheStore}
-     * via {@link CacheStore#delete(Object)} method.
-     * <h2 class="header">Transactions</h2>
-     * This method is transactional and will enlist the entry into ongoing transaction
-     * if there is one.
-     *
-     * @param key Key whose mapping is to be removed from cache.
-     * @param val Value to match against currently cached value.
-     * @return Future for the remove operation. The future will return object containing actual old value and success
-     *      flag.
-     * @throws NullPointerException if the key or value is {@code null}.
-     */
-    public IgniteInternalFuture<GridCacheReturn> removexAsync(K key, V val);
-
-    /**
      * Gets value from cache. Will go to primary node even if this is a backup.
      *
      * @param key Key to get value for.
@@ -1850,6 +1794,11 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return New projection based on this one, but with the specified expiry policy.
      */
     public IgniteInternalCache<K, V> withExpiryPolicy(ExpiryPolicy plc);
+
+    /**
+     * @return Cache with no-retries behavior enabled.
+     */
+    public IgniteInternalCache<K, V> withNoRetries();
 
     /**
      * @param key Key.
@@ -1974,7 +1923,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public V getTopologySafe(K key) throws IgniteCheckedException;
 
     /**
-     * Tries to put value in cache. Will fail with {@link GridCacheTryPutFailedException}
+     * Tries to get and put value in cache. Will fail with {@link GridCacheTryPutFailedException}
      * if topology exchange is in progress.
      *
      * @param key Key.
@@ -1982,7 +1931,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Old value.
      * @throws IgniteCheckedException In case of error.
      */
-    @Nullable public V tryPutIfAbsent(K key, V val) throws IgniteCheckedException;
+    @Nullable public V tryGetAndPut(K key, V val) throws IgniteCheckedException;
 
     /**
      * @param topVer Locked topology version.

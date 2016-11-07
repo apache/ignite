@@ -304,6 +304,13 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     }
 
     /**
+     * @return New projection.
+     */
+    public PlatformClusterGroup forServers() {
+        return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forServers());
+    }
+
+    /**
      * @return Projection.
      */
     public ClusterGroupEx projection() {

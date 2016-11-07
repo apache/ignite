@@ -30,6 +30,8 @@
         http://www.springframework.org/schema/util
         http://www.springframework.org/schema/util/spring-util.xsd">
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+        <!-- Enable peer class loading for remote events. -->
+        <property name="peerClassLoadingEnabled" value="true"/>
         <!-- Enable client mode. -->
         <property name="clientMode" value="true"/>
 
@@ -48,7 +50,7 @@
         <!-- Enable cache events. -->
         <property name="includeEventTypes">
             <list>
-                <!-- Cache events (only EVT_CACHE_OBJECT_PUT for tests). -->
+                <!-- Cache events. -->
                 <util:constant static-field="org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT"/>
             </list>
         </property>

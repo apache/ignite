@@ -1,0 +1,90 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{5B571661-17F4-4F29-8C7D-0EDB38CA9B55}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Apache.Ignite.Linq</RootNamespace>
+    <AssemblyName>Apache.Ignite.Linq</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>..\Apache.Ignite.Core\Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>none</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>Apache.Ignite.Linq.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Remotion.Linq, Version=2.0.0.0, Culture=neutral, PublicKeyToken=fee00910d6e5f53b, processorArchitecture=MSIL">
+      <HintPath>..\packages\Remotion.Linq.2.0.1\lib\net40\Remotion.Linq.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="CacheExtensions.cs" />
+    <Compile Include="CompiledQuery2.cs" />
+    <Compile Include="CompiledQuery.cs" />
+    <Compile Include="ICacheQueryable.cs" />
+    <Compile Include="Impl\AliasDictionary.cs" />
+    <Compile Include="Impl\CacheFieldsQueryable.cs" />
+    <Compile Include="Impl\CacheFieldsQueryExecutor.cs" />
+    <Compile Include="Impl\CacheFieldsQueryProvider.cs" />
+    <Compile Include="Impl\CacheQueryable.cs" />
+    <Compile Include="Impl\CacheQueryableBase.cs" />
+    <Compile Include="Impl\CacheQueryExpressionVisitor.cs" />
+    <Compile Include="Impl\CacheQueryModelVisitor.cs" />
+    <Compile Include="Impl\CacheQueryParser.cs" />
+    <Compile Include="Impl\ICacheQueryableInternal.cs" />
+    <Compile Include="Impl\MethodVisitor.cs" />
+    <Compile Include="Impl\QueryData.cs" />
+    <Compile Include="Impl\SqlTypes.cs" />
+    <Compile Include="Impl\ExpressionWalker.cs" />
+    <Compile Include="Package-Info.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="QueryOptions.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Apache.Ignite.Linq.nuspec" />
+    <None Include="Apache.Ignite.Linq.snk" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj">
+      <Project>{4cd2f726-7e2b-46c4-a5ba-057bb82eecb6}</Project>
+      <Name>Apache.Ignite.Core</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

@@ -20,10 +20,12 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheInterceptor;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -38,8 +40,11 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentLinkedHashMap;
 
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
 /**
  *
@@ -47,8 +52,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** Active cache IDs. */
     private GridLongList activeCacheIds = new GridLongList();
-    /** Per-transaction read map. */
 
+    /** Per-transaction read map. */
     @GridToStringInclude
     protected Map<IgniteTxKey, IgniteTxEntry> txMap;
 
@@ -68,6 +73,18 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Nullable @Override public Integer firstCacheId() {
         return activeCacheIds.isEmpty() ? null : (int)activeCacheIds.get(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unwindEvicts(GridCacheSharedContext cctx) {
+        for (int i = 0; i < activeCacheIds.size(); i++) {
+            int cacheId = (int) activeCacheIds.get(i);
+
+            GridCacheContext ctx = cctx.cacheContext(cacheId);
+
+            if (ctx != null)
+                CU.unwindEvicts(ctx);
+        }
     }
 
     /** {@inheritDoc} */
@@ -134,15 +151,32 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean sync(GridCacheSharedContext cctx) {
+    @Override public CacheWriteSynchronizationMode syncMode(GridCacheSharedContext cctx) {
+        CacheWriteSynchronizationMode syncMode = CacheWriteSynchronizationMode.FULL_ASYNC;
+
         for (int i = 0; i < activeCacheIds.size(); i++) {
             int cacheId = (int)activeCacheIds.get(i);
 
-            if (cctx.cacheContext(cacheId).config().getWriteSynchronizationMode() == FULL_SYNC)
-                return true;
+            CacheWriteSynchronizationMode cacheSyncMode =
+                cctx.cacheContext(cacheId).config().getWriteSynchronizationMode();
+
+            switch (cacheSyncMode) {
+                case FULL_SYNC:
+                    return FULL_SYNC;
+
+                case PRIMARY_SYNC: {
+                    if (syncMode == FULL_ASYNC)
+                        syncMode = PRIMARY_SYNC;
+
+                    break;
+                }
+
+                case FULL_ASYNC:
+                    break;
+            }
         }
 
-        return false;
+        return syncMode;
     }
 
     /** {@inheritDoc} */
@@ -342,6 +376,13 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         return txMap == null ? Collections.<IgniteTxEntry>emptySet() : txMap.values();
     }
 
+    /**
+     * @return All entries. Returned collection is copy of internal collection.
+     */
+    public synchronized Collection<IgniteTxEntry> allEntriesCopy() {
+        return txMap == null ? Collections.<IgniteTxEntry>emptySet() : new HashSet<>(txMap.values());
+    }
+
     /** {@inheritDoc} */
     @Override public IgniteTxEntry entry(IgniteTxKey key) {
         return txMap == null ? null : txMap.get(key);
@@ -388,7 +429,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void addEntry(IgniteTxEntry entry) {
+    @Override public synchronized void addEntry(IgniteTxEntry entry) {
         txMap.put(entry.txKey(), entry);
     }
 

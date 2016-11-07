@@ -119,4 +119,15 @@ public abstract class GridSqlElement implements Iterable<GridSqlElement> {
     @Override public String toString() {
         return getSQL();
     }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        throw new IllegalStateException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        return this == o || (!(o == null || getClass() != o.getClass()) &&
+            children.equals(((GridSqlElement)o).children));
+    }
 }

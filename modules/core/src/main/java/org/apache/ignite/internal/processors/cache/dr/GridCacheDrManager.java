@@ -56,13 +56,13 @@ public interface GridCacheDrManager extends GridCacheManager {
         AffinityTopologyVersion topVer)throws IgniteCheckedException;
 
     /**
-     * Process partitions "before exchange" event.
+     * Process partitions exchange event.
      *
      * @param topVer Topology version.
      * @param left {@code True} if exchange has been caused by node leave.
      * @throws IgniteCheckedException If failed.
      */
-    public void beforeExchange(AffinityTopologyVersion topVer, boolean left) throws IgniteCheckedException;
+    public void onExchange(AffinityTopologyVersion topVer, boolean left) throws IgniteCheckedException;
 
     /**
      * @return {@code True} is DR is enabled.

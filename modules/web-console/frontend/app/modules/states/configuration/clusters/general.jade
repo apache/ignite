@@ -1,0 +1,73 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include ../../../../../app/helpers/jade/mixins.jade
+
+-var form = 'general'
+-var model = 'backupItem'
+-var modelDiscoveryKind = model + '.discovery.kind'
+
+.panel.panel-default(ng-form=form novalidate)
+    .panel-heading(bs-collapse-toggle)
+        ignite-form-panel-chevron
+        label General
+        ignite-form-revert
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
+        .panel-body
+            .col-sm-6
+                .settings-row
+                    +text('Name:', model + '.name', '"clusterName"', 'true', 'Input name', 'Grid name allows to indicate to what grid this particular grid instance belongs to')
+                .settings-row
+                    +caches(model, 'Select caches to start in cluster or add a new cache')
+                .settings-row
+                    +text-ip-address('Local host:', model + '.localHost', '"localHost"', 'true', '0.0.0.0',
+                        'System-wide local address or host for all Ignite components to bind to<br/>\
+                        If not defined then Ignite tries to use local wildcard address<br/>\
+                        That means that all services will be available on all network interfaces of the host machine')
+                .settings-row
+                    +dropdown('Discovery:', model + '.discovery.kind', '"discovery"', 'true', 'Choose discovery', 'discoveries',
+                        'Discovery allows to discover remote nodes in grid\
+                        <ul>\
+                            <li>Static IPs - IP Finder which works only with pre configured list of IP addresses specified</li>\
+                            <li>Multicast - Multicast based IP finder</li>\
+                            <li>AWS S3 - AWS S3 based IP finder that automatically discover cluster nodes on Amazon EC2 cloud</li>\
+                            <li>Apache jclouds - Apache jclouds multi cloud toolkit based IP finder for cloud platforms with unstable IP addresses</li>\
+                            <li>Google cloud storage - Google Cloud Storage based IP finder that automatically discover cluster nodes on Google Compute Engine cluster</li>\
+                            <li>JDBC - JDBC based IP finder that use database to store node IP addres</li>\
+                            <li>Shared filesystem - Shared filesystem based IP finder that use file to store node IP address</li>\
+                            <li>Apache ZooKeeper - Apache ZooKeeper based IP finder when you use ZooKeeper to coordinate your distributed environment</li>\
+                        </ul>')
+                .settings-row
+                    .panel-details
+                        div(ng-if='#{modelDiscoveryKind} === "Cloud"')
+                            include ./general/discovery/cloud.jade
+                        div(ng-if='#{modelDiscoveryKind} === "GoogleStorage"')
+                            include ./general/discovery/google.jade
+                        div(ng-if='#{modelDiscoveryKind} === "Jdbc"')
+                            include ./general/discovery/jdbc.jade
+                        div(ng-if='#{modelDiscoveryKind} === "Multicast"')
+                            include ./general/discovery/multicast.jade
+                        div(ng-if='#{modelDiscoveryKind} === "S3"')
+                            include ./general/discovery/s3.jade
+                        div(ng-if='#{modelDiscoveryKind} === "SharedFs"')
+                            include ./general/discovery/shared.jade
+                        div(ng-if='#{modelDiscoveryKind} === "Vm"')
+                            include ./general/discovery/vm.jade
+                        div(ng-if='#{modelDiscoveryKind} === "ZooKeeper"')
+                            include ./general/discovery/zookeeper.jade
+            .col-sm-6
+                -var model = 'backupItem'
+                +preview-xml-java(model, 'clusterCaches', 'caches')

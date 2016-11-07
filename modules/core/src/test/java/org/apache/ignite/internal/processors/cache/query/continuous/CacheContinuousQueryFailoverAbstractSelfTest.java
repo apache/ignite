@@ -57,6 +57,8 @@ import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -65,6 +67,7 @@ import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
@@ -81,6 +84,7 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -99,7 +103,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
-import static org.apache.ignite.cache.CacheMemoryMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -164,6 +168,13 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      */
     protected CacheMemoryMode memoryMode() {
         return ONHEAP_TIERED;
+    }
+
+    /**
+     * @return Async callback flag.
+     */
+    protected boolean asyncCallback() {
+        return false;
     }
 
     /**
@@ -258,6 +269,9 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      */
     public void testRebalanceVersion() throws Exception {
         Ignite ignite0 = startGrid(0);
+
+        int minorVer = ignite0.configuration().isLateAffinityAssignment() ? 1 : 0;
+
         GridDhtPartitionTopology top0 = ((IgniteKernal)ignite0).context().cache().context().cacheContext(1).topology();
 
         assertTrue(top0.rebalanceFinished(new AffinityTopologyVersion(1)));
@@ -266,8 +280,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         Ignite ignite1 = startGrid(1);
         GridDhtPartitionTopology top1 = ((IgniteKernal)ignite1).context().cache().context().cacheContext(1).topology();
 
-        waitRebalanceFinished(ignite0, 2);
-        waitRebalanceFinished(ignite1, 2);
+        waitRebalanceFinished(ignite0, 2, minorVer);
+        waitRebalanceFinished(ignite1, 2, minorVer);
 
         assertFalse(top0.rebalanceFinished(new AffinityTopologyVersion(3)));
         assertFalse(top1.rebalanceFinished(new AffinityTopologyVersion(3)));
@@ -275,9 +289,9 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         Ignite ignite2 = startGrid(2);
         GridDhtPartitionTopology top2 = ((IgniteKernal)ignite2).context().cache().context().cacheContext(1).topology();
 
-        waitRebalanceFinished(ignite0, 3);
-        waitRebalanceFinished(ignite1, 3);
-        waitRebalanceFinished(ignite2, 3);
+        waitRebalanceFinished(ignite0, 3, minorVer);
+        waitRebalanceFinished(ignite1, 3, minorVer);
+        waitRebalanceFinished(ignite2, 3, minorVer);
 
         assertFalse(top0.rebalanceFinished(new AffinityTopologyVersion(4)));
         assertFalse(top1.rebalanceFinished(new AffinityTopologyVersion(4)));
@@ -295,9 +309,105 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         stopGrid(1);
 
-        waitRebalanceFinished(ignite0, 5);
-        waitRebalanceFinished(ignite2, 5);
-        waitRebalanceFinished(ignite3, 5);
+        waitRebalanceFinished(ignite0, 5, 0);
+        waitRebalanceFinished(ignite2, 5, 0);
+        waitRebalanceFinished(ignite3, 5, 0);
+    }
+
+    /**
+     * Test that during rebalancing correct old value passed to continuous query.
+     *
+     * @throws Exception If fail.
+     */
+    public void testRebalance() throws Exception {
+        for (int iter = 0; iter < 5; iter++) {
+            log.info("Iteration: " + iter);
+
+            final IgniteEx ignite = startGrid(1);
+
+            final CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>("testCache");
+
+            ccfg.setAtomicityMode(atomicityMode());
+            ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+            ccfg.setCacheMode(cacheMode());
+            ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
+            ccfg.setBackups(2);
+
+            final IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(ccfg);
+
+            final int KEYS = 10_000;
+
+            for (int i = 0; i < KEYS; i++)
+                cache.put(i, i);
+
+            final ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
+
+            final AtomicBoolean err = new AtomicBoolean();
+
+            final AtomicInteger cntr = new AtomicInteger();
+
+            qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
+                @Override public void onUpdated(
+                    final Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> cacheEntryEvts) {
+                    try {
+                        for (final CacheEntryEvent<? extends Integer, ? extends Integer> evt : cacheEntryEvts) {
+                            final Integer oldVal = evt.getOldValue();
+
+                            final Integer val = evt.getValue();
+
+                            assertNotNull("No old value: " + evt, oldVal);
+                            assertEquals("Unexpected old value: " + evt, (Integer)(oldVal + 1), val);
+
+                            cntr.incrementAndGet();
+                        }
+                    }
+                    catch (Throwable e) {
+                        err.set(true);
+
+                        error("Unexpected error: " + e, e);
+                    }
+                }
+            });
+
+            final QueryCursor<Cache.Entry<Integer, Integer>> cur = cache.query(qry);
+
+            final CountDownLatch latch = new CountDownLatch(1);
+
+            final IgniteInternalFuture<Object> updFut = GridTestUtils.runAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    latch.await();
+
+                    for (int i = 0; i < KEYS && !err.get(); i++)
+                        cache.put(i, i + 1);
+
+                    return null;
+                }
+            });
+
+            final IgniteInternalFuture<Object> rebFut = GridTestUtils.runAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    latch.await();
+
+                    for (int i = 2; i <= 5 && !err.get(); i++)
+                        startGrid(i);
+
+                    return null;
+                }
+            });
+
+            latch.countDown();
+
+            updFut.get();
+            rebFut.get();
+
+            assertFalse("Unexpected error during test", err.get());
+
+            assertTrue(cntr.get() > 0);
+
+            cur.close();
+
+            stopAllGrids();
+        }
     }
 
     /**
@@ -305,8 +415,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @param topVer Topology version.
      * @throws Exception If failed.
      */
-    private void waitRebalanceFinished(Ignite ignite, long topVer) throws Exception {
-        final AffinityTopologyVersion topVer0 = new AffinityTopologyVersion(topVer);
+    private void waitRebalanceFinished(Ignite ignite, long topVer, int minorVer) throws Exception {
+        final AffinityTopologyVersion topVer0 = new AffinityTopologyVersion(topVer, minorVer);
 
         final GridDhtPartitionTopology top =
             ((IgniteKernal)ignite).context().cache().context().cacheContext(1).topology();
@@ -473,7 +583,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         for (int j = 0; j < 50; ++j) {
             ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
-            final CacheEventListener3 lsnr = new CacheEventListener3();
+            final CacheEventListener3 lsnr = asyncCallback() ? new CacheEventAsyncListener3()
+                : new CacheEventListener3();
 
             qry.setLocalListener(lsnr);
 
@@ -557,7 +668,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
-        final CacheEventListener3 lsnr = new CacheEventListener3();
+        final CacheEventListener3 lsnr = asyncCallback() ? new CacheEventAsyncListener3() : new CacheEventListener3();
 
         qry.setLocalListener(lsnr);
 
@@ -718,7 +829,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
-        final CacheEventListener3 lsnr = new CacheEventListener3();
+        final CacheEventListener3 lsnr = asyncCallback() ? new CacheEventAsyncListener3() : new CacheEventListener3();
 
         qry.setLocalListener(lsnr);
 
@@ -838,7 +949,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         Affinity<Object> aff = qryClient.affinity(null);
 
-        CacheEventListener1 lsnr = new CacheEventListener1(false);
+        CacheEventListener1 lsnr = asyncCallback() ? new CacheEventAsyncListener1(false)
+            : new CacheEventListener1(false);
 
         ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
@@ -1187,15 +1299,22 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @param cache Cache.
      * @param parts Number of partitions.
      * @return Keys.
+     * @throws Exception If failed.
      */
-    private List<Integer> testKeys(IgniteCache<Object, Object> cache, int parts) {
+    private List<Integer> testKeys(IgniteCache<Object, Object> cache, int parts) throws Exception {
         Ignite ignite = cache.unwrap(Ignite.class);
 
         List<Integer> res = new ArrayList<>();
 
-        Affinity<Object> aff = ignite.affinity(cache.getName());
+        final Affinity<Object> aff = ignite.affinity(cache.getName());
 
-        ClusterNode node = ignite.cluster().localNode();
+        final ClusterNode node = ignite.cluster().localNode();
+
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return aff.primaryPartitions(node).length > 0;
+            }
+        }, 5000));
 
         int[] nodeParts = aff.primaryPartitions(node);
 
@@ -1535,7 +1654,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         qry.setLocalListener(lsnr);
 
-        qry.setRemoteFilter(new CacheEventFilter());
+        qry.setRemoteFilter(asyncCallback() ? new CacheEventAsyncFilter() : new CacheEventFilter());
 
         QueryCursor<?> cur = qryClnCache.query(qry);
 
@@ -1629,7 +1748,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
                     newQry.setLocalListener(dinLsnr);
 
-                    newQry.setRemoteFilter(new CacheEventFilter());
+                    newQry.setRemoteFilter(asyncCallback() ? new CacheEventAsyncFilter() : new CacheEventFilter());
 
                     dinQry = qryClnCache.query(newQry);
 
@@ -1776,7 +1895,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         final IgniteCache<Object, Object> qryClnCache = qryCln.cache(null);
 
-        final CacheEventListener2 lsnr = new CacheEventListener2();
+        final CacheEventListener2 lsnr = asyncCallback() ? new CacheEventAsyncListener2() : new CacheEventListener2();
 
         ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
@@ -2134,6 +2253,19 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      *
      */
+    @IgniteAsyncCallback
+    private static class CacheEventAsyncListener1 extends CacheEventListener1 {
+        /**
+         * @param saveAll Save all events flag.
+         */
+        CacheEventAsyncListener1(boolean saveAll) {
+            super(saveAll);
+        }
+    }
+
+    /**
+     *
+     */
     private static class CacheEventListener1 implements CacheEntryUpdatedListener<Object, Object> {
         /** */
         private volatile CountDownLatch latch;
@@ -2193,6 +2325,14 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                 log.error("Unexpected error", e);
             }
         }
+    }
+
+    /**
+     *
+     */
+    @IgniteAsyncCallback
+    private static class CacheEventAsyncListener2 extends CacheEventListener2 {
+        // No-op.
     }
 
     /**
@@ -2265,6 +2405,14 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      *
      */
+    @IgniteAsyncCallback
+    public static class CacheEventAsyncListener3 extends CacheEventListener3 {
+        // No-op.
+    }
+
+    /**
+     *
+     */
     public static class CacheEventListener3 implements CacheEntryUpdatedListener<Object, Object>,
         CacheEntryEventSerializableFilter<Object, Object> {
         /** Keys. */
@@ -2288,6 +2436,14 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         @Override public boolean evaluate(CacheEntryEvent<?, ?> e) throws CacheEntryListenerException {
             return (Integer)e.getValue() % 2 == 0;
         }
+    }
+
+    /**
+     *
+     */
+    @IgniteAsyncCallback
+    private static class CacheEventAsyncFilter extends CacheEventFilter {
+        // No-op.
     }
 
     /**

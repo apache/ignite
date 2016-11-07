@@ -26,11 +26,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -38,6 +36,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheFilterFailedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.GridCacheReturn;
+import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
@@ -224,8 +224,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /** {@inheritDoc} */
     @Override public GridTuple<CacheObject> peek(GridCacheContext cacheCtx,
         boolean failFast,
-        KeyCacheObject key,
-        CacheEntryPredicate[] filter)
+        KeyCacheObject key)
         throws GridCacheFilterFailedException
     {
         assert false : "Method peek can only be called on user transaction: " + this;
@@ -316,7 +315,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     log.debug("Replacing obsolete entry in remote transaction [entry=" + entry + ", tx=" + this + ']');
 
                 // Replace the entry.
-                txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()));
+                txEntry.cached(txEntry.context().cache().entryEx(txEntry.key(), topologyVersion()));
             }
         }
     }
@@ -440,7 +439,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                         if (log.isDebugEnabled())
                             log.debug("Got removed entry while committing (will retry): " + txEntry);
 
-                        txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()));
+                        txEntry.cached(txEntry.context().cache().entryEx(txEntry.key(), topologyVersion()));
                     }
                 }
             }
@@ -451,26 +450,46 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                 Map<IgniteTxKey, IgniteTxEntry> writeMap = txState.writeMap();
 
+                GridCacheReturnCompletableWrapper wrapper = null;
+
                 if (!F.isEmpty(writeMap)) {
+                    GridCacheReturn ret = null;
+
+                    if (!near() && !local() && onePhaseCommit()) {
+                        if (needReturnValue()) {
+                            ret = new GridCacheReturn(null, cctx.localNodeId().equals(otherNodeId()), true, null, true);
+
+                            UUID origNodeId = otherNodeId(); // Originating node.
+
+                            cctx.tm().addCommittedTxReturn(this,
+                                wrapper = new GridCacheReturnCompletableWrapper(
+                                    !cctx.localNodeId().equals(origNodeId) ? origNodeId : null));
+                        }
+                        else
+                            cctx.tm().addCommittedTx(this, this.nearXidVersion(), null);
+                    }
+
                     // Register this transaction as completed prior to write-phase to
                     // ensure proper lock ordering for removed entries.
                     cctx.tm().addCommittedTx(this);
 
                     AffinityTopologyVersion topVer = topologyVersion();
 
-                    // Node that for near transactions we grab all entries.
-                    for (IgniteTxEntry txEntry : (near() ? allEntries() : writeEntries())) {
-                        GridCacheContext cacheCtx = txEntry.context();
+                    batchStoreCommit(writeMap().values());
 
-                        boolean replicate = cacheCtx.isDrEnabled();
+                    try {
+                        // Node that for near transactions we grab all entries.
+                        for (IgniteTxEntry txEntry : (near() ? allEntries() : writeEntries())) {
+                            GridCacheContext cacheCtx = txEntry.context();
 
-                        try {
+                            boolean replicate = cacheCtx.isDrEnabled();
+
                             while (true) {
                                 try {
                                     GridCacheEntryEx cached = txEntry.cached();
 
                                     if (cached == null)
-                                        txEntry.cached(cached = cacheCtx.cache().entryEx(txEntry.key()));
+                                        txEntry.cached(cached = cacheCtx.cache().entryEx(txEntry.key(), topologyVersion()));
 
                                     if (near() && cacheCtx.dr().receiveEnabled()) {
                                         cached.markObsolete(xidVer);
@@ -487,7 +506,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                         txEntry.cached().unswap(false);
 
                                     IgniteBiTuple<GridCacheOperation, CacheObject> res =
-                                        applyTransformClosures(txEntry, false);
+                                        applyTransformClosures(txEntry, false, ret);
 
                                     GridCacheOperation op = res.get1();
                                     CacheObject val = res.get2();
@@ -543,6 +562,8 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 true,
                                                 true,
                                                 txEntry.keepBinary(),
+                                                txEntry.hasOldValue(),
+                                                txEntry.oldValue(),
                                                 topVer,
                                                 null,
                                                 replicate ? DR_BACKUP : DR_NONE,
@@ -562,6 +583,8 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 true,
                                                 true,
                                                 txEntry.keepBinary(),
+                                                txEntry.hasOldValue(),
+                                                txEntry.oldValue(),
                                                 topVer,
                                                 null,
                                                 replicate ? DR_BACKUP : DR_NONE,
@@ -593,6 +616,8 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                             true,
                                             true,
                                             txEntry.keepBinary(),
+                                            txEntry.hasOldValue(),
+                                            txEntry.oldValue(),
                                             topVer,
                                             null,
                                             replicate ? DR_BACKUP : DR_NONE,
@@ -663,25 +688,30 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                         log.debug("Attempting to commit a removed entry (will retry): " + txEntry);
 
                                     // Renew cached entry.
-                                    txEntry.cached(cacheCtx.cache().entryEx(txEntry.key()));
+                                    txEntry.cached(cacheCtx.cache().entryEx(txEntry.key(), topologyVersion()));
                                 }
                             }
                         }
-                        catch (Throwable ex) {
-                            // In case of error, we still make the best effort to commit,
-                            // as there is no way to rollback at this point.
-                            err = new IgniteTxHeuristicCheckedException("Commit produced a runtime exception " +
-                                "(all transaction entries will be invalidated): " + CU.txString(this), ex);
+                    }
+                    catch (Throwable ex) {
+                        // In case of error, we still make the best effort to commit,
+                        // as there is no way to rollback at this point.
+                        err = new IgniteTxHeuristicCheckedException("Commit produced a runtime exception " +
+                            "(all transaction entries will be invalidated): " + CU.txString(this), ex);
 
-                            U.error(log, "Commit failed.", err);
+                        U.error(log, "Commit failed.", err);
 
-                            uncommit();
+                        uncommit();
 
-                            state(UNKNOWN);
+                        state(UNKNOWN);
 
-                            if (ex instanceof Error)
-                                throw (Error)ex;
-                        }
+                        if (ex instanceof Error)
+                            throw (Error)ex;
+
+                    }
+                    finally {
+                        if (wrapper != null)
+                            wrapper.initialize(ret);
                     }
                 }
 
@@ -774,6 +804,11 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /** {@inheritDoc} */
     @Override public Collection<GridCacheVersion> alternateVersions() {
         return explicitVers == null ? Collections.<GridCacheVersion>emptyList() : explicitVers;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void commitError(Throwable e) {
+        // No-op.
     }
 
     /**

@@ -19,18 +19,22 @@
 
 #include <ignite/common/common.h>
 #include <ignite/common/concurrent.h>
-#include <ignite/common/exports.h>
-#include <ignite/common/java.h>
+#include <ignite/jni/exports.h>
+#include <ignite/jni/java.h>
+#include <ignite/jni/utils.h>
+#include <ignite/common/utils.h>
 
+#include "ignite/ignition.h"
 #include "ignite/impl/ignite_environment.h"
 #include "ignite/impl/ignite_impl.h"
-#include "ignite/impl/utils.h"
-#include "ignite/ignition.h"
 
+using namespace ignite::common;
 using namespace ignite::common::concurrent;
-using namespace ignite::common::java;
+
+using namespace ignite::jni;
+using namespace ignite::jni::java;
+
 using namespace ignite::impl;
-using namespace ignite::impl::utils;
 
 namespace ignite
 {
@@ -212,9 +216,9 @@ namespace ignite
 
                 int optsLen;
                 char** opts = CreateJvmOptions(cfg, homeFound ? &home : NULL, cp, &optsLen);
-                
+
                 envTarget = new SharedPointer<IgniteEnvironment>(env);
-                
+
                 SharedPointer<JniContext> ctx(
                     JniContext::Create(opts, optsLen, env.Get()->GetJniHandlers(envTarget), &jniErr));
 
@@ -254,7 +258,7 @@ namespace ignite
 
                     if (!javaRef) {
                         IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
-                        
+
                         failed = true;
                     }
                     else {
@@ -454,7 +458,7 @@ namespace ignite
             JniErrorInfo jniErr;
 
             SharedPointer<JniContext> ctx(JniContext::Create(NULL, 0, JniHandlers(), &jniErr));
-             
+
             IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
             if (err->GetCode() == IgniteError::IGNITE_SUCCESS)

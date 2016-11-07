@@ -69,6 +69,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     private boolean template;
 
     /** */
+    private UUID rcvdFrom;
+
+    /** */
     private transient boolean exchangeNeeded;
 
     /** */
@@ -265,6 +268,20 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public void close(boolean close) {
         this.close = close;
+    }
+
+    /**
+     * @param nodeId ID of node provided cache configuration in discovery data.
+     */
+    public void receivedFrom(UUID nodeId) {
+        rcvdFrom = nodeId;
+    }
+
+    /**
+     * @return ID of node provided cache configuration in discovery data.
+     */
+    @Nullable public UUID receivedFrom() {
+        return rcvdFrom;
     }
 
     /** {@inheritDoc} */

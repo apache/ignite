@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,14 +26,12 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.Cache;
 import javax.cache.CacheException;
@@ -55,7 +51,6 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -72,7 +67,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
@@ -101,7 +95,6 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -128,6 +121,27 @@ public class GridCacheUtils {
 
     /** Marshaller system cache name. */
     public static final String MARSH_CACHE_NAME = "ignite-marshaller-sys-cache";
+
+    /** */
+    public static final String CACHE_MSG_LOG_CATEGORY = "org.apache.ignite.cache.msg";
+
+    /** */
+    public static final String ATOMIC_MSG_LOG_CATEGORY = CACHE_MSG_LOG_CATEGORY + ".atomic";
+
+    /** */
+    public static final String TX_MSG_LOG_CATEGORY = CACHE_MSG_LOG_CATEGORY + ".tx";
+
+    /** */
+    public static final String TX_MSG_PREPARE_LOG_CATEGORY = TX_MSG_LOG_CATEGORY + ".prepare";
+
+    /** */
+    public static final String TX_MSG_FINISH_LOG_CATEGORY = TX_MSG_LOG_CATEGORY + ".finish";
+
+    /** */
+    public static final String TX_MSG_LOCK_LOG_CATEGORY = TX_MSG_LOG_CATEGORY + ".lock";
+
+    /** */
+    public static final String TX_MSG_RECOVERY_LOG_CATEGORY = TX_MSG_LOG_CATEGORY + ".recovery";
 
     /** Default mask name. */
     private static final String DEFAULT_MASK_NAME = "<default>";
@@ -156,6 +170,9 @@ public class GridCacheUtils {
     /** Keep serialized flag. */
     public static final int KEEP_BINARY_FLAG_MASK = 0x2;
 
+    /** Flag indicating that old value for 'invoke' operation was non null on primary node. */
+    public static final int OLD_VAL_ON_PRIMARY = 0x4;
+
     /** Empty predicate array. */
     private static final IgnitePredicate[] EMPTY = new IgnitePredicate[0];
 
@@ -167,14 +184,6 @@ public class GridCacheUtils {
         new C1<GridDhtLocalPartition, GridDhtPartitionState>() {
             @Override public GridDhtPartitionState apply(GridDhtLocalPartition p) {
                 return p.state();
-            }
-        };
-
-    /** */
-    private static final IgniteClosure<Integer, GridCacheVersion[]> VER_ARR_FACTORY =
-        new C1<Integer, GridCacheVersion[]>() {
-            @Override public GridCacheVersion[] apply(Integer size) {
-                return new GridCacheVersion[size];
             }
         };
 
@@ -302,46 +311,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * Writes {@link GridCacheVersion} to output stream. This method is meant to be used by
-     * implementations of {@link Externalizable} interface.
-     *
-     * @param out Output stream.
-     * @param ver Version to write.
-     * @throws IOException If write failed.
-     */
-    public static void writeVersion(ObjectOutput out, GridCacheVersion ver) throws IOException {
-        // Write null flag.
-        out.writeBoolean(ver == null);
-
-        if (ver != null) {
-            out.writeBoolean(ver instanceof GridCacheVersionEx);
-
-            ver.writeExternal(out);
-        }
-    }
-
-    /**
-     * Reads {@link GridCacheVersion} from input stream. This method is meant to be used by
-     * implementations of {@link Externalizable} interface.
-     *
-     * @param in Input stream.
-     * @return Read version.
-     * @throws IOException If read failed.
-     */
-    @Nullable public static GridCacheVersion readVersion(ObjectInput in) throws IOException {
-        // If UUID is not null.
-        if (!in.readBoolean()) {
-            GridCacheVersion ver = in.readBoolean() ? new GridCacheVersionEx() : new GridCacheVersion();
-
-            ver.readExternal(in);
-
-            return ver;
-        }
-
-        return null;
-    }
-
-    /**
      * @param ctx Cache context.
      * @param meta Meta name.
      * @return Filter for entries with meta.
@@ -378,6 +347,16 @@ public class GridCacheUtils {
             throw new GridCacheFilterFailedException(val);
 
         return null;
+    }
+
+    /**
+     * Create filter array.
+     *
+     * @param filter Filter.
+     * @return Filter array.
+     */
+    public static CacheEntryPredicate[] filterArray(@Nullable CacheEntryPredicate filter) {
+        return filter != null ? new CacheEntryPredicate[] { filter } : CU.empty0();
     }
 
     /**
@@ -827,21 +806,6 @@ public class GridCacheUtils {
 
     /**
      * @param nodes Nodes.
-     * @param locId Local node ID.
-     * @return Local node if it is in the list of nodes, or primary node.
-     */
-    public static ClusterNode localOrPrimary(Iterable<ClusterNode> nodes, UUID locId) {
-        assert !F.isEmpty(nodes);
-
-        for (ClusterNode n : nodes)
-            if (n.id().equals(locId))
-                return n;
-
-        return F.first(nodes);
-    }
-
-    /**
-     * @param nodes Nodes.
      * @return Backup nodes.
      */
     public static Collection<ClusterNode> backups(Collection<ClusterNode> nodes) {
@@ -849,38 +813,6 @@ public class GridCacheUtils {
             return Collections.emptyList();
 
         return F.view(nodes, F.notEqualTo(F.first(nodes)));
-    }
-
-    /**
-     * @param mappings Mappings.
-     * @param k map key.
-     * @return Either current list value or newly created one.
-     */
-    public static <K, V> Collection<V> getOrSet(Map<K, List<V>> mappings, K k) {
-        List<V> vals = mappings.get(k);
-
-        if (vals == null)
-            mappings.put(k, vals = new LinkedList<>());
-
-        return vals;
-    }
-
-    /**
-     * @param mappings Mappings.
-     * @param k map key.
-     * @return Either current list value or newly created one.
-     */
-    public static <K, V> Collection<V> getOrSet(ConcurrentMap<K, Collection<V>> mappings, K k) {
-        Collection<V> vals = mappings.get(k);
-
-        if (vals == null) {
-            Collection<V> old = mappings.putIfAbsent(k, vals = new ConcurrentLinkedDeque8<>());
-
-            if (old != null)
-                vals = old;
-        }
-
-        return vals;
     }
 
     /**
@@ -909,20 +841,6 @@ public class GridCacheUtils {
                 return "Error logger [excludes=" + Arrays.toString(excl) + ']';
             }
         };
-    }
-
-    /**
-     * @param t Exception to check.
-     * @return {@code true} if caused by lock timeout.
-     */
-    public static boolean isLockTimeout(Throwable t) {
-        if (t == null)
-            return false;
-
-        while (t instanceof IgniteCheckedException || t instanceof IgniteException)
-            t = t.getCause();
-
-        return t instanceof GridCacheLockTimeoutException;
     }
 
     /**
@@ -1119,13 +1037,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * @return Version array factory.
-     */
-    public static IgniteClosure<Integer, GridCacheVersion[]> versionArrayFactory() {
-        return VER_ARR_FACTORY;
-    }
-
-    /**
      * Converts cache version to byte array.
      *
      * @param ver Version.
@@ -1259,6 +1170,7 @@ public class GridCacheUtils {
 
     /**
      * Validates that cache key object has overridden equals and hashCode methods.
+     * Will also check that a BinaryObject has a hash code set.
      *
      * @param key Key.
      * @throws IllegalArgumentException If equals or hashCode is not implemented.
@@ -1270,6 +1182,10 @@ public class GridCacheUtils {
         if (!U.overridesEqualsAndHashCode(key))
             throw new IllegalArgumentException("Cache key must override hashCode() and equals() methods: " +
                 key.getClass().getName());
+
+        if (U.isHashCodeEmpty(key))
+            throw new IllegalArgumentException("Cache key created with BinaryBuilder is missing hash code - " +
+                "please set it explicitly during building by using BinaryBuilder.hashCode(int)");
     }
 
     /**

@@ -420,7 +420,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
             return F.t("Task result holder has left grid: " + resHolderId, null);
 
         // Tuple: error message-response.
-        final IgniteBiTuple<String, GridTaskResultResponse> t = F.t2();
+        final IgniteBiTuple<String, GridTaskResultResponse> t = new IgniteBiTuple<>();
 
         final Lock lock = new ReentrantLock();
         final Condition cond = lock.newCondition();

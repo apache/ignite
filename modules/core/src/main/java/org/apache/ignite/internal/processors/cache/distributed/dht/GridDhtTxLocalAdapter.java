@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridLeanSet;
@@ -283,7 +284,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                     continue;
 
                 if (e.cached().obsolete()) {
-                    GridCacheEntryEx cached = cacheCtx.cache().entryEx(e.key());
+                    GridCacheEntryEx cached = cacheCtx.cache().entryEx(e.key(), topologyVersion());
 
                     e.cached(cached);
                 }
@@ -312,7 +313,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                         break;
                     }
                     catch (GridCacheEntryRemovedException ignore) {
-                        GridCacheEntryEx cached = cacheCtx.cache().entryEx(e.key());
+                        GridCacheEntryEx cached = cacheCtx.cache().entryEx(e.key(), topologyVersion());
 
                         e.cached(cached);
                     }
@@ -690,10 +691,16 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         if (passedKeys.isEmpty())
             return new GridFinishedFuture<>(ret);
 
-        GridDhtTransactionalCacheAdapter<?, ?> dhtCache = cacheCtx.isNear() ? cacheCtx.nearTx().dht() : cacheCtx.dhtTx();
+        GridDhtTransactionalCacheAdapter<?, ?> dhtCache =
+            cacheCtx.isNear() ? cacheCtx.nearTx().dht() : cacheCtx.dhtTx();
+
+        long timeout = remainingTime();
+
+        if (timeout == -1)
+            return new GridFinishedFuture<>(timeoutException());
 
         IgniteInternalFuture<Boolean> fut = dhtCache.lockAllAsyncInternal(passedKeys,
-            lockTimeout(),
+            timeout,
             this,
             isInvalidate(),
             read,

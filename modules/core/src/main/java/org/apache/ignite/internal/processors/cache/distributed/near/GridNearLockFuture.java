@@ -20,10 +20,12 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
@@ -48,8 +50,10 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTransactionalCacheAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -63,11 +67,14 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 
 /**
@@ -118,7 +125,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
     private LockTimeoutObject timeoutObj;
 
     /** Lock timeout. */
-    private long timeout;
+    private final long timeout;
 
     /** Filter. */
     private final CacheEntryPredicate[] filter;
@@ -180,6 +187,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         super(CU.boolReducer());
 
         assert keys != null;
+        assert (tx != null && timeout >= 0) || tx == null;
 
         this.cctx = cctx;
         this.keys = keys;
@@ -262,13 +270,6 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
      */
     private boolean isInvalidate() {
         return tx != null && tx.isInvalidate();
-    }
-
-    /**
-     * @return {@code True} if rollback is synchronous.
-     */
-    private boolean syncRollback() {
-        return tx != null && tx.syncRollback();
     }
 
     /**
@@ -486,6 +487,38 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
     }
 
     /**
+     * @return Keys for which locks requested from remote nodes but response isn't received.
+     */
+    public Set<IgniteTxKey> requestedKeys() {
+        synchronized (sync) {
+            if (timeoutObj != null && timeoutObj.requestedKeys != null)
+                return timeoutObj.requestedKeys;
+
+            return requestedKeys0();
+        }
+    }
+
+    /**
+     * @return Keys for which locks requested from remote nodes but response isn't received.
+     */
+    private Set<IgniteTxKey> requestedKeys0() {
+        for (IgniteInternalFuture<Boolean> miniFut : futures()) {
+            if (isMini(miniFut) && !miniFut.isDone()) {
+                MiniFuture mini = (MiniFuture)miniFut;
+
+                Set<IgniteTxKey> requestedKeys = U.newHashSet(mini.keys.size());
+
+                for (KeyCacheObject key : mini.keys)
+                    requestedKeys.add(new IgniteTxKey(key, cctx.cacheId()));
+
+                return requestedKeys;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Finds pending mini future by the given mini ID.
      *
      * @param miniId Mini ID to find.
@@ -494,10 +527,10 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
     @SuppressWarnings({"ForLoopReplaceableByForEach", "IfMayBeConditional"})
     private MiniFuture miniFuture(IgniteUuid miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (futs) {
+        synchronized (sync) {
             // Avoid iterator creation.
-            for (int i = 0; i < futs.size(); i++) {
-                IgniteInternalFuture<Boolean> fut = futs.get(i);
+            for (int i = 0; i < futuresCount(); i++) {
+                IgniteInternalFuture<Boolean> fut = future(i);
 
                 if (!isMini(fut))
                     continue;
@@ -626,6 +659,10 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         if (log.isDebugEnabled())
             log.debug("Received onDone(..) callback [success=" + success + ", err=" + err + ", fut=" + this + ']');
 
+        if (inTx() && cctx.tm().deadlockDetectionEnabled() &&
+            (this.err instanceof IgniteTxTimeoutCheckedException || timedOut))
+            return false;
+
         // If locks were not acquired yet, delay completion.
         if (isDone() || (err == null && success && !checkLocks()))
             return false;
@@ -732,7 +769,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
             topVer = tx.topologyVersionSnapshot();
 
         if (topVer != null) {
-            for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()){
+            for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()) {
                 if (fut.topologyVersion().equals(topVer)){
                     Throwable err = fut.validateCache(cctx);
 
@@ -1013,7 +1050,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                                 timeout,
                                                 mappedKeys.size(),
                                                 inTx() ? tx.size() : mappedKeys.size(),
-                                                inTx() && tx.syncCommit(),
+                                                inTx() && tx.syncMode() == FULL_SYNC,
                                                 inTx() ? tx.subjectId() : null,
                                                 inTx() ? tx.taskNameHash() : 0,
                                                 read ? accessTtl : -1L,
@@ -1378,6 +1415,9 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
             super(timeout);
         }
 
+        /** Requested keys. */
+        private Set<IgniteTxKey> requestedKeys;
+
         /** {@inheritDoc} */
         @SuppressWarnings({"ThrowableInstanceNeverThrown"})
         @Override public void onTimeout() {
@@ -1386,7 +1426,42 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
 
             timedOut = true;
 
-            onComplete(false, true);
+            if (inTx() && cctx.tm().deadlockDetectionEnabled()) {
+                synchronized (sync) {
+                    requestedKeys = requestedKeys0();
+
+                    clear(); // Stop response processing.
+                }
+
+                Set<IgniteTxKey> keys = new HashSet<>();
+
+                for (IgniteTxEntry txEntry : tx.allEntries()) {
+                    if (!txEntry.locked())
+                        keys.add(txEntry.txKey());
+                }
+
+                IgniteInternalFuture<TxDeadlock> fut = cctx.tm().detectDeadlock(tx, keys);
+
+                fut.listen(new IgniteInClosure<IgniteInternalFuture<TxDeadlock>>() {
+                    @Override public void apply(IgniteInternalFuture<TxDeadlock> fut) {
+                        try {
+                            TxDeadlock deadlock = fut.get();
+
+                            if (deadlock != null)
+                                err = new TransactionDeadlockException(deadlock.toString(cctx.shared()));
+                        }
+                        catch (IgniteCheckedException e) {
+                            err = e;
+
+                            U.warn(log, "Failed to detect deadlock.", e);
+                        }
+
+                        onComplete(false, true);
+                    }
+                });
+            }
+            else
+                onComplete(false, true);
         }
 
         /** {@inheritDoc} */
@@ -1471,7 +1546,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                 tx.removeMapping(node.id());
 
             // Primary node left the grid, so fail the future.
-            GridNearLockFuture.this.onDone(newTopologyException(e, node.id()));
+            GridNearLockFuture.this.onDone(false, newTopologyException(e, node.id()));
 
             onDone(true);
         }
@@ -1488,6 +1563,10 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
             }
 
             if (res.error() != null) {
+                if (inTx() && cctx.tm().deadlockDetectionEnabled() &&
+                    (res.error() instanceof IgniteTxTimeoutCheckedException || tx.remainingTime() == -1))
+                    return;
+
                 if (log.isDebugEnabled())
                     log.debug("Finishing mini future with an error due to error in response [miniFut=" + this +
                         ", res=" + res + ']');

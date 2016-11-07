@@ -73,6 +73,9 @@ public class Objects implements Serializable {
     /** Value for arrcol. */
     private Object arrcol;
 
+    /** Value for fieldWithAlias. */
+    private String fieldWithAlias;
+
     /**
      * Empty constructor.
      */
@@ -98,7 +101,8 @@ public class Objects implements Serializable {
         java.sql.Date datecol,
         java.sql.Time timecol,
         java.sql.Timestamp tscol,
-        Object arrcol
+        Object arrcol,
+        String fieldWithAlias
     ) {
         this.pk = pk;
         this.boolcol = boolcol;
@@ -115,6 +119,7 @@ public class Objects implements Serializable {
         this.timecol = timecol;
         this.tscol = tscol;
         this.arrcol = arrcol;
+        this.fieldWithAlias = fieldWithAlias;
     }
 
     /**
@@ -387,6 +392,24 @@ public class Objects implements Serializable {
         this.arrcol = arrcol;
     }
 
+    /**
+     * Gets fieldWithAlias.
+     *
+     * @return Value for fieldWithAlias.
+     */
+    public String getFieldWithAlias() {
+        return fieldWithAlias;
+    }
+
+    /**
+     * Sets fieldWithAlias.
+     *
+     * @param fieldWithAlias New value for fieldWithAlias.
+     */
+    public void setFieldWithAlias(String fieldWithAlias) {
+        this.fieldWithAlias = fieldWithAlias;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
@@ -442,6 +465,9 @@ public class Objects implements Serializable {
         if (arrcol != null ? !arrcol.equals(that.arrcol) : that.arrcol != null)
             return false;
 
+        if (fieldWithAlias != null ? !fieldWithAlias.equals(that.fieldWithAlias) : that.fieldWithAlias != null)
+            return false;
+
         return true;
     }
 
@@ -477,6 +503,8 @@ public class Objects implements Serializable {
 
         res = 31 * res + (arrcol != null ? arrcol.hashCode() : 0);
 
+        res = 31 * res + (fieldWithAlias != null ? fieldWithAlias.hashCode() : 0);
+
         return res;
     }
 
@@ -497,6 +525,7 @@ public class Objects implements Serializable {
             ", timecol=" + timecol +
             ", tscol=" + tscol +
             ", arrcol=" + arrcol +
+            ", fieldWithAlias=" + fieldWithAlias +
             "]";
     }
 }

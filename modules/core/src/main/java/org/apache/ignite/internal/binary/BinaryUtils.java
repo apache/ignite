@@ -46,6 +46,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryCollectionFactory;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryMapFactory;
@@ -53,6 +54,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
@@ -63,6 +65,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
@@ -74,6 +77,13 @@ public class BinaryUtils {
 
     /** */
     public static final Map<Byte, Class<?>> FLAG_TO_CLASS = new HashMap<>();
+
+    /** */
+    public static final boolean USE_STR_SERIALIZATION_VER_2 = IgniteSystemProperties.getBoolean(
+        IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, false);
+
+    /** Map from class to associated write replacer. */
+    public static final Map<Class, BinaryWriteReplacer> CLS_TO_WRITE_REPLACER = new HashMap<>();
 
     /** {@code true} if serialized value of this type cannot contain references to objects. */
     private static final boolean[] PLAIN_TYPE_FLAG = new boolean[102];
@@ -99,6 +109,9 @@ public class BinaryUtils {
     /** Flag: compact footer, no field IDs. */
     public static final short FLAG_COMPACT_FOOTER = 0x0020;
 
+    /** Flag: no hash code has been set. */
+    public static final short FLAG_EMPTY_HASH_CODE = 0x0040;
+
     /** Offset which fits into 1 byte. */
     public static final int OFFSET_1 = 1;
 
@@ -110,6 +123,10 @@ public class BinaryUtils {
 
     /** Field ID length. */
     public static final int FIELD_ID_LEN = 4;
+
+    /** Whether to skip TreeMap/TreeSet wrapping. */
+    public static final boolean WRAP_TREES =
+        !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES);
 
     /** Field type names. */
     private static final String[] FIELD_TYPE_NAMES;
@@ -237,6 +254,11 @@ public class BinaryUtils {
         FIELD_TYPE_NAMES[GridBinaryMarshaller.TIMESTAMP_ARR] = "Timestamp[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.OBJ_ARR] = "Object[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.ENUM_ARR] = "Enum[]";
+
+        if (wrapTrees()) {
+            CLS_TO_WRITE_REPLACER.put(TreeMap.class, new BinaryTreeMapWriteReplacer());
+            CLS_TO_WRITE_REPLACER.put(TreeSet.class, new BinaryTreeSetWriteReplacer());
+        }
     }
 
     /**
@@ -286,7 +308,7 @@ public class BinaryUtils {
      * @param flag Flag.
      * @return {@code True} if flag is set in flags.
      */
-    private static boolean isFlagSet(short flags, short flag) {
+    static boolean isFlagSet(short flags, short flag) {
         return (flags & flag) == flag;
     }
 
@@ -415,7 +437,7 @@ public class BinaryUtils {
                 break;
 
             case GridBinaryMarshaller.TIMESTAMP:
-                writer.doWriteTimestamp((Timestamp) val);
+                writer.doWriteTimestamp((Timestamp)val);
 
                 break;
 
@@ -577,6 +599,13 @@ public class BinaryUtils {
     }
 
     /**
+     * @return Whether tree structures should be wrapped.
+     */
+    public static boolean wrapTrees() {
+        return WRAP_TREES;
+    }
+
+    /**
      * @param map Map to check.
      * @return {@code True} if this map type is supported.
      */
@@ -585,7 +614,7 @@ public class BinaryUtils {
 
         return cls == HashMap.class ||
             cls == LinkedHashMap.class ||
-            cls == TreeMap.class ||
+            (!wrapTrees() && cls == TreeMap.class) ||
             cls == ConcurrentHashMap8.class ||
             cls == ConcurrentHashMap.class;
     }
@@ -596,6 +625,7 @@ public class BinaryUtils {
      * @param map Map.
      * @return New map of the same type or null.
      */
+    @SuppressWarnings("unchecked")
     public static <K, V> Map<K, V> newKnownMap(Object map) {
         Class<?> cls = map == null ? null : map.getClass();
 
@@ -603,7 +633,7 @@ public class BinaryUtils {
             return U.newHashMap(((Map)map).size());
         else if (cls == LinkedHashMap.class)
             return U.newLinkedHashMap(((Map)map).size());
-        else if (cls == TreeMap.class)
+        else if (!wrapTrees() && cls == TreeMap.class)
             return new TreeMap<>(((TreeMap<Object, Object>)map).comparator());
         else if (cls == ConcurrentHashMap8.class)
             return new ConcurrentHashMap8<>(U.capacity(((Map)map).size()));
@@ -614,7 +644,8 @@ public class BinaryUtils {
     }
 
     /**
-     * Attempts to create a new map of the same type as {@code map} has. Otherwise returns new {@code HashMap} instance.
+     * Attempts to create a new map of the same type as {@code map} has. Otherwise returns new {@code HashMap}
+     * instance.
      *
      * @param map Original map.
      * @return New map.
@@ -641,19 +672,35 @@ public class BinaryUtils {
 
         return cls == HashSet.class ||
             cls == LinkedHashSet.class ||
-            cls == TreeSet.class ||
+            (!wrapTrees() && cls == TreeSet.class) ||
             cls == ConcurrentSkipListSet.class ||
             cls == ArrayList.class ||
             cls == LinkedList.class;
     }
 
     /**
-     * Attempts to create a new collection of the same known type. Will return null if collection type is
-     * unknown.
+     * @param arr Array to check.
+     * @return {@code true} if this array is of a known type.
+     */
+    public static boolean knownArray(Object arr) {
+        if (arr == null)
+            return false;
+
+        Class<?> cls =  arr.getClass();
+
+        return cls == byte[].class || cls == short[].class || cls == int[].class || cls == long[].class ||
+            cls == float[].class || cls == double[].class || cls == char[].class || cls == boolean[].class ||
+            cls == String[].class || cls == UUID[].class || cls == Date[].class || cls == Timestamp[].class ||
+            cls == BigDecimal[].class;
+    }
+
+    /**
+     * Attempts to create a new collection of the same known type. Will return null if collection type is unknown.
      *
      * @param col Collection.
      * @return New empty collection.
      */
+    @SuppressWarnings("unchecked")
     public static <V> Collection<V> newKnownCollection(Object col) {
         Class<?> cls = col == null ? null : col.getClass();
 
@@ -661,7 +708,7 @@ public class BinaryUtils {
             return U.newHashSet(((Collection)col).size());
         else if (cls == LinkedHashSet.class)
             return U.newLinkedHashSet(((Collection)col).size());
-        else if (cls == TreeSet.class)
+        else if (!wrapTrees() && cls == TreeSet.class)
             return new TreeSet<>(((TreeSet<Object>)col).comparator());
         else if (cls == ConcurrentSkipListSet.class)
             return new ConcurrentSkipListSet<>(((ConcurrentSkipListSet<Object>)col).comparator());
@@ -674,7 +721,8 @@ public class BinaryUtils {
     }
 
     /**
-     * Attempts to create a new set of the same type as {@code set} has. Otherwise returns new {@code HashSet} instance.
+     * Attempts to create a new set of the same type as {@code set} has. Otherwise returns new {@code HashSet}
+     * instance.
      *
      * @param set Original set.
      * @return New set.
@@ -780,7 +828,7 @@ public class BinaryUtils {
 
         int len = length(in, start);
 
-        if (hasSchema(flags)){
+        if (hasSchema(flags)) {
             // Schema exists.
             if (hasRaw(flags))
                 // Raw offset is set, it is at the very end of the object.
@@ -1150,15 +1198,28 @@ public class BinaryUtils {
      * @return Value.
      */
     public static String doReadString(BinaryInputStream in) {
-        if (!in.hasArray())
-            return new String(doReadByteArray(in), UTF_8);
+        if (!in.hasArray()) {
+            byte[] arr = doReadByteArray(in);
+
+            if (USE_STR_SERIALIZATION_VER_2)
+                return utf8BytesToStr(arr, 0, arr.length);
+            else
+                return new String(arr, UTF_8);
+        }
 
         int strLen = in.readInt();
 
         int pos = in.position();
 
         // String will copy necessary array part for us.
-        String res = new String(in.array(), pos, strLen, UTF_8);
+        String res;
+
+        if (USE_STR_SERIALIZATION_VER_2) {
+            res = utf8BytesToStr(in.array(), pos, strLen);
+        }
+        else {
+            res = new String(in.array(), pos, strLen, UTF_8);
+        }
 
         in.position(pos + strLen);
 
@@ -1356,6 +1417,7 @@ public class BinaryUtils {
     /**
      * @return Value.
      */
+    @SuppressWarnings("ConstantConditions")
     public static Object doReadProxy(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles) {
         Class<?>[] intfs = new Class<?>[in.readInt()];
@@ -1390,7 +1452,7 @@ public class BinaryUtils {
      * @param in Input stream.
      * @return Class name.
      */
-    private static String doReadClassName(BinaryInputStream in) {
+    public static String doReadClassName(BinaryInputStream in) {
         byte flag = in.readByte();
 
         if (flag != GridBinaryMarshaller.STRING)
@@ -1485,7 +1547,7 @@ public class BinaryUtils {
     private static Object[] doReadBinaryEnumArray(BinaryInputStream in, BinaryContext ctx) {
         int len = in.readInt();
 
-        Object[] arr = (Object[]) Array.newInstance(BinaryObject.class, len);
+        Object[] arr = (Object[])Array.newInstance(BinaryObject.class, len);
 
         for (int i = 0; i < len; i++) {
             byte flag = in.readByte();
@@ -1524,7 +1586,7 @@ public class BinaryUtils {
         throws BinaryObjectException {
         int len = in.readInt();
 
-        Object[] arr = (Object[]) Array.newInstance(cls, len);
+        Object[] arr = (Object[])Array.newInstance(cls, len);
 
         for (int i = 0; i < len; i++) {
             byte flag = in.readByte();
@@ -1565,7 +1627,7 @@ public class BinaryUtils {
      */
     @Nullable public static Object doReadObject(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles) throws BinaryObjectException {
-        return new BinaryReaderExImpl(ctx, in, ldr, handles.handles()).deserialize();
+        return new BinaryReaderExImpl(ctx, in, ldr, handles.handles(), true).deserialize();
     }
 
     /**
@@ -2010,6 +2072,177 @@ public class BinaryUtils {
         }
         else
             return null;
+    }
+
+    /**
+     * Reconstructs string from UTF-8 bytes.
+     *
+     * @param arr array Byte array.
+     * @param off offset Offset in the array.
+     * @param len length Byte array lenght.
+     * @return string Resulting string.
+     */
+    public static String utf8BytesToStr(byte[] arr, int off, int len) {
+        int c, charArrCnt = 0, total = off + len;
+        int c2, c3;
+        char[] res = new char[len];
+
+        // try reading ascii
+        while (off < total) {
+            c = (int)arr[off] & 0xff;
+
+            if (c > 127)
+                break;
+
+            off++;
+
+            res[charArrCnt++] = (char)c;
+        }
+
+        // read other
+        while (off < total) {
+            c = (int)arr[off] & 0xff;
+
+            switch (c >> 4) {
+                case 0:
+                case 1:
+                case 2:
+                case 3:
+                case 4:
+                case 5:
+                case 6:
+                case 7:
+                    /* 0xxxxxxx*/
+                    off++;
+
+                    res[charArrCnt++] = (char)c;
+
+                    break;
+                case 12:
+                case 13:
+                    /* 110x xxxx   10xx xxxx*/
+                    off += 2;
+
+                    if (off > total)
+                        throw new BinaryObjectException("Malformed input: partial character at end");
+
+                    c2 = (int)arr[off - 1];
+
+                    if ((c2 & 0xC0) != 0x80)
+                        throw new BinaryObjectException("Malformed input around byte: " + off);
+
+                    res[charArrCnt++] = (char)(((c & 0x1F) << 6) | (c2 & 0x3F));
+
+                    break;
+                case 14:
+                    /* 1110 xxxx  10xx xxxx  10xx xxxx */
+                    off += 3;
+
+                    if (off > total)
+                        throw new BinaryObjectException("Malformed input: partial character at end");
+
+                    c2 = (int)arr[off - 2];
+
+                    c3 = (int)arr[off - 1];
+
+                    if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80))
+                        throw new BinaryObjectException("Malformed input around byte: " + (off - 1));
+
+                    res[charArrCnt++] = (char)(((c & 0x0F) << 12) |
+                        ((c2 & 0x3F) << 6) | (c3 & 0x3F));
+
+                    break;
+                default:
+                    /* 10xx xxxx,  1111 xxxx */
+                    throw new BinaryObjectException("Malformed input around byte: " + off);
+            }
+        }
+
+        return len == charArrCnt ? new String(res) : new String(res, 0, charArrCnt);
+    }
+
+    /**
+     * Converts the string into UTF-8 byte array considering special symbols like the surrogates.
+     *
+     * @param val String to convert.
+     * @return Resulting byte array.
+     */
+    public static byte[] strToUtf8Bytes(String val) {
+        int strLen = val.length();
+        int utfLen = 0;
+        int c, cnt;
+
+        // Determine length of resulting byte array.
+        for (cnt = 0; cnt < strLen; cnt++) {
+            c = val.charAt(cnt);
+
+            if (c >= 0x0001 && c <= 0x007F)
+                utfLen++;
+            else if (c > 0x07FF)
+                utfLen += 3;
+            else
+                utfLen += 2;
+        }
+
+        byte[] arr = new byte[utfLen];
+
+        int position = 0;
+
+        for (cnt = 0; cnt < strLen; cnt++) {
+            c = val.charAt(cnt);
+
+            if (c >= 0x0001 && c <= 0x007F)
+                arr[position++] = (byte)c;
+            else if (c > 0x07FF) {
+                arr[position++] = (byte)(0xE0 | (c >> 12) & 0x0F);
+                arr[position++] = (byte)(0x80 | (c >> 6) & 0x3F);
+                arr[position++] = (byte)(0x80 | (c & 0x3F));
+            }
+            else {
+                arr[position++] = (byte)(0xC0 | ((c >> 6) & 0x1F));
+                arr[position++] = (byte)(0x80 | (c  & 0x3F));
+            }
+        }
+
+        return arr;
+    }
+
+    /**
+     * Create binary type proxy.
+     *
+     * @param ctx Context.
+     * @param obj Binary object.
+     * @return Binary type proxy.
+     */
+    public static BinaryType typeProxy(BinaryContext ctx, BinaryObjectEx obj) {
+        if (ctx == null)
+            throw new BinaryObjectException("BinaryContext is not set for the object.");
+
+        return new BinaryTypeProxy(ctx, obj.typeId());
+    }
+
+    /**
+     * Create binary type which is used by users.
+     *
+     * @param ctx Context.
+     * @param obj Binary object.
+     * @return Binary type.
+     */
+    public static BinaryType type(BinaryContext ctx, BinaryObjectEx obj) {
+        if (ctx == null)
+            throw new BinaryObjectException("BinaryContext is not set for the object.");
+
+        return ctx.metadata(obj.typeId());
+    }
+
+    /**
+     * Get predefined write-replacer associated with class.
+     *
+     * @param cls Class.
+     * @return Write replacer.
+     */
+    public static BinaryWriteReplacer writeReplacer(Class cls) {
+        return cls != null ? CLS_TO_WRITE_REPLACER.get(cls) : null;
     }
 
     /**

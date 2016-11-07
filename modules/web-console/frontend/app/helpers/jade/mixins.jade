@@ -1,0 +1,524 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include ./form.jade
+
+//- Mixin for advanced options toggle.
+mixin advanced-options-toggle(click, cond, showMessage, hideMessage)
+    .advanced-options
+        i.fa(ng-click='#{click}' ng-class='#{cond} ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
+        a(ng-click=click) {{#{cond} ? '#{hideMessage}' : '#{showMessage}'}}
+
+//- Mixin for advanced options toggle with default settings.
+mixin advanced-options-toggle-default
+    +advanced-options-toggle('toggleExpanded()', 'ui.expanded', 'Show advanced settings...', 'Hide advanced settings...')
+
+//- Mixin for main table on screen with list of items.
+mixin main-table(title, rows, focusId, click, rowTemplate, searchField)
+    .padding-bottom-dflt(ng-show='#{rows} && #{rows}.length > 0')
+        table.links(st-table='displayedRows' st-safe-src='#{rows}')
+            thead
+                tr
+                    th
+                        lable.labelHeader.labelFormField #{title}:
+                        .col-sm-3.pull-right(style='padding: 0')
+                            input.form-control(type='text' st-search='#{searchField}' placeholder='Filter #{title}...')
+            tbody
+                tr
+                    td
+                        .scrollable-y(ng-show='displayedRows.length > 0' style='max-height: 200px')
+                            table
+                                tbody
+                                    tr(ng-repeat='row in displayedRows track by row._id' ignite-bs-affix-update)
+                                        td
+                                            a(ng-class='{active: row._id == selectedItem._id}' ignite-on-click-focus=focusId ng-click=click) #{rowTemplate}
+                        label.placeholder(ng-show='displayedRows.length == 0') No #{title} found
+
+//- Mixin with save, remove, clone and undo buttons.
+mixin save-remove-clone-undo-buttons(objectName)
+    -var removeTip = '"Remove current ' + objectName + '"'
+    -var cloneTip = '"Clone current ' + objectName + '"'
+    -var undoTip = '"Undo all changes for current ' + objectName + '"'
+
+    div(ng-show='contentVisible()' style='display: inline-block;')
+        .panel-tip-container(ng-hide='!backupItem || backupItem._id')
+            a.btn.btn-primary(ng-disabled='!ui.inputForm.$dirty' ng-click='ui.inputForm.$dirty && saveItem()' bs-tooltip='' data-title='{{saveBtnTipText(ui.inputForm.$dirty, "#{objectName}")}}' data-placement='bottom' data-trigger='hover') Save
+        .panel-tip-container(ng-show='backupItem._id')
+            a.btn.btn-primary(id='save-item' ng-disabled='!ui.inputForm.$dirty' ng-click='ui.inputForm.$dirty && saveItem()' bs-tooltip='' data-title='{{saveBtnTipText(ui.inputForm.$dirty, "#{objectName}")}}' data-placement='bottom' data-trigger='hover') Save
+        .panel-tip-container(ng-show='backupItem._id')
+            a.btn.btn-primary(id='clone-item' ng-click='cloneItem()' bs-tooltip=cloneTip data-placement='bottom' data-trigger='hover') Clone
+        .btn-group.panel-tip-container(ng-show='backupItem._id')
+            button.btn.btn-primary(id='remove-item' ng-click='removeItem()' bs-tooltip=removeTip data-placement='bottom' data-trigger='hover') Remove
+            button.btn.dropdown-toggle.btn-primary(id='remove-item-dropdown' data-toggle='dropdown' data-container='body' bs-dropdown='[{ text: "Remove All", click: "removeAllItems()" }]' data-placement='bottom-right')
+                span.caret
+        .panel-tip-container(ng-show='backupItem')
+            i.btn.btn-primary.fa.fa-undo(id='undo-item' ng-disabled='!ui.inputForm.$dirty' ng-click='ui.inputForm.$dirty && resetAll()' bs-tooltip=undoTip data-placement='bottom' data-trigger='hover')
+
+//- Mixin for feedback on specified error.
+mixin error-feedback(visible, error, errorMessage, name)
+    i.fa.fa-exclamation-triangle.form-control-feedback(
+        ng-if=visible
+        bs-tooltip='"#{errorMessage}"'
+        ignite-error=error
+        ignite-error-message=errorMessage
+        name=name
+    )
+
+//- Mixin for feedback on unique violation.
+mixin unique-feedback(name, errorMessage)
+    +form-field-feedback(name, 'igniteUnique', errorMessage)
+
+//- Mixin for feedback on IP address violation.
+mixin ipaddress-feedback(name)
+    +form-field-feedback(name, 'ipaddress', 'Invalid address!')
+
+//- Mixin for feedback on port of IP address violation.
+mixin ipaddress-port-feedback(name)
+    +form-field-feedback(name, 'ipaddressPort', 'Invalid port!')
+
+//- Mixin for feedback on port range violation.
+mixin ipaddress-port-range-feedback(name)
+    +form-field-feedback(name, 'ipaddressPortRange', 'Invalid port range!')
+
+//- Mixin for feedback on UUID violation.
+mixin uuid-feedback(name)
+    +form-field-feedback(name, 'uuid', 'Invalid node ID!')
+
+//- Mixin for checkbox.
+mixin checkbox(lbl, model, name, tip)
+    +form-field-checkbox(lbl, model, name, false, false, tip)
+
+//- Function that convert enabled state to corresponding disabled state.
+-var enabledToDisabled = function (enabled) {
+-    return (enabled === false || enabled === true) ? !enabled : '!(' + enabled + ')';
+-}
+
+//- Mixin for checkbox with enabled condition.
+mixin checkbox-enabled(lbl, model, name, enabled, tip)
+    +form-field-checkbox(lbl, model, name, enabledToDisabled(enabled), false, tip)
+
+//- Mixin for java name field with enabled condition.
+mixin java-class(lbl, model, name, enabled, required, tip)
+    -var errLbl = lbl.substring(0, lbl.length - 1)
+
+    +ignite-form-field-text(lbl, model, name, enabledToDisabled(enabled), required, 'Enter fully qualified class name', tip)(
+        data-java-identifier='true'
+        data-java-package-specified='true'
+        data-java-keywords='true'
+        data-java-built-in-class='true'
+    )
+        if  block
+            block
+
+        +form-field-feedback(name, 'javaBuiltInClass', errLbl + ' should not be the Java built-in class!')
+        +form-field-feedback(name, 'javaKeywords', errLbl + ' could not contains reserved Java keyword!')
+        +form-field-feedback(name, 'javaPackageSpecified', errLbl + ' does not have package specified!')
+        +form-field-feedback(name, 'javaIdentifier', errLbl + ' is invalid Java identifier!')
+
+//- Mixin for text field with enabled condition with options.
+mixin java-class-typeahead(lbl, model, name, options, enabled, required, placeholder, tip)
+    -var errLbl = lbl.substring(0, lbl.length - 1)
+
+    +form-field-datalist(lbl, model, name, enabledToDisabled(enabled), required, placeholder, options, tip)(
+        data-java-identifier='true'
+        data-java-package-specified='allow-built-in'
+        data-java-keywords='true'
+    )
+        +form-field-feedback(name, 'javaKeywords', errLbl + ' could not contains reserved Java keyword!')
+        +form-field-feedback(name, 'javaPackageSpecified', errLbl + ' does not have package specified!')
+        +form-field-feedback(name, 'javaIdentifier', errLbl + ' is invalid Java identifier!')
+
+//- Mixin for java package field with enabled condition.
+mixin java-package(lbl, model, name, enabled, required, tip)
+    +ignite-form-field-text(lbl, model, name, enabledToDisabled(enabled), required, 'Enter package name', tip)(
+        data-java-keywords='true'
+        data-java-package-name='package-only'
+    )
+        +form-field-feedback(name, 'javaPackageName', 'Package name is invalid')
+        +form-field-feedback(name, 'javaKeywords', 'Package name could not contains reserved java keyword')
+
+//- Mixin for text field with IP address check.
+mixin text-ip-address(lbl, model, name, enabled, placeholder, tip)
+    +ignite-form-field-text(lbl, model, name, enabledToDisabled(enabled), false, placeholder, tip)(data-ipaddress='true')
+        +ipaddress-feedback(name)
+
+//- Mixin for text field with IP address and port range check.
+mixin text-ip-address-with-port-range(lbl, model, name, enabled, placeholder, tip)
+    +ignite-form-field-text(lbl, model, name, enabledToDisabled(enabled), false, placeholder, tip)(data-ipaddress='true' data-ipaddress-with-port='true' data-ipaddress-with-port-range='true')
+        +ipaddress-feedback(name)
+        +ipaddress-port-feedback(name)
+        +ipaddress-port-range-feedback(name)
+
+//- Mixin for text field.
+mixin text-enabled(lbl, model, name, enabled, required, placeholder, tip)
+    +ignite-form-field-text(lbl, model, name, enabledToDisabled(enabled), required, placeholder, tip)
+        if  block
+            block
+
+//- Mixin for text field.
+mixin text(lbl, model, name, required, placeholder, tip)
+    +ignite-form-field-text(lbl, model, name, false, required, placeholder, tip)
+        if  block
+            block
+
+//- Mixin for password field.
+mixin password(lbl, model, name, required, placeholder, tip)
+    +ignite-form-field-password(lbl, model, name, false, required, placeholder, tip)
+        if  block
+            block
+
+//- Mixin for text field with enabled condition with options.
+mixin text-options(lbl, model, name, options, enabled, required, placeholder, tip)
+    +form-field-datalist(lbl, model, name, enabledToDisabled(enabled), required, placeholder, options, tip)
+
+//- Mixin for required numeric field.
+mixin number-required(lbl, model, name, enabled, required, placeholder, min, tip)
+    +ignite-form-field-number(lbl, model, name, enabledToDisabled(enabled), required, placeholder, min, false, false, tip)
+
+//- Mixin for required numeric field with maximum and minimum limit.
+mixin number-min-max(lbl, model, name, enabled, placeholder, min, max, tip)
+    +ignite-form-field-number(lbl, model, name, enabledToDisabled(enabled), false, placeholder, min, max, '1', tip)
+
+//- Mixin for required numeric field with maximum and minimum limit.
+mixin number-min-max-step(lbl, model, name, enabled, placeholder, min, max, step, tip)
+    +ignite-form-field-number(lbl, model, name, enabledToDisabled(enabled), false, placeholder, min, max, step, tip)
+
+//- Mixin for numeric field.
+mixin number(lbl, model, name, enabled, placeholder, min, tip)
+    +ignite-form-field-number(lbl, model, name, enabledToDisabled(enabled), false, placeholder, min, false, false, tip)
+
+//- Mixin for required dropdown field.
+mixin dropdown-required-empty(lbl, model, name, enabled, required, placeholder, placeholderEmpty, options, tip)
+    +ignite-form-field-dropdown(lbl, model, name, enabledToDisabled(enabled), required, false, placeholder, placeholderEmpty, options, tip)
+        if  block
+            block
+
+//- Mixin for required dropdown field.
+mixin dropdown-required(lbl, model, name, enabled, required, placeholder, options, tip)
+    +ignite-form-field-dropdown(lbl, model, name, enabledToDisabled(enabled), required, false, placeholder, '', options, tip)
+        if  block
+            block
+
+//- Mixin for dropdown field.
+mixin dropdown(lbl, model, name, enabled, placeholder, options, tip)
+    +ignite-form-field-dropdown(lbl, model, name, enabledToDisabled(enabled), false, false, placeholder, '', options, tip)
+        if  block
+            block
+
+//- Mixin for dropdown-multiple field.
+mixin dropdown-multiple(lbl, model, name, enabled, placeholder, placeholderEmpty, options, tip)
+    +ignite-form-field-dropdown(lbl, model, name, enabledToDisabled(enabled), false, true, placeholder, placeholderEmpty, options, tip)
+        if  block
+            block
+
+//- Mixin for table text field.
+mixin table-text-field(name, model, items, valid, save, placeholder, newItem)
+    -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
+    -var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
+
+    -var onEscape = newItem ? 'group.add = []' : 'field.edit = false'
+
+    -var resetOnBlur = newItem ? '!stopblur && (group.add = [])' : 'field.edit = false'
+    -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
+
+    if block
+        block
+
+    .input-tip
+        +ignite-form-field-input(name, model, false, 'true', placeholder)(
+            data-ignite-unique=items
+            data-ignite-form-field-input-autofocus='true'
+            ng-blur=onBlur
+            ignite-on-enter=onEnter
+            ignite-on-escape=onEscape
+        )
+
+//- Mixin for table java class field.
+mixin table-java-class-field(lbl, name, model, items, valid, save, newItem)
+    -var errLbl = lbl.substring(0, lbl.length - 1)
+
+    -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
+    -var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
+
+    -var onEscape = newItem ? 'group.add = []' : 'field.edit = false'
+
+    -var resetOnBlur = newItem ? '!stopblur && (group.add = [])' : 'field.edit = false'
+    -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
+
+    if block
+        block
+
+    +form-field-feedback(name, 'javaBuiltInClass', errLbl + ' should not be the Java built-in class!')
+    +form-field-feedback(name, 'javaKeywords', errLbl + ' could not contains reserved Java keyword!')
+    +form-field-feedback(name, 'javaPackageSpecified', errLbl + ' does not have package specified!')
+    +form-field-feedback(name, 'javaIdentifier', errLbl + ' is invalid Java identifier!')
+
+    if block
+        block
+
+    .input-tip
+        +ignite-form-field-input(name, model, false, 'true', 'Enter fully qualified class name')(
+            data-java-identifier='true'
+            data-java-package-specified='true'
+            data-java-keywords='true'
+            data-java-built-in-class='true'
+
+            data-ignite-unique=items
+            data-ignite-form-field-input-autofocus='true'
+
+            ng-blur=onBlur
+            ignite-on-enter=onEnter
+            ignite-on-escape=onEscape
+        )
+
+//- Mixin for table java package field.
+mixin table-java-package-field(name, model, items, valid, save, newItem)
+    -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
+    -var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
+
+    -var onEscape = newItem ? 'group.add = []' : 'field.edit = false'
+
+    -var resetOnBlur = newItem ? '!stopblur && (group.add = [])' : 'field.edit = false'
+    -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
+
+    +form-field-feedback(name, 'javaKeywords', 'Package name could not contains reserved Java keyword!')
+    +form-field-feedback(name, 'javaPackageName', 'Package name is invalid!')
+
+    if block
+        block
+
+    .input-tip
+        +ignite-form-field-input(name, model, false, 'true', 'Enter package name')(
+            data-java-keywords='true'
+            data-java-package-name='package-only'
+
+            data-ignite-unique=items
+            data-ignite-form-field-input-autofocus='true'
+
+            ng-blur=onBlur
+            ignite-on-enter=onEnter
+            ignite-on-escape=onEscape
+        )
+
+
+//- Mixin for table address field.
+mixin table-address-field(name, model, items, valid, save, newItem, portRange)
+    -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
+    -var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
+
+    -var onEscape = newItem ? 'group.add = []' : 'field.edit = false'
+
+    -var resetOnBlur = newItem ? '!stopblur && (group.add = [])' : 'field.edit = false'
+    -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
+
+    +ipaddress-feedback(name)
+    +ipaddress-port-feedback(name)
+    +ipaddress-port-range-feedback(name)
+
+    if block
+        block
+
+    .input-tip
+        +ignite-form-field-input(name, model, false, 'true', 'IP address:port')(
+            data-ipaddress='true'
+            data-ipaddress-with-port='true'
+            data-ipaddress-with-port-range=portRange ? 'true' : null
+            data-ignite-unique=items
+            data-ignite-form-field-input-autofocus='true'
+            ng-blur=onBlur
+            ignite-on-enter=onEnter
+            ignite-on-escape=onEscape
+        )
+
+//- Mixin for table UUID field.
+mixin table-uuid-field(name, model, items, valid, save, newItem)
+    -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
+    -var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
+
+    -var onEscape = newItem ? 'group.add = []' : 'field.edit = false'
+
+    -var resetOnBlur = newItem ? '!stopblur && (group.add = [])' : 'field.edit = false'
+    -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
+
+    if block
+        block
+
+    .input-tip
+        +ignite-form-field-input(name, model, false, 'true', 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx')(
+            data-uuid='true'
+            data-ignite-unique=items
+            data-ignite-form-field-input-autofocus='true'
+            ng-blur=onBlur
+            ignite-on-enter=onEnter
+            ignite-on-escape=onEscape
+        )
+
+//- Mixin for table save button.
+   "||" used instead of "&&" to workaround escaping of "&&" to "&amp;&amp;"
+mixin table-save-button(valid, save, newItem)
+    -var reset = newItem ? 'group.add = []' : 'field.edit = false'
+
+    i.fa.fa-floppy-o.form-field-save(
+        ng-show=valid
+        ng-click='!(#{valid}) || (#{save}); !(#{valid}) || (#{reset});'
+        bs-tooltip
+        data-title='Click icon or press [Enter] to save item'
+    )
+
+//- Mixin for table remove button.
+mixin table-remove-conditional-button(items, show, tip)
+    i.tipField.fa.fa-remove(
+        ng-hide='!#{show} || field.edit'
+        bs-tooltip
+        data-title=tip
+        ng-click='#{items}.splice(#{items}.indexOf(model), 1)'
+    )
+
+//- Mixin for table remove button.
+mixin table-remove-button(items, tip)
+    +table-remove-conditional-button(items, 'true', tip)
+
+//- Mixin for cache mode.
+mixin cacheMode(lbl, model, name, placeholder)
+    +dropdown(lbl, model, name, 'true', placeholder,
+        '[\
+            {value: "LOCAL", label: "LOCAL"},\
+            {value: "REPLICATED", label: "REPLICATED"},\
+            {value: "PARTITIONED", label: "PARTITIONED"}\
+        ]',
+        'Cache modes:\
+        <ul>\
+            <li>PARTITIONED - in this mode the overall key set will be divided into partitions and all partitions will be split equally between participating nodes</li>\
+            <li>REPLICATED - in this mode all the keys are distributed to all participating nodes</li>\
+            <li>LOCAL - in this mode caches residing on different grid nodes will not know about each other</li>\
+        </ul>'
+    )
+
+//- Mixin for eviction policy.
+mixin evictionPolicy(model, name, enabled, required, tip)
+    -var kind = model + '.kind'
+    -var policy = model + '[' + kind + ']'
+
+    +dropdown-required('Eviction policy:', kind, name + '+ "Kind"', enabled, required, 'Not set',
+        '[\
+            {value: "LRU", label: "LRU"},\
+            {value: "FIFO", label: "FIFO"},\
+            {value: "SORTED", label: "Sorted"},\
+            {value: undefined, label: "Not set"}\
+        ]', tip)
+    span(ng-if=kind ng-init='__ = {};')
+        a.customize(ng-show='__.expanded' ng-click='__.expanded = false') Hide settings
+        a.customize(ng-hide='__.expanded' ng-click='__.expanded = true') Show settings
+        .panel-details(ng-if='__.expanded')
+            .details-row
+                +number('Batch size', policy + '.batchSize', name + '+ "batchSize"', enabled, '1', '0',
+                    'Number of entries to remove on shrink')
+            .details-row
+                +number('Max memory size', policy + '.maxMemorySize', name + '+ "maxMemorySize"', enabled, '0', '0',
+                    'Maximum allowed cache size in bytes')
+            .details-row
+                +number('Max size', policy + '.maxSize', name + '+ "maxSize"', enabled, '100000', '0',
+                    'Maximum allowed size of cache before entry will start getting evicted')
+
+//- Mixin for clusters dropdown.
+mixin clusters(model, tip)
+    +dropdown-multiple('<span>Clusters:</span>' + '<a ui-sref="base.configuration.clusters({linkId: linkId()})"> (add)</a>',
+        model + '.clusters', '"clusters"', true, 'Choose clusters', 'No clusters configured', 'clusters', tip)
+
+//- Mixin for caches dropdown.
+mixin caches(model, tip)
+    +dropdown-multiple('<span>Caches:</span>' + '<a ui-sref="base.configuration.caches({linkId: linkId()})"> (add)</a>',
+        model + '.caches', '"caches"', true, 'Choose caches', 'No caches configured', 'caches', tip)
+
+//- Mixin for XML and Java preview.
+mixin preview-xml-java(master, generator, detail)
+    ignite-ui-ace-tabs
+        .preview-panel
+            .preview-legend
+                a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
+                | &nbsp;
+                a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
+            .preview-content(ng-if='mode')
+                ignite-ui-ace-java(data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
+            .preview-content(ng-if='!mode')
+                ignite-ui-ace-xml(data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
+            .preview-content-empty(ng-if='!data')
+                label All Defaults
+
+//- LEGACY mixin for LEGACY tables.
+mixin btn-save(show, click)
+    i.tipField.fa.fa-floppy-o(ng-show=show ng-click=click bs-tooltip='' data-title='Click icon or press [Enter] to save item' data-trigger='hover')
+
+//- LEGACY mixin for LEGACY tables.
+mixin btn-add(click, tip)
+    i.tipField.fa.fa-plus(ng-click=click bs-tooltip=tip data-trigger = 'hover')
+
+//- LEGACY mixin for LEGACY tables.
+mixin btn-remove(click, tip)
+    i.tipField.fa.fa-remove(ng-click=click bs-tooltip=tip data-trigger='hover')
+
+//- LEGACY mixin for LEGACY tables.
+mixin btn-remove-cond(cond, click, tip)
+    i.tipField.fa.fa-remove(ng-show=cond ng-click=click bs-tooltip=tip data-trigger='hover')
+
+//- LEGACY mixin for LEGACY pair values tables.
+mixin table-pair-edit(tbl, prefix, keyPlaceholder, valPlaceholder, keyJavaBuiltInTypes, valueJavaBuiltInTypes, focusId, index, divider)
+    -var keyModel = tbl + '.' + prefix + 'Key'
+    -var valModel = tbl +'.' + prefix + 'Value'
+
+    -var keyFocusId = prefix + 'Key' + focusId
+    -var valFocusId = prefix + 'Value' + focusId
+
+    .col-xs-6.col-sm-6.col-md-6
+        .fieldSep !{divider}
+        .input-tip
+            if keyJavaBuiltInTypes
+                input.form-control(id=keyFocusId ignite-on-enter-focus-move=valFocusId type='text' ng-model=keyModel placeholder=keyPlaceholder bs-typeahead container='body' ignite-retain-selection data-min-length='1' bs-options='javaClass for javaClass in javaBuiltInClasses' ignite-on-escape='tableReset()')
+            else
+                input.form-control(id=keyFocusId ignite-on-enter-focus-move=valFocusId type='text' ng-model=keyModel placeholder=keyPlaceholder ignite-on-escape='tableReset()')
+    .col-xs-6.col-sm-6.col-md-6
+        -var btnVisible = 'tablePairSaveVisible(' + tbl + ', ' + index + ')'
+        -var btnSave = 'tablePairSave(tablePairValid, backupItem, ' + tbl + ', ' + index + ')'
+        -var btnVisibleAndSave = btnVisible + ' && ' + btnSave
+
+        +btn-save(btnVisible, btnSave)
+        .input-tip
+            if valueJavaBuiltInTypes
+                input.form-control(id=valFocusId type='text' ng-model=valModel placeholder=valPlaceholder bs-typeahead container='body' ignite-retain-selection data-min-length='1' bs-options='javaClass for javaClass in javaBuiltInClasses' ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset()')
+            else
+                input.form-control(id=valFocusId type='text' ng-model=valModel placeholder=valPlaceholder ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset()')
+
+//- Mixin for DB dialect.
+mixin dialect(lbl, model, name, required, tipTitle, genericDialectName, placeholder)
+    +dropdown(lbl, model, name, required, placeholder, '[\
+                {value: "Generic", label: "' + genericDialectName + '"},\
+                {value: "Oracle", label: "Oracle"},\
+                {value: "DB2", label: "IBM DB2"},\
+                {value: "SQLServer", label: "Microsoft SQL Server"},\
+                {value: "MySQL", label: "MySQL"},\
+                {value: "PostgreSQL", label: "PostgreSQL"},\
+                {value: "H2", label: "H2 database"}\
+        ]',
+        tipTitle +
+        '<ul>\
+            <li>' + genericDialectName + '</li>\
+            <li>Oracle database</li>\
+            <li>IBM DB2</li>\
+            <li>Microsoft SQL Server</li>\
+            <li>MySQL</li>\
+            <li>PostgreSQL</li>\
+            <li>H2 database</li>\
+        </ul>')

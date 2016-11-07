@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Services
     using System.Diagnostics;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Collections;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Services;
 
     /// <summary>
@@ -55,6 +56,7 @@ namespace Apache.Ignite.Core.Impl.Services
             TotalCount = reader.ReadInt();
             OriginNodeId = reader.ReadGuid() ?? Guid.Empty;
             AffinityKey = reader.ReadObject<object>();
+            Platform = (Platform) reader.ReadByte();
 
             var mapSize = reader.ReadInt();
             var snap = new Dictionary<Guid, int>(mapSize);
@@ -80,10 +82,13 @@ namespace Apache.Ignite.Core.Impl.Services
                 catch (Exception ex)
                 {
                     throw new ServiceInvocationException(
-                        "Failed to retrieve service type. It has either been cancelled, or is not a .Net service", ex);
+                        "Failed to retrieve service type. It has either been cancelled, or is not a .NET service", ex);
                 }
             }
         }
+
+        /** <inheritdoc /> */
+        public Platform Platform { get; private set; }
 
         /** <inheritdoc /> */
         public int TotalCount { get; private set; }

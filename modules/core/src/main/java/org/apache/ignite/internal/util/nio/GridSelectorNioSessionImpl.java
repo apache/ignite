@@ -227,7 +227,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
 
             if (recovery != null) {
                 if (!recovery.add(last)) {
-                    LT.warn(log, null, "Unacknowledged messages queue size overflow, will attempt to reconnect " +
+                    LT.warn(log, "Unacknowledged messages queue size overflow, will attempt to reconnect " +
                         "[remoteAddr=" + remoteAddress() +
                         ", queueLimit=" + recovery.queueLimit() + ']');
 
@@ -262,6 +262,13 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      */
     int writeQueueSize() {
         return queueSize.get();
+    }
+
+    /**
+     * @return Write requests.
+     */
+    Collection<GridNioFuture<?>> writeQueue() {
+        return queue;
     }
 
     /** {@inheritDoc} */

@@ -31,13 +31,19 @@
     </parent>
 
     <artifactId>ignite-schema-import</artifactId>
-    <version>1.6.0-SNAPSHOT</version>
+    <version>1.8.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <dependencies>
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-schema-import-db</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -78,6 +84,14 @@
                             <mainClass>org.apache.ignite.schema.ui.SchemaImportApp</mainClass>
                         </manifest>
                     </archive>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
                 </configuration>
             </plugin>
         </plugins>

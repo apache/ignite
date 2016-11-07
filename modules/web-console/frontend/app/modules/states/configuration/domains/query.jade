@@ -1,0 +1,170 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include ../../../../../app/helpers/jade/mixins.jade
+
+-var form = 'query'
+-var model = 'backupItem'
+-var queryFields = model + '.fields'
+-var queryAliases = model + '.aliases'
+-var queryIndexes = model + '.indexes'
+-var queryFieldsForm = 'queryFields'
+-var queryAliasesForm = 'queryAliases'
+-var queryIndexesForm = 'queryIndexes'
+
+// LEGACY mixin for LEGACY index fields table.
+mixin table-index-item-edit(prefix, index, sortAvailable, idAddition)
+    -var fieldName = prefix + 'FieldName'
+    -var direction = prefix + 'Direction'
+
+    -var fieldNameModel = 'indexesTbl.' + fieldName
+    -var directionModel = 'indexesTbl.' + direction
+
+    -var btnVisible = 'tableIndexItemSaveVisible(indexesTbl, ' + index + ')'
+    -var btnSave = 'tableIndexItemSave(indexesTbl, itemIndex, ' + index + ')'
+    -var btnVisibleAndSave = btnVisible + ' && ' + btnSave
+
+    .col-xs-8.col-sm-8.col-md-8(ng-show=sortAvailable)
+        label.fieldSep /
+        .input-tip
+            input.form-control(id='{{::"#{fieldName}S" + #{idAddition}}}' ignite-on-enter-focus-move='{{::"#{direction}S" + #{idAddition}}}' type='text' ng-model=fieldNameModel placeholder='Field name' ignite-on-escape='tableReset()')
+    .col-xs-4.col-sm-4.col-md-4(ng-show=sortAvailable)
+        +btn-save(btnVisible, btnSave)
+        .input-tip
+            button.select-toggle.form-control(id='{{::"#{direction}S" + #{idAddition}}}' ng-model=directionModel bs-select bs-options='item.value as item.label for item in {{sortDirections}}' ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset()' tabindex='0')
+    .col-xs-12(ng-show='!(#{sortAvailable})')
+        +btn-save(btnVisible, btnSave)
+        .input-tip
+            input.form-control(id='{{::"#{fieldName}" + #{idAddition}}}' type='text' ng-model=fieldNameModel placeholder='Field name' ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset()')
+
+.panel.panel-default(ng-form=form novalidate)
+    .panel-heading(bs-collapse-toggle)
+        ignite-form-panel-chevron
+        label(id='query-title') Domain model for SQL query
+        ignite-form-field-tooltip.tipLabel
+            | Domain model properties for fields queries
+        ignite-form-revert
+    .panel-collapse(role='tabpanel' bs-collapse-target id='query')
+        .panel-body
+            .col-sm-6
+                .content-not-available(ng-if='#{model}.queryMetadata === "Annotations"')
+                    label Not available for annotated types
+                div(ng-if='#{model}.queryMetadata === "Configuration"')
+                    .settings-row
+                        +ignite-form-group(ng-model='#{queryFields}' ng-form='#{queryFieldsForm}')
+                            ignite-form-field-label(id='queryFields')
+                                | Fields
+                            ignite-form-group-tooltip
+                                | Collection of name-to-type mappings to be queried, in addition to indexed fields
+                            ignite-form-group-add(ng-click='tableNewItem(queryFieldsTbl)')
+                                | Add field to query
+                            .group-content-empty(ng-if='!((#{queryFields} && #{queryFields}.length > 0) || tableNewItemActive(queryFieldsTbl))')
+                                | Not defined
+                            .group-content(ng-show='(#{queryFields} && #{queryFields}.length > 0) || tableNewItemActive(queryFieldsTbl)')
+                                table.links-edit(id='fields' st-table=queryFields)
+                                    tbody
+                                        tr(ng-repeat='item in #{queryFields}')
+                                            td.col-sm-12(ng-show='!tableEditing(queryFieldsTbl, $index)')
+                                                a.labelFormField(ng-click='tableStartEdit(backupItem, queryFieldsTbl, $index)') {{item.name}}  / {{item.className}}
+                                                +btn-remove('tableRemove(backupItem, queryFieldsTbl, $index)', '"Remove path"')
+                                            td.col-sm-12(ng-show='tableEditing(queryFieldsTbl, $index)')
+                                                +table-pair-edit('queryFieldsTbl', 'cur', 'Field name', 'Field full class name', false, true, '{{::queryFieldsTbl.focusId + $index}}', '$index', '/')
+                                    tfoot(ng-show='tableNewItemActive(queryFieldsTbl)')
+                                        tr
+                                            td.col-sm-12
+                                                +table-pair-edit('queryFieldsTbl', 'new', 'Field name', 'Field full class name', false, true, '{{::queryFieldsTbl.focusId + $index}}', '-1', '/')
+                    .settings-row
+                        +ignite-form-group(ng-model='#{queryAliases}' ng-form='#{queryAliasesForm}')
+                            ignite-form-field-label
+                                | Aliases
+                            ignite-form-group-tooltip
+                                | Mapping from full property name in dot notation to an alias that will be used as SQL column name
+                                | For example: "parent.name" as "parentName"
+                            ignite-form-group-add(ng-click='tableNewItem(aliasesTbl)')
+                                | Add alias to query
+                            .group-content-empty(ng-if='!((#{queryAliases} && #{queryAliases}.length > 0) || tableNewItemActive(aliasesTbl))')
+                                | Not defined
+                            .group-content(ng-show='(#{queryAliases} && #{queryAliases}.length > 0) || tableNewItemActive(aliasesTbl)')
+                                table.links-edit(id='aliases' st-table=queryAliases)
+                                    tbody
+                                        tr(ng-repeat='item in #{queryAliases}')
+                                            td.col-sm-12(ng-show='!tableEditing(aliasesTbl, $index)')
+                                                a.labelFormField(ng-click='tableStartEdit(backupItem, aliasesTbl, $index)') {{item.field}} &rarr; {{item.alias}}
+                                                +btn-remove('tableRemove(backupItem, aliasesTbl, $index)', '"Remove alias"')
+                                            td.col-sm-12(ng-show='tableEditing(aliasesTbl, $index)')
+                                                +table-pair-edit('aliasesTbl', 'cur', 'Field name', 'Field Alias', false, false, '{{::aliasesTbl.focusId + $index}}', '$index', '&rarr;')
+                                    tfoot(ng-show='tableNewItemActive(aliasesTbl)')
+                                        tr
+                                            td.col-sm-12
+                                                +table-pair-edit('aliasesTbl', 'new', 'Field name', 'Field Alias', false, false, '{{::aliasesTbl.focusId + $index}}', '-1', '&rarr;')
+                    .settings-row(ng-init='indexesTbl={type: "table-indexes", model: "indexes", focusId: "IndexName", ui: "table-indexes"}')
+                        +ignite-form-group(ng-model='#{queryIndexes}' ng-form='#{queryIndexesForm}')
+                            ignite-form-field-label
+                                | Indexes
+                            ignite-form-group-tooltip
+                                | Collection of indexes
+                            ignite-form-group-add(ng-click='tableNewItem(indexesTbl)')
+                                | Add new index
+                            .group-content-empty(id='indexes-add' ng-show='!((#{queryIndexes} && #{queryIndexes}.length > 0) || tableNewItemActive(indexesTbl))')
+                                | Not defined
+                            .group-content(ng-show='(#{queryIndexes} && #{queryIndexes}.length > 0) || tableNewItemActive(indexesTbl)')
+                                -var btnVisibleAndSave = 'tableIndexSaveVisible(indexesTbl, $index) && tableIndexSave(indexesTbl, $index)'
+
+                                table.links-edit(st-table=queryIndexes ng-init='newDirection = false')
+                                    tbody
+                                        tr(ng-repeat='item in #{queryIndexes}')
+                                            td
+                                                .col-sm-12(ng-show='!tableEditing(indexesTbl, $index)')
+                                                    a.labelFormField(id='indexes{{$index}}' ng-click='tableStartEdit(backupItem, indexesTbl, $index)') {{$index + 1}}) {{item.name}} [{{item.indexType}}]
+                                                    +btn-remove('tableRemove(backupItem, indexesTbl, $index)', '"Remove index"')
+                                                    +btn-add('tableIndexNewItem(indexesTbl, $index)', '"Add new field to index"')
+                                                div(ng-show='tableEditing(indexesTbl, $index)')
+                                                    .col-sm-7
+                                                        label.fieldSep /
+                                                        .input-tip
+                                                            input.form-control(id='curIndexName{{$index}}' type='text' ignite-on-enter-focus-move='curIndexType{{$index}}' ng-model='indexesTbl.curIndexName' placeholder='Index name' ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset()')
+                                                    .col-sm-5
+                                                        +btn-save('tableIndexSaveVisible(indexesTbl, $index)', 'tableIndexSave(indexesTbl, $index)')
+                                                        .input-tip
+                                                            button.select-toggle.form-control(id='curIndexType{{$index}}' bs-select ng-model='indexesTbl.curIndexType' data-placeholder='Select index type' bs-options='item.value as item.label for item in indexType' tabindex='0' ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset()')
+                                                .margin-left-dflt
+                                                    table.links-edit-sub(st-table='item.fields' ng-init='itemIndex = $index')
+                                                        tbody
+                                                            tr(ng-repeat='itemItem in item.fields')
+                                                                td
+                                                                    div(ng-show='!tableIndexItemEditing(indexesTbl, itemIndex, $index)')
+                                                                        a.labelFormField(ng-if='item.indexType == "SORTED"' ng-click='tableIndexItemStartEdit(indexesTbl, itemIndex, $index)') {{$index + 1}}) {{itemItem.name}} / {{itemItem.direction ? "ASC" : "DESC"}}
+                                                                        a.labelFormField(ng-if='item.indexType != "SORTED"' ng-click='tableIndexItemStartEdit(indexesTbl, itemIndex, $index)') {{$index + 1}}) {{itemItem.name}}
+                                                                        +btn-remove('tableRemoveIndexItem(item, $index)', '"Remove field from index"')
+                                                                    div(ng-show='tableIndexItemEditing(indexesTbl, itemIndex, $index)')
+                                                                        +table-index-item-edit('cur', '$index', 'item.indexType == "SORTED"', 'itemIndex + "-" + $index')
+                                                        tfoot(ng-show='tableIndexNewItemActive(indexesTbl, itemIndex)')
+                                                            tr(style='padding-left: 18px')
+                                                                td
+                                                                    +table-index-item-edit('new', '-1', 'item.indexType == "SORTED"', 'itemIndex')
+                                    tfoot(ng-show='tableNewItemActive(indexesTbl)')
+                                        tr
+                                            td
+                                                .col-sm-7
+                                                    .fieldSep /
+                                                    .input-tip
+                                                        input#newIndexName.form-control(type='text' ignite-on-enter-focus-move='newIndexType' ng-model='indexesTbl.newIndexName' placeholder='Index name' ignite-on-enter='tableIndexSaveVisible(indexesTbl, -1) && tableIndexSave(indexesTbl, -1)' ignite-on-escape='tableReset()')
+                                                .col-sm-5
+                                                    +btn-save('tableIndexSaveVisible(indexesTbl, -1)', 'tableIndexSave(indexesTbl, -1)')
+                                                    .input-tip
+                                                        button#newIndexType.select-toggle.form-control(bs-select ng-model='indexesTbl.newIndexType' data-placeholder='Select index type' bs-options='item.value as item.label for item in indexType' tabindex='0' ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset()')
+            .col-sm-6
+                +preview-xml-java(model, 'domainModelQuery')

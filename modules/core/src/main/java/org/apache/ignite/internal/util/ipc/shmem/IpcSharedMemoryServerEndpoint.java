@@ -297,13 +297,13 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
                     String msg = "Failed to process incoming connection (most probably, shared memory " +
                         "rest endpoint has been configured by mistake).";
 
-                    LT.warn(log, null, msg);
+                    LT.warn(log, msg);
 
                     sendErrorResponse(out, e);
                 }
                 catch (IpcOutOfSystemResourcesException e) {
                     if (!omitOutOfResourcesWarn)
-                        LT.warn(log, null, OUT_OF_RESOURCES_MSG);
+                        LT.warn(log, OUT_OF_RESOURCES_MSG);
 
                     sendErrorResponse(out, e);
                 }
@@ -381,8 +381,10 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
             long idx = tokIdxGen.get();
 
             if (tokIdxGen.compareAndSet(idx, idx + 2))
-                return F.pair(new File(tokDir, TOKEN_FILE_NAME + idx + "-" + pid + "-" + size).getAbsolutePath(),
-                    new File(tokDir, TOKEN_FILE_NAME + (idx + 1) + "-" + pid + "-" + size).getAbsolutePath());
+                return new IgnitePair<>(
+                    new File(tokDir, TOKEN_FILE_NAME + idx + "-" + pid + "-" + size).getAbsolutePath(),
+                    new File(tokDir, TOKEN_FILE_NAME + (idx + 1) + "-" + pid + "-" + size).getAbsolutePath()
+                );
         }
     }
 

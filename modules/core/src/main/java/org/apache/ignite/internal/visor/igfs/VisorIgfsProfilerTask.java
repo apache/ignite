@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,7 +39,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -174,13 +174,17 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
         private static final int LOG_COL_TOTAL_BYTES = 19;
 
         /** List of log entries that should be parsed. */
-        private static final Set<Integer> LOG_TYPES = F.asSet(
-            TYPE_OPEN_IN,
-            TYPE_OPEN_OUT,
-            TYPE_RANDOM_READ,
-            TYPE_CLOSE_IN,
-            TYPE_CLOSE_OUT
-        );
+        private static final Set<Integer> LOG_TYPES;
+
+        static {
+            LOG_TYPES = new HashSet<>();
+
+            LOG_TYPES.add(TYPE_OPEN_IN);
+            LOG_TYPES.add(TYPE_OPEN_OUT);
+            LOG_TYPES.add(TYPE_RANDOM_READ);
+            LOG_TYPES.add(TYPE_CLOSE_IN);
+            LOG_TYPES.add(TYPE_CLOSE_OUT);
+        }
 
         /**
          * Create job with given argument.

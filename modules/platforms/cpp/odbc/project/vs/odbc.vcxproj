@@ -1,0 +1,247 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{12F77E12-38FE-42D3-B1DA-7E5979362961}</ProjectGuid>
+    <RootNamespace>ignite.odbc</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v100</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v100</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v100</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v100</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+    <TargetName>ignite.odbc</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+    <TargetName>ignite.odbc</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+    <TargetName>ignite.odbc</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+    <TargetName>ignite.odbc</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>false</SDLCheck>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include;$(ProjectDir)\..\..\src</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;IGNITE_IMPL;IGNITE_FRIEND;TARGET_MODULE_FULL_NAME="$(TargetFileName)";_DEBUG;ODBC_DEBUG;ODBC_LOG_PATH="D:\\odbc.log";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
+      <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>false</SDLCheck>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include;$(ProjectDir)\..\..\src</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;IGNITE_IMPL;IGNITE_FRIEND;TARGET_MODULE_FULL_NAME="$(TargetFileName)";_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
+      <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>false</SDLCheck>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include;$(ProjectDir)\..\..\src</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;IGNITE_IMPL;IGNITE_FRIEND;TARGET_MODULE_FULL_NAME="$(TargetFileName)";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
+      <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>false</SDLCheck>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include;$(ProjectDir)\..\..\src</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;IGNITE_IMPL;IGNITE_FRIEND;TARGET_MODULE_FULL_NAME="$(TargetFileName)";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
+      <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\os\win\src\system_dsn.cpp" />
+    <ClCompile Include="..\..\os\win\src\system\socket_client.cpp" />
+    <ClCompile Include="..\..\os\win\src\system\ui\custom_window.cpp" />
+    <ClCompile Include="..\..\os\win\src\system\ui\dsn_configuration_window.cpp" />
+    <ClCompile Include="..\..\os\win\src\system\ui\window.cpp" />
+    <ClCompile Include="..\..\src\app\application_data_buffer.cpp" />
+    <ClCompile Include="..\..\src\app\parameter.cpp" />
+    <ClCompile Include="..\..\src\column.cpp" />
+    <ClCompile Include="..\..\src\common_types.cpp" />
+    <ClCompile Include="..\..\src\config\configuration.cpp" />
+    <ClCompile Include="..\..\src\config\connection_info.cpp" />
+    <ClCompile Include="..\..\src\connection.cpp" />
+    <ClCompile Include="..\..\src\cursor.cpp" />
+    <ClCompile Include="..\..\src\diagnostic\diagnosable_adapter.cpp" />
+    <ClCompile Include="..\..\src\diagnostic\diagnostic_record.cpp" />
+    <ClCompile Include="..\..\src\diagnostic\diagnostic_record_storage.cpp" />
+    <ClCompile Include="..\..\src\dsn_config.cpp" />
+    <ClCompile Include="..\..\src\entry_points.cpp" />
+    <ClCompile Include="..\..\src\environment.cpp" />
+    <ClCompile Include="..\..\src\meta\column_meta.cpp" />
+    <ClCompile Include="..\..\src\meta\table_meta.cpp" />
+    <ClCompile Include="..\..\src\odbc.cpp" />
+    <ClCompile Include="..\..\src\protocol_version.cpp" />
+    <ClCompile Include="..\..\src\query\data_query.cpp" />
+    <ClCompile Include="..\..\src\query\column_metadata_query.cpp" />
+    <ClCompile Include="..\..\src\query\foreign_keys_query.cpp" />
+    <ClCompile Include="..\..\src\query\primary_keys_query.cpp" />
+    <ClCompile Include="..\..\src\query\special_columns_query.cpp" />
+    <ClCompile Include="..\..\src\query\table_metadata_query.cpp" />
+    <ClCompile Include="..\..\src\query\type_info_query.cpp" />
+    <ClCompile Include="..\..\src\result_page.cpp" />
+    <ClCompile Include="..\..\src\row.cpp" />
+    <ClCompile Include="..\..\src\statement.cpp" />
+    <ClCompile Include="..\..\src\type_traits.cpp" />
+    <ClCompile Include="..\..\src\utility.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="module.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\include\ignite\odbc.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\app\application_data_buffer.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\app\parameter.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\column.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\common_types.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\config\configuration.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\config\connection_info.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\connection.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\cursor.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\diagnostic\diagnosable.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\diagnostic\diagnosable_adapter.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\diagnostic\diagnostic_record.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\diagnostic\diagnostic_record_storage.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\dsn_config.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\environment.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\message.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\meta\column_meta.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\meta\primary_key_meta.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\meta\table_meta.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\parser.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\protocol_version.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\query\data_query.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\query\column_metadata_query.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\query\foreign_keys_query.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\query\primary_keys_query.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\query\query.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\query\special_columns_query.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\query\table_metadata_query.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\query\type_info_query.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\result_page.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\row.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\statement.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\system\odbc_constants.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\system\socket_client.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\system\ui\dsn_configuration_window.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\type_traits.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\utility.h" />
+    <ClInclude Include="..\..\os\win\include\ignite\odbc\system\ui\custom_window.h" />
+    <ClInclude Include="..\..\os\win\include\ignite\odbc\system\ui\window.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\binary\project\vs\binary.vcxproj">
+      <Project>{4f15669b-92eb-49f0-b774-8f19bae0b960}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\common\project\vs\common.vcxproj">
+      <Project>{b63f2e01-5157-4719-8491-0e1c7cd3b701}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

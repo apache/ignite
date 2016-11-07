@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -57,6 +58,8 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
     protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
+
         cfg.setPeerClassLoadingEnabled(false);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
@@ -74,6 +77,7 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
         ccfg.setName("cache*");
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -84,7 +88,7 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 3 * 60 * 1000L;
+        return 5 * 60 * 1000L;
     }
 
     /** {@inheritDoc} */

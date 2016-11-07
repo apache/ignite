@@ -18,12 +18,13 @@
 package org.apache.ignite.examples.datagrid;
 
 import javax.cache.Cache;
+import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -81,9 +82,13 @@ public class CacheContinuousQueryExample {
 
                 // This filter will be evaluated remotely on all nodes.
                 // Entry that pass this filter will be sent to the caller.
-                qry.setRemoteFilter(new CacheEntryEventSerializableFilter<Integer, String>() {
-                    @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends String> e) {
-                        return e.getKey() > 10;
+                qry.setRemoteFilterFactory(new Factory<CacheEntryEventFilter<Integer, String>>() {
+                    @Override public CacheEntryEventFilter<Integer, String> create() {
+                        return new CacheEntryEventFilter<Integer, String>() {
+                            @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends String> e) {
+                                return e.getKey() > 10;
+                            }
+                        };
                     }
                 });
 

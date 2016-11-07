@@ -88,6 +88,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_USER;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IDX_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IGFS_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MANAGEMENT_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MARSH_CACHE_POOL;
@@ -156,6 +157,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** IGFS pool. */
     private ExecutorService igfsPool;
+
+    /** Index pool. */
+    private ExecutorService idxPool;
 
     /** Discovery listener. */
     private GridLocalEventListener discoLsnr;
@@ -267,6 +271,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             1,
             0,
             new LinkedBlockingQueue<Runnable>());
+
+        if (IgniteComponentType.INDEXING.inClassPath()) {
+            int cpus = Runtime.getRuntime().availableProcessors();
+
+            idxPool = new IgniteThreadPoolExecutor("idx", ctx.gridName(),
+                cpus, cpus * 2, 3000L, new LinkedBlockingQueue<Runnable>(1000));
+        }
 
         getSpi().setListener(commLsnr = new CommunicationListener<Serializable>() {
             @Override public void onMessage(UUID nodeId, Serializable msg, IgniteRunnable msgC) {
@@ -548,6 +559,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             U.shutdownNow(getClass(), affPool, log);
 
+            U.shutdownNow(getClass(), idxPool, log);
+
             GridEventStorageManager evtMgr = ctx.event();
 
             if (evtMgr != null && discoLsnr != null)
@@ -651,6 +664,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 case AFFINITY_POOL:
                 case UTILITY_CACHE_POOL:
                 case MARSH_CACHE_POOL:
+                case IDX_POOL:
                 case IGFS_POOL:
                 {
                     if (msg.isOrdered())
@@ -689,7 +703,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @return Execution pool.
      * @throws IgniteCheckedException If failed.
      */
-    private Executor pool(byte plc) throws IgniteCheckedException {
+    public Executor pool(byte plc) throws IgniteCheckedException {
         switch (plc) {
             case P2P_POOL:
                 return p2pPool;
@@ -716,6 +730,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 assert igfsPool != null : "IGFS pool is not configured.";
 
                 return igfsPool;
+
+            case IDX_POOL:
+                assert idxPool != null : "Indexing pool is not configured.";
+
+                return idxPool;
 
             default: {
                 assert plc >= 0 : "Negative policy: " + plc;
@@ -1352,6 +1371,19 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     public void send(ClusterNode node, GridTopic topic, Message msg, byte plc)
         throws IgniteCheckedException {
         send(node, topic, topic.ordinal(), msg, plc, false, 0, false, null);
+    }
+
+    /**
+     * @param node Destination node.
+     * @param topic Topic to send the message to.
+     * @param topicOrd GridTopic enumeration ordinal.
+     * @param msg Message to send.
+     * @param plc Type of processing.
+     * @throws IgniteCheckedException Thrown in case of any errors.
+     */
+    public void send(ClusterNode node, Object topic, int topicOrd, Message msg, byte plc)
+        throws IgniteCheckedException {
+        send(node, topic, topicOrd, msg, plc, false, 0, false, null);
     }
 
     /**

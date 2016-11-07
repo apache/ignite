@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.lang.IgnitePair;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jsr166.ConcurrentHashMap8;
@@ -66,7 +65,7 @@ public class ConcurrentMapTest {
 
             int writes = testMap(100000, new ConcurrentHashMap8<String, Integer>(cap, 0.75f, lvl));
 
-            ress.add(F.pair(lvl, writes));
+            ress.add(new IgnitePair<>(lvl, writes));
         }
 
         X.println("Test summary.");

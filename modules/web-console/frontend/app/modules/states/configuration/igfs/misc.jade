@@ -1,0 +1,108 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include ../../../../../app/helpers/jade/mixins.jade
+
+-var form = 'misc'
+-var model = 'backupItem'
+-var pathModesForm = 'miscPathModes'
+-var pathModes = model + '.pathModes'
+
+//- LEGACY mixin for LEGACY IGFS path modes table.
+mixin table-igfs-path-mode-edit(prefix, focusId, index)
+    -var keyModel = 'tblPathModes.' + prefix + 'Key'
+    -var valModel = 'tblPathModes.' + prefix + 'Value'
+
+    -var keyFocusId = prefix + 'Key' + focusId
+    -var valFocusId = prefix + 'Value' + focusId
+
+    .col-xs-8.col-sm-8.col-md-8
+        .fieldSep /
+        .input-tip
+            input.form-control(id=keyFocusId ignite-on-enter-focus-move=valFocusId type='text' ng-model=keyModel placeholder='Path' ignite-on-escape='tableReset()')
+    .col-xs-4.col-sm-4.col-md-4
+        -var arg = keyModel + ', ' + valModel
+        -var btnVisible = 'tablePairSaveVisible(tblPathModes, ' + index + ')'
+        -var btnSave = 'tablePairSave(tablePairValid, backupItem, tblPathModes, ' + index + ')'
+        -var btnVisibleAndSave = btnVisible + ' && ' + btnSave
+        +btn-save(btnVisible, btnSave)
+        .input-tip
+            button.select-toggle.form-control(id=valFocusId bs-select ng-model=valModel data-placeholder='Mode' bs-options='item.value as item.label for item in igfsModes' tabindex='0' ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset()')
+
+.panel.panel-default(ng-form=form novalidate)
+    .panel-heading(bs-collapse-toggle='' ng-click='ui.loadPanel("#{form}")')
+        ignite-form-panel-chevron
+        label Miscellaneous
+        ignite-form-field-tooltip.tipLabel
+            | Various miscellaneous IGFS settings
+        ignite-form-revert
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
+        .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
+            .col-sm-6
+                .settings-row
+                    +number('Block size:', model + '.blockSize', '"blockSize"', 'true', '65536', '0', 'File data block size in bytes')
+                .settings-row
+                    +number('Stream buffer size:', model + '.streamBufferSize', '"streamBufferSize"', 'true', '65536', '0', 'Read/write buffer size for IGFS stream operations in bytes')
+                .settings-row
+                    +number('Maximum space size:', model + '.maxSpaceSize', '"maxSpaceSize"', 'true', '0', '0', 'Maximum space available for data cache to store file system entries')
+                .settings-row
+                    +number('Maximum task range length:', model + '.maximumTaskRangeLength', '"maximumTaskRangeLength"', 'true', '0', '0', 'Maximum default range size of a file being split during IGFS task execution')
+                .settings-row
+                    +number-min-max('Management port:', model + '.managementPort', '"managementPort"', 'true', '11400', '0', '65535', 'Port number for management endpoint')
+                .settings-row
+                    +number('Per node batch size:', model + '.perNodeBatchSize', '"perNodeBatchSize"', 'true', '100', '0', 'Number of file blocks collected on local node before sending batch to remote node')
+                .settings-row
+                    +number('Per node parallel batch count:', model + '.perNodeParallelBatchCount', '"perNodeParallelBatchCount"', 'true', '8', '0', 'Number of file block batches that can be concurrently sent to remote node')
+                .settings-row
+                    +number('Prefetch blocks:', model + '.prefetchBlocks', '"prefetchBlocks"', 'true', '0', '0', 'Number of pre-fetched blocks if specific file chunk is requested')
+                .settings-row
+                    +number('Sequential reads before prefetch:', model + '.sequentialReadsBeforePrefetch', '"sequentialReadsBeforePrefetch"', 'true', '0', '0', 'Amount of sequential block reads before prefetch is triggered')
+                .settings-row
+                    +number('Trash purge timeout:', model + '.trashPurgeTimeout', '"trashPurgeTimeout"', 'true', '1000', '0', 'Maximum timeout awaiting for trash purging in case data cache oversize is detected')
+                .settings-row
+                    +checkbox('Colocate metadata', model + '.colocateMetadata', '"colocateMetadata"', 'Whether to co-locate metadata on a single node')
+                .settings-row
+                    +checkbox('Relaxed consistency', model + '.relaxedConsistency', '"relaxedConsistency"',
+                        'If value of this flag is <b>true</b>, IGFS will skip expensive consistency checks<br/>\
+                        It is recommended to set this flag to <b>false</b> if your application has conflicting\
+                        operations, or you do not know how exactly users will use your system')
+                .settings-row
+                    +ignite-form-group(ng-model=pathModes ng-form=pathModesForm)
+                        ignite-form-field-label
+                            | Path modes
+                        ignite-form-group-tooltip
+                            | Map of path prefixes to IGFS modes used for them
+                        ignite-form-group-add(ng-click='tableNewItem(tblPathModes)')
+                            | Add path mode
+
+                        .group-content-empty(ng-if='!((#{pathModes} && #{pathModes}.length > 0) || tableNewItemActive(tblPathModes))') Not defined
+
+                        .group-content(ng-show='(#{pathModes} && #{pathModes}.length > 0) || tableNewItemActive(tblPathModes)')
+                            table.links-edit(id='pathModes' st-table=pathModes)
+                                tbody
+                                    tr(ng-repeat='item in #{pathModes}')
+                                        td.col-sm-12(ng-show='!tableEditing(tblPathModes, $index)')
+                                            a.labelFormField(ng-click='tableStartEdit(backupItem, tblPathModes, $index)') {{item.path + " [" + item.mode + "]"}}
+                                            +btn-remove('tableRemove(backupItem, tblPathModes, $index)', '"Remove path"')
+                                        td.col-sm-12(ng-show='tableEditing(tblPathModes, $index)')
+                                            +table-igfs-path-mode-edit('cur', '{{::tblPathModes.focusId + $index}}', '$index')
+                                tfoot(ng-show='tableNewItemActive(tblPathModes)')
+                                    tr
+                                        td.col-sm-12
+                                            +table-igfs-path-mode-edit('new', 'PathMode', '-1')
+
+            .col-sm-6
+                +preview-xml-java(model, 'igfsMisc')

@@ -336,7 +336,7 @@ public class IgniteClientReconnectQueriesTest extends IgniteClientReconnectAbstr
      */
     private void blockMessage(Class<?> clazz) {
         for (int i = 0; i < serverCount(); i++) {
-            BlockTpcCommunicationSpi commSpi = commSpi(grid(i));
+            BlockTcpCommunicationSpi commSpi = commSpi(grid(i));
 
             commSpi.blockMessage(clazz);
         }
@@ -347,7 +347,7 @@ public class IgniteClientReconnectQueriesTest extends IgniteClientReconnectAbstr
      */
     private void unblockMessage() {
         for (int i = 0; i < serverCount(); i++) {
-            BlockTpcCommunicationSpi commSpi = commSpi(grid(i));
+            BlockTcpCommunicationSpi commSpi = commSpi(grid(i));
 
             commSpi.unblockMessage();
         }

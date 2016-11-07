@@ -174,7 +174,7 @@ public class IgniteCacheOffheapEvictQueryTest extends GridCommonAbstractTest {
                             }
                         }
 
-                        LT.warn(log, null, e.getMessage());
+                        LT.warn(log, e.getMessage());
 
                         return;
                     }

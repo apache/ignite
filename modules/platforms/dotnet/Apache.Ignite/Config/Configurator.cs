@@ -62,6 +62,9 @@ namespace Apache.Ignite.Config
         /** Command line argument: Config file name to read config section from. */
         private const string CmdConfigFile = "ConfigFileName";
 
+        /** Hidden command line argument: Force test classpath. */
+        private const string CmdForceTestClasspath = "ForceTestClasspath";
+
         /** <inheritDoc /> */
         public static IgniteConfiguration GetConfiguration(Tuple<string, string>[] args)
         {
@@ -72,7 +75,8 @@ namespace Apache.Ignite.Config
 
             foreach (var arg in args)
             {
-                Func<string, bool> argIs = x => arg.Item1.Equals(x, StringComparison.OrdinalIgnoreCase);
+                var arg0 = arg;  // copy captured variable
+                Func<string, bool> argIs = x => arg0.Item1.Equals(x, StringComparison.OrdinalIgnoreCase);
 
                 if (argIs(CmdIgniteHome))
                     cfg.IgniteHome = arg.Item2;
@@ -94,6 +98,8 @@ namespace Apache.Ignite.Config
                     jvmOpts.Add(arg.Item2);
                 else if (argIs(CmdAssembly))
                     assemblies.Add(arg.Item2);
+                else if (argIs(CmdForceTestClasspath) && arg.Item2 == "true")
+                    Environment.SetEnvironmentVariable("IGNITE_NATIVE_TEST_CLASSPATH", "true");
             }
 
             if (jvmOpts.Count > 0)
@@ -147,12 +153,12 @@ namespace Apache.Ignite.Config
         /// </summary>
         private static ExeConfigurationFileMap GetConfigMap(string fileName)
         {
-            fileName = Path.GetFullPath(fileName);
+            var fullFileName = Path.GetFullPath(fileName);
 
-            if (!File.Exists(fileName))
-                throw new InvalidOperationException("Specified config file does not exist: " + fileName);
+            if (!File.Exists(fullFileName))
+                throw new ConfigurationErrorsException("Specified config file does not exist: " + fileName);
 
-            return new ExeConfigurationFileMap {ExeConfigFilename = fileName};
+            return new ExeConfigurationFileMap {ExeConfigFilename = fullFileName};
         }
 
         /// <summary>

@@ -141,7 +141,7 @@ public class IgniteClientReconnectStreamerTest extends IgniteClientReconnectAbst
 
         final IgniteDataStreamer<Integer, Integer> streamer = client.dataStreamer(CACHE_NAME);
 
-        BlockTpcCommunicationSpi commSpi = commSpi(srv);
+        BlockTcpCommunicationSpi commSpi = commSpi(srv);
 
         commSpi.blockMessage(DataStreamerResponse.class);
 

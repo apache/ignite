@@ -83,7 +83,6 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
         }
 
         if (getTestGridName(10).equals(gridName)) {
-
             CacheConfiguration cc = cfg.getCacheConfiguration()[0];
             cc.setRebalanceDelay(-1);
         }

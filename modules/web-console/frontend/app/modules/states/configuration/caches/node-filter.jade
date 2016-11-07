@@ -1,0 +1,108 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include ../../../../../app/helpers/jade/mixins.jade
+
+-var form = 'nodeFilter'
+-var model = 'backupItem'
+
+.panel.panel-default(ng-form=form novalidate)
+    .panel-heading(bs-collapse-toggle='' ng-click='ui.loadPanel("#{form}")')
+        ignite-form-panel-chevron
+        label(id='nodeFilter-title') Node filter
+        ignite-form-field-tooltip.tipLabel
+            | Determines on what nodes the cache should be started
+        ignite-form-revert
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
+        .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
+            .col-sm-6
+                .settings-row
+                    -var nodeFilter = model + '.nodeFilter';
+                    -var nodeFilterKind = nodeFilter + '.kind';
+
+                    +dropdown('Node filter:', nodeFilterKind, '"nodeFilter"', 'true', 'Not set',
+                        '[\
+                            {value: "IGFS", label: "IGFS nodes"},\
+                            {value: "OnNodes", label: "Specified nodes"},\
+                            {value: "Custom", label: "Custom"},\
+                            {value: undefined, label: "Not set"}\
+                        ]',
+                        'Node filter variant'
+                    )
+                .settings-row(ng-show=nodeFilterKind)
+                    div(ng-show='#{nodeFilterKind} === "IGFS"')
+                        -var igfsNodeFilter = nodeFilter + '.IGFS'
+                        -var required = nodeFilterKind + ' === "IGFS"'
+
+                        //(lbl, model, name, enabled, required, placeholder, options, tip)
+                        +dropdown-required-empty('IGFS:', igfsNodeFilter + '.igfs', '"igfsNodeFilter"', 'true', required,
+                            'Choose IGFS', 'No IGFS configured', 'igfss', 'Select IGFS to filter nodes')
+                    div(ng-show='#{nodeFilterKind} === "Custom"')
+                        -var customNodeFilter = nodeFilter + '.Custom'
+                        -var required = nodeFilterKind + ' === "Custom"'
+
+                        +java-class('Class name:', customNodeFilter + '.className', '"customNodeFilter"',
+                            'true', required, 'Class name of custom node filter implementation')
+                    div(ng-show='#{nodeFilterKind} === "OnNodes"')
+                        -var nodeSetFilter = nodeFilter + '.OnNodes.nodeIds'
+
+                        +ignite-form-group(ng-form=form ng-model=nodeSetFilter)
+                            -var uniqueTip = 'Such node ID already exists!'
+
+                            ignite-form-field-label
+                                | Node IDs
+                            ignite-form-group-tooltip
+                                | Set of node IDs to deploy cache
+                            ignite-form-group-add(ng-click='group.add = [{}]')
+                                | Add new node ID
+
+                            .group-content(ng-if='#{nodeSetFilter}.length')
+                                -var model = 'obj.model';
+                                -var name = '"edit" + $index'
+                                -var valid = form + '[' + name + '].$valid'
+                                -var save = nodeSetFilter + '[$index] = ' + model
+
+                                div(ng-repeat='model in #{nodeSetFilter} track by $index' ng-init='obj = {}')
+                                    label.col-xs-12.col-sm-12.col-md-12
+                                        .indexField
+                                            | {{ $index+1 }})
+                                        +table-remove-button(nodeSetFilter, 'Remove node ID')
+
+                                        span(ng-hide='field.edit')
+                                            a.labelFormField(ng-click='field.edit = true; #{model} = model;') {{ model }}
+                                        span(ng-if='field.edit' ng-init='#{field} = model')
+                                            +table-uuid-field(name, model, nodeSetFilter, valid, save, false, true)
+                                                +table-save-button(valid, save, false)
+                                                +unique-feedback(name, uniqueTip)
+                                                +uuid-feedback(name)
+
+                            .group-content(ng-repeat='field in group.add')
+                                -var model = 'new';
+                                -var name = '"new"'
+                                -var valid = form + '[' + name + '].$valid'
+                                -var save = nodeSetFilter + '.push(' + model + ')'
+
+                                div
+                                    label.col-xs-12.col-sm-12.col-md-12
+                                        +table-uuid-field(name, model, nodeSetFilter, valid, save, true, true)
+                                            +table-save-button(valid, save, true)
+                                            +unique-feedback(name, uniqueTip)
+                                            +uuid-feedback(name)
+                            .group-content-empty(id='nodeSetFilter' ng-if='!(#{nodeSetFilter}.length) && !group.add.length')
+                                | Not defined
+
+            .col-sm-6
+                +preview-xml-java(model, 'cacheNodeFilter', 'igfss')

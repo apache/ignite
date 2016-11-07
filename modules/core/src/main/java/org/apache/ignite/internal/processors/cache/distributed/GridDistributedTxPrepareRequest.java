@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -34,6 +35,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
@@ -53,7 +56,7 @@ import org.jetbrains.annotations.Nullable;
  * Transaction prepare request for optimistic and eventually consistent
  * transactions.
  */
-public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage {
+public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage implements IgniteTxStateAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -144,6 +147,10 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /** IO policy. */
     private byte plc;
 
+    /** Transient TX state. */
+    @GridDirectTransient
+    private IgniteTxState txState;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -153,6 +160,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
     /**
      * @param tx Cache transaction.
+     * @param timeout Transactions timeout.
      * @param reads Read entries.
      * @param writes Write entries.
      * @param txNodes Transaction nodes mapping.
@@ -161,6 +169,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      */
     public GridDistributedTxPrepareRequest(
         IgniteInternalTx tx,
+        long timeout,
         @Nullable Collection<IgniteTxEntry> reads,
         Collection<IgniteTxEntry> writes,
         Map<UUID, Collection<UUID>> txNodes,
@@ -173,12 +182,12 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         threadId = tx.threadId();
         concurrency = tx.concurrency();
         isolation = tx.isolation();
-        timeout = tx.timeout();
         invalidate = tx.isInvalidate();
         txSize = tx.size();
         sys = tx.system();
         plc = tx.ioPolicy();
 
+        this.timeout = timeout;
         this.reads = reads;
         this.writes = writes;
         this.txNodes = txNodes;
@@ -236,12 +245,16 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /**
      * @return Commit version.
      */
-    public GridCacheVersion writeVersion() { return writeVer; }
+    public GridCacheVersion writeVersion() {
+        return writeVer;
+    }
 
     /**
      * @return Invalidate flag.
      */
-    public boolean isInvalidate() { return invalidate; }
+    public boolean isInvalidate() {
+        return invalidate;
+    }
 
     /**
      * @return Transaction timeout.
@@ -304,6 +317,16 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      */
     public boolean onePhaseCommit() {
         return onePhaseCommit;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteTxState txState() {
+        return txState;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void txState(IgniteTxState txState) {
+        this.txState = txState;
     }
 
     /** {@inheritDoc}
@@ -377,6 +400,11 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo || forceAddDepInfo;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+        return ctx.txPrepareMessageLogger();
     }
 
     /** {@inheritDoc} */

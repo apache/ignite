@@ -26,7 +26,6 @@ import java.io.ObjectStreamException;
 import java.util.Collections;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -45,7 +44,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     /** */
     private static ThreadLocal<IgniteBiTuple<String, Object>> stash = new ThreadLocal<IgniteBiTuple<String, Object>>() {
         @Override protected IgniteBiTuple<String, Object> initialValue() {
-            return F.t2();
+            return new IgniteBiTuple<>();
         }
     };
 
@@ -203,10 +202,9 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
         try {
             IgniteBiTuple<String, Object> t = stash.get();
 
-            String gridNameR = t.get1();
             Object ctgrR = t.get2();
 
-            IgniteLogger log = IgnitionEx.gridx(gridNameR).log();
+            IgniteLogger log = IgnitionEx.localIgnite().log();
 
             return ctgrR != null ? log.getLogger(ctgrR) : log;
         }

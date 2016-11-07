@@ -53,7 +53,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Finally all generated jobs are sent to Grid nodes for execution.
  * <p>
- * As with regular {@code GridComputeTask} you can define your own logic for results handling and reduce step.
+ * As with regular {@code ComputeTask} you can define your own logic for results handling and reduce step.
  * <p>
  * Here is an example of such a task:
  * <pre name="code" class="java">
@@ -66,10 +66,10 @@ import org.jetbrains.annotations.Nullable;
  *     }
  *
  *     // Aggregate results into one compound result.
- *     public Integer reduce(List&lt;GridComputeJobResult&gt; results) throws IgniteCheckedException {
+ *     public Integer reduce(List&lt;ComputeJobResult&gt; results) throws IgniteCheckedException {
  *         Integer total = 0;
  *
- *         for (GridComputeJobResult res : results) {
+ *         for (ComputeJobResult res : results) {
  *             Integer cnt = res.getData();
  *
  *             // Null can be returned for non-existent file in case we decide to ignore such situations.

@@ -1,0 +1,307 @@
+[
+  {
+    "keyType": "Integer",
+    "valueType": "model.Parking",
+    "queryMetadata": "Configuration",
+    "databaseSchema": "CARS",
+    "databaseTable": "PARKING",
+    "indexes": [],
+    "aliases": [],
+    "fields": [
+      {
+        "name": "name",
+        "className": "String"
+      },
+      {
+        "name": "capacity",
+        "className": "Integer"
+      }
+    ],
+    "valueFields": [
+      {
+        "databaseFieldName": "NAME",
+        "databaseFieldType": "VARCHAR",
+        "javaFieldName": "name",
+        "javaFieldType": "String"
+      },
+      {
+        "databaseFieldName": "CAPACITY",
+        "databaseFieldType": "INTEGER",
+        "javaFieldName": "capacity",
+        "javaFieldType": "int"
+      }
+    ],
+    "keyFields": [
+      {
+        "databaseFieldName": "ID",
+        "databaseFieldType": "INTEGER",
+        "javaFieldName": "id",
+        "javaFieldType": "int"
+      }
+    ],
+    "caches": []
+  },
+  {
+    "keyType": "Integer",
+    "valueType": "model.Department",
+    "queryMetadata": "Configuration",
+    "databaseSchema": "PUBLIC",
+    "databaseTable": "DEPARTMENT",
+    "indexes": [],
+    "aliases": [],
+    "fields": [
+      {
+        "name": "countryId",
+        "className": "Integer"
+      },
+      {
+        "name": "name",
+        "className": "String"
+      }
+    ],
+    "valueFields": [
+      {
+        "databaseFieldName": "COUNTRY_ID",
+        "databaseFieldType": "INTEGER",
+        "javaFieldName": "countryId",
+        "javaFieldType": "int"
+      },
+      {
+        "databaseFieldName": "NAME",
+        "databaseFieldType": "VARCHAR",
+        "javaFieldName": "name",
+        "javaFieldType": "String"
+      }
+    ],
+    "keyFields": [
+      {
+        "databaseFieldName": "ID",
+        "databaseFieldType": "INTEGER",
+        "javaFieldName": "id",
+        "javaFieldType": "int"
+      }
+    ],
+    "caches": []
+  },
+  {
+    "keyType": "Integer",
+    "valueType": "model.Employee",
+    "queryMetadata": "Configuration",
+    "databaseSchema": "PUBLIC",
+    "databaseTable": "EMPLOYEE",
+    "indexes": [
+      {
+        "name": "EMP_NAMES",
+        "indexType": "SORTED",
+        "fields": [
+          {
+            "name": "firstName",
+            "direction": true
+          },
+          {
+            "name": "lastName",
+            "direction": true
+          }
+        ]
+      },
+      {
+        "name": "EMP_SALARY",
+        "indexType": "SORTED",
+        "fields": [
+          {
+            "name": "salary",
+            "direction": true
+          }
+        ]
+      }
+    ],
+    "aliases": [],
+    "fields": [
+      {
+        "name": "departmentId",
+        "className": "Integer"
+      },
+      {
+        "name": "managerId",
+        "className": "Integer"
+      },
+      {
+        "name": "firstName",
+        "className": "String"
+      },
+      {
+        "name": "lastName",
+        "className": "String"
+      },
+      {
+        "name": "email",
+        "className": "String"
+      },
+      {
+        "name": "phoneNumber",
+        "className": "String"
+      },
+      {
+        "name": "hireDate",
+        "className": "Date"
+      },
+      {
+        "name": "job",
+        "className": "String"
+      },
+      {
+        "name": "salary",
+        "className": "Double"
+      }
+    ],
+    "valueFields": [
+      {
+        "databaseFieldName": "DEPARTMENT_ID",
+        "databaseFieldType": "INTEGER",
+        "javaFieldName": "departmentId",
+        "javaFieldType": "int"
+      },
+      {
+        "databaseFieldName": "MANAGER_ID",
+        "databaseFieldType": "INTEGER",
+        "javaFieldName": "managerId",
+        "javaFieldType": "Integer"
+      },
+      {
+        "databaseFieldName": "FIRST_NAME",
+        "databaseFieldType": "VARCHAR",
+        "javaFieldName": "firstName",
+        "javaFieldType": "String"
+      },
+      {
+        "databaseFieldName": "LAST_NAME",
+        "databaseFieldType": "VARCHAR",
+        "javaFieldName": "lastName",
+        "javaFieldType": "String"
+      },
+      {
+        "databaseFieldName": "EMAIL",
+        "databaseFieldType": "VARCHAR",
+        "javaFieldName": "email",
+        "javaFieldType": "String"
+      },
+      {
+        "databaseFieldName": "PHONE_NUMBER",
+        "databaseFieldType": "VARCHAR",
+        "javaFieldName": "phoneNumber",
+        "javaFieldType": "String"
+      },
+      {
+        "databaseFieldName": "HIRE_DATE",
+        "databaseFieldType": "DATE",
+        "javaFieldName": "hireDate",
+        "javaFieldType": "Date"
+      },
+      {
+        "databaseFieldName": "JOB",
+        "databaseFieldType": "VARCHAR",
+        "javaFieldName": "job",
+        "javaFieldType": "String"
+      },
+      {
+        "databaseFieldName": "SALARY",
+        "databaseFieldType": "DOUBLE",
+        "javaFieldName": "salary",
+        "javaFieldType": "Double"
+      }
+    ],
+    "keyFields": [
+      {
+        "databaseFieldName": "ID",
+        "databaseFieldType": "INTEGER",
+        "javaFieldName": "id",
+        "javaFieldType": "int"
+      }
+    ],
+    "caches": []
+  },
+  {
+    "keyType": "Integer",
+    "valueType": "model.Country",
+    "queryMetadata": "Configuration",
+    "databaseSchema": "PUBLIC",
+    "databaseTable": "COUNTRY",
+    "indexes": [],
+    "aliases": [],
+    "fields": [
+      {
+        "name": "name",
+        "className": "String"
+      },
+      {
+        "name": "population",
+        "className": "Integer"
+      }
+    ],
+    "valueFields": [
+      {
+        "databaseFieldName": "NAME",
+        "databaseFieldType": "VARCHAR",
+        "javaFieldName": "name",
+        "javaFieldType": "String"
+      },
+      {
+        "databaseFieldName": "POPULATION",
+        "databaseFieldType": "INTEGER",
+        "javaFieldName": "population",
+        "javaFieldType": "int"
+      }
+    ],
+    "keyFields": [
+      {
+        "databaseFieldName": "ID",
+        "databaseFieldType": "INTEGER",
+        "javaFieldName": "id",
+        "javaFieldType": "int"
+      }
+    ],
+    "caches": []
+  },
+  {
+    "keyType": "Integer",
+    "valueType": "model.Car",
+    "queryMetadata": "Configuration",
+    "databaseSchema": "CARS",
+    "databaseTable": "CAR",
+    "indexes": [],
+    "aliases": [],
+    "fields": [
+      {
+        "name": "parkingId",
+        "className": "Integer"
+      },
+      {
+        "name": "name",
+        "className": "String"
+      }
+    ],
+    "valueFields": [
+      {
+        "databaseFieldName": "PARKING_ID",
+        "databaseFieldType": "INTEGER",
+        "javaFieldName": "parkingId",
+        "javaFieldType": "int"
+      },
+      {
+        "databaseFieldName": "NAME",
+        "databaseFieldType": "VARCHAR",
+        "javaFieldName": "name",
+        "javaFieldType": "String"
+      }
+    ],
+    "keyFields": [
+      {
+        "databaseFieldName": "ID",
+        "databaseFieldType": "INTEGER",
+        "javaFieldName": "id",
+        "javaFieldType": "int"
+      }
+    ],
+    "caches": []
+  }
+]

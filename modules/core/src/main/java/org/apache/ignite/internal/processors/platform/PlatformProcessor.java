@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStore;
 import org.jetbrains.annotations.Nullable;
@@ -203,9 +202,8 @@ public interface PlatformProcessor extends GridProcessor {
      * @param initVal Initial value.
      * @param create Create flag.
      * @return Platform atomic long.
-     * @throws IgniteException
      */
-    public PlatformTarget atomicLong(String name, long initVal, boolean create) throws IgniteException;
+    public PlatformTarget atomicLong(String name, long initVal, boolean create);
 
     /**
      * Get or create AtomicSequence.
@@ -213,9 +211,8 @@ public interface PlatformProcessor extends GridProcessor {
      * @param initVal Initial value.
      * @param create Create flag.
      * @return Platform atomic long.
-     * @throws IgniteException
      */
-    public PlatformTarget atomicSequence(String name, long initVal, boolean create) throws IgniteException;
+    public PlatformTarget atomicSequence(String name, long initVal, boolean create);
 
     /**
      * Get or create AtomicReference.
@@ -223,9 +220,8 @@ public interface PlatformProcessor extends GridProcessor {
      * @param memPtr Pointer to a stream with initial value. 0 for null initial value.
      * @param create Create flag.
      * @return Platform atomic long.
-     * @throws IgniteException
      */
-    public PlatformTarget atomicReference(String name, long memPtr, boolean create) throws IgniteException;
+    public PlatformTarget atomicReference(String name, long memPtr, boolean create);
 
     /**
      * Gets the configuration of the current Ignite instance.
@@ -233,4 +229,46 @@ public interface PlatformProcessor extends GridProcessor {
      * @param memPtr Stream to write data to.
      */
     public void getIgniteConfiguration(long memPtr);
+
+    /**
+     * Gets the cache names.
+     *
+     * @param memPtr Stream to write data to.
+     */
+    public void getCacheNames(long memPtr);
+
+    /**
+     * Starts a near cache on local node if cache was previously started.
+     *
+     * @param cacheName Cache name.
+     * @param memPtr Pointer to a stream with near cache config. 0 for default config.
+     * @return Cache.
+     */
+    public PlatformTarget createNearCache(@Nullable String cacheName, long memPtr);
+
+    /**
+     * Gets existing near cache with the given name or creates a new one.
+     *
+     * @param cacheName Cache name.
+     * @param memPtr Pointer to a stream with near cache config. 0 for default config.
+     * @return Cache.
+     */
+    public PlatformTarget getOrCreateNearCache(@Nullable String cacheName, long memPtr);
+
+    /**
+     * Gets a value indicating whether Ignite logger has specified level enabled.
+     *
+     * @param level Log level.
+     */
+    public boolean loggerIsLevelEnabled(int level);
+
+    /**
+     * Logs to the Ignite logger.
+     *
+     * @param level Log level.
+     * @param message Message.
+     * @param category Category.
+     * @param errorInfo Error info.
+     */
+    public void loggerLog(int level, String message, String category, String errorInfo);
 }

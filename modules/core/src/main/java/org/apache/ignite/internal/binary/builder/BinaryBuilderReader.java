@@ -55,7 +55,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
     /** */
     private int pos;
 
-    /*
+    /**
      * Constructor.
      *
      * @param objImpl Binary object
@@ -67,7 +67,8 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
 
         reader = new BinaryReaderExImpl(ctx,
             BinaryHeapInputStream.create(arr, pos),
-            ctx.configuration().getClassLoader());
+            ctx.configuration().getClassLoader(),
+            false);
 
         objMap = new HashMap<>();
     }
@@ -83,7 +84,11 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
         this.arr = other.arr;
         this.pos = start;
 
-        reader = new BinaryReaderExImpl(ctx, BinaryHeapInputStream.create(arr, start), null, other.reader.handles());
+        reader = new BinaryReaderExImpl(ctx,
+            BinaryHeapInputStream.create(arr, start),
+            null,
+            other.reader.handles(),
+            false);
 
         this.objMap = other.objMap;
     }

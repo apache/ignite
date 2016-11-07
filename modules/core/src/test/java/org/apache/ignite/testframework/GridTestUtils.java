@@ -172,13 +172,14 @@ public final class GridTestUtils {
      * @param sent Sent or received.
      */
     public static void addMessage(UUID from, UUID to, Message msg, boolean sent) {
-        IgnitePair<UUID> key = F.pair(from, to);
+        IgnitePair<UUID> key = new IgnitePair<>(from, to);
 
         IgnitePair<Queue<Message>> val = msgMap.get(key);
 
         if (val == null) {
             IgnitePair<Queue<Message>> old = msgMap.putIfAbsent(key,
-                val = F.<Queue<Message>>pair(new ConcurrentLinkedQueue<Message>(), new ConcurrentLinkedQueue<Message>()));
+                val = new IgnitePair<Queue<Message>>(
+                    new ConcurrentLinkedQueue<Message>(), new ConcurrentLinkedQueue<Message>()));
 
             if (old != null)
                 val = old;
@@ -1023,7 +1024,7 @@ public final class GridTestUtils {
                     Collection<ClusterNode> nodes = top.nodes(p, AffinityTopologyVersion.NONE);
 
                     if (nodes.size() > backups + 1) {
-                        LT.warn(log, null, "Partition map was not updated yet (will wait) [grid=" + g.name() +
+                        LT.warn(log, "Partition map was not updated yet (will wait) [grid=" + g.name() +
                             ", p=" + p + ", nodes=" + F.nodeIds(nodes) + ']');
 
                         wait = true;

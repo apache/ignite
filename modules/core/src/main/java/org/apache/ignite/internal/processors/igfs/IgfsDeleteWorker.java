@@ -19,14 +19,11 @@ package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
-import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
@@ -38,7 +35,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static org.apache.ignite.internal.GridTopic.TOPIC_IGFS;
+import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_PURGED;
 
 /**
  * IGFS worker for removal from the trash directory.
@@ -74,9 +71,6 @@ public class IgfsDeleteWorker extends IgfsThread {
     /** Cancellation flag. */
     private volatile boolean cancelled;
 
-    /** Message topic. */
-    private Object topic;
-
     /**
      * Constructor.
      *
@@ -89,10 +83,6 @@ public class IgfsDeleteWorker extends IgfsThread {
 
         meta = igfsCtx.meta();
         data = igfsCtx.data();
-
-        String igfsName = igfsCtx.igfs().name();
-
-        topic = F.isEmpty(igfsName) ? TOPIC_IGFS : TOPIC_IGFS.topic(igfsName);
 
         assert meta != null;
         assert data != null;
@@ -167,11 +157,14 @@ public class IgfsDeleteWorker extends IgfsThread {
         try {
             info = meta.info(trashId);
         }
-        catch(ClusterTopologyServerNotFoundException e) {
-            LT.warn(log, e, "Server nodes not found.");
+        catch (ClusterTopologyServerNotFoundException ignore) {
+            // Ignore.
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Cannot obtain trash directory info.", e);
+            U.warn(log, "Cannot obtain trash directory info (is node stopping?)");
+
+            if (log.isDebugEnabled())
+                U.error(log, "Cannot obtain trash directory info.", e);
         }
 
         if (info != null) {
@@ -187,8 +180,6 @@ public class IgfsDeleteWorker extends IgfsThread {
                             if (log.isDebugEnabled())
                                 log.debug("Sending delete confirmation message [name=" + entry.getKey() +
                                     ", fileId=" + fileId + ']');
-
-                            sendDeleteMessage(new IgfsDeleteMessage(fileId));
                         }
                     }
                     else
@@ -199,8 +190,6 @@ public class IgfsDeleteWorker extends IgfsThread {
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to delete entry from the trash directory: " + entry.getKey(), e);
-
-                    sendDeleteMessage(new IgfsDeleteMessage(fileId, e));
                 }
             }
         }
@@ -245,7 +234,17 @@ public class IgfsDeleteWorker extends IgfsThread {
                     // In case this node crashes, other node will re-delete the file.
                     data.delete(lockedInfo).get();
 
-                    return meta.delete(trashId, name, id);
+                    boolean ret = meta.delete(trashId, name, id);
+
+                    if (ret) {
+                        IgfsPath path = IgfsUtils.extractOriginalPathFromTrash(name);
+
+                        assert path != null;
+
+                        IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EVT_IGFS_FILE_PURGED);
+                    }
+
+                    return ret;
                 }
             }
             else
@@ -342,27 +341,6 @@ public class IgfsDeleteWorker extends IgfsThread {
             }
             else
                 return true; // Directory entry was deleted concurrently.
-        }
-    }
-
-    /**
-     * Send delete message to all meta cache nodes in the grid.
-     *
-     * @param msg Message to send.
-     */
-    private void sendDeleteMessage(IgfsDeleteMessage msg) {
-        assert msg != null;
-
-        Collection<ClusterNode> nodes = meta.metaCacheNodes();
-
-        for (ClusterNode node : nodes) {
-            try {
-                igfsCtx.send(node, topic, msg, GridIoPolicy.IGFS_POOL);
-            }
-            catch (IgniteCheckedException e) {
-                U.warn(log, "Failed to send IGFS delete message to node [nodeId=" + node.id() +
-                    ", msg=" + msg + ", err=" + e.getMessage() + ']');
-            }
         }
     }
 }

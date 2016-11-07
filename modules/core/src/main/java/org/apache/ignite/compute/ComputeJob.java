@@ -102,7 +102,7 @@ import org.apache.ignite.IgniteException;
  * </ul>
  * Refer to corresponding resource documentation for more information.
  * <p>
- * <h1 class="header">GridComputeJobAdapter</h1>
+ * <h1 class="header">ComputeJobAdapter</h1>
  * Ignite comes with convenience {@link ComputeJobAdapter} adapter that provides
  * default empty implementation for {@link ComputeJob#cancel()} method and also
  * allows user to set and get job argument, if there is one.

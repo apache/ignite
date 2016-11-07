@@ -26,10 +26,7 @@ public class JettyRestProcessorUnsignedSelfTest extends JettyRestProcessorAbstra
         return 8091;
     }
 
-    /**
-     * @return Signature.
-     * @throws Exception If failed.
-     */
+    /** {@inheritDoc} */
     @Override protected String signature() throws Exception {
         return null;
     }
