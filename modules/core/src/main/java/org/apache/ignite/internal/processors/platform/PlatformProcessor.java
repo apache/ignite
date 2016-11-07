@@ -277,5 +277,5 @@ public interface PlatformProcessor extends GridProcessor {
      *
      * @return Binary processor.
      */
-    public PlatformTarget binaryProcessor();
+    public PlatformTargetProxy binaryProcessor();
 }

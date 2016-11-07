@@ -508,8 +508,8 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget binaryProcessor() {
-        return new PlatformBinaryProcessor(platformCtx);
+    @Override public PlatformTargetProxy binaryProcessor() {
+        return proxy(new PlatformBinaryProcessor(platformCtx));
     }
 
     /**
