@@ -150,6 +150,10 @@ extern "C" {
         ctx->ProcessorLoggerLog(static_cast<jobject>(obj), level, message, category, errorInfo);
     }
 
+    void* IGNITE_CALL IgniteProcessorBinaryProcessor(gcj::JniContext* ctx, void* obj) {
+        return ctx->ProcessorBinaryProcessor(static_cast<jobject>(obj));
+    }
+
     long long IGNITE_CALL IgniteTargetInStreamOutLong(gcj::JniContext* ctx, void* obj, int opType, long long memPtr) {
         return ctx->TargetInStreamOutLong(static_cast<jobject>(obj), opType, memPtr);
     }

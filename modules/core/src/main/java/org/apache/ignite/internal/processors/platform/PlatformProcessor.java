@@ -271,4 +271,11 @@ public interface PlatformProcessor extends GridProcessor {
      * @param errorInfo Error info.
      */
     public void loggerLog(int level, String message, String category, String errorInfo);
+
+    /**
+     * Gets the binary processor.
+     *
+     * @return Binary processor.
+     */
+    public PlatformTarget binaryProcessor();
 }

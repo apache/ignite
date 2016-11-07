@@ -72,9 +72,7 @@ namespace ignite
 
                 if (metaMgr->IsUpdatedSince(metaVer))
                 {
-                    BinaryTypeUpdaterImpl metaUpdater(env, javaRef);
-
-                    if (!metaMgr->ProcessPendingUpdates(&metaUpdater, err))
+                    if (!metaMgr->ProcessPendingUpdates(env.Get()->GetTypeUpdater(), err))
                         return 0;
                 }
 
