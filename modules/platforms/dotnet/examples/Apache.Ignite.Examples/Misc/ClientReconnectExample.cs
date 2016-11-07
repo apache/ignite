@@ -80,13 +80,9 @@ namespace Apache.Ignite.Examples.Misc
                         {
                             Console.WriteLine(">>> Client disconnected from the cluster.");
 
-                            var task = disconnectedException.ClientReconnectTask;
+                            disconnectedException.ClientReconnectTask.Wait();
 
-                            Console.WriteLine(">>> Waiting while client gets reconnected to the cluster.");
-
-                            task.Wait();
-
-                            Console.WriteLine(">>> Client has reconnected successfully.");
+                            Console.WriteLine(">>> Client reconnected to the cluster.");
 
                             // Updating the reference to the cache. The client reconnected to the new cluster.
                             cache = ignite.GetCache<int, string>(CacheName);
