@@ -208,8 +208,8 @@ public class IgniteClientReconnectStreamerTest extends IgniteClientReconnectAbst
 
             fail();
         }
-        catch (IllegalStateException e) {
-            // DataStreamer closed.
+        catch (CacheException e) {
+            checkAndWait(e);
         }
 
         try {

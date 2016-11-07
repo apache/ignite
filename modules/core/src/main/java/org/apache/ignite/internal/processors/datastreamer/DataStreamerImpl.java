@@ -399,6 +399,11 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             throw new IllegalStateException("Data streamer has been closed.");
         }
+        else if (cancelled) {
+            busyLock.leaveBusy();
+
+            throw new IllegalStateException("Data streamer has been closed.");
+        }
     }
 
     /**
@@ -540,9 +545,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> addData(Collection<? extends Map.Entry<K, V>> entries) {
-        if (cancelled)
-            throw new IllegalStateException("DataStreamer cancelled, new data can't be processed.");
-
         A.notEmpty(entries, "entries");
 
         checkSecurityPermission(SecurityPermission.CACHE_PUT);
@@ -607,9 +609,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      * @return Future.
      */
     public IgniteFuture<?> addDataInternal(Collection<? extends DataStreamerEntry> entries) {
-        if (cancelled)
-            throw new IllegalStateException("DataStreamer cancelled, new data can't be processed.");
-
         enterBusy();
 
         GridFutureAdapter<Object> resFut = new GridFutureAdapter<>();

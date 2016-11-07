@@ -103,13 +103,10 @@ public abstract class IgniteClientReconnectFailoverAbstractTest extends IgniteCl
                             c.call();
                         }
                         catch (CacheException e) {
-                            checkAndWait(e); // DataStreamer failed on close (flush).
+                            checkAndWait(e);
                         }
                         catch (IgniteClientDisconnectedException e) {
-                            checkAndWait(e); // DataStreamer failed at creation.
-                        }
-                        catch (IllegalStateException e){
-                            // DataStreamer failed during data addition.
+                            checkAndWait(e);
                         }
 
                         if (++iter % 100 == 0)

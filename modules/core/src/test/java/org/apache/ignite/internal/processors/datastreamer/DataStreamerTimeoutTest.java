@@ -18,9 +18,11 @@ package org.apache.ignite.internal.processors.datastreamer;
 
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteDataStreamerTimeoutException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -92,12 +94,7 @@ public class DataStreamerTimeoutTest extends GridCommonAbstractTest {
             for (int i = 0; i < ENTRY_AMOUNT; i++)
                 ldr.addData(i, i);
         }
-        catch (Exception e) {
-            String mess = e.getMessage();
-
-            assertTrue(mess, mess.contains("Some of DataStreamer operations failed") ||
-                mess.contains("Data streamer exceeded timeout on flush"));
-
+        catch (CacheException | IgniteDataStreamerTimeoutException e) {
             thrown = true;
         }
         finally {
@@ -156,16 +153,11 @@ public class DataStreamerTimeoutTest extends GridCommonAbstractTest {
                         processed++;
                     }
                 }
-                catch (Exception e) {
-                    assertEquals(e.getMessage(), "DataStreamer cancelled, new data can't be processed.");
+                catch (IllegalStateException e) {
+                    // No-op.
                 }
             }
-            catch (Exception e) {
-                String mess = e.getMessage();
-
-                assertTrue(mess, mess.contains("Some of DataStreamer operations failed. [failedCount=1]") ||
-                    mess.contains("Data streamer exceeded timeout on flush"));
-
+            catch (CacheException | IgniteDataStreamerTimeoutException e) {
                 thrown = true;
             }
         }

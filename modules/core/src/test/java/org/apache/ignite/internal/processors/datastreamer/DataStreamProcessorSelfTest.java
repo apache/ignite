@@ -32,7 +32,6 @@ import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
@@ -231,16 +230,13 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                 @Override public Object call() throws Exception {
                     Collection<IgniteFuture<?>> futs = new ArrayList<>(cnt);
 
-                    try {
-                        for (int i = 0; i < cnt; i++) {
-                            int idx = idxGen.getAndIncrement();
+                    for (int i = 0; i < cnt; i++) {
+                        int idx = idxGen.getAndIncrement();
 
-                            futs.add(ldr.addData(idx, idx));
-                        }
+                        futs.add(ldr.addData(idx, idx));
                     }
-                    finally {
-                        l1.countDown();
-                    }
+
+                    l1.countDown();
 
                     for (IgniteFuture<?> fut : futs)
                         fut.get();
