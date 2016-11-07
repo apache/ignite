@@ -756,7 +756,7 @@ public class GridReduceQueryExecutor {
             }
             finally {
                 // Make sure any activity related to current attempt is cancelled.
-                cancelRemoteQueriesIfNeeded(nodes, r, qryReqId);
+                cancelRemoteQueriesIfNeeded(nodes, r, qryReqId, qry.distributedJoins());
 
                 if (!runs.remove(qryReqId, r))
                     U.warn(log, "Query run was already removed: " + qryReqId);
@@ -793,15 +793,26 @@ public class GridReduceQueryExecutor {
     }
 
     /**
+     * @param nodes Query nodes.
      * @param r Query run.
      * @param qryReqId Query id.
+     * @param distributedJoins Distributed join flag.
      */
-    private void cancelRemoteQueriesIfNeeded(Collection<ClusterNode> nodes, QueryRun r, long qryReqId) {
-        for (GridMergeIndex idx : r.idxs) {
-            if (!idx.fetchedAll()) {
-                send(nodes, new GridQueryCancelRequest(qryReqId), null, false);
+    private void cancelRemoteQueriesIfNeeded(Collection<ClusterNode> nodes,
+        QueryRun r,
+        long qryReqId,
+        boolean distributedJoins)
+    {
+        // For distributedJoins need always send cancel request to cleanup resources.
+        if (distributedJoins)
+            send(nodes, new GridQueryCancelRequest(qryReqId), null, false);
+        else {
+            for (GridMergeIndex idx : r.idxs) {
+                if (!idx.fetchedAll()) {
+                    send(nodes, new GridQueryCancelRequest(qryReqId), null, false);
 
-                break;
+                    break;
+                }
             }
         }
     }
