@@ -502,10 +502,26 @@ public abstract class IgniteUtils {
         }
     };
 
+    private static final boolean assertionsEnabled;
+
     /**
      * Initializes enterprise check.
      */
     static {
+        boolean assertionsEnabled0 = true;
+
+        try {
+            assert false;
+
+            assertionsEnabled0 = false;
+        }
+        catch (AssertionError ignored) {
+            assertionsEnabled0 = true;
+        }
+        finally {
+            assertionsEnabled = assertionsEnabled0;
+        }
+
         String osName = System.getProperty("os.name");
 
         String osLow = osName.toLowerCase();
@@ -6110,6 +6126,13 @@ public abstract class IgniteUtils {
             if (zip != null)
                 zip.close();
         }
+    }
+
+    /**
+     * @return {@code True} if assertions enabled.
+     */
+    public static boolean assertionsEnabled() {
+        return assertionsEnabled;
     }
 
     /**
