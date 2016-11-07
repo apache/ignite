@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         private const int OpForNodeIds = 7;
 
         /** */
-        private const int OpGetMeta = 8;
+        private const int OpMetadata = 8;
 
         /** */
         private const int OpMetrics = 9;
@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         private const int OpForRemotes = 17;
 
         /** */
-        private const int OpForDaemons = 18;
+        public const int OpForDaemons = 18;
 
         /** */
         private const int OpForRandom = 19;
@@ -115,13 +115,10 @@ namespace Apache.Ignite.Core.Impl.Cluster
         private const int OpForYoungest = 21;
         
         /** */
-        private const int OpResetMetrics = 22;
+        public const int OpResetMetrics = 22;
         
         /** */
-        private const int OpForServers = 23;
-        
-        /** */
-        private const int OpPutMeta = 24;
+        public const int OpForServers = 23;
         
         /** Initial Ignite instance. */
         private readonly Ignite _ignite;
@@ -560,7 +557,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IBinaryType GetBinaryType(int typeId)
         {
-            return DoOutInOp<IBinaryType>(OpGetMeta, 
+            return DoOutInOp<IBinaryType>(OpMetadata,
                 writer => writer.WriteInt(typeId),
                 stream =>
                 {
@@ -601,72 +598,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
                 writer.WriteInt(typeId);
                 writer.WriteInt(schemaId);
             });
-        }
-
-        /// <summary>
-        /// Resets local I/O, job, and task execution metrics.
-        /// </summary>
-        public void ResetMetrics()
-        {
-            DoOutInOp(OpResetMetrics);
-        }
-
-        /// <summary>
-        /// Put binary types to Grid.
-        /// </summary>
-        /// <param name="types">Binary types.</param>
-        public void PutBinaryTypes(ICollection<BinaryType> types)
-        {
-            DoOutOp(OpPutMeta, w =>
-            {
-                w.WriteInt(types.Count);
-
-                foreach (var meta in types)
-                {
-                    w.WriteInt(meta.TypeId);
-                    w.WriteString(meta.TypeName);
-                    w.WriteString(meta.AffinityKeyFieldName);
-
-                    IDictionary<string, int> fields = meta.GetFieldsMap();
-
-                    w.WriteInt(fields.Count);
-
-                    foreach (var field in fields)
-                    {
-                        w.WriteString(field.Key);
-                        w.WriteInt(field.Value);
-                    }
-
-                    w.WriteBoolean(meta.IsEnum);
-
-                    // Send schemas
-                    var desc = meta.Descriptor;
-                    Debug.Assert(desc != null);
-
-                    var count = 0;
-                    var countPos = w.Stream.Position;
-                    w.WriteInt(0);  // Reserve for count
-
-                    foreach (var schema in desc.Schema.GetAll())
-                    {
-                        w.WriteInt(schema.Key);
-
-                        var ids = schema.Value;
-                        w.WriteInt(ids.Length);
-
-                        foreach (var id in ids)
-                            w.WriteInt(id);
-
-                        count++;
-                    }
-
-                    w.Stream.WriteInt(countPos, count);
-                }
-
-                Marshaller.FinishMarshal(w);
-            });
-
-            Marshaller.OnBinaryTypesSent(types);
         }
     }
 }

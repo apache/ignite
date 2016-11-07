@@ -21,7 +21,9 @@ include ../../app/helpers/jade/mixins.jade
         .modal-content
             .modal-header
                 button.close(ng-click='$hide()') &times;
-                h4.modal-title Clone
+                h4.modal-title 
+                    i.fa.fa-clone
+                    | Clone
             form.form-horizontal.modal-body.row(name='ui.inputForm' novalidate)
                 div
                     .col-sm-2

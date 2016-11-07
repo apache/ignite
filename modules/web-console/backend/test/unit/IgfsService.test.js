@@ -19,55 +19,43 @@ const assert = require('chai').assert;
 const injector = require('../injector');
 const testIgfss = require('../data/igfss.json');
 const testAccounts = require('../data/accounts.json');
+const testSpaces = require('../data/spaces.json');
 
 let igfsService;
 let mongo;
 let errors;
+let db;
 
 suite('IgfsServiceTestsSuite', () => {
-    const prepareUserSpaces = () => {
-        return mongo.Account.create(testAccounts)
-            .then((accounts) => {
-                return Promise.all(accounts.map((account) => mongo.Space.create(
-                    [
-                        {name: 'Personal space', owner: account._id, demo: false},
-                        {name: 'Demo space', owner: account._id, demo: true}
-                    ]
-                )))
-                    .then((spaces) => [accounts, spaces]);
-            });
-    };
-
     suiteSetup(() => {
         return Promise.all([injector('services/igfss'),
             injector('mongo'),
-            injector('errors')])
-            .then(([_igfsService, _mongo, _errors]) => {
+            injector('errors'),
+            injector('dbHelper')])
+            .then(([_igfsService, _mongo, _errors, _db]) => {
                 mongo = _mongo;
                 igfsService = _igfsService;
                 errors = _errors;
+                db = _db;
             });
     });
 
-    setup(() => {
-        return Promise.all([
-            mongo.Igfs.remove().exec(),
-            mongo.Account.remove().exec(),
-            mongo.Space.remove().exec()
-        ]);
-    });
+    setup(() => db.init());
 
     test('Create new igfs', (done) => {
-        igfsService.merge(testIgfss[0])
+        const dupleIgfs = Object.assign({}, testIgfss[0], {name: 'Other name'});
+
+        delete dupleIgfs._id;
+
+        igfsService.merge(dupleIgfs)
             .then((igfs) => {
                 assert.isNotNull(igfs._id);
 
-                return igfs._id;
+                return mongo.Igfs.findById(igfs._id);
             })
-            .then((igfsId) => mongo.Igfs.findById(igfsId))
-            .then((igfs) => {
-                assert.isNotNull(igfs);
-            })
+            .then((igfs) =>
+                assert.isNotNull(igfs)
+            )
             .then(done)
             .catch(done);
     });
@@ -75,25 +63,21 @@ suite('IgfsServiceTestsSuite', () => {
     test('Update existed igfs', (done) => {
         const newName = 'NewUniqueName';
 
-        igfsService.merge(testIgfss[0])
-            .then((existIgfs) => {
-                const igfsBeforeMerge = Object.assign({}, testIgfss[0], {_id: existIgfs._id, name: newName});
+        const igfsBeforeMerge = Object.assign({}, testIgfss[0], {name: newName});
 
-                return igfsService.merge(igfsBeforeMerge);
-            })
+        igfsService.merge(igfsBeforeMerge)
             .then((igfs) => mongo.Igfs.findById(igfs._id))
-            .then((igfsAfterMerge) => {
-                assert.equal(igfsAfterMerge.name, newName);
-            })
+            .then((igfsAfterMerge) => assert.equal(igfsAfterMerge.name, newName))
             .then(done)
             .catch(done);
     });
 
     test('Create duplicated igfs', (done) => {
-        const dupleIfgs = Object.assign({}, testIgfss[0], {_id: null});
+        const dupleIfgs = Object.assign({}, testIgfss[0]);
 
-        igfsService.merge(testIgfss[0])
-            .then(() => igfsService.merge(dupleIfgs))
+        delete dupleIfgs._id;
+
+        igfsService.merge(dupleIfgs)
             .catch((err) => {
                 assert.instanceOf(err, errors.DuplicateKeyException);
 
@@ -102,25 +86,18 @@ suite('IgfsServiceTestsSuite', () => {
     });
 
     test('Remove existed igfs', (done) => {
-        igfsService.merge(testIgfss[0])
-            .then((existIgfs) => {
-                return mongo.Igfs.findById(existIgfs._id)
-                    .then((foundIgfs) => igfsService.remove(foundIgfs._id))
-                    .then(({rowsAffected}) => {
-                        assert.equal(rowsAffected, 1);
-                    })
-                    .then(() => mongo.Igfs.findById(existIgfs._id))
-                    .then((notFoundIgfs) => {
-                        assert.isNull(notFoundIgfs);
-                    });
-            })
+        igfsService.remove(testIgfss[0]._id)
+            .then(({rowsAffected}) => assert.equal(rowsAffected, 1))
+            .then(() => mongo.Igfs.findById(testIgfss[0]._id))
+            .then((notFoundIgfs) =>
+                assert.isNull(notFoundIgfs)
+            )
             .then(done)
             .catch(done);
     });
 
     test('Remove igfs without identifier', (done) => {
-        igfsService.merge(testIgfss[0])
-            .then(() => igfsService.remove())
+        igfsService.remove()
             .catch((err) => {
                 assert.instanceOf(err, errors.IllegalArgumentException);
 
@@ -131,45 +108,22 @@ suite('IgfsServiceTestsSuite', () => {
     test('Remove missed igfs', (done) => {
         const validNoExistingId = 'FFFFFFFFFFFFFFFFFFFFFFFF';
 
-        igfsService.merge(testIgfss[0])
-            .then(() => igfsService.remove(validNoExistingId))
-            .then(({rowsAffected}) => {
-                assert.equal(rowsAffected, 0);
-            })
-            .then(done)
-            .catch(done);
-    });
-
-    test('Remove all igfss in space', (done) => {
-        prepareUserSpaces()
-            .then(([accounts, spaces]) => {
-                const currentUser = accounts[0];
-                const userIgfs = Object.assign({}, testIgfss[0], {space: spaces[0][0]._id});
-
-                return igfsService.merge(userIgfs)
-                    .then(() => igfsService.removeAll(currentUser._id, false));
-            })
-            .then(({rowsAffected}) => {
-                assert.equal(rowsAffected, 1);
-            })
+        igfsService.remove(validNoExistingId)
+            .then(({rowsAffected}) => assert.equal(rowsAffected, 0))
             .then(done)
             .catch(done);
     });
 
     test('Get all igfss by space', (done) => {
-        prepareUserSpaces()
-            .then(([accounts, spaces]) => {
-                const userIgfs = Object.assign({}, testIgfss[0], {space: spaces[0][0]._id});
+        igfsService.listBySpaces(testSpaces[0]._id)
+            .then((igfss) => assert.equal(igfss.length, 1))
+            .then(done)
+            .catch(done);
+    });
 
-                return igfsService.merge(userIgfs)
-                    .then((existIgfs) => {
-                        return igfsService.listBySpaces(spaces[0][0]._id)
-                            .then((igfss) => {
-                                assert.equal(igfss.length, 1);
-                                assert.equal(igfss[0]._id.toString(), existIgfs._id.toString());
-                            });
-                    });
-            })
+    test('Remove all igfss in space', (done) => {
+        igfsService.removeAll(testAccounts[0]._id, false)
+            .then(({rowsAffected}) => assert.equal(rowsAffected, 1))
             .then(done)
             .catch(done);
     });

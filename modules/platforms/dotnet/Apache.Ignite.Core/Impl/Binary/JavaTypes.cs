@@ -62,9 +62,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         private static readonly Dictionary<string, Type> JavaToNet =
             NetToJava.GroupBy(x => x.Value).ToDictionary(g => g.Key, g => g.First().Key);
 
-        /** */
-        private static readonly string MappedTypes = string.Join(", ", NetToJava.Keys.Select(x => x.Name));
-
         /// <summary>
         /// Gets the corresponding Java type name.
         /// </summary>
@@ -109,14 +106,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             Type res;
 
             return JavaToNet.TryGetValue(javaTypeName, out res) ? res : null;
-        }
-
-        /// <summary>
-        /// Gets the supported types as a comma-separated string.
-        /// </summary>
-        public static string SupportedTypesString
-        {
-            get { return MappedTypes; }
         }
     }
 }

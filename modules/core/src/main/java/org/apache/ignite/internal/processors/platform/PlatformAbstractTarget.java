@@ -43,6 +43,9 @@ public abstract class PlatformAbstractTarget implements PlatformTarget, Platform
     /** Constant: ERROR. */
     protected static final int ERROR = -1;
 
+    /** */
+    private static final int OP_META = -1;
+
     /** Context. */
     protected final PlatformContext platformCtx;
 
@@ -132,7 +135,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget, Platform
      * @return Dummy value which is never returned.
      * @throws IgniteCheckedException Exception to be thrown.
      */
-    private <T> T throwUnsupported(int type) throws IgniteCheckedException {
+    protected <T> T throwUnsupported(int type) throws IgniteCheckedException {
         throw new IgniteCheckedException("Unsupported operation type: " + type);
     }
 

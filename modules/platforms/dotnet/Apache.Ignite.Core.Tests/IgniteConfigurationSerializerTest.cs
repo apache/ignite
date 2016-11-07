@@ -598,7 +598,8 @@ namespace Apache.Ignite.Core.Tests
                 },
                 IsLateAffinityAssignment = false,
                 SpringConfigUrl = "test",
-                Logger = new IgniteNLogLogger()
+                Logger = new IgniteNLogLogger(),
+                FailureDetectionTimeout = TimeSpan.FromMinutes(2)
             };
         }
 

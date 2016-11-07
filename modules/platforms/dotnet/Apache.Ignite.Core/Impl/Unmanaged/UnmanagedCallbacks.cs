@@ -1097,6 +1097,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private void Error(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars,
             int errMsgCharsLen, sbyte* stackTraceChars, int stackTraceCharsLen, void* errData, int errDataLen)
         {
+            // errData mechanism is only needed for CachePartialUpdateException and is no longer used,
+            // since CacheImpl handles all errors itself.
+            Debug.Assert(errDataLen == 0);
+            Debug.Assert(errData == null);
+
             string errCls = IgniteUtils.Utf8UnmanagedToString(errClsChars, errClsCharsLen);
             string errMsg = IgniteUtils.Utf8UnmanagedToString(errMsgChars, errMsgCharsLen);
             string stackTrace = IgniteUtils.Utf8UnmanagedToString(stackTraceChars, stackTraceCharsLen);
@@ -1104,15 +1109,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             switch (errType)
             {
                 case ErrGeneric:
-                    if (_ignite != null && errDataLen > 0)
-                    {
-                        // Stream disposal intentionally omitted: IGNITE-1598
-                        var stream = new PlatformRawMemory(errData, errDataLen).GetStream();
-
-                        throw ExceptionUtils.GetException(_ignite, errCls, errMsg, stackTrace,
-                            _ignite.Marshaller.StartUnmarshal(stream));
-                    }
-
                     throw ExceptionUtils.GetException(_ignite, errCls, errMsg, stackTrace);
 
                 case ErrJvmInit:
