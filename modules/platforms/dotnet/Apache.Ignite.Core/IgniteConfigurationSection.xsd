@@ -183,7 +183,7 @@
                             <xs:element name="types" minOccurs="0">
                                 <xs:annotation>
                                     <xs:documentation>
-                                        Binarizable types. Shorthand for creating "BinaryTypeConfiguration.
+                                        Assembly-qualified type names (Type.AssemblyQualifiedName) for binarizable types. Shorthand for creating BinaryTypeConfiguration.
                                     </xs:documentation>
                                 </xs:annotation>
                                 <xs:complexType>
