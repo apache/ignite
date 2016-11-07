@@ -250,14 +250,14 @@ struct QueriesTestSuiteFixture
         BOOST_CHECK_EQUAL(columns[9], 0);
         BOOST_CHECK_EQUAL(columns[10], 0);
 
-        BOOST_CHECK_EQUAL(columnLens[0], 0);
-        BOOST_CHECK_EQUAL(columnLens[1], 0);
-        BOOST_CHECK_EQUAL(columnLens[2], 0);
-        BOOST_CHECK_EQUAL(columnLens[3], 0);
-        BOOST_CHECK_EQUAL(columnLens[4], 0);
-        BOOST_CHECK_EQUAL(columnLens[5], 0);
-        BOOST_CHECK_EQUAL(columnLens[6], 0);
-        BOOST_CHECK_EQUAL(columnLens[7], 0);
+        BOOST_CHECK_EQUAL(columnLens[0], static_cast<SQLLEN>(sizeof(T)));
+        BOOST_CHECK_EQUAL(columnLens[1], static_cast<SQLLEN>(sizeof(T)));
+        BOOST_CHECK_EQUAL(columnLens[2], static_cast<SQLLEN>(sizeof(T)));
+        BOOST_CHECK_EQUAL(columnLens[3], static_cast<SQLLEN>(sizeof(T)));
+        BOOST_CHECK_EQUAL(columnLens[4], static_cast<SQLLEN>(sizeof(T)));
+        BOOST_CHECK_EQUAL(columnLens[5], static_cast<SQLLEN>(sizeof(T)));
+        BOOST_CHECK_EQUAL(columnLens[6], static_cast<SQLLEN>(sizeof(T)));
+        BOOST_CHECK_EQUAL(columnLens[7], static_cast<SQLLEN>(sizeof(T)));
         BOOST_CHECK_EQUAL(columnLens[8], SQL_NO_TOTAL);
         BOOST_CHECK_EQUAL(columnLens[9], SQL_NO_TOTAL);
         BOOST_CHECK_EQUAL(columnLens[10], SQL_NO_TOTAL);
