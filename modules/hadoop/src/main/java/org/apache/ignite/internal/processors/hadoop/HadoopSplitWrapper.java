@@ -20,7 +20,10 @@ package org.apache.ignite.internal.processors.hadoop;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Arrays;
 
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -33,6 +36,7 @@ public class HadoopSplitWrapper extends HadoopInputSplit {
     private static final long serialVersionUID = 0L;
 
     /** Native hadoop input split. */
+    @GridToStringExclude
     private byte[] bytes;
 
     /** */
@@ -115,5 +119,10 @@ public class HadoopSplitWrapper extends HadoopInputSplit {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return id;
+    }
+
+    /** {@inheritDoc} */
+    public String toString() {
+        return S.toString(HadoopSplitWrapper.class, this, "hosts", Arrays.toString(hosts));
     }
 }

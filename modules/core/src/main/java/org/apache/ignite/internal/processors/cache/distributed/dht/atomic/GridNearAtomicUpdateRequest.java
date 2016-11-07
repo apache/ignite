@@ -659,7 +659,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         }
 
         if (expiryPlcBytes != null && expiryPlc == null)
-            expiryPlc = ctx.marshaller().unmarshal(expiryPlcBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            expiryPlc = U.unmarshal(ctx, expiryPlcBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         if (partIds != null && !partIds.isEmpty()) {
             assert partIds.size() == keys.size();

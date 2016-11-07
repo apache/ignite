@@ -71,6 +71,8 @@ div
                 div(ng-show='#{modelRetryPolicyKind} === "Custom"')
                     include ./zookeeper/retrypolicy/custom.jade
     .details-row
+        -var model = 'backupItem.discovery.ZooKeeper'
+
         +text('Base path:', model + '.basePath', '"basePath"', 'false', '/services', 'Base path for service registration')
     .details-row
         +text('Service name:', model + '.serviceName', '"serviceName"', 'false', 'ignite',

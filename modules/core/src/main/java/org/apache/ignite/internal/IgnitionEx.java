@@ -36,7 +36,6 @@ import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -62,6 +61,7 @@ import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.igfs.IgfsThreadFactory;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -119,10 +119,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_PUBLIC_KEEP_ALIVE_TIME;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_PUBLIC_THREADPOOL_QUEUE_CAP;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SYSTEM_KEEP_ALIVE_TIME;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SYSTEM_THREADPOOL_QUEUE_CAP;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_JVM;
 
@@ -1457,28 +1454,34 @@ public class IgnitionEx {
         private volatile IgniteKernal grid;
 
         /** Executor service. */
-        private ExecutorService execSvc;
+        private ThreadPoolExecutor execSvc;
 
         /** System executor service. */
-        private ExecutorService sysExecSvc;
+        private ThreadPoolExecutor sysExecSvc;
 
         /** Management executor service. */
-        private ExecutorService mgmtExecSvc;
+        private ThreadPoolExecutor mgmtExecSvc;
 
         /** P2P executor service. */
-        private ExecutorService p2pExecSvc;
+        private ThreadPoolExecutor p2pExecSvc;
 
         /** IGFS executor service. */
-        private ExecutorService igfsExecSvc;
+        private ThreadPoolExecutor igfsExecSvc;
 
         /** REST requests executor service. */
-        private ExecutorService restExecSvc;
+        private ThreadPoolExecutor restExecSvc;
 
         /** Utility cache executor service. */
-        private ExecutorService utilityCacheExecSvc;
+        private ThreadPoolExecutor utilityCacheExecSvc;
 
         /** Marshaller cache executor service. */
-        private ExecutorService marshCacheExecSvc;
+        private ThreadPoolExecutor marshCacheExecSvc;
+
+        /** Affinity executor service. */
+        private ThreadPoolExecutor affExecSvc;
+
+        /** Indexing pool. */
+        private ThreadPoolExecutor idxExecSvc;
 
         /** Continuous query executor service. */
         private IgniteStripedThreadPoolExecutor callbackExecSvc;
@@ -1642,12 +1645,10 @@ public class IgnitionEx {
                 cfg.getGridName(),
                 cfg.getPublicThreadPoolSize(),
                 cfg.getPublicThreadPoolSize(),
-                DFLT_PUBLIC_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>(DFLT_PUBLIC_THREADPOOL_QUEUE_CAP));
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>());
 
-            if (!myCfg.isClientMode())
-                // Pre-start all threads as they are guaranteed to be needed.
-                ((ThreadPoolExecutor)execSvc).prestartAllCoreThreads();
+            execSvc.allowCoreThreadTimeOut(true);
 
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
@@ -1656,11 +1657,10 @@ public class IgnitionEx {
                 cfg.getGridName(),
                 cfg.getSystemThreadPoolSize(),
                 cfg.getSystemThreadPoolSize(),
-                DFLT_SYSTEM_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>());
 
-            // Pre-start all threads as they are guaranteed to be needed.
-            ((ThreadPoolExecutor)sysExecSvc).prestartAllCoreThreads();
+            sysExecSvc.allowCoreThreadTimeOut(true);
 
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
@@ -1671,8 +1671,10 @@ public class IgnitionEx {
                 cfg.getGridName(),
                 cfg.getManagementThreadPoolSize(),
                 cfg.getManagementThreadPoolSize(),
-                0,
+                DFLT_THREAD_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<Runnable>());
+
+            mgmtExecSvc.allowCoreThreadTimeOut(true);
 
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
@@ -1683,20 +1685,21 @@ public class IgnitionEx {
                 cfg.getGridName(),
                 cfg.getPeerClassLoadingThreadPoolSize(),
                 cfg.getPeerClassLoadingThreadPoolSize(),
-                0,
+                DFLT_THREAD_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<Runnable>());
+
+            p2pExecSvc.allowCoreThreadTimeOut(true);
 
             // Note that we do not pre-start threads here as igfs pool may not be needed.
             igfsExecSvc = new IgniteThreadPoolExecutor(
-                "igfs",
-                cfg.getGridName(),
                 cfg.getIgfsThreadPoolSize(),
                 cfg.getIgfsThreadPoolSize(),
-                0,
-                new LinkedBlockingQueue<Runnable>());
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>(),
+                new IgfsThreadFactory(cfg.getGridName(), "igfs"),
+                null /* Abort policy will be used. */);
 
-            // Pre-start all threads to avoid HadoopClassLoader leaks.
-            ((ThreadPoolExecutor)igfsExecSvc).prestartAllCoreThreads();
+            igfsExecSvc.allowCoreThreadTimeOut(true);
 
             // Note that we do not pre-start threads here as this pool may not be needed.
             callbackExecSvc = new IgniteStripedThreadPoolExecutor(
@@ -1710,9 +1713,11 @@ public class IgnitionEx {
                     myCfg.getGridName(),
                     myCfg.getConnectorConfiguration().getThreadPoolSize(),
                     myCfg.getConnectorConfiguration().getThreadPoolSize(),
-                    ConnectorConfiguration.DFLT_KEEP_ALIVE_TIME,
-                    new LinkedBlockingQueue<Runnable>(ConnectorConfiguration.DFLT_THREADPOOL_QUEUE_CAP)
+                    DFLT_THREAD_KEEP_ALIVE_TIME,
+                    new LinkedBlockingQueue<Runnable>()
                 );
+
+                restExecSvc.allowCoreThreadTimeOut(true);
             }
 
             utilityCacheExecSvc = new IgniteThreadPoolExecutor(
@@ -1721,7 +1726,9 @@ public class IgnitionEx {
                 myCfg.getUtilityCacheThreadPoolSize(),
                 myCfg.getUtilityCacheThreadPoolSize(),
                 myCfg.getUtilityCacheKeepAliveTime(),
-                new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
+                new LinkedBlockingQueue<Runnable>());
+
+            utilityCacheExecSvc.allowCoreThreadTimeOut(true);
 
             marshCacheExecSvc = new IgniteThreadPoolExecutor(
                 "marshaller-cache",
@@ -1729,7 +1736,32 @@ public class IgnitionEx {
                 myCfg.getMarshallerCacheThreadPoolSize(),
                 myCfg.getMarshallerCacheThreadPoolSize(),
                 myCfg.getMarshallerCacheKeepAliveTime(),
-                new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
+                new LinkedBlockingQueue<Runnable>());
+
+            marshCacheExecSvc.allowCoreThreadTimeOut(true);
+
+            affExecSvc = new IgniteThreadPoolExecutor(
+                "aff",
+                cfg.getGridName(),
+                1,
+                1,
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>());
+
+            affExecSvc.allowCoreThreadTimeOut(true);
+
+            if (IgniteComponentType.INDEXING.inClassPath()) {
+                int cpus = Runtime.getRuntime().availableProcessors();
+
+                idxExecSvc = new IgniteThreadPoolExecutor(
+                    "idx",
+                    cfg.getGridName(),
+                    cpus,
+                    cpus * 2,
+                    3000L,
+                    new LinkedBlockingQueue<Runnable>(1000)
+                );
+            }
 
             // Register Ignite MBean for current grid instance.
             registerFactoryMbean(myCfg.getMBeanServer());
@@ -1743,7 +1775,7 @@ public class IgnitionEx {
                 grid = grid0;
 
                 grid0.start(myCfg, utilityCacheExecSvc, marshCacheExecSvc, execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc,
-                    igfsExecSvc, restExecSvc, callbackExecSvc,
+                    igfsExecSvc, restExecSvc, affExecSvc, idxExecSvc, callbackExecSvc,
                     new CA() {
                         @Override public void apply() {
                             startLatch.countDown();
@@ -1823,7 +1855,10 @@ public class IgnitionEx {
                 // If user provided IGNITE_HOME - set it as a system property.
                 U.setIgniteHome(ggHome);
 
-            U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
+            // Correctly resolve work directory and set it back to configuration.
+            String workDir = U.workDirectory(cfg.getWorkDirectory(), ggHome);
+
+            myCfg.setWorkDirectory(workDir);
 
             // Ensure invariant.
             // It's a bit dirty - but this is a result of late refactoring
@@ -1834,7 +1869,7 @@ public class IgnitionEx {
 
             myCfg.setNodeId(nodeId);
 
-            IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), nodeId);
+            IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), nodeId, workDir);
 
             assert cfgLog != null;
 
@@ -2095,11 +2130,13 @@ public class IgnitionEx {
         /**
          * @param cfgLog Configured logger.
          * @param nodeId Local node ID.
+         * @param workDir Work directory.
          * @return Initialized logger.
          * @throws IgniteCheckedException If failed.
          */
         @SuppressWarnings("ErrorNotRethrown")
-        private IgniteLogger initLogger(@Nullable IgniteLogger cfgLog, UUID nodeId) throws IgniteCheckedException {
+        private IgniteLogger initLogger(@Nullable IgniteLogger cfgLog, UUID nodeId, String workDir)
+            throws IgniteCheckedException {
             try {
                 Exception log4jInitErr = null;
 
@@ -2156,6 +2193,10 @@ public class IgnitionEx {
                     if (log4jCls == null || log4jInitErr != null)
                         cfgLog = new JavaLogger();
                 }
+
+                // Special handling for Java logger which requires work directory.
+                if (cfgLog instanceof JavaLogger)
+                    ((JavaLogger)cfgLog).setWorkDirectory(workDir);
 
                 // Set node IDs for all file appenders.
                 if (cfgLog instanceof LoggerNodeIdAware)
@@ -2368,6 +2409,14 @@ public class IgnitionEx {
             U.shutdownNow(getClass(), marshCacheExecSvc, log);
 
             marshCacheExecSvc = null;
+
+            U.shutdownNow(getClass(), affExecSvc, log);
+
+            affExecSvc = null;
+
+            U.shutdownNow(getClass(), idxExecSvc, log);
+
+            idxExecSvc = null;
 
             U.shutdownNow(getClass(), callbackExecSvc, log);
 
