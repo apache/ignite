@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             Ignition.StopAll(true);
 
-            Directory.Delete(_tempDir);
+            Directory.Delete(_tempDir, true);
         }
 
         /// <summary>
@@ -60,7 +60,8 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             using (var ignite = Ignition.Start(cfg))
             {
-                Assert.IsNull(ignite.GetConfiguration().SwapSpaceSpi);
+                // NoopSwapSpaceSpi is used by default.
+                Assert.IsInstanceOf<NoopSwapSpaceSpi>(ignite.GetConfiguration().SwapSpaceSpi);
 
                 var ex = Assert.Throws<CacheException>(
                     () => ignite.CreateCache<int, int>(new CacheConfiguration {EnableSwap = true}));
