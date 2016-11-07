@@ -33,9 +33,9 @@ namespace Apache.Ignite.Core.Impl.SwapSpace
         /// </summary>
         private enum Type : byte
         {
-            None,
-            File,
-            Noop
+            None = 0,
+            File = 1,
+            Noop = 2
         }
 
         /// <summary>
