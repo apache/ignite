@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.Collection;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -66,7 +67,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
      *
      * @param sysPerms System permissions.
      */
-    public void setSysPermissions(Collection<SecurityPermission> sysPerms) {
+    public void setSystemPermissions(Collection<SecurityPermission> sysPerms) {
         this.sysPerms = sysPerms;
     }
 
@@ -97,5 +98,10 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
     /** {@inheritDoc} */
     @Override public boolean defaultAllowAll() {
         return dfltAllowAll;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(SecurityBasicPermissionSet.class, this);
     }
 }

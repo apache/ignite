@@ -71,6 +71,7 @@ public class SecurityPermissionSetBuilder {
     public static SecurityPermissionSetBuilder create(){
         return new SecurityPermissionSetBuilder();
     }
+
     /**
      * Append default all flag.
      *
@@ -156,6 +157,7 @@ public class SecurityPermissionSetBuilder {
         for (String ptrn : ptrns) {
             if (name.startsWith(ptrn)) {
                 ex = false;
+
                 break;
             }
         }
@@ -213,7 +215,7 @@ public class SecurityPermissionSetBuilder {
         permSet.setDefaultAllowAll(dfltAllowAll);
         permSet.setCachePermissions(unmodifiableMap(cachePerms));
         permSet.setTaskPermissions(unmodifiableMap(taskPerms));
-        permSet.setSysPermissions(unmodifiableList(sysPerms));
+        permSet.setSystemPermissions(unmodifiableList(sysPerms));
 
         return permSet;
     }

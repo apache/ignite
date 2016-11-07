@@ -39,7 +39,7 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
 
         exp.setTaskPermissions(permTask);
 
-        exp.setSysPermissions(Arrays.asList(ADMIN_VIEW, EVENTS_ENABLE));
+        exp.setSystemPermissions(Arrays.asList(ADMIN_VIEW, EVENTS_ENABLE));
 
         final SecurityPermissionSetBuilder permsBuilder = new SecurityPermissionSetBuilder();
 
