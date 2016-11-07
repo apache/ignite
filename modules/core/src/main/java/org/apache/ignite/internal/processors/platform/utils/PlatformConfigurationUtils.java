@@ -54,6 +54,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.swapspace.SwapSpaceSpi;
 import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpiMBean;
+import org.apache.ignite.spi.swapspace.noop.NoopSwapSpaceSpi;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
@@ -533,16 +534,31 @@ public class PlatformConfigurationUtils {
             cfg.setTransactionConfiguration(tx);
         }
 
-        if (in.readBoolean()) {
-            FileSwapSpaceSpi swap = new FileSwapSpaceSpi();
+        byte swapType = in.readByte();
 
-            swap.setBaseDirectory(in.readString());
-            swap.setMaximumSparsity(in.readFloat());
-            swap.setMaxWriteQueueSize(in.readInt());
-            swap.setReadStripesNumber(in.readInt());
-            swap.setWriteBufferSize(in.readInt());
+        switch (swapType) {
+            case 1: {
+                FileSwapSpaceSpi swap = new FileSwapSpaceSpi();
 
-            cfg.setSwapSpaceSpi(swap);
+                swap.setBaseDirectory(in.readString());
+                swap.setMaximumSparsity(in.readFloat());
+                swap.setMaxWriteQueueSize(in.readInt());
+                swap.setReadStripesNumber(in.readInt());
+                swap.setWriteBufferSize(in.readInt());
+
+                cfg.setSwapSpaceSpi(swap);
+
+                break;
+            }
+
+            case 2: {
+                cfg.setSwapSpaceSpi(new NoopSwapSpaceSpi());
+
+                break;
+            }
+
+            default:
+                assert swapType == 0;
         }
     }
 
