@@ -24,7 +24,8 @@ include ../../../../../app/helpers/jade/mixins.jade
         ignite-form-panel-chevron
         label Rebalance
         ignite-form-field-tooltip.tipLabel
-            | Cache rebalance settings
+            | Cache rebalance settings#[br]
+            | #[a(href="https://apacheignite.readme.io/docs/rebalancing" target="_blank") More info]
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=form)
         .panel-body(ng-if='ui.isPanelLoaded("#{form}")')

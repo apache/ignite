@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.ExamplesDll.Binary
 {
-    using System;
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -25,7 +24,6 @@ namespace Apache.Ignite.ExamplesDll.Binary
     /// <summary>
     /// Employee.
     /// </summary>
-    [Serializable]
     public class Employee
     {
         /// <summary>
@@ -35,6 +33,7 @@ namespace Apache.Ignite.ExamplesDll.Binary
         /// <param name="salary">Salary.</param>
         /// <param name="address">Address.</param>
         /// <param name="departments">Departments.</param>
+        /// <param name="organizationId">The organization identifier.</param>
         public Employee(string name, long salary, Address address, ICollection<string> departments, 
             int organizationId = 0)
         {

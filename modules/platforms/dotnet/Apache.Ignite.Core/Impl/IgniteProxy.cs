@@ -30,7 +30,6 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Messaging;
@@ -42,7 +41,7 @@ namespace Apache.Ignite.Core.Impl
     /// </summary>
     [Serializable]
     [ExcludeFromCodeCoverage]
-    internal class IgniteProxy : IIgnite, IClusterGroupEx, IBinaryWriteAware, ICluster
+    internal class IgniteProxy : IIgnite, IBinaryWriteAware, ICluster
     {
         /** */
         [NonSerialized]
@@ -454,12 +453,6 @@ namespace Apache.Ignite.Core.Impl
             {
                 return _ignite;
             }
-        }
-
-        /** <inheritdoc /> */
-        public IBinaryType GetBinaryType(int typeId)
-        {
-            return _ignite.GetBinaryType(typeId);
         }
     }
 }

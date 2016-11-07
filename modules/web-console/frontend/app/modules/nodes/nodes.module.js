@@ -15,7 +15,13 @@
  * limitations under the License.
  */
 
-// TODO IGNITE-2054: need move $generatorJava to services.
-export default ['GeneratorJava', () => {
-    return $generatorJava;
-}];
+import angular from 'angular';
+
+import './nodes-dialog.scss';
+
+import Nodes from './Nodes.service';
+import nodesDialogController from './nodes-dialog.controller';
+
+angular.module('ignite-console.nodes', [])
+    .service('IgniteNodes', Nodes)
+    .controller('nodesDialogController', nodesDialogController);

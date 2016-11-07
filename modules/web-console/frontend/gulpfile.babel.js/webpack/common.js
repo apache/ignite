@@ -43,7 +43,7 @@ try {
 }
 
 export default () => {
-    const assetsLoader = development ? 'url-loader' : 'file-loader';
+    const assetsLoader = 'file-loader';
 
     return {
         cache: true,

@@ -333,7 +333,7 @@ public class AgentClusterDemo {
     private static  IgniteConfiguration igniteConfiguration(int gridIdx, boolean client) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName((client ? "demo-server-" : "demo-client-") + gridIdx);
+        cfg.setGridName((client ? "demo-client-" : "demo-server-" ) + gridIdx);
         cfg.setLocalHost("127.0.0.1");
         cfg.setIncludeEventTypes(EVTS_DISCOVERY);
 
