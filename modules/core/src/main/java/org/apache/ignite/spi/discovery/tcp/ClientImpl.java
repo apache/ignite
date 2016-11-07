@@ -127,7 +127,8 @@ class ClientImpl extends TcpDiscoveryImpl {
     private static final Object SPI_RECONNECT_FAILED = "SPI_RECONNECT_FAILED";
 
     /** */
-    private static int DFLT_BYTE_ARR_STREAM_SIZE = 512;
+    @SuppressWarnings("FieldCanBeLocal")
+    private static int DFLT_BYTE_ARR_STREAM_SIZE = 32 * 1024;
 
     /** Remote nodes. */
     private final ConcurrentMap<UUID, TcpDiscoveryNode> rmtNodes = new ConcurrentHashMap8<>();

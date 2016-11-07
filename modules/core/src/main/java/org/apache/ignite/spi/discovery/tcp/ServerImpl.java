@@ -6162,13 +6162,14 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (in == null) {
-                final int left = buf.remaining();
+                final int oldLim = buf.limit();
 
-                buf.get(msgBuf.array(), msgBuf.position(), Math.min(left, msgBuf.remaining()));
+                if (buf.remaining() > msgBuf.remaining())
+                    buf.limit(buf.position() + msgBuf.remaining());
 
-                final int read = left - buf.remaining();
+                msgBuf.put(buf);
 
-                msgBuf.position(msgBuf.position() + read);
+                buf.limit(oldLim);
 
                 if (!msgBuf.hasRemaining()) {
                     msgBuf.rewind();
@@ -6206,7 +6207,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             assert buf == null || buf.position() == 0 : buf;
 
             if (buf == null || buf.capacity() < len)
-                buf = ByteBuffer.allocate(len);
+                buf = ByteBuffer.allocateDirect(len);
 
             buf.limit(len);
 
