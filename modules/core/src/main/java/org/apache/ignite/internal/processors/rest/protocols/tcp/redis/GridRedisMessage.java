@@ -32,7 +32,7 @@ public class GridRedisMessage implements GridClientMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Random UUID used for RESP clients authentication. */
+    /** Random UUID used for REDIS clients authentication. */
     private static final UUID RESP_ID = UUID.randomUUID();
 
     /** Request byte. */

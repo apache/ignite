@@ -25,7 +25,7 @@ public enum GridClientPacketType {
     MEMCACHE,
 
     /** Redis protocol message. */
-    RESP,
+    REDIS,
 
     /** Ignite handshake. */
     IGNITE_HANDSHAKE,

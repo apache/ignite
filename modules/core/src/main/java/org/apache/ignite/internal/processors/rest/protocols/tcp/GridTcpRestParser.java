@@ -105,7 +105,7 @@ public class GridTcpRestParser implements GridNioParser {
                     break;
 
                 case RESP_REQ_FLAG:
-                    state.packetType(GridClientPacketType.RESP);
+                    state.packetType(GridClientPacketType.REDIS);
 
                     break;
 
@@ -146,7 +146,7 @@ public class GridTcpRestParser implements GridNioParser {
 
                 break;
 
-            case RESP:
+            case REDIS:
                 res = GridRedisProtocolParser.readArray(buf);
 
                 break;

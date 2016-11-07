@@ -23,7 +23,7 @@ import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Parser to decode/encode Redis protocol (RESP) requests.
+ * Parser to decode/encode Redis protocol (REDIS) requests.
  */
 public class GridRedisProtocolParser {
     /** + prefix. */
@@ -212,10 +212,10 @@ public class GridRedisProtocolParser {
     }
 
     /**
-     * Converts an integer result to a RESP integer.
+     * Converts an integer result to a REDIS integer.
      *
      * @param integer Integer result.
-     * @return RESP integer.
+     * @return REDIS integer.
      */
     public static ByteBuffer toInteger(String integer) {
         byte[] b = integer.getBytes();
@@ -231,10 +231,10 @@ public class GridRedisProtocolParser {
     }
 
     /**
-     * Converts an integer result to a RESP integer.
+     * Converts an integer result to a REDIS integer.
      *
      * @param integer Integer result.
-     * @return RESP integer.
+     * @return REDIS integer.
      */
     public static ByteBuffer toInteger(int integer) {
         return toInteger(String.valueOf(integer));

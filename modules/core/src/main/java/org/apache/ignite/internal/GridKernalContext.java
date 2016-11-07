@@ -469,7 +469,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @param ldr Class loader.
      * @return User version for given class loader or empty string if no version
-     * was explicitly specified.
+     *      was explicitly specified.
      */
     public String userVersion(ClassLoader ldr);
 
@@ -490,7 +490,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
 
     /**
      * @return Thread pool implementation to be used in grid to process job execution
-     * requests and user messages sent to the node.
+     *      requests and user messages sent to the node.
      */
     public ExecutorService getExecutorService();
 
@@ -506,13 +506,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * {@link org.apache.ignite.compute.ComputeJob GridJobs}.
      *
      * @return Thread pool implementation to be used in grid for internal and Visor
-     * jobs processing.
+     *      jobs processing.
      */
     public ExecutorService getManagementExecutorService();
 
     /**
      * @return Thread pool implementation to be used for peer class loading
-     * requests handling.
+     *      requests handling.
      */
     public ExecutorService getPeerClassLoadingExecutorService();
 
@@ -528,7 +528,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * processing of client messages (REST requests).
      *
      * @return Thread pool implementation to be used for processing of client
-     * messages.
+     *      messages.
      */
     public ExecutorService getRestExecutorService();
 

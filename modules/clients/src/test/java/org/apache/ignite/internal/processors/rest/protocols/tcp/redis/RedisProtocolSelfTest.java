@@ -38,6 +38,9 @@ import redis.clients.jedis.exceptions.JedisDataException;
  * Tests for Redis protocol.
  */
 public class RedisProtocolSelfTest extends GridCommonAbstractTest {
+    /** Grid count. */
+    private static final int GRID_CNT = 2;
+
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -112,9 +115,6 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
     @Override protected <K, V> IgniteCache<K, V> jcache() {
         return grid(0).cache(null);
     }
-
-    /** Grid count. */
-    private static final int GRID_CNT = 1;
 
     /** {@inheritDoc} */
     protected int gridCount() {
