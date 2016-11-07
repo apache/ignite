@@ -417,7 +417,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     /**
      * @return Logger instance.
      */
-    public IgniteLogger logger() {
+    @Nullable public IgniteLogger logger() {
         return null;
     }
 
