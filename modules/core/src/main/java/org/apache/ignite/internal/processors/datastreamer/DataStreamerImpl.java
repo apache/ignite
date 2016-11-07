@@ -36,7 +36,6 @@ import java.util.concurrent.Delayed;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
@@ -261,7 +260,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private final ConcurrentLinkedDeque<Runnable> dataToRemap = new ConcurrentLinkedDeque<>();
 
     /** */
-    private final AtomicInteger remapOwning = new AtomicInteger();
+    private final AtomicBoolean remapOwning = new AtomicBoolean();
 
     /**
      * @param ctx Grid kernal context.
@@ -683,17 +682,25 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /**
      *
      */
-    private void acquireRemapSemaphore() throws IgniteInterruptedCheckedException{
+    private void acquireRemapSemaphore() throws IgniteInterruptedCheckedException {
         try {
             if (remapSem.availablePermits() != REMAP_SEMAPHORE_PERMISSIONS_COUNT) {
-                // Wait until failed data being processed.
-                boolean res = remapSem.tryAcquire(REMAP_SEMAPHORE_PERMISSIONS_COUNT, timeout, TimeUnit.MILLISECONDS);
+                if (timeout == DFLT_UNLIMIT_TIMEOUT) {
+                    // Wait until failed data being processed.
+                    remapSem.acquire(REMAP_SEMAPHORE_PERMISSIONS_COUNT);
 
-                if (res)
                     remapSem.release(REMAP_SEMAPHORE_PERMISSIONS_COUNT);
-                else
-                    throw new IgniteDataStreamerTimeoutException("Data streamer exceeded timeout " +
-                        "while was waiting for failed data resending finished.");
+                }
+                else {
+                    // Wait until failed data being processed.
+                    boolean res = remapSem.tryAcquire(REMAP_SEMAPHORE_PERMISSIONS_COUNT, timeout, TimeUnit.MILLISECONDS);
+
+                    if (res)
+                        remapSem.release(REMAP_SEMAPHORE_PERMISSIONS_COUNT);
+                    else
+                        throw new IgniteDataStreamerTimeoutException("Data streamer exceeded timeout " +
+                            "while was waiting for failed data resending finished.");
+                }
             }
         }
         catch (InterruptedException e) {
@@ -877,13 +884,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                                         dataToRemap.add(r);
 
-                                        if (remapOwning.get() == 0 && remapOwning.compareAndSet(0, 1)) {
+                                        if (!remapOwning.get() && remapOwning.compareAndSet(false, true)) {
                                             ctx.closure().callLocalSafe(new GPC<Boolean>() {
                                                 @Override public Boolean call() {
                                                     boolean locked = true;
 
                                                     while (locked || !dataToRemap.isEmpty()) {
-                                                        if (!locked && !remapOwning.compareAndSet(0, 1))
+                                                        if (!locked && !remapOwning.compareAndSet(false, true))
                                                             return false;
 
                                                         try {
@@ -896,9 +903,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                                                             if (!dataToRemap.isEmpty())
                                                                 locked = true;
                                                             else {
-                                                                boolean res = remapOwning.compareAndSet(1, 0);
-
-                                                                assert res;
+                                                                remapOwning.set(false);
 
                                                                 locked = false;
                                                             }
@@ -1204,6 +1209,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             err = new IgniteCheckedException("Some of DataStreamer operations failed [failedCount=" + failed + "]");
 
         fut.onDone(err);
+
+        assert remapSem.availablePermits() == REMAP_SEMAPHORE_PERMISSIONS_COUNT;
 
         return err;
     }
