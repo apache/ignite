@@ -26,7 +26,8 @@ include ../../../../../app/helpers/jade/mixins.jade
         ignite-form-panel-chevron
         label Class deployment
         ignite-form-field-tooltip.tipLabel
-            | Task and resources deployment in cluster
+            | Task and resources deployment in cluster#[br]
+            | #[a(href="https://apacheignite.readme.io/docs/deployment-modes" target="_blank") More info]
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id='deployment')
         .panel-body(ng-if='ui.isPanelLoaded("#{form}")')

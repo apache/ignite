@@ -16,31 +16,30 @@
 
 include ../../../../../app/helpers/jade/mixins.jade
 
--var form = 'serverNearCache'
--var model = 'backupItem'
+-var form = 'clientNearCache'
+-var model = 'backupItem.clientNearConfiguration'
 
-.panel.panel-default(ng-form=form novalidate ng-show='#{model}.cacheMode === "PARTITIONED"')
+.panel.panel-default(ng-form=form novalidate ng-show='backupItem.cacheMode === "PARTITIONED"')
     .panel-heading(bs-collapse-toggle='' ng-click='ui.loadPanel("#{form}")')
         ignite-form-panel-chevron
-        label Server near cache
+        label Client near cache
         ignite-form-field-tooltip.tipLabel
-            | Near cache settings#[br]
+            | Near cache settings for client nodes#[br]
             | Near cache is a small local cache that stores most recently or most frequently accessed data#[br]
             | Should be used in case when it is impossible to send computations to remote nodes
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=form)
         .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
             .col-sm-6
-                -var enabled = model + '.nearCacheEnabled'
-                -var nearCfg = model + '.nearConfiguration'
+                -var enabled = model + '.clientNearCacheEnabled'
 
                 .settings-row
-                    +checkbox('Enabled', enabled, '"nearCacheEnabled"', 'Flag indicating whether to configure near cache')
+                    +checkbox('Enabled', enabled, '"clientNacheEnabled"', 'Flag indicating whether to configure near cache')
                 .settings-row
-                    +number('Start size:', nearCfg + '.nearStartSize', '"nearStartSize"', enabled, '375000', '0',
+                    +number('Start size:', model + '.nearStartSize', '"clientNearStartSize"', enabled, '375000', '0',
                         'Initial cache size for near cache which will be used to pre-create internal hash table after start')
                 .settings-row
-                    +evictionPolicy(model + '.nearConfiguration.nearEvictionPolicy', '"nearCacheEvictionPolicy"', enabled, 'false',
+                    +evictionPolicy(model + '.nearEvictionPolicy', '"clientNearCacheEvictionPolicy"', enabled, 'false',
                         'Near cache eviction policy\
                         <ul>\
                             <li>Least Recently Used (LRU) - Eviction policy based on LRU algorithm and supports batch eviction</li>\
@@ -48,4 +47,4 @@ include ../../../../../app/helpers/jade/mixins.jade
                             <li>SORTED - Eviction policy which will select the minimum cache entry for eviction</li>\
                         </ul>')
             .col-sm-6
-                +preview-xml-java(model, 'cacheServerNearCache')
+                +preview-xml-java('backupItem', 'cacheClientNearCache')

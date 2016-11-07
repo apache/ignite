@@ -15,13 +15,38 @@
  * limitations under the License.
  */
 
-export default ['$scope', 'GeneratorXml', function($scope, generator) {
-    const ctrl = this;
+import webpack from 'webpack';
 
-    delete ctrl.data;
+const NODE_ENV = process.env.NODE_ENV || 'production';
 
-    // Set default generator
-    ctrl.generator = (cluster) => {
-        return generator.cluster(cluster, $scope.cfg);
+export default () => {
+
+    return {
+        cache: true,
+        node: {
+            fs: 'empty'
+        },
+
+        module: {
+            preLoaders: null
+        },
+
+        // Entry points.
+        entry: null,
+
+        // Output system.
+        output: null,
+        eslint: null,
+
+        // Load plugins.
+        plugins: [
+            new webpack.ProvidePlugin({
+                $: 'jquery',
+                jQuery: 'jquery',
+                _: 'lodash',
+                nv: 'nvd3'
+            }),
+            new webpack.DefinePlugin({NODE_ENV: JSON.stringify(NODE_ENV)})
+        ]
     };
-}];
+};

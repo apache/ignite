@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,21 +15,36 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Cluster
+namespace Apache.Ignite.ExamplesDll.Datagrid
 {
-    using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cluster;
-
+    using System;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.ExamplesDll.Binary;
+    
     /// <summary>
-    /// Extended internal Ignite interface.
+    /// Filter for scan query example.
     /// </summary>
-    internal interface IClusterGroupEx : IClusterGroup
+    [Serializable]
+    public class ScanQueryFilter : ICacheEntryFilter<int, Employee>
     {
+        /** Zip code to filter on. */
+        private readonly int _zipCode;
+
         /// <summary>
-        /// Gets protable metadata for type.
+        /// Initializes a new instance of the <see cref="ScanQueryFilter"/> class.
         /// </summary>
-        /// <param name="typeId">Type ID.</param>
-        /// <returns>Metadata.</returns>
-        IBinaryType GetBinaryType(int typeId);
+        /// <param name="zipCode">The zip code.</param>
+        public ScanQueryFilter(int zipCode)
+        {
+            _zipCode = zipCode;
+        }
+
+        /// <summary>
+        /// Returns a value indicating whether provided cache entry satisfies this predicate.
+        /// </summary>
+        public bool Invoke(ICacheEntry<int, Employee> entry)
+        {
+            return entry.Value.Address.Zip == _zipCode;
+        }
     }
 }

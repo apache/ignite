@@ -1637,6 +1637,12 @@ $generatorJava.cacheStore = function(cache, domains, cacheVarName, res) {
 
                 res.needEmptyLine = true;
 
+                if (storeFactory.sqlEscapeAll) {
+                    res.line(varName + '.setSqlEscapeAll(true);');
+
+                    res.needEmptyLine = true;
+                }
+
                 const domainConfigs = _.filter(domains, function(domain) {
                     return $generatorCommon.domainQueryMetadata(domain) === 'Configuration' &&
                         $generatorCommon.isDefinedAndNotEmpty(domain.databaseTable);
@@ -2565,10 +2571,10 @@ $generatorJava.javaClassCode = function(domain, key, pkg, useConstructor, includ
 $generatorJava.pojos = function(caches, useConstructor, includeKeyFields) {
     const pojos = [];
 
-    _.forEach(caches, function(cache) {
-        _.forEach(cache.domains, function(domain) {
-            // Skip already generated classes.
-            if (!_.find(pojos, {valueType: domain.valueType}) &&
+    _.forEach(caches, (cache) => {
+        _.forEach(cache.domains, (domain) => {
+            // Process only  domains with 'generatePojo' flag and skip already generated classes.
+            if (domain.generatePojo && !_.find(pojos, {valueType: domain.valueType}) &&
                 // Skip domain models without value fields.
                 $generatorCommon.isDefinedAndNotEmpty(domain.valueFields)) {
                 const pojo = {};
