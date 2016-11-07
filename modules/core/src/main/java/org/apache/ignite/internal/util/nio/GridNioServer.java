@@ -469,8 +469,6 @@ public class GridNioServer<T> {
         NioOperationFuture<Boolean> fut = new NioOperationFuture<>(impl, NioOperation.CLOSE);
 
         impl.offerStateChange(fut);
-        // TODO
-        // clientWorkers.get(impl.selectorIndex()).offer(fut, impl.selectorIndex());
 
         return fut;
     }
@@ -1711,7 +1709,7 @@ public class GridNioServer<T> {
          * @throws IgniteCheckedException If IOException occurred or thread was unable to add worker to workers pool.
          */
         @SuppressWarnings("unchecked")
-        private void bodyInternal() throws IgniteCheckedException {
+        private void bodyInternal() throws IgniteCheckedException, InterruptedException {
             try {
                 long lastIdleCheck = U.currentTimeMillis();
 
@@ -1863,8 +1861,16 @@ public class GridNioServer<T> {
                         park = true;
 
                         try {
-                            if (changeReqs.isEmpty())
+                            while (changeReqs.isEmpty()) {
                                 LockSupport.parkNanos(1_000_000_000);
+
+                                if (Thread.interrupted())
+                                    throw new InterruptedException();
+                            }
+
+                            assert !changeReqs.isEmpty();
+
+                            continue;
                         }
                         finally {
                             park = false;

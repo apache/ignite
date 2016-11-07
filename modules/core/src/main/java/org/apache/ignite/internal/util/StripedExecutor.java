@@ -51,12 +51,15 @@ public class StripedExecutor {
         stripes = new Stripe[cnt];
 
         for (int i = 0; i < cnt; i++) {
-            Stripe stripe = new StripeConcurrentQueue();
+            Stripe stripe = new StripeConcurrentQueueNoPark();
 
             stripes[i] = stripe;
 
             stripe.start(i);
         }
+
+        // TODO
+        System.out.println("Stripes [cls=" + stripes[0].getClass().getSimpleName() + ", cnt=" + cnt + ']');
 
         inited = true;
     }
@@ -174,10 +177,11 @@ public class StripedExecutor {
                     return;
                 }
 
-                if (cmd != null)
+                if (cmd != null) {
                     execute0(cmd);
 
-                cnt++;
+                    cnt++;
+                }
             }
         }
 
@@ -259,10 +263,14 @@ public class StripedExecutor {
 
         /** {@inheritDoc} */
         @Override Runnable take() throws InterruptedException {
-            Runnable r = queue.poll();
+            Runnable r;
 
-            if (r != null)
-                return r;
+            for (int i = 0; i < 256; i++) {
+                r = queue.poll();
+
+                if (r != null)
+                    return r;
+            }
 
             parked = true;
 
@@ -300,6 +308,39 @@ public class StripedExecutor {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(StripeConcurrentQueue.class, this, super.toString());
+        }
+    }
+
+    /**
+     * Stripe.
+     */
+    private static class StripeConcurrentQueueNoPark extends Stripe {
+        /** Queue. */
+        private final Queue<Runnable> queue = new ConcurrentLinkedQueue<>();
+
+        /** {@inheritDoc} */
+        @Override Runnable take() {
+            for (;;) {
+                Runnable r = queue.poll();
+
+                if (r != null)
+                    return r;
+            }
+        }
+
+        /** {@inheritDoc} */
+        void execute(Runnable cmd) {
+            queue.add(cmd);
+        }
+
+        /** {@inheritDoc} */
+        @Override int queueSize() {
+            return queue.size();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(StripeConcurrentQueueNoPark.class, this, super.toString());
         }
     }
 
