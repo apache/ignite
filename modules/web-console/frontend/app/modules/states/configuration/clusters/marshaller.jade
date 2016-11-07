@@ -28,7 +28,8 @@ include ../../../../../app/helpers/jade/mixins.jade
         ignite-form-field-tooltip.tipLabel
             | Marshaller allows to marshal or unmarshal objects in grid#[br]
             | It provides serialization/deserialization mechanism for all instances that are sent across networks or are otherwise serialized
-            | By default BinaryMarshaller will be used
+            | By default BinaryMarshaller will be used#[br]
+            | #[a(href="https://apacheignite.readme.io/docs/binary-marshaller" target="_blank") More info]
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=form)
         .panel-body(ng-if='ui.isPanelLoaded("#{form}")')

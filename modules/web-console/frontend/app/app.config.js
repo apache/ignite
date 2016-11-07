@@ -15,6 +15,16 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
+
+const nonNil = _.negate(_.isNil);
+const nonEmpty = _.negate(_.isEmpty);
+
+_.mixin({
+    nonNil,
+    nonEmpty
+});
+
 import alertTemplateUrl from '../views/templates/alert.jade';
 
 const igniteConsoleCfg = angular.module('ignite-console.config', ['ngAnimate', 'mgcrea.ngStrap']);

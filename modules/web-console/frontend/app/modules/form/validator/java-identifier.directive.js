@@ -20,7 +20,11 @@ export default ['javaIdentifier', ['JavaTypes', (JavaTypes) => {
         if (_.isNil(attrs.javaIdentifier) || attrs.javaIdentifier !== 'true')
             return;
 
-        ngModel.$validators.javaIdentifier = (value) => _.isEmpty(value) || JavaTypes.validClassName(value);
+        ngModel.$validators.javaIdentifier = (value) => attrs.validationActive === 'false' ||
+            _.isEmpty(value) || JavaTypes.validClassName(value);
+
+        if (attrs.validationActive !== 'always')
+            attrs.$observe('validationActive', () => ngModel.$validate());
     };
 
     return {

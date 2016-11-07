@@ -310,7 +310,6 @@
     <Compile Include="Impl\Common\IgniteConfigurationXmlSerializer.cs" />
     <Compile Include="Impl\Common\IgniteHome.cs" />
     <Compile Include="Impl\Common\LoadedAssembliesResolver.cs" />
-    <Compile Include="Impl\Common\ResizeableArray.cs" />
     <Compile Include="Impl\Common\TypeCaster.cs" />
     <Compile Include="Impl\Common\TypeStringConverter.cs" />
     <Compile Include="Impl\Compute\Closure\ComputeAbstractClosureTask.cs" />
@@ -351,7 +350,6 @@
     <Compile Include="Impl\Handle\HandleRegistry.cs" />
     <Compile Include="Impl\Handle\IHandle.cs" />
     <Compile Include="Impl\IInteropCallback.cs" />
-    <Compile Include="Impl\InteropExceptionHolder.cs" />
     <Compile Include="Impl\LifecycleBeanHolder.cs" />
     <Compile Include="Impl\Memory\InteropExternalMemory.cs" />
     <Compile Include="Impl\Memory\InteropMemoryUtils.cs" />
@@ -386,7 +384,6 @@
     <Compile Include="Impl\Binary\BinarizableSerializer.cs" />
     <Compile Include="Impl\Binary\Marshaller.cs" />
     <Compile Include="Impl\Binary\BinaryMode.cs" />
-    <Compile Include="Impl\Binary\BinaryObjectHandle.cs" />
     <Compile Include="Impl\Binary\BinaryObjectHeader.cs" />
     <Compile Include="Impl\Binary\BinaryObjectSchema.cs" />
     <Compile Include="Impl\Binary\BinaryObjectSchemaField.cs" />

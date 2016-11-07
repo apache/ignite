@@ -25,7 +25,8 @@ include ../../../../../app/helpers/jade/mixins.jade
         ignite-form-panel-chevron
         label ODBC configuration
         ignite-form-field-tooltip.tipLabel
-            | ODBC server configuration
+            | ODBC server configuration#[br]
+            | #[a(href="https://apacheignite.readme.io/docs/odbc-driver" target="_blank") More info]
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=form)
         .panel-body(ng-if='ui.isPanelLoaded("#{form}")')

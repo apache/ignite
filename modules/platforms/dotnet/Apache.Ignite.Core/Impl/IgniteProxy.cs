@@ -40,6 +40,7 @@ namespace Apache.Ignite.Core.Impl
     /// Grid proxy with fake serialization.
     /// </summary>
     [Serializable]
+    [ExcludeFromCodeCoverage]
     internal class IgniteProxy : IIgnite, IBinaryWriteAware, ICluster
     {
         /** */

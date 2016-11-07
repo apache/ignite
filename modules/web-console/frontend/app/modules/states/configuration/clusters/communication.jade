@@ -26,7 +26,8 @@ include ../../../../../app/helpers/jade/mixins.jade
         label Communication
         ignite-form-field-tooltip.tipLabel
             | Configuration of communication with other nodes by TCP/IP
-            | Provide basic plumbing to send and receive grid messages and is utilized for all distributed grid operations
+            | Provide basic plumbing to send and receive grid messages and is utilized for all distributed grid operations#[br]
+            | #[a(href="https://apacheignite.readme.io/docs/network-config" target="_blank") More info]
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=form)
         .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
