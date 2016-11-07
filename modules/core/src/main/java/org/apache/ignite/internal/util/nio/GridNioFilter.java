@@ -109,7 +109,11 @@ public interface GridNioFilter {
      * @return Write future or {@code null}.
      * @throws IgniteCheckedException If filter is not in chain or GridNioException occurred in the underlying filter.
      */
-    public GridNioFuture<?> proceedSessionWrite(GridNioSession ses, Object msg, boolean fut) throws IgniteCheckedException;
+    public GridNioFuture<?> proceedSessionWrite(
+        GridNioSession ses,
+        Object msg,
+        boolean fut
+    ) throws IgniteCheckedException;
 
     /**
      * Forwards session close request to the next logical filter in filter chain.

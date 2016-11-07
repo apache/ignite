@@ -71,12 +71,19 @@ public class GridNioCodecFilter extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onExceptionCaught(GridNioSession ses, IgniteCheckedException ex) throws IgniteCheckedException {
+    @Override public void onExceptionCaught(
+        GridNioSession ses,
+        IgniteCheckedException ex
+    ) throws IgniteCheckedException {
         proceedExceptionCaught(ses, ex);
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg, boolean fut) throws IgniteCheckedException {
+    @Override public GridNioFuture<?> onSessionWrite(
+        GridNioSession ses,
+        Object msg,
+        boolean fut
+    ) throws IgniteCheckedException {
         // No encoding needed in direct mode.
         if (directMode)
             return proceedSessionWrite(ses, msg, fut);
