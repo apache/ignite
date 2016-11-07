@@ -93,7 +93,7 @@ public abstract class GridRedisThruRestCommandHandler implements GridRedisComman
      *
      * @param resp REST response.
      * @param params Auxiliary parameters.
-     * @return
+     * @return Response for the command.
      */
     public abstract ByteBuffer makeResponse(GridRestResponse resp, List<String> params);
 }

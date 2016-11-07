@@ -23,7 +23,7 @@ import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Parser to decode/encode Redis protocol (REDIS) requests.
+ * Parser to decode/encode Redis protocol (RESP) requests.
  */
 public class GridRedisProtocolParser {
     /** + prefix. */
@@ -66,10 +66,10 @@ public class GridRedisProtocolParser {
     private static final byte[] OK = "OK".getBytes();
 
     /**
-     * Reads array.
+     * Reads an array into {@link GridRedisMessage}.
      *
-     * @param buf
-     * @return
+     * @param buf Buffer.
+     * @return {@link GridRedisMessage}.
      * @throws IgniteCheckedException
      */
     public static GridRedisMessage readArray(ByteBuffer buf) throws IgniteCheckedException {
@@ -91,7 +91,7 @@ public class GridRedisProtocolParser {
     /**
      * Reads a bulk string.
      *
-     * @param buf
+     * @param buf Buffer.
      * @return Bulk string.
      * @throws IgniteCheckedException
      */
@@ -113,9 +113,9 @@ public class GridRedisProtocolParser {
     }
 
     /**
-     * Counts elements.
+     * Counts elements in buffer.
      *
-     * @param buf
+     * @param buf Buffer.
      * @return Count of elements.
      */
     private static int elCnt(ByteBuffer buf) throws IgniteCheckedException {
@@ -212,7 +212,7 @@ public class GridRedisProtocolParser {
     }
 
     /**
-     * Converts an integer result to a REDIS integer.
+     * Converts an integer result to a RESP integer.
      *
      * @param integer Integer result.
      * @return REDIS integer.
@@ -231,7 +231,7 @@ public class GridRedisProtocolParser {
     }
 
     /**
-     * Converts an integer result to a REDIS integer.
+     * Converts an integer result to a RESP integer.
      *
      * @param integer Integer result.
      * @return REDIS integer.
@@ -241,6 +241,8 @@ public class GridRedisProtocolParser {
     }
 
     /**
+     * Creates Nil response.
+     *
      * @return Nil response.
      */
     public static ByteBuffer nil() {
@@ -276,11 +278,19 @@ public class GridRedisProtocolParser {
         return buf;
     }
 
+    /**
+     * Converts a resultant map response to an array.
+     *
+     * @param vals Map.
+     * @return Array response.
+     */
     public static ByteBuffer toArray(Map<Object, Object> vals) {
         return toArray(vals.values());
     }
 
     /**
+     * Converts a resultant collection response to an array.
+     *
      * @param vals Array elements.
      * @return Array response.
      */

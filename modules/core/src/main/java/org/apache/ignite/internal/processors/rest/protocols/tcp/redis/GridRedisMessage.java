@@ -65,15 +65,6 @@ public class GridRedisMessage implements GridClientMessage {
         msgParts = new ArrayList<>(msgLen);
     }
 
-    public GridRedisMessage copy(GridRedisMessage msg) {
-        GridRedisMessage m = new GridRedisMessage(msgParts.size());
-
-        for (String p : msgParts)
-            m.append(p);
-
-        return m;
-    }
-
     public void append(String part) {
         msgParts.add(part);
     }
