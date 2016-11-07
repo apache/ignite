@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Impl.SwapSpace
         /// </summary>
         public static ISwapSpaceSpi Read(IBinaryRawReader reader)
         {
-            var type = (Type)reader.ReadByte();
+            var type = (Type) reader.ReadByte();
 
             switch (type)
             {
