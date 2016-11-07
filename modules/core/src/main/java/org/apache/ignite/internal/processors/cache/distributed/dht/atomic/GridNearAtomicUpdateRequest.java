@@ -217,4 +217,15 @@ public interface GridNearAtomicUpdateRequest {
      * @param clearKeys If {@code true} clears keys.
      */
     public void cleanup(boolean clearKeys);
+
+    /**
+     * @return Keys size.
+     */
+    public int size();
+
+    /**
+     * @param idx Key index.
+     * @return Key.
+     */
+    public KeyCacheObject key(int idx);
 }

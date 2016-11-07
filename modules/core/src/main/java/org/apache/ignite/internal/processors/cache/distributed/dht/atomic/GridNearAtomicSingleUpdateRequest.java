@@ -25,6 +25,7 @@ import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -53,6 +54,10 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
     /** Key to update. */
     @GridToStringInclude
     protected KeyCacheObject key;
+
+    /** Key singleton list. */
+    @GridDirectTransient
+    protected List<KeyCacheObject> keys;
 
     /** Value to update. */
     protected CacheObject val;
@@ -123,6 +128,8 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
             clientReq,
             addDepInfo
         );
+
+        keys = Collections.emptyList();
     }
 
     /**
@@ -146,6 +153,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
         assert conflictVer == null : conflictVer;
 
         this.key = key;
+        keys = Collections.singletonList(key);
         partId = key.partition();
 
         if (val != null) {
@@ -158,8 +166,20 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
     }
 
     /** {@inheritDoc} */
+    @Override public int size() {
+        return key == null ? 0 : 1;
+    }
+
+    /** {@inheritDoc} */
     @Override public List<KeyCacheObject> keys() {
-        return Collections.singletonList(key);
+        return keys;
+    }
+
+    /** {@inheritDoc} */
+    @Override public KeyCacheObject key(int idx) {
+        assert idx == 0 : idx;
+
+        return key;
     }
 
     /** {@inheritDoc} */
@@ -242,6 +262,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
             val.finishUnmarshal(cctx.cacheObjectContext(), ldr);
 
         key.partition(partId);
+        keys = Collections.singletonList(key);
     }
 
     /** {@inheritDoc} */

@@ -156,6 +156,7 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
         entryProcessor = (EntryProcessor<Object, Object, Object>)val;
 
         this.key = key;
+        keys = Collections.singletonList(key);
         partId = key.partition();
 
         hasPrimary(hasPrimary() | primary);
@@ -222,7 +223,6 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
         if (invokeArgs == null)
             invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, ctx, ldr);
 
-        key.partition(partId);
     }
 
     /** {@inheritDoc} */

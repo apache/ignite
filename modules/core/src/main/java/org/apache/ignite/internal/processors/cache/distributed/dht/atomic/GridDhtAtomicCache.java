@@ -1685,7 +1685,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         List<KeyCacheObject> keys = req.keys();
 
-        assert !req.returnValue() || (req.operation() == TRANSFORM || keys.size() == 1);
+        assert !req.returnValue() || (req.operation() == TRANSFORM || req.size() == 1);
 
         GridDhtAtomicUpdateFuture dhtFut = null;
 
@@ -1759,7 +1759,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         GridCacheReturn retVal = null;
 
-                        if (keys.size() > 1 &&                    // Several keys ...
+                        if (req.size() > 1 &&                    // Several keys ...
                             writeThrough() && !req.skipStore() && // and store is enabled ...
                             !ctx.store().isLocal() &&             // and this is not local store ...
                                                                   // (conflict resolver should be used for local store)
@@ -1931,7 +1931,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         }
 
-        int size = req.keys().size();
+        int size = req.size();
 
         Map<KeyCacheObject, CacheObject> putMap = null;
 
@@ -2343,8 +2343,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         GridCacheReturn retVal = null;
         Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted = null;
 
-        List<KeyCacheObject> keys = req.keys();
-
         AffinityTopologyVersion topVer = req.topologyVersion();
 
         boolean checkReaders = hasNear || ctx.discovery().hasNearCache(name(), topVer);
@@ -2354,8 +2352,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean intercept = ctx.config().getInterceptor() != null;
 
         // Avoid iterator creation.
-        for (int i = 0; i < keys.size(); i++) {
-            KeyCacheObject k = keys.get(i);
+        for (int i = 0; i < req.size(); i++) {
+            KeyCacheObject k = req.key(i);
 
             GridCacheOperation op = req.operation();
 
@@ -2491,7 +2489,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 if (updRes.removeVersion() != null) {
                     if (deleted == null)
-                        deleted = new ArrayList<>(keys.size());
+                        deleted = new ArrayList<>(req.size());
 
                     deleted.add(F.t(entry, updRes.removeVersion()));
                 }
@@ -2973,6 +2971,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         Collection<GridCacheDrInfo> drPutVals;
         Collection<GridCacheVersion> drRmvVals;
 
+        int size = req.size();
+        Collection<KeyCacheObject> keys = new ArrayList<>(size);
+
+        for (int i = 0; i < size; i++)
+            keys.add(req.key(i));
+
         if (req.conflictVersions() == null) {
             vals = req.values();
 
@@ -2980,7 +2984,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             drRmvVals = null;
         }
         else if (req.operation() == UPDATE) {
-            int size = req.keys().size();
 
             drPutVals = new ArrayList<>(size);
 
@@ -3011,7 +3014,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             this,
             ctx.config().getWriteSynchronizationMode(),
             req.operation(),
-            req.keys(),
+            keys,
             vals,
             req.invokeArguments(),
             drPutVals,
