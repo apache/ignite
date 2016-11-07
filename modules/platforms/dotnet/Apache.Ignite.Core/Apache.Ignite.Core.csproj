@@ -75,7 +75,7 @@
     <Optimize>true</Optimize>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
-	<DebugType>none</DebugType>
+    <DebugType>none</DebugType>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -477,6 +477,7 @@
     <Compile Include="Transactions\Package-Info.cs" />
     <Compile Include="Transactions\TransactionConcurrency.cs" />
     <Compile Include="Transactions\TransactionConfiguration.cs" />
+    <Compile Include="Transactions\TransactionDeadlockException.cs" />
     <Compile Include="Transactions\TransactionHeuristicException.cs" />
     <Compile Include="Transactions\TransactionIsolation.cs" />
     <Compile Include="Transactions\TransactionOptimisticException.cs" />

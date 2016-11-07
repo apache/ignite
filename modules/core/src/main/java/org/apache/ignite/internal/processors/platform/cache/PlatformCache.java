@@ -58,6 +58,8 @@ import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.transactions.TransactionDeadlockException;
+import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.Nullable;
 
 import javax.cache.Cache;
@@ -1094,6 +1096,16 @@ public class PlatformCache extends PlatformAbstractTarget {
 
         if (e.getCause() instanceof EntryProcessorException)
             return (Exception)e.getCause();
+
+        TransactionDeadlockException deadlockException = X.cause(e, TransactionDeadlockException.class);
+
+        if (deadlockException != null)
+            return deadlockException;
+
+        TransactionTimeoutException timeoutException = X.cause(e, TransactionTimeoutException.class);
+
+        if (timeoutException != null)
+            return timeoutException;
 
         return super.convertException(e);
     }
