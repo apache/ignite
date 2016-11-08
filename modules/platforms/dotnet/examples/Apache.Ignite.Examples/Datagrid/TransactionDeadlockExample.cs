@@ -69,8 +69,8 @@ namespace Apache.Ignite.Examples.Datagrid
                 var keys = Enumerable.Range(1, 100).ToArray();
 
                 // Modify keys in reverse order to cause a deadlock.
-                var task1 = Task.Factory.StartNew(() => IncrementKeys(cache, keys, 1));
-                var task2 = Task.Factory.StartNew(() => IncrementKeys(cache, keys.Reverse(), 2));
+                var task1 = Task.Factory.StartNew(() => UpdateKeys(cache, keys, 1));
+                var task2 = Task.Factory.StartNew(() => UpdateKeys(cache, keys.Reverse(), 2));
 
                 Task.WaitAll(task1, task2);
 
@@ -80,9 +80,9 @@ namespace Apache.Ignite.Examples.Datagrid
         }
 
         /// <summary>
-        /// Increments the specified keys.
+        /// Updates the specified keys.
         /// </summary>
-        private static void IncrementKeys(ICache<int, int> cache, IEnumerable<int> keys, int threadId)
+        private static void UpdateKeys(ICache<int, int> cache, IEnumerable<int> keys, int threadId)
         {
             var txs = cache.Ignite.GetTransactions();
 
@@ -92,7 +92,7 @@ namespace Apache.Ignite.Examples.Datagrid
                 {
                     foreach (var key in keys)
                     {
-                        cache[key]++;
+                        cache[key] = threadId;
                     }
 
                     // Introduce a delay to ensure lock conflict.
