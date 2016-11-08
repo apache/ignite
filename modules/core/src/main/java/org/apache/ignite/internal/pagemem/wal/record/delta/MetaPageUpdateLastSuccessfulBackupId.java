@@ -27,14 +27,18 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.PageMetaIO;
 public class MetaPageUpdateLastSuccessfulBackupId extends PageDeltaRecord {
     /** */
     private final long lastSuccessfulBackupId;
+    /** Last successful backup tag. */
+    private final long lastSuccessfulBackupTag;
 
     /**
      * @param pageId Meta page ID.
+     * @param backupTag
      */
-    public MetaPageUpdateLastSuccessfulBackupId(int cacheId, long pageId, long lastSuccessfulBackupId) {
+    public MetaPageUpdateLastSuccessfulBackupId(int cacheId, long pageId, long lastSuccessfulBackupId, long backupTag) {
         super(cacheId, pageId);
 
         this.lastSuccessfulBackupId = lastSuccessfulBackupId;
+        this.lastSuccessfulBackupTag = backupTag;
     }
 
     /** {@inheritDoc} */
@@ -50,10 +54,17 @@ public class MetaPageUpdateLastSuccessfulBackupId extends PageDeltaRecord {
     }
 
     /**
-     * @return Root ID.
+     * @return lastSuccessfulBackupId
      */
     public long lastSuccessfulBackupId() {
         return lastSuccessfulBackupId;
+    }
+
+    /**
+     * @return lastSuccessfulBackupTag
+     */
+    public long lastSuccessfulBackupTag() {
+        return lastSuccessfulBackupTag;
     }
 }
 

@@ -37,10 +37,13 @@ public class PageMetaIO extends PageIO {
     private static final int LAST_SUCCESSFUL_FULL_BACKUP_ID_OFF = LAST_SUCCESSFUL_BACKUP_ID_OFF + 8;
 
     /** Next backup id offset. */
-    private static final int NEXT_BACKUP_ID_OFF = LAST_SUCCESSFUL_FULL_BACKUP_ID_OFF + 8;
+    private static final int NEXT_BACKUP_TAG_OFF = LAST_SUCCESSFUL_FULL_BACKUP_ID_OFF + 8;
+
+    /** Last successful full backup tag offset. */
+    private static final int LAST_SUCCESSFUL_FULL_BACKUP_TAG_OFF = NEXT_BACKUP_TAG_OFF + 8;
 
     /** Last allocated index offset. */
-    private static final int LAST_ALLOCATED_INDEX_OFF = NEXT_BACKUP_ID_OFF + 8;
+    private static final int LAST_ALLOCATED_INDEX_OFF = LAST_SUCCESSFUL_FULL_BACKUP_TAG_OFF + 8;
 
     /** Candidate allocated index offset. */
     private static final int CANDIDATE_ALLOCATED_INDEX_OFF = LAST_ALLOCATED_INDEX_OFF + 4;
@@ -148,9 +151,30 @@ public class PageMetaIO extends PageIO {
      * @param nextBackupId Next backup id.
      */
     public void setNextBackupId(@NotNull ByteBuffer buf, long nextBackupId) {
-        buf.putLong(NEXT_BACKUP_ID_OFF, nextBackupId);
+        buf.putLong(NEXT_BACKUP_TAG_OFF, nextBackupId);
     }
 
+    /**
+     * @param buf Buffer.
+     */
+    public long getLastSuccessfulBackupTag(@NotNull ByteBuffer buf) {
+        return buf.getLong(LAST_SUCCESSFUL_FULL_BACKUP_TAG_OFF);
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param lastSuccessfulBackupTag Last successful backup tag.
+     */
+    public void setLastSuccessfulBackupTag(@NotNull ByteBuffer buf, long lastSuccessfulBackupTag) {
+        buf.putLong(LAST_SUCCESSFUL_FULL_BACKUP_TAG_OFF, lastSuccessfulBackupTag);
+    }
+
+    /**
+     * @param buf Buffer.
+     */
+    public long getNextBackupTag(@NotNull ByteBuffer buf) {
+        return buf.getLong(NEXT_BACKUP_TAG_OFF);
+    }
     /**
      * @param buf Buffer.
      * @param lastAllocatedIdx Last allocated index.
@@ -179,12 +203,5 @@ public class PageMetaIO extends PageIO {
      */
     public int getCandidateAllocatedIndex(@NotNull ByteBuffer buf) {
         return buf.getInt(CANDIDATE_ALLOCATED_INDEX_OFF);
-    }
-
-    /**
-     * @param buf Buffer.
-     */
-    public long getNextBackupId(@NotNull ByteBuffer buf) {
-        return buf.getLong(NEXT_BACKUP_ID_OFF);
     }
 }
