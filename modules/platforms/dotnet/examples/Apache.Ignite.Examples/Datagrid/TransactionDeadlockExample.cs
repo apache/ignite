@@ -66,7 +66,7 @@ namespace Apache.Ignite.Examples.Datagrid
                 // Clean up caches on all nodes before run.
                 cache.Clear();
 
-                var keys = Enumerable.Range(1, 100).ToArray();
+                var keys = Enumerable.Range(1, 10).ToArray();
 
                 // Modify keys in reverse order to cause a deadlock.
                 var task1 = Task.Factory.StartNew(() => UpdateKeys(cache, keys, 1));
@@ -88,7 +88,8 @@ namespace Apache.Ignite.Examples.Datagrid
 
             try
             {
-                using (var tx = txs.TxStart(TransactionConcurrency.Pessimistic, TransactionIsolation.ReadCommitted))
+                using (var tx = txs.TxStart(TransactionConcurrency.Pessimistic, TransactionIsolation.ReadCommitted,
+                    TimeSpan.FromSeconds(2), 0))
                 {
                     foreach (var key in keys)
                     {
@@ -96,7 +97,7 @@ namespace Apache.Ignite.Examples.Datagrid
                     }
 
                     // Introduce a delay to ensure lock conflict.
-                    Thread.Sleep(TimeSpan.FromSeconds(1));
+                    Thread.Sleep(TimeSpan.FromSeconds(3));
 
                     tx.Commit();
                 }
