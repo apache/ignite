@@ -612,7 +612,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         for (DynamicCacheChangeRequest req : reqs) {
             if (req.globalStateChange()) {
-                cctx.cache().beforeActivate(topologyVersion());
+                cctx.cache().beforeActivate(req, topologyVersion());
 
                 break;
             }

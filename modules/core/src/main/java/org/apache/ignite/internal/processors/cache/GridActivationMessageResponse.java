@@ -19,34 +19,59 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
-public class ActivationMessageResponse implements Message {
+public class GridActivationMessageResponse extends GridCacheMessage{
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** Request id. */
+    private UUID requestId;
+
     /** Node id. */
     private UUID nodeId;
 
-    /** Serialized error. */
+    /** Activation error. */
+    @GridDirectTransient
+    private Throwable err;
+
+    /** Serialized activation error. */
     private byte[] errBytes;
 
     /**
      * Default constructor.
      */
-    public ActivationMessageResponse() {
+    public GridActivationMessageResponse() {
          /* No-op. */
     }
 
     /**
      * @param nodeId Node id.
-     * @param errBytes Error bytes.
      */
-    public ActivationMessageResponse(UUID nodeId, byte[] errBytes) {
+    public GridActivationMessageResponse(
+        UUID requestId,
+        UUID nodeId,
+        Throwable err
+    ) {
+        this.requestId = requestId;
         this.nodeId = nodeId;
-        this.errBytes = errBytes;
+        this.err = err;
+    }
+
+    /**
+     *
+     */
+    public UUID getRequestId() {
+        return requestId;
     }
 
     /**
@@ -59,13 +84,34 @@ public class ActivationMessageResponse implements Message {
     /**
      *
      */
-    public byte[] getErrBytes() {
-        return errBytes;
+    public Throwable getError() {
+        return err;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+        super.prepareMarshal(ctx);
+
+        if (err != null && errBytes == null)
+            errBytes = CU.marshal(ctx, false, err);
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        super.finishUnmarshal(ctx, ldr);
+
+        if (errBytes != null && err == null)
+            err = ctx.marshaller().unmarshal(errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+
     }
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
+
+        if (!super.writeTo(buf, writer))
+            return false;
 
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(directType(), fieldsCount()))
@@ -75,14 +121,20 @@ public class ActivationMessageResponse implements Message {
         }
 
         switch (writer.state()) {
-            case 0:
+            case 3:
                 if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 1:
+            case 4:
                 if (!writer.writeUuid("nodeId", nodeId))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
+                if (!writer.writeUuid("requestId", requestId))
                     return false;
 
                 writer.incrementState();
@@ -99,8 +151,11 @@ public class ActivationMessageResponse implements Message {
         if (!reader.beforeMessageRead())
             return false;
 
+        if (!super.readFrom(buf, reader))
+            return false;
+
         switch (reader.state()) {
-            case 0:
+            case 3:
                 errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
@@ -108,8 +163,16 @@ public class ActivationMessageResponse implements Message {
 
                 reader.incrementState();
 
-            case 1:
+            case 4:
                 nodeId = reader.readUuid("nodeId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
+                requestId = reader.readUuid("requestId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -118,7 +181,7 @@ public class ActivationMessageResponse implements Message {
 
         }
 
-        return reader.afterMessageRead(ActivationMessageResponse.class);
+        return reader.afterMessageRead(GridActivationMessageResponse.class);
     }
 
     /** {@inheritDoc} */
@@ -128,11 +191,16 @@ public class ActivationMessageResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 6;
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
+    @Override public boolean addDeploymentInfo() {
+        return false;
+    }
 
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridActivationMessageResponse.class, this, super.toString());
     }
 }

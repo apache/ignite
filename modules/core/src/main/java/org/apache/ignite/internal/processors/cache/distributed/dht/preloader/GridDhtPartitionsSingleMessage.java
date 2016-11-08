@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.io.Externalizable;
+import java.util.Map;
+import java.util.HashMap;
 import java.nio.ByteBuffer;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.Externalizable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -43,7 +43,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     /** Local partitions. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<Integer, GridDhtPartitionMap2> parts = new HashMap<>();
+    private Map<Integer, GridDhtPartitionMap2> parts;
 
     /** Serialized partitions. */
     private byte[] partsBytes;
@@ -93,6 +93,9 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      * @param locMap Local partition map.
      */
     public void addLocalPartitionMap(int cacheId, GridDhtPartitionMap2 locMap) {
+        if (parts == null)
+            parts = new HashMap<>();
+
         parts.put(cacheId, locMap);
     }
 
@@ -125,6 +128,9 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      * @return Local partitions.
      */
     public Map<Integer, GridDhtPartitionMap2> partitions() {
+        if (parts == null)
+            parts = new HashMap<>();
+
         return parts;
     }
 

@@ -110,14 +110,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         return pageMem;
     }
 
-    public void fileLock() throws IgniteCheckedException {
+    /**
+     *
+     */
+    public void beforeOnKernalStart() throws IgniteCheckedException {
 
     }
-
-    public void fileUnLock() throws IgniteCheckedException {
-
-    }
-
     /**
      * No-op for non-persistent storage.
      */
