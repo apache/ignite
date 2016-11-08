@@ -21,14 +21,13 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
+import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisThruRestCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridRedisGenericException;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
-import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisThruRestCommandHandler;
-import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridRedisGenericException;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -52,8 +51,8 @@ public class GridRedisGetRangeCommandHandler extends GridRedisThruRestCommandHan
     private static final int END_OFFSET_POS = 2;
 
     /** {@inheritDoc} */
-    public GridRedisGetRangeCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
-        super(ctx, hnd);
+    public GridRedisGetRangeCommandHandler(final GridRestProtocolHandler hnd) {
+        super(hnd);
     }
 
     /** {@inheritDoc} */
@@ -90,7 +89,7 @@ public class GridRedisGetRangeCommandHandler extends GridRedisThruRestCommandHan
                 startOffset = boundedStartOffset(Integer.parseInt(params.get(START_OFFSET_POS)), res.length());
                 endOffset = boundedEndOffset(Integer.parseInt(params.get(END_OFFSET_POS)), res.length());
             }
-            catch (NumberFormatException e) {
+            catch (NumberFormatException ignored) {
                 return GridRedisProtocolParser.toGenericError("Offset is not an integer!");
             }
 
@@ -104,10 +103,7 @@ public class GridRedisGetRangeCommandHandler extends GridRedisThruRestCommandHan
      * @return Offset within the bounds.
      */
     private int boundedStartOffset(int idx, int size) {
-        if (idx >= 0)
-            return Math.min(idx, size);
-        else
-            return size + idx;
+        return idx >= 0 ? Math.min(idx, size) : size + idx;
     }
 
     /**
@@ -116,9 +112,6 @@ public class GridRedisGetRangeCommandHandler extends GridRedisThruRestCommandHan
      * @return Offset within the bounds.
      */
     private int boundedEndOffset(int idx, int size) {
-        if (idx >= 0)
-            return Math.min(idx + 1, size);
-        else
-            return size + idx + 1;
+        return idx >= 0 ? Math.min(idx + 1, size) : size + idx + 1;
     }
 }

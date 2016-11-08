@@ -21,14 +21,13 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
+import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisThruRestCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridRedisGenericException;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
-import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisThruRestCommandHandler;
-import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridRedisGenericException;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -51,8 +50,8 @@ public class GridRedisAppendCommandHandler extends GridRedisThruRestCommandHandl
     private static final int VAL_POS = 2;
 
     /** {@inheritDoc} */
-    public GridRedisAppendCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
-        super(ctx, hnd);
+    public GridRedisAppendCommandHandler(final GridRestProtocolHandler hnd) {
+        super(hnd);
     }
 
     /** {@inheritDoc} */
@@ -77,8 +76,9 @@ public class GridRedisAppendCommandHandler extends GridRedisThruRestCommandHandl
         appendReq.value(val);
         appendReq.command(CACHE_APPEND);
 
-        if ((boolean)hnd.handle(appendReq).getResponse() == false) {
-            // append on on-existing key in REST returns false.
+        Object resp = hnd.handle(appendReq).getResponse();
+        if (resp != null && !(boolean)resp) {
+            // append on existing key.
             GridRestCacheRequest setReq = new GridRestCacheRequest();
 
             setReq.clientId(msg.clientId());

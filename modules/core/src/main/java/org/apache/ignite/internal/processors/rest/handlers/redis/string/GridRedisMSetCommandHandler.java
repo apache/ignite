@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
@@ -47,8 +46,8 @@ public class GridRedisMSetCommandHandler extends GridRedisThruRestCommandHandler
     );
 
     /** {@inheritDoc} */
-    public GridRedisMSetCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
-        super(ctx, hnd);
+    public GridRedisMSetCommandHandler(final GridRestProtocolHandler hnd) {
+        super(hnd);
     }
 
     /** {@inheritDoc} */

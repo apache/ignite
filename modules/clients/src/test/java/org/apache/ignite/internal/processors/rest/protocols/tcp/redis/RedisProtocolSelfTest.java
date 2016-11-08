@@ -122,7 +122,7 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    protected void beforeTest() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         assert grid(0).cluster().nodes().size() == gridCount();
     }
 

@@ -21,14 +21,13 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
+import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisThruRestCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridRedisGenericException;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
-import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisThruRestCommandHandler;
-import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridRedisGenericException;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -52,9 +51,12 @@ public class GridRedisSetRangeCommandHandler extends GridRedisThruRestCommandHan
     /** Value position in Redis message. */
     private static final int VAL_POS = 3;
 
+    /** Maximum offset. */
+    private static final int MAX_OFFSET = 536870911;
+
     /** {@inheritDoc} */
-    public GridRedisSetRangeCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
-        super(ctx, hnd);
+    public GridRedisSetRangeCommandHandler(final GridRestProtocolHandler hnd) {
+        super(hnd);
     }
 
     /** {@inheritDoc} */
@@ -69,11 +71,11 @@ public class GridRedisSetRangeCommandHandler extends GridRedisThruRestCommandHan
         if (msg.messageSize() < 4)
             throw new GridRedisGenericException("Wrong number of arguments");
 
-        int offset;
+        int off;
         try {
-            offset = Integer.parseInt(msg.aux(OFFSET_POS));
+            off = Integer.parseInt(msg.aux(OFFSET_POS));
         }
-        catch (NumberFormatException e) {
+        catch (NumberFormatException ignored) {
             throw new GridRedisGenericException("Offset is not an integer!");
         }
 
@@ -85,13 +87,13 @@ public class GridRedisSetRangeCommandHandler extends GridRedisThruRestCommandHan
         getReq.key(msg.key());
         getReq.command(CACHE_GET);
 
-        if (val.length() == 0)
+        if (val.isEmpty())
             return getReq;
 
         Object resp = hnd.handle(getReq).getResponse();
 
-        int totalLen = offset + val.length();
-        if (offset < 0 || totalLen > 536870911)
+        int totalLen = off + val.length();
+        if (off < 0 || totalLen > MAX_OFFSET)
             throw new GridRedisGenericException("Offset is out of range!");
 
         GridRestCacheRequest putReq = new GridRestCacheRequest();
@@ -102,14 +104,14 @@ public class GridRedisSetRangeCommandHandler extends GridRedisThruRestCommandHan
 
         if (resp == null) {
             byte[] dst = new byte[totalLen];
-            System.arraycopy(val.getBytes(), 0, dst, offset, val.length());
+            System.arraycopy(val.getBytes(), 0, dst, off, val.length());
 
             putReq.value(new String(dst));
         }
         else {
             String cacheVal = String.valueOf(resp);
 
-            cacheVal = cacheVal.substring(0, offset) + val;
+            cacheVal = cacheVal.substring(0, off) + val;
 
             putReq.value(cacheVal);
         }

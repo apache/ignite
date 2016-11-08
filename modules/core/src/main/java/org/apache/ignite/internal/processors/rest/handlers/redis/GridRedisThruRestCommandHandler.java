@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.rest.handlers.redis;
 import java.nio.ByteBuffer;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
@@ -41,10 +40,9 @@ public abstract class GridRedisThruRestCommandHandler implements GridRedisComman
     /**
      * Constructor.
      *
-     * @param ctx Context.
      * @param hnd REST protocol handler.
      */
-    public GridRedisThruRestCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
+    public GridRedisThruRestCommandHandler(final GridRestProtocolHandler hnd) {
         this.hnd = hnd;
     }
 

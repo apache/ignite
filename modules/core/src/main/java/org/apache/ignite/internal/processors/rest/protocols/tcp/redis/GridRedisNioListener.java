@@ -67,23 +67,23 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
         addCommandHandler(new GridRedisConnectionCommandHandler());
 
         // string commands.
-        addCommandHandler(new GridRedisGetCommandHandler(ctx, hnd));
-        addCommandHandler(new GridRedisSetCommandHandler(ctx, hnd));
-        addCommandHandler(new GridRedisMSetCommandHandler(ctx, hnd));
-        addCommandHandler(new GridRedisMGetCommandHandler(ctx, hnd));
-        addCommandHandler(new GridRedisIncrDecrCommandHandler(ctx, hnd));
-        addCommandHandler(new GridRedisAppendCommandHandler(ctx, hnd));
-        addCommandHandler(new GridRedisGetSetCommandHandler(ctx, hnd));
-        addCommandHandler(new GridRedisStrlenCommandHandler(ctx, hnd));
-        addCommandHandler(new GridRedisSetRangeCommandHandler(ctx, hnd));
-        addCommandHandler(new GridRedisGetRangeCommandHandler(ctx, hnd));
+        addCommandHandler(new GridRedisGetCommandHandler(hnd));
+        addCommandHandler(new GridRedisSetCommandHandler(hnd));
+        addCommandHandler(new GridRedisMSetCommandHandler(hnd));
+        addCommandHandler(new GridRedisMGetCommandHandler(hnd));
+        addCommandHandler(new GridRedisIncrDecrCommandHandler(hnd));
+        addCommandHandler(new GridRedisAppendCommandHandler(hnd));
+        addCommandHandler(new GridRedisGetSetCommandHandler(hnd));
+        addCommandHandler(new GridRedisStrlenCommandHandler(hnd));
+        addCommandHandler(new GridRedisSetRangeCommandHandler(hnd));
+        addCommandHandler(new GridRedisGetRangeCommandHandler(hnd));
 
         // key commands.
-        addCommandHandler(new GridRedisDelCommandHandler(ctx, hnd));
-        addCommandHandler(new GridRedisExistsCommandHandler(ctx, hnd));
+        addCommandHandler(new GridRedisDelCommandHandler(hnd));
+        addCommandHandler(new GridRedisExistsCommandHandler(hnd));
 
         // server commands.
-        addCommandHandler(new GridRedisDbSizeCommandHandler(ctx, hnd));
+        addCommandHandler(new GridRedisDbSizeCommandHandler(hnd));
     }
 
     /**

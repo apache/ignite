@@ -22,14 +22,13 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
+import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisThruRestCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridRedisGenericException;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
-import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisThruRestCommandHandler;
-import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridRedisGenericException;
 import org.apache.ignite.internal.processors.rest.request.DataStructuresRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
@@ -59,8 +58,8 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisThruRestCommandHan
     private static final int DELTA_POS = 2;
 
     /** {@inheritDoc} */
-    public GridRedisIncrDecrCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
-        super(ctx, hnd);
+    public GridRedisIncrDecrCommandHandler(final GridRestProtocolHandler hnd) {
+        super(hnd);
     }
 
     /** {@inheritDoc} */
@@ -100,7 +99,7 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisThruRestCommandHan
             try {
                 restReq.delta(Long.valueOf(msg.aux(DELTA_POS)));
             }
-            catch (NumberFormatException e) {
+            catch (NumberFormatException ignored) {
                 throw new GridRedisGenericException("An increment value must be numeric and in range!");
             }
         }
@@ -115,6 +114,8 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisThruRestCommandHan
             case DECRBY:
                 restReq.command(ATOMIC_DECREMENT);
                 break;
+            default:
+                assert false : "Unexpected command received!";
         }
 
         return restReq;
