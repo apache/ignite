@@ -681,6 +681,18 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     }
 
     /** {@inheritDoc} */
+    @Override public Iterable<CacheDataStore> cacheDataStores() {
+        if (cctx.isLocal())
+            return Collections.singleton(locCacheDataStore);
+
+        return new Iterable<CacheDataStore>() {
+            @Override public Iterator<CacheDataStore> iterator() {
+                return partDataStores.values().iterator();
+            }
+        };
+    }
+
+    /** {@inheritDoc} */
     @Override public void destroyCacheDataStore(int p, CacheDataStore store) throws IgniteCheckedException {
         try {
             partDataStores.remove(p, store);
@@ -896,6 +908,21 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         /** {@inheritDoc} */
         @Override public GridCursor<? extends CacheDataRow> cursor() throws IgniteCheckedException {
             return dataTree.find(null, null);
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridCursor<? extends CacheDataRow> cursor(KeyCacheObject lower,
+            KeyCacheObject upper) throws IgniteCheckedException {
+            KeySearchRow lowerRow = null;
+            KeySearchRow upperRow = null;
+
+            if (lower != null)
+                lowerRow = new KeySearchRow(lower.hashCode(), lower, 0);
+
+            if (upper != null)
+                upperRow = new KeySearchRow(upper.hashCode(), upper, 0);
+
+            return dataTree.find(lowerRow, upperRow);
         }
 
         /** {@inheritDoc} */

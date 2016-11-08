@@ -177,8 +177,16 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @return Backup init future or {@code null} if backup is not available.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteInternalFuture startLocalBackup(StartFullBackupAckDiscoveryMessage backupMsg, ClusterNode initiator)
+    @Nullable public IgniteInternalFuture startLocalBackup(StartFullBackupAckDiscoveryMessage backupMsg,
+        ClusterNode initiator)
         throws IgniteCheckedException {
+        return null;
+    }
+
+    /**
+     * @return Future that will be completed when indexes for given cache are restored.
+     */
+    @Nullable public IgniteInternalFuture indexRebuildFuture(int cacheId) {
         return null;
     }
 

@@ -63,13 +63,13 @@ import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyIterator;
+import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
@@ -2298,6 +2298,16 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         ctx.preloader().forcePreload();
 
         return new IgniteFutureImpl<>(ctx.preloader().syncFuture());
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<?> indexReadyFuture() {
+        IgniteInternalFuture fut = ctx.shared().database().indexRebuildFuture(ctx.cacheId());
+
+        if (fut == null)
+            return new IgniteFinishedFutureImpl<>();
+
+        return new IgniteFutureImpl<>(fut);
     }
 
     /**

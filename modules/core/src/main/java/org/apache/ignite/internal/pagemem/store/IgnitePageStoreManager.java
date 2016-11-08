@@ -175,4 +175,10 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager {
      * @return saved configuration for cache
      */
     public CacheConfiguration readConfiguration(String cacheName);
+
+    /**
+     * @param cacheId Cache ID.
+     * @return {@code True} if index store for given cache existed before node started.
+     */
+    public boolean hasIndexStore(int cacheId);
 }
