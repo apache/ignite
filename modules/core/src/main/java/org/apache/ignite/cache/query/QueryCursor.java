@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cache.query;
 
-import java.sql.ResultSet;
 import java.util.List;
 
 /**
