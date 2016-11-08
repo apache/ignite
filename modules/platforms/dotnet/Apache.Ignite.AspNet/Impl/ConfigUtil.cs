@@ -89,7 +89,7 @@ namespace Apache.Ignite.AspNet.Impl
 
                 if (config == null)
                     throw new ConfigurationErrorsException(string.Format(CultureInfo.InvariantCulture,
-                        "{0} with name '{1}' is defined in <configSections>, but not present in configuration", 
+                        "{0} with name '{1}' is defined in <configSections>, but not present in configuration.", 
                         typeof(IgniteConfigurationSection).Name, sectionName));
             }
             else
