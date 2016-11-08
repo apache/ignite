@@ -3114,7 +3114,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     try {
                         SecurityCredentials cred = unmarshalCredentials(node);
 
-                        System.out.println("coordinator auth " + msg);
                         SecurityContext subj = spi.nodeAuth.authenticateNode(node, cred);
 
                         if (subj == null) {
