@@ -2813,6 +2813,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         DynamicCacheChangeBatch batch,
         AffinityTopologyVersion topVer
     ) {
+        //todo validate dynamic request if activate
         for (DynamicCacheChangeRequest req : batch.requests()) {
             if (req.globalStateChange()){
                 if (globalState == ACTIVE)
@@ -4158,7 +4159,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             resps.put(nodeId, msg);
 
-            if (requestId.equals(msg.getRequestId()) && waitNodes.size() == resps.size()) {
+            if (requestId.equals(msg.getRequestId()) && waitNodes.size() <= resps.size()) {
                 Throwable e = new Throwable();
 
                 boolean fail = false;
