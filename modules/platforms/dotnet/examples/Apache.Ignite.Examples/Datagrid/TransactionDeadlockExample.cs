@@ -102,9 +102,13 @@ namespace Apache.Ignite.Examples.Datagrid
                     tx.Commit();
                 }
             }
+            catch (TransactionDeadlockException e)
+            {
+                Console.WriteLine("\n>>> Transaction deadlock in thread {0}: {1}", threadId, e.Message);
+            }
             catch (Exception e)
             {
-                Console.WriteLine("Update failed in thread {0}: {1}", threadId, e);
+                Console.WriteLine("\n>>> Update failed in thread {0}: {1}", threadId, e);
             }
         }
     }
