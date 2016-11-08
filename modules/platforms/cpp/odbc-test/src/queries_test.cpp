@@ -296,32 +296,32 @@ BOOST_AUTO_TEST_CASE(TestConnectionProtocolVersion_1_6_0)
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsInt8)
 {
-    CheckTwoRowsInt<int8_t>(SQL_C_STINYINT);
+    CheckTwoRowsInt<signed char>(SQL_C_STINYINT);
 }
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsUint8)
 {
-    CheckTwoRowsInt<uint8_t>(SQL_C_UTINYINT);
+    CheckTwoRowsInt<unsigned char>(SQL_C_UTINYINT);
 }
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsInt16)
 {
-    CheckTwoRowsInt<int16_t>(SQL_C_SSHORT);
+    CheckTwoRowsInt<signed short>(SQL_C_SSHORT);
 }
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsUint16)
 {
-    CheckTwoRowsInt<uint16_t>(SQL_C_USHORT);
+    CheckTwoRowsInt<unsigned short>(SQL_C_USHORT);
 }
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsInt32)
 {
-    CheckTwoRowsInt<int32_t>(SQL_C_SLONG);
+    CheckTwoRowsInt<signed long>(SQL_C_SLONG);
 }
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsUint32)
 {
-    CheckTwoRowsInt<uint32_t>(SQL_C_ULONG);
+    CheckTwoRowsInt<unsigned long>(SQL_C_ULONG);
 }
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsInt64)
