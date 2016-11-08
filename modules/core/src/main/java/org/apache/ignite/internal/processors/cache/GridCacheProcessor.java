@@ -42,7 +42,9 @@ import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheWriter;
 import javax.management.JMException;
 import javax.management.MBeanServer;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheExistsException;
@@ -66,7 +68,6 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridPerformanceSuggestions;
-import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -76,7 +77,6 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
-import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.pagemem.backup.StartFullBackupAckDiscoveryMessage;
@@ -1780,7 +1780,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (sharedCtx.cacheContext(CU.cacheId(cfg.getName())) != null)
             return;
 
-        if (affNodeStart || clientNodeStart) {
+        if (affNodeStart || clientNodeStart || CU.isSystemCache(cfg.getName())) {
             if (clientNodeStart && !affNodeStart) {
                 if (nearCfg != null)
                     ccfg.setNearConfiguration(nearCfg);
@@ -2563,7 +2563,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         //if call on client node, then send compute to server node for activate
         if (ctx.config().isClientMode()){
-            /*IgniteCompute c = ((ClusterGroupAdapter)ctx.cluster().get().forNode(coordinator))
+            ClusterNode crd = ctx.discovery().serverNodes(AffinityTopologyVersion.NONE).get(0);
+
+            IgniteCompute c = ((ClusterGroupAdapter)ctx.cluster().get().forNode(crd))
                 .compute().withAsync();
 
             c.run(new IgniteRunnable() {
@@ -2579,7 +2581,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 @Override public void apply(IgniteFuture future) {
                     actFut.onDone();
                 }
-            });*/
+            });
         }else {
             //if call on server node, then load all config and create request for start, and send batch custom event
             try {
@@ -4072,8 +4074,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                             //send fail to node which invoke activate
                             sendActivationResponse(req.requestId(), req.initiatingNodeId(), e);
-
-                            //send revert state, cancel task, destroy cache
                         }
                     }
                 });
@@ -4084,8 +4084,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 //send fail to node which invoke activate
                 sendActivationResponse(req.requestId(), req.initiatingNodeId(), e);
-
-                //send revert state, cancel task, destroy cache
             }
         }
     }
