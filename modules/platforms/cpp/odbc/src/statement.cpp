@@ -145,6 +145,157 @@ namespace ignite
             paramBindings.clear();
         }
 
+        void Statement::SetAttribute(int attr, void* value, SQLINTEGER valueLen)
+        {
+            IGNITE_ODBC_API_CALL(InternalSetAttribute(attr, value, valueLen));
+        }
+
+        SqlResult Statement::InternalSetAttribute(int attr, void* value, SQLINTEGER valueLen)
+        {
+            switch (attr)
+            {
+                case SQL_ATTR_ROW_ARRAY_SIZE:
+                {
+                    SQLULEN val = reinterpret_cast<SQLULEN>(value);
+
+                    LOG_MSG("SQL_ATTR_ROW_ARRAY_SIZE: %d\n", val);
+
+                    if (val != 1)
+                    {
+                        AddStatusRecord(SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                            "Fetching of more than one row by call is not supported.");
+
+                        return SQL_RESULT_ERROR;
+                    }
+
+                    break;
+                }
+
+                case SQL_ATTR_ROWS_FETCHED_PTR:
+                {
+                    SetRowsFetchedPtr(reinterpret_cast<size_t*>(value));
+
+                    break;
+                }
+
+                case SQL_ATTR_ROW_STATUS_PTR:
+                {
+                    SetRowStatusesPtr(reinterpret_cast<uint16_t*>(value));
+
+                    break;
+                }
+
+                case SQL_ATTR_PARAM_BIND_OFFSET_PTR:
+                {
+                    SetParamBindOffsetPtr(reinterpret_cast<int*>(value));
+
+                    break;
+                }
+
+                case SQL_ATTR_ROW_BIND_OFFSET_PTR:
+                {
+                    SetColumnBindOffsetPtr(reinterpret_cast<int*>(value));
+
+                    break;
+                }
+
+                default:
+                {
+                    AddStatusRecord(SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                        "Specified attribute is not supported.");
+
+                    return SQL_RESULT_ERROR;
+                }
+            }
+
+            return SQL_RESULT_SUCCESS;
+        }
+
+        void Statement::GetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER* valueLen)
+        {
+            IGNITE_ODBC_API_CALL(InternalGetAttribute(attr, buf, bufLen, valueLen));
+        }
+
+        SqlResult Statement::InternalGetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER* valueLen)
+        {
+            if (!buf)
+            {
+                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, "Data buffer is NULL.");
+
+                return SQL_RESULT_ERROR;
+            }
+
+            switch (attr)
+            {
+                case SQL_ATTR_APP_ROW_DESC:
+                case SQL_ATTR_APP_PARAM_DESC:
+                case SQL_ATTR_IMP_ROW_DESC:
+                case SQL_ATTR_IMP_PARAM_DESC:
+                {
+                    SQLPOINTER *val = reinterpret_cast<SQLPOINTER*>(buf);
+
+                    *val = static_cast<SQLPOINTER>(this);
+
+                    break;
+                }
+
+                case SQL_ATTR_ROW_ARRAY_SIZE:
+                {
+                    SQLINTEGER *val = reinterpret_cast<SQLINTEGER*>(buf);
+
+                    *val = static_cast<SQLINTEGER>(1);
+
+                    break;
+                }
+
+                case SQL_ATTR_ROWS_FETCHED_PTR:
+                {
+                    SQLULEN** val = reinterpret_cast<SQLULEN**>(buf);
+
+                    *val = reinterpret_cast<SQLULEN*>(GetRowsFetchedPtr());
+
+                    break;
+                }
+
+                case SQL_ATTR_ROW_STATUS_PTR:
+                {
+                    SQLUSMALLINT** val = reinterpret_cast<SQLUSMALLINT**>(buf);
+
+                    *val = reinterpret_cast<SQLUSMALLINT*>(GetRowStatusesPtr());
+
+                    break;
+                }
+
+                case SQL_ATTR_PARAM_BIND_OFFSET_PTR:
+                {
+                    SQLULEN** val = reinterpret_cast<SQLULEN**>(buf);
+
+                    *val = reinterpret_cast<SQLULEN*>(GetParamBindOffsetPtr());
+
+                    break;
+                }
+
+                case SQL_ATTR_ROW_BIND_OFFSET_PTR:
+                {
+                    SQLULEN** val = reinterpret_cast<SQLULEN**>(buf);
+
+                    *val = reinterpret_cast<SQLULEN*>(GetColumnBindOffsetPtr());
+
+                    break;
+                }
+
+                default:
+                {
+                    AddStatusRecord(SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                        "Specified attribute is not supported.");
+
+                    return SQL_RESULT_ERROR;
+                }
+            }
+
+            return SQL_RESULT_SUCCESS;
+        }
+
         uint16_t Statement::GetParametersNumber()
         {
             IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
