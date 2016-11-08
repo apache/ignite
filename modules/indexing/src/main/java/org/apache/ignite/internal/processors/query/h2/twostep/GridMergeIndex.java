@@ -177,17 +177,21 @@ public abstract class GridMergeIndex extends BaseIndex {
     public final void addPage(GridResultPage page) {
         int pageRowsCnt = page.rowsInPage();
 
+        Counter cnt = remainingRows.get(page.source());
+
+        // Reduce counter before page adding to avoid race
+        // in GridMergeIndexUnsorted cursor iterator
+        int remainingRowsCount = cnt.addAndGet(-pageRowsCnt);
+
         if (pageRowsCnt != 0)
             addPage0(page);
-
-        Counter cnt = remainingRows.get(page.source());
 
         int allRows = page.response().allRows();
 
         if (allRows != -1) { // Only the first page contains allRows count and is allowed to init counter.
             assert !cnt.initialized : "Counter is already initialized.";
 
-            cnt.addAndGet(allRows);
+            remainingRowsCount = cnt.addAndGet(allRows);
             expRowsCnt.addAndGet(allRows);
 
             // We need this separate flag to handle case when the first source contains only one page
@@ -195,7 +199,7 @@ public abstract class GridMergeIndex extends BaseIndex {
             cnt.initialized = true;
         }
 
-        if (cnt.addAndGet(-pageRowsCnt) == 0) { // Result can be negative in case of race between messages, it is ok.
+        if (remainingRowsCount == 0) { // Result can be negative in case of race between messages, it is ok.
             boolean last = true;
 
             for (Counter c : remainingRows.values()) { // Check all the sources.
