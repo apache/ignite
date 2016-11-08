@@ -18,10 +18,14 @@
 namespace Apache.Ignite.Examples.Datagrid
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Transactions;
-    using Apache.Ignite.ExamplesDll.Binary;
 
     /// <summary>
     /// This example demonstrates transaction deadlock detection mechanism.
@@ -59,13 +63,47 @@ namespace Apache.Ignite.Examples.Datagrid
                     AtomicityMode = CacheAtomicityMode.Transactional
                 });
 
-                // TODO
-
                 // Clean up caches on all nodes before run.
                 cache.Clear();
 
+                var keys = Enumerable.Range(1, 100).ToArray();
+
+                // Modify keys in reverse order to cause a deadlock.
+                var task1 = Task.Factory.StartNew(() => IncrementKeys(cache, keys, 1));
+                var task2 = Task.Factory.StartNew(() => IncrementKeys(cache, keys.Reverse(), 2));
+
+                Task.WaitAll(task1, task2);
+
                 Console.WriteLine("\n>>> Example finished, press any key to exit ...");
                 Console.ReadKey();
+            }
+        }
+
+        /// <summary>
+        /// Increments the specified keys.
+        /// </summary>
+        private static void IncrementKeys(ICache<int, int> cache, IEnumerable<int> keys, int threadId)
+        {
+            var txs = cache.Ignite.GetTransactions();
+
+            try
+            {
+                using (var tx = txs.TxStart(TransactionConcurrency.Pessimistic, TransactionIsolation.ReadCommitted))
+                {
+                    foreach (var key in keys)
+                    {
+                        cache[key]++;
+                    }
+
+                    // Introduce a delay to ensure lock conflict.
+                    Thread.Sleep(TimeSpan.FromSeconds(1));
+
+                    tx.Commit();
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Update failed in thread {0}: {1}", threadId, e);
             }
         }
     }
