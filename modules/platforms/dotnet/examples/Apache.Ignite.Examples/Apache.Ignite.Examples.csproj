@@ -58,6 +58,7 @@
     <Compile Include="Datagrid\BinaryModeExample.cs" />
     <Compile Include="Datagrid\QueryExample.cs" />
     <Compile Include="Datagrid\StoreExample.cs" />
+    <Compile Include="Datagrid\TransactionDeadlockExample.cs" />
     <Compile Include="Datagrid\TransactionExample.cs" />
     <Compile Include="Events\EventsExample.cs" />
     <Compile Include="Messaging\MessagingExample.cs" />
