@@ -66,7 +66,7 @@ namespace Apache.Ignite.Examples.Datagrid
                 // Clean up caches on all nodes before run.
                 cache.Clear();
 
-                var keys = Enumerable.Range(1, 10).ToArray();
+                var keys = Enumerable.Range(1, 100).ToArray();
 
                 // Modify keys in reverse order to cause a deadlock.
                 var task1 = Task.Factory.StartNew(() => UpdateKeys(cache, keys, 1));
