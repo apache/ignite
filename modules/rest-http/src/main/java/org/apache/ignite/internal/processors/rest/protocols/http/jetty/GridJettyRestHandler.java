@@ -255,11 +255,22 @@ public class GridJettyRestHandler extends AbstractHandler {
         }
     }
 
+    private void setCross(String reqHeader,String resHeader,HttpServletRequest srvReq, HttpServletResponse res){
+        String header = srvReq.getHeader(reqHeader);
+        if(header != null) {
+            res.addHeader(resHeader,header);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void handle(String target, Request req, HttpServletRequest srvReq, HttpServletResponse res)
         throws IOException, ServletException {
         if (log.isDebugEnabled())
             log.debug("Handling request [target=" + target + ", req=" + req + ", srvReq=" + srvReq + ']');
+
+        setCross("Origin","Access-Control-Allow-Origin",srvReq,res);
+        setCross("Access-Control-Request-Headers","Access-Control-Allow-Headers",srvReq,res);
+        res.setHeader("Access-Control-Allow-Credentials","true");
 
         if (target.startsWith("/ignite")) {
             processRequest(target, srvReq, res);
@@ -394,6 +405,32 @@ public class GridJettyRestHandler extends AbstractHandler {
         }
     }
 
+    private Object getCalssParam(String classNameKey, String pKey, Map<String, Object> params) throws ClassNotFoundException, IOException {
+        String className = (String) params.get(classNameKey);
+        if (className == null) {
+            return params.get(pKey);
+        } else {
+            return params.containsKey(pKey) ? jsonMapper.readValue((String) params.get(pKey), Class.forName(className)) : null;
+        }
+    }
+
+    private List<Object> getCalssParams(String classNameKey, String keyPrefix, Map<String, Object> params) throws IOException, ClassNotFoundException {
+        assert keyPrefix != null;
+
+        List<Object> vals = new LinkedList<>();
+
+        for (int i = 1; ; i++) {
+            String key = keyPrefix + i;
+
+            if (params.containsKey(key))
+                vals.add(getCalssParam(classNameKey, key, params));
+            else
+                break;
+        }
+
+        return vals;
+    }
+
     /**
      * Creates REST request.
      *
@@ -404,7 +441,7 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @throws IgniteCheckedException If creation failed.
      */
     @Nullable private GridRestRequest createRequest(GridRestCommand cmd,
-        Map<String, Object> params, HttpServletRequest req) throws IgniteCheckedException {
+        Map<String, Object> params, HttpServletRequest req) throws IgniteCheckedException, IOException, ClassNotFoundException {
         GridRestRequest restReq;
 
         switch (cmd) {
@@ -460,11 +497,11 @@ public class GridJettyRestHandler extends AbstractHandler {
                 String cacheName = (String)params.get("cacheName");
 
                 restReq0.cacheName(F.isEmpty(cacheName) ? null : cacheName);
-                restReq0.key(params.get("key"));
-                restReq0.value(params.get("val"));
-                restReq0.value2(params.get("val2"));
+                restReq0.key(getCalssParam("keyClasses", "key", params));
+                restReq0.value(getCalssParam("valClasses", "val", params));
+                restReq0.value2(getCalssParam("valClasses", "val2", params));
 
-                Object val1 = params.get("val1");
+                Object val1 = getCalssParam("valClasses", "val1", params);
 
                 if (val1 != null)
                     restReq0.value(val1);
@@ -474,8 +511,8 @@ public class GridJettyRestHandler extends AbstractHandler {
 
                 if (cmd == CACHE_GET_ALL || cmd == CACHE_PUT_ALL || cmd == CACHE_REMOVE_ALL ||
                     cmd == CACHE_CONTAINS_KEYS) {
-                    List<Object> keys = values("k", params);
-                    List<Object> vals = values("v", params);
+                    List<Object> keys = getCalssParams("keyClasses", "k", params);
+                    List<Object> vals = getCalssParams("valClasses", "v", params);
 
                     if (keys.size() < vals.size())
                         throw new IgniteCheckedException("Number of keys must be greater or equals to number of values.");
