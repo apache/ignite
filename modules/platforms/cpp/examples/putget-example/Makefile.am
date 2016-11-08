@@ -30,9 +30,7 @@ AM_CPPFLAGS = \
     -I@top_srcdir@/../jni/os/linux/include \
     -I$(JAVA_HOME)/include \
     -I$(JAVA_HOME)/include/linux \
-    -DIGNITE_IMPL \
-    -D__STDC_LIMIT_MACROS \
-    -D__STDC_CONSTANT_MACROS
+    -DIGNITE_IMPL
 
 AM_CXXFLAGS = \
     -Wall \

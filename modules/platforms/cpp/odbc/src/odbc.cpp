@@ -854,9 +854,73 @@ namespace ignite
         if (!statement)
             return SQL_INVALID_HANDLE;
 
-        statement->GetAttribute(attr, valueBuf, valueBufLen, valueResLen);
+        if (!valueBuf)
+            return SQL_ERROR;
 
-        return statement->GetDiagnosticRecords().GetReturnCode();
+        switch (attr)
+        {
+            case SQL_ATTR_APP_ROW_DESC:
+            case SQL_ATTR_APP_PARAM_DESC:
+            case SQL_ATTR_IMP_ROW_DESC:
+            case SQL_ATTR_IMP_PARAM_DESC:
+            {
+                SQLPOINTER *val = reinterpret_cast<SQLPOINTER*>(valueBuf);
+
+                *val = static_cast<SQLPOINTER>(stmt);
+
+                break;
+            }
+
+            case SQL_ATTR_ROW_ARRAY_SIZE:
+            {
+                SQLINTEGER *val = reinterpret_cast<SQLINTEGER*>(valueBuf);
+
+                *val = static_cast<SQLINTEGER>(1);
+
+                break;
+            }
+
+            case SQL_ATTR_ROWS_FETCHED_PTR:
+            {
+                SQLULEN** val = reinterpret_cast<SQLULEN**>(valueBuf);
+
+                *val = reinterpret_cast<SQLULEN*>(statement->GetRowsFetchedPtr());
+
+                break;
+            }
+
+            case SQL_ATTR_ROW_STATUS_PTR:
+            {
+                SQLUSMALLINT** val = reinterpret_cast<SQLUSMALLINT**>(valueBuf);
+
+                *val = reinterpret_cast<SQLUSMALLINT*>(statement->GetRowStatusesPtr());
+
+                break;
+            }
+
+            case SQL_ATTR_PARAM_BIND_OFFSET_PTR:
+            {
+                SQLULEN** val = reinterpret_cast<SQLULEN**>(valueBuf);
+
+                *val = reinterpret_cast<SQLULEN*>(statement->GetParamBindOffsetPtr());
+
+                break;
+            }
+
+            case SQL_ATTR_ROW_BIND_OFFSET_PTR:
+            {
+                SQLULEN** val = reinterpret_cast<SQLULEN**>(valueBuf);
+
+                *val = reinterpret_cast<SQLULEN*>(statement->GetColumnBindOffsetPtr());
+
+                break;
+            }
+
+            default:
+                return SQL_ERROR;
+        }
+
+        return SQL_SUCCESS;
     }
 
     SQLRETURN SQLSetStmtAttr(SQLHSTMT    stmt,
@@ -879,9 +943,53 @@ namespace ignite
         if (!statement)
             return SQL_INVALID_HANDLE;
 
-        statement->SetAttribute(attr, value, valueLen);
+        switch (attr)
+        {
+            case SQL_ATTR_ROW_ARRAY_SIZE:
+            {
+                SQLULEN val = reinterpret_cast<SQLULEN>(value);
 
-        return statement->GetDiagnosticRecords().GetReturnCode();
+                LOG_MSG("Value: %d\n", val);
+
+                if (val != 1)
+                    return SQL_ERROR;
+
+                break;
+            }
+
+            case SQL_ATTR_ROWS_FETCHED_PTR:
+            {
+                statement->SetRowsFetchedPtr(reinterpret_cast<size_t*>(value));
+
+                break;
+            }
+
+            case SQL_ATTR_ROW_STATUS_PTR:
+            {
+                statement->SetRowStatusesPtr(reinterpret_cast<uint16_t*>(value));
+
+                break;
+            }
+
+            case SQL_ATTR_PARAM_BIND_OFFSET_PTR:
+            {
+                statement->SetParamBindOffsetPtr(reinterpret_cast<int*>(value));
+
+                break;
+            }
+
+            case SQL_ATTR_ROW_BIND_OFFSET_PTR:
+            {
+                statement->SetColumnBindOffsetPtr(reinterpret_cast<int*>(value));
+
+                break;
+            }
+
+            default:
+                return SQL_ERROR;
+        }
+
+        return SQL_SUCCESS;
     }
 
     SQLRETURN SQLPrimaryKeys(SQLHSTMT       stmt,

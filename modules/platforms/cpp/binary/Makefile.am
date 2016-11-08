@@ -26,9 +26,7 @@ AM_CPPFLAGS = \
     -I$(srcdir)/include \
     -I@top_srcdir@/common/include \
     -I@top_srcdir@/common/os/linux/include \
-    -DIGNITE_IMPL \
-    -D__STDC_LIMIT_MACROS \
-    -D__STDC_CONSTANT_MACROS
+    -DIGNITE_IMPL
 
 AM_CXXFLAGS = \
     -Wall \

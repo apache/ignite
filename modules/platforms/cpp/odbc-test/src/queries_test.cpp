@@ -200,8 +200,6 @@ struct QueriesTestSuiteFixture
             "floatField, doubleField, boolField, guidField, dateField, timestampField FROM TestType";
 
         ret = SQLExecDirect(stmt, reinterpret_cast<SQLCHAR*>(request), SQL_NTS);
-        if (!SQL_SUCCEEDED(ret))
-            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         if (!SQL_SUCCEEDED(ret))
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
@@ -366,8 +364,6 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
         "floatField, doubleField, boolField, guidField, dateField, timestampField FROM TestType";
 
     ret = SQLExecDirect(stmt, request, SQL_NTS);
-    if (!SQL_SUCCEEDED(ret))
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
@@ -464,8 +460,6 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
         "floatField, doubleField, boolField, guidField, dateField, timestampField FROM TestType";
 
     ret = SQLExecDirect(stmt, request, SQL_NTS);
-    if (!SQL_SUCCEEDED(ret))
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
     ret = SQLFetch(stmt);
     if (!SQL_SUCCEEDED(ret))
@@ -528,8 +522,6 @@ BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
         "floatField, doubleField, boolField, guidField, dateField, timestampField FROM TestType";
 
     ret = SQLExecDirect(stmt, request, SQL_NTS);
-    if (!SQL_SUCCEEDED(ret))
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
     ret = SQLFetch(stmt);
     if (!SQL_SUCCEEDED(ret))
@@ -673,5 +665,6 @@ BOOST_AUTO_TEST_CASE(TestDataAtExecution)
     ret = SQLFetch(stmt);
     BOOST_CHECK(ret == SQL_NO_DATA);
 }
+
 
 BOOST_AUTO_TEST_SUITE_END()
