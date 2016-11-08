@@ -631,7 +631,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         while (true) {
             int cnt = evictGuard.get();
 
-            if (cnt < 0)
+            if (cnt != 0)
                 return false;
 
             if (evictGuard.compareAndSet(cnt, cnt + 1))
