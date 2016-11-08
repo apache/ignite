@@ -61,7 +61,8 @@ public class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdate
         GridNearAtomicUpdateRequest updateReq,
         GridNearAtomicUpdateResponse updateRes
     ) {
-        super(cctx, completionCb, writeVer, updateReq, updateRes, cctx.config().getBackups());
+        super(cctx, completionCb, writeVer, updateReq, updateRes,
+            Math.min(cctx.grid().cluster().nodes().size(), cctx.config().getBackups()));
     }
 
     /** {@inheritDoc} */
