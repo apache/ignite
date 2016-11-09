@@ -21,7 +21,6 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -791,6 +790,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         for (ClusterNode node : nodes) {
             try {
+                assert !node.equals(cctx.localNode());
+
                 cctx.io().sendNoRetry(node, m, SYSTEM_POOL);
             }
             catch (ClusterTopologyCheckedException ignore) {
@@ -998,6 +999,23 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
         }
 
+        for (GridClientPartitionTopology top : clientTops.values()) {
+            if (m.partitions() != null && m.partitions().containsKey(top.cacheId()))
+                continue;
+
+            GridDhtPartitionMap2 locMap = top.localPartitionMap();
+
+            addPartitionMap(m,
+                dupData,
+                compress,
+                top.cacheId(),
+                locMap,
+                top.similarAffinityKey());
+
+            if (sndCounters)
+                m.partitionUpdateCounters(top.cacheId(), top.updateCounters(true));
+        }
+
         return m;
     }
 
@@ -1010,7 +1028,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param affKey Cache affinity key.
      */
     private void addPartitionMap(GridDhtPartitionsSingleMessage m,
-        Map<Object, T2<Integer,Map<Integer, GridDhtPartitionState>>> dupData,
+        Map<Object, T2<Integer, Map<Integer, GridDhtPartitionState>>> dupData,
         boolean compress,
         Integer cacheId,
         GridDhtPartitionMap2 map,
@@ -1023,7 +1041,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (state0 != null && state0.get2().equals(map.map())) {
                 dupDataCache = state0.get1();
 
-                map.map(U.<Integer, GridDhtPartitionState>newHashMap(0));
+                map = map.emptyCopy();
             }
             else
                 dupData.put(affKey, new T2<>(cacheId, map.map()));

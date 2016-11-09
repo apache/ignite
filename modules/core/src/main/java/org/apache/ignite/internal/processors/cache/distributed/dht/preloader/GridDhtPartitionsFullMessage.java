@@ -234,12 +234,11 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
                 for (Map.Entry<Integer, Integer> e : dupPartsData.entrySet()) {
                     GridDhtPartitionFullMap map1 = parts.get(e.getKey());
-
-                    assert map1 != null : e.getKey();
-
                     GridDhtPartitionFullMap map2 = parts.get(e.getValue());
 
+                    assert map1 != null : e.getKey();
                     assert map2 != null : e.getValue();
+                    assert map1.size() == map2.size();
 
                     for (Map.Entry<UUID, GridDhtPartitionMap2> e0 : map2.entrySet()) {
                         GridDhtPartitionMap2 partMap1 = map1.get(e0.getKey());

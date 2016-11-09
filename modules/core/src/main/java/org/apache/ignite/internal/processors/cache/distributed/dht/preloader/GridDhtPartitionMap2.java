@@ -61,6 +61,13 @@ public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, E
     private volatile int moving;
 
     /**
+     * Empty constructor required for {@link Externalizable}.
+     */
+    public GridDhtPartitionMap2() {
+        // No-op.
+    }
+
+    /**
      * @param nodeId Node ID.
      * @param updateSeq Update sequence number.
      * @param top Topology version.
@@ -116,14 +123,7 @@ public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, E
             updateSeq,
             top,
             U.<Integer, GridDhtPartitionState>newHashMap(0),
-            moving);
-    }
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridDhtPartitionMap2() {
-        // No-op.
+            0);
     }
 
     /**

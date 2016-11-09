@@ -972,6 +972,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private void sendAllPartitions(Collection<ClusterNode> nodes) throws IgniteCheckedException {
         GridDhtPartitionsFullMessage m = createPartitionsMessage(nodes, true);
 
+        assert !nodes.contains(cctx.localNode());
+
         if (log.isDebugEnabled())
             log.debug("Sending full partition map [nodeIds=" + F.viewReadOnly(nodes, F.node2id()) +
                 ", exchId=" + exchId + ", msg=" + m + ']');

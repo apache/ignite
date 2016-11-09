@@ -114,6 +114,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
         if (dupDataCache != null) {
             assert F.isEmpty(locMap.map());
+            assert parts.containsKey(dupDataCache);
 
             if (dupPartsData == null)
                 dupPartsData = new HashMap<>();
