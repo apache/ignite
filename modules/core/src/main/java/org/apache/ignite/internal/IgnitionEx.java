@@ -1641,6 +1641,7 @@ public class IgnitionEx {
             }
 
             validateThreadPoolSize(cfg.getPublicThreadPoolSize(), "public");
+
             execSvc = new IgniteThreadPoolExecutor(
                 "pub",
                 cfg.getGridName(),
@@ -1654,6 +1655,7 @@ public class IgnitionEx {
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
             validateThreadPoolSize(cfg.getSystemThreadPoolSize(), "system");
+
             sysExecSvc = new IgniteThreadPoolExecutor(
                 "sys",
                 cfg.getGridName(),
@@ -1669,6 +1671,7 @@ public class IgnitionEx {
             // Note, that we do not pre-start threads here as management pool may
             // not be needed.
             validateThreadPoolSize(cfg.getManagementThreadPoolSize(), "management");
+
             mgmtExecSvc = new IgniteThreadPoolExecutor(
                 "mgmt",
                 cfg.getGridName(),
@@ -1696,6 +1699,7 @@ public class IgnitionEx {
 
             // Note that we do not pre-start threads here as igfs pool may not be needed.
             validateThreadPoolSize(cfg.getIgfsThreadPoolSize(), "IGFS");
+
             igfsExecSvc = new IgniteThreadPoolExecutor(
                 cfg.getIgfsThreadPoolSize(),
                 cfg.getIgfsThreadPoolSize(),
@@ -1707,7 +1711,8 @@ public class IgnitionEx {
             igfsExecSvc.allowCoreThreadTimeOut(true);
 
             // Note that we do not pre-start threads here as this pool may not be needed.
-            validateThreadPoolSize(cfg.getAsyncCallbackPoolSize(), "callback");
+            validateThreadPoolSize(cfg.getAsyncCallbackPoolSize(), "async callback");
+
             callbackExecSvc = new IgniteStripedThreadPoolExecutor(
                 cfg.getAsyncCallbackPoolSize(),
                 cfg.getGridName(),
@@ -1715,6 +1720,7 @@ public class IgnitionEx {
 
             if (myCfg.getConnectorConfiguration() != null) {
                 validateThreadPoolSize(myCfg.getConnectorConfiguration().getThreadPoolSize(), "connector");
+
                 restExecSvc = new IgniteThreadPoolExecutor(
                     "rest",
                     myCfg.getGridName(),
@@ -1728,6 +1734,7 @@ public class IgnitionEx {
             }
 
             validateThreadPoolSize(myCfg.getUtilityCacheThreadPoolSize(), "utility cache");
+
             utilityCacheExecSvc = new IgniteThreadPoolExecutor(
                 "utility",
                 cfg.getGridName(),
@@ -1739,6 +1746,7 @@ public class IgnitionEx {
             utilityCacheExecSvc.allowCoreThreadTimeOut(true);
 
             validateThreadPoolSize(myCfg.getMarshallerCacheThreadPoolSize(), "marshaller cache");
+
             marshCacheExecSvc = new IgniteThreadPoolExecutor(
                 "marshaller-cache",
                 cfg.getGridName(),
@@ -1847,19 +1855,15 @@ public class IgnitionEx {
         }
 
         /**
-         * Should be used before every call of
-         * {@link IgniteThreadPoolExecutor#IgniteThreadPoolExecutor(int, int, long, BlockingQueue)}
-         * - like constructor to get right definition of an invalid thread pool size
-         * @param poolSize an actual value in the configuration
-         * @param poolName a name of the pool like 'management'
-         * @throws IgniteCheckedException If the poolSize is wrong
+         * @param poolSize an actual value in the configuration.
+         * @param poolName a name of the pool like 'management'.
+         * @throws IgniteCheckedException If the poolSize is wrong.
          */
         private static void validateThreadPoolSize(int poolSize, String poolName)
             throws IgniteCheckedException {
-
             if (poolSize <= 0) {
                 throw new IgniteCheckedException("Invalid " + poolName + " thread pool size" +
-                        " (must be greater than 0), actual value: " + poolSize);
+                    " (must be greater than 0), actual value: " + poolSize);
             }
         }
 
@@ -2045,7 +2049,7 @@ public class IgnitionEx {
             if (userCaches != null && userCaches.length > 0) {
                 if (!U.discoOrdered(cfg.getDiscoverySpi()) && !U.relaxDiscoveryOrdered())
                     throw new IgniteCheckedException("Discovery SPI implementation does not support node ordering and " +
-                        "cannot be used with cache (use SPI with @GridDiscoverySpiOrderSupport annotation, " +
+                        "cannot be used with cache (use SPI with @DiscoverySpiOrderSupport annotation, " +
                         "like TcpDiscoverySpi)");
 
                 for (CacheConfiguration ccfg : userCaches) {

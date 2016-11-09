@@ -26,85 +26,70 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Test for wrong values of xxxThreadPoolSize
  */
 public class IgniteThreadPoolSizeTest extends GridCommonAbstractTest {
-
     /** Wrong thread pool size value for testing */
     private static final int WRONG_VALUE = 0;
 
-    /** Factory method for creating an IgniteConfiguration */
-    private IgniteConfiguration cfg() {
-        return new IgniteConfiguration();
-    }
-
-    /** Performs testing for wrong tread pool size
-     * @param cfg an IgniteConfiguration with the only one thread pool size assigned with the WRONG_VALUE
-     * @throws Exception If starting the Ignition doesn't throw an exception related to the 'thread pool size'
+    /**
+     * @return Ignite configuration.
      */
-    private void testWrongPoolSize(IgniteConfiguration cfg) throws Exception {
-        try {
-            Ignition.start(cfg);
-            throw new Exception("test failed");
-        }
-        catch (IgniteException ex) {
-            if (ex.getMessage() == null ||
-                !ex.getMessage().contains("thread pool size"))
-                throw ex;
-        }
+    private IgniteConfiguration configuration() {
+        return new IgniteConfiguration();
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAsyncCallbackPoolSize() throws Exception {
-        testWrongPoolSize(cfg().setAsyncCallbackPoolSize(WRONG_VALUE));
+        testWrongPoolSize(configuration().setAsyncCallbackPoolSize(WRONG_VALUE));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testIgfsThreadPoolSize() throws Exception {
-        testWrongPoolSize(cfg().setIgfsThreadPoolSize(WRONG_VALUE));
+        testWrongPoolSize(configuration().setIgfsThreadPoolSize(WRONG_VALUE));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testManagementThreadPoolSize() throws Exception {
-        testWrongPoolSize(cfg().setManagementThreadPoolSize(WRONG_VALUE));
+        testWrongPoolSize(configuration().setManagementThreadPoolSize(WRONG_VALUE));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPeerClassLoadingThreadPoolSize() throws Exception {
-        testWrongPoolSize(cfg().setPeerClassLoadingThreadPoolSize(WRONG_VALUE));
+        testWrongPoolSize(configuration().setPeerClassLoadingThreadPoolSize(WRONG_VALUE));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPublicThreadPoolSize() throws Exception {
-        testWrongPoolSize(cfg().setPublicThreadPoolSize(WRONG_VALUE));
+        testWrongPoolSize(configuration().setPublicThreadPoolSize(WRONG_VALUE));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testRebalanceThreadPoolSize() throws Exception {
-        testWrongPoolSize(cfg().setRebalanceThreadPoolSize(WRONG_VALUE));
+        testWrongPoolSize(configuration().setRebalanceThreadPoolSize(WRONG_VALUE));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testSystemThreadPoolSize() throws Exception {
-        testWrongPoolSize(cfg().setSystemThreadPoolSize(WRONG_VALUE));
+        testWrongPoolSize(configuration().setSystemThreadPoolSize(WRONG_VALUE));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testUtilityCachePoolSize() throws Exception {
-        testWrongPoolSize(cfg().setUtilityCachePoolSize(WRONG_VALUE));
+        testWrongPoolSize(configuration().setUtilityCachePoolSize(WRONG_VALUE));
     }
 
     /**
@@ -112,15 +97,35 @@ public class IgniteThreadPoolSizeTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("deprecated")
     public void testMarshallerCachePoolSize() throws Exception {
-        testWrongPoolSize(cfg().setMarshallerCachePoolSize(WRONG_VALUE));
+        testWrongPoolSize(configuration().setMarshallerCachePoolSize(WRONG_VALUE));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testConnectorThreadPoolSize() throws Exception {
-        final IgniteConfiguration cfg = cfg();
+        final IgniteConfiguration cfg = configuration();
+
         cfg.getConnectorConfiguration().setThreadPoolSize(WRONG_VALUE);
+
         testWrongPoolSize(cfg);
+    }
+
+    /**
+     * Performs testing for wrong tread pool size.
+     *
+     * @param cfg an IgniteConfiguration with the only one thread pool size assigned with the WRONG_VALUE.
+     * @throws Exception If failed.
+     */
+    private void testWrongPoolSize(IgniteConfiguration cfg) throws Exception {
+        try {
+            Ignition.start(cfg);
+
+            fail();
+        }
+        catch (IgniteException ex) {
+            assertNotNull(ex.getMessage());
+            assertTrue(ex.getMessage().contains("thread pool size"));
+        }
     }
 }
