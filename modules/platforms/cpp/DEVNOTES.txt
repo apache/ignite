@@ -50,7 +50,6 @@ Common Requirements:
  * Java Development Kit (JDK) must be installed: https://java.com/en/download/index.jsp
  * JAVA_HOME environment variable must be set pointing to Java installation directory.
  * IGNITE_HOME environment variable must be set to Ignite installation directory.
- * WiX Toolset to generate ODBC installers, with "bin" directory added to PATH.
 
 Building binaries:
 
@@ -61,8 +60,9 @@ Building binaries:
    with the right mouse button and choosing "Build" option.
    
 Building installers:
- * First build ODBC drivers: Release|x64 for 64-bit version and Release|Win32
-   for 32-bit version.
+ * Install WiX Toolset if you do not have it yet.
+ * Add WiX Toolset "bin" directory to your PATH environmental variable.
+ * Build ODBC drivers: Release|x64 for 64-bit version and Release|Win32 for 32-bit version.
  * Open terminal and navigate to the directory $IGNITE_HOME/platforms/cpp/odbc/install
  * Execute the following commands one by one to build 32-bit driver:
     * candle.exe ignite-odbc-x86.wxs
