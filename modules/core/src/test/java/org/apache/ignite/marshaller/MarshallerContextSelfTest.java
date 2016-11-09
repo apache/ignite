@@ -39,7 +39,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClassName() throws Exception {
-        File workDir = U.resolveWorkDirectory("marshaller", false);
+        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false);
 
         final MarshallerContextImpl.ContinuousQueryListener queryListener =
                 new MarshallerContextImpl.ContinuousQueryListener(log, workDir);
@@ -67,7 +67,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testOnUpdated() throws Exception {
-        File workDir = U.resolveWorkDirectory("marshaller", false);
+        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false);
 
         final MarshallerContextImpl.ContinuousQueryListener queryListener =
                 new MarshallerContextImpl.ContinuousQueryListener(log, workDir);
