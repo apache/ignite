@@ -205,6 +205,17 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
 
             Assert.assertEquals("1", jcache().get("setKey1"));
             Assert.assertEquals("b0", jcache().get("setKey2"));
+
+            // test options.
+            jedis.set("setKey1", "2", "nx");
+            jedis.set("setKey3", "3", "nx");
+            Assert.assertEquals("1", jcache().get("setKey1"));
+            Assert.assertEquals("3", jcache().get("setKey3"));
+
+            jedis.set("setKey1", "2", "xx");
+            jedis.set("setKey4", "4", "xx");
+            Assert.assertEquals("2", jcache().get("setKey1"));
+            Assert.assertNull(jcache().get("setKey4"));
         }
     }
 

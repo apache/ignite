@@ -32,6 +32,8 @@ import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PUT;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PUT_IF_ABSENT;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REPLACE;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.SET;
 
 /**
@@ -75,15 +77,52 @@ public class GridRedisSetCommandHandler extends GridRedisThruRestCommandHandler 
         restReq.value(msg.aux(VAL_POS));
 
         if (msg.messageSize() >= 4) {
-            // TODO: handle options.
+
+            List<String> params = msg.aux();
+
+            // get rid of SET value.
+            params.remove(0);
+
+            if (isNx(params))
+                restReq.command(CACHE_PUT_IF_ABSENT);
+            else if (isXx(params))
+                restReq.command(CACHE_REPLACE);
+
+            // TODO: handle expiration options.
         }
 
         return restReq;
     }
 
+    /**
+     * @param params Command parameters.
+     * @return True if NX option is available, otherwise false.
+     */
+    private boolean isNx(List<String> params) {
+        if (params.size() >= 3)
+            return params.get(0).equalsIgnoreCase("nx") || params.get(2).equalsIgnoreCase("nx");
+        else
+            return params.get(0).equalsIgnoreCase("nx");
+    }
+
+    /**
+     * @param params Command parameters.
+     * @return True if XX option is available, otherwise false.
+     */
+    private boolean isXx(List<String> params) {
+        if (params.size() >= 3)
+            return params.get(0).equalsIgnoreCase("xx") || params.get(2).equalsIgnoreCase("xx");
+        else
+            return params.get(0).equalsIgnoreCase("xx");
+    }
+
     /** {@inheritDoc} */
     @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
-        return (restRes.getResponse() == null ? GridRedisProtocolParser.nil()
-            : GridRedisProtocolParser.OkString());
+        Object resp = restRes.getResponse();
+
+        if (resp == null)
+            return GridRedisProtocolParser.nil();
+
+        return (!(boolean)resp ? GridRedisProtocolParser.nil() : GridRedisProtocolParser.OkString());
     }
 }

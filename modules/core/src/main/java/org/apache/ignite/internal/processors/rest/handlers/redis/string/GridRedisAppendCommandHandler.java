@@ -78,7 +78,7 @@ public class GridRedisAppendCommandHandler extends GridRedisThruRestCommandHandl
 
         Object resp = hnd.handle(appendReq).getResponse();
         if (resp != null && !(boolean)resp) {
-            // append on existing key.
+            // append on non-existing key.
             GridRestCacheRequest setReq = new GridRestCacheRequest();
 
             setReq.clientId(msg.clientId());
