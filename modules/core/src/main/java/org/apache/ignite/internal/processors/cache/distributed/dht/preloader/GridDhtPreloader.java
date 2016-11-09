@@ -58,7 +58,6 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPC;
-import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -769,12 +768,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                             GridDhtLocalPartition part = partsToEvict.poll();
 
                             if (part != null)
-                                try {
-                                    part.tryEvict();
-                                }
-                                catch (Throwable ex) {
-                                    LT.error(log, ex, "Partition eviction failed, this can cause grid hang.");
-                                }
+                                part.tryEvict();
                         }
                         finally {
                             if (!partsToEvict.isEmptyx())
