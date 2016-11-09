@@ -44,9 +44,6 @@ public class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdate
     /** Entries with readers. */
     private GridDhtCacheEntry nearReaderEntry;
 
-    /** Continuous query closure. */
-    private CI1<Boolean> cntQryClsr;
-
     /**
      * @param cctx Cache context.
      * @param completionCb Callback to invoke when future is completed.
@@ -63,14 +60,6 @@ public class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdate
     ) {
         super(cctx, completionCb, writeVer, updateReq, updateRes,
             Math.min(cctx.grid().cluster().nodes().size(), cctx.config().getBackups()));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void addContinuousQueryClosure(CI1<Boolean> clsr) {
-        assert !isDone() : this;
-        assert cntQryClsr == null : cntQryClsr;
-
-        cntQryClsr = clsr;
     }
 
     /** {@inheritDoc} */
@@ -116,8 +105,10 @@ public class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdate
             if (!suc)
                 updateRes.addFailedKey(key, err);
 
-            if (cntQryClsr != null)
-                cntQryClsr.apply(suc);
+            if (cntQryClsrs != null) {
+                for (CI1<Boolean> clsr : cntQryClsrs)
+                    clsr.apply(suc);
+            }
 
             if (updateReq.writeSynchronizationMode() == FULL_SYNC)
                 completionCb.apply(updateReq, updateRes);

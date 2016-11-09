@@ -48,8 +48,6 @@ public class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture
     /** Entries with readers. */
     private Map<KeyCacheObject, GridDhtCacheEntry> nearReadersEntries;
 
-    /** Continuous query closures. */
-    protected Collection<CI1<Boolean>> cntQryClsrs;
 
     /**
      * @param cctx Cache context.
@@ -68,16 +66,6 @@ public class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture
         super(cctx, completionCb, writeVer, updateReq, updateRes, updateReq.keys().size());
 
         keys = new ArrayList<>(updateReq.keys().size());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void addContinuousQueryClosure(CI1<Boolean> clsr) {
-        assert !isDone() : this;
-
-        if (cntQryClsrs == null)
-            cntQryClsrs = new ArrayList<>(10);
-
-        cntQryClsrs.add(clsr);
     }
 
     /** {@inheritDoc} */

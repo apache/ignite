@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -89,6 +91,9 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
     @GridToStringInclude
     protected final Map<UUID, GridDhtAtomicUpdateRequest> mappings;
 
+    /** Continuous query closures. */
+    protected Collection<CI1<Boolean>> cntQryClsrs;
+
     /** */
     protected final boolean waitForExchange;
 
@@ -137,7 +142,14 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
     /**
      * @param clsr Continuous query closure.
      */
-    public abstract void addContinuousQueryClosure(CI1<Boolean> clsr);
+    public void addContinuousQueryClosure(CI1<Boolean> clsr) {
+        assert !isDone() : this;
+
+        if (cntQryClsrs == null)
+            cntQryClsrs = new ArrayList<>(10);
+
+        cntQryClsrs.add(clsr);
+    }
 
     /**
      * @param entry Entry to map.
