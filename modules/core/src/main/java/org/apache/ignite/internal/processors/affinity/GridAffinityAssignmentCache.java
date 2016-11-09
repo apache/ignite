@@ -108,7 +108,7 @@ public class GridAffinityAssignmentCache {
     private final AtomicInteger fullHistSize = new AtomicInteger();
 
     /** */
-    private final SimilarAffinityKey similarAffKey;
+    private final Object similarAffKey;
 
     /**
      * Constructs affinity cached calculations.
@@ -147,9 +147,14 @@ public class GridAffinityAssignmentCache {
         affCache = new ConcurrentSkipListMap<>();
         head = new AtomicReference<>(new GridAffinityAssignment(AffinityTopologyVersion.NONE));
 
-        similarAffKey = new SimilarAffinityKey(aff.getClass(), nodeFilter.getClass(), backups, partsCnt);
+        similarAffKey = ctx.affinity().similaryAffinityKey(aff, nodeFilter, backups, partsCnt);
+
+        assert similarAffKey != null;
     }
 
+    /**
+     * @return Key to find caches with similar affinity.
+     */
     public Object similarAffinityKey() {
         return similarAffKey;
     }
@@ -610,59 +615,6 @@ public class GridAffinityAssignmentCache {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(AffinityReadyFuture.class, this);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class SimilarAffinityKey {
-        /** */
-        private final int backups;
-
-        /** */
-        private final Class<?> affFuncCls;
-
-        /** */
-        private final Class<?> filterCls;
-
-        /** */
-        private final int partsCnt;
-
-        /** */
-        private final int hash;
-
-        public SimilarAffinityKey(Class<?> affFuncCls, Class<?> filterCls, int backups, int partsCnt) {
-            this.backups = backups;
-            this.affFuncCls = affFuncCls;
-            this.filterCls = filterCls;
-            this.partsCnt = partsCnt;
-
-            int hash = backups;
-            hash = 31 * hash + affFuncCls.hashCode();
-            hash = 31 * hash + filterCls.hashCode();
-            hash= 31 * hash + partsCnt;
-
-            this.hash = hash;
-        }
-
-        @Override public int hashCode() {
-            return hash;
-        }
-
-        @Override public boolean equals(Object o) {
-            if (o == this)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            SimilarAffinityKey key = (SimilarAffinityKey)o;
-
-            return backups == key.backups &&
-                affFuncCls == key.affFuncCls &&
-                filterCls == key.filterCls &&
-                partsCnt == key.partsCnt;
         }
     }
 }
