@@ -118,11 +118,6 @@ public class PoolProcessor extends GridProcessorAdapter {
 
                 return ctx.utilityCachePool();
 
-            case GridIoPolicy.MARSH_CACHE_POOL:
-                assert ctx.marshallerCachePool() != null : "Marshaller cache pool is not configured.";
-
-                return ctx.marshallerCachePool();
-
             case GridIoPolicy.IGFS_POOL:
                 assert ctx.getIgfsExecutorService() != null : "IGFS pool is not configured.";
 

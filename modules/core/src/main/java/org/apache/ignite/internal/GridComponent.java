@@ -17,13 +17,16 @@
 
 package org.apache.ignite.internal;
 
-import java.io.Serializable;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer.GridDiscoveryData;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer.NewNodeDiscoveryData;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.UUID;
 
 /**
  * Interface for all main internal Ignite components (managers and processors).
@@ -43,7 +46,10 @@ public interface GridComponent {
         PLUGIN,
 
         /** */
-        CLUSTER_PROC
+        CLUSTER_PROC,
+
+        /** */
+        MARSHALLER_PROC
     }
 
     /**
@@ -78,24 +84,27 @@ public interface GridComponent {
     public void onKernalStop(boolean cancel);
 
     /**
-     * Gets discovery data object that will be sent to new node
-     * during discovery process.
+     * Collects discovery data both on joining node before sending {@link org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage} request and on nodes already in grid on receiving {@link org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage}.
      *
-     * @param nodeId ID of new node that joins topology.
-     * @return Discovery data object or {@code null} if there is nothing
-     *      to send for this component.
-     */
-    @Nullable public Serializable collectDiscoveryData(UUID nodeId);
+     * @param dataContainer container object to store discovery data in.
+     *
+     */public void collectDiscoveryData(DiscoveryDataContainer dataContainer);
 
     /**
      * Receives discovery data object from remote nodes (called
      * on new node during discovery process).
      *
-     * @param joiningNodeId Joining node ID.
-     * @param rmtNodeId Remote node ID for which data is provided.
-     * @param data Discovery data object or {@code null} if nothing was
+     * @param data {@link DiscoveryDataContainer.GridDiscoveryData} interface to retrieve discovery data collected on remote nodes (data common for all nodes in grid and specific for each node).
      */
-    public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Serializable data);
+    public void onGridDataReceived(GridDiscoveryData data);
+
+    /**
+     * Method is called on nodes that are already in grid (not on joining node).
+     * It receives discovery data from joining node.
+     *
+     * @param data {@link DiscoveryDataContainer.NewNodeDiscoveryData} interface to retrieve discovery data of joining node.
+     */
+    public void onJoiningNodeDataReceived(NewNodeDiscoveryData data);
 
     /**
      * Prints memory statistics (sizes of internal structures, etc.).

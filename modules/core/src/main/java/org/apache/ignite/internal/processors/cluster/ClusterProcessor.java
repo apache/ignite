@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cluster;
 
 import java.io.Serializable;
 import java.lang.ref.WeakReference;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
@@ -36,9 +37,12 @@ import org.apache.ignite.internal.util.GridTimerTask;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer.GridDiscoveryData;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
+import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CLUSTER_PROC;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 
 /**
@@ -98,27 +102,40 @@ public class ClusterProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
-        return DiscoveryDataExchangeType.CLUSTER_PROC;
+        return CLUSTER_PROC;
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public Serializable collectDiscoveryData(UUID nodeId) {
+    @Override
+    public void collectDiscoveryData(DiscoveryDataContainer dataContainer) {
         HashMap<String, Object> map = new HashMap<>();
 
         map.put(ATTR_UPDATE_NOTIFIER_STATUS, notifyEnabled.get());
 
-        return map;
+        dataContainer.addNodeSpecificData(CLUSTER_PROC.ordinal(), map);
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Serializable data) {
-        if (joiningNodeId.equals(ctx.localNodeId())) {
-            Map<String, Object> map = (Map<String, Object>)data;
+    @Override
+    public void onGridDataReceived(GridDiscoveryData data) {
+        Map<UUID, Serializable> nodeSpecData = data.nodeSpecificData();
 
-            if (map != null && map.containsKey(ATTR_UPDATE_NOTIFIER_STATUS))
-                notifyEnabled.set((Boolean)map.get(ATTR_UPDATE_NOTIFIER_STATUS));
+        if (nodeSpecData != null) {
+            Boolean lstFlag = findLastFlag(nodeSpecData.values());
+            if (lstFlag != null)
+                notifyEnabled.set(lstFlag);
         }
+    }
+
+    private Boolean findLastFlag(Collection<Serializable> vals) {
+        Boolean flag = null;
+        for (Serializable ser : vals) {
+            if (ser != null) {
+                Map<String, Object> map = (Map<String, Object>) ser;
+
+                if (map.containsKey(ATTR_UPDATE_NOTIFIER_STATUS))
+                    flag = (Boolean) map.get(ATTR_UPDATE_NOTIFIER_STATUS);
+            }
+        }
+        return flag;
     }
 
     /** {@inheritDoc} */

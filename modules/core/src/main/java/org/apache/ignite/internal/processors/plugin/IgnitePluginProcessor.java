@@ -39,7 +39,12 @@ import org.apache.ignite.plugin.Extension;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer.GridDiscoveryData;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer.NewNodeDiscoveryData;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.PLUGIN;
 
 /**
  *
@@ -148,40 +153,67 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
-        return DiscoveryDataExchangeType.PLUGIN;
+        return PLUGIN;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Serializable collectDiscoveryData(UUID nodeId) {
-        HashMap<String, Serializable> discData = null;
+    @Override
+    public void collectDiscoveryData(DiscoveryDataContainer dataContainer) {
+        HashMap<String, Serializable> pluginsData = null;
 
         for (Map.Entry<String, PluginProvider> e : plugins.entrySet()) {
-            Serializable data = e.getValue().provideDiscoveryData(nodeId);
+            Serializable data = e.getValue().provideDiscoveryData(dataContainer.getJoiningNodeId());
 
             if (data != null) {
-                if (discData == null)
-                    discData = new HashMap<>();
+                if (pluginsData == null)
+                    pluginsData = new HashMap<>();
 
-                discData.put(e.getKey(), data);
+                pluginsData.put(e.getKey(), data);
             }
         }
 
-        return discData;
+        if (pluginsData != null) {
+            int cmpId = PLUGIN.ordinal();
+
+            dataContainer.addNodeSpecificData(cmpId, pluginsData);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void onDiscoveryDataReceived(UUID nodeId, UUID rmtNodeId, Serializable data) {
-        Map<String, Serializable> discData = (Map<String, Serializable>)data;
+    @Override
+    public void onJoiningNodeDataReceived(NewNodeDiscoveryData data) {
+        if (data.hasJoiningNodeData()) {
+            Map<String, Serializable> pluginsData = (Map<String, Serializable>) data.joiningNodeData();
 
-        if (discData != null) {
-            for (Map.Entry<String, Serializable> e : discData.entrySet()) {
-                PluginProvider provider = plugins.get(e.getKey());
+            applyPluginsData(data.joiningNodeId(), pluginsData);
+        }
+    }
 
-                if (provider != null)
-                    provider.receiveDiscoveryData(nodeId, e.getValue());
-                else
-                    U.warn(log, "Received discovery data for unknown plugin: " + e.getKey());
-            }
+    /** {@inheritDoc} */
+    @Override
+    public void onGridDataReceived(GridDiscoveryData data) {
+        Map<UUID, Serializable> nodeSpecificData = data.nodeSpecificData();
+
+        if (nodeSpecificData != null) {
+            UUID joiningNodeId = data.joiningNodeId();
+
+            for (Serializable v : nodeSpecificData.values())
+                if (v != null) {
+                    Map<String, Serializable> pluginsData = (Map<String, Serializable>) v;
+
+                    applyPluginsData(joiningNodeId, pluginsData);
+                }
+        }
+    }
+
+    private void applyPluginsData(UUID nodeId, Map<String, Serializable> pluginsData) {
+        for (Map.Entry<String, Serializable> e : pluginsData.entrySet()) {
+            PluginProvider provider = plugins.get(e.getKey());
+
+            if (provider != null)
+                provider.receiveDiscoveryData(nodeId, e.getValue());
+            else
+                U.warn(log, "Received discovery data for unknown plugin: " + e.getKey());
         }
     }
 

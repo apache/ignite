@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors;
 
-import java.io.Serializable;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -28,6 +26,9 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer.GridDiscoveryData;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer.NewNodeDiscoveryData;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -78,13 +79,16 @@ public abstract class GridProcessorAdapter implements GridProcessor {
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override @Nullable public Serializable collectDiscoveryData(UUID nodeId) {
-        return null;
+    @Override public void collectDiscoveryData(DiscoveryDataContainer dataContainer) {
     }
 
-    /** {@inheritDoc} */
-    @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Serializable data) {
+    @Override
+    public void onGridDataReceived(GridDiscoveryData data) {
+        // No-op.
+    }
+
+    @Override
+    public void onJoiningNodeDataReceived(NewNodeDiscoveryData data) {
         // No-op.
     }
 

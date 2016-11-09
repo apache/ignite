@@ -85,6 +85,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryStatistics;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -92,11 +93,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinde
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAuthFailedMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryEnsureDelivery;
+import org.apache.ignite.spi.discovery.tcp.messages.*;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -1666,67 +1663,45 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         return msg.error().contains("versions are not compatible");
     }
 
-    /**
-     * @param nodeId Node ID.
-     * @return Marshalled exchange data.
-     */
-    protected Map<Integer, byte[]> collectExchangeData(UUID nodeId) {
+    protected DiscoveryDataContainer collectExchangeData(DiscoveryDataContainer data) {
         if (locNode.isDaemon())
-            return Collections.emptyMap();
+            return data;
 
-        Map<Integer, Serializable> data = exchange.collect(nodeId);
+        exchange.collect(data);
 
-        assert data != null;
+        data.marshalGridData(locNode.id(), marshaller(), log);
 
-        Map<Integer, byte[]> data0 = U.newHashMap(data.size());
+        return data;
+    }
 
-        for (Map.Entry<Integer, Serializable> entry : data.entrySet()) {
+    private void marshalDiscoveryData(Map<Integer, byte[]> marshalledData, Map<Integer, Serializable> dataToMarshal) {
+        for (Map.Entry<Integer, Serializable> entry : dataToMarshal.entrySet()) {
             try {
                 byte[] bytes = U.marshal(marshaller(), entry.getValue());
 
-                data0.put(entry.getKey(), bytes);
+                marshalledData.put(entry.getKey(), bytes);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to marshal discovery data " +
-                    "[comp=" + entry.getKey() + ", data=" + entry.getValue() + ']', e);
+                        "[comp=" + entry.getKey() + ", data=" + entry.getValue() + ']', e);
             }
         }
-
-        return data0;
     }
 
     /**
-     * @param joiningNodeID Joining node ID.
-     * @param nodeId Remote node ID for which data is provided.
-     * @param data Collection of marshalled discovery data objects from different components.
+     * @param dataContainer object holding discovery data collected during discovery process.
      * @param clsLdr Class loader.
      */
-    protected void onExchange(UUID joiningNodeID,
-        UUID nodeId,
-        Map<Integer, byte[]> data,
-        ClassLoader clsLdr)
-    {
+    protected void onExchange(DiscoveryDataContainer dataContainer, ClassLoader clsLdr) {
         if (locNode.isDaemon())
             return;
 
-        Map<Integer, Serializable> data0 = U.newHashMap(data.size());
+        if (dataContainer.getJoiningNodeId().equals(locNode.id()))
+            dataContainer.unmarshalGridData(marshaller(), clsLdr, log);
+        else
+            dataContainer.unmarshalJoiningNodeData(marshaller(), clsLdr, log);
 
-        for (Map.Entry<Integer, byte[]> entry : data.entrySet()) {
-            try {
-                Serializable compData = U.unmarshal(marshaller(), entry.getValue(), clsLdr);
-
-                data0.put(entry.getKey(), compData);
-            }
-            catch (IgniteCheckedException e) {
-                if (GridComponent.DiscoveryDataExchangeType.CONTINUOUS_PROC.ordinal() == entry.getKey() &&
-                    X.hasCause(e, ClassNotFoundException.class) && locNode.isClient())
-                    U.warn(log, "Failed to unmarshal continuous query remote filter on client node. Can be ignored.");
-                else
-                    U.error(log, "Failed to unmarshal discovery data for component: "  + entry.getKey(), e);
-            }
-        }
-
-        exchange.onExchange(joiningNodeID, nodeId, data0);
+        exchange.onExchange(dataContainer);
     }
 
     /** {@inheritDoc} */

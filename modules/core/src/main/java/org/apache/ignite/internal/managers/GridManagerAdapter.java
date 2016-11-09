@@ -59,6 +59,9 @@ import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiNoop;
 import org.apache.ignite.spi.IgniteSpiTimeoutObject;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer.GridDiscoveryData;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer.NewNodeDiscoveryData;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -603,13 +606,18 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override @Nullable public Serializable collectDiscoveryData(UUID nodeId) {
-        return null;
+    @Override
+    public void collectDiscoveryData(DiscoveryDataContainer dataContainer) {
+        // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Serializable data) {
+    @Override
+    public void onGridDataReceived(GridDiscoveryData data) {
+        // No-op.
+    }
+
+    @Override
+    public void onJoiningNodeDataReceived(NewNodeDiscoveryData data) {
         // No-op.
     }
 

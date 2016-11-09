@@ -19,45 +19,48 @@ package org.apache.ignite.marshaller;
 
 import java.io.File;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import javax.cache.event.EventType;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.MarshallerContextImpl;
-import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager;
+import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static java.nio.file.Files.readAllBytes;
+import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 
 /**
  * Test marshaller context.
  */
 public class MarshallerContextSelfTest extends GridCommonAbstractTest {
+
+    private GridTestKernalContext ctx;
+
+    @Override
+    protected void beforeTest() throws Exception {
+        ctx = newContext();
+    }
+
     /**
      * @throws Exception If failed.
      */
     public void testClassName() throws Exception {
-        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false);
+        MarshallerContextImpl marshallerContext = new MarshallerContextImpl(null);
 
-        final MarshallerContextImpl.ContinuousQueryListener queryListener =
-                new MarshallerContextImpl.ContinuousQueryListener(log, workDir);
+        marshallerContext.onMarshallerProcessorStarted(ctx);
 
-        final ArrayList evts = new ArrayList<>();
+        MarshallerMappingItem item = new MarshallerMappingItem();
 
-        IgniteCacheProxy cache = new IgniteCacheProxy();
+        item.setPlatformId(JAVA_ID);
+        item.setTypeId(1);
+        item.setClassName(String.class.getName());
 
-        evts.add(new CacheContinuousQueryManager.CacheEntryEventImpl(cache,
-            EventType.CREATED,
-            1,
-            String.class.getName()));
-
-        queryListener.onUpdated(evts);
+        marshallerContext.onMappingAccepted(item);
 
         try (Ignite g1 = startGrid(1)) {
             MarshallerContextImpl marshCtx = ((IgniteKernal)g1).context().marshallerContext();
-            String clsName = marshCtx.className(1);
+            String clsName = marshCtx.getClassName(JAVA_ID, 1);
 
             assertEquals("java.lang.String", clsName);
         }
@@ -68,22 +71,18 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      */
     public void testOnUpdated() throws Exception {
         File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false);
+        MarshallerContextImpl context = new MarshallerContextImpl(null);
 
-        final MarshallerContextImpl.ContinuousQueryListener queryListener =
-                new MarshallerContextImpl.ContinuousQueryListener(log, workDir);
+        context.onMarshallerProcessorStarted(ctx);
 
-        final ArrayList evts = new ArrayList<>();
+        MarshallerMappingItem item = new MarshallerMappingItem();
+        item.setTypeId(1);
+        item.setPlatformId(JAVA_ID);
+        item.setClassName(String.class.getName());
 
-        IgniteCacheProxy cache = new IgniteCacheProxy();
+        context.onMappingAccepted(item);
 
-        evts.add(new CacheContinuousQueryManager.CacheEntryEventImpl(cache,
-            EventType.CREATED,
-            1,
-            String.class.getName()));
-
-        queryListener.onUpdated(evts);
-
-        String fileName = "1.classname";
+        String fileName = "1.classname0";
 
         assertEquals("java.lang.String", new String(readAllBytes(Paths.get(workDir + "/" + fileName))));
     }

@@ -1563,7 +1563,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             orderMap.get(order).add(cacheId);
                         }
 
-                        Callable<Boolean> marshR = null;
                         List<Callable<Boolean>> orderedRs = new ArrayList<>(size);
 
                         //Ordered rebalance scheduling.
@@ -1587,10 +1586,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     U.log(log, "Cache rebalancing scheduled: [cache=" + cacheCtx.name() +
                                         ", waitList=" + waitList.toString() + "]");
 
-                                    if (cacheId == CU.cacheId(GridCacheUtils.MARSH_CACHE_NAME))
-                                        marshR = r;
-                                    else
-                                        orderedRs.add(r);
+                                    orderedRs.add(r);
                                 }
                             }
                         }
@@ -1600,23 +1596,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                         rebalanceQ.addAll(orderedRs);
 
-                        if (marshR != null || !rebalanceQ.isEmpty()) {
+                        if (!rebalanceQ.isEmpty()) {
                             if (futQ.isEmpty()) {
                                 U.log(log, "Rebalancing required " +
                                     "[top=" + exchFut.topologyVersion() + ", evt=" + exchFut.discoveryEvent().name() +
                                     ", node=" + exchFut.discoveryEvent().eventNode().id() + ']');
-
-                                if (marshR != null) {
-                                    try {
-                                        marshR.call(); //Marshaller cache rebalancing launches in sync way.
-                                    }
-                                    catch (Exception ex) {
-                                        if (log.isDebugEnabled())
-                                            log.debug("Failed to send initial demand request to node");
-
-                                        continue;
-                                    }
-                                }
 
                                 final GridFutureAdapter fut = new GridFutureAdapter();
 

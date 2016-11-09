@@ -42,8 +42,8 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -812,25 +812,16 @@ public class PlatformUtils {
      */
     @SuppressWarnings("deprecation")
     public static GridBinaryMarshaller marshaller() {
-        try {
-            IgniteConfiguration cfg = new IgniteConfiguration();
+        BinaryContext ctx =
+            new BinaryContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration(), new NullLogger());
 
-            BinaryContext ctx =
-                new BinaryContext(BinaryNoopMetadataHandler.instance(), cfg, new NullLogger());
+        BinaryMarshaller marsh = new BinaryMarshaller();
 
-            BinaryMarshaller marsh = new BinaryMarshaller();
+        marsh.setContext(new MarshallerContextImpl(null));
 
-            String workDir = U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome());
+        ctx.configure(marsh, new IgniteConfiguration());
 
-            marsh.setContext(new MarshallerContextImpl(workDir, null));
-
-            ctx.configure(marsh, new IgniteConfiguration());
-
-            return new GridBinaryMarshaller(ctx);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
+        return new GridBinaryMarshaller(ctx);
     }
 
     /**
