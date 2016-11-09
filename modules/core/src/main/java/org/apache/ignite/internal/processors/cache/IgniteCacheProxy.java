@@ -1303,6 +1303,18 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public void put(K key, V val) {
+        // TODO
+        if (CU.cheatCache(ctx.cacheId())) {
+            try {
+                delegate.put(key, val);
+            }
+            catch (IgniteCheckedException e) {
+                throw cacheException(e);
+            }
+
+            return;
+        }
+
         try {
             GridCacheGateway<K, V> gate = this.gate;
 

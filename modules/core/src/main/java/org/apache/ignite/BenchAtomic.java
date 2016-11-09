@@ -19,6 +19,7 @@ package org.apache.ignite;
 
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -230,6 +231,7 @@ public class BenchAtomic {
 //            .setAtomicWriteOrderMode(CacheAtomicWriteOrderMode.PRIMARY)
            // .setAffinity(new FairAffinityFunction(1024))
             .setBackups(0)
+            .setAtomicWriteOrderMode(CacheAtomicWriteOrderMode.PRIMARY)
             .setRebalanceMode(CacheRebalanceMode.SYNC)
             .setCopyOnRead(false)
 //            .setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED)

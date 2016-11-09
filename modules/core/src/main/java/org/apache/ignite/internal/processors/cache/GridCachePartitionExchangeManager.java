@@ -1207,7 +1207,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             if (mvcc != null) {
                 for (GridCacheFuture<?> fut : mvcc.activeFutures()) {
-                    if (curTime - fut.startTime() > timeout) {
+                    if (curTime - fut.startTime() > timeout && fut.startTime() != 0 /*TODO*/ ) {
                         found = true;
 
                         if (longRunningOpsDumpCnt < GridDhtPartitionsExchangeFuture.DUMP_PENDING_OBJECTS_THRESHOLD) {
@@ -1220,7 +1220,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 }
 
                 for (GridCacheFuture<?> fut : mvcc.atomicFutures()) {
-                    if (curTime - fut.startTime() > timeout) {
+                    if (curTime - fut.startTime() > timeout && fut.startTime() != 0 /*TODO*/) {
                         found = true;
 
                         if (longRunningOpsDumpCnt < GridDhtPartitionsExchangeFuture.DUMP_PENDING_OBJECTS_THRESHOLD) {

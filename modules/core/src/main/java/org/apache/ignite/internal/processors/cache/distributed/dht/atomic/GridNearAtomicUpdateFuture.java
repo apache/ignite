@@ -611,9 +611,11 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
      * @param remapKeys Keys to remap.
      */
     void map(AffinityTopologyVersion topVer, @Nullable Collection<KeyCacheObject> remapKeys) {
-        Collection<ClusterNode> topNodes = CU.affinityNodes(cctx, topVer);
+        // TODO
+        Collection<ClusterNode> topNodes = CU.cheatCache(cctx.cacheId()) ?
+            Collections.<ClusterNode>emptyList() : CU.affinityNodes(cctx, topVer);
 
-        if (F.isEmpty(topNodes)) {
+        if (!CU.cheatCache(cctx.cacheId()) && F.isEmpty(topNodes)) {
             onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all partition nodes " +
                 "left the grid)."));
 
@@ -651,6 +653,10 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                 singleReq0 = mapSingleUpdate(topVer, futVer, updVer);
             }
             else {
+                // TODO
+                if (CU.cheatCache(cctx.cacheId()))
+                    throw new RuntimeException();
+
                 Map<UUID, GridNearAtomicUpdateRequest> pendingMappings = mapUpdate(topNodes,
                     topVer,
                     futVer,
