@@ -215,14 +215,10 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
         super.finishUnmarshal(ctx, ldr);
 
         if (entryProcessorBytes != null && entryProcessor == null)
-            entryProcessor = ctx.marshaller().unmarshal(
-                entryProcessorBytes,
-                U.resolveClassLoader(ldr, ctx.gridConfig())
-            );
+            entryProcessor = U.unmarshal(ctx, entryProcessorBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         if (invokeArgs == null)
             invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, ctx, ldr);
-
     }
 
     /** {@inheritDoc} */
