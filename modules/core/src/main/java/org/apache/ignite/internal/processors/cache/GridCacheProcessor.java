@@ -592,7 +592,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         sharedCtx.io().addHandler(
             0, GridActivationMessageResponse.class, new CI2<UUID, GridActivationMessageResponse>() {
-                @Override public void apply(UUID uuid, GridActivationMessageResponse msg) {
+                @Override public void apply(UUID nodeId, GridActivationMessageResponse msg) {
                     processActivationResponse(msg);
                 }
             });
@@ -4003,11 +4003,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param msg Message.
      */
     private void processActivationResponse(GridActivationMessageResponse msg){
+        assert msg!=null;
+
         UUID requestId = msg.getRequestId();
 
         GridActivateFuture fut = actFuts.get(requestId);
 
-        if (fut != null) {
+        if (fut != null && !fut.isDone()) {
             fut.onResponse(msg);
 
             if (fut.isDone())
@@ -4112,16 +4114,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private static class GridActivateFuture extends GridFutureAdapter {
         /** Request id. */
-        private UUID requestId;
+        private final UUID requestId;
 
         /** Nodes. */
-        private Set<UUID> waitNodes = new CopyOnWriteArraySet<>();
+        private final Set<UUID> waitNodes = new HashSet<>();
 
         /** Responses. */
-        private Map<UUID, GridActivationMessageResponse> resps = new ConcurrentHashMap<>();
+        private final Map<UUID, GridActivationMessageResponse> resps = new HashMap<>();
 
         /** Context. */
-        private GridKernalContext ctx;
+        private final GridKernalContext ctx;
+
+        /** */
+        private final Object mux = new Object();
+
 
         /**
          * @param ctx Context.
@@ -4134,10 +4140,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 @Override public void onEvent(Event evt) {
                     assert evt != null;
 
+                    if (isDone())
+                        return;
+
                     DiscoveryEvent e = (DiscoveryEvent)evt;
 
-                    waitNodes.remove(e.eventNode().id());
+                    boolean allReceived = false;
 
+                    synchronized (mux){
+                        if (waitNodes.remove(e.eventNode().id()))
+                            allReceived = waitNodes.isEmpty();
+                    }
+
+                    if (allReceived)
+                        onAllReceived();
                 }
             }, EVT_NODE_LEFT, EVT_NODE_FAILED);
         }
@@ -4146,7 +4162,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
          * @param waitNodes Nodes.
          */
         public void setWaitNodes(List<UUID> waitNodes) {
-            this.waitNodes.addAll(waitNodes);
+            synchronized (mux){
+                this.waitNodes.addAll(waitNodes);
+            }
         }
 
         /**
@@ -4155,30 +4173,46 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         public void onResponse(GridActivationMessageResponse msg) {
             assert msg != null;
 
+            if (isDone())
+                return;
+
             UUID nodeId = msg.getNodeId();
 
-            resps.put(nodeId, msg);
+            boolean allReceived = false;
 
-            if (requestId.equals(msg.getRequestId()) && waitNodes.size() <= resps.size()) {
-                Throwable e = new Throwable();
+            synchronized (mux){
+                if (waitNodes.remove(nodeId))
+                    allReceived = waitNodes.isEmpty();
 
-                boolean fail = false;
-
-                for (Map.Entry<UUID, GridActivationMessageResponse> entry : resps.entrySet()) {
-                    GridActivationMessageResponse r = entry.getValue();
-
-                    if (r.getError() != null) {
-                        fail = true;
-
-                        e.addSuppressed(r.getError());
-                    }
-                }
-
-                if (fail)
-                    onDone(e);
-                else
-                    onDone();
+                resps.put(nodeId, msg);
             }
+
+            if (allReceived)
+                onAllReceived();
+        }
+
+        /**
+         *
+         */
+        private void onAllReceived(){
+            Throwable e = new Throwable();
+
+            boolean fail = false;
+
+            for (Map.Entry<UUID, GridActivationMessageResponse> entry : resps.entrySet()) {
+                GridActivationMessageResponse r = entry.getValue();
+
+                if (r.getError() != null) {
+                    fail = true;
+
+                    e.addSuppressed(r.getError());
+                }
+            }
+
+            if (fail)
+                onDone(e);
+            else
+                onDone();
         }
     }
 }
