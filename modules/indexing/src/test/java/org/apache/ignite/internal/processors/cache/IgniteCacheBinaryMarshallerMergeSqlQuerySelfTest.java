@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessor;
 import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
@@ -37,5 +38,41 @@ public class IgniteCacheBinaryMarshallerMergeSqlQuerySelfTest extends IgniteCach
     /** {@inheritDoc} */
     @Override protected Object createPerson(int id, String name) {
         return createPersonBinary(id, name);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        ignite(0).cache("K32P").clear();
+        ignite(0).cache("K42P").clear();
+
+        super.afterTest();
+    }
+
+    /**
+     *
+     */
+    public void testFieldsListIdentity() {
+        IgniteCache<Key3, Person> p = ignite(0).cache("K32P").withKeepBinary();
+
+        p.query(new SqlFieldsQuery(
+            "merge into Person (key, strKey, id, name) values (1, 'aa', ?, ?), (2, 'bb', 2, 'Alex')").setArgs(1, "Sergi"));
+
+        assertEquals(createPerson(1, "Sergi"), p.get(new Key3(1)));
+
+        assertEquals(createPerson(2, "Alex"), p.get(new Key3(2)));
+    }
+
+    /**
+     *
+     */
+    public void testCustomIdentity() {
+        IgniteCache<Key4, Person> p = ignite(0).cache("K42P").withKeepBinary();
+
+        p.query(new SqlFieldsQuery(
+            "merge into Person (key, strKey, id, name) values (1, 'aa', ?, ?), (2, 'bb', 2, 'Alex')").setArgs(1, "Sergi"));
+
+        assertEquals(createPerson(1, "Sergi"), p.get(new Key4(1)));
+
+        assertEquals(createPerson(2, "Alex"), p.get(new Key4(2)));
     }
 }
