@@ -18,309 +18,348 @@
 package org.apache.ignite.internal;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
-import java.nio.channels.OverlappingFileLockException;
-import java.nio.charset.StandardCharsets;
+import java.net.URL;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.locks.Lock;
-import javax.cache.event.CacheEntryEvent;
-import javax.cache.event.CacheEntryListenerException;
-import javax.cache.event.CacheEntryUpdatedListener;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheTryPutFailedException;
-import org.apache.ignite.internal.util.GridStripedLock;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
+import org.apache.ignite.internal.processors.marshaller.MappedName;
+import org.apache.ignite.internal.processors.marshaller.MappedNameImpl;
+import org.apache.ignite.internal.processors.marshaller.MappingRequestFuture;
+import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.plugin.PluginProvider;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
+
+import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 
 /**
  * Marshaller context implementation.
  */
-public class MarshallerContextImpl extends MarshallerContextAdapter {
+public class MarshallerContextImpl implements MarshallerContext {
     /** */
-    private static final GridStripedLock fileLock = new GridStripedLock(32);
+    private static final String CLS_NAMES_FILE = "META-INF/classnames.properties";
 
     /** */
-    private final CountDownLatch latch = new CountDownLatch(1);
+    private static final String JDK_CLS_NAMES_FILE = "META-INF/classnames-jdk.properties";
 
     /** */
-    private final File workDir;
+    private final Set<String> registeredSystemTypes = new HashSet<>();
 
-    /** */
-    private IgniteLogger log;
+    private final Map<Byte, ConcurrentMap<Integer, MappedName>> allCaches = new HashMap<>();
 
-    /** */
-    private volatile GridCacheAdapter<Integer, String> cache;
+    private ConcurrentMap<Integer, MappedName> defaultCache = new ConcurrentHashMap8<>();
 
-    /** Non-volatile on purpose. */
-    private int failedCnt;
+    private MarshallerMappingPersistence persistence;
 
-    /** */
-    private ContinuousQueryListener lsnr;
+    private MarshallerMappingTransport transport;
+
+    private boolean isClientNode;
 
     /**
+     * Initializes context.
+     *
      * @param plugins Plugins.
-     * @throws IgniteCheckedException In case of error.
      */
-    public MarshallerContextImpl(List<PluginProvider> plugins) throws IgniteCheckedException {
-        super(plugins);
-
-        workDir = U.resolveWorkDirectory("marshaller", false);
-    }
-
-    /**
-     * @param ctx Context.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException {
-        if (ctx.clientNode()) {
-            lsnr = new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir);
-
-            ctx.continuous().registerStaticRoutine(
-                CU.MARSH_CACHE_NAME,
-                lsnr,
-                null,
-                null);
-        }
-    }
-
-    /**
-     * @param ctx Kernal context.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
-        assert ctx != null;
-
-        log = ctx.log(MarshallerContextImpl.class);
-
-        cache = ctx.cache().marshallerCache();
-
-        if (ctx.cache().marshallerCache().context().affinityNode()) {
-            ctx.cache().marshallerCache().context().continuousQueries().executeInternalQuery(
-                new ContinuousQueryListener(log, workDir),
-                null,
-                true,
-                true,
-                false
-            );
-        }
-        else {
-            if (lsnr != null) {
-                ctx.closure().runLocalSafe(new Runnable() {
-                    @SuppressWarnings("unchecked")
-                    @Override public void run() {
-                        try {
-                            Iterable entries = cache.context().continuousQueries().existingEntries(false, null);
-
-                            lsnr.onUpdated(entries);
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to load marshaller cache entries: " + e, e);
-                        }
-                    }
-                });
-            }
-        }
-
-        latch.countDown();
-    }
-
-    /**
-     * Release marshaller context.
-     */
-    public void onKernalStop() {
-        latch.countDown();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean registerClassName(int id, String clsName) throws IgniteCheckedException {
-        GridCacheAdapter<Integer, String> cache0 = cache;
-
-        if (cache0 == null)
-            return false;
-
-        String old;
-
+    public MarshallerContextImpl(@Nullable List<PluginProvider> plugins) {
+        initializeCaches();
         try {
-            old = cache0.tryGetAndPut(id, clsName);
+            ClassLoader ldr = U.gridClassLoader();
 
-            if (old != null && !old.equals(clsName))
-                throw new IgniteCheckedException("Type ID collision detected [id=" + id + ", clsName1=" + clsName +
-                    ", clsName2=" + old + ']');
+            Enumeration<URL> urls = ldr.getResources(CLS_NAMES_FILE);
 
-            failedCnt = 0;
+            boolean foundClsNames = false;
 
-            return true;
-        }
-        catch (CachePartialUpdateCheckedException | GridCacheTryPutFailedException e) {
-            if (++failedCnt > 10) {
-                if (log.isQuiet())
-                    U.quiet(false, "Failed to register marshalled class for more than 10 times in a row " +
-                        "(may affect performance).");
+            while (urls.hasMoreElements()) {
+                processResource(urls.nextElement());
 
-                failedCnt = 0;
+                foundClsNames = true;
             }
 
+            if (!foundClsNames)
+                throw new IgniteException("Failed to load class names properties file packaged with ignite binaries " +
+                    "[file=" + CLS_NAMES_FILE + ", ldr=" + ldr + ']');
+
+            URL jdkClsNames = ldr.getResource(JDK_CLS_NAMES_FILE);
+
+            if (jdkClsNames == null)
+                throw new IgniteException("Failed to load class names properties file packaged with ignite binaries " +
+                    "[file=" + JDK_CLS_NAMES_FILE + ", ldr=" + ldr + ']');
+
+            processResource(jdkClsNames);
+
+            checkHasClassName(GridDhtPartitionFullMap.class.getName(), ldr, CLS_NAMES_FILE);
+            checkHasClassName(GridDhtPartitionMap2.class.getName(), ldr, CLS_NAMES_FILE);
+            checkHasClassName(HashMap.class.getName(), ldr, JDK_CLS_NAMES_FILE);
+
+            if (plugins != null && !plugins.isEmpty()) {
+                for (PluginProvider plugin : plugins) {
+                    URL pluginClsNames = ldr.getResource("META-INF/" + plugin.name().toLowerCase()
+                        + ".classnames.properties");
+
+                    if (pluginClsNames != null)
+                        processResource(pluginClsNames);
+                }
+            }
+        }
+        catch (IOException e) {
+            throw new IllegalStateException("Failed to initialize marshaller context.", e);
+        }
+    }
+
+    private void initializeCaches() {
+        allCaches.put(JAVA_ID, defaultCache);
+    }
+
+    public HashMap<Byte, ConcurrentMap<Integer, MappedName>> getCachedMappings() {
+        HashMap<Byte, ConcurrentMap<Integer, MappedName>> result = new HashMap<>(allCaches.size());
+
+        for (Map.Entry<Byte, ConcurrentMap<Integer, MappedName>> e0 : allCaches.entrySet()) {
+
+            ConcurrentMap<Integer, MappedName> res;
+
+            if (e0.getValue() == defaultCache) {
+                //filtering out system types from default cache to reduce message size
+                res = new ConcurrentHashMap8<>();
+                for (Map.Entry<Integer, MappedName> e1 : e0.getValue().entrySet())
+                    if (!registeredSystemTypes.contains(e1.getValue().className()))
+                        res.put(e1.getKey(), e1.getValue());
+            } else
+                res = e0.getValue();
+
+            if (res.size() > 0)
+                result.put(e0.getKey(), res);
+        }
+
+        return result;
+    }
+
+    public void applyPlatformMapping(byte platformId, Map<Integer, MappedName> marshallerMapping) {
+        ConcurrentMap<Integer, MappedName> platformCache = getCacheFor(platformId);
+
+        if (platformCache == null) {
+            platformCache = new ConcurrentHashMap8<>();
+            allCaches.put(platformId, platformCache);
+        }
+
+        for (Map.Entry<Integer, MappedName> e : marshallerMapping.entrySet())
+            platformCache.putIfAbsent(e.getKey(), e.getValue());
+    }
+
+    /**
+     * @param clsName Class name.
+     * @param ldr Class loader used to get properties file.
+     * @param fileName File name.
+     */
+    private void checkHasClassName(String clsName, ClassLoader ldr, String fileName) {
+        if (!defaultCache.containsKey(clsName.hashCode()))
+            throw new IgniteException("Failed to read class name from class names properties file. " +
+                "Make sure class names properties file packaged with ignite binaries is not corrupted " +
+                "[clsName=" + clsName + ", fileName=" + fileName + ", ldr=" + ldr + ']');
+    }
+
+    /**
+     * @param url Resource URL.
+     * @throws IOException In case of error.
+     */
+    private void processResource(URL url) throws IOException {
+        try (InputStream in = url.openStream()) {
+            BufferedReader rdr = new BufferedReader(new InputStreamReader(in));
+
+            String line;
+
+            while ((line = rdr.readLine()) != null) {
+                if (line.isEmpty() || line.startsWith("#"))
+                    continue;
+
+                String clsName = line.trim();
+
+                int typeId = clsName.hashCode();
+
+                MappedNameImpl oldClsName;
+
+                if ((oldClsName = (MappedNameImpl) defaultCache.put(typeId, new MappedNameImpl(clsName, true))) != null) {
+                    if (!oldClsName.className().equals(clsName))
+                        throw new IgniteException("Duplicate type ID [id=" + typeId + ", clsName=" + clsName +
+                        ", oldClsName=" + oldClsName + ']');
+                }
+
+                registeredSystemTypes.add(clsName);
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean registerClassName(byte platformId, int typeId, String clsName) throws IgniteCheckedException {
+        ConcurrentMap<Integer, MappedName> cache = getCacheFor(platformId);
+
+        MappedName mappedName = cache.get(typeId);
+
+        if (mappedName != null)
+            if (mappedName instanceof MappingRequestFuture)
+                return false;
+            else if (!mappedName.className().equals(clsName))
+                throw new IgniteCheckedException("Duplicate ID [id="
+                        + typeId
+                        + ", oldCls="
+                        + mappedName.className()
+                        + ", newCls="
+                        + clsName);
+            else
+                return mappedName.isAccepted();
+        else {
+            transport.proposeMapping(platformId, typeId, clsName);
             return false;
         }
     }
 
     /** {@inheritDoc} */
-    @Override public String className(int id) throws IgniteCheckedException {
-        GridCacheAdapter<Integer, String> cache0 = cache;
+    @Override
+    public boolean registerMappingForPlatform(byte newPlatformId) {
+        if (allCaches.containsKey(newPlatformId))
+            return false;
+        else
+            allCaches.put(newPlatformId, new ConcurrentHashMap8<Integer, MappedName>());
+        return true;
+    }
 
-        if (cache0 == null) {
-            U.awaitQuiet(latch);
+    /**
+     *
+     * @param item type mapping to propose
+     * @return false if there is a conflict with another mapping in local cache, true otherwise.
+     */
+    public boolean onMappingProposed(MarshallerMappingItem item) {
+        ConcurrentMap<Integer, MappedName> cache = getCacheFor(item.getPlatformId());
 
-            cache0 = cache;
+        if (cache.putIfAbsent(item.getTypeId(), new MappedNameImpl(item.getClassName(), false)) == null)
+            return true;
+        else
+            return false;
+    }
 
-            if (cache0 == null)
-                throw new IllegalStateException("Failed to initialize marshaller context (grid is stopping).");
-        }
+    public void onMappingAccepted(MarshallerMappingItem item) {
+        ConcurrentMap<Integer, MappedName> cache = getCacheFor(item.getPlatformId());
 
-        String clsName = cache0.getTopologySafe(id);
+        cache.replace(item.getTypeId(), new MappedNameImpl(item.getClassName(), true));
 
-        if (clsName == null) {
-            String fileName = id + ".classname";
+        persistence.onMappingAccepted(item.getPlatformId(), item.getTypeId(), item.getClassName());
+    }
 
-            Lock lock = fileLock(fileName);
+    /** {@inheritDoc} */
+    @Override public Class getClass(byte platformId, int typeId, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException {
+        String clsName = getClassName(platformId, typeId);
 
-            lock.lock();
+        if (clsName == null)
+            throw new ClassNotFoundException("Unknown type ID: " + typeId);
 
-            try {
-                File file = new File(workDir, fileName);
+        return U.forName(clsName, ldr);
+    }
 
-                try (FileInputStream in = new FileInputStream(file)) {
-                    FileLock fileLock = fileLock(in.getChannel(), true);
+    @Override public String getClassName(byte platformId, int typeId) throws ClassNotFoundException, IgniteCheckedException {
+        ConcurrentMap<Integer, MappedName> cache = getCacheFor(platformId);
 
-                    assert fileLock != null : fileName;
+        if (cache == null)
+            throw new IgniteCheckedException("Cache for platformId=" + platformId + " not found.");
 
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-                        clsName = reader.readLine();
+        String clsName;
+        MappedName mappedName = cache.get(typeId);
+
+        if (mappedName != null)
+            clsName = mappedName.className();
+        else {
+            clsName = persistence.onMappingMiss(platformId, typeId);
+            if (clsName != null)
+                cache.putIfAbsent(typeId, new MappedNameImpl(clsName, true));
+            else
+                if (isClientNode) {
+                    mappedName = cache.get(typeId);
+                    if (mappedName == null) {
+                        mappedName = transport.requestMapping(platformId, typeId);
+                        cache.putIfAbsent(typeId, mappedName);
                     }
-                }
-                catch (IOException e) {
-                    throw new IgniteCheckedException("Class definition was not found " +
-                        "at marshaller cache and local file. " +
-                        "[id=" + id + ", file=" + file.getAbsolutePath() + ']');
-                }
-            }
-            finally {
-                lock.unlock();
-            }
 
-            // Must explicitly put entry to cache to invoke other continuous queries.
-            registerClassName(id, clsName);
+                    clsName = cache.get(typeId).className();
+
+                    if (clsName == null)
+                        throw new ClassNotFoundException("Requesting mapping from grid failed for type ID: " + typeId);
+
+                    return clsName;
+
+                    //also take into account that Future objects should never be serialized and sent across the ring
+                } else
+                    throw new ClassNotFoundException("Unknown type ID: " + typeId);
         }
 
         return clsName;
     }
 
-    /**
-     * @param fileName File name.
-     * @return Lock instance.
-     */
-    private static Lock fileLock(String fileName) {
-        return fileLock.getLock(fileName.hashCode());
-    }
+    public boolean resolveMissedMapping(MarshallerMappingItem item) {
+        ConcurrentMap<Integer, MappedName> cache = getCacheFor(item.getPlatformId());
 
-    /**
-     * @param ch File channel.
-     * @param shared Shared.
-     */
-    private static FileLock fileLock(
-        FileChannel ch,
-        boolean shared
-    ) throws IOException, IgniteInterruptedCheckedException {
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+        if (cache != null) {
+            MappedName mappedName = cache.get(item.getTypeId());
 
-        while (true) {
-            FileLock fileLock = ch.tryLock(0L, Long.MAX_VALUE, shared);
-
-            if (fileLock == null)
-                U.sleep(rnd.nextLong(50));
-            else
-                return fileLock;
-        }
-    }
-
-    /**
-     */
-    public static class ContinuousQueryListener implements CacheEntryUpdatedListener<Integer, String> {
-        /** */
-        private final IgniteLogger log;
-
-        /** */
-        private final File workDir;
-
-        /**
-         * @param log Logger.
-         * @param workDir Work directory.
-         */
-        public ContinuousQueryListener(IgniteLogger log, File workDir) {
-            this.log = log;
-            this.workDir = workDir;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> evts)
-            throws CacheEntryListenerException {
-            for (CacheEntryEvent<? extends Integer, ? extends String> evt : evts) {
-                assert evt.getOldValue() == null || F.eq(evt.getOldValue(), evt.getValue()):
-                    "Received cache entry update for system marshaller cache: " + evt;
-
-                if (evt.getOldValue() == null) {
-                    String fileName = evt.getKey() + ".classname";
-
-                    Lock lock = fileLock(fileName);
-
-                    lock.lock();
-
-                    try {
-                        File file = new File(workDir, fileName);
-
-                        try (FileOutputStream out = new FileOutputStream(file)) {
-                            FileLock fileLock = fileLock(out.getChannel(), false);
-
-                            assert fileLock != null : fileName;
-
-                            try (Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
-                                writer.write(evt.getValue());
-
-                                writer.flush();
-                            }
-                        }
-                        catch (IOException e) {
-                            U.error(log, "Failed to write class name to file [id=" + evt.getKey() +
-                                ", clsName=" + evt.getValue() + ", file=" + file.getAbsolutePath() + ']', e);
-                        }
-                        catch(OverlappingFileLockException ignored) {
-                            if (log.isDebugEnabled())
-                                log.debug("File already locked (will ignore): " + file.getAbsolutePath());
-                        }
-                        catch (IgniteInterruptedCheckedException e) {
-                            U.error(log, "Interrupted while waiting for acquiring file lock: " + file, e);
-                        }
-                    }
-                    finally {
-                        lock.unlock();
-                    }
+            if (mappedName != null && mappedName.className() != null) {
+                item.setClassName(mappedName.className());
+                try {
+                    Thread.sleep(750);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
+                return true;
             }
         }
+
+        return false;
+    }
+
+    public void onMissedMappingResolved(MarshallerMappingItem item) {
+        ConcurrentMap<Integer, MappedName> cache = getCacheFor(item.getPlatformId());
+
+        if (cache != null) {
+            int typeId = item.getTypeId();
+            MappedName mappedName = cache.get(typeId);
+
+            if (mappedName instanceof MappingRequestFuture) {
+                String clsName = item.getClassName();
+                if (clsName != null) {
+                    MappedName newMappedName = new MappedNameImpl(clsName, true);
+
+                    cache.replace(typeId, newMappedName);
+
+                    ((MappingRequestFuture) mappedName).onMappingResolved(newMappedName);
+                } else
+                    ((MappingRequestFuture) mappedName).onMappingResolutionFailed();
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isSystemType(String typeName) {
+        return registeredSystemTypes.contains(typeName);
+    }
+
+    private ConcurrentMap<Integer, MappedName> getCacheFor(byte platformId) {
+        return (platformId == JAVA_ID) ? defaultCache : allCaches.get(platformId);
+    }
+
+    public void onMarshallerProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException {
+        assert ctx != null;
+
+        persistence = new MarshallerMappingPersistence(ctx.log(MarshallerMappingPersistence.class));
+        transport = new MarshallerMappingTransport(ctx.discovery());
+        isClientNode = ctx.clientNode();
     }
 }

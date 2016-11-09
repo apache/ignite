@@ -58,9 +58,11 @@ public class CacheClientBinaryPutGetExample {
      * @param args Command line arguments, none required.
      */
     public static void main(String[] args) {
+        Ignition.setClientMode(true);
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
             System.out.println(">>> Binary objects cache put-get example started.");
+
 
             CacheConfiguration<Integer, Organization> cfg = new CacheConfiguration<>();
 
@@ -71,8 +73,8 @@ public class CacheClientBinaryPutGetExample {
             try (IgniteCache<Integer, Organization> cache = ignite.getOrCreateCache(cfg)) {
                 if (ignite.cluster().forDataNodes(cache.getName()).nodes().isEmpty()) {
                     System.out.println();
-                    System.out.println(">>> This example requires remote cache node nodes to be started.");
                     System.out.println(">>> Please start at least 1 remote cache node.");
+                    System.out.println(">>> This example requires remote cache node nodes to be started.");
                     System.out.println(">>> Refer to example's javadoc for details on configuration.");
                     System.out.println();
 
@@ -81,12 +83,14 @@ public class CacheClientBinaryPutGetExample {
 
                 putGet(cache);
                 putGetBinary(cache);
+                Thread.sleep(500L);
                 putGetAll(cache);
                 putGetAllBinary(cache);
 
                 System.out.println();
-            }
-            finally {
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } finally {
                 // Delete cache with its content completely.
                 ignite.destroyCache(CACHE_NAME);
             }

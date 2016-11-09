@@ -91,7 +91,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFF
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IDX_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IGFS_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MANAGEMENT_POOL;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MARSH_CACHE_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.P2P_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
@@ -151,9 +150,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** Utility cache pool. */
     private ExecutorService utilityCachePool;
-
-    /** Marshaller cache pool. */
-    private ExecutorService marshCachePool;
 
     /** IGFS pool. */
     private ExecutorService igfsPool;
@@ -262,7 +258,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         sysPool = ctx.getSystemExecutorService();
         mgmtPool = ctx.getManagementExecutorService();
         utilityCachePool = ctx.utilityCachePool();
-        marshCachePool = ctx.marshallerCachePool();
         igfsPool = ctx.getIgfsExecutorService();
         affPool = new IgniteThreadPoolExecutor(
             "aff",
@@ -663,7 +658,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 case MANAGEMENT_POOL:
                 case AFFINITY_POOL:
                 case UTILITY_CACHE_POOL:
-                case MARSH_CACHE_POOL:
                 case IDX_POOL:
                 case IGFS_POOL:
                 {
@@ -720,11 +714,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 assert utilityCachePool != null : "Utility cache pool is not configured.";
 
                 return utilityCachePool;
-
-            case MARSH_CACHE_POOL:
-                assert marshCachePool != null : "Marshaller cache pool is not configured.";
-
-                return marshCachePool;
 
             case IGFS_POOL:
                 assert igfsPool != null : "IGFS pool is not configured.";

@@ -40,9 +40,6 @@ public class GridIoPolicy {
     /** Utility cache execution pool. */
     public static final byte UTILITY_CACHE_POOL = 5;
 
-    /** Marshaller cache execution pool. */
-    public static final byte MARSH_CACHE_POOL = 6;
-
     /** IGFS pool. */
     public static final byte IGFS_POOL = 7;
 

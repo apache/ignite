@@ -17,37 +17,54 @@
 
 package org.apache.ignite.internal;
 
-import java.io.File;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.cache.event.CacheEntryEvent;
-import javax.cache.event.EventType;
-import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
 import org.apache.ignite.testframework.GridTestClassLoader;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+
+import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 
 /**
  * Test marshaller context.
  */
 public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
     /** Inner logger. */
-    private InnerLogger innerLog = null;
+    private InnerLogger innerLog;
+
+    private GridKernalContext ctx;
+
+    private class GridTestKernalContextV1 extends GridTestKernalContext {
+
+        public GridTestKernalContextV1(IgniteLogger log, IgniteConfiguration cfg) throws IgniteCheckedException {
+            super(log, cfg);
+        }
+
+        @Override
+        public IgniteLogger log(Class<?> cls) {
+            return innerLog;
+        }
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         innerLog = new InnerLogger();
 
-        log = innerLog;
+        IgniteConfiguration iCfg = new IgniteConfiguration();
+        iCfg.setClientMode(false);
+
+        ctx = new GridTestKernalContextV1(innerLog, iCfg);
     }
 
     /**
-     * Mumtithread test, used custom class loader
+     * Multithreaded test, used custom class loader
      */
     public void testMultithreadedUpdate() throws Exception {
         multithreaded(new Callable<Object>() {
@@ -55,7 +72,8 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
                 GridTestClassLoader classLoader = new GridTestClassLoader(
                     InternalExecutor.class.getName(),
                     MarshallerContextImpl.class.getName(),
-                    MarshallerContextImpl.ContinuousQueryListener.class.getName()
+                    MarshallerMappingPersistence.class.getName(),
+                    MarshallerMappingTransport.class.getName()
                 );
 
                 Thread.currentThread().setContextClassLoader(classLoader);
@@ -64,7 +82,7 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
 
                 Object internelExecutor = clazz.newInstance();
 
-                clazz.getMethod("executeTest", GridTestLog4jLogger.class).invoke(internelExecutor, log);
+                clazz.getMethod("executeTest", GridTestLog4jLogger.class, GridKernalContext.class).invoke(internelExecutor, log, ctx);
 
                 return null;
             }
@@ -87,21 +105,19 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
         /**
         * Executes onUpdated
         */
-        public void executeTest(GridTestLog4jLogger log) throws Exception {
+        public void executeTest(GridTestLog4jLogger log, GridKernalContext ctx) throws Exception {
             counter.incrementAndGet();
 
-            File workDir = U.resolveWorkDirectory("marshaller", false);
+            MarshallerContextImpl marshallerContext = new MarshallerContextImpl(null);
+            marshallerContext.onMarshallerProcessorStarted(ctx);
 
-            final MarshallerContextImpl.ContinuousQueryListener queryListener = new MarshallerContextImpl.ContinuousQueryListener(log, workDir);
-
-            final ArrayList evts = new ArrayList<CacheEntryEvent<Integer, String>>();
-
-            IgniteCacheProxy cache = new IgniteCacheProxy();
-
-            evts.add(new CacheContinuousQueryManager.CacheEntryEventImpl(cache, EventType.CREATED, 1, String.class.getName()));
+            MarshallerMappingItem item = new MarshallerMappingItem();
+            item.setPlatformId(JAVA_ID);
+            item.setTypeId(1);
+            item.setClassName(String.class.getName());
 
             for (int i = 0; i < 100; i++)
-                queryListener.onUpdated(evts);
+                marshallerContext.onMappingAccepted(item);
         }
     }
 

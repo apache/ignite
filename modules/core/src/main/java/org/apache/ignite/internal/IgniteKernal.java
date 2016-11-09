@@ -115,10 +115,10 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.hadoop.Hadoop;
-import org.apache.ignite.internal.processors.hadoop.HadoopClassLoader;
 import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
+import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.OsDiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.odbc.OdbcProcessor;
@@ -672,7 +672,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @SuppressWarnings({"CatchGenericClass", "unchecked"})
     public void start(final IgniteConfiguration cfg,
         ExecutorService utilityCachePool,
-        ExecutorService marshCachePool,
         final ExecutorService execSvc,
         final ExecutorService sysExecSvc,
         ExecutorService p2pExecSvc,
@@ -777,7 +776,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 cfg,
                 gw,
                 utilityCachePool,
-                marshCachePool,
                 execSvc,
                 sysExecSvc,
                 p2pExecSvc,
@@ -888,6 +886,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor(createHadoopComponent());
             startProcessor(new DataStructuresProcessor(ctx));
             startProcessor(createComponent(PlatformProcessor.class, ctx));
+            startProcessor(new GridMarshallerMappingProcessor(ctx));
 
             // Start plugins.
             for (PluginProvider provider : ctx.plugins().allProviders()) {
@@ -1909,8 +1908,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }
 
             List<GridComponent> comps = ctx.components();
-
-            ctx.marshallerContext().onKernalStop();
 
             // Callback component in reverse order while kernal is still functional
             // if called in the same thread, at least.

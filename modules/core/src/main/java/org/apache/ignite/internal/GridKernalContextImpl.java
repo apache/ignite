@@ -59,12 +59,13 @@ import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
-import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
+import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.igfs.IgfsHelper;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
+import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.odbc.OdbcProcessor;
 import org.apache.ignite.internal.processors.offheap.GridOffHeapProcessor;
@@ -324,9 +325,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private ExecutorService utilityCachePool;
 
     /** */
-    private ExecutorService marshCachePool;
-
-    /** */
     private IgniteConfiguration cfg;
 
     /** */
@@ -365,7 +363,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param cfg Grid configuration.
      * @param gw Kernal gateway.
      * @param utilityCachePool Utility cache pool.
-     * @param marshCachePool Marshaller cache pool.
      * @param execSvc Public executor service.
      * @param sysExecSvc System executor service.
      * @param p2pExecSvc P2P executor service.
@@ -382,7 +379,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         IgniteConfiguration cfg,
         GridKernalGateway gw,
         ExecutorService utilityCachePool,
-        ExecutorService marshCachePool,
         ExecutorService execSvc,
         ExecutorService sysExecSvc,
         ExecutorService p2pExecSvc,
@@ -399,7 +395,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.cfg = cfg;
         this.gw = gw;
         this.utilityCachePool = utilityCachePool;
-        this.marshCachePool = marshCachePool;
         this.execSvc = execSvc;
         this.sysExecSvc = sysExecSvc;
         this.p2pExecSvc = p2pExecSvc;
@@ -531,7 +526,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             cluster = (ClusterProcessor)comp;
         else if (comp instanceof PlatformProcessor)
             platformProc = (PlatformProcessor)comp;
-        else if (!(comp instanceof DiscoveryNodeValidationProcessor))
+        else if (!(comp instanceof DiscoveryNodeValidationProcessor || comp instanceof GridMarshallerMappingProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
         if (addToList)
@@ -757,11 +752,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public ExecutorService utilityCachePool() {
         return utilityCachePool;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExecutorService marshallerCachePool() {
-        return marshCachePool;
     }
 
     /** {@inheritDoc} */

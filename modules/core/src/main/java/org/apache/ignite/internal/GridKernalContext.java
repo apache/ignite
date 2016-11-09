@@ -300,13 +300,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public ExecutorService utilityCachePool();
 
     /**
-     * Gets marshaller cache pool.
-     *
-     * @return Marshaller cache pool.
-     */
-    public ExecutorService marshallerCachePool();
-
-    /**
      * Gets async callback pool.
      *
      * @return Async callback pool.

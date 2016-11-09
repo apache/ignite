@@ -17,6 +17,8 @@
 
 package org.apache.ignite.spi.discovery;
 
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
+
 import java.io.Serializable;
 import java.util.Map;
 import java.util.UUID;
@@ -32,17 +34,14 @@ public interface DiscoverySpiDataExchange {
      * on new node that joins topology to transfer its data to existing
      * nodes and on all existing nodes to transfer their data to new node.
      *
-     * @param joiningNodeId ID of new node that joins topology.
-     * @return Collection of discovery data objects from different components.
+     * @param data {@link DiscoveryDataContainer} object managing discovery data during node joining process.
      */
-    public Map<Integer, Serializable> collect(UUID joiningNodeId);
+    public DiscoveryDataContainer collect(DiscoveryDataContainer data);
 
     /**
      * Notifies discovery manager about data received from remote node.
      *
-     * @param joiningNodeId ID of new node that joins topology.
-     * @param nodeId ID of the node provided data.
-     * @param data Collection of discovery data objects from different components.
+     * @param dataContainer Collection of discovery data objects from different components.
      */
-    public void onExchange(UUID joiningNodeId, UUID nodeId, Map<Integer, Serializable> data);
+    public void onExchange(DiscoveryDataContainer dataContainer);
 }

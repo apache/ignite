@@ -22,7 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.MarshallerContextAdapter;
+import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
@@ -113,7 +113,7 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
 
     /**
      */
-    private static class ClientMarshallerContext extends MarshallerContextAdapter {
+    private static class ClientMarshallerContext extends MarshallerContextImpl {
         /** */
         public ClientMarshallerContext() {
             super(null);
@@ -124,16 +124,6 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
          */
         public ClientMarshallerContext(@Nullable List<PluginProvider> plugins) {
             super(plugins);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected boolean registerClassName(int id, String clsName) {
-            throw new UnsupportedOperationException(clsName);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected String className(int id) {
-            throw new UnsupportedOperationException();
         }
     }
 }

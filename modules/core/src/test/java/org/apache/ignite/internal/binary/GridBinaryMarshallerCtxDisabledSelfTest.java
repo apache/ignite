@@ -18,14 +18,19 @@
 package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.MarshallerContextAdapter;
+import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.io.Externalizable;
@@ -42,10 +47,9 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testObjectExchange() throws Exception {
-        BinaryMarshaller marsh = new BinaryMarshaller();
-        marsh.setContext(new MarshallerContextWithNoStorage());
-
         IgniteConfiguration cfg = new IgniteConfiguration();
+
+        BinaryMarshaller marsh = createMarshaller(cfg);
 
         BinaryContext context = new BinaryContext(BinaryCachingMetadataHandler.create(), cfg, new NullLogger());
 
@@ -84,24 +88,34 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
         assertEquals(simpleExtr, marsh.unmarshal(marsh.marshal(simpleExtr), null));
     }
 
+    private BinaryMarshaller createMarshaller(IgniteConfiguration cfg) throws IgniteCheckedException {
+        cfg.setClientMode(false);
+        cfg.setDiscoverySpi(new TcpDiscoverySpi() {
+            @Override
+            public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
+                // No-op.
+            }
+        });
+
+        GridTestKernalContext ctx = new GridTestKernalContext(log, cfg);
+        ctx.add(new GridDiscoveryManager(ctx));
+
+        MarshallerContextImpl marshCtx = new MarshallerContextImpl(null);
+        marshCtx.onMarshallerProcessorStarted(ctx);
+
+        BinaryMarshaller marsh = new BinaryMarshaller();
+        marsh.setContext(marshCtx);
+
+        return marsh;
+    }
     /**
      * Marshaller context with no storage. Platform has to work in such environment as well by marshalling class name of
      * a binary object.
      */
-    private static class MarshallerContextWithNoStorage extends MarshallerContextAdapter {
+    private static class MarshallerContextWithNoStorage extends MarshallerContextImpl {
         /** */
         public MarshallerContextWithNoStorage() {
             super(null);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected boolean registerClassName(int id, String clsName) throws IgniteCheckedException {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected String className(int id) throws IgniteCheckedException {
-            return null;
         }
     }
 

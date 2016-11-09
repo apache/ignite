@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.managers.discovery;
 
 import java.io.Externalizable;
-import java.io.Serializable;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
@@ -112,6 +111,8 @@ import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataContainer.NewNodeDiscoveryData;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -642,42 +643,33 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         });
 
         spi.setDataExchange(new DiscoverySpiDataExchange() {
-            @Override public Map<Integer, Serializable> collect(UUID nodeId) {
-                assert nodeId != null;
+            @Override public DiscoveryDataContainer collect(DiscoveryDataContainer data) {
+                assert data != null;
+                assert data.getJoiningNodeId() != null;
 
-                Map<Integer, Serializable> data = new HashMap<>();
-
-                for (GridComponent comp : ctx.components()) {
-                    Serializable compData = comp.collectDiscoveryData(nodeId);
-
-                    if (compData != null) {
-                        assert comp.discoveryDataType() != null;
-
-                        data.put(comp.discoveryDataType().ordinal(), compData);
-                    }
-                }
+                for (GridComponent comp : ctx.components())
+                    comp.collectDiscoveryData(data);
 
                 return data;
             }
 
-            @Override public void onExchange(UUID joiningNodeId, UUID nodeId, Map<Integer, Serializable> data) {
-                for (Map.Entry<Integer, Serializable> e : data.entrySet()) {
-                    GridComponent comp = null;
-
+            @Override
+            public void onExchange(DiscoveryDataContainer dataContainer) {
+                if (ctx.localNodeId().equals(dataContainer.getJoiningNodeId()))
+                    //NodeAdded msg reached joining node after round-trip over the ring
                     for (GridComponent c : ctx.components()) {
-                        if (c.discoveryDataType() != null && c.discoveryDataType().ordinal() == e.getKey()) {
-                            comp = c;
-
-                            break;
+                        if (c.discoveryDataType() != null)
+                            c.onGridDataReceived(dataContainer.gridDiscoveryData(c.discoveryDataType().ordinal()));
+                    }
+                else {
+                    //discovery data from newly joined node has to be applied to the current old node
+                    for (GridComponent c : ctx.components())
+                        if (c.discoveryDataType() != null) {
+                            NewNodeDiscoveryData data = dataContainer.newJoinerDiscoveryData(c.discoveryDataType().ordinal());
+                            if (data != null)
+                                c.onJoiningNodeDataReceived(data);
                         }
-                    }
 
-                    if (comp != null)
-                        comp.onDiscoveryDataReceived(joiningNodeId, nodeId, e.getValue());
-                    else {
-                        if (log.isDebugEnabled())
-                            log.debug("Received discovery data for unknown component: " + e.getKey());
-                    }
                 }
             }
         });
