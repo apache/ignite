@@ -17,24 +17,24 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
  */
-public class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
+class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -51,20 +51,32 @@ public class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdate
      * @param updateReq Update request.
      * @param updateRes Update response.
      */
-    public GridDhtAtomicSingleUpdateFuture(
+    GridDhtAtomicSingleUpdateFuture(
         GridCacheContext cctx,
         CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
         GridCacheVersion writeVer,
         GridNearAtomicUpdateRequest updateReq,
         GridNearAtomicUpdateResponse updateRes
     ) {
-        super(cctx, completionCb, writeVer, updateReq, updateRes,
-            Math.min(cctx.grid().cluster().nodes().size(), cctx.config().getBackups()));
+        super(cctx, completionCb, writeVer, updateReq, updateRes);
     }
 
     /** {@inheritDoc} */
-    @Override protected void addKey(KeyCacheObject key) {
+    @Override protected void addDhtKey(KeyCacheObject key, List<ClusterNode> dhtNodes) {
         assert this.key == null || this.key.equals(key) : this.key;
+
+        if (mappings == null)
+            mappings = U.newHashMap(dhtNodes.size());
+
+        this.key = key;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void addNearKey(KeyCacheObject key, Collection<UUID> readers) {
+        assert this.key == null || this.key.equals(key) : this.key;
+
+        if (mappings == null)
+            mappings = U.newHashMap(readers.size());
 
         this.key = key;
     }
@@ -84,6 +96,8 @@ public class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdate
 
         if (!F.isEmpty(updateRes.nearEvicted())) {
             try {
+                assert nearReaderEntry != null;
+
                 nearReaderEntry.removeReader(nodeId, updateRes.messageId());
             }
             catch (GridCacheEntryRemovedException e) {
@@ -96,27 +110,8 @@ public class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdate
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable Void res, @Nullable Throwable err) {
-        if (super.onDone(res, err)) {
-            cctx.mvcc().removeAtomicFuture(version());
-
-            boolean suc = err == null;
-
-            if (!suc)
-                updateRes.addFailedKey(key, err);
-
-            if (cntQryClsrs != null) {
-                for (CI1<Boolean> clsr : cntQryClsrs)
-                    clsr.apply(suc);
-            }
-
-            if (updateReq.writeSynchronizationMode() == FULL_SYNC)
-                completionCb.apply(updateReq, updateRes);
-
-            return true;
-        }
-
-        return false;
+    @Override protected void addFailedKeys(GridNearAtomicUpdateResponse updateRes, Throwable err) {
+        updateRes.addFailedKey(key, err);
     }
 
     /** {@inheritDoc} */

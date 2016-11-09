@@ -42,6 +42,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -76,26 +77,26 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
 
     /** Completion callback. */
     @GridToStringExclude
-    protected final CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb;
+    private final CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb;
 
     /** Update request. */
-    protected final GridNearAtomicUpdateRequest updateReq;
+    private final GridNearAtomicUpdateRequest updateReq;
 
     /** Update response. */
-    protected final GridNearAtomicUpdateResponse updateRes;
+    final GridNearAtomicUpdateResponse updateRes;
 
     /** Force transform backup flag. */
-    protected boolean forceTransformBackups;
+    private boolean forceTransformBackups;
 
     /** Mappings. */
     @GridToStringInclude
-    protected final Map<UUID, GridDhtAtomicUpdateRequest> mappings;
+    protected Map<UUID, GridDhtAtomicUpdateRequest> mappings;
 
     /** Continuous query closures. */
-    protected Collection<CI1<Boolean>> cntQryClsrs;
+    private Collection<CI1<Boolean>> cntQryClsrs;
 
     /** */
-    protected final boolean waitForExchange;
+    private final boolean waitForExchange;
 
     /** Response count. */
     private volatile int resCnt;
@@ -112,8 +113,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
         CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
         GridCacheVersion writeVer,
         GridNearAtomicUpdateRequest updateReq,
-        GridNearAtomicUpdateResponse updateRes,
-        int initMappingsSize) {
+        GridNearAtomicUpdateResponse updateRes) {
         this.cctx = cctx;
 
         futVer = cctx.versions().next(updateReq.topologyVersion());
@@ -122,7 +122,6 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
         this.updateRes = updateRes;
         this.writeVer = writeVer;
 
-        mappings = U.newHashMap(initMappingsSize);
         waitForExchange = !(updateReq.topologyLocked() || (updateReq.fastMap() && !updateReq.clientRequest()));
 
         if (log == null) {
@@ -132,7 +131,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Void> completeFuture(AffinityTopologyVersion topVer) {
+    @Override public final IgniteInternalFuture<Void> completeFuture(AffinityTopologyVersion topVer) {
         if (waitForExchange && updateReq.topologyVersion().compareTo(topVer) < 0)
             return this;
 
@@ -142,7 +141,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
     /**
      * @param clsr Continuous query closure.
      */
-    public void addContinuousQueryClosure(CI1<Boolean> clsr) {
+    public final void addContinuousQueryClosure(CI1<Boolean> clsr) {
         assert !isDone() : this;
 
         if (cntQryClsrs == null)
@@ -163,7 +162,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
      * @param updateCntr Partition update counter.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    public void addWriteEntry(GridDhtCacheEntry entry,
+    final void addWriteEntry(GridDhtCacheEntry entry,
         @Nullable CacheObject val,
         EntryProcessor<Object, Object, Object> entryProcessor,
         long ttl,
@@ -181,7 +180,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
 
         CacheWriteSynchronizationMode syncMode = updateReq.writeSynchronizationMode();
 
-        addKey(entry.key());
+        addDhtKey(entry.key(), dhtNodes);
 
         for (int i = 0; i < dhtNodes.size(); i++) {
             ClusterNode node = dhtNodes.get(i);
@@ -225,10 +224,16 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
     }
 
     /**
-     * adds new key.
-     * @param key key.
+     * @param key Key.
+     * @param dhtNodes DHT nodes.
      */
-    protected abstract void addKey(KeyCacheObject key);
+    protected abstract void addDhtKey(KeyCacheObject key, List<ClusterNode> dhtNodes);
+
+    /**
+     * @param key Key.
+     * @param readers Near cache readers.
+     */
+    protected abstract void addNearKey(KeyCacheObject key, Collection<UUID> readers);
 
     /**
      * @param readers Entry readers.
@@ -238,7 +243,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
      * @param ttl TTL for near cache update (optional).
      * @param expireTime Expire time for near cache update (optional).
      */
-    public void addNearWriteEntries(Iterable<UUID> readers,
+    final void addNearWriteEntries(Collection<UUID> readers,
         GridDhtCacheEntry entry,
         @Nullable CacheObject val,
         EntryProcessor<Object, Object, Object> entryProcessor,
@@ -246,7 +251,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
         long expireTime) {
         CacheWriteSynchronizationMode syncMode = updateReq.writeSynchronizationMode();
 
-        addKey(entry.key());
+        addNearKey(entry.key(), readers);
 
         AffinityTopologyVersion topVer = updateReq.topologyVersion();
 
@@ -298,22 +303,22 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
     /**
      * @return Write version.
      */
-    GridCacheVersion writeVersion() {
+    final GridCacheVersion writeVersion() {
         return writeVer;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid futureId() {
+    @Override public final IgniteUuid futureId() {
         return futVer.asGridUuid();
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersion version() {
+    @Override public final GridCacheVersion version() {
         return futVer;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onNodeLeft(UUID nodeId) {
+    @Override public final boolean onNodeLeft(UUID nodeId) {
         boolean res = registerResponse(nodeId);
 
         if (res && msgLog.isDebugEnabled()) {
@@ -328,10 +333,10 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
      * @param nodeId Node ID.
      * @return {@code True} if request found.
      */
-    protected boolean registerResponse(UUID nodeId) {
+    final boolean registerResponse(UUID nodeId) {
         int resCnt0;
 
-        GridDhtAtomicUpdateRequest req = mappings.get(nodeId);
+        GridDhtAtomicUpdateRequest req = mappings != null ? mappings.get(nodeId) : null;
 
         if (req != null) {
             synchronized (this) {
@@ -358,8 +363,8 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
     /**
      * Sends requests to remote nodes.
      */
-    public void map() {
-        if (!mappings.isEmpty()) {
+    final void map() {
+        if (!F.isEmpty(mappings)) {
             for (GridDhtAtomicUpdateRequest req : mappings.values()) {
                 try {
                     cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
@@ -399,7 +404,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
      *
      * @param nodeId Backup node ID.
      */
-    public void onResult(UUID nodeId) {
+    public final void onResult(UUID nodeId) {
         if (log.isDebugEnabled())
             log.debug("Received deferred DHT atomic update future result [nodeId=" + nodeId + ']');
 
@@ -413,6 +418,36 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
      * @param updateRes Update response.
      */
     public abstract void onResult(UUID nodeId, GridDhtAtomicUpdateResponse updateRes);
+
+    /**
+     * @param updateRes Response.
+     * @param err Error.
+     */
+    protected abstract void addFailedKeys(GridNearAtomicUpdateResponse updateRes, Throwable err);
+
+    /** {@inheritDoc} */
+    @Override public final boolean onDone(@Nullable Void res, @Nullable Throwable err) {
+        if (super.onDone(res, err)) {
+            cctx.mvcc().removeAtomicFuture(version());
+
+            boolean suc = err == null;
+
+            if (!suc)
+                addFailedKeys(updateRes, err);
+
+            if (cntQryClsrs != null) {
+                for (CI1<Boolean> clsr : cntQryClsrs)
+                    clsr.apply(suc);
+            }
+
+            if (updateReq.writeSynchronizationMode() == FULL_SYNC)
+                completionCb.apply(updateReq, updateRes);
+
+            return true;
+        }
+
+        return false;
+    }
 
     /** {@inheritDoc} */
     @Override public boolean trackable() {

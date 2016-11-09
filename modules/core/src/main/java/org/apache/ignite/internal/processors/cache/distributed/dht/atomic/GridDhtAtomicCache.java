@@ -3069,7 +3069,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         }
 
-        if (updateReq.keys().size() == 1)
+        if (updateReq.size() == 1)
             return new GridDhtAtomicSingleUpdateFuture(ctx, completionCb, writeVer, updateReq, updateRes);
         else
             return new GridDhtAtomicUpdateFuture(ctx, completionCb, writeVer, updateReq, updateRes);

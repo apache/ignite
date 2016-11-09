@@ -20,25 +20,24 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * DHT atomic cache backup update future.
  */
-public class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
+class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -56,20 +55,26 @@ public class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture
      * @param updateReq Update request.
      * @param updateRes Update response.
      */
-    public GridDhtAtomicUpdateFuture(
+    GridDhtAtomicUpdateFuture(
         GridCacheContext cctx,
         CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
         GridCacheVersion writeVer,
         GridNearAtomicUpdateRequest updateReq,
         GridNearAtomicUpdateResponse updateRes
     ) {
-        super(cctx, completionCb, writeVer, updateReq, updateRes, updateReq.keys().size());
+        super(cctx, completionCb, writeVer, updateReq, updateRes);
 
         keys = new ArrayList<>(updateReq.keys().size());
+        mappings = U.newHashMap(updateReq.keys().size());
     }
 
     /** {@inheritDoc} */
-    @Override protected void addKey(KeyCacheObject key) {
+    @Override protected void addDhtKey(KeyCacheObject key, List<ClusterNode> dhtNodes) {
+        keys.add(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void addNearKey(KeyCacheObject key, Collection<UUID> readers) {
         keys.add(key);
     }
 
@@ -107,29 +112,9 @@ public class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable Void res, @Nullable Throwable err) {
-        if (super.onDone(res, err)) {
-            cctx.mvcc().removeAtomicFuture(version());
-
-            boolean suc = err == null;
-
-            if (!suc) {
-                for (KeyCacheObject key : keys)
-                    updateRes.addFailedKey(key, err);
-            }
-
-            if (cntQryClsrs != null) {
-                for (CI1<Boolean> clsr : cntQryClsrs)
-                    clsr.apply(suc);
-            }
-
-            if (updateReq.writeSynchronizationMode() == FULL_SYNC)
-                completionCb.apply(updateReq, updateRes);
-
-            return true;
-        }
-
-        return false;
+    @Override protected void addFailedKeys(GridNearAtomicUpdateResponse updateRes, Throwable err) {
+        for (KeyCacheObject key : keys)
+            updateRes.addFailedKey(key, err);
     }
 
     /** {@inheritDoc} */
