@@ -302,6 +302,16 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
+    @Override public int size() {
+        return keys != null ? keys.size() : 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public KeyCacheObject key(int idx) {
+        return keys.get(idx);
+    }
+
+    /** {@inheritDoc} */
     @Override public List<?> values() {
         return op == TRANSFORM ? entryProcessors : vals;
     }
@@ -485,7 +495,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
         if (expiryPlcBytes != null && expiryPlc == null)
-            expiryPlc = ctx.marshaller().unmarshal(expiryPlcBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            expiryPlc = U.unmarshal(ctx, expiryPlcBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         finishUnmarshalCacheObjects(keys, cctx, ldr);
 

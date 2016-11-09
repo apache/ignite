@@ -25,6 +25,7 @@ import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -158,8 +159,20 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
     }
 
     /** {@inheritDoc} */
+    @Override public int size() {
+        return key == null ? 0 : 1;
+    }
+
+    /** {@inheritDoc} */
     @Override public List<KeyCacheObject> keys() {
         return Collections.singletonList(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public KeyCacheObject key(int idx) {
+        assert idx == 0 : idx;
+
+        return key;
     }
 
     /** {@inheritDoc} */
