@@ -35,7 +35,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoader;
@@ -760,7 +759,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             checkConsistency();
 
             if (globalState == ACTIVE){
-                sharedCtx.database().beforeOnKernalStart();
+                sharedCtx.database().beforeActivate();
 
                 sharedCtx.wal().onKernalStart(false);
 
@@ -2553,9 +2552,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return new GridFinishedFuture<>();
 
         if (state != ACTIVE)
-            throw new UnsupportedOperationException(state + " this type is not supported");
+            throw new UnsupportedOperationException(state + " this operation is not supported");
 
-        UUID requestId = UUID.randomUUID();
+        final UUID requestId = UUID.randomUUID();
 
         final GridActivateFuture actFut = new GridActivateFuture(requestId, ctx);
 
@@ -2578,13 +2577,24 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             });
 
             c.future().listen(new CI1<IgniteFuture>() {
-                @Override public void apply(IgniteFuture future) {
-                    actFut.onDone();
+                @Override public void apply(IgniteFuture fut) {
+                    try {
+                        fut.get();
+
+                        actFut.onDone();
+                    }
+                    catch (IgniteException e) {
+                        actFut.onDone(e);
+                    }finally {
+                        actFuts.remove(requestId);
+                    }
                 }
             });
         }else {
             //if call on server node, then load all config and create request for start, and send batch custom event
             try {
+                sharedCtx.database().beforeActivate();
+
                 List<DynamicCacheChangeRequest> reqs = new ArrayList<>();
 
                 Set<String> internalCaches = internalCachesNames();
@@ -2644,8 +2654,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Collection of futures.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    private Collection<DynamicCacheStartFuture> initiateCacheChanges(Collection<DynamicCacheChangeRequest> reqs,
-        boolean failIfExists) {
+    private Collection<DynamicCacheStartFuture> initiateCacheChanges(
+        Collection<DynamicCacheChangeRequest> reqs,
+        boolean failIfExists
+    ) {
         Collection<DynamicCacheStartFuture> res = new ArrayList<>(reqs.size());
 
         Collection<DynamicCacheChangeRequest> sndReqs = new ArrayList<>(reqs.size());
@@ -4046,7 +4058,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             try {
                 globalState = req.state();
 
-                sharedCtx.database().beforeOnKernalStart();
+                if (!req.initiatingNodeId().equals(ctx.localNodeId()))
+                    sharedCtx.database().beforeActivate();
 
                 sharedCtx.wal().onKernalStart(false);
 

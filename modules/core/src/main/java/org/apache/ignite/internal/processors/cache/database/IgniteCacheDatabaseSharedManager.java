@@ -113,7 +113,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      *
      */
-    public void beforeOnKernalStart() throws IgniteCheckedException {
+    public void beforeActivate() throws IgniteCheckedException {
 
     }
     /**
