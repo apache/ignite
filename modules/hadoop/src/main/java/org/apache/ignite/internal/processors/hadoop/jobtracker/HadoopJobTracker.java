@@ -75,6 +75,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -313,6 +314,8 @@ public class HadoopJobTracker extends HadoopComponent {
 
             HadoopMapReducePlan mrPlan = mrPlanner.preparePlan(job, ctx.nodes(), null);
 
+            logPlan(info, mrPlan);
+
             HadoopJobMetadata meta = new HadoopJobMetadata(ctx.localNodeId(), jobId, info);
 
             meta.mapReducePlan(mrPlan);
@@ -350,6 +353,64 @@ public class HadoopJobTracker extends HadoopComponent {
         }
         finally {
             busyLock.readUnlock();
+        }
+    }
+
+    /**
+     * Log map-reduce plan if needed.
+     *
+     * @param info Job info.
+     * @param plan Plan.
+     */
+    @SuppressWarnings("StringConcatenationInsideStringBufferAppend")
+    private void logPlan(HadoopJobInfo info, HadoopMapReducePlan plan) {
+        if (log.isDebugEnabled()) {
+            Map<UUID, IgniteBiTuple<Collection<HadoopInputSplit>, int[]>> map = new HashMap<>();
+
+            for (UUID nodeId : plan.mapperNodeIds())
+                map.put(nodeId, new IgniteBiTuple<Collection<HadoopInputSplit>, int[]>(plan.mappers(nodeId), null));
+
+            for (UUID nodeId : plan.reducerNodeIds()) {
+                int[] reducers = plan.reducers(nodeId);
+
+                IgniteBiTuple<Collection<HadoopInputSplit>, int[]> entry = map.get(nodeId);
+
+                if (entry == null)
+                    map.put(nodeId, new IgniteBiTuple<Collection<HadoopInputSplit>, int[]>(null, reducers));
+                else
+                    entry.set2(reducers);
+            }
+
+            StringBuilder details = new StringBuilder("[");
+
+            boolean first = true;
+
+            for (Map.Entry<UUID, IgniteBiTuple<Collection<HadoopInputSplit>, int[]>> entry : map.entrySet()) {
+                if (first)
+                    first = false;
+                else
+                    details.append(", ");
+
+                UUID nodeId = entry.getKey();
+
+                Collection<HadoopInputSplit> mappers = entry.getValue().get1();
+
+                if (mappers == null)
+                    mappers = Collections.emptyList();
+
+                int[] reducers = entry.getValue().get2();
+
+                if (reducers == null)
+                    reducers = new int[0];
+
+                details.append("[nodeId=" + nodeId + ", mappers=" + mappers.size() + ", reducers=" + reducers.length +
+                    ", mapperDetails=" + mappers + ", reducerDetails=" + Arrays.toString(reducers) + ']');
+            }
+
+            details.append(']');
+
+            log.debug("Prepared map-reduce plan [jobName=" + info.jobName() + ", mappers=" + plan.mappers() +
+                ", reducers=" + plan.reducers() + ", details=" + details + ']');
         }
     }
 

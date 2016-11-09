@@ -289,9 +289,7 @@ namespace ignite
         if (!diag.IsSuccessful())
             return diag.GetReturnCode();
 
-        std::string outConnectStr = connection->GetConfiguration().ToConnectString();
-
-        size_t reslen = CopyStringToBuffer(outConnectStr,
+        size_t reslen = CopyStringToBuffer(connectStr,
             reinterpret_cast<char*>(outConnectionString),
             static_cast<size_t>(outConnectionStringBufferLen));
 

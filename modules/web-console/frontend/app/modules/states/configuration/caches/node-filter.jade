@@ -36,7 +36,6 @@ include ../../../../../app/helpers/jade/mixins.jade
                     +dropdown('Node filter:', nodeFilterKind, '"nodeFilter"', 'true', 'Not set',
                         '[\
                             {value: "IGFS", label: "IGFS nodes"},\
-                            {value: "OnNodes", label: "Specified nodes"},\
                             {value: "Custom", label: "Custom"},\
                             {value: undefined, label: "Not set"}\
                         ]',
@@ -56,53 +55,5 @@ include ../../../../../app/helpers/jade/mixins.jade
 
                         +java-class('Class name:', customNodeFilter + '.className', '"customNodeFilter"',
                             'true', required, 'Class name of custom node filter implementation')
-                    div(ng-show='#{nodeFilterKind} === "OnNodes"')
-                        -var nodeSetFilter = nodeFilter + '.OnNodes.nodeIds'
-
-                        +ignite-form-group(ng-form=form ng-model=nodeSetFilter)
-                            -var uniqueTip = 'Such node ID already exists!'
-
-                            ignite-form-field-label
-                                | Node IDs
-                            ignite-form-group-tooltip
-                                | Set of node IDs to deploy cache
-                            ignite-form-group-add(ng-click='group.add = [{}]')
-                                | Add new node ID
-
-                            .group-content(ng-if='#{nodeSetFilter}.length')
-                                -var model = 'obj.model';
-                                -var name = '"edit" + $index'
-                                -var valid = form + '[' + name + '].$valid'
-                                -var save = nodeSetFilter + '[$index] = ' + model
-
-                                div(ng-repeat='model in #{nodeSetFilter} track by $index' ng-init='obj = {}')
-                                    label.col-xs-12.col-sm-12.col-md-12
-                                        .indexField
-                                            | {{ $index+1 }})
-                                        +table-remove-button(nodeSetFilter, 'Remove node ID')
-
-                                        span(ng-hide='field.edit')
-                                            a.labelFormField(ng-click='field.edit = true; #{model} = model;') {{ model }}
-                                        span(ng-if='field.edit' ng-init='#{field} = model')
-                                            +table-uuid-field(name, model, nodeSetFilter, valid, save, false, true)
-                                                +table-save-button(valid, save, false)
-                                                +unique-feedback(name, uniqueTip)
-                                                +uuid-feedback(name)
-
-                            .group-content(ng-repeat='field in group.add')
-                                -var model = 'new';
-                                -var name = '"new"'
-                                -var valid = form + '[' + name + '].$valid'
-                                -var save = nodeSetFilter + '.push(' + model + ')'
-
-                                div
-                                    label.col-xs-12.col-sm-12.col-md-12
-                                        +table-uuid-field(name, model, nodeSetFilter, valid, save, true, true)
-                                            +table-save-button(valid, save, true)
-                                            +unique-feedback(name, uniqueTip)
-                                            +uuid-feedback(name)
-                            .group-content-empty(id='nodeSetFilter' ng-if='!(#{nodeSetFilter}.length) && !group.add.length')
-                                | Not defined
-
             .col-sm-6
                 +preview-xml-java(model, 'cacheNodeFilter', 'igfss')

@@ -9,7 +9,7 @@ How to deploy locally:
  run "npm install --no-optional" for download backend dependencies.
 4. Change directory to '$IGNITE_HOME/modules/web-console/frontend' and
  run "npm install --no-optional" for download frontend dependencies.
-5. Build ignite-web-agent module follow instructions from 'modules/web-agent/README.txt'.
+5. Build ignite-web-agent module follow instructions from 'modules/web-console/web-agent/README.txt'.
 6. Copy ignite-web-agent-<version>.zip from '$IGNITE_HOME/modules/web-console/web-agent/target'
  to '$IGNITE_HOME/modules/web-console/backend/agent_dists' folder.
 

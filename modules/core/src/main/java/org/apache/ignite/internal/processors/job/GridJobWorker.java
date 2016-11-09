@@ -57,6 +57,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_JOB_CANCELLED;
@@ -421,7 +422,14 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
         try {
             if (job == null) {
-                job = marsh.unmarshal(jobBytes, U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                MarshallerUtils.jobSenderVersion(taskNode.version());
+
+                try {
+                    job = U.unmarshal(marsh, jobBytes, U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                }
+                finally {
+                    MarshallerUtils.jobSenderVersion(null);
+                }
 
                 // No need to hold reference any more.
                 jobBytes = null;
@@ -804,11 +812,11 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                                 ctx.localNodeId(),
                                 ses.getId(),
                                 ses.getJobId(),
-                                loc ? null : marsh.marshal(ex),
+                                loc ? null : U.marshal(marsh, ex),
                                 loc ? ex : null,
-                                loc ? null: marsh.marshal(res),
+                                loc ? null: U.marshal(marsh, res),
                                 loc ? res : null,
-                                loc ? null : marsh.marshal(attrs),
+                                loc ? null : U.marshal(marsh, attrs),
                                 loc ? attrs : null,
                                 isCancelled(),
                                 retry ? ctx.cache().context().exchange().readyAffinityVersion() : null);
