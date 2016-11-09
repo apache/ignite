@@ -167,7 +167,6 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
      * @throws Exception If fail.
      */
     public void testNoDataNodesOnClose() throws Exception {
-
         boolean failed = false;
 
         cnt = 0;
