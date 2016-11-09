@@ -30,7 +30,7 @@
 namespace ignite
 {
     /**
-     * Date type.
+     * %Date type.
      */
     class IGNITE_IMPORT_EXPORT Date
     {

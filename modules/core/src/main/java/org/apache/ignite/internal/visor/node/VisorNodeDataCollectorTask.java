@@ -18,21 +18,14 @@
 package org.apache.ignite.internal.visor.node;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.util.VisorExceptionWrapper;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.logMapped;
 
 /**
  * Collects current Grid state mostly topology and metrics.
@@ -42,25 +35,6 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
     VisorNodeDataCollectorTaskResult, VisorNodeDataCollectorJobResult> {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** {@inheritDoc} */
-    @Override protected Map<? extends ComputeJob, ClusterNode> map0(List<ClusterNode> subgrid,
-        VisorTaskArgument<VisorNodeDataCollectorTaskArg> arg) {
-        assert arg != null;
-
-        Map<ComputeJob, ClusterNode> map = U.newHashMap(subgrid.size());
-
-        try {
-            for (ClusterNode node : subgrid)
-                map.put(job(taskArg), node);
-
-            return map;
-        }
-        finally {
-            if (debug)
-                logMapped(ignite.log(), getClass(), map.values());
-        }
-    }
 
     /** {@inheritDoc} */
     @Override protected VisorNodeDataCollectorJob job(VisorNodeDataCollectorTaskArg arg) {

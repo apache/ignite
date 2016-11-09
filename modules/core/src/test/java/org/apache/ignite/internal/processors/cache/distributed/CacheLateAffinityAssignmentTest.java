@@ -1743,10 +1743,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         final List<CacheConfiguration> ccfgs = new ArrayList<>();
 
-        ccfgs.add(cacheConfiguration("ac1", ATOMIC, 0));
-        ccfgs.add(cacheConfiguration("ac2", ATOMIC, 1));
-        ccfgs.add(cacheConfiguration("ac3", ATOMIC, 2));
-
         ccfgs.add(cacheConfiguration("tc1", TRANSACTIONAL, 0));
         ccfgs.add(cacheConfiguration("tc2", TRANSACTIONAL, 1));
         ccfgs.add(cacheConfiguration("tc3", TRANSACTIONAL, 2));

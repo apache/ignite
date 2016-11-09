@@ -139,11 +139,6 @@ public class GridMessageListenHandler implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void onListenerRegistered(UUID routineId, GridKernalContext ctx) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public void unregister(UUID routineId, GridKernalContext ctx) {
         ctx.io().removeUserMessageListener(topic, pred);
     }
@@ -221,6 +216,11 @@ public class GridMessageListenHandler implements GridContinuousHandler {
         catch (CloneNotSupportedException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onNodeLeft() {
+        // No-op.
     }
 
     /** {@inheritDoc} */

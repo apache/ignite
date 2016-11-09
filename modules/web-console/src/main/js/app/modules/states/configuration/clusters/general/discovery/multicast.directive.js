@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './multicast.jade!';
+import templateUrl from './multicast.jade';
 
 export default ['igniteConfigurationClustersGeneralDiscoveryMulticast', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];
