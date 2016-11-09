@@ -103,11 +103,21 @@ public class IgniteTestSuite extends TestSuite {
     }
 
     /** {@inheritDoc} */
-    @Override public void addTestSuite(Class<? extends TestCase> testClass) {
-        IgniteTestSuite suite = new IgniteTestSuite(testClass, ignoredOnly);
+    @Override public void addTest(Test test) {
+        // Ignore empty test suites.
+        if (test instanceof IgniteTestSuite) {
+            IgniteTestSuite suite = (IgniteTestSuite)test;
 
-        if (suite.testCount() > 0)
-            addTest(suite);
+            if (suite.testCount() == 0)
+                return;
+        }
+
+        super.addTest(test);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addTestSuite(Class<? extends TestCase> testClass) {
+        addTest(new IgniteTestSuite(testClass, ignoredOnly));
     }
 
     /**

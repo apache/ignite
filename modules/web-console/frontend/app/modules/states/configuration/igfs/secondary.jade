@@ -24,7 +24,8 @@ include ../../../../../app/helpers/jade/mixins.jade
         ignite-form-panel-chevron
         label(id="secondaryFileSystem-title") Secondary file system
         ignite-form-field-tooltip.tipLabel
-            | Secondary file system is provided for pass-through, write-through, and read-through purposes
+            | Secondary file system is provided for pass-through, write-through, and read-through purposes#[br]
+            | #[a(href="https://apacheignite-fs.readme.io/docs/secondary-file-system" target="_blank") More info]
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=form)
         .panel-body(ng-if='ui.isPanelLoaded("#{form}")')

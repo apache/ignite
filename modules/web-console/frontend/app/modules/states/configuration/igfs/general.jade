@@ -23,6 +23,9 @@ include ../../../../../app/helpers/jade/mixins.jade
     .panel-heading(bs-collapse-toggle)
         ignite-form-panel-chevron
         label General
+        ignite-form-field-tooltip.tipLabel
+            | General IGFS configuration#[br]
+            | #[a(href="https://apacheignite-fs.readme.io/docs/in-memory-file-system" target="_blank") More info]
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id='general')
         .panel-body

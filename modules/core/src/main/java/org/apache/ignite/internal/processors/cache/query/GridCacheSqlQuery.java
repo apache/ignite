@@ -142,7 +142,7 @@ public class GridCacheSqlQuery implements Message, GridCacheQueryMarshallable {
         assert params != null;
 
         try {
-            paramsBytes = m.marshal(params);
+            paramsBytes = U.marshal(m, params);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -163,7 +163,7 @@ public class GridCacheSqlQuery implements Message, GridCacheQueryMarshallable {
                 // To avoid deserializing of enum types.
                 params = ((BinaryMarshaller)m).binaryMarshaller().unmarshal(paramsBytes, ldr);
             else
-                params = m.unmarshal(paramsBytes, ldr);
+                params = U.unmarshal(m, paramsBytes, ldr);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

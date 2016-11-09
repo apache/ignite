@@ -24,21 +24,28 @@ include ../../../../../app/helpers/jade/mixins.jade
         ignite-form-panel-chevron
         label Queries & Indexing
         ignite-form-field-tooltip.tipLabel
-            | Cache queries settings
+            | Cache queries settings#[br]
+            | #[a(href="https://apacheignite.readme.io/docs/sql-queries" target="_blank") More info]
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=form)
         .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
             .col-sm-6
                 .settings-row
                     +text('SQL schema name:', model + '.sqlSchema', '"sqlSchema"', 'false', 'Input schema name',
-                        'Schema name allow to use existing database queries in your application and according to SQL ANSI-99<br>\
-                        Cache is reffered by schema name in cross-cache queries<br/>\
-                        Nonquoted identifiers are not case sensitive. Quoted identifiers are case sensitive<br/>\
-                        When SQL schema is not specified, quoted cache name should be used<br/>\
-                        Query example without schema name:<br>\
-                        SELECT .... FROM "cache1".Type1 JOIN "cache2".Type2 ...<br>\
-                        The same query using schema name:<br>\
-                        SELECT .... FROM cache1.Type1 JOIN cache2.Type2 ...')
+                        'Specify any custom name to be used as SQL schema for current cache. This name will correspond to SQL ANSI-99 standard.\
+                        Nonquoted identifiers are not case sensitive. Quoted identifiers are case sensitive.\
+                        When SQL schema is not specified, quoted cache name should used instead.<br/>\
+                        For example:\
+                        <ul>\
+                            <li>\
+                                Query without schema names (quoted cache names will be used):\
+                                SELECT * FROM "PersonsCache".Person p INNER JOIN "OrganizationsCache".Organization o on p.org = o.id\
+                            </li>\
+                            <li>\
+                                The same query using schema names "Persons" and "Organizations":\
+                                SELECT * FROM Persons.Person p INNER JOIN Organizations.Organization o on p.org = o.id\
+                            </li>\
+                        </ul>')
                 .settings-row
                     +number('On-heap cache for off-heap indexes:', model + '.sqlOnheapRowCacheSize', '"sqlOnheapRowCacheSize"', 'true', '10240', '1',
                         'Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access')
@@ -97,7 +104,8 @@ include ../../../../../app/helpers/jade/mixins.jade
                         'Flag indicating whether SQL indexes should support snapshots')
                 .settings-row
                     +checkbox('Escape table and filed names', model + '.sqlEscapeAll', '"sqlEscapeAll"',
-                        'If enabled than all the SQL table and field names will be escaped with double quotes like "tableName"."fieldName"<br/>\
-                        This enforces case sensitivity for field names and also allows having special characters in table and field names')
+                        'If enabled than all schema, table and field names will be escaped with double quotes (for example: "tableName"."fieldName").<br/>\
+                        This enforces case sensitivity for field names and also allows having special characters in table and field names.<br/>\
+                        Escaped names will be used for creation internal structures in Ignite SQL engine.')
             .col-sm-6
                 +preview-xml-java(model, 'cacheQuery', 'domains')

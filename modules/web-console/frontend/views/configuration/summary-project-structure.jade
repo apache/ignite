@@ -19,7 +19,7 @@
         button.close(id='summary-project-structure-close' ng-click='$hide()') &times;
     .popover-content
         treecontrol.tree-classic(tree-model='projectStructure' options='projectStructureOptions' expanded-nodes='projectStructureExpanded')
-            span(ng-switch='' on='node.type')
+            span(ng-switch='node.type')
                 span(ng-switch-when='folder')
                     label {{node.name}}
                 span(ng-switch-when='file')

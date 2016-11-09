@@ -14,6 +14,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+include ../../app/directives/ui-grid-settings/ui-grid-settings.jade
+
 mixin btn-toolbar(btn, click, tip, focusId)
     i.btn.btn-default.fa(class=btn ng-click=click bs-tooltip='' data-title=tip ignite-on-click-focus=focusId data-trigger='hover' data-placement='bottom')
 
@@ -82,36 +84,70 @@ mixin paragraph-rename
         .input-tip
             input.form-control(id='paragraph-name-{{paragraph.id}}' ng-model='paragraph.editName' required ng-click='$event.stopPropagation();' ignite-on-enter='renameParagraph(paragraph, paragraph.editName)' ignite-on-escape='paragraph.edit = false')
 
+mixin query-settings
+    label.tipLabel Refresh rate:
+        button.btn.btn-default.fa.fa-clock-o.tipLabel(title='Click to show refresh rate dialog' ng-class='{"btn-info": paragraph.rate && paragraph.rate.installed}' bs-popover data-template-url='/sql/paragraph-rate.html' data-placement='left' data-auto-close='1' data-trigger='click') {{rateAsString(paragraph)}}
+    label.tipLabel Page size:
+        button.btn.btn-default.select-toggle.tipLabel(ng-model='paragraph.pageSize' bs-options='item for item in pageSizes' bs-select bs-tooltip data-placement='bottom-right' data-title='Max number of rows to show in query result as one page')
+    label.margin-left-dflt(title='Fetch first page of results only')
+        input(type='checkbox' ng-model='paragraph.firstPageOnly')
+        span Fetch first page only
+    label.margin-left-dflt(title='Execute query locally on selected node.\nNode selection dialog will be shown before query execution.')
+        input(type='checkbox' ng-model='paragraph.localQry')
+        span Local query
+
+mixin query-actions
+    .btn-group(bs-tooltip='' data-title='{{actionTooltip(paragraph, "execute", true)}}' data-placement='bottom')
+        button.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, true)' ng-click='execute(paragraph)') Execute
+        button.btn.btn-primary.dropdown-toggle(
+            ng-disabled='!actionAvailable(paragraph, true)'
+            bs-dropdown=''
+            data-container='body'
+            data-placement='bottom-right'
+        )
+            span.caret
+        ul.dropdown-menu(role='menu')
+            li #[a(href='javascript:void(0)' ng-click='execute(paragraph)') Execute]
+            li #[a(href='javascript:void(0)' ng-if='nonCollocatedJoinsAvailable(paragraph)' ng-click='execute(paragraph, true)') Execute non collocated joins]
+    .btn-group(bs-tooltip='' data-title='{{actionTooltip(paragraph, "execute scan", false)}}' data-placement='bottom')
+        button.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, false)' ng-click='scan(paragraph)') Scan
+        button.btn.btn-primary.dropdown-toggle(
+            ng-disabled='!actionAvailable(paragraph, false)'
+            bs-dropdown=''
+            data-container='body'
+            data-placement='bottom-right'
+        )
+            span.caret
+        ul.dropdown-menu(role='menu')
+            li #[a(href='javascript:void(0)' ng-click='scan(paragraph)') Scan]
+            li #[a(href='javascript:void(0)' ng-click='actionAvailable(paragraph, false) && scanWithFilter(paragraph)') Scan with filter]
+    a.btn.btn-default(ng-disabled='!actionAvailable(paragraph, true)' ng-click='explain(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{actionTooltip(paragraph, "explain", true)}}') Explain
+
 mixin query-controls
     .sql-controls
-        a.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, true)' ng-click='execute(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{actionTooltip(paragraph, "execute", true)}}') Execute
-        a.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, true)' ng-click='explain(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{actionTooltip(paragraph, "explain", true)}}') Explain
-        .btn-group(bs-tooltip='' data-title='{{actionTooltip(paragraph, "execute scan", false)}}' data-placement='bottom')
-            a.btn.btn-primary.fieldButton(ng-disabled='!actionAvailable(paragraph, false)' ng-click='scan(paragraph)') Scan
-            a.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, false)' data-toggle='dropdown' data-container='body' bs-dropdown='[{ text: "Scan with filter", click: "actionAvailable(paragraph, false) && scanWithFilter(paragraph)" }]')
-                span.caret
-
+        +query-actions()
         .pull-right
-            label.tipLabel System columns:
-            a.btn.btn-default.fa.fa-bars.tipLabel(ng-class='{"btn-info": paragraph.systemColumns}' ng-click='toggleSystemColumns(paragraph)' ng-disabled='paragraph.disabledSystemColumns' bs-tooltip data-title='Show "_KEY", "_VAL" columns')
-            label.tipLabel Refresh rate:
-            button.btn.btn-default.fa.fa-clock-o.tipLabel(title='Click to show refresh rate dialog' ng-class='{"btn-info": paragraph.rate && paragraph.rate.installed}' bs-popover data-template-url='/sql/paragraph-rate.html' data-placement='left' data-auto-close='1' data-trigger='click') {{rateAsString(paragraph)}}
-            label.tipLabel Page size:
-            button.select-toggle.fieldButton.btn.btn-default(ng-model='paragraph.pageSize' bs-options='item for item in pageSizes' bs-select bs-tooltip data-placement='bottom-right' data-title='Max number of rows to show in query result as one page')
+            +query-settings()
 
 mixin table-result
     .total.row
         .col-xs-4
+            +ui-grid-settings
             label Page: #[b {{paragraph.page}}]
             label.margin-left-dflt Results so far: #[b {{paragraph.rows.length + paragraph.total}}]
             label.margin-left-dflt Duration: #[b {{paragraph.duration | duration}}]
         .col-xs-4
             +result-toolbar
         .col-xs-4
-            .btn-group.pull-right(ng-disabled='paragraph.loading')
-                button.btn.btn-primary.fieldButton(ng-click='exportCsv(paragraph)' bs-tooltip data-title='{{actionTooltip(paragraph, "export", false)}}') Export
-                button.btn.btn-primary(id='export-item-dropdown' data-toggle='dropdown' data-container='body' bs-dropdown='exportDropdown' data-placement='bottom-right')
-                    span.caret
+            .pull-right
+                label(style='margin-right: 10px;')
+                    input(type='checkbox' ng-model='paragraph.systemColumns' ng-change='toggleSystemColumns(paragraph)' ng-disabled='paragraph.disabledSystemColumns')
+                    span Show _KEY, _VAL columns
+                .btn-group(ng-disabled='paragraph.loading')
+                    button.btn.btn-primary(ng-click='exportCsv(paragraph)' bs-tooltip data-title='{{actionTooltip(paragraph, "export", false)}}') Export
+                    button.btn.btn-primary.dropdown-toggle(id='export-item-dropdown' data-toggle='dropdown' data-container='body' bs-dropdown='exportDropdown' data-placement='bottom-right')
+                        span.caret
+    
     .grid(ui-grid='paragraph.gridOptions' ui-grid-resize-columns ui-grid-exporter)
 
 mixin chart-result
@@ -161,15 +197,15 @@ mixin chart-result
                                 .col-xs-4.col-sm-3
                                     div(ng-show='caches.length > 0' style='padding: 5px 10px' st-table='displayedCaches' st-safe-src='caches')
                                         lable.labelField.labelFormField Caches:
-                                        i.fa.fa-database.tipField(title='Click to show cache types metadata dialog' bs-popover data-template-url='/sql/cache-metadata.html' data-placement='bottom' data-trigger='click' data-container='#{{ paragraph.id}}')
+                                        i.fa.fa-database.tipField(title='Click to show cache types metadata dialog' bs-popover data-template-url='/sql/cache-metadata.html' data-placement='bottom' data-trigger='click' data-container='#{{ paragraph.id }}')
                                         .input-tip
                                             input.form-control(type='text' st-search='label' placeholder='Filter caches...')
                                         table.links
                                             tbody.scrollable-y(style='max-height: 15em; display: block;')
                                                 tr(ng-repeat='cache in displayedCaches track by cache.name')
                                                     td(style='width: 100%')
-                                                        input.labelField(id='cache{{$index}}' type='radio' value='{{cache.name}}' ng-model='paragraph.cacheName')
-                                                        label(for='cache{{$index}}' ng-bind='cache.label')
+                                                        input.labelField(id='cache_{{ [paragraph.id, $index].join("_") }}' type='radio' value='{{cache.name}}' ng-model='paragraph.cacheName')
+                                                        label(for='cache_{{ [paragraph.id, $index].join("_") }} ' ng-bind='cache.label')
                                     .empty-caches(ng-show='displayedCaches.length == 0 && caches.length != 0')
                                         label Wrong caches filter
                                     .empty-caches(ng-show='caches.length == 0')
@@ -183,10 +219,10 @@ mixin chart-result
                                     +table-result
                                 .chart(ng-switch-when='chart')
                                     +chart-result
-                                .footer.clearfix(ng-show='paragraph.nonRefresh()')
+                                .footer.clearfix
                                     a.pull-left(ng-click='showResultQuery(paragraph)') Show query
 
-                                    -var nextVisibleCondition = 'paragraph.queryId && (paragraph.table() || paragraph.chart() && (paragraph.timeLineSupported() || !paragraph.chartTimeLineEnabled()))'
+                                    -var nextVisibleCondition = 'paragraph.resultType() != "error" && paragraph.queryId && paragraph.nonRefresh() && (paragraph.table() || paragraph.chart() && !paragraph.scanExplain())'
 
                                     .pull-right(ng-show=nextVisibleCondition ng-class='{disabled: paragraph.loading}' ng-click='!paragraph.loading && nextPage(paragraph)')
                                         i.fa.fa-chevron-circle-right
