@@ -46,6 +46,7 @@ module.exports.factory = function(logger, cookieParser, bodyParser, session, con
                 secret: settings.sessionSecret,
                 resave: false,
                 saveUninitialized: true,
+                unset: 'destroy',
                 cookie: {
                     expires: new Date(Date.now() + settings.cookieTTL),
                     maxAge: settings.cookieTTL

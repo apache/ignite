@@ -40,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -347,15 +348,17 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         // Fields query
         GridQueryFieldsResult fieldsRes =
-            spi.queryFields("A", "select a.a.name n1, a.a.age a1, b.a.name n2, " +
-            "b.a.age a2 from a.a, b.a where a.a.id = b.a.id ", Collections.emptySet(), null);
+            spi.execute("A", "select a.a.name n1, a.a.age a1, b.a.name n2, " +
+                "b.a.age a2 from a.a, b.a where a.a.id = b.a.id ", Collections.emptySet(), null, 0, null);
 
         String[] aliases = {"N1", "A1", "N2", "A2"};
         Object[] vals = { "Valera", 19, "Kolya", 25};
 
-        assertTrue(fieldsRes.iterator().hasNext());
+        IgniteSpiCloseableIterator<List<?>> it = fieldsRes.iterator();
 
-        List<?> fields = fieldsRes.iterator().next();
+        assertTrue(it.hasNext());
+
+        List<?> fields = it.next();
 
         assertEquals(4, fields.size());
 
@@ -366,7 +369,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
             assertEquals(vals[i++], f);
         }
 
-        assertFalse(fieldsRes.iterator().hasNext());
+        assertFalse(it.hasNext());
 
         // Remove
         spi.remove(typeAA.space(), key(2), aa(2, "Valera", 19));
@@ -447,7 +450,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                 time = now;
                 range *= 3;
 
-                GridQueryFieldsResult res = spi.queryFields("A", sql, Arrays.<Object>asList(1, range), null);
+                GridQueryFieldsResult res = spi.execute("A", sql, Arrays.<Object>asList(1, range), null, 0, null);
 
                 assert res.iterator().hasNext();
 
@@ -552,8 +555,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                     return name;
                 }
 
-                @Override
-                public Class<?> type() {
+                @Override public Class<?> type() {
                     return Object.class;
                 }
             };

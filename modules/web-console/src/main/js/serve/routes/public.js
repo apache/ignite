@@ -112,12 +112,16 @@ module.exports.factory = function(express, passport, nodemailer, settings, mail,
                     account.resetPasswordToken = _randomString();
 
                     return account.save()
-                        .then(() => mail.send(account, `Thanks for signing up for ${settings.smtp.username}.`,
-                            `Hello ${account.firstName} ${account.lastName}!<br><br>` +
-                            `You are receiving this email because you have signed up to use <a href="http://${req.headers.host}">${settings.smtp.username}</a>.<br><br>` +
-                            'If you have not done the sign up and do not know what this email is about, please ignore it.<br>' +
-                            'You may reset the password by clicking on the following link, or paste this into your browser:<br><br>' +
-                            `http://${req.headers.host}/password/reset?token=${account.resetPasswordToken}`));
+                        .then(() => {
+                            const resetLink = `http://${req.headers.host}/password/reset?token=${account.resetPasswordToken}`;
+
+                            mail.send(account, `Thanks for signing up for ${settings.smtp.username}.`,
+                                `Hello ${account.firstName} ${account.lastName}!<br><br>` +
+                                `You are receiving this email because you have signed up to use <a href="http://${req.headers.host}">${settings.smtp.username}</a>.<br><br>` +
+                                'If you have not done the sign up and do not know what this email is about, please ignore it.<br>' +
+                                'You may reset the password by clicking on the following link, or paste this into your browser:<br><br>' +
+                                `<a href="${resetLink}">${resetLink}</a>`);
+                        });
                 })
                 .catch((err) => {
                     res.status(401).send(err.message);
@@ -166,14 +170,17 @@ module.exports.factory = function(express, passport, nodemailer, settings, mail,
 
                     return user.save();
                 })
-                .then((user) => mail.send(user, 'Password Reset',
-                    `Hello ${user.firstName} ${user.lastName}!<br><br>` +
-                    'You are receiving this because you (or someone else) have requested the reset of the password for your account.<br><br>' +
-                    'Please click on the following link, or paste this into your browser to complete the process:<br><br>' +
-                    'http://' + req.headers.host + '/password/reset?token=' + user.resetPasswordToken + '<br><br>' +
-                    'If you did not request this, please ignore this email and your password will remain unchanged.',
-                    'Failed to send email with reset link!')
-                )
+                .then((user) => {
+                    const resetLink = `http://${req.headers.host}/password/reset?token=${user.resetPasswordToken}`;
+
+                    mail.send(user, 'Password Reset',
+                        `Hello ${user.firstName} ${user.lastName}!<br><br>` +
+                        'You are receiving this because you (or someone else) have requested the reset of the password for your account.<br><br>' +
+                        'Please click on the following link, or paste this into your browser to complete the process:<br><br>' +
+                        `<a href="${resetLink}">${resetLink}</a><br><br>` +
+                        'If you did not request this, please ignore this email and your password will remain unchanged.',
+                        'Failed to send email with reset link!');
+                })
                 .then(() => res.status(200).send('An email has been sent with further instructions.'))
                 .catch((err) => {
                     // TODO IGNITE-843 Send email to admin

@@ -23,16 +23,19 @@ header#header.header
                 ignite-header-logo
             td(ng-if='$root.user' style='padding-top: 20px')
                 ul.nav.navbar-nav(ignite-sidebar ignite-navbar)
-                    li(ng-class='{active: $state.includes("base.configuration")}')
-                        a.dropdown-toggle(data-toggle='dropdown' bs-dropdown='sidebar.items' data-placement='bottom-right') Configuration
+                    li(ng-class='{active: $state.includes("base.configuration")}' bs-dropdown='sidebar.items' data-placement='bottom-right' data-trigger='hover focus' data-container='self' data-animation='' ng-click='$event.stopPropagation()')
+                        a.dropdown-toggle Configuration
                             span.caret
 
-                    li.sql-notebooks(ng-class='{active: $state.includes("base.sql")}' ng-controller='notebooks')
-                        a(ng-if='IgniteDemoMode' ui-sref='base.sql.demo') SQL
+                ul.nav.navbar-nav(ng-controller='notebooks')
+                    li.sql-notebooks(ng-if='IgniteDemoMode' ng-class='{active: $state.includes("base.sql")}')
+                        a(ui-sref='base.sql.demo') SQL
 
-                        a(ng-if='!IgniteDemoMode && !notebooks.length' ng-click='inputNotebookName()') SQL
+                    li.sql-notebooks(ng-if='!IgniteDemoMode && !notebooks.length' ng-class='{active: $state.includes("base.sql")}')
+                        a(ng-click='inputNotebookName()') SQL
 
-                        a.dropdown-toggle(ng-if='!IgniteDemoMode && notebooks.length' data-toggle='dropdown' bs-dropdown='notebookDropdown' data-placement='bottom-left') SQL
+                    li.sql-notebooks(ng-if='!IgniteDemoMode && notebooks.length' ng-class='{active: $state.includes("base.sql")}' bs-dropdown='notebookDropdown' data-placement='bottom-left' data-trigger='hover focus' data-container='self' data-animation='' ng-click='$event.stopPropagation()')
+                        a.dropdown-toggle SQL
                             span.caret
 
                     li(ui-sref-active='active'  ng-repeat='item in navbar.items')
@@ -43,6 +46,6 @@ header#header.header
                     button.btn.btn-info(ng-if='!IgniteDemoMode' ng-click='startDemo()') Start demo
 
                 ul.nav.navbar-nav.pull-right(ignite-userbar)
-                    li(ng-class='{active: $state.includes("settings")}')
-                        a.dropdown-toggle(data-toggle='dropdown' bs-dropdown='userbar.items' data-placement='bottom-right') {{user.firstName}} {{user.lastName}}
+                    li(bs-dropdown='userbar.items' data-placement='bottom-right' data-trigger='hover focus' data-container='self' data-animation='' ng-class='{active: $state.includes("settings")}' ng-click='$event.stopPropagation()')
+                        a.dropdown-toggle {{user.firstName}} {{user.lastName}}
                             span.caret

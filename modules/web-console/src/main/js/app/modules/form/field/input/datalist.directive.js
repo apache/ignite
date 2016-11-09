@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-import template from './datalist.jade!';
+import templateUrl from './datalist.jade';
 
-export default ['igniteFormFieldInputDatalist', ['IgniteFormGUID', '$table', (guid, $table) => {
+export default ['igniteFormFieldInputDatalist', ['IgniteFormGUID', 'IgniteLegacyTable', (guid, LegacyTable) => {
     const link = (scope, element, attrs, [ngModel, form, label], transclude) => {
         const {id, ngModelName} = scope;
 
@@ -74,10 +74,10 @@ export default ['igniteFormFieldInputDatalist', ['IgniteFormGUID', '$table', (gu
         scope.ngChange = () => {
             ngModel.$setViewValue(scope.value);
 
-            if (JSON.stringify(scope.value) !== JSON.stringify(form.$defaults[name]))
-                ngModel.$setDirty();
-            else
+            if (_.isEqual(scope.value, form.$defaults[name]))
                 ngModel.$setPristine();
+            else
+                ngModel.$setDirty();
 
             setTimeout(checkValid, 100); // Use setTimeout() workaround of problem of two controllers.
         };
@@ -86,9 +86,8 @@ export default ['igniteFormFieldInputDatalist', ['IgniteFormGUID', '$table', (gu
             scope.value = ngModel.$modelValue;
         };
 
-        // TODO LEGACY
         scope.tableReset = () => {
-            $table.tableSaveAndReset();
+            LegacyTable.tableSaveAndReset();
         };
 
         transclude(scope.$parent, function(clone, tscope) {
@@ -115,7 +114,7 @@ export default ['igniteFormFieldInputDatalist', ['IgniteFormGUID', '$table', (gu
             autofocus: '=igniteFormFieldInputAutofocus'
         },
         link,
-        template,
+        templateUrl,
         replace: true,
         transclude: true,
         require: ['ngModel', '^form', '?^igniteFormField']

@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-import template from './loading.jade!';
-import './loading.css!';
+import templateUrl from './loading.jade';
+import './loading.css';
 
-export default ['igniteLoading', ['$loading', '$compile', ($loading, $compile) => {
+export default ['igniteLoading', ['IgniteLoading', '$templateCache', '$compile', (Loading, $templateCache, $compile) => {
     const link = (scope, element) => {
-        const compiledTemplate = $compile(template());
+        const compiledTemplate = $compile($templateCache.get(templateUrl));
 
         const build = () => {
             scope.position = scope.position || 'middle';
@@ -30,7 +30,7 @@ export default ['igniteLoading', ['$loading', '$compile', ($loading, $compile) =
             if (!scope.loading) {
                 scope.loading = loading;
 
-                $loading.add(scope.key || 'defaultSpinnerKey', scope.loading);
+                Loading.add(scope.key || 'defaultSpinnerKey', scope.loading);
                 element.append(scope.loading);
             }
         };

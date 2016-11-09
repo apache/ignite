@@ -73,12 +73,15 @@ import scala.language.{implicitConversions, reflectiveCalls}
  *
  * ====Arguments====
  * {{{
- *     -id=<node-id>
- *         Full ID of the node to get cache statistics from.
- *         Either '-id8' or '-id' can be specified.
- *         If neither is specified statistics will be gathered from all nodes.
  *     -id8=<node-id>
  *         ID8 of the node to get cache statistics from.
+ *         Note that either '-id8' or '-id' should be specified.
+ *         You can also use '@n0' ... '@nn' variables as a shortcut for <node-id8>.
+ *         To specify oldest node on the same host as visor use variable '@nl'.
+ *         To specify oldest node on other hosts that are not running visor use variable '@nr'.
+ *         If neither is specified statistics will be gathered from all nodes.
+ *     -id=<node-id>
+ *         Full ID of the node to get cache statistics from.
  *         Either '-id8' or '-id' can be specified.
  *         If neither is specified statistics will be gathered from all nodes.
  *     -c=<cache-name>
@@ -278,7 +281,7 @@ class VisorCacheCommand {
                             else if (hasArgFlag("swap", argLst))
                                 VisorCacheSwapCommand().swap(argLst, node)
                             else if (hasArgFlag("stop", argLst))
-                                VisorCacheStopCommand().scan(argLst, node)
+                                VisorCacheStopCommand().stop(argLst, node)
                         }
                         else {
                             if (hasArgFlag("clear", argLst))
@@ -311,11 +314,16 @@ class VisorCacheCommand {
                 return
             }
 
-            println("Time of the snapshot: " + formatDateTime(System.currentTimeMillis))
+            node match {
+                case Some(n) =>
+                    println("ID8=" + nid8(n) + ", time of the snapshot: " + formatDateTime(System.currentTimeMillis))
+                case None =>
+                    println("Time of the snapshot: " + formatDateTime(System.currentTimeMillis))
+            }
 
             val sumT = VisorTextTable()
 
-            sumT #= ("Name(@)", "Mode", "Nodes", "Entries (Heap / Off heap)", "Hits", "Misses", "Reads", "Writes")
+            sumT #= ("Name(@)", "Mode", "Nodes", "Entries (Heap / Off-heap)", "Hits", "Misses", "Reads", "Writes")
 
             sortAggregatedData(aggrData, sortType.getOrElse("cn"), reversed).foreach(
                 ad => {
@@ -389,7 +397,7 @@ class VisorCacheCommand {
                         (ad.maximumHeapSize() + ad.maximumOffHeapSize()))
                     csT += ("  Heap size Min/Avg/Max", ad.minimumHeapSize() + " / " +
                         formatDouble(ad.averageHeapSize()) + " / " + ad.maximumHeapSize())
-                    csT += ("  Off heap size Min/Avg/Max", ad.minimumOffHeapSize() + " / " +
+                    csT += ("  Off-heap size Min/Avg/Max", ad.minimumOffHeapSize() + " / " +
                         formatDouble(ad.averageOffHeapSize()) + " / " + ad.maximumOffHeapSize())
 
                     val ciT = VisorTextTable()
@@ -406,7 +414,15 @@ class VisorCacheCommand {
 
                             formatDouble(nm.getCurrentCpuLoad * 100d) + " %",
                             X.timeSpan2HMSM(nm.getUpTime),
-                            cm.keySize(),
+                            cm match {
+                                case v2: VisorCacheMetricsV2 => (
+                                    "Total: " + (v2.keySize() + v2.offHeapEntriesCount()),
+                                    "  Heap: " + v2.keySize(),
+                                    "  Off-Heap: " + v2.offHeapEntriesCount(),
+                                    "  Off-Heap Memory: " + formatMemory(v2.offHeapAllocatedSize())
+                                )
+                                case v1 => v1.keySize()
+                            },
                             (
                                 "Hi: " + cm.hits(),
                                 "Mi: " + cm.misses(),
@@ -459,12 +475,12 @@ class VisorCacheCommand {
      */
     private def mkCacheName(@Nullable s: String): String = {
         if (s == null) {
-            val v = mfind(DFLT_CACHE_KEY)
+            val v = mfindHead(DFLT_CACHE_KEY)
 
             DFLT_CACHE_NAME + (if (v.isDefined) "(@" + v.get._1 + ')' else "")
         }
         else {
-            val v = mfind(s)
+            val v = mfindHead(s)
 
             s + (if (v.isDefined) "(@" + v.get._1 + ')' else "")
         }
@@ -625,7 +641,7 @@ class VisorCacheCommand {
 
         val sumT = VisorTextTable()
 
-        sumT #= ("#", "Name(@)", "Mode", "Size (Heap / Off heap)")
+        sumT #= ("#", "Name(@)", "Mode", "Size (Heap / Off-heap)")
 
         sortedAggrData.indices.foreach(i => {
             val ad = sortedAggrData(i)
@@ -649,7 +665,7 @@ class VisorCacheCommand {
 
         sumT.render()
 
-        val a = ask("\nChoose cache number ('c' to cancel) [c]: ", "c")
+        val a = ask("\nChoose cache number ('c' to cancel) [c]: ", "0")
 
         if (a.toLowerCase == "c")
             None
@@ -703,16 +719,18 @@ object VisorCacheCommand {
             "cache -stop -c=<cache-name>"
     ),
         args = Seq(
+            "-id8=<node-id>" -> Seq(
+                "ID8 of the node to get cache statistics from.",
+                "Note that either '-id8' or '-id' should be specified.",
+                "You can also use '@n0' ... '@nn' variables as a shortcut for <node-id8>.",
+                "To specify oldest node on the same host as visor use variable '@nl'.",
+                "To specify oldest node on other hosts that are not running visor use variable '@nr'.",
+                "If neither is specified statistics will be gathered from all nodes."
+            ),
             "-id=<node-id>" -> Seq(
                 "Full ID of the node to get cache statistics from.",
                 "Either '-id8' or '-id' can be specified.",
                 "If neither is specified statistics will be gathered from all nodes."
-            ),
-            "-id8=<node-id>" -> Seq(
-                "ID8 of the node to get cache statistics from.",
-                "Either '-id8' or '-id' can be specified.",
-                "If neither is specified statistics will be gathered from all nodes.",
-                "Note you can also use '@n0' ... '@nn' variables as shortcut to <node-id>."
             ),
             "-c=<cache-name>" -> Seq(
                 "Name of the cache.",
