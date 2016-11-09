@@ -870,6 +870,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                                         final Runnable r = new Runnable() {
                                             @Override public void run() {
                                                 try {
+                                                    if (cancelled)
+                                                        throw new IllegalStateException("DataStreamed closed.");
+
                                                     load0(entriesForNode, resFut, activeKeys, remaps + 1);
                                                 }
                                                 catch (Throwable ex) {
@@ -1209,8 +1212,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             err = new IgniteCheckedException("Some of DataStreamer operations failed [failedCount=" + failed + "]");
 
         fut.onDone(err);
-
-        assert remapSem.availablePermits() == REMAP_SEMAPHORE_PERMISSIONS_COUNT;
 
         return err;
     }
