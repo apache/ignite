@@ -27,7 +27,8 @@ include ../../../../../app/helpers/jade/mixins.jade
         ignite-form-panel-chevron
         label(id='sslConfiguration-title') SSL configuration
         ignite-form-field-tooltip.tipLabel
-            | Settings for SSL configuration for creating a secure socket layer
+            | Settings for SSL configuration for creating a secure socket layer#[br]
+            | #[a(href="https://apacheignite.readme.io/docs/ssltls" target="_blank") More info]
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=form)
         .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
@@ -58,7 +59,7 @@ include ../../../../../app/helpers/jade/mixins.jade
                         ignite-form-group-tooltip
                             | Pre-configured trust managers
                         ignite-form-group-add(ng-show='#{enabled}' ng-click='(group.add = [{}])')
-                            | Add new trust manager.
+                            | Add new trust manager
 
                         .group-content(ng-if='#{trust}.length')
                             -var model = 'obj.model';
@@ -75,7 +76,7 @@ include ../../../../../app/helpers/jade/mixins.jade
                                         span(ng-hide='field.edit')
                                             a.labelFormField(ng-click='#{enabled} && (field.edit = true) && (#{model} = model)') {{ model }}
                                         span(ng-if='field.edit')
-                                            +table-java-class-field('Trust manager:', name, model, trust, valid, save, false)
+                                            +table-java-class-field('Trust manager', name, model, trust, valid, save, false)
                                                 +table-save-button(valid, save, false)
                                                 +unique-feedback(name, uniqueTip)
                             div(ng-hide=enabled)

@@ -17,7 +17,7 @@
 
 // Controller for IGFS screen.
 export default ['igfsController', [
-    '$scope', '$http', '$state', '$filter', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteLegacyTable', 'igniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils',
+    '$scope', '$http', '$state', '$filter', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteLegacyTable', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils',
     function($scope, $http, $state, $filter, $timeout, LegacyUtils, Messages, Confirm, Clone, Loading, ModelNormalizer, UnsavedChangesGuard, LegacyTable, Resource, ErrorPopover, FormUtils) {
         UnsavedChangesGuard.install($scope);
 
@@ -231,7 +231,7 @@ export default ['igfsController', [
                 else
                     $scope.backupItem = emptyIgfs;
 
-                $scope.backupItem = angular.merge({}, blank, $scope.backupItem);
+                $scope.backupItem = _.merge({}, blank, $scope.backupItem);
 
                 if ($scope.ui.inputForm) {
                     $scope.ui.inputForm.$error = {};
@@ -304,7 +304,7 @@ export default ['igfsController', [
                     });
 
                     if (idx >= 0)
-                        angular.merge($scope.igfss[idx], item);
+                        _.assign($scope.igfss[idx], item);
                     else {
                         item._id = _id;
                         $scope.igfss.push(item);

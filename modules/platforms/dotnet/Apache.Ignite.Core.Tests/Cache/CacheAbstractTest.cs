@@ -1927,7 +1927,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             };
 
             checkLock(cache.Lock(key));
-            checkLock(cache.LockAll(new[] {key, 1, 2, 3}));
+            checkLock(cache.LockAll(new[] { key, 1, 2, 3 }));
         }
 
         [Test]
