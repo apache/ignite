@@ -39,7 +39,8 @@ namespace Apache.Ignite.Core.Tests.NuGet
             };
             
             // ReSharper disable once ObjectCreationAsStatement
-            new IgniteDbConfiguration(cfg, new CacheConfiguration("efMetaCache"), 
+            new IgniteDbConfiguration(cfg,
+                new CacheConfiguration("efMetaCache") {AtomicityMode = CacheAtomicityMode.Transactional},
                 new CacheConfiguration("efDataCache"), null);
 
             var ignite = Ignition.GetIgnite(cfg.GridName);
