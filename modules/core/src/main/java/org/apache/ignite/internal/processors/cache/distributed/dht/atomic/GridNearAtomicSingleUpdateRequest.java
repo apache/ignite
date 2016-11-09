@@ -55,10 +55,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
     @GridToStringInclude
     protected KeyCacheObject key;
 
-    /** Key singleton list. */
-    @GridDirectTransient
-    protected List<KeyCacheObject> keys;
-
     /** Value to update. */
     protected CacheObject val;
 
@@ -128,8 +124,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
             clientReq,
             addDepInfo
         );
-
-        keys = Collections.emptyList();
     }
 
     /**
@@ -153,7 +147,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
         assert conflictVer == null : conflictVer;
 
         this.key = key;
-        keys = Collections.singletonList(key);
         partId = key.partition();
 
         if (val != null) {
@@ -172,7 +165,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
 
     /** {@inheritDoc} */
     @Override public List<KeyCacheObject> keys() {
-        return keys;
+        return Collections.singletonList(key);
     }
 
     /** {@inheritDoc} */
@@ -262,7 +255,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
             val.finishUnmarshal(cctx.cacheObjectContext(), ldr);
 
         key.partition(partId);
-        keys = Collections.singletonList(key);
     }
 
     /** {@inheritDoc} */
