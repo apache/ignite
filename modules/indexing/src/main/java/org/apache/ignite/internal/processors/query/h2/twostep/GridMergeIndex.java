@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -113,7 +112,7 @@ public abstract class GridMergeIndex extends BaseIndex {
     protected final void checkSourceNodesAlive() {
         for (UUID nodeId : sources()) {
             if (!ctx.discovery().alive(nodeId)) {
-                fail(nodeId);
+                fail(nodeId, null);
 
                 return;
             }
@@ -174,10 +173,17 @@ public abstract class GridMergeIndex extends BaseIndex {
     /**
      * @param nodeId Node ID.
      */
-    public void fail(UUID nodeId) {
+    public void fail(UUID nodeId, final CacheException e) {
         addPage0(new GridResultPage(null, nodeId, null) {
             @Override public boolean isFail() {
                 return true;
+            }
+
+            @Override public void fetchNextPage() {
+                if (e == null)
+                    super.fetchNextPage();
+                else
+                    throw e;
             }
         });
     }

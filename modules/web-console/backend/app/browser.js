@@ -98,9 +98,9 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                 });
 
                 // Execute query on node and return first page to browser.
-                socket.on('node:query', (nid, cacheName, query, local, pageSize, cb) => {
+                socket.on('node:query', (nid, cacheName, query, distributedJoins, local, pageSize, cb) => {
                     agentMgr.findAgent(accountId())
-                        .then((agent) => agent.fieldsQuery(demo, nid, cacheName, query, local, pageSize))
+                        .then((agent) => agent.fieldsQuery(demo, nid, cacheName, query, distributedJoins, local, pageSize))
                         .then((res) => cb(null, res))
                         .catch((err) => cb(_errorToJson(err)));
                 });
@@ -114,13 +114,13 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                 });
 
                 // Execute query on node and return full result to browser.
-                socket.on('node:query:getAll', (nid, cacheName, query, local, cb) => {
+                socket.on('node:query:getAll', (nid, cacheName, query, distributedJoins, local, cb) => {
                     // Set page size for query.
                     const pageSize = 1024;
 
                     agentMgr.findAgent(accountId())
                         .then((agent) => {
-                            const firstPage = agent.fieldsQuery(demo, nid, cacheName, query, local, pageSize)
+                            const firstPage = agent.fieldsQuery(demo, nid, cacheName, query, distributedJoins, local, pageSize)
                                 .then(({result}) => {
                                     if (result.key)
                                         return Promise.reject(result.key);
@@ -133,10 +133,10 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                                     return acc;
 
                                 return agent.queryFetch(demo, acc.responseNodeId, acc.queryId, pageSize)
-                                    .then((res) => {
-                                        acc.rows = acc.rows.concat(res.rows);
+                                    .then(({result}) => {
+                                        acc.rows = acc.rows.concat(result.rows);
 
-                                        acc.hasMore = res.hasMore;
+                                        acc.hasMore = result.hasMore;
 
                                         return fetchResult(acc);
                                     });
