@@ -17,7 +17,6 @@
 
 package org.apache.ignite.thread;
 
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -28,15 +27,21 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class IgniteThreadPoolSizeTest extends GridCommonAbstractTest {
 
+    /** Wrong thread pool size value for testing */
     private static final int WRONG_VALUE = 0;
 
+    /** Factory method for creating an IgniteConfiguration */
     private IgniteConfiguration cfg() {
         return new IgniteConfiguration();
     }
 
+    /** Performs testing for wrong tread pool size
+     * @param cfg an IgniteConfiguration with the only one thread pool size assigned with the WRONG_VALUE
+     * @throws Exception If starting the Ignition doesn't throw an exception related to the 'thread pool size'
+     */
     private void testWrongPoolSize(IgniteConfiguration cfg) throws Exception {
         try {
-            Ignite ignite = Ignition.start(cfg);
+            Ignition.start(cfg);
             throw new Exception("test failed");
         }
         catch (IgniteException ex) {
@@ -105,6 +110,7 @@ public class IgniteThreadPoolSizeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("deprecated")
     public void testMarshallerCachePoolSize() throws Exception {
         testWrongPoolSize(cfg().setMarshallerCachePoolSize(WRONG_VALUE));
     }
