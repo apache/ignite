@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.NuGet
 {
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.EntityFramework;
     using NUnit.Framework;
 
@@ -38,13 +39,14 @@ namespace Apache.Ignite.Core.Tests.NuGet
             };
             
             // ReSharper disable once ObjectCreationAsStatement
-            new IgniteDbConfiguration(cfg, "efCache", null);
+            new IgniteDbConfiguration(cfg, new CacheConfiguration("efMetaCache"), 
+                new CacheConfiguration("efDataCache"), null);
 
             var ignite = Ignition.GetIgnite(cfg.GridName);
-            var cache = ignite.GetCache<string, object>("efCache");
-
             Assert.IsNotNull(ignite);
-            Assert.IsNotNull(cache);
+
+            Assert.IsNotNull(ignite.GetCache<string, object>("efMetaCache"));
+            Assert.IsNotNull(ignite.GetCache<string, object>("efDataCache"));
         }
 
         /// <summary>
