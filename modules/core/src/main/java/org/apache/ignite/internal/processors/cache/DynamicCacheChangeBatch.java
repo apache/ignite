@@ -86,7 +86,7 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
      * @param clientNodes Client nodes map.
      */
     public void clientNodes(Map<String, Map<UUID, Boolean>> clientNodes) {
-        this.clientNodes = null;//clientNodes;
+        this.clientNodes = clientNodes;
     }
 
     /** {@inheritDoc} */

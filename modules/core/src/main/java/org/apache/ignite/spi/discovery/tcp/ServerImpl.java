@@ -4070,8 +4070,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     Map<Integer, byte[]> data = msg.newNodeDiscoveryData();
 
                     if (data != null)
-                        spi.onExchange(node.id(), node.id(), data,
-                            U.resolveClassLoader(spi.ignite().configuration()));
+                        spi.onExchange(node.id(), node.id(), data, U.resolveClassLoader(spi.ignite().configuration()));
 
                     msg.addDiscoveryData(locNodeId, spi.collectExchangeData(node.id()));
 
