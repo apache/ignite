@@ -294,9 +294,16 @@ namespace Apache.Ignite.AspNet
 
             var data = (IgniteSessionStateStoreData) item;
 
-            // TODO: lockId is null and item does not exist when newItem is true.
+            if (newItem)
+            {
+                var cache = _expiryCacheHolder.GetCacheWithExpiry(data.Timeout * 60);
 
-            SetAndUnlockItem(key, data);
+                PutItem(key, data, cache);
+            }
+            else
+            {
+                SetAndUnlockItem(key, data);
+            }
         }
 
         /// <summary>
