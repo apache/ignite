@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './server-near-cache.jade!';
+import templateUrl from './server-near-cache.jade';
 
 export default ['igniteConfigurationCachesServerNearCache', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

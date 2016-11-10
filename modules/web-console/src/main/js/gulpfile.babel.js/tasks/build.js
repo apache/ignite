@@ -18,4 +18,4 @@
 import gulp from 'gulp';
 import sequence from 'gulp-sequence';
 
-gulp.task('build', (cb) => sequence(['clean', 'clean:ignite-modules-temp'], 'ignite:modules', ['copy', 'jade', 'sass'], 'bundle', cb));
+gulp.task('build', (cb) => sequence(['clean', 'clean:ignite-modules-temp'], 'ignite:modules', ['copy:resource', 'jade'], 'bundle', cb));

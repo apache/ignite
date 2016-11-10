@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './bounded-exponential-backoff.jade!';
+import templateUrl from './bounded-exponential-backoff.jade';
 
 export default ['igniteConfigurationClustersGeneralDiscoveryZookeeperBoundedExponential', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

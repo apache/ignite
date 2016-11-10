@@ -40,12 +40,25 @@ namespace ignite
     {
         /**
          * Binary raw writer.
+         *
+         * This class implemented as a reference to an implementation so copying
+         * of this class instance will only create another reference to the same
+         * underlying object.
+         *
+         * @note User should not store copy of this instance as it can be
+         *     invalidated as soon as the initially passed to user instance has
+         *     been destructed. For example this means that if user received an
+         *     instance of this class as a function argument then he should not
+         *     store and use copy of this class out of the scope of this
+         *     function.
          */
         class IGNITE_IMPORT_EXPORT BinaryRawWriter
         {
         public:
             /**
              * Constructor.
+             *
+             * Internal method. Should not be used by user.
              *
              * @param impl Implementation.
              */

@@ -82,6 +82,6 @@ public class IgniteCacheTtlCleanupSelfTest extends GridCacheAbstractSelfTest {
         CacheObjectContext cacheObjCtx = cacheAdapter.context().cacheObjectContext();
 
         for (int i = 0; i < 100; i++)
-            assertNull(cacheAdapter.map().getEntry(cacheObjects.toCacheKeyObject(cacheObjCtx, i, true)));
+            assertNull(cacheAdapter.map().getEntry(cacheObjects.toCacheKeyObject(cacheObjCtx, null, i, true)));
     }
 }

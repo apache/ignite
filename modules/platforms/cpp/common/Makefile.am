@@ -26,7 +26,9 @@ SUBDIRS = \
 AM_CPPFLAGS = \
     -I$(srcdir)/include \
     -I$(srcdir)/os/linux/include \
-    -DIGNITE_IMPL
+    -DIGNITE_IMPL \
+    -D__STDC_LIMIT_MACROS \
+    -D__STDC_CONSTANT_MACROS
 
 AM_CXXFLAGS = \
     -Wall \
@@ -42,9 +44,12 @@ libignite_common_la_LDFLAGS = \
 libignite_common_la_SOURCES = \
     os/linux/src/common/concurrent_os.cpp \
     os/linux/src/common/utils.cpp \
+    src/common/big_integer.cpp \
     src/common/concurrent.cpp \
-    src/ignite_error.cpp \
+    src/common/decimal.cpp \
+    src/common/bits.cpp \
     src/date.cpp \
+    src/ignite_error.cpp \
     src/guid.cpp \
     src/timestamp.cpp
 	

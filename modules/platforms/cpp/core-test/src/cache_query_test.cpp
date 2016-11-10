@@ -212,63 +212,6 @@ namespace ignite
     }
 }
 
-/** Node started during the test. */
-Ignite grid = Ignite();
-
-/** Cache accessor. */
-Cache<int, QueryPerson> GetCache()
-{
-    return grid.GetCache<int, QueryPerson>("cache");
-}
-
-/**
- * Test setup fixture.
- */
-struct CacheQueryTestSuiteFixture {
-    /**
-     * Constructor.
-     */
-    CacheQueryTestSuiteFixture()
-    {
-        IgniteConfiguration cfg;
-        
-        cfg.jvmOpts.push_back("-Xdebug");
-        cfg.jvmOpts.push_back("-Xnoagent");
-        cfg.jvmOpts.push_back("-Djava.compiler=NONE");
-        cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
-        cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
-
-#ifdef IGNITE_TESTS_32
-        cfg.jvmInitMem = 256;
-        cfg.jvmMaxMem = 768;
-#else
-        cfg.jvmInitMem = 1024;
-        cfg.jvmMaxMem = 4096;
-#endif
-
-        char* cfgPath = getenv("IGNITE_NATIVE_TEST_CPP_CONFIG_PATH");
-
-        cfg.springCfgPath = std::string(cfgPath).append("/").append("cache-query.xml");
-
-        IgniteError err;
-
-        Ignite grid0 = Ignition::Start(cfg, &err);
-
-        if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
-            BOOST_ERROR(err.GetText());
-
-        grid = grid0;
-    }
-
-    /**
-     * Destructor.
-     */
-    ~CacheQueryTestSuiteFixture()
-    {
-        Ignition::Stop(grid.GetName(), true);
-    }
-};
-
 /**
  * Ensure that HasNext() fails.
  *
@@ -522,6 +465,131 @@ void CheckMultipleGetAll(Cursor& cur, int key1, const std::string& name1,
     }
 }
 
+/**
+ * Test setup fixture.
+ */
+struct CacheQueryTestSuiteFixture
+{
+    Ignite StartNode(const char* name)
+    {
+        IgniteConfiguration cfg;
+
+        cfg.jvmOpts.push_back("-Xdebug");
+        cfg.jvmOpts.push_back("-Xnoagent");
+        cfg.jvmOpts.push_back("-Djava.compiler=NONE");
+        cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
+        cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
+
+#ifdef IGNITE_TESTS_32
+        cfg.jvmInitMem = 256;
+        cfg.jvmMaxMem = 768;
+#else
+        cfg.jvmInitMem = 1024;
+        cfg.jvmMaxMem = 4096;
+#endif
+
+        cfg.springCfgPath.assign(getenv("IGNITE_NATIVE_TEST_CPP_CONFIG_PATH")).append("/cache-query.xml");
+
+        IgniteError err;
+
+        Ignite grid0 = Ignition::Start(cfg, name, &err);
+
+        if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
+            BOOST_ERROR(err.GetText());
+
+        return grid0;
+    }
+
+    void CheckFieldsQueryPages(int32_t pageSize, int32_t pagesNum, int32_t additionalNum)
+    {
+        // Test simple query.
+        Cache<int, QueryPerson> cache = GetPersonCache();
+
+        // Test query with two fields of different type.
+        SqlFieldsQuery qry("select name, age from QueryPerson");
+
+        QueryFieldsCursor cursor = cache.Query(qry);
+        CheckEmpty(cursor);
+
+        const int32_t entryCnt = pageSize * pagesNum + additionalNum; // Number of entries.
+
+        qry.SetPageSize(pageSize);
+
+        for (int i = 0; i < entryCnt; i++)
+        {
+            std::stringstream stream;
+
+            stream << "A" << i;
+
+            cache.Put(i, QueryPerson(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1970 + i),
+                BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60)));
+        }
+
+        cursor = cache.Query(qry);
+
+        IgniteError error;
+
+        for (int i = 0; i < entryCnt; i++)
+        {
+            std::stringstream stream;
+
+            stream << "A" << i;
+
+            std::string expected_name = stream.str();
+            int expected_age = i * 10;
+
+            BOOST_REQUIRE(cursor.HasNext(error));
+            BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+            QueryFieldsRow row = cursor.GetNext(error);
+            BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+            BOOST_REQUIRE(row.HasNext(error));
+            BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+            std::string name = row.GetNext<std::string>(error);
+            BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+            BOOST_REQUIRE(name == expected_name);
+
+            int age = row.GetNext<int>(error);
+            BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+            BOOST_REQUIRE(age == expected_age);
+
+            BOOST_REQUIRE(!row.HasNext());
+        }
+
+        CheckEmpty(cursor);
+    }
+
+    /**
+     * Constructor.
+     */
+    CacheQueryTestSuiteFixture() : 
+        grid(StartNode("Node1"))
+    {
+        // No-op.
+    }
+
+    /**
+     * Destructor.
+     */
+    ~CacheQueryTestSuiteFixture()
+    {
+        Ignition::StopAll(true);
+    }
+
+    /** Person cache accessor. */
+    Cache<int, QueryPerson> GetPersonCache()
+    {
+        return grid.GetCache<int, QueryPerson>("cache");
+    }
+
+    /** Node started during the test. */
+    Ignite grid;
+};
+
 BOOST_FIXTURE_TEST_SUITE(CacheQueryTestSuite, CacheQueryTestSuiteFixture)
 
 /**
@@ -529,7 +597,7 @@ BOOST_FIXTURE_TEST_SUITE(CacheQueryTestSuite, CacheQueryTestSuiteFixture)
  */
 BOOST_AUTO_TEST_CASE(TestSqlQuery)
 {    
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with no results.
     SqlQuery qry("QueryPerson", "age < 20");
@@ -585,7 +653,7 @@ BOOST_AUTO_TEST_CASE(TestSqlQuery)
  */
 BOOST_AUTO_TEST_CASE(TestTextQuery)
 {
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with no results.
     TextQuery qry("QueryPerson", "A1");
@@ -631,7 +699,7 @@ BOOST_AUTO_TEST_CASE(TestTextQuery)
 BOOST_AUTO_TEST_CASE(TestScanQuery)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with no results.
     ScanQuery qry;
@@ -667,7 +735,7 @@ BOOST_AUTO_TEST_CASE(TestScanQuery)
 BOOST_AUTO_TEST_CASE(TestScanQueryPartitioned)
 {
     // Populate cache with data.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     int32_t partCnt = 256;   // Defined in configuration explicitly.   
     int32_t entryCnt = 1000; // Should be greater than partCnt.
@@ -716,7 +784,7 @@ BOOST_AUTO_TEST_CASE(TestScanQueryPartitioned)
 BOOST_AUTO_TEST_CASE(TestFieldsQuerySingle)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with two fields of different type.
     SqlFieldsQuery qry("select age, name from QueryPerson");
@@ -761,7 +829,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySingle)
 BOOST_AUTO_TEST_CASE(TestFieldsQueryExceptions)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with two fields of different type.
     SqlFieldsQuery qry("select age, name from QueryPerson");
@@ -806,7 +874,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryExceptions)
 BOOST_AUTO_TEST_CASE(TestFieldsQueryTwo)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with two fields of different type.
     SqlFieldsQuery qry("select age, name from QueryPerson");
@@ -869,7 +937,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryTwo)
 BOOST_AUTO_TEST_CASE(TestFieldsQuerySeveral)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with two fields of different type.
     SqlFieldsQuery qry("select name, age from QueryPerson");
@@ -935,7 +1003,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySeveral)
 BOOST_AUTO_TEST_CASE(TestFieldsQueryDateLess)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with field of type 'Date'.
     SqlFieldsQuery qry("select birthday from QueryPerson where birthday<'1990-01-01'");
@@ -996,7 +1064,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryDateLess)
 BOOST_AUTO_TEST_CASE(TestFieldsQueryDateMore)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with field of type 'Date'.
     SqlFieldsQuery qry("select birthday from QueryPerson where birthday>'2070-01-01'");
@@ -1057,7 +1125,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryDateMore)
 BOOST_AUTO_TEST_CASE(TestFieldsQueryDateEqual)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with field of type 'Date'.
     SqlFieldsQuery qry("select birthday from QueryPerson where birthday='2032-01-01'");
@@ -1109,7 +1177,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryDateEqual)
 BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestampLess)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with field of type 'Timestamp'.
     SqlFieldsQuery qry("select recordCreated from QueryPerson where recordCreated<'2016-01-01 01:00:00'");
@@ -1170,7 +1238,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestampLess)
 BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestampMore)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with field of type 'Timestamp'.
     SqlFieldsQuery qry("select recordCreated from QueryPerson where recordCreated>'2016-01-01 15:30:00'");
@@ -1233,7 +1301,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestampMore)
 BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestampEqual)
 {
     // Test simple query.
-    Cache<int, QueryPerson> cache = GetCache();
+    Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with field of type 'Timestamp'.
     SqlFieldsQuery qry("select recordCreated from QueryPerson where recordCreated='2016-01-01 09:18:00'");
@@ -1277,6 +1345,39 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestampEqual)
     BOOST_REQUIRE(!row.HasNext());
 
     CheckEmpty(cursor);
+}
+
+/**
+ * Test fields query with several pages.
+ */
+BOOST_AUTO_TEST_CASE(TestFieldsQueryPagesSeveral)
+{
+    CheckFieldsQueryPages(32, 8, 1);
+}
+
+/**
+ * Test fields query with page size 1.
+ */
+BOOST_AUTO_TEST_CASE(TestFieldsQueryPageSingle)
+{
+    CheckFieldsQueryPages(1, 100, 0);
+}
+
+/**
+ * Test fields query with page size 0.
+ */
+BOOST_AUTO_TEST_CASE(TestFieldsQueryPageZero)
+{
+    try
+    {
+        CheckFieldsQueryPages(0, 100, 0);
+
+        BOOST_FAIL("Exception expected.");
+    }
+    catch (IgniteError&)
+    {
+        // Expected.
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

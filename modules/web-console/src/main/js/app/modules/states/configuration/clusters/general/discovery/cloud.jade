@@ -16,6 +16,8 @@
 
 include ../../../../../../../app/helpers/jade/mixins.jade
 
+-var discoveryKind = 'Cloud'
+-var required = 'backupItem.discovery.kind == "' + discoveryKind + '"'
 -var model = 'backupItem.discovery.Cloud'
 -var regions = model + '.regions'
 -var zones = model + '.zones'
@@ -32,11 +34,11 @@ div
             'Path to a credential that is used during authentication on the cloud<br/>\
             Access key or private key should be stored in a plain or PEM file without a passphrase')
     .details-row
-        +text('Identity:', model + '.identity', 'identity', 'true', 'Input identity',
+        +text('Identity:', model + '.identity', discoveryKind + 'Identity', required, 'Input identity',
             'Identity that is used as a user name during a connection to the cloud<br/>\
             Depending on a cloud platform it can be an email address, user name, etc')
     .details-row
-        +text('Provider:', model + '.provider', 'provider', 'true', 'Input provider', 'Cloud provider to use')
+        +text('Provider:', model + '.provider', discoveryKind + 'Provider', required, 'Input provider', 'Cloud provider to use')
     .details-row
         ignite-form-group(ng-model=regions ng-form=formRegions)
             -var uniqueTip = 'Such region already exists!'
