@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequest;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -661,6 +662,15 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         return true;
     }
 
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<Object> request(GridNearAtomicUpdateRequest req,
+        AffinityTopologyVersion topVer) {
+        if (!needForceKeys())
+            return null;
+
+        return request0(req.keys(), topVer);
+    }
+
     /**
      * @param keys Keys to request.
      * @return Future for request.
@@ -670,6 +680,16 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         if (!needForceKeys())
             return null;
 
+        return request0(keys, topVer);
+    }
+
+    /**
+     * @param keys Keys to request.
+     * @param topVer Topology version.
+     * @return Future for request.
+     */
+    @SuppressWarnings({"unchecked", "RedundantCast"})
+    private GridDhtFuture<Object> request0(Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer) {
         final GridDhtForceKeysFuture<?, ?> fut = new GridDhtForceKeysFuture<>(cctx, topVer, keys, this);
 
         IgniteInternalFuture<?> topReadyFut = cctx.affinity().affinityReadyFuturex(topVer);

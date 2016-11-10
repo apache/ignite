@@ -129,7 +129,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         GridNearAtomicUpdateRequest req,
         GridNearAtomicUpdateResponse res
     ) {
-        if (F.size(res.failedKeys()) == req.keys().size())
+        if (F.size(res.failedKeys()) == req.size())
             return;
 
         /*
@@ -152,11 +152,11 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
         String taskName = ctx.kernalContext().task().resolveTaskName(req.taskNameHash());
 
-        for (int i = 0; i < req.keys().size(); i++) {
+        for (int i = 0; i < req.size(); i++) {
             if (F.contains(skipped, i))
                 continue;
 
-            KeyCacheObject key = req.keys().get(i);
+            KeyCacheObject key = req.key(i);
 
             if (F.contains(failed, key))
                 continue;
