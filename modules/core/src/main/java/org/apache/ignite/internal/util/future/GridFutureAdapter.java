@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util.future;
 
+import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
@@ -34,8 +35,9 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Future adapter.
+ * // TODO: remove serializable
  */
-public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
+public class GridFutureAdapter<R> implements IgniteInternalFuture<R>, Serializable {
     // https://bugs.openjdk.java.net/browse/JDK-8074773
     static {
         Class<?> ensureLoaded = LockSupport.class;
