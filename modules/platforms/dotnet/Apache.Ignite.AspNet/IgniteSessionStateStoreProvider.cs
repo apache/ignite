@@ -294,6 +294,8 @@ namespace Apache.Ignite.AspNet
 
             var data = (IgniteSessionStateStoreData) item;
 
+            // TODO: lockId is null and item does not exist when newItem is true.
+
             SetAndUnlockItem(key, data);
         }
 
