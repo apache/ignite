@@ -153,6 +153,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
 
                 if (isDone())
                     return resolveAndThrow(state);
+
                 else if (Thread.interrupted()) {
                     interrupted = true;
 
