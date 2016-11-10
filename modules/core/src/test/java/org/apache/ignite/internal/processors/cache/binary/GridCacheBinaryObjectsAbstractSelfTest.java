@@ -145,6 +145,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             setTypeName("ComplexBinaryFieldsListHashedKey");
 
             BinaryFieldIdentityResolver id = new BinaryFieldIdentityResolver();
+
             id.setFieldNames("secondField", "thirdField");
 
             setIdentityResolver(id);
