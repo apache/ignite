@@ -302,6 +302,10 @@ namespace Apache.Ignite.AspNet
             }
             else
             {
+                if (!(lockId is long) || data.LockId != (long) lockId)
+                    throw new IgniteException(string.Format(CultureInfo.InvariantCulture,
+                        "Invalid session release request, expected lockId: {0}, actual: {1}", data.LockId, lockId));
+
                 SetAndUnlockItem(key, data);
             }
         }
