@@ -73,7 +73,6 @@ import static org.apache.ignite.IgniteJdbcDriver.PROP_COLLOCATED;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_DISTRIBUTED_JOINS;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_LOCAL;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_NODE_ID;
-import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAM;
 
 /**
  * JDBC connection implementation.
@@ -119,9 +118,6 @@ public class JdbcConnection implements Connection {
     /** Distributed joins flag. */
     private boolean distributedJoins;
 
-    /** UUID of stream associated with this connection. */
-    private UUID streamUuid;
-
     /** Statements. */
     final Set<JdbcStatement> statements = new HashSet<>();
 
@@ -143,15 +139,10 @@ public class JdbcConnection implements Connection {
         this.collocatedQry = Boolean.parseBoolean(props.getProperty(PROP_COLLOCATED));
         this.distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS));
 
-        boolean stream = Boolean.parseBoolean(props.getProperty(PROP_STREAM));
-
         String nodeIdProp = props.getProperty(PROP_NODE_ID);
 
         if (nodeIdProp != null)
             this.nodeId = UUID.fromString(nodeIdProp);
-
-        if (stream)
-            streamUuid = UUID.randomUUID();
 
         try {
             String cfgUrl = props.getProperty(PROP_CFG);
@@ -725,13 +716,6 @@ public class JdbcConnection implements Connection {
      */
     boolean isDistributedJoins() {
         return distributedJoins;
-    }
-
-    /**
-     * @return UUID of stream associated with this connection, {@code null} if streaming mode is not on.
-     */
-    UUID streamUuid() {
-        return streamUuid;
     }
 
     /**

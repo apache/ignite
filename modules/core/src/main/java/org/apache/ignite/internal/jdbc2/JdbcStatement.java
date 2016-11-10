@@ -110,7 +110,7 @@ public class JdbcStatement implements Statement {
         boolean loc = nodeId == null;
 
         JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), sql, true, loc, getArgs(),
-            fetchSize, uuid, null, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+            fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
 
         try {
             JdbcQueryTask.QueryResult res =
@@ -164,7 +164,7 @@ public class JdbcStatement implements Statement {
         boolean loc = nodeId == null;
 
         JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), sql, false, loc, args,
-            fetchSize, uuid, conn.streamUuid(), conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+            fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
 
         try {
             JdbcQueryTask.QueryResult qryRes =
@@ -325,7 +325,7 @@ public class JdbcStatement implements Statement {
         boolean loc = nodeId == null;
 
         JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), sql, null, loc, getArgs(),
-            fetchSize, uuid, conn.streamUuid(), conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+            fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
 
         try {
             JdbcQueryTask.QueryResult res =

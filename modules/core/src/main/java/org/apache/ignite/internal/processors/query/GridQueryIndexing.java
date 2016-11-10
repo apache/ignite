@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -70,18 +69,6 @@ public interface GridQueryIndexing {
     public QueryCursor<List<?>> queryTwoStep(GridCacheContext<?,?> cctx, SqlFieldsQuery qry) throws IgniteCheckedException;
 
     /**
-     * Parses SQL query into two step query and executes it. Query must be a MERGE statement.
-     *
-     * @param cctx Cache context.
-     * @param streamer Data streamer.
-     * @param qry Query.
-     * @return Cursor.
-     * @throws IgniteCheckedException If failed.
-     */
-    public QueryCursor<List<?>> streamQueryTwoStep(GridCacheContext<?,?> cctx, IgniteDataStreamer<?, ?> streamer,
-       SqlFieldsQuery qry) throws IgniteCheckedException;
-
-    /**
      * Parses SQL query into two step query and executes it.
      *
      * @param cctx Cache context.
@@ -104,22 +91,7 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     public GridQueryFieldsResult queryLocalSqlFields(@Nullable final String spaceName, final String qry,
-        @Nullable final Collection<Object> params, final IndexingQueryFilter filter, boolean enforceJoinOrder) throws IgniteCheckedException;
-
-    /**
-     * Perform a MERGE statement using data streamer as receiver.
-     *
-     * @param spaceName Space name.
-     * @param qry Query.
-     * @param params Query parameters.
-     * @param filter Space name and key filter.
-     * @param enforceJoinOrder Enforce join order of tables in the query.
-     * @return Query result.
-     * @throws IgniteCheckedException If failed.
-     */
-    public GridQueryFieldsResult streamQueryLocalSqlFields(@Nullable final String spaceName, final String qry,
-        @Nullable final Collection<Object> params, final IndexingQueryFilter filter, IgniteDataStreamer<?, ?> streamer,
-        boolean enforceJoinOrder) throws IgniteCheckedException;
+                                                     @Nullable final Collection<Object> params, final IndexingQueryFilter filter, boolean enforceJoinOrder) throws IgniteCheckedException;
 
     /**
      * Executes regular query.

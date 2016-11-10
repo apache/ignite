@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryField;
@@ -756,50 +755,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * @param cctx Cache context.
-     * @param streamer Data streamer.
-     * @param qry Query.
-     * @return Iterator.
-     */
-    public QueryCursor<List<?>> streamQuery(final GridCacheContext<?, ?> cctx,
-        final IgniteDataStreamer<?, ?> streamer, final SqlFieldsQuery qry) {
-        assert streamer != null;
-
-        if ((cctx.isReplicated() && cctx.affinityNode()) || cctx.isLocal() || qry.isLocal())
-            return streamQueryLocalFields(cctx, streamer, qry);
-        else
-            return streamQueryTwoStep(cctx, streamer, qry);
-    }
-
-    /**
-     * @param cctx Cache context.
-     * @param streamer Data streamer.
-     * @param qry Query.
-     * @return Cursor.
-     */
-    private QueryCursor<List<?>> streamQueryTwoStep(final GridCacheContext<?,?> cctx,
-        final IgniteDataStreamer<?, ?> streamer, final SqlFieldsQuery qry) {
-        checkxEnabled();
-
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to execute query (grid is stopping).");
-
-        try {
-            return executeQuery(cctx, new IgniteOutClosureX<QueryCursor<List<?>>>() {
-                @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
-                    return idx.streamQueryTwoStep(cctx, streamer, qry);
-                }
-            }, true);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
-    }
-
-    /**
-     * @param cctx Cache context.
      * @param qry Query.
      * @return Cursor.
      */
@@ -960,51 +915,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     final GridQueryFieldsResult res = idx.queryLocalSqlFields(space, sql, F.asList(args),
                         idx.backupFilter(requestTopVer.get(), null), qry.isEnforceJoinOrder());
-
-                    sendQueryExecutedEvent(sql, args);
-
-                    QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(new Iterable<List<?>>() {
-                        @Override public Iterator<List<?>> iterator() {
-                            return new GridQueryCacheObjectsIterator(res.iterator(), cctx, keepBinary);
-                        }
-                    });
-
-                    cursor.fieldsMeta(res.metaData());
-
-                    return cursor;
-                }
-            }, true);
-        }
-        catch (IgniteCheckedException e) {
-            throw new CacheException(e);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
-    }
-
-    /**
-     * @param cctx Cache context.
-     * @param streamer Data streamer.
-     * @param qry Query.
-     * @return Iterator.
-     */
-    private QueryCursor<List<?>> streamQueryLocalFields(final GridCacheContext<?, ?> cctx,
-        final IgniteDataStreamer<?, ?> streamer, final SqlFieldsQuery qry) {
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to execute query (grid is stopping).");
-
-        try {
-            final boolean keepBinary = cctx.keepBinary();
-
-            return executeQuery(cctx, new IgniteOutClosureX<QueryCursor<List<?>>>() {
-                @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
-                    String space = cctx.name();
-                    String sql = qry.getSql();
-                    Object[] args = qry.getArgs();
-
-                    final GridQueryFieldsResult res = idx.streamQueryLocalSqlFields(space, sql, F.asList(args),
-                        idx.backupFilter(requestTopVer.get(), null), streamer, qry.isEnforceJoinOrder());
 
                     sendQueryExecutedEvent(sql, args);
 
