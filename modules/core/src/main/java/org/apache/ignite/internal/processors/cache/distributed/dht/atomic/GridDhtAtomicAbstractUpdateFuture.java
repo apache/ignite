@@ -45,6 +45,7 @@ import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -80,7 +81,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
     private final CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb;
 
     /** Update request. */
-    private final GridNearAtomicUpdateRequest updateReq;
+    protected final GridNearAtomicUpdateRequest updateReq;
 
     /** Update response. */
     final GridNearAtomicUpdateResponse updateRes;
@@ -90,7 +91,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
 
     /** Mappings. */
     @GridToStringInclude
-    protected Map<UUID, GridDhtAtomicUpdateRequest> mappings;
+    protected Map<UUID, GridDhtAtomicAbstractUpdateRequest> mappings;
 
     /** Continuous query closures. */
     private Collection<CI1<Boolean>> cntQryClsrs;
@@ -188,23 +189,16 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
             UUID nodeId = node.id();
 
             if (!nodeId.equals(cctx.localNodeId())) {
-                GridDhtAtomicUpdateRequest updateReq = mappings.get(nodeId);
+                GridDhtAtomicAbstractUpdateRequest updateReq = mappings.get(nodeId);
 
                 if (updateReq == null) {
-                    updateReq = new GridDhtAtomicUpdateRequest(
-                        cctx.cacheId(),
+                    updateReq = createRequest(
                         nodeId,
                         futVer,
                         writeVer,
                         syncMode,
                         topVer,
-                        forceTransformBackups,
-                        this.updateReq.subjectId(),
-                        this.updateReq.taskNameHash(),
-                        forceTransformBackups ? this.updateReq.invokeArguments() : null,
-                        cctx.deploymentEnabled(),
-                        this.updateReq.keepBinary(),
-                        this.updateReq.skipStore());
+                        forceTransformBackups);
 
                     mappings.put(nodeId, updateReq);
                 }
@@ -256,7 +250,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
         AffinityTopologyVersion topVer = updateReq.topologyVersion();
 
         for (UUID nodeId : readers) {
-            GridDhtAtomicUpdateRequest updateReq = mappings.get(nodeId);
+            GridDhtAtomicAbstractUpdateRequest updateReq = mappings.get(nodeId);
 
             if (updateReq == null) {
                 ClusterNode node = cctx.discovery().node(nodeId);
@@ -265,20 +259,13 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
                 if (node == null)
                     continue;
 
-                updateReq = new GridDhtAtomicUpdateRequest(
-                    cctx.cacheId(),
+                updateReq = createRequest(
                     nodeId,
                     futVer,
                     writeVer,
                     syncMode,
                     topVer,
-                    forceTransformBackups,
-                    this.updateReq.subjectId(),
-                    this.updateReq.taskNameHash(),
-                    forceTransformBackups ? this.updateReq.invokeArguments() : null,
-                    cctx.deploymentEnabled(),
-                    this.updateReq.keepBinary(),
-                    this.updateReq.skipStore());
+                    forceTransformBackups);
 
                 mappings.put(nodeId, updateReq);
             }
@@ -336,7 +323,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
     final boolean registerResponse(UUID nodeId) {
         int resCnt0;
 
-        GridDhtAtomicUpdateRequest req = mappings != null ? mappings.get(nodeId) : null;
+        GridDhtAtomicAbstractUpdateRequest req = mappings != null ? mappings.get(nodeId) : null;
 
         if (req != null) {
             synchronized (this) {
@@ -365,7 +352,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
      */
     final void map() {
         if (!F.isEmpty(mappings)) {
-            for (GridDhtAtomicUpdateRequest req : mappings.values()) {
+            for (GridDhtAtomicAbstractUpdateRequest req : mappings.values()) {
                 try {
                     cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
 
@@ -410,6 +397,18 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
 
         registerResponse(nodeId);
     }
+
+    /**
+     * Creates DHT request
+     */
+    protected abstract GridDhtAtomicAbstractUpdateRequest createRequest(
+        UUID nodeId,
+        GridCacheVersion futVer,
+        GridCacheVersion writeVer,
+        CacheWriteSynchronizationMode syncMode,
+        @NotNull AffinityTopologyVersion topVer,
+        boolean forceTransformBackups
+    );
 
     /**
      * Callback for backup update response.

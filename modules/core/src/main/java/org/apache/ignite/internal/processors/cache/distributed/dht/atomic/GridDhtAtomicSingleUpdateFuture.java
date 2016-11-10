@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -30,6 +32,11 @@ import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteProductVersion;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
@@ -37,6 +44,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
     /** */
     private static final long serialVersionUID = 0L;
+
+    // TODO: 24.10.16 add correct version
+    /** */
+    private static final IgniteProductVersion SINGLE_UPDATE_REQUEST = IgniteProductVersion.fromString("1.8.0");
 
     /** Future keys. */
     private KeyCacheObject key;
@@ -87,6 +98,52 @@ class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture 
     }
 
     /** {@inheritDoc} */
+    @Override protected GridDhtAtomicAbstractUpdateRequest createRequest(
+        UUID nodeId,
+        GridCacheVersion futVer,
+        GridCacheVersion writeVer,
+        CacheWriteSynchronizationMode syncMode,
+        @NotNull AffinityTopologyVersion topVer,
+        boolean forceTransformBackups
+    ) {
+        ClusterNode node = cctx.node(nodeId);
+
+        if (canUseSingleRequest(node)) {
+            assert !forceTransformBackups;
+
+            return new GridDhtAtomicSingleUpdateRequest(
+                cctx.cacheId(),
+                nodeId,
+                futVer,
+                writeVer,
+                syncMode,
+                topVer,
+                forceTransformBackups,
+                updateReq.subjectId(),
+                updateReq.taskNameHash(),
+                cctx.deploymentEnabled(),
+                updateReq.keepBinary(),
+                updateReq.skipStore());
+        }
+        else {
+            return new GridDhtAtomicUpdateRequest(
+                cctx.cacheId(),
+                nodeId,
+                futVer,
+                writeVer,
+                syncMode,
+                topVer,
+                forceTransformBackups,
+                updateReq.subjectId(),
+                updateReq.taskNameHash(),
+                forceTransformBackups ? updateReq.invokeArguments() : null,
+                cctx.deploymentEnabled(),
+                updateReq.keepBinary(),
+                updateReq.skipStore());
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void onResult(UUID nodeId, GridDhtAtomicUpdateResponse updateRes) {
         if (log.isDebugEnabled())
             log.debug("Received DHT atomic update future result [nodeId=" + nodeId + ", updateRes=" + updateRes + ']');
@@ -112,6 +169,17 @@ class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture 
     /** {@inheritDoc} */
     @Override protected void addFailedKeys(GridNearAtomicUpdateResponse updateRes, Throwable err) {
         updateRes.addFailedKey(key, err);
+    }
+
+    /**
+     * @param node Target node
+     * @return {@code true} if target node supports {@link GridNearAtomicSingleUpdateRequest}
+     */
+    private boolean canUseSingleRequest(ClusterNode node) {
+        return node.version().compareToIgnoreTimestamp(SINGLE_UPDATE_REQUEST) >= 0 &&
+            updateReq.conflictExpireTime(0) < 0 &&
+            updateReq.conflictTtl(0) < 0 &&
+            updateReq.conflictVersion(0) == null;
     }
 
     /** {@inheritDoc} */
