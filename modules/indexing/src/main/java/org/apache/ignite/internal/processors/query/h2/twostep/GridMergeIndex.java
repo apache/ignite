@@ -208,12 +208,11 @@ public abstract class GridMergeIndex extends BaseIndex {
         }
 
         if (remainingRowsCount == 0) { // Result can be negative in case of race between messages, it is ok.
+            if (cnt.state == State.UNINITIALIZED)
+                return;
 
             // Guarantee that finished state possible only if counter is zero and all pages was added
-            if (cnt.state == State.INITIALIZED)
-                cnt.state = State.FINISHED;
-            else
-                return;
+            cnt.state = State.FINISHED;
 
             for (Counter c : remainingRows.values()) { // Check all the sources.
                 if (c.state != State.FINISHED)
