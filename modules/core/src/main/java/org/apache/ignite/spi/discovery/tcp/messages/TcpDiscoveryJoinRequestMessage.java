@@ -36,6 +36,9 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractMessage 
     /** Discovery data. */
     private final Map<Integer, byte[]> discoData;
 
+    /** */
+    private transient boolean directSndFailed;
+
     /**
      * Constructor.
      *
@@ -77,6 +80,14 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractMessage 
      */
     public void responded(boolean responded) {
         setFlag(RESPONDED_FLAG_POS, responded);
+    }
+
+    public boolean directSendFailed() {
+        return directSndFailed;
+    }
+
+    public void directSendFailed(boolean directSndFailed) {
+        this.directSndFailed = directSndFailed;
     }
 
     /** {@inheritDoc} */

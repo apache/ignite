@@ -136,6 +136,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -168,6 +169,9 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusChe
 class ServerImpl extends TcpDiscoveryImpl {
     /** */
     private static final int ENSURED_MSG_HIST_SIZE = getInteger(IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE, 512);
+
+    /** */
+    private static final boolean SEND_JOIN_REQ_DIRECTLY = getBoolean("SEND_JOIN_REQ_DIRECTLY", false);
 
     /** */
     private static final IgniteProductVersion CUSTOM_MSG_ALLOW_JOINING_FOR_VERIFIED_SINCE =
@@ -3728,21 +3732,58 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
             else {
                 if (sendMessageToRemotes(msg)) {
-                    TcpDiscoveryNode crd = resolveCoordinator();
+                    if (SEND_JOIN_REQ_DIRECTLY && !msg.directSendFailed()) {
+                        final TcpDiscoveryNode crd = resolveCoordinator();
 
-                    Collection<TcpDiscoveryNode> failedNodes;
+                        Collection<TcpDiscoveryNode> failedNodes;
 
-                    synchronized (mux) {
-                        failedNodes = U.arrayList(ServerImpl.this.failedNodes.keySet());
-                    }
+                        synchronized (mux) {
+                            failedNodes = U.arrayList(ServerImpl.this.failedNodes.keySet());
+                        }
 
-                    TcpDiscoveryNode newNext = ring.nextNode(failedNodes);
+                        TcpDiscoveryNode next = ring.nextNode(failedNodes);
 
-                    if (crd != null && !crd.equals(newNext)) {
-                        Integer res = trySendMessageDirectly(crd, msg);
+                        if (crd != null && !crd.equals(next)) {
+                            if (log.isDebugEnabled()) {
+                                log.debug("Will send join request directly to coordinator " +
+                                    "[msg=" + msg + ", crd=" + crd + ", next=" + next + ']');
+                            }
 
-                        if (F.eq(RES_OK, res))
+                            utilityPool.submit(new Runnable() {
+                                @Override public void run() {
+                                    IgniteSpiException sndErr = null;
+                                    Integer res = null;
+
+                                    try {
+                                        res = trySendMessageDirectly(crd, msg);
+
+                                        if (F.eq(RES_OK, res)) {
+                                            if (log.isDebugEnabled()) {
+                                                log.debug("Sent join request directly to coordinator " +
+                                                    "[msg=" + msg + ", crd=" + crd + ']');
+                                            }
+
+                                            return;
+                                        }
+                                    }
+                                    catch (IgniteSpiException e) {
+                                        sndErr = e;
+                                    }
+
+                                    if (log.isDebugEnabled()) {
+                                        log.debug("Failed to send join request to coordinator, will process from " +
+                                            "message worker [msg=" + msg + ", crd=" + crd + ", err=" + sndErr +
+                                            ", res=" + res + ']');
+                                    }
+
+                                    msg.directSendFailed(true);
+
+                                    msgWorker.addMessage(msg);
+                                }
+                            });
+
                             return;
+                        }
                     }
 
                     sendMessageAcrossRing(msg);
