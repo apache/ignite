@@ -142,7 +142,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         }});
 
         binTypes.add(new BinaryTypeConfiguration() {{
-            setTypeName("ComplexBinaryFieldsListHashedKey");
+            setTypeName(ComplexBinaryFieldsListHashedKey.class.getName());
 
             BinaryFieldIdentityResolver id = new BinaryFieldIdentityResolver();
 
@@ -992,10 +992,10 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     public void testCrossFormatObjectsIdentity() {
         IgniteCache c = binKeysCache();
 
-        c.put(new ComplexKey(), "zzz");
+        c.put(new ComplexBinaryFieldsListHashedKey(), "zzz");
 
         // Now let's build an identical key for get
-        BinaryObjectBuilder bldr = grid(0).binary().builder("ComplexBinaryFieldsListHashedKey");
+        BinaryObjectBuilder bldr = grid(0).binary().builder(ComplexBinaryFieldsListHashedKey.class.getName());
 
         bldr.setField("firstField", 365);
         bldr.setField("secondField", "value");
@@ -1396,7 +1396,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      * Key to test puts and gets with
      */
     @SuppressWarnings({"ConstantConditions", "unused"})
-    private final static class ComplexKey {
+    private final static class ComplexBinaryFieldsListHashedKey {
         /** */
         private final Integer firstField = 1;
 
@@ -1411,7 +1411,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            ComplexKey that = (ComplexKey) o;
+            ComplexBinaryFieldsListHashedKey that = (ComplexBinaryFieldsListHashedKey) o;
 
             return secondField.equals(that.secondField) &&
                 thirdField.equals(that.thirdField);
