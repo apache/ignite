@@ -349,20 +349,37 @@ namespace Apache.Ignite.AspNet.Tests
             Assert.IsFalse(GetProvider().SetItemExpireCallback(null));
 
             // Check there is no item.
-            var res = provider.GetItem(HttpContext, "myId", out locked, out lockAge, out lockId, out actions);
+            var res = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
             Assert.IsNull(res);
 
-            // Put an item.
-            provider.CreateUninitializedItem(HttpContext, "myId", 1);
+            // Put an item with CreateUninitializedItem and check.
+            provider.CreateUninitializedItem(HttpContext, Id, 1);
+            CheckExpiry(provider);
 
-            // Check that it is there.
-            res = provider.GetItem(HttpContext, "myId", out locked, out lockAge, out lockId, out actions);
+            // Put an item with SetAndReleaseItemExclusive and check.
+            var data = provider.CreateNewStoreData(HttpContext, 1);
+            provider.SetAndReleaseItemExclusive(HttpContext, Id, data, lockId, true);
+            CheckExpiry(provider);
+        }
+
+        /// <summary>
+        /// Checks item expiration.
+        /// </summary>
+        private static void CheckExpiry(SessionStateStoreProviderBase provider)
+        {
+            bool locked;
+            TimeSpan lockAge;
+            object lockId;
+            SessionStateActions actions;
+
+            // Check that item is present.
+            var res = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
             Assert.IsNotNull(res);
 
             // Wait a minute and check again.
             Thread.Sleep(TimeSpan.FromMinutes(1.05));
 
-            res = provider.GetItem(HttpContext, "myId", out locked, out lockAge, out lockId, out actions);
+            res = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
             Assert.IsNull(res);
         }
 
