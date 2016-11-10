@@ -17,11 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -35,18 +32,17 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * DHT atomic cache backup update future.
+ *
  */
-class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
+class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Future keys. */
-    private final Collection<KeyCacheObject> keys;
+    private KeyCacheObject key;
 
     /** Entries with readers. */
-    private Map<KeyCacheObject, GridDhtCacheEntry> nearReadersEntries;
-
+    private GridDhtCacheEntry nearReaderEntry;
 
     /**
      * @param cctx Cache context.
@@ -55,7 +51,7 @@ class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
      * @param updateReq Update request.
      * @param updateRes Update response.
      */
-    GridDhtAtomicUpdateFuture(
+    GridDhtAtomicSingleUpdateFuture(
         GridCacheContext cctx,
         CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
         GridCacheVersion writeVer,
@@ -63,27 +59,31 @@ class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
         GridNearAtomicUpdateResponse updateRes
     ) {
         super(cctx, completionCb, writeVer, updateReq, updateRes);
-
-        keys = new ArrayList<>(updateReq.keys().size());
-        mappings = U.newHashMap(updateReq.keys().size());
     }
 
     /** {@inheritDoc} */
     @Override protected void addDhtKey(KeyCacheObject key, List<ClusterNode> dhtNodes) {
-        keys.add(key);
+        assert this.key == null || this.key.equals(key) : this.key;
+
+        if (mappings == null)
+            mappings = U.newHashMap(dhtNodes.size());
+
+        this.key = key;
     }
 
     /** {@inheritDoc} */
     @Override protected void addNearKey(KeyCacheObject key, Collection<UUID> readers) {
-        keys.add(key);
+        assert this.key == null || this.key.equals(key) : this.key;
+
+        if (mappings == null)
+            mappings = U.newHashMap(readers.size());
+
+        this.key = key;
     }
 
     /** {@inheritDoc} */
     @Override protected void addNearReaderEntry(GridDhtCacheEntry entry) {
-        if (nearReadersEntries == null)
-            nearReadersEntries = new HashMap<>();
-
-        nearReadersEntries.put(entry.key(), entry);
+        nearReaderEntry = entry;
     }
 
     /** {@inheritDoc} */
@@ -95,16 +95,14 @@ class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
             this.updateRes.addFailedKeys(updateRes.failedKeys(), updateRes.error());
 
         if (!F.isEmpty(updateRes.nearEvicted())) {
-            for (KeyCacheObject key : updateRes.nearEvicted()) {
-                GridDhtCacheEntry entry = nearReadersEntries.get(key);
+            try {
+                assert nearReaderEntry != null;
 
-                try {
-                    entry.removeReader(nodeId, updateRes.messageId());
-                }
-                catch (GridCacheEntryRemovedException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("Entry with evicted reader was removed [entry=" + entry + ", err=" + e + ']');
-                }
+                nearReaderEntry.removeReader(nodeId, updateRes.messageId());
+            }
+            catch (GridCacheEntryRemovedException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Entry with evicted reader was removed [entry=" + nearReaderEntry + ", err=" + e + ']');
             }
         }
 
@@ -113,12 +111,11 @@ class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
 
     /** {@inheritDoc} */
     @Override protected void addFailedKeys(GridNearAtomicUpdateResponse updateRes, Throwable err) {
-        for (KeyCacheObject key : keys)
-            updateRes.addFailedKey(key, err);
+        updateRes.addFailedKey(key, err);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtAtomicUpdateFuture.class, this);
+        return S.toString(GridDhtAtomicSingleUpdateFuture.class, this);
     }
 }
