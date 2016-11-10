@@ -3,7 +3,9 @@ Apache Ignite C++ Build Instructions
 Here you can find instruction on how to build Apache Ignite C++ core library and
 stand-alone node binary. To build examples you need to build and install core Apache
 Ignite library then refer to $IGNITE_HOME/platforms/cpp/example/README.txt for
-futher instructions.
+further instructions.
+
+For details on ODBC driver installation and usage please refer to odbc/README.txt.
 
 Building on Linux With Autotools
 ----------------------------------
@@ -15,7 +17,9 @@ Common Requirements:
  * JAVA_HOME environment variable must be set pointing to Java installation directory.
  * IGNITE_HOME environment variable must be set to Ignite installation directory.
  * To build ODBC driver you need to install ODBC Driver Manager on you system.
-   Apache Ignite has been tested with UnixODBC.
+   Apache Ignite has been tested with UnixODBC. Make sure that you install development
+   version of the driver manager which contains header files that are necessary for
+   building a driver.
 
 Building the Apache Ignite C++ components:
  * Navigate to the directory $IGNITE_HOME/platforms/cpp
@@ -37,7 +41,7 @@ use configure script with the following arguments:
 With the config like that you should not have any ignite dependencies as jvm.dll installed
 to build ODBC driver.
 
-NOTE: You may want to use "make install" command to install Ignite libraries and heasders
+NOTE: You may want to use "make install" command to install Ignite libraries and headers
 for your operation system. Note however that this action may require superuser privileges.
 
 Building on Windows with Visual Studio (tm)
