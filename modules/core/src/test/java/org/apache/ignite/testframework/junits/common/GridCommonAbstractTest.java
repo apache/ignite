@@ -440,8 +440,21 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     protected void awaitPartitionMapExchange(boolean waitEvicts, boolean waitNode2PartUpdate) throws InterruptedException {
         long timeout = 30_000;
 
+        long startTime = -1;
+
+        Set<String> names = new HashSet<>();
+
         for (Ignite g : G.allGrids()) {
             IgniteKernal g0 = (IgniteKernal)g;
+
+            names.add(g0.configuration().getGridName());
+
+            if (startTime != -1) {
+                if (startTime != g0.context().discovery().gridStartTime())
+                    fail("Found nodes from different clusters [allNodes=" + names + ']');
+            }
+            else
+                startTime = g0.context().discovery().gridStartTime();
 
             for (IgniteCacheProxy<?, ?> c : g0.context().cache().jcaches()) {
                 CacheConfiguration cfg = c.context().config();
