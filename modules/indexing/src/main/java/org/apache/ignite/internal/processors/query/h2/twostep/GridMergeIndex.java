@@ -192,8 +192,7 @@ public abstract class GridMergeIndex extends BaseIndex {
 
             expRowsCnt.addAndGet(allRows);
 
-            // Add page before setting initialized flag to avoid race condition
-            // with fetching next page while adding last page
+            // Add page before setting initialized flag to avoid race condition with adding last page
             if (pageRowsCnt > 0)
                 addPage0(page);
 
@@ -210,7 +209,7 @@ public abstract class GridMergeIndex extends BaseIndex {
 
         if (remainingRowsCount == 0) { // Result can be negative in case of race between messages, it is ok.
 
-            // Guarantee that finished state possible only if counter is zero and page added
+            // Guarantee that finished state possible only if counter is zero and all pages was added
             if (cnt.state == State.INITIALIZED)
                 cnt.state = State.FINISHED;
             else
@@ -221,8 +220,8 @@ public abstract class GridMergeIndex extends BaseIndex {
                     return;
             }
 
-            // Page-marker that last page was added
             if (lastSubmitted.compareAndSet(false, true)) {
+                // Add page-marker that last page was added
                 addPage0(new GridResultPage(null, page.source(), null) {
                     @Override public boolean isLast() {
                         return true;
