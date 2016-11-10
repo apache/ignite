@@ -19,6 +19,7 @@ namespace Apache.Ignite.AspNet.Tests
 {
     using System;
     using System.Collections.Specialized;
+    using System.Configuration;
     using System.Linq;
     using System.Reflection;
     using System.Threading;
@@ -116,13 +117,27 @@ namespace Apache.Ignite.AspNet.Tests
             Assert.Throws<InvalidOperationException>(() =>
                     stateProvider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions));
 
-            // Invalid section.
-            Assert.Throws<IgniteException>(() =>
+            // Missing section.
+            var ex = Assert.Throws<IgniteException>(() =>
                 stateProvider.Initialize("testName", new NameValueCollection
                 {
-                    {SectionNameAttr, "invalidSection"},
+                    {SectionNameAttr, "missingSection"},
                     {CacheNameAttr, CacheName}
                 }));
+
+            Assert.IsInstanceOf<ConfigurationErrorsException>(ex.InnerException);
+
+            // Invalid section with missing content.
+            stateProvider = new IgniteSessionStateStoreProvider();
+
+            ex = Assert.Throws<IgniteException>(() =>
+                stateProvider.Initialize("testName", new NameValueCollection
+                {
+                    {SectionNameAttr, "igniteConfigurationInvalid"},
+                    {CacheNameAttr, CacheName}
+                }));
+
+            Assert.IsInstanceOf<ConfigurationErrorsException>(ex.InnerException);
 
             // Valid grid.
             stateProvider = GetProvider();

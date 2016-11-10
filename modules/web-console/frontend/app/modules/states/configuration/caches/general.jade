@@ -23,6 +23,9 @@ include ../../../../../app/helpers/jade/mixins.jade
     .panel-heading(bs-collapse-toggle)
         ignite-form-panel-chevron
         label General
+        ignite-form-field-tooltip.tipLabel
+            | Common cache configuration#[br]
+            | #[a(href="https://apacheignite.readme.io/docs/data-grid" target="_blank") More info]
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id='general')
         .panel-body

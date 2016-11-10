@@ -24,6 +24,7 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.hadoop.HadoopTestClassLoader;
 import org.apache.ignite.internal.processors.hadoop.impl.client.HadoopClientProtocolEmbeddedSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.client.HadoopClientProtocolMultipleServersSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.client.HadoopClientProtocolSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopTxConfigCacheTest;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.KerberosHadoopFileSystemFactorySelfTest;
@@ -194,6 +195,7 @@ public class IgniteHadoopTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopClientProtocolSelfTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopClientProtocolEmbeddedSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopClientProtocolMultipleServersSelfTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopCommandLineTest.class.getName())));
 

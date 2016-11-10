@@ -293,7 +293,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                 if (msg.data() == null && msg.dataBytes() != null) {
                     try {
-                        msg.data(marsh.unmarshal(msg.dataBytes(), U.resolveClassLoader(ctx.config())));
+                        msg.data(U.unmarshal(marsh, msg.dataBytes(), U.resolveClassLoader(ctx.config())));
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to process message (ignoring): " + msg, e);
@@ -729,7 +729,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                     if (msg.data() == null && msg.dataBytes() != null) {
                         try {
-                            msg.data(marsh.unmarshal(msg.dataBytes(), U.resolveClassLoader(ctx.config())));
+                            msg.data(U.unmarshal(marsh, msg.dataBytes(), U.resolveClassLoader(ctx.config())));
                         }
                         catch (IgniteCheckedException e) {
                             U.error(log, "Failed to process message (ignoring): " + msg, e);
@@ -819,6 +819,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             if (!toSnd.isEmpty())
                 sendNotification(nodeId, routineId, null, toSnd, orderedTopic, true, null);
+        }
+        else {
+            LocalRoutineInfo localRoutineInfo = locInfos.get(routineId);
+
+            if (localRoutineInfo != null)
+                localRoutineInfo.handler().notifyCallback(nodeId, routineId, objs, ctx);
         }
     }
 
@@ -1316,7 +1322,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         if (!msg.messages() &&
             msg.data() != null &&
             (nodes.size() > 1 || !ctx.localNodeId().equals(F.first(nodes).id())))
-            msg.dataBytes(marsh.marshal(msg.data()));
+            msg.dataBytes(U.marshal(marsh, msg.data()));
 
         for (ClusterNode node : nodes) {
             int cnt = 0;

@@ -43,6 +43,9 @@ public class HadoopIgfsProperties {
      * @throws IgniteException In case of error.
      */
     public HadoopIgfsProperties(Map<String, String> props) throws IgniteException {
+        if (props == null)
+            return;
+
         usrName = props.get(IgfsUtils.PROP_USER_NAME);
         grpName = props.get(IgfsUtils.PROP_GROUP_NAME);
 

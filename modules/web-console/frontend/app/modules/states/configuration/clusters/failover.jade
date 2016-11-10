@@ -19,14 +19,15 @@ include ../../../../../app/helpers/jade/mixins.jade
 -var model = 'backupItem'
 -var form = 'failoverSpi'
 -var failoverSpi = model + '.failoverSpi'
--var failoverCustom = 'failover.kind === "Custom"'
+-var failoverCustom = 'model.kind === "Custom"'
 
 .panel.panel-default(ng-form=form novalidate)
     .panel-heading(bs-collapse-toggle ng-click='ui.loadPanel("#{form}")')
         ignite-form-panel-chevron
         label Failover configuration
         ignite-form-field-tooltip.tipLabel
-            | Failover SPI provides ability to supply custom logic for handling failed execution of a grid job
+            | Failover SPI provides ability to supply custom logic for handling failed execution of a grid job#[br]
+            | #[a(href="https://apacheignite.readme.io/docs/fault-tolerance" target="_blank") More info]
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=form)
         .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
@@ -41,10 +42,10 @@ include ../../../../../app/helpers/jade/mixins.jade
                             | Add failover SPI
                         .group-content-empty(ng-if='!(#{failoverSpi} && #{failoverSpi}.length > 0)')
                             | Not defined
-                        .group-content(ng-show='#{failoverSpi} && #{failoverSpi}.length > 0' ng-repeat='failover in #{failoverSpi} track by $index')
+                        .group-content(ng-show='#{failoverSpi} && #{failoverSpi}.length > 0' ng-repeat='model in #{failoverSpi} track by $index')
                             hr(ng-if='$index != 0')
                             .settings-row
-                                +dropdown('Failover SPI:', 'failover.kind', '"failoverKind" + $index', 'true', 'Choose Failover SPI', '[\
+                                +dropdown-required('Failover SPI:', 'model.kind', '"failoverKind" + $index', 'true', 'true', 'Choose Failover SPI', '[\
                                         {value: "JobStealing", label: "Job stealing"},\
                                         {value: "Never", label: "Never"},\
                                         {value: "Always", label: "Always"},\
@@ -59,14 +60,14 @@ include ../../../../../app/helpers/jade/mixins.jade
                                     </ul>')
 
                                     +table-remove-button(failoverSpi, 'Remove Failover SPI')
-                            .settings-row(ng-show='failover.kind === "JobStealing"')
-                                +number('Maximum failover attempts:', 'failover.JobStealing.maximumFailoverAttempts', '"jsMaximumFailoverAttempts" + $index', 'true', '5', '0',
+                            .settings-row(ng-show='model.kind === "JobStealing"')
+                                +number('Maximum failover attempts:', 'model.JobStealing.maximumFailoverAttempts', '"jsMaximumFailoverAttempts" + $index', 'true', '5', '0',
                                     'Maximum number of attempts to execute a failed job on another node')
-                            .settings-row(ng-show='failover.kind === "Always"')
-                                +number('Maximum failover attempts:', 'failover.Always.maximumFailoverAttempts', '"alwaysMaximumFailoverAttempts" + $index', 'true', '5', '0',
+                            .settings-row(ng-show='model.kind === "Always"')
+                                +number('Maximum failover attempts:', 'model.Always.maximumFailoverAttempts', '"alwaysMaximumFailoverAttempts" + $index', 'true', '5', '0',
                                     'Maximum number of attempts to execute a failed job on another node')
                             .settings-row(ng-show=failoverCustom)
-                                +java-class('SPI implementation', 'failover.Custom.class', '"failoverSpiClass" + $index', 'true', failoverCustom,
+                                +java-class('SPI implementation', 'model.Custom.class', '"failoverSpiClass" + $index', 'true', failoverCustom,
                                     'Custom FailoverSpi implementation class name.')
             .col-sm-6
                 +preview-xml-java(model, 'clusterFailover')

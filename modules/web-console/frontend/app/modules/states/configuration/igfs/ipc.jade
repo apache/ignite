@@ -54,7 +54,7 @@ include ../../../../../app/helpers/jade/mixins.jade
                 .settings-row
                     +text-enabled('Token directory:', ipcEndpointConfiguration + '.tokenDirectoryPath', '"ipcEndpointConfigurationTokenDirectoryPath"', enabled, 'false', 'ipc/shmem', 'Directory where shared memory tokens are stored')
                 .settings-row
-                    +number('Thread count:', ipcEndpointConfiguration + '.threadCount', 'ipcEndpointConfigurationThreadCount', enabled, 'availableProcessors', '1',
+                    +number('Thread count:', ipcEndpointConfiguration + '.threadCount', '"ipcEndpointConfigurationThreadCount"', enabled, 'availableProcessors', '1',
                         'Number of threads used by this endpoint to process incoming requests')
             .col-sm-6
                 +preview-xml-java(model, 'igfsIPC')
