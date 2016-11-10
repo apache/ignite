@@ -131,6 +131,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             parts.put(cacheId, fullMap);
 
             if (dupDataCache != null) {
+                assert compress;
                 assert parts.containsKey(dupDataCache);
 
                 if (dupPartsData == null)

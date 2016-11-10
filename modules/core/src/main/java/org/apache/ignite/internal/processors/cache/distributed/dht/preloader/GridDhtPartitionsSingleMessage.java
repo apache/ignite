@@ -113,6 +113,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         parts.put(cacheId, locMap);
 
         if (dupDataCache != null) {
+            assert compress;
             assert F.isEmpty(locMap.map());
             assert parts.containsKey(dupDataCache);
 

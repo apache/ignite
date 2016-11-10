@@ -194,13 +194,6 @@ public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, E
     }
 
     /**
-     * @param map Partition states map.
-     */
-    public void map(Map<Integer, GridDhtPartitionState> map) {
-        this.map = map;
-    }
-
-    /**
      * @return Node ID.
      */
     public UUID nodeId() {

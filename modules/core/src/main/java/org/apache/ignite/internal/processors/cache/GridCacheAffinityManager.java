@@ -48,7 +48,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     private static final AffinityTopologyVersion LOC_CACHE_TOP_VER = new AffinityTopologyVersion(1);
 
     /** */
-    public static final String FAILED_TO_FIND_CACHE_ERR_MSG = "Failed to find cache (cache was not started " +
+    private static final String FAILED_TO_FIND_CACHE_ERR_MSG = "Failed to find cache (cache was not started " +
         "yet or cache was already stopped): ";
 
     /** Affinity cached function. */

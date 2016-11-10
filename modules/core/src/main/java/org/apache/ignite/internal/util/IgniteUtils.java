@@ -9696,6 +9696,13 @@ public abstract class IgniteUtils {
         }
     }
 
+    /**
+     * @param marsh Marshaller.
+     * @param zipBytes Zip-compressed bytes.
+     * @param clsLdr Class loader to use.
+     * @return Unmarshalled object.
+     * @throws IgniteCheckedException
+     */
     public static <T> T unmarshalZip(Marshaller marsh, byte[] zipBytes, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         assert marsh != null;
         assert zipBytes != null;

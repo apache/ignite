@@ -229,13 +229,6 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     }
 
     /**
-     * @param newNodeDiscoData Discovery data from new node.
-     */
-    public void newNodeDiscoveryData(Map<Integer, byte[]> newNodeDiscoData) {
-        this.newNodeDiscoData = newNodeDiscoData;
-    }
-
-    /**
      * @return Discovery data from old nodes.
      */
     public Map<UUID, Map<Integer, byte[]>> oldNodesDiscoveryData() {
