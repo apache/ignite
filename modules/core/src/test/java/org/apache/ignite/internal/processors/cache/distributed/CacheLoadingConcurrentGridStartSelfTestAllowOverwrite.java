@@ -15,47 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.events;
-
-import org.apache.ignite.cluster.ClusterNode;
+package org.apache.ignite.internal.processors.cache.distributed;
 
 /**
- * Cache fail event.
+ *
  */
-public class UnhandledExceptionEvent extends EventAdapter {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    private Exception ex;
-
+public class CacheLoadingConcurrentGridStartSelfTestAllowOverwrite extends CacheLoadingConcurrentGridStartSelfTest {
     /**
      * Default constructor.
      */
-    public UnhandledExceptionEvent() {
-    }
-
-    /**
-     * @param node Node.
-     * @param msg Message.
-     * @param ex Exception.
-     * @param type Type.
-     */
-    public UnhandledExceptionEvent(ClusterNode node, String msg, Exception ex, int type) {
-        super(node, msg, type);
-        this.ex = ex;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return "msg=" + message() + ", type=" + type() + "ex=" + ex;
-    }
-
-    /**
-     *
-     * @return inner exception
-     */
-    public Exception getException() {
-        return ex;
+    public CacheLoadingConcurrentGridStartSelfTestAllowOverwrite() {
+        allowOverwrite = true;
     }
 }

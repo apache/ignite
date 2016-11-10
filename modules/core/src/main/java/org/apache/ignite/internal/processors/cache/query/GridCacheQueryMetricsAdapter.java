@@ -172,11 +172,4 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics, Externalizabl
     @Override public String toString() {
         return S.toString(GridCacheQueryMetricsAdapter.class, this);
     }
-
-    /**
-     * Increment fails counter.
-     */
-    public void incrementOnFails() {
-        fails.increment();
-    }
 }

@@ -357,6 +357,6 @@ public class GridCacheQueryResponse extends GridCacheMessage implements GridCach
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheQueryResponse.class, this, super.toString());
+        return S.toString(GridCacheQueryResponse.class, this);
     }
 }
