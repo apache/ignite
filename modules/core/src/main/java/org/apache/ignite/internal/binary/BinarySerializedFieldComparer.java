@@ -263,13 +263,13 @@ public class BinarySerializedFieldComparer {
             if (c1.offheap()) {
                 if (c2.offheap())
                     // Case 1: both offheap.
-                    return GridUnsafeMemory.compare(c1.ptr + off, c2.ptr + off, len);
+                    return GridUnsafeMemory.compare(c1.curFieldPos + c1.ptr + off, c2.curFieldPos + c2.ptr + off, len);
             }
             else {
                 if (!c2.offheap()) {
                     // Case 2: both onheap.
                     for (int i = 0; i < len; i++) {
-                        if (c1.arr[off + i] != c2.arr[off + i])
+                        if (c1.arr[c1.curFieldPos + off + i] != c2.arr[c2.curFieldPos + off + i])
                             return false;
                     }
 
@@ -287,7 +287,7 @@ public class BinarySerializedFieldComparer {
             assert c1.offheap() && !c2.offheap();
 
             for (int i = 0; i < len; i++) {
-                if (BinaryPrimitives.readByte(c1.ptr, off + i) != c2.arr[off + i])
+                if (BinaryPrimitives.readByte(c1.ptr, c1.curFieldPos + off + i) != c2.arr[c2.curFieldPos + off + i])
                     return false;
             }
 
