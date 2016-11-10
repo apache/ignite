@@ -23,6 +23,7 @@ namespace Apache.Ignite.EntityFramework
     /// Default caching policy implementation: everything is cached with <see cref="DbCachingMode.ReadWrite"/>, 
     /// no expiration.
     /// </summary>
+    // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
     public class DbCachingPolicy : IDbCachingPolicy
     {
         /// <summary>
