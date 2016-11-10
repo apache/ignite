@@ -200,9 +200,9 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
 
                 else if (Thread.interrupted()) {
                     interrupted = true;
-// TODO
-//                    if (!ignoreInterrupts)
-//                        throw new IgniteInterruptedCheckedException("Thread has been interrupted.");
+
+                    // TODO ignore interrupts support
+                    throw new IgniteInterruptedCheckedException("Thread has been interrupted.");
                 }
             }
         }
