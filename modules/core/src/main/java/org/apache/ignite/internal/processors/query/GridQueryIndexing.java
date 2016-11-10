@@ -87,11 +87,13 @@ public interface GridQueryIndexing {
      * @param params Query parameters.
      * @param filter Space name and key filter.
      * @param enforceJoinOrder Enforce join order of tables in the query.
+     * @param timeout Query timeout in milliseconds.
+     * @param cancel Query cancel.
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
-    public GridQueryFieldsResult queryLocalSqlFields(@Nullable final String spaceName, final String qry,
-                                                     @Nullable final Collection<Object> params, final IndexingQueryFilter filter, boolean enforceJoinOrder) throws IgniteCheckedException;
+    public GridQueryFieldsResult queryLocalSqlFields(@Nullable String spaceName, String qry,
+        Collection<Object> params, IndexingQueryFilter filter, boolean enforceJoinOrder, int timeout, GridQueryCancel cancel) throws IgniteCheckedException;
 
     /**
      * Executes regular query.
@@ -232,4 +234,9 @@ public interface GridQueryIndexing {
      * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
      */
     public PreparedStatement prepareNativeStatement(String schema, String sql) throws SQLException;
+
+    /**
+     * Cancels all executing queries.
+     */
+    public void cancelAllQueries();
 }

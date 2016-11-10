@@ -265,7 +265,7 @@ namespace ignite
 
                         utility::IntoLower(key);
 
-                        if (value.front() == '{' && value.back() == '}')
+                        if (value[0] == '{' && value[value.size() - 1] == '}')
                             value = value.substr(1, value.size() - 2);
 
                         args[key] = value;
