@@ -665,7 +665,7 @@ namespace Apache.Ignite.EntityFramework.Tests
             TestUtils.RunMultiThreaded(CreateRemoveBlog, 4, 20);
 
             // Wait for the cleanup to complete.
-            Thread.Sleep(200);
+            Thread.Sleep(500);
 
             // Only one version of data is in the cache.
             Assert.AreEqual(1, _cache.GetSize());
@@ -908,7 +908,7 @@ namespace Apache.Ignite.EntityFramework.Tests
             }
         }
 
-        private class DelegateCachingPolicy : IDbCachingPolicy
+        private class DelegateCachingPolicy : DbCachingPolicy
         {
             public Func<DbQueryInfo, bool> CanBeCachedFunc { get; set; }
 
@@ -918,24 +918,28 @@ namespace Apache.Ignite.EntityFramework.Tests
 
             public Func<DbQueryInfo, DbCachingMode> GetCachingStrategyFunc { get; set; }
 
-            public bool CanBeCached(DbQueryInfo queryInfo)
+            public override bool CanBeCached(DbQueryInfo queryInfo)
             {
                 return CanBeCachedFunc == null || CanBeCachedFunc(queryInfo);
             }
 
-            public bool CanBeCached(DbQueryInfo queryInfo, int rowCount)
+            public override bool CanBeCached(DbQueryInfo queryInfo, int rowCount)
             {
                 return CanBeCachedRowsFunc == null || CanBeCachedRowsFunc(queryInfo, rowCount);
             }
 
-            public TimeSpan GetExpirationTimeout(DbQueryInfo queryInfo)
+            public override TimeSpan GetExpirationTimeout(DbQueryInfo queryInfo)
             {
-                return GetExpirationTimeoutFunc == null ? TimeSpan.MaxValue : GetExpirationTimeoutFunc(queryInfo);
+                return GetExpirationTimeoutFunc == null 
+                    ? base.GetExpirationTimeout(queryInfo) 
+                    : GetExpirationTimeoutFunc(queryInfo);
             }
 
-            public DbCachingMode GetCachingMode(DbQueryInfo queryInfo)
+            public override DbCachingMode GetCachingMode(DbQueryInfo queryInfo)
             {
-                return GetCachingStrategyFunc == null ? DbCachingMode.ReadWrite : GetCachingStrategyFunc(queryInfo);
+                return GetCachingStrategyFunc == null 
+                    ? base.GetCachingMode(queryInfo)
+                    : GetCachingStrategyFunc(queryInfo);
             }
         }
     }
