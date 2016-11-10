@@ -910,24 +910,24 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         Object affKey) {
         Integer dupDataCache = null;
 
-//        if (compress && affKey != null && !m.containsCache(cacheId)) {
-//            T2<Integer, GridDhtPartitionFullMap> state0 = dupData.get(affKey);
-//
-//            if (state0 != null && state0.get2().partitionStateEquals(map)) {
-//                GridDhtPartitionFullMap map0 = new GridDhtPartitionFullMap(map.nodeId(),
-//                    map.nodeOrder(),
-//                    map.updateSequence());
-//
-//                for (Map.Entry<UUID, GridDhtPartitionMap2> e : map.entrySet())
-//                    map0.put(e.getKey(), e.getValue().emptyCopy());
-//
-//                map = map0;
-//
-//                dupDataCache = state0.get1();
-//            }
-//            else
-//                dupData.put(affKey, new T2<>(cacheId, map));
-//        }
+        if (compress && affKey != null && !m.containsCache(cacheId)) {
+            T2<Integer, GridDhtPartitionFullMap> state0 = dupData.get(affKey);
+
+            if (state0 != null && state0.get2().partitionStateEquals(map)) {
+                GridDhtPartitionFullMap map0 = new GridDhtPartitionFullMap(map.nodeId(),
+                    map.nodeOrder(),
+                    map.updateSequence());
+
+                for (Map.Entry<UUID, GridDhtPartitionMap2> e : map.entrySet())
+                    map0.put(e.getKey(), e.getValue().emptyCopy());
+
+                map = map0;
+
+                dupDataCache = state0.get1();
+            }
+            else
+                dupData.put(affKey, new T2<>(cacheId, map));
+        }
 
         m.addFullPartitionsMap(cacheId, map, dupDataCache);
     }

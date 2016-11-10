@@ -1120,6 +1120,12 @@ class ClientImpl extends TcpDiscoveryImpl {
                         }
                     }
                 }
+                catch (InterruptedException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Client socket writer interrupted.");
+
+                    return;
+                }
                 catch (Exception e) {
                     if (spi.getSpiContext().isStopping()) {
                         if (log.isDebugEnabled())
