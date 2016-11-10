@@ -246,7 +246,7 @@ namespace Apache.Ignite.AspNet.Tests
             Assert.IsFalse(locked);
             Assert.AreEqual(TimeSpan.Zero, lockAge);
             Assert.AreEqual(SessionStateActions.None, actions);
-            provider.SetAndReleaseItemExclusive(HttpContext, Id, UpdateStoreData(res), lockId, true);
+            provider.SetAndReleaseItemExclusive(HttpContext, Id, UpdateStoreData(res), lockId, false);
 
             // Not locked, item present.
             res = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
