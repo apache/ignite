@@ -209,6 +209,24 @@ namespace Apache.Ignite.AspNet.Tests
             Assert.AreEqual(TimeSpan.Zero, lockAge);
             Assert.AreEqual(SessionStateActions.None, actions);
 
+            // SetAndRelease with no lock. This happens with certain versions of ASP.NET.
+            var item = provider.CreateNewStoreData(HttpContext, 7);
+            // ReSharper disable once AssignNullToNotNullAttribute (lockId is not supposed to be null, but it can be).
+            provider.SetAndReleaseItemExclusive(HttpContext, Id, item, null, true);
+
+            // Check added item.
+            res = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
+            Assert.IsNotNull(res);
+            Assert.IsNull(lockId);
+            Assert.AreEqual(7, res.Timeout);
+            Assert.IsFalse(locked);
+            Assert.AreEqual(TimeSpan.Zero, lockAge);
+            Assert.AreEqual(SessionStateActions.None, actions);
+
+            // Remove item.
+            // ReSharper disable once AssignNullToNotNullAttribute (lockId is not supposed to be null, but it can be).
+            provider.RemoveItem(HttpContext, Id, null, null);
+
             // Add item.
             provider.CreateUninitializedItem(HttpContext, Id, 7);
             
