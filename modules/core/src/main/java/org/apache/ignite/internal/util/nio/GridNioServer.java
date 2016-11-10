@@ -1752,6 +1752,8 @@ public class GridNioServer<T> {
 
                                     ses.key(key);
 
+                                    ses.procWrite.set(true);
+
                                     f.onDone(true);
                                 }
                                 else {
@@ -1864,8 +1866,11 @@ public class GridNioServer<T> {
                             while (changeReqs.isEmpty()) {
                                 LockSupport.parkNanos(1_000_000_000);
 
-                                if (Thread.interrupted())
-                                    throw new InterruptedException();
+                                if (Thread.interrupted()) {
+                                    Thread.currentThread().interrupt();
+
+                                    return;
+                                }
                             }
 
                             assert !changeReqs.isEmpty();
@@ -2137,6 +2142,26 @@ public class GridNioServer<T> {
         }
 
         /**
+         * @return Always {@code true} to put it to assert statement.
+         */
+        protected boolean consistent() {
+            int wsCnt = 0;
+
+            for (SelectionKey key : selector.keys()) {
+                boolean opWrite = key.isValid() && (key.interestOps() & SelectionKey.OP_WRITE) != 0;
+
+                if (opWrite)
+                    wsCnt++;
+            }
+
+            assert wsCnt == writeSesCnt : "Worker in illegal state [actualWriteSesCnt=" + wsCnt +
+                ", calculatedWriteSesCnt=" + writeSesCnt +
+                ", worker=" + this + ']';
+
+            return true;
+        }
+
+        /**
          * Checks sessions assigned to a selector for timeouts.
          *
          * @param keys Keys registered to selector.
@@ -2164,7 +2189,9 @@ public class GridNioServer<T> {
 
                     long idleTimeout0 = idleTimeout;
 
-                    if (!opWrite && now - ses.lastReceiveTime() > idleTimeout0 && now - ses.lastSendScheduleTime() > idleTimeout0) {
+                    if (!opWrite &&
+                        now - ses.lastReceiveTime() > idleTimeout0 &&
+                        now - ses.lastSendScheduleTime() > idleTimeout0) {
                         filterChain.onSessionIdleTimeout(ses);
 
                         // Update timestamp to avoid multiple notifications within one timeout interval.
@@ -2176,6 +2203,9 @@ public class GridNioServer<T> {
                     close(ses,  e);
                 }
             }
+
+            // For test purposes only!
+            assert consistent();
         }
 
         /**

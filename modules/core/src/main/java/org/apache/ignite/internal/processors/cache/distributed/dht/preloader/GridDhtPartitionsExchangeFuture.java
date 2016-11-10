@@ -955,6 +955,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         try {
             cctx.io().send(node, m, SYSTEM_POOL);
+
+            U.debug(log, ">>> Sent local partitions [node=" + node + ", clientOnly=" + clientOnlyExchange +
+                ", m=" + m + ']');
         }
         catch (ClusterTopologyCheckedException e) {
             if (log.isDebugEnabled())
@@ -1180,6 +1183,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             if (!centralizedAff)
                 sendAllPartitions(node.id(), cctx.gridConfig().getNetworkSendRetryCount());
+
+            if (msg.client())
+                U.debug(log, ">>> Sent all partitions to client [node=" + node + ", msg=" + msg + ']');
         }
         else {
             initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
@@ -1343,6 +1349,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         assert msg != null;
 
         final UUID nodeId = node.id();
+
+        U.debug(log, "Received partitions full map [node=" + node + ", msg=" + msg + ']');
 
         if (isDone()) {
             if (log.isDebugEnabled())

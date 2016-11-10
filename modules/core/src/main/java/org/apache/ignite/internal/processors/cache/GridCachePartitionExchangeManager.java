@@ -1080,6 +1080,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
             else {
                 if (msg.client()) {
+                    U.debug(log, ">>> Received partitions from client [node=" + node + ", msg=" + msg + ']');
+
                     final GridDhtPartitionsExchangeFuture exchFut = exchangeFuture(msg.exchangeId(),
                         null,
                         null,
