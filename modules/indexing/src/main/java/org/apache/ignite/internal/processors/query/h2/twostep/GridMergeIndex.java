@@ -181,7 +181,7 @@ public abstract class GridMergeIndex extends BaseIndex {
 
         // RemainingRowsCount should be updated before page adding to avoid race
         // in GridMergeIndexUnsorted cursor iterator
-        int remainingRowsCount ;
+        int remainingRowsCount;
 
         int allRows = page.response().allRows();
 
@@ -193,16 +193,17 @@ public abstract class GridMergeIndex extends BaseIndex {
             expRowsCnt.addAndGet(allRows);
 
             // Add page before setting initialized flag to avoid race condition with adding LastPage
-            if(pageRowsCnt > 0)
+            if (pageRowsCnt > 0)
                 addPage0(page);
 
             // We need this separate flag to handle case when the first source contains only one page
             // and it will signal that all remaining counters are zero and fetch is finished.
             cnt.initialized = true;
-        }else {
+        }
+        else {
             remainingRowsCount = cnt.addAndGet(-pageRowsCnt);
 
-            if(pageRowsCnt > 0)
+            if (pageRowsCnt > 0)
                 addPage0(page);
         }
 

@@ -68,7 +68,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
     private static final boolean TEST_INFO = true;
 
     /** Number of test grids (nodes). Should not be less than 2. */
-    private static final int GRID_CNT = 4;
+    private static final int GRID_CNT = 3;
 
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -706,9 +706,8 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
                         iter++;
 
                         // Scan query.
-                        QueryCursor<Cache.Entry<Integer, Integer>> query = c.query(new ScanQuery<Integer, Integer>());
                         Collection<Cache.Entry<Integer, Integer>> entries =
-                            query.getAll();
+                            c.query(new ScanQuery<Integer, Integer>()).getAll();
 
                         assert entries != null;
 
@@ -734,7 +733,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * JUnit.
+     * SqlFieldsQuery paging mechanics stress test
      *
      * @throws Exception If failed.
      */
@@ -789,7 +788,6 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
 
         fut.get();
     }
-
 
     /**
      * Test value.

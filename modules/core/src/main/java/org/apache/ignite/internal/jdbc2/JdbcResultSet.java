@@ -88,8 +88,9 @@ public class JdbcResultSet implements ResultSet {
     private int fetchSize;
 
     /**
-     * Creates new result set with predefined fields. Result set created with this constructor will never execute remote
-     * tasks.
+     * Creates new result set with predefined fields.
+     * Result set created with this constructor will
+     * never execute remote tasks.
      *
      * @param uuid Query UUID.
      * @param stmt Statement.
@@ -177,10 +178,10 @@ public class JdbcResultSet implements ResultSet {
     }
 
     /**
-     * Marks result set as closed. If this result set is associated with locally executed query then query cursor will
-     * also closed.
+     * Marks result set as closed.
+     * If this result set is associated with locally executed query then query cursor will also closed.
      */
-    void closeInternal() throws SQLException {
+    void closeInternal() throws SQLException  {
         if (((JdbcConnection)stmt.getConnection()).nodeId() == null && uuid != null)
             JdbcQueryTask.remove(uuid);
 
@@ -1483,16 +1484,11 @@ public class JdbcResultSet implements ResultSet {
         ensureHasCurrentRow();
 
         try {
-            Object val = curr.get(colIdx - 1);
+            T val = cls == String.class ? (T)String.valueOf(curr.get(colIdx - 1)) : (T)curr.get(colIdx - 1);
 
             wasNull = val == null;
 
-            if (val == null)
-                return null;
-            else if (cls == String.class)
-                return (T)String.valueOf(val);
-            else
-                return (T)val;
+            return val;
         }
         catch (IndexOutOfBoundsException ignored) {
             throw new SQLException("Invalid column index: " + colIdx);
