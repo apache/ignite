@@ -1692,91 +1692,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         return res;
     }
 
-    /*
-
-    static ClassProperty buildClassProperty(boolean key, Class<?> cls, String pathStr, Class<?> resType,
-        Map<String,String> aliases, CacheObjectContext coCtx) {
-        String[] path = pathStr.split("\\.");
-
-        ClassProperty res = null;
-
-        StringBuilder fullName = new StringBuilder();
-
-        for (String prop : path) {
-            if (fullName.length() != 0)
-                fullName.append('.');
-
-            fullName.append(prop);
-
-            String alias = aliases.get(fullName.toString());
-
-            StringBuilder bld = new StringBuilder("get");
-
-            bld.append(prop);
-
-            bld.setCharAt(3, Character.toUpperCase(bld.charAt(3)));
-
-            ClassProperty tmp = null;
-
-            try {
-                tmp = new ClassProperty(cls.getMethod(bld.toString()), key, alias, coCtx);
-            }
-            catch (NoSuchMethodException ignore) {
-                // No-op.
-            }
-
-            if (tmp == null) { // Boolean getter can be defined as is###().
-                bld = new StringBuilder("is");
-
-                bld.append(prop);
-
-                bld.setCharAt(2, Character.toUpperCase(bld.charAt(2)));
-
-                try {
-                    tmp = new ClassProperty(cls.getMethod(bld.toString()), key, alias, coCtx);
-                }
-                catch (NoSuchMethodException ignore) {
-                    // No-op.
-                }
-            }
-
-            Class cls0 = cls;
-
-            while (tmp == null && cls0 != null)
-                try {
-                    tmp = new ClassProperty(cls0.getDeclaredField(prop), key, alias, coCtx);
-                }
-                catch (NoSuchFieldException ignored) {
-                    cls0 = cls0.getSuperclass();
-                }
-
-            if (tmp == null) {
-                try {
-                    tmp = new ClassProperty(cls.getMethod(prop), key, alias, coCtx);
-                }
-                catch (NoSuchMethodException ignored) {
-                    // No-op.
-                }
-            }
-
-            if (tmp == null)
-                return null;
-
-            tmp.parent(res);
-
-            cls = tmp.type();
-
-            res = tmp;
-        }
-
-        if (!U.box(resType).isAssignableFrom(U.box(res.type())))
-            return null;
-
-        return res;
-    }
-
-     */
-
     /**
      * Gets types for space.
      *
@@ -1895,6 +1810,22 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         setBldr.append(prop);
         setBldr.setCharAt(3, Character.toUpperCase(setBldr.charAt(3)));
 
+        try {
+            Method getter = cls.getMethod(getBldr.toString());
+            Method setter = cls.getMethod(setBldr.toString());
+
+            return new MethodsAccessor(getter, setter);
+        }
+        catch (NoSuchMethodException ignore) {
+            // No-op.
+        }
+
+        getBldr = new StringBuilder("is");
+        getBldr.append(prop);
+        getBldr.setCharAt(2, Character.toUpperCase(getBldr.charAt(3)));
+
+        // We do nothing about setBldr here as it corresponds to setProperty name which is what we need
+        // for boolean property setter as well
         try {
             Method getter = cls.getMethod(getBldr.toString());
             Method setter = cls.getMethod(setBldr.toString());

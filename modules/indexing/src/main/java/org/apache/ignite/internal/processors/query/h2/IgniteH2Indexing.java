@@ -817,67 +817,23 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             removeTable(tbl);
     }
 
-    /* queryLocalSqlFields */
-
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public GridQueryFieldsResult queryLocalSqlFields(@Nullable final String spaceName, final String qry,
-                                                               @Nullable final Collection<Object> params, final IndexingQueryFilter filters, boolean enforceJoinOrder)
-        throws IgniteCheckedException {
-        Connection conn = connectionForSpace(spaceName);
-
-        long start = U.currentTimeMillis();
-
-        PreparedStatement stmt;
-
-        try {
-            stmt = prepareStatement(conn, qry, true);
-        }
-        catch (SQLException e) {
-            throw new IgniteSQLException(e);
-        }
-
-        Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement) stmt);
-
-        initLocalQueryContext(conn, enforceJoinOrder, filters);
-
-        if (!p.isQuery())
-            return updateLocalSqlFields(cacheContext(spaceName), stmt, params != null ? params.toArray() : null,
-                filters, enforceJoinOrder);
-
-        try {
-            ResultSet rs = executeSqlQueryStatementWithTimer(spaceName, conn, stmt, qry, params, start);
-
-            List<GridQueryFieldMetadata> meta = null;
-
-            if (rs != null) {
-                try {
-                    meta = meta(rs.getMetaData());
-                }
-                catch (SQLException e) {
-                    throw new IgniteSQLException("Failed to get meta data.", e);
-                }
-            }
-
-            return new GridQueryFieldsResultAdapter(meta, new FieldsIterator(rs));
-        }
-        finally {
-            GridH2QueryContext.clearThreadLocal();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public GridQueryFieldsResult queryLocalSqlFields(@Nullable final String spaceName, final String qry,
-                                                               @Nullable final Collection<Object> params, final IndexingQueryFilter filters, boolean enforceJoinOrder,
-                                                               final int timeout, final GridQueryCancel cancel)
-        throws IgniteCheckedException {
+        @Nullable final Collection<Object> params, final IndexingQueryFilter filters, boolean enforceJoinOrder,
+        final int timeout, final GridQueryCancel cancel) throws IgniteCheckedException {
         final Connection conn = connectionForSpace(spaceName);
 
         initLocalQueryContext(conn, enforceJoinOrder, filters);
 
         try {
             final PreparedStatement stmt = preparedStatementWithParams(conn, qry, params, true);
+
+            Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement) stmt);
+
+            if (!p.isQuery())
+                return updateLocalSqlFields(cacheContext(spaceName), stmt, params != null ? params.toArray() : null,
+                    filters, enforceJoinOrder, timeout, cancel);
 
             List<GridQueryFieldMetadata> meta;
 
@@ -901,18 +857,28 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param cctx
+     * @param stmt
+     * @param params
+     * @param filters
+     * @param enforceJoinOrder
+     * @param timeout
+     * @param cancel
+     * @return
+     * @throws IgniteCheckedException
+     */
     @SuppressWarnings("unchecked")
     private GridQueryFieldsResult updateLocalSqlFields(final GridCacheContext cctx, final PreparedStatement stmt,
-        final Object[] params, final IndexingQueryFilter filters, boolean enforceJoinOrder)
-        throws IgniteCheckedException {
+        final Object[] params, final IndexingQueryFilter filters, boolean enforceJoinOrder,
+        int timeout, GridQueryCancel cancel) throws IgniteCheckedException {
         Object[] errKeys = null;
 
         int items = 0;
 
         for (int i = 0; i < DFLT_DML_RERUN_ATTEMPTS; i++) {
             IgniteBiTuple<Integer, Object[]> r = updateLocalSqlFields0(cctx, stmt, params, errKeys, filters,
-                enforceJoinOrder);
+                enforceJoinOrder, timeout, cancel);
 
             if (F.isEmpty(r.get2())) {
                 return new GridQueryFieldsResultAdapter(Collections.<GridQueryFieldMetadata>emptyList(),
@@ -937,13 +903,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param failedKeys Keys to restrict UPDATE and DELETE operations with. Null or empty array means no restriction.
      * @param filters Filters.
      * @param enforceJoinOrder Enforce join order.
-     * @return Pair [number of successfully processed items; keys that have failed to be processed]
+     * @param timeout
+     *@param cancel @return Pair [number of successfully processed items; keys that have failed to be processed]
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("ConstantConditions")
     private IgniteBiTuple<Integer, Object[]> updateLocalSqlFields0(final GridCacheContext cctx,
-                                                                   final PreparedStatement prepStmt, Object[] params, final Object[] failedKeys, final IndexingQueryFilter filters,
-                                                                   boolean enforceJoinOrder) throws IgniteCheckedException {
+        final PreparedStatement prepStmt, Object[] params, final Object[] failedKeys, final IndexingQueryFilter filters,
+        boolean enforceJoinOrder, int timeout, GridQueryCancel cancel) throws IgniteCheckedException {
         Connection conn = connectionForSpace(cctx.name());
 
         initLocalQueryContext(conn, enforceJoinOrder, filters);
@@ -965,7 +932,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     sel = GridSqlQuerySplitter.selectForInsertOrMerge(merge.rows(), merge.query());
                 }
 
-                ResultSet rs = executeSqlQueryWithTimer(cctx.name(), conn, sel.getSQL(), F.asList(params), true);
+                ResultSet rs = executeSqlQueryWithTimer(cctx.name(), conn, sel.getSQL(), F.asList(params), true,
+                    timeout, cancel);
 
                 final Iterator<List<?>> rsIter = new FieldsIterator(rs);
 
@@ -1019,7 +987,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     params[paramsCnt] = failedKeys;
                 }
 
-                ResultSet rs = executeSqlQueryWithTimer(cctx.name(), conn, map.getSQL(), F.asList(params), true);
+                ResultSet rs = executeSqlQueryWithTimer(cctx.name(), conn, map.getSQL(), F.asList(params), true,
+                    timeout, cancel);
 
                 final Iterator<List<?>> rsIter = new FieldsIterator(rs);
 
@@ -1147,65 +1116,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         return ccfg.isSqlEscapeAll() ? escapeName(ccfg.getSqlSchema(), true) : ccfg.getSqlSchema().toUpperCase();
     }
 
-    /* executeSqlQuery */
-
-    /**
-     * Executes sql query.
-     *
-     * @param conn Connection,.
-     * @param sql Sql query.
-     * @param params Parameters.
-     * @param useStmtCache If {@code true} uses statement cache.
-     * @return Result.
-     * @throws IgniteCheckedException If failed.
-     */
-    private ResultSet executeSqlQuery(Connection conn, String sql, Collection<Object> params, boolean useStmtCache)
-        throws IgniteCheckedException {
-        PreparedStatement stmt;
-
-        try {
-            stmt = prepareStatement(conn, sql, useStmtCache);
-        }
-        catch (SQLException e) {
-            throw new IgniteSQLException("Failed to parse SQL query: " + sql, e);
-        }
-
-        return executeSqlQueryStatement((JdbcPreparedStatement) stmt, sql, params);
-    }
-
-    /**
-     * @param stmt
-     * @param sql
-     * @param params
-     * @return
-     * @throws IgniteCheckedException
-     */
-    private ResultSet executeSqlQueryStatement(JdbcPreparedStatement stmt, String sql, Collection<Object> params)
-        throws IgniteCheckedException {
-        switch (commandType(stmt)) {
-            case CommandInterface.SELECT:
-            case CommandInterface.CALL:
-            case CommandInterface.EXPLAIN:
-            case CommandInterface.ANALYZE:
-                break;
-            default:
-                throw new IgniteCheckedException("Failed to execute non-query SQL statement: " + sql);
-        }
-
-        bindParameters(stmt, params);
-
-        try {
-            return stmt.executeQuery();
-        }
-        catch (SQLException e) {
-            onSqlException();
-
-            throw new IgniteSQLException("Failed to execute SQL query.", e);
-        }
-    }
-
-    /* VS */
-
     /**
      * Prepares sql statement.
      *
@@ -1217,7 +1127,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     private PreparedStatement preparedStatementWithParams(Connection conn, String sql, Collection<Object> params,
-                                                          boolean useStmtCache) throws IgniteCheckedException {
+        boolean useStmtCache) throws IgniteCheckedException {
         final PreparedStatement stmt;
 
         try {
@@ -1286,80 +1196,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 ((Session)((JdbcConnection)conn).getSession()).setQueryTimeout(0);
         }
     }
-
-    /* executeSqlQueryWithTimer */
-
-    /**
-     * Executes sql query and prints warning if query is too slow.
-     *
-     * @param space Space name.
-     * @param conn Connection,.
-     * @param sql Sql query.
-     * @param params Parameters.
-     * @param useStmtCache If {@code true} uses statement cache.
-     * @return Result.
-     * @throws IgniteCheckedException If failed.
-     */
-    public ResultSet executeSqlQueryWithTimer(String space, Connection conn, String sql, @Nullable Collection<Object> params,
-                                              boolean useStmtCache) throws IgniteCheckedException {
-        long start = U.currentTimeMillis();
-        PreparedStatement stmt;
-
-        try {
-            stmt = prepareStatement(conn, sql, useStmtCache);
-        }
-        catch (SQLException e) {
-            throw new IgniteSQLException(e);
-        }
-
-        return executeSqlQueryStatementWithTimer(space, conn, stmt, sql, params, start);
-    }
-
-    /**
-     * Executes sql query and prints warning if query is too slow.
-     *
-     * @param space Space name.
-     * @param conn Connection,.
-     * @param sql Sql query.
-     * @param params Parameters.
-     * @return Result.
-     * @throws IgniteCheckedException If failed.
-     */
-    private ResultSet executeSqlQueryStatementWithTimer(String space, Connection conn, PreparedStatement stmt, String sql,
-                                                        @Nullable Collection<Object> params, long start) throws IgniteCheckedException {
-        long start0 = start != 0 ? start : U.currentTimeMillis();
-
-        try {
-            ResultSet rs = executeSqlQueryStatement((JdbcPreparedStatement) stmt, sql, params);
-
-            long time = U.currentTimeMillis() - start0;
-
-            long longQryExecTimeout = schemas.get(schema(space)).ccfg.getLongQueryWarningTimeout();
-
-            if (time > longQryExecTimeout) {
-                String msg = "Query execution is too long (" + time + " ms): " + sql;
-
-                ResultSet plan = executeSqlQuery(conn, "EXPLAIN " + sql, params, false);
-
-                plan.next();
-
-                // Add SQL explain result message into log.
-                String longMsg = "Query execution is too long [time=" + time + " ms, sql='" + sql + '\'' +
-                    ", plan=" + U.nl() + plan.getString(1) + U.nl() + ", parameters=" + params + "]";
-
-                LT.warn(log, longMsg, msg);
-            }
-
-            return rs;
-        }
-        catch (SQLException e) {
-            onSqlException();
-
-            throw new IgniteSQLException(e);
-        }
-    }
-
-    /* VS */
 
     /**
      * Executes sql query and prints warning if query is too slow..
@@ -1865,25 +1701,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * Executes query.
-     *
-     * @param space Space.
-     * @param qry Query.
-     * @param params Query parameters.
-     * @param tbl Target table of query to generate select.
-     * @return Result set.
-     * @throws IgniteCheckedException If failed.
-     */
-    private ResultSet executeQuery(String space, String qry, @Nullable Collection<Object> params, TableDescriptor tbl)
-            throws IgniteCheckedException {
-        Connection conn = connectionForThread(tbl.schemaName());
-
-        String sql = generateQuery(qry, tbl);
-
-        return executeSqlQueryWithTimer(space, conn, sql, params, true);
-    }
-
-    /**
      * Binds parameters to prepared statement.
      *
      * @param stmt Prepared statement.
@@ -2217,18 +2034,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         twoStepQry.pageSize(qry.getPageSize());
 
-        /* */
-        Iterable<List<?>> qryRes = runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder);
-
-        QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(qryRes);
-        /* VS */
-
         GridQueryCancel cancel = new GridQueryCancel();
 
-        QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
-            runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder, qry.getTimeout(), cancel), cancel);
-
-        /* */
+        QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(),
+            enforceJoinOrder, qry.getTimeout(), cancel), cancel);
 
         cursor.fieldsMeta(meta);
 
