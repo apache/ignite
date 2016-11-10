@@ -1484,13 +1484,16 @@ public class JdbcResultSet implements ResultSet {
         ensureHasCurrentRow();
 
         try {
-            Object colValue = curr.get(colIdx - 1);
+            Object val = curr.get(colIdx - 1);
 
-            T val = cls == String.class ? (T)String.valueOf(colValue ) : (T)colValue ;
+            wasNull = val == null;
 
-            wasNull = colValue == null;
-
-            return val;
+            if (val == null)
+                return null;
+            else if (cls == String.class)
+                return (T)String.valueOf(val);
+            else
+                return (T)val;
         }
         catch (IndexOutOfBoundsException ignored) {
             throw new SQLException("Invalid column index: " + colIdx);
