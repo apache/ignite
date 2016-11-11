@@ -55,11 +55,17 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
         BinaryConfiguration binCfg = new BinaryConfiguration();
 
-        binCfg.setIdentityResolver(BinaryArrayIdentityResolver.instance());
-
         binCfg.setTypeConfigurations(Arrays.asList(
-            new BinaryTypeConfiguration() {{ setTypeName(Key.class.getName()); }},
-            new BinaryTypeConfiguration() {{ setTypeName(Key2.class.getName()); }},
+            new BinaryTypeConfiguration() {{
+                setTypeName(Key.class.getName());
+
+                setIdentityResolver(BinaryArrayIdentityResolver.instance());
+            }},
+            new BinaryTypeConfiguration() {{
+                setTypeName(Key2.class.getName());
+
+                setIdentityResolver(BinaryArrayIdentityResolver.instance());
+            }},
             new BinaryTypeConfiguration() {{
                 setTypeName(Key3.class.getName());
 

@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Unit tests for serialized field comparer.
  */
-public class BinarySerialiedFieldComparerSelfTest extends GridCommonAbstractTest {
+public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTest {
     /** Type counter. */
     private static final AtomicInteger TYPE_CTR = new AtomicInteger();
 
@@ -467,14 +467,14 @@ public class BinarySerialiedFieldComparerSelfTest extends GridCommonAbstractTest
      * @param expRes Expected result.
      */
     private void compareSingle(BinaryObjectExImpl first, BinaryObjectExImpl second, boolean expRes) {
-        BinarySerializedFieldComparer firstComp = first.createFieldComparer();
-        BinarySerializedFieldComparer secondComp = second.createFieldComparer();
+        BinarySerializedFieldComparator firstComp = first.createFieldComparator();
+        BinarySerializedFieldComparator secondComp = second.createFieldComparator();
 
         // Compare expected result.
         firstComp.findField(singleFieldOrder(first));
         secondComp.findField(singleFieldOrder(second));
 
-        assertEquals(expRes, BinarySerializedFieldComparer.equals(firstComp, secondComp));
+        assertEquals(expRes, BinarySerializedFieldComparator.equals(firstComp, secondComp));
     }
 
     /**

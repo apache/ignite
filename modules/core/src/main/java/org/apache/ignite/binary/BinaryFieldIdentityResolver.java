@@ -20,7 +20,7 @@ package org.apache.ignite.binary;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryFieldImpl;
 import org.apache.ignite.internal.binary.BinaryObjectExImpl;
-import org.apache.ignite.internal.binary.BinarySerializedFieldComparer;
+import org.apache.ignite.internal.binary.BinarySerializedFieldComparator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -136,14 +136,14 @@ public class BinaryFieldIdentityResolver extends BinaryAbstractIdentityResolver 
                     accessor2 = accessor(ex2, typeId, schemaId2);
 
                 // Even better case: compare fields without deserialization.
-                BinarySerializedFieldComparer comp1 = ex1.createFieldComparer();
-                BinarySerializedFieldComparer comp2 = ex2.createFieldComparer();
+                BinarySerializedFieldComparator comp1 = ex1.createFieldComparator();
+                BinarySerializedFieldComparator comp2 = ex2.createFieldComparator();
 
                 for (int i = 0; i < fieldNames.length; i++) {
                     comp1.findField(accessor1.orders[i]);
                     comp2.findField(accessor2.orders[i]);
 
-                    if (!BinarySerializedFieldComparer.equals(comp1, comp2))
+                    if (!BinarySerializedFieldComparator.equals(comp1, comp2))
                         return false;
                 }
 
