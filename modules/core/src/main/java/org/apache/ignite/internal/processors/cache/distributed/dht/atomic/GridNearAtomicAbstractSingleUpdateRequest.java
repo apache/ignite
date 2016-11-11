@@ -20,10 +20,14 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.UUID;
+import javax.cache.expiry.ExpiryPolicy;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -57,6 +61,38 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
 
     /** Return value flag. */
     private static final int RET_VAL_FLAG_MASK = 0x40;
+
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** Target node ID. */
+    @GridDirectTransient
+    protected UUID nodeId;
+
+    /** Future version. */
+    protected GridCacheVersion futVer;
+
+    /** Update version. Set to non-null if fastMap is {@code true}. */
+    protected GridCacheVersion updateVer;
+
+    /** Topology version. */
+    protected AffinityTopologyVersion topVer;
+
+    /** Write synchronization mode. */
+    protected CacheWriteSynchronizationMode syncMode;
+
+    /** Update operation. */
+    protected GridCacheOperation op;
+
+    /** Subject ID. */
+    protected UUID subjId;
+
+    /** Task name hash. */
+    protected int taskNameHash;
+
+    /** */
+    @GridDirectTransient
+    private GridNearAtomicUpdateResponse res;
 
     /** Compressed boolean flags. */
     protected byte flags;
@@ -106,18 +142,18 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
         boolean clientReq,
         boolean addDepInfo
     ) {
-        super(
-            cacheId,
-            nodeId,
-            futVer,
-            updateVer,
-            topVer,
-            syncMode,
-            op,
-            subjId,
-            taskNameHash,
-            addDepInfo
-        );
+        assert futVer != null;
+
+        this.cacheId = cacheId;
+        this.nodeId = nodeId;
+        this.futVer = futVer;
+        this.updateVer = updateVer;
+        this.topVer = topVer;
+        this.syncMode = syncMode;
+        this.op = op;
+        this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
+        this.addDepInfo = addDepInfo;
 
         fastMap(fastMap);
         topologyLocked(topLocked);
@@ -125,6 +161,119 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
         skipStore(skipStore);
         keepBinary(keepBinary);
         clientRequest(clientReq);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int lookupIndex() {
+        return CACHE_MSG_IDX;
+    }
+
+    /**
+     * @return Mapped node ID.
+     */
+    @Override public UUID nodeId() {
+        return nodeId;
+    }
+
+    /**
+     * @param nodeId Node ID.
+     */
+    @Override public void nodeId(UUID nodeId) {
+        this.nodeId = nodeId;
+    }
+
+    /**
+     * @return Subject ID.
+     */
+    @Override public UUID subjectId() {
+        return subjId;
+    }
+
+    /**
+     * @return Task name hash.
+     */
+    @Override public int taskNameHash() {
+        return taskNameHash;
+    }
+
+    /**
+     * @return Future version.
+     */
+    @Override public GridCacheVersion futureVersion() {
+        return futVer;
+    }
+
+    /**
+     * @return Update version for fast-map request.
+     */
+    @Override public GridCacheVersion updateVersion() {
+        return updateVer;
+    }
+
+    /**
+     * @return Topology version.
+     */
+    @Override public AffinityTopologyVersion topologyVersion() {
+        return topVer;
+    }
+
+    /**
+     * @return Cache write synchronization mode.
+     */
+    @Override public CacheWriteSynchronizationMode writeSynchronizationMode() {
+        return syncMode;
+    }
+
+    /**
+     * @return Expiry policy.
+     */
+    @Override public ExpiryPolicy expiry() {
+        return null;
+    }
+
+    /**
+     * @return Update operation.
+     */
+    @Override public GridCacheOperation operation() {
+        return op;
+    }
+
+    /**
+     * @return Optional arguments for entry processor.
+     */
+    @Override @Nullable public Object[] invokeArguments() {
+        return null;
+    }
+
+    /**
+     * @param res Response.
+     * @return {@code True} if current response was {@code null}.
+     */
+    @Override public boolean onResponse(GridNearAtomicUpdateResponse res) {
+        if (this.res == null) {
+            this.res = res;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return Response.
+     */
+    @Override @Nullable public GridNearAtomicUpdateResponse response() {
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return addDepInfo;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+        return ctx.atomicMessageLogger();
     }
 
     /**
@@ -265,8 +414,50 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
         }
 
         switch (writer.state()) {
-            case 10:
+            case 3:
                 if (!writer.writeByte("flags", flags))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
+                if (!writer.writeMessage("futVer", futVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
+                if (!writer.writeByte("op", op != null ? (byte)op.ordinal() : -1))
+                    return false;
+
+                writer.incrementState();
+
+            case 6:
+                if (!writer.writeUuid("subjId", subjId))
+                    return false;
+
+                writer.incrementState();
+
+            case 7:
+                if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
+                    return false;
+
+                writer.incrementState();
+
+            case 8:
+                if (!writer.writeInt("taskNameHash", taskNameHash))
+                    return false;
+
+                writer.incrementState();
+
+            case 9:
+                if (!writer.writeMessage("topVer", topVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 10:
+                if (!writer.writeMessage("updateVer", updateVer))
                     return false;
 
                 writer.incrementState();
@@ -287,8 +478,72 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
             return false;
 
         switch (reader.state()) {
-            case 10:
+            case 3:
                 flags = reader.readByte("flags");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 4:
+                futVer = reader.readMessage("futVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
+                byte opOrd;
+
+                opOrd = reader.readByte("op");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                op = GridCacheOperation.fromOrdinal(opOrd);
+
+                reader.incrementState();
+
+            case 6:
+                subjId = reader.readUuid("subjId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 7:
+                byte syncModeOrd;
+
+                syncModeOrd = reader.readByte("syncMode");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                syncMode = CacheWriteSynchronizationMode.fromOrdinal(syncModeOrd);
+
+                reader.incrementState();
+
+            case 8:
+                taskNameHash = reader.readInt("taskNameHash");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 9:
+                topVer = reader.readMessage("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 10:
+                updateVer = reader.readMessage("updateVer");
 
                 if (!reader.isLastRead())
                     return false;
