@@ -113,6 +113,7 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
@@ -2560,39 +2561,38 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         actFuts.putIfAbsent(requestId, actFut);
 
-        //if call on client node, then send compute to server node for activate
-        if (ctx.config().isClientMode()){
-            ClusterNode crd = ctx.discovery().serverNodes(AffinityTopologyVersion.NONE).get(0);
+        try {
+            //if call on client node, then send compute to server node for activate
+            if (ctx.config().isClientMode()) {
+                ClusterNode crd = ctx.discovery().serverNodes(AffinityTopologyVersion.NONE).get(0);
 
-            IgniteCompute c = ((ClusterGroupAdapter)ctx.cluster().get().forNode(crd))
-                .compute().withAsync();
+                IgniteCompute c = ((ClusterGroupAdapter)ctx.cluster().get().forNode(crd))
+                    .compute().withAsync();
 
-            c.run(new IgniteRunnable() {
-                @IgniteInstanceResource
-                private Ignite ignite;
+                c.run(new IgniteRunnable() {
+                    @IgniteInstanceResource
+                    private Ignite ignite;
 
-                @Override public void run() {
-                    ignite.active(true);
-                }
-            });
-
-            c.future().listen(new CI1<IgniteFuture>() {
-                @Override public void apply(IgniteFuture fut) {
-                    try {
-                        fut.get();
-
-                        actFut.onDone();
+                    @Override public void run() {
+                        ignite.active(true);
                     }
-                    catch (IgniteException e) {
-                        actFut.onDone(e);
-                    }finally {
-                        actFuts.remove(requestId);
+                });
+
+                c.future().listen(new CI1<IgniteFuture>() {
+                    @Override public void apply(IgniteFuture fut) {
+                        try {
+                            fut.get();
+
+                            actFut.onDone();
+                        }
+                        catch (IgniteException e) {
+                            actFut.onDone(e);
+                        }
                     }
-                }
-            });
-        }else {
-            //if call on server node, then load all config and create request for start, and send batch custom event
-            try {
+                });
+            }
+            else {
+                //if call on server node, then load all config and create request for start, and send batch custom event
                 sharedCtx.database().beforeActivate();
 
                 List<DynamicCacheChangeRequest> reqs = new ArrayList<>();
@@ -2641,9 +2641,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 //create futures and send requests
                 initiateCacheChanges(reqs, true);
             }
-            catch (IgniteCheckedException e) {
-                actFut.onDone(e);
-            }
+        }
+        catch (IgniteCheckedException e) {
+            actFut.onDone(e);
         }
 
         return actFut;
@@ -4015,7 +4015,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param msg Message.
      */
     private void processActivationResponse(GridActivationMessageResponse msg){
-        assert msg!=null;
+        assert msg != null;
+
+        if (log.isDebugEnabled()) {
+            log.debug(
+                "Received activation response [requestId=" + msg.getRequestId() +
+                    ", nodeId=" + msg.getNodeId() + "]"
+            );
+        }
+
+        ClusterNode node = ctx.discovery().node(msg.getNodeId());
+
+        if (node == null) {
+            U.warn(
+                log, "Received activation response from unknown node (will ignore) [requestId=" +
+                    msg.getRequestId() + ']'
+            );
+
+            return;
+        }
 
         UUID requestId = msg.getRequestId();
 
@@ -4046,7 +4064,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             for (ClusterNode n : nodes)
                 ids.add(n.id());
 
-            fut.setWaitNodes(ids);
+            fut.setRemaining(ids);
         }
     }
 
@@ -4110,7 +4128,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private void sendActivationResponse(UUID requestId, UUID initNodeId, Throwable ex) {
         try {
-            GridActivationMessageResponse actResp = new GridActivationMessageResponse(requestId, ctx.localNodeId(), ex);
+            GridActivationMessageResponse actResp = new GridActivationMessageResponse(
+                requestId, ctx.localNodeId(), ex
+            );
 
             if (ctx.localNodeId().equals(initNodeId))
                 processActivationResponse(actResp);
@@ -4125,22 +4145,26 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private static class GridActivateFuture extends GridFutureAdapter {
+    private class GridActivateFuture extends GridFutureAdapter {
         /** Request id. */
+        @GridToStringInclude
         private final UUID requestId;
 
         /** Nodes. */
-        private final Set<UUID> waitNodes = new HashSet<>();
+        @GridToStringInclude
+        private final Set<UUID> remaining = new HashSet<>();
 
         /** Responses. */
+        @GridToStringInclude
         private final Map<UUID, GridActivationMessageResponse> resps = new HashMap<>();
 
         /** Context. */
+        @GridToStringExclude
         private final GridKernalContext ctx;
 
         /** */
+        @GridToStringExclude
         private final Object mux = new Object();
-
 
         /**
          * @param ctx Context.
@@ -4160,9 +4184,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     boolean allReceived = false;
 
-                    synchronized (mux){
-                        if (waitNodes.remove(e.eventNode().id()))
-                            allReceived = waitNodes.isEmpty();
+                    synchronized (mux) {
+                        if (remaining.remove(e.eventNode().id()))
+                            allReceived = remaining.isEmpty();
                     }
 
                     if (allReceived)
@@ -4172,11 +4196,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         /**
-         * @param waitNodes Nodes.
+         * @param remaining Nodes.
          */
-        public void setWaitNodes(List<UUID> waitNodes) {
+        public void setRemaining(List<UUID> remaining) {
             synchronized (mux){
-                this.waitNodes.addAll(waitNodes);
+                this.remaining.addAll(remaining);
             }
         }
 
@@ -4194,8 +4218,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             boolean allReceived = false;
 
             synchronized (mux){
-                if (waitNodes.remove(nodeId))
-                    allReceived = waitNodes.isEmpty();
+                if (remaining.remove(nodeId))
+                    allReceived = remaining.isEmpty();
 
                 resps.put(nodeId, msg);
             }
@@ -4226,6 +4250,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 onDone(e);
             else
                 onDone();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
+            actFuts.remove(requestId, this);
+
+            return super.onDone(res, err);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(GridActivateFuture.class, this);
         }
     }
 }
