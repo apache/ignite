@@ -135,6 +135,8 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         if (interopCfg.logger() != null)
             interopCfg.logger().setContext(platformCtx);
+
+        utilityCache = new PlatformUtilityCache((byte)1);
     }
 
     /** {@inheritDoc} */
