@@ -1006,7 +1006,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 QueryCursorImpl<List<?>> cur = new QueryCursorImpl<>(it);
 
                 if (stmt instanceof GridSqlUpdate)
-                    return doUpdate(cctx, (GridSqlUpdate) stmt, cur);
+                    return doUpdate(cctx, (GridSqlUpdate) stmt, cur, pageSize);
                 else
                     return doDelete(cctx, (GridSqlDelete) stmt, cur);
             }
@@ -1463,7 +1463,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     cctx.operationContextPerCall(newOpCtx);
             }
 
-            Map<Object, EntryProcessor<Object, Object, Boolean>> rows = new LinkedHashMap<>(ins.rows().size());
+            Map<Object, EntryProcessor<Object, Object, Boolean>> rows = ins.query() == null ?
+                new LinkedHashMap<Object, EntryProcessor<Object, Object, Boolean>>(ins.rows().size()) :
+                new LinkedHashMap<Object, EntryProcessor<Object, Object, Boolean>>();
 
             // Keys that failed to INSERT due to duplication.
             List<Object> duplicateKeys = new ArrayList<>();
@@ -1473,13 +1475,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             SQLException resEx = null;
 
             try {
-                for (List<?> row : src) {
+                Iterator<List<?>> it = src.iterator();
+
+                while (it.hasNext()) {
+                    List<?> row = it.next();
+
                     final IgniteBiTuple t = rowToKeyValue(cctx, desc.type(), keySupplier, valSupplier, keyColIdx, valColIdx,
                         cols, row.toArray());
 
                     rows.put(t.getKey(), new InsertEntryProcessor(t.getValue()));
 
-                    if (pageSize > 0 && rows.size() == pageSize) {
+                    if (!it.hasNext() || (pageSize > 0 && rows.size() == pageSize)) {
                         GridTuple3<Integer, Object[], SQLException> batchRes = processBatch(cctx, rows);
 
                         resCnt += batchRes.get1();
@@ -2142,7 +2148,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             updateRes = doDelete(cctx, (GridSqlDelete) twoStepQry.initialStatement(), cursor);
 
         if (twoStepQry.initialStatement() instanceof GridSqlUpdate)
-            updateRes = doUpdate(cctx, (GridSqlUpdate) twoStepQry.initialStatement(), cursor);
+            updateRes = doUpdate(cctx, (GridSqlUpdate) twoStepQry.initialStatement(), cursor, qry.getPageSize());
 
         if (twoStepQry.initialStatement() instanceof GridSqlMerge)
             updateRes = new IgniteBiTuple<>(doMerge(cctx, (GridSqlMerge) twoStepQry.initialStatement(), cursor,
@@ -2293,11 +2299,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param cctx Cache context.
      * @param update Update statement.
      * @param cursor SELECT results.
-     * @return Cursor corresponding to results of UPDATE (contains number of items affected).
+     * @param pageSize Batch size for streaming.
+     * @return Pair [cursor corresponding to results of UPDATE (contains number of items affected); keys whose values
+     *     had been modified concurrently (arguments for a re-run)].
      */
     @SuppressWarnings("unchecked")
     private IgniteBiTuple<Integer, Object[]> doUpdate(GridCacheContext cctx, GridSqlUpdate update,
-        QueryCursorImpl<List<?>> cursor) throws IgniteCheckedException {
+        QueryCursorImpl<List<?>> cursor, int pageSize) throws IgniteCheckedException {
 
         GridSqlTable tbl = gridTableForElement(update.target());
 
@@ -2310,8 +2318,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1);
 
         boolean bin = cctx.binaryMarshaller();
-
-        Map<Object, EntryProcessor<Object, Object, Boolean>> m = new HashMap<>();
 
         Column[] cols = gridTbl.getColumns();
 
@@ -2351,64 +2357,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         int res = 0;
 
-        for (List<?> e : cursor) {
-            Object key = e.get(0);
-            Object val = (hasNewVal ? e.get(valColIdx) : e.get(1));
-
-            Object newVal;
-
-            Map<String, Object> newColVals = new HashMap<>();
-
-            for (int i = 0; i < updatedCols.size(); i++) {
-                if (hasNewVal && i == valColIdx - 2)
-                    continue;
-
-                newColVals.put(updatedCols.get(i).columnName(), e.get(i + 2));
-            }
-
-            newVal = newValSupplier.apply(e);
-
-            if (bin && !(val instanceof BinaryObject))
-                val = cctx.grid().binary().toBinary(val);
-
-            // Skip key and value - that's why we start off with 2nd column
-            for (int i = 0; i < cols.length - 2; i++) {
-                Column c = cols[i + 2];
-
-                boolean hasNewColVal = newColVals.containsKey(c.getName());
-
-                // Binary objects get old field values from the Builder, so we can skip what we're not updating
-                if (bin && !hasNewColVal)
-                    continue;
-
-                Object colVal = hasNewColVal ? newColVals.get(c.getName()) : desc.columnValue(key, val, i);
-
-                desc.setColumnValue(key, newVal, colVal, i);
-            }
-
-            if (bin && hasProps) {
-                assert newVal instanceof BinaryObjectBuilder;
-
-                newVal = ((BinaryObjectBuilder) newVal).build();
-            }
-
-            Object srcVal = e.get(1);
-
-            if (bin && !(srcVal instanceof BinaryObject))
-                srcVal = cctx.grid().binary().toBinary(srcVal);
-
-            m.put(key, new ModifyingEntryProcessor(srcVal, new EntryValueUpdater(newVal)));
-
-            res++;
-        }
-
         // Switch to cache specified in query.
         cctx = cctx.shared().cacheContext(CU.cacheId(tbl.schema()));
 
         CacheOperationContext opCtx = cctx.operationContextPerCall();
 
         // Force keepBinary for operation context to avoid binary deserialization inside entry processor
-        if (bin) {
+        if (cctx.binaryMarshaller()) {
             CacheOperationContext newOpCtx = null;
 
             if (opCtx == null)
@@ -2421,35 +2376,107 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 cctx.operationContextPerCall(newOpCtx);
         }
 
+        Map<Object, EntryProcessor<Object, Object, Boolean>> rows = new LinkedHashMap<>();
+
+        // Keys that failed to UPDATE due to concurrent updates.
+        List<Object> failedKeys = new ArrayList<>();
+
+        SQLException resEx = null;
+
         try {
-            Map<Object, EntryProcessorResult<Boolean>> updRes = cctx.cache().invokeAll(m);
+            Iterator<List<?>> it = cursor.iterator();
 
-            if (F.isEmpty(updRes))
-                return new IgniteBiTuple<>(res, X.EMPTY_OBJECT_ARRAY);
+            while (it.hasNext()) {
+                List<?> e = it.next();
+                Object key = e.get(0);
+                Object val = (hasNewVal ? e.get(valColIdx) : e.get(1));
 
-            SQLException resEx;
+                Object newVal;
 
-            GridTuple3<Object[], SQLException, Integer> splitRes = splitErrors(updRes);
+                Map<String, Object> newColVals = new HashMap<>();
 
-            if (splitRes.get2() == null)
-                return new IgniteBiTuple<>(res, splitRes.get1());
+                for (int i = 0; i < updatedCols.size(); i++) {
+                    if (hasNewVal && i == valColIdx - 2)
+                        continue;
 
-            // Everything left in errKeys is not erroneous keys, but duplicate keys
-            if (!F.isEmpty(splitRes.get1())) {
-                resEx = new SQLException("Failed to UPDATE some keys because they were modified concurrently " +
-                    "[keys=" + Arrays.deepToString(splitRes.get1()) + ']',
-                    ErrorCode.getState(ErrorCode.CONCURRENT_UPDATE_1), ErrorCode.CONCURRENT_UPDATE_1);
+                    newColVals.put(updatedCols.get(i).columnName(), e.get(i + 2));
+                }
 
-                resEx.setNextException(splitRes.get2());
+                newVal = newValSupplier.apply(e);
+
+                if (bin && !(val instanceof BinaryObject))
+                    val = cctx.grid().binary().toBinary(val);
+
+                // Skip key and value - that's why we start off with 2nd column
+                for (int i = 0; i < cols.length - 2; i++) {
+                    Column c = cols[i + 2];
+
+                    boolean hasNewColVal = newColVals.containsKey(c.getName());
+
+                    // Binary objects get old field values from the Builder, so we can skip what we're not updating
+                    if (bin && !hasNewColVal)
+                        continue;
+
+                    Object colVal = hasNewColVal ? newColVals.get(c.getName()) : desc.columnValue(key, val, i);
+
+                    desc.setColumnValue(key, newVal, colVal, i);
+                }
+
+                if (bin && hasProps) {
+                    assert newVal instanceof BinaryObjectBuilder;
+
+                    newVal = ((BinaryObjectBuilder) newVal).build();
+                }
+
+                Object srcVal = e.get(1);
+
+                if (bin && !(srcVal instanceof BinaryObject))
+                    srcVal = cctx.grid().binary().toBinary(srcVal);
+
+                rows.put(key, new ModifyingEntryProcessor(srcVal, new EntryValueUpdater(newVal)));
+
+                if ((pageSize > 0 && rows.size() == pageSize) || (!it.hasNext())) {
+                    GridTuple3<Integer, Object[], SQLException> batchRes = processBatch(cctx, rows);
+
+                    res += batchRes.get1();
+
+                    failedKeys.addAll(F.asList(batchRes.get2()));
+
+                    if (batchRes.get3() != null) {
+                        if (resEx == null)
+                            resEx = batchRes.get3();
+                        else
+                            resEx.setNextException(batchRes.get3());
+                    }
+
+                    if (it.hasNext())
+                        rows.clear(); // No need to clear after the last batch.
+                }
             }
-            else
-                resEx = splitRes.get2();
 
-            throw new IgniteSQLException(resEx);
+            if (resEx != null) {
+                if (!F.isEmpty(failedKeys)) {
+                    // Don't go for a re-run if processing of some keys yielded exceptions and report keys that
+                    // had been modified concurrently right away.
+                    String msg = "Failed to UPDATE some keys because they had been modified concurrently " +
+                        "[keys=" + failedKeys + ']';
+
+                    SQLException dupEx = new SQLException(msg, ErrorCode.getState(ErrorCode.DUPLICATE_KEY_1),
+                        ErrorCode.DUPLICATE_KEY_1);
+
+                    dupEx.setNextException(resEx);
+
+                    resEx = dupEx;
+                }
+
+                throw new IgniteSQLException(resEx);
+            }
         }
         finally {
             cctx.operationContextPerCall(opCtx);
         }
+
+        return new IgniteBiTuple<>(res, failedKeys.toArray());
     }
 
     /**
