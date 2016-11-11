@@ -194,7 +194,7 @@ public class BinaryFieldIdentityResolver extends BinaryAbstractIdentityResolver 
         if (res != null && res.applicableTo(typId, schemaId))
             return res;
 
-        // Try reading form map.
+        // Try reading from map.
         long key = ((long)typId << 32) + schemaId;
 
         HashMap<Long, FieldAccessor> accessors0 = accessors;
