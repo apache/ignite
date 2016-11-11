@@ -55,8 +55,8 @@ import static java.lang.reflect.Modifier.isStatic;
 import static java.lang.reflect.Modifier.isTransient;
 
 /**
-* Direct marshallable code generator.
-*/
+ * Direct marshallable code generator.
+ */
 public class MessageCodeGenerator {
     /** */
     private static final Comparator<Field> FIELD_CMP = new Comparator<Field>() {
@@ -553,9 +553,9 @@ public class MessageCodeGenerator {
 
         GridCodegenConverter fldPreproc = field.getAnnotation(GridCodegenConverter.class);
 
-        String getExp = (fldPreproc != null && !fldPreproc.get().isEmpty())? fldPreproc.get(): field.getName();
-        Class<?> writeType = (fldPreproc != null && !fldPreproc.type().equals(GridCodegenConverter.Default.class))?
-            fldPreproc.type(): field.getType();
+        String getExp = (fldPreproc != null && !fldPreproc.get().isEmpty()) ? fldPreproc.get() : field.getName();
+        Class<?> writeType = (fldPreproc != null && !fldPreproc.type().equals(GridCodegenConverter.Default.class)) ?
+            fldPreproc.type() : field.getType();
 
         returnFalseIfWriteFailed(writeType, field.getName(), colAnn != null ? colAnn.value() : null,
             mapAnn != null ? mapAnn.keyType() : null, mapAnn != null ? mapAnn.valueType() : null, false, getExp);
@@ -583,9 +583,9 @@ public class MessageCodeGenerator {
         indent++;
 
         GridCodegenConverter fldPreproc = field.getAnnotation(GridCodegenConverter.class);
-        String setExp = (fldPreproc != null && !fldPreproc.get().isEmpty())? fldPreproc.set(): "";
-        Class<?> writeType = (fldPreproc != null && !fldPreproc.type().equals(GridCodegenConverter.Default.class))?
-            fldPreproc.type(): field.getType();
+        String setExp = (fldPreproc != null && !fldPreproc.get().isEmpty()) ? fldPreproc.set() : "";
+        Class<?> writeType = (fldPreproc != null && !fldPreproc.type().equals(GridCodegenConverter.Default.class)) ?
+            fldPreproc.type() : field.getType();
 
         returnFalseIfReadFailed(writeType, field.getName(), colAnn != null ? colAnn.value() : null,
             mapAnn != null ? mapAnn.keyType() : null, mapAnn != null ? mapAnn.valueType() : null, setExp);
