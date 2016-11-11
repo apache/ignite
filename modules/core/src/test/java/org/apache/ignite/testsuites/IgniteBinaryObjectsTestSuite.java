@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.binary.BinaryArrayIdentityResolverSelfTest;
 import org.apache.ignite.internal.binary.BinaryBasicIdMapperSelfTest;
 import org.apache.ignite.internal.binary.BinaryBasicNameMapperSelfTest;
 import org.apache.ignite.internal.binary.BinaryConfigurationConsistencySelfTest;
@@ -94,6 +95,7 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         suite.addTestSuite(BinaryMarshallerSelfTest.class);
 
         suite.addTestSuite(BinarySerialiedFieldComparerSelfTest.class);
+        suite.addTestSuite(BinaryArrayIdentityResolverSelfTest.class);
         suite.addTestSuite(BinaryFieldIdentityResolverSelfTest.class);
         suite.addTestSuite(BinaryIdentityResolverConfigurationSelfTest.class);
 
