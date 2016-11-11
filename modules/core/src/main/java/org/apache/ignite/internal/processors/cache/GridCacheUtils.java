@@ -110,9 +110,12 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.REA
  * Cache utility methods.
  */
 public class GridCacheUtils {
-    // TODO cheat cache ID.
+    /** Cheat cache ID for debugging and benchmarking purposes. */
     public static final int cheatCacheId;
 
+    /*
+     *
+     */
     static {
         String cheatCache = System.getProperty("CHEAT_CACHE");
 
@@ -128,6 +131,16 @@ public class GridCacheUtils {
             cheatCacheId = 0;
     }
 
+    /**
+     * Quickly checks if passed in cache ID is a "cheat cache ID" set by -DCHEAT_CACHE=user_cache_name
+     * and resolved in static block above.
+     *
+     * FOR DEBUGGING AND TESTING PURPOSES!
+     *
+     * @param id Cache ID to check.
+     * @return {@code True} if this is cheat cache ID.
+     */
+    @Deprecated
     public static boolean cheatCache(int id) {
         return cheatCacheId != 0 && id == cheatCacheId;
     }

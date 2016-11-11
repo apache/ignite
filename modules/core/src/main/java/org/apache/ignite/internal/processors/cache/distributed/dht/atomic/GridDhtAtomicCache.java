@@ -1104,13 +1104,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
             waitTopFut);
 
-        // TODO
-        if (CU.cheatCache(ctx.cacheId())) {
-            updateFut.map();
-
-            return updateFut;
-        }
-
         return asyncOp(new CO<IgniteInternalFuture<Object>>() {
             @Override public IgniteInternalFuture<Object> apply() {
                 updateFut.map();
@@ -1151,13 +1144,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         final GridNearAtomicAbstractUpdateFuture updateFut =
             createSingleUpdateFuture(key, val, proc, invokeArgs, retval, filter, waitTopFut);
-
-        // TODO
-        if (CU.cheatCache(ctx.cacheId())) {
-            updateFut.map();
-
-            return updateFut;
-        }
 
         return asyncOp(new CO<IgniteInternalFuture<Object>>() {
             @Override public IgniteInternalFuture<Object> apply() {
