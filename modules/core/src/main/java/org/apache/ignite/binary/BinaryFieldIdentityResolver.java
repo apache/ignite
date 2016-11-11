@@ -20,15 +20,18 @@ package org.apache.ignite.binary;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryFieldImpl;
 import org.apache.ignite.internal.binary.BinaryObjectExImpl;
-import org.apache.ignite.internal.binary.BinarySerializedFieldComparator;
+import org.apache.ignite.internal.binary.BinarySerializedFieldComparer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.HashMap;
 
 /**
- * Identity resolver implementation using the provided list of fields to calculate the hash code and to perform equality
- * checks.
+ * Identity resolver implementation which use the list of provided fields to calculate the hash code and to perform
+ * equality checks.
+ * <p>
+ * Standard polynomial function with multiplier {@code 31} is used to calculate hash code. For example, for three
+ * fields {@code [a, b, c]}it would be {@code hash = 31 * (31 * a + b) + c}. Order of fields is important.
  */
 public class BinaryFieldIdentityResolver extends BinaryAbstractIdentityResolver {
     /** Mutex for synchronization. */
@@ -133,14 +136,14 @@ public class BinaryFieldIdentityResolver extends BinaryAbstractIdentityResolver 
                     accessor2 = accessor(ex2, typeId, schemaId2);
 
                 // Even better case: compare fields without deserialization.
-                BinarySerializedFieldComparator comp1 = ex1.createFieldComparator();
-                BinarySerializedFieldComparator comp2 = ex2.createFieldComparator();
+                BinarySerializedFieldComparer comp1 = ex1.createFieldComparer();
+                BinarySerializedFieldComparer comp2 = ex2.createFieldComparer();
 
                 for (int i = 0; i < fieldNames.length; i++) {
                     comp1.findField(accessor1.orders[i]);
                     comp2.findField(accessor2.orders[i]);
 
-                    if (!BinarySerializedFieldComparator.equals(comp1, comp2))
+                    if (!BinarySerializedFieldComparer.equals(comp1, comp2))
                         return false;
                 }
 
@@ -194,7 +197,7 @@ public class BinaryFieldIdentityResolver extends BinaryAbstractIdentityResolver 
         if (res != null && res.applicableTo(typId, schemaId))
             return res;
 
-        // Try reading form map.
+        // Try reading from map.
         long key = ((long)typId << 32) + schemaId;
 
         HashMap<Long, FieldAccessor> accessors0 = accessors;

@@ -37,6 +37,7 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryArrayIdentityResolver;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -127,6 +128,12 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         List<BinaryTypeConfiguration> binTypes = new ArrayList<>();
 
         binTypes.add(new BinaryTypeConfiguration() {{
+            setTypeName("ArrayHashedKey");
+
+            setIdentityResolver(new BinaryArrayIdentityResolver());
+        }});
+
+        binTypes.add(new BinaryTypeConfiguration() {{
             setTypeName("FieldsHashedKey");
 
             BinaryFieldIdentityResolver id = new BinaryFieldIdentityResolver();
@@ -142,9 +149,10 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         }});
 
         binTypes.add(new BinaryTypeConfiguration() {{
-            setTypeName("ComplexBinaryFieldsListHashedKey");
+            setTypeName(ComplexBinaryFieldsListHashedKey.class.getName());
 
             BinaryFieldIdentityResolver id = new BinaryFieldIdentityResolver();
+
             id.setFieldNames("secondField", "thirdField");
 
             setIdentityResolver(id);
@@ -155,11 +163,11 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
         cfg.setBinaryConfiguration(binCfg);
 
-        CacheKeyConfiguration fieldsHashConfiguration = new CacheKeyConfiguration("FieldsHashedKey", "fld1");
+        CacheKeyConfiguration arrayHashCfg = new CacheKeyConfiguration("ArrayHashedKey", "fld1");
+        CacheKeyConfiguration fieldsHashCfg = new CacheKeyConfiguration("FieldsHashedKey", "fld1");
+        CacheKeyConfiguration customHashCfg = new CacheKeyConfiguration("CustomHashedKey", "fld1");
 
-        CacheKeyConfiguration customHashConfiguration = new CacheKeyConfiguration("CustomHashedKey", "fld1");
-
-        cfg.setCacheKeyConfiguration(fieldsHashConfiguration, customHashConfiguration);
+        cfg.setCacheKeyConfiguration(arrayHashCfg, fieldsHashCfg, customHashCfg);
 
         GridCacheBinaryObjectsAbstractSelfTest.cfg = cfg;
 
@@ -991,10 +999,10 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     public void testCrossFormatObjectsIdentity() {
         IgniteCache c = binKeysCache();
 
-        c.put(new ComplexKey(), "zzz");
+        c.put(new ComplexBinaryFieldsListHashedKey(), "zzz");
 
         // Now let's build an identical key for get
-        BinaryObjectBuilder bldr = grid(0).binary().builder("ComplexBinaryFieldsListHashedKey");
+        BinaryObjectBuilder bldr = grid(0).binary().builder(ComplexBinaryFieldsListHashedKey.class.getName());
 
         bldr.setField("firstField", 365);
         bldr.setField("secondField", "value");
@@ -1003,6 +1011,40 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         BinaryObject binKey = bldr.build();
 
         assertEquals("zzz", c.get(binKey));
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("unchecked")
+    public void testPutWithArrayHashing() {
+        IgniteCache c = binKeysCache();
+
+        {
+            BinaryObjectBuilder bldr = grid(0).binary().builder("ArrayHashedKey");
+
+            BinaryObject binKey = bldr.setField("fld1", 5).setField("fld2", 1).setField("fld3", "abc").build();
+
+            c.put(binKey, "zzz");
+        }
+
+        // Now let's build an identical key for get.
+        {
+            BinaryObjectBuilder bldr = grid(0).binary().builder("ArrayHashedKey");
+
+            BinaryObject binKey = bldr.setField("fld1", 5).setField("fld2", 1).setField("fld3", "abc").build();
+
+            assertEquals("zzz", c.get(binKey));
+        }
+
+        // Now let's build not identical key for get.
+        {
+            BinaryObjectBuilder bldr = grid(0).binary().builder("ArrayHashedKey");
+
+            BinaryObject binKey = bldr.setField("fld1", 5).setField("fld2", 100).setField("fld3", "abc").build();
+
+            assertNull(c.get(binKey));
+        }
     }
 
     /**
@@ -1034,7 +1076,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
             BinaryObject binKey = bldr.build();
 
-            c.put(binKey, "zzz");
+            assertEquals("zzz", c.get(binKey));
         }
     }
 
@@ -1395,7 +1437,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      * Key to test puts and gets with
      */
     @SuppressWarnings({"ConstantConditions", "unused"})
-    private final static class ComplexKey {
+    private final static class ComplexBinaryFieldsListHashedKey {
         /** */
         private final Integer firstField = 1;
 
@@ -1410,7 +1452,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            ComplexKey that = (ComplexKey) o;
+            ComplexBinaryFieldsListHashedKey that = (ComplexBinaryFieldsListHashedKey) o;
 
             return secondField.equals(that.secondField) &&
                 thirdField.equals(that.thirdField);

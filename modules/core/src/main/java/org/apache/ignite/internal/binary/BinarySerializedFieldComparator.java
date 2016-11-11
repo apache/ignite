@@ -19,6 +19,9 @@ package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Arrays;
 
 /**
  * Compares fiels in serialized form when possible.
@@ -239,8 +242,51 @@ public class BinarySerializedFieldComparator {
                 return true;
 
             default:
-                return F.eq(c1.currentField(), c2.currentField());
+                Object val1 = c1.currentField();
+                Object val2 = c2.currentField();
+
+                return isArray(val1) ? compareArrays(val1, val2) : F.eq(val1, val2);
         }
+    }
+
+    /**
+     * Compare arrays.
+     *
+     * @param val1 Value 1.
+     * @param val2 Value 2.
+     * @return Result.
+     */
+    private static boolean compareArrays(Object val1, Object val2) {
+        if (val1.getClass() == val2.getClass()) {
+            if (val1 instanceof byte[])
+                return Arrays.equals((byte[])val1, (byte[])val2);
+            else if (val1 instanceof boolean[])
+                return Arrays.equals((boolean[])val1, (boolean[])val2);
+            else if (val1 instanceof short[])
+                return Arrays.equals((short[])val1, (short[])val2);
+            else if (val1 instanceof char[])
+                return Arrays.equals((char[])val1, (char[])val2);
+            else if (val1 instanceof int[])
+                return Arrays.equals((int[])val1, (int[])val2);
+            else if (val1 instanceof long[])
+                return Arrays.equals((long[])val1, (long[])val2);
+            else if (val1 instanceof float[])
+                return Arrays.equals((float[])val1, (float[])val2);
+            else if (val1 instanceof double[])
+                return Arrays.equals((double[])val1, (double[])val2);
+            else
+                return Arrays.deepEquals((Object[])val1, (Object[])val2);
+        }
+
+        return false;
+    }
+
+    /**
+     * @param field Field.
+     * @return {@code True} if field is array.
+     */
+    private static boolean isArray(@Nullable Object field) {
+        return field != null && field.getClass().isArray();
     }
 
     /**
@@ -263,13 +309,13 @@ public class BinarySerializedFieldComparator {
             if (c1.offheap()) {
                 if (c2.offheap())
                     // Case 1: both offheap.
-                    return GridUnsafeMemory.compare(c1.ptr + off, c2.ptr + off, len);
+                    return GridUnsafeMemory.compare(c1.curFieldPos + c1.ptr + off, c2.curFieldPos + c2.ptr + off, len);
             }
             else {
                 if (!c2.offheap()) {
                     // Case 2: both onheap.
                     for (int i = 0; i < len; i++) {
-                        if (c1.arr[off + i] != c2.arr[off + i])
+                        if (c1.arr[c1.curFieldPos + off + i] != c2.arr[c2.curFieldPos + off + i])
                             return false;
                     }
 
@@ -287,7 +333,7 @@ public class BinarySerializedFieldComparator {
             assert c1.offheap() && !c2.offheap();
 
             for (int i = 0; i < len; i++) {
-                if (BinaryPrimitives.readByte(c1.ptr, off + i) != c2.arr[off + i])
+                if (BinaryPrimitives.readByte(c1.ptr, c1.curFieldPos + off + i) != c2.arr[c2.curFieldPos + off + i])
                     return false;
             }
 

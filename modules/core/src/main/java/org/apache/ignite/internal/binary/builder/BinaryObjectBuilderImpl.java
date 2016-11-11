@@ -337,7 +337,6 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
             //noinspection NumberEquality
             writer.postWrite(true, registeredType, hashCode, isHashCodeSet);
-            writer.postWriteHashCode(registeredType ? null : clsNameToWrite);
 
             // Update metadata if needed.
             int schemaId = writer.schemaId();
@@ -360,6 +359,9 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
                 schemaReg.addSchema(curSchema.schemaId(), curSchema);
             }
+
+            // Update hash code after schema is written.
+            writer.postWriteHashCode(registeredType ? null : clsNameToWrite);
         }
         finally {
             writer.popSchema();

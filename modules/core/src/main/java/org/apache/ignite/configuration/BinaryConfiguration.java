@@ -23,9 +23,7 @@ import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
-import org.apache.ignite.binary.BinaryIdentityResolver;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Configuration object for Ignite Binary Objects.
@@ -43,9 +41,6 @@ public class BinaryConfiguration {
 
     /** Serializer. */
     private BinarySerializer serializer;
-
-    /** Identity. */
-    private BinaryIdentityResolver identityRslvr;
 
     /** Types. */
     private Collection<BinaryTypeConfiguration> typeCfgs;
@@ -118,24 +113,6 @@ public class BinaryConfiguration {
      */
     public void setSerializer(BinarySerializer serializer) {
         this.serializer = serializer;
-    }
-
-    /**
-     * Gets identity.
-     *
-     * @return Identity.
-     */
-    @Nullable public BinaryIdentityResolver getIdentityResolver() {
-        return identityRslvr;
-    }
-
-    /**
-     * Sets identity resolver.
-     *
-     * @param identityRslvr Identity resolver.
-     */
-    public void setIdentityResolver(@Nullable BinaryIdentityResolver identityRslvr) {
-        this.identityRslvr = identityRslvr;
     }
 
     /**

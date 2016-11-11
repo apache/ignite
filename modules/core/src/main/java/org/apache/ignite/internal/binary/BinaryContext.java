@@ -135,7 +135,7 @@ public class BinaryContext {
     /** Set of system classes that should be marshalled with BinaryMarshaller. */
     private static final Set<String> BINARYLIZABLE_SYS_CLSS;
 
-    /** Binarylizable system classes set initialization. */
+    /* Binarylizable system classes set initialization. */
     static {
         Set<String> sysClss = new HashSet<>();
 
@@ -400,7 +400,6 @@ public class BinaryContext {
             binaryCfg.getNameMapper(),
             binaryCfg.getIdMapper(),
             binaryCfg.getSerializer(),
-            binaryCfg.getIdentityResolver(),
             binaryCfg.getTypeConfigurations()
         );
 
@@ -410,7 +409,6 @@ public class BinaryContext {
     /**
      * @param globalIdMapper ID mapper.
      * @param globalSerializer Serializer.
-     * @param globalIdentity Identity.
      * @param typeCfgs Type configurations.
      * @throws BinaryObjectException In case of error.
      */
@@ -418,7 +416,6 @@ public class BinaryContext {
         BinaryNameMapper globalNameMapper,
         BinaryIdMapper globalIdMapper,
         BinarySerializer globalSerializer,
-        BinaryIdentityResolver globalIdentity,
         Collection<BinaryTypeConfiguration> typeCfgs
     ) throws BinaryObjectException {
         TypeDescriptors descs = new TypeDescriptors();
@@ -441,7 +438,7 @@ public class BinaryContext {
                 BinaryIdMapper idMapper = U.firstNotNull(typeCfg.getIdMapper(), globalIdMapper);
                 BinaryNameMapper nameMapper = U.firstNotNull(typeCfg.getNameMapper(), globalNameMapper);
                 BinarySerializer serializer = U.firstNotNull(typeCfg.getSerializer(), globalSerializer);
-                BinaryIdentityResolver identity = U.firstNotNull(typeCfg.getIdentityResolver(), globalIdentity);
+                BinaryIdentityResolver identity = typeCfg.getIdentityResolver();
 
                 BinaryInternalMapper mapper = resolveMapper(nameMapper, idMapper);
 
