@@ -60,6 +60,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
@@ -807,7 +810,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         dhtVer = explicitVer != null ? explicitVer : writeVersion();
 
                                     if (cctx.wal() != null && !writeEntries().isEmpty()
-                                        && op != NOOP && op != RELOAD && op != READ)
+                                        && op != NOOP && op != RELOAD && op != READ) {
+
+                                        boolean owning = isOwningPart(topVer, txEntry, cacheCtx);
+
                                         ptr = cctx.wal().log(new DataRecord(new DataEntry(
                                             cacheCtx.cacheId(),
                                             txEntry.key(),
@@ -817,7 +823,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             writeVersion(),
                                             0,
                                             txEntry.key().partition(),
-                                            txEntry.updateCounter())));
+                                            owning ? txEntry.updateCounter() : 0)));
+                                    }
 
                                     if (op == CREATE || op == UPDATE) {
                                         GridCacheUpdateTxResult updRes = cached.innerSet(
@@ -1034,6 +1041,23 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 assert !needsCompletedVersions || rolledbackVers != null;
             }
         }
+    }
+
+    private boolean isOwningPart(AffinityTopologyVersion topVer, IgniteTxEntry txEntry, GridCacheContext cacheCtx) {
+        boolean owning = false;
+
+        GridDhtPartitionTopology top = cacheCtx.topology();
+
+        top.readLock();
+
+        try {
+            GridDhtLocalPartition part = top.localPartition(txEntry.key().partition(), topVer, false);
+            owning = part.state() == GridDhtPartitionState.OWNING;
+        }
+        finally {
+            top.readUnlock();
+        }
+        return owning;
     }
 
     /**

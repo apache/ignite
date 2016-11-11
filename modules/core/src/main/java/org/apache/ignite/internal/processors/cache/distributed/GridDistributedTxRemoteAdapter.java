@@ -43,6 +43,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
@@ -550,6 +553,8 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                             if (dataEntries == null)
                                                 dataEntries = new ArrayList<>(entries.size());
 
+                                            boolean owning = isOwningPart(topVer, txEntry, cacheCtx);
+
                                             dataEntries.add(
                                                 new DataEntry(
                                                     cacheCtx.cacheId(),
@@ -560,7 +565,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                     writeVersion(),
                                                     0,
                                                     txEntry.key().partition(),
-                                                    txEntry.updateCounter()
+                                                    owning ? txEntry.updateCounter() : 0
                                                 )
                                             );
                                         }
@@ -742,6 +747,23 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                 state(COMMITTED);
             }
         }
+    }
+
+    private boolean isOwningPart(AffinityTopologyVersion topVer, IgniteTxEntry txEntry, GridCacheContext cacheCtx) {
+        boolean owning = false;
+
+        GridDhtPartitionTopology top = cacheCtx.topology();
+
+        top.readLock();
+
+        try {
+            GridDhtLocalPartition part = top.localPartition(txEntry.key().partition(), topVer, false);
+            owning = part.state() == GridDhtPartitionState.OWNING;
+        }
+        finally {
+            top.readUnlock();
+        }
+        return owning;
     }
 
     /** {@inheritDoc} */

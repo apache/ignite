@@ -784,9 +784,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
         }
 
-//        if (curState == CacheState.ACTIVE || newState == CacheState.ACTIVE)
-//            cctx.database().beforeExchange(this, newState == CacheState.ACTIVE);
-            cctx.database().beforeExchange(this, false);
+        if (curState == CacheState.ACTIVE || newState == CacheState.ACTIVE)
+            cctx.database().beforeExchange(this, newState == CacheState.ACTIVE);
+//            cctx.database().beforeExchange(this, false);
 
         // If a backup request, synchronously wait for backup start.
         if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
@@ -1473,6 +1473,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 owners.add(cctx.localNodeId());
 
             top.setOwners(p, owners);
+
+            StringBuilder builder = new StringBuilder("!!Set Owners( " + p +  ") owners - ");
+            for (UUID owner : owners) {
+                builder.append(owner.toString()).append(", ");
+            }
+
+            log.error(builder.toString());
+
         }
     }
 
@@ -1510,6 +1518,16 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 }
             }
 
+            if (discoEvt.type() == EVT_NODE_JOINED) {
+                if (cctx.database().persistenceEnabled()) {
+                    for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                        log.error("!!Assign");
+                        assignPartitionStates(cacheCtx.topology());
+                    }
+                }
+            }
+
+
             if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
                 assert discoEvt instanceof DiscoveryCustomEvent;
 
@@ -1522,8 +1540,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             resetLostPartitions();
                         else if (req.globalStateChange() && req.state() == CacheState.ACTIVE) {
                             if (cctx.database().persistenceEnabled()) {
-                                for (GridCacheContext cacheCtx : cctx.cacheContexts())
+                                for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                                    log.error("!!Assign");
                                     assignPartitionStates(cacheCtx.topology());
+                                }
                             }
                         }
                     }

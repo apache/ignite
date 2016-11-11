@@ -755,10 +755,10 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             }
 
             if (loc == null) {
-                if (!belongs)
-                    throw new GridDhtInvalidPartitionException(p, "Creating partition which does not belong to " +
-                        "local node (often may be caused by inconsistent 'key.hashCode()' implementation) " +
-                        "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
+//                if (!belongs)
+//                    throw new GridDhtInvalidPartitionException(p, "Creating partition which does not belong to " +
+//                        "local node (often may be caused by inconsistent 'key.hashCode()' implementation) " +
+//                        "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
 
                 locParts.set(p, loc = new GridDhtLocalPartition(cctx, p, entryFactory));
 
