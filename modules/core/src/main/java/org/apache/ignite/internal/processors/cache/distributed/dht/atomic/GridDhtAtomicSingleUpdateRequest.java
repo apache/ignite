@@ -40,6 +40,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.KEEP_BINARY_FLAG_MASK;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.SKIP_STORE_FLAG_MASK;
 
 /**
  *
@@ -50,6 +51,32 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
     /** Keep serialized flag. */
     private static final int NEAR_FLAG_MASK = 0x80;
+
+    /** Future version. */
+    protected GridCacheVersion futVer;
+
+    /** Write version. */
+    protected GridCacheVersion writeVer;
+
+    /** Write synchronization mode. */
+    protected CacheWriteSynchronizationMode syncMode;
+
+    /** Topology version. */
+    protected AffinityTopologyVersion topVer;
+
+    /** Force transform backups flag. */
+    protected boolean forceTransformBackups;
+
+    /** Subject ID. */
+    protected UUID subjId;
+
+    /** Task name hash. */
+    protected int taskNameHash;
+
+    /**
+     * Additional flags.
+     */
+    protected byte flags;
 
     /** Keys to update. */
     @GridToStringInclude
@@ -105,21 +132,17 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         boolean keepBinary,
         boolean skipStore
     ) {
-        super(
-            cacheId,
-            nodeId,
-            futVer,
-            writeVer,
-            syncMode,
-            topVer,
-            forceTransformBackups,
-            subjId,
-            taskNameHash,
-            skipStore
-        );
-
+        super(cacheId, nodeId);
+        this.futVer = futVer;
+        this.writeVer = writeVer;
+        this.syncMode = syncMode;
+        this.topVer = topVer;
+        this.forceTransformBackups = forceTransformBackups;
+        this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
         this.addDepInfo = addDepInfo;
 
+        setFlag(skipStore, SKIP_STORE_FLAG_MASK);
         setFlag(keepBinary, KEEP_BINARY_FLAG_MASK);
     }
 
@@ -191,6 +214,11 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
+    @Override public boolean forceTransformBackups() {
+        return forceTransformBackups;
+    }
+
+    /** {@inheritDoc} */
     @Override public int size() {
         return key != null ? near() ? 0 : 1 : 0;
     }
@@ -203,6 +231,11 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     /** {@inheritDoc} */
     @Override public boolean hasKey(KeyCacheObject key) {
         return F.eq(this.key, key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean skipStore() {
+        return isFlag(SKIP_STORE_FLAG_MASK);
     }
 
     /** {@inheritDoc} */
@@ -235,6 +268,31 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         assert idx == 0 : idx;
 
         return near() ? null : val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheVersion futureVersion() {
+        return futVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheVersion writeVersion() {
+        return writeVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int taskNameHash() {
+        return taskNameHash;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID subjectId() {
+        return subjId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheWriteSynchronizationMode writeSynchronizationMode() {
+        return syncMode;
     }
 
     /** {@inheritDoc} */
@@ -361,26 +419,74 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         }
 
         switch (writer.state()) {
-            case 11:
+            case 3:
+                if (!writer.writeByte("flags", flags))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
+                if (!writer.writeBoolean("forceTransformBackups", forceTransformBackups))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
+                if (!writer.writeMessage("futVer", futVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 6:
                 if (!writer.writeMessage("key", key))
                     return false;
 
                 writer.incrementState();
 
-            case 12:
+            case 7:
                 if (!writer.writeMessage("prevVal", prevVal))
                     return false;
 
                 writer.incrementState();
 
-            case 13:
+            case 8:
+                if (!writer.writeUuid("subjId", subjId))
+                    return false;
+
+                writer.incrementState();
+
+            case 9:
+                if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
+                    return false;
+
+                writer.incrementState();
+
+            case 10:
+                if (!writer.writeInt("taskNameHash", taskNameHash))
+                    return false;
+
+                writer.incrementState();
+
+            case 11:
+                if (!writer.writeMessage("topVer", topVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 12:
                 if (!writer.writeLong("updateCntr", updateCntr))
                     return false;
 
                 writer.incrementState();
 
-            case 14:
+            case 13:
                 if (!writer.writeMessage("val", val))
+                    return false;
+
+                writer.incrementState();
+
+            case 14:
+                if (!writer.writeMessage("writeVer", writeVer))
                     return false;
 
                 writer.incrementState();
@@ -401,7 +507,31 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
             return false;
 
         switch (reader.state()) {
-            case 11:
+            case 3:
+                flags = reader.readByte("flags");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 4:
+                forceTransformBackups = reader.readBoolean("forceTransformBackups");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
+                futVer = reader.readMessage("futVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 6:
                 key = reader.readMessage("key");
 
                 if (!reader.isLastRead())
@@ -409,7 +539,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 12:
+            case 7:
                 prevVal = reader.readMessage("prevVal");
 
                 if (!reader.isLastRead())
@@ -417,7 +547,43 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 13:
+            case 8:
+                subjId = reader.readUuid("subjId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 9:
+                byte syncModeOrd;
+
+                syncModeOrd = reader.readByte("syncMode");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                syncMode = CacheWriteSynchronizationMode.fromOrdinal(syncModeOrd);
+
+                reader.incrementState();
+
+            case 10:
+                taskNameHash = reader.readInt("taskNameHash");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 11:
+                topVer = reader.readMessage("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 12:
                 updateCntr = reader.readLong("updateCntr");
 
                 if (!reader.isLastRead())
@@ -425,8 +591,16 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 14:
+            case 13:
                 val = reader.readMessage("val");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 14:
+                writeVer = reader.readMessage("writeVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -476,6 +650,26 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 15;
+    }
+
+    /**
+     * Sets flag mask.
+     *
+     * @param flag Set or clear.
+     * @param mask Mask.
+     */
+    private void setFlag(boolean flag, int mask) {
+        flags = flag ? (byte)(flags | mask) : (byte)(flags & ~mask);
+    }
+
+    /**
+     * Reags flag mask.
+     *
+     * @param mask Mask to read.
+     * @return Flag value.
+     */
+    private boolean isFlag(int mask) {
+        return (flags & mask) != 0;
     }
 
     /** {@inheritDoc} */

@@ -18,25 +18,18 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.io.Externalizable;
-import java.nio.ByteBuffer;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.SKIP_STORE_FLAG_MASK;
 
 /**
  *
@@ -48,32 +41,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
     /** Node ID. */
     @GridDirectTransient
     protected UUID nodeId;
-
-    /** Future version. */
-    protected GridCacheVersion futVer;
-
-    /** Write version. */
-    protected GridCacheVersion writeVer;
-
-    /** Write synchronization mode. */
-    protected CacheWriteSynchronizationMode syncMode;
-
-    /** Topology version. */
-    protected AffinityTopologyVersion topVer;
-
-    /** Force transform backups flag. */
-    protected boolean forceTransformBackups;
-
-    /** Subject ID. */
-    protected UUID subjId;
-
-    /** Task name hash. */
-    protected int taskNameHash;
-
-    /**
-     * Additional flags.
-     */
-    protected byte flags;
 
     /** On response flag. Access should be synced on future. */
     @GridDirectTransient
@@ -91,36 +58,10 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
      *
      * @param cacheId Cache ID.
      * @param nodeId Node ID.
-     * @param futVer Future version.
-     * @param writeVer Write version for cache values.
-     * @param syncMode Cache write synchronization mode.
-     * @param topVer Topology version.
-     * @param forceTransformBackups Force transform backups flag.
-     * @param subjId Subject ID.
-     * @param taskNameHash Task name hash code.
      */
-    protected GridDhtAtomicAbstractUpdateRequest(
-        int cacheId,
-        UUID nodeId,
-        GridCacheVersion futVer,
-        GridCacheVersion writeVer,
-        CacheWriteSynchronizationMode syncMode,
-        @NotNull AffinityTopologyVersion topVer,
-        boolean forceTransformBackups,
-        UUID subjId,
-        int taskNameHash,
-        boolean skipStore) {
+    protected GridDhtAtomicAbstractUpdateRequest(int cacheId, UUID nodeId) {
         this.cacheId = cacheId;
         this.nodeId = nodeId;
-        this.futVer = futVer;
-        this.writeVer = writeVer;
-        this.syncMode = syncMode;
-        this.topVer = topVer;
-        this.forceTransformBackups = forceTransformBackups;
-        this.subjId = subjId;
-        this.taskNameHash = taskNameHash;
-
-        setFlag(skipStore, SKIP_STORE_FLAG_MASK);
     }
 
     /** {@inheritDoc} */
@@ -136,48 +77,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
     }
 
     /**
-     * @return Subject ID.
-     */
-    public UUID subjectId() {
-        return subjId;
-    }
-
-    /**
-     * @return Task name.
-     */
-    public int taskNameHash() {
-        return taskNameHash;
-    }
-
-    /**
-     * @return Version assigned on primary node.
-     */
-    public GridCacheVersion futureVersion() {
-        return futVer;
-    }
-
-    /**
-     * @return Write version.
-     */
-    public GridCacheVersion writeVersion() {
-        return writeVer;
-    }
-
-    /**
-     * @return Cache write synchronization mode.
-     */
-    public CacheWriteSynchronizationMode writeSynchronizationMode() {
-        return syncMode;
-    }
-
-    /**
-     * @return Topology version.
-     */
-    @Override public AffinityTopologyVersion topologyVersion() {
-        return topVer;
-    }
-
-    /**
      * @return Keep binary flag.
      */
     public abstract boolean keepBinary();
@@ -185,9 +84,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
     /**
      * @return Skip write-through to a persistent storage.
      */
-    public boolean skipStore() {
-        return isFlag(SKIP_STORE_FLAG_MASK);
-    }
+    public abstract boolean skipStore();
 
     /**
      * @return {@code True} if on response flag changed.
@@ -204,9 +101,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
     /**
      * @return Force transform backups flag.
      */
-    public boolean forceTransformBackups() {
-        return forceTransformBackups;
-    }
+    public abstract boolean forceTransformBackups();
 
     /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
@@ -260,88 +155,30 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
      */
     protected abstract void cleanup();
 
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
+    /**
+     * @return Subject ID.
+     */
+    public abstract UUID subjectId();
 
-        if (!reader.beforeMessageRead())
-            return false;
+    /**
+     * @return Task name.
+     */
+    public abstract int taskNameHash();
 
-        if (!super.readFrom(buf, reader))
-            return false;
+    /**
+     * @return Version assigned on primary node.
+     */
+    public abstract GridCacheVersion futureVersion();
 
-        switch (reader.state()) {
-            case 3:
-                flags = reader.readByte("flags");
+    /**
+     * @return Write version.
+     */
+    public abstract GridCacheVersion writeVersion();
 
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                forceTransformBackups = reader.readBoolean("forceTransformBackups");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                futVer = reader.readMessage("futVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                subjId = reader.readUuid("subjId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                byte syncModeOrd;
-
-                syncModeOrd = reader.readByte("syncMode");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                syncMode = CacheWriteSynchronizationMode.fromOrdinal(syncModeOrd);
-
-                reader.incrementState();
-
-            case 8:
-                taskNameHash = reader.readInt("taskNameHash");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                topVer = reader.readMessage("topVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 10:
-                writeVer = reader.readMessage("writeVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(GridDhtAtomicAbstractUpdateRequest.class);
-    }
+    /**
+     * @return Cache write synchronization mode.
+     */
+    public abstract CacheWriteSynchronizationMode writeSynchronizationMode();
 
     /**
      * @return Keys size.
@@ -447,95 +284,4 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
      * @return Optional arguments for entry processor.
      */
     @Nullable public abstract Object[] invokeArguments();
-
-    /**
-     * Sets flag mask.
-     *
-     * @param flag Set or clear.
-     * @param mask Mask.
-     */
-    protected void setFlag(boolean flag, int mask) {
-        flags = flag ? (byte)(flags | mask) : (byte)(flags & ~mask);
-    }
-
-    /**
-     * Reags flag mask.
-     *
-     * @param mask Mask to read.
-     * @return Flag value.
-     */
-    protected boolean isFlag(int mask) {
-        return (flags & mask) != 0;
-    }
-
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 3:
-                if (!writer.writeByte("flags", flags))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeBoolean("forceTransformBackups", forceTransformBackups))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeMessage("futVer", futVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeUuid("subjId", subjId))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeMessage("topVer", topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 10:
-                if (!writer.writeMessage("writeVer", writeVer))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    @Override public byte fieldsCount() {
-        return 11;
-    }
 }
