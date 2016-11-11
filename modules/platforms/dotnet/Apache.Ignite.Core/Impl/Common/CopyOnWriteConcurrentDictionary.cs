@@ -69,5 +69,13 @@ namespace Apache.Ignite.Core.Impl.Common
                 return res;
             }
         }
+
+        /// <summary>
+        /// Determines whether the specified key exists in the dictionary.
+        /// </summary>
+        public bool ContainsKey(TKey key)
+        {
+            return _dict.ContainsKey(key);
+        }
     }
 }

@@ -169,8 +169,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 var handler = FindWriteHandler(t, out supportsHandles);
 
-                return handler == null ? null : new BinarySystemWriteHandler(handler, supportsHandles, 
-                    handler == WriteSerializable);
+                return handler == null ? null : new BinarySystemWriteHandler(handler, supportsHandles);
             });
         }
 
@@ -257,9 +256,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                     elemType == typeof (BinaryObject))
                     return WriteArray;
             }
-
-            if (type.IsSerializable)
-                return WriteSerializable;
 
             return null;
         }
@@ -599,16 +595,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             ctx.WriteInt(binEnum.EnumValue);
         }
 
-        /// <summary>
-        /// Writes serializable.
-        /// </summary>
-        /// <param name="writer">The writer.</param>
-        /// <param name="o">The object.</param>
-        private static void WriteSerializable(BinaryWriter writer, object o)
-        {
-            writer.Write(new SerializableObjectHolder(o));
-        }
-
         /**
          * <summary>Read enum array.</summary>
          */
@@ -792,23 +778,17 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** */
         private readonly bool _supportsHandles;
 
-        /** */
-        private readonly bool _isSerializable;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="BinarySystemWriteHandler" /> class.
         /// </summary>
         /// <param name="writeAction">The write action.</param>
         /// <param name="supportsHandles">Handles flag.</param>
-        /// <param name="isSerializable">Determines whether this handler writes objects as serializable.</param>
-        public BinarySystemWriteHandler(Action<BinaryWriter, object> writeAction, bool supportsHandles, 
-            bool isSerializable)
+        public BinarySystemWriteHandler(Action<BinaryWriter, object> writeAction, bool supportsHandles)
         {
             Debug.Assert(writeAction != null);
 
             _writeAction = writeAction;
             _supportsHandles = supportsHandles;
-            _isSerializable = isSerializable;
         }
 
         /// <summary>
@@ -827,14 +807,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         public bool SupportsHandles
         {
             get { return _supportsHandles; }
-        }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether this handler writes objects as serializable
-        /// </summary>
-        public bool IsSerializable
-        {
-            get { return _isSerializable; }
         }
     }
 }

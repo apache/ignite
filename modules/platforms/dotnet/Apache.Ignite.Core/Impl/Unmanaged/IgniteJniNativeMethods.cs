@@ -110,6 +110,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorGetIgniteConfiguration")]
         public static extern void ProcessorGetIgniteConfiguration(void* ctx, void* obj, long memPtr);
 
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorRegisterType")]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool ProcessorRegisterType(void* ctx, void* obj, int id, sbyte* name);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorGetClass")]
+        public static extern sbyte* ProcessorGetClass(void* ctx, void* obj, int id, int* resLen);
+
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorGetCacheNames")]
         public static extern void ProcessorGetCacheNames(void* ctx, void* obj, long memPtr);
 
@@ -184,5 +191,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteRemoveConsoleHandler")]
         public static extern int RemoveConsoleHandler(void* consoleHandler);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteReleaseChars")]
+        public static extern void ReleaseChars(sbyte* chars);
     }
 }

@@ -1245,9 +1245,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             {
                 var reader = new BinaryReader(marsh, new BinaryHeapStream(bytes), BinaryMode.ForceBinary, null);
 
-                reader.DetachNext();
-
-                outerObj = reader.Deserialize<IBinaryObject>();
+                outerObj = reader.DetachNext().Deserialize<IBinaryObject>();
             }
             else
                 outerObj = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);

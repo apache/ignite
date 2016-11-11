@@ -147,7 +147,7 @@ namespace Apache.Ignite.Core.Impl
         {
             if (!string.IsNullOrEmpty(_cfg.SpringConfigUrl))
             {
-                // If there is a Spring config, use setting from Spring, 
+                // If there is a Spring config, use setting from Spring,
                 // since we ignore .NET config in legacy mode.
                 var cfg0 = GetConfiguration().BinaryConfiguration;
 

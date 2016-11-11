@@ -48,26 +48,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Metadatas collected during this write session. */
         private IDictionary<int, BinaryType> _metas;
 
-        /** Current type ID. */
-        private int _curTypeId;
-
-        /** Current name converter */
-        private IBinaryNameMapper _curConverter;
-
-        /** Current mapper. */
-        private IBinaryIdMapper _curMapper;
-        
-        /** Current object start position. */
-        private int _curPos;
-
-        /** Current raw position. */
-        private int _curRawPos;
+        /** Current stack frame. */
+        private Frame _frame;
 
         /** Whether we are currently detaching an object. */
         private bool _detaching;
-
-        /** Current type structure tracker, */
-        private BinaryStructureTracker _curStruct;
 
         /** Schema holder. */
         private readonly BinaryObjectSchemaHolder _schema = BinaryObjectSchemaHolder.Current;
@@ -873,7 +858,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullField();
             else
             {
-                var desc = _marsh.GetDescriptor(val.GetType());
+                var desc = _marsh.GetDescriptor(val.GetType(), false);
 
                 if (desc != null)
                 {
@@ -1087,8 +1072,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </returns>
         public IBinaryRawWriter GetRawWriter()
         {
-            if (_curRawPos == 0)
-                _curRawPos = _stream.Position;
+            if (_frame.RawPos == 0)
+                _frame.RawPos = _stream.Position;
 
             return this;
         }
@@ -1157,116 +1142,117 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (WriteBuilderSpecials(obj))
                 return;
 
-            // Suppose that we faced normal object and perform descriptor lookup.
-            IBinaryTypeDescriptor desc = _marsh.GetDescriptor(type);
+            // Are we dealing with a well-known type?
+            var handler = BinarySystemHandlers.GetWriteHandler(type);
 
-            if (desc != null)
+            if (handler != null)
             {
-                // Writing normal object.
-                var pos = _stream.Position;
-
-                // Dealing with handles.
-                if (desc.Serializer.SupportsHandles && WriteHandle(pos, obj))
-                    return;
-
-                // Skip header length as not everything is known now
-                _stream.Seek(BinaryObjectHeader.Size, SeekOrigin.Current);
-
-                // Preserve old frame.
-                int oldTypeId = _curTypeId;
-                IBinaryNameMapper oldConverter = _curConverter;
-                IBinaryIdMapper oldMapper = _curMapper;
-                int oldRawPos = _curRawPos;
-                var oldPos = _curPos;
-                
-                var oldStruct = _curStruct;
-
-                // Push new frame.
-                _curTypeId = desc.TypeId;
-                _curConverter = desc.NameMapper;
-                _curMapper = desc.IdMapper;
-                _curRawPos = 0;
-                _curPos = pos;
-
-                _curStruct = new BinaryStructureTracker(desc, desc.WriterTypeStructure);
-                var schemaIdx = _schema.PushSchema();
-
-                try
-                {
-                    // Write object fields.
-                    desc.Serializer.WriteBinary(obj, this);
-
-                    // Write schema
-                    var schemaOffset = _stream.Position - pos;
-
-                    int schemaId;
-                    
-                    var flags = desc.UserType
-                        ? BinaryObjectHeader.Flag.UserType
-                        : BinaryObjectHeader.Flag.None;
-
-                    if (Marshaller.CompactFooter && desc.UserType)
-                        flags |= BinaryObjectHeader.Flag.CompactFooter;
-
-                    var hasSchema = _schema.WriteSchema(_stream, schemaIdx, out schemaId, ref flags);
-
-                    if (hasSchema)
-                    {
-                        flags |= BinaryObjectHeader.Flag.HasSchema;
-
-                        // Calculate and write header.
-                        if (_curRawPos > 0)
-                            _stream.WriteInt(_curRawPos - pos); // raw offset is in the last 4 bytes
-
-                        // Update schema in type descriptor
-                        if (desc.Schema.Get(schemaId) == null)
-                            desc.Schema.Add(schemaId, _schema.GetSchema(schemaIdx));
-                    }
-                    else
-                        schemaOffset = BinaryObjectHeader.Size;
-
-                    if (_curRawPos > 0)
-                        flags |= BinaryObjectHeader.Flag.HasRaw;
-
-                    var len = _stream.Position - pos;
-
-                    var header = new BinaryObjectHeader(desc.TypeId, obj.GetHashCode(), len,
-                        schemaId, schemaOffset, flags);
-
-                    BinaryObjectHeader.Write(header, _stream, pos);
-
-                    Stream.Seek(pos + len, SeekOrigin.Begin); // Seek to the end
-                }
-                finally
-                {
-                    _schema.PopSchema(schemaIdx);
-                }
-
-                // Apply structure updates if any.
-                _curStruct.UpdateWriterStructure(this);
-
-                // Restore old frame.
-                _curTypeId = oldTypeId;
-                _curConverter = oldConverter;
-                _curMapper = oldMapper;
-                _curRawPos = oldRawPos;
-                _curPos = oldPos;
-
-                _curStruct = oldStruct;
-            }
-            else
-            {
-                // Are we dealing with a well-known type?
-                var handler = BinarySystemHandlers.GetWriteHandler(type);
-
-                if (handler == null)  // We did our best, object cannot be marshalled.
-                    throw new BinaryObjectException("Unsupported object type [type=" + type + ", object=" + obj + ']');
-                
                 if (handler.SupportsHandles && WriteHandle(_stream.Position, obj))
                     return;
 
                 handler.Write(this, obj);
+
+                return;
             }
+
+            var isSerializable = type.IsSerializable;
+
+            // Suppose that we faced normal object and perform descriptor lookup.
+            // Do not dynamically register serializable types for compatibility.
+            var desc = _marsh.GetDescriptor(type, !isSerializable);
+
+            if (desc == null)
+            {
+                if (!isSerializable)
+                    throw new BinaryObjectException("Unsupported object type [type=" + type + ", object=" + obj + ']');
+
+                Write(new SerializableObjectHolder(obj));
+
+                return;
+            }
+
+            // Writing normal object.
+            var pos = _stream.Position;
+
+            // Dealing with handles.
+            if (desc.Serializer.SupportsHandles && WriteHandle(pos, obj))
+                return;
+
+            // Skip header length as not everything is known now
+            _stream.Seek(BinaryObjectHeader.Size, SeekOrigin.Current);
+
+            // Write type name for unregistered types
+            if (!desc.IsRegistered)
+                WriteString(type.AssemblyQualifiedName);
+
+            var headerSize = _stream.Position - pos;
+
+            // Preserve old frame.
+            var oldFrame = _frame;
+
+            // Push new frame.
+            _frame.RawPos = 0;
+            _frame.Pos = pos;
+            _frame.Struct = new BinaryStructureTracker(desc, desc.WriterTypeStructure);
+
+            var schemaIdx = _schema.PushSchema();
+
+            try
+            {
+                // Write object fields.
+                desc.Serializer.WriteBinary(obj, this);
+
+                // Write schema
+                var schemaOffset = _stream.Position - pos;
+
+                int schemaId;
+                    
+                var flags = desc.UserType
+                    ? BinaryObjectHeader.Flag.UserType
+                    : BinaryObjectHeader.Flag.None;
+
+                if (Marshaller.CompactFooter && desc.UserType)
+                    flags |= BinaryObjectHeader.Flag.CompactFooter;
+
+                var hasSchema = _schema.WriteSchema(_stream, schemaIdx, out schemaId, ref flags);
+
+                if (hasSchema)
+                {
+                    flags |= BinaryObjectHeader.Flag.HasSchema;
+
+                    // Calculate and write header.
+                    if (_frame.RawPos > 0)
+                        _stream.WriteInt(_frame.RawPos - pos); // raw offset is in the last 4 bytes
+
+                    // Update schema in type descriptor
+                    if (desc.Schema.Get(schemaId) == null)
+                        desc.Schema.Add(schemaId, _schema.GetSchema(schemaIdx));
+                }
+                else
+                    schemaOffset = headerSize;
+
+                if (_frame.RawPos > 0)
+                    flags |= BinaryObjectHeader.Flag.HasRaw;
+
+                var len = _stream.Position - pos;
+
+                var header = new BinaryObjectHeader(desc.IsRegistered ? desc.TypeId : BinaryUtils.TypeUnregistered,
+                    obj.GetHashCode(), len, schemaId, schemaOffset, flags);
+
+                BinaryObjectHeader.Write(header, _stream, pos);
+
+                Stream.Seek(pos + len, SeekOrigin.Begin); // Seek to the end
+            }
+            finally
+            {
+                _schema.PopSchema(schemaIdx);
+            }
+
+            // Apply structure updates if any.
+            _frame.Struct.UpdateWriterStructure(this);
+
+            // Restore old frame.
+            _frame = oldFrame;
         }
 
         /// <summary>
@@ -1448,12 +1434,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="fieldTypeId">Field type ID.</param>
         private void WriteFieldId(string fieldName, byte fieldTypeId)
         {
-            if (_curRawPos != 0)
+            if (_frame.RawPos != 0)
                 throw new BinaryObjectException("Cannot write named fields after raw data is written.");
 
-            var fieldId = _curStruct.GetFieldId(fieldName, fieldTypeId);
+            var fieldId = _frame.Struct.GetFieldId(fieldName, fieldTypeId);
 
-            _schema.PushField(fieldId, _stream.Position - _curPos);
+            _schema.PushField(fieldId, _stream.Position - _frame.Pos);
         }
 
         /// <summary>
@@ -1481,6 +1467,21 @@ namespace Apache.Ignite.Core.Impl.Binary
                 else
                     _metas[desc.TypeId] = new BinaryType(desc, fields);
             }
+        }
+
+        /// <summary>
+        /// Stores current writer stack frame.
+        /// </summary>
+        private struct Frame
+        {
+            /** Current object start position. */
+            public int Pos;
+
+            /** Current raw position. */
+            public int RawPos;
+
+            /** Current type structure tracker, */
+            public BinaryStructureTracker Struct;
         }
     }
 }

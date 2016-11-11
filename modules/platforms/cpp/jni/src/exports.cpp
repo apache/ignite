@@ -150,6 +150,14 @@ extern "C" {
         ctx->ProcessorLoggerLog(static_cast<jobject>(obj), level, message, category, errorInfo);
     }
 
+    bool IGNITE_CALL IgniteProcessorRegisterType(gcj::JniContext* ctx, void* obj, int id, char* name) {
+        return ctx->ProcessorRegisterType(static_cast<jobject>(obj), id, name);
+    }
+
+    char* IGNITE_CALL IgniteProcessorGetClass(gcj::JniContext* ctx, void* obj, int id, int* resLen) {
+        return ctx->ProcessorGetClass(static_cast<jobject>(obj), id, resLen);
+    }
+
     long long IGNITE_CALL IgniteTargetInStreamOutLong(gcj::JniContext* ctx, void* obj, int opType, long long memPtr) {
         return ctx->TargetInStreamOutLong(static_cast<jobject>(obj), opType, memPtr);
     }
@@ -232,5 +240,9 @@ extern "C" {
 
     void IGNITE_CALL IgniteRemoveConsoleHandler(gcj::ConsoleWriteHandler consoleHandler) {
         gcj::JniContext::RemoveConsoleHandler(consoleHandler);
+    }
+
+    void IGNITE_CALL IgniteReleaseChars(char* chars) {
+        delete[] chars;
     }
 }

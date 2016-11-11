@@ -92,6 +92,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** Interop configuration. */
     private final PlatformConfigurationEx interopCfg;
 
+    /** Platform utility cache. */
+    private final PlatformUtilityCache utilityCache;
+
     /** Whether processor is started. */
     private boolean started;
 
@@ -106,7 +109,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
      *
      * @param ctx Kernal context.
      */
-    public PlatformProcessorImpl(GridKernalContext ctx) {
+    public PlatformProcessorImpl(GridKernalContext ctx) throws IgniteCheckedException {
         super(ctx);
 
         log = ctx.log(PlatformProcessorImpl.class);
@@ -132,6 +135,8 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         if (interopCfg.logger() != null)
             interopCfg.logger().setContext(platformCtx);
+
+        utilityCache = new PlatformUtilityCache((byte)1);
     }
 
     /** {@inheritDoc} */
@@ -169,6 +174,8 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
+        utilityCache.onKernalStop();
+
         startLatch.countDown();
     }
 
@@ -500,6 +507,29 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         BinaryRawReaderEx reader = platformCtx.reader(platformCtx.memory().get(memPtr));
         return PlatformConfigurationUtils.readNearConfiguration(reader);
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformUtilityCache utilityCache() {
+        return utilityCache;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean registerType(int id, String name) {
+        try {
+            return utilityCache.getMarshallerContext().registerTypeName(id, name);
+        } catch (IgniteCheckedException ignored) {
+            return false;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getClass(int id) {
+        try {
+            return utilityCache.getMarshallerContext().getTypeName(id);
+        } catch (IgniteCheckedException ignored) {
+            return null;
+        }
     }
 
     /**

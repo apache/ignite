@@ -425,10 +425,12 @@ public class PlatformContextImpl implements PlatformContext {
         if (schema == null) {
             BinaryTypeImpl meta = (BinaryTypeImpl)cacheObjProc.metadata(typeId);
 
-            for (BinarySchema typeSchema : meta.metadata().schemas()) {
-                if (schemaId == typeSchema.schemaId()) {
-                    schema = typeSchema;
-                    break;
+            if (meta != null) {
+                for (BinarySchema typeSchema : meta.metadata().schemas()) {
+                    if (schemaId == typeSchema.schemaId()) {
+                        schema = typeSchema;
+                        break;
+                    }
                 }
             }
 

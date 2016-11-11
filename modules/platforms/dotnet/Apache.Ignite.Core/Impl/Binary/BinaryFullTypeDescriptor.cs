@@ -66,6 +66,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Enum flag. */
         private readonly bool _isEnum;
 
+        /** Register flag. */
+        private readonly bool _isRegistered;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -79,6 +82,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="keepDeserialized">Whether to cache deserialized value in IBinaryObject</param>
         /// <param name="affKeyFieldName">Affinity field key name.</param>
         /// <param name="isEnum">Enum flag.</param>
+        /// <param name="isRegistered">Registered flag.</param>
         public BinaryFullTypeDescriptor(
             Type type, 
             int typeId, 
@@ -89,7 +93,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             IBinarySerializerInternal serializer, 
             bool keepDeserialized, 
             string affKeyFieldName,
-            bool isEnum)
+            bool isEnum,
+            bool isRegistered = true)
         {
             _type = type;
             _typeId = typeId;
@@ -101,6 +106,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             _keepDeserialized = keepDeserialized;
             _affKeyFieldName = affKeyFieldName;
             _isEnum = isEnum;
+            _isRegistered = isRegistered;
         }
 
         /// <summary>
@@ -217,6 +223,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         public BinaryObjectSchema Schema
         {
             get { return _schema; }
+        }
+
+        /** <inheritDoc /> */
+        public bool IsRegistered
+        {
+            get { return _isRegistered; }
         }
     }
 }

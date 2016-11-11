@@ -218,6 +218,8 @@ namespace ignite
             JniMethod M_PLATFORM_PROCESSOR_GET_CACHE_NAMES = JniMethod("getCacheNames", "(J)V", false);
             JniMethod M_PLATFORM_PROCESSOR_LOGGER_IS_LEVEL_ENABLED = JniMethod("loggerIsLevelEnabled", "(I)Z", false);
             JniMethod M_PLATFORM_PROCESSOR_LOGGER_LOG = JniMethod("loggerLog", "(ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;)V", false);
+            JniMethod M_PLATFORM_PROCESSOR_REGISTER_TYPE = JniMethod("registerType", "(ILjava/lang/String;)Z", false);
+            JniMethod M_PLATFORM_PROCESSOR_GET_CLASS = JniMethod("getClass", "(I)Ljava/lang/String;", false);
 
             const char* C_PLATFORM_TARGET = "org/apache/ignite/internal/processors/platform/PlatformTarget";
             JniMethod M_PLATFORM_TARGET_IN_LONG_OUT_LONG = JniMethod("inLongOutLong", "(IJ)J", false);
@@ -536,6 +538,8 @@ namespace ignite
 				m_PlatformProcessor_getCacheNames = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_GET_CACHE_NAMES);
 				m_PlatformProcessor_loggerIsLevelEnabled = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_LOGGER_IS_LEVEL_ENABLED);
 				m_PlatformProcessor_loggerLog = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_LOGGER_LOG);
+				m_PlatformProcessor_registerType = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_REGISTER_TYPE);
+				m_PlatformProcessor_getClass = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_GET_CLASS);
 
                 c_PlatformTarget = FindClass(env, C_PLATFORM_TARGET);
                 m_PlatformTarget_inLongOutLong = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_IN_LONG_OUT_LONG);
@@ -1341,6 +1345,36 @@ namespace ignite
                     env->DeleteLocalRef(errorInfo0);
 
                 ExceptionCheck(env);
+            }
+
+            bool JniContext::ProcessorRegisterType(jobject obj, int id, char* name)
+            {
+                JNIEnv* env = Attach();
+
+                jstring name0 = env->NewStringUTF(name);
+
+                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformProcessor_registerType, id, name0);
+
+                env->DeleteLocalRef(name0);
+
+                ExceptionCheck(env);
+
+                return res != 0;
+            }
+
+            char* JniContext::ProcessorGetClass(jobject obj, int id, int* resLen)
+            {
+                JNIEnv* env = Attach();
+
+                jstring res = static_cast<jstring>(env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_getClass, id));
+
+                ExceptionCheck(env);
+
+                char* resChars = StringToChars(env, res, resLen);
+
+                env->DeleteLocalRef(res);
+
+                return resChars;
             }
 
             long long JniContext::TargetInStreamOutLong(jobject obj, int opType, long long memPtr, JniErrorInfo* err) {

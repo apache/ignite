@@ -23,7 +23,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
     using NUnit.Framework;
 
@@ -102,14 +104,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             throw new Exception("Expected exception in ExceptionalEntryFilter");
         }
-    }
-
-    /// <summary>
-    /// Filter that can't be serialized.
-    /// </summary>
-    public class InvalidCacheEntryFilter : CacheEntryFilter
-    {
-        // No-op.
     }
 
     /// <summary>
@@ -206,9 +200,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             for (int i = 105; i < 110; i++)
                 Assert.AreEqual("val_" + i, cache.Get(i));
-
-            // Test invalid filter
-            Assert.Throws<BinaryObjectException>(() => cache.LoadCache(new InvalidCacheEntryFilter(), 100, 10));
 
             // Test exception in filter
             Assert.Throws<CacheStoreException>(() => cache.LoadCache(new ExceptionalEntryFilter(), 100, 10));
@@ -529,6 +520,25 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         }
 
         /// <summary>
+        /// Tests the non serializable store factory.
+        /// </summary>
+        [Test]
+        public void TestNonSerializableStoreFactory()
+        {
+            var ignite = Ignition.GetIgnite(GridName);
+
+            var ex = Assert.Throws<IgniteException>(
+                () => ignite.CreateCache<int, string>(new CacheConfiguration("TestNonSerializableStoreFactory")
+                {
+                    CacheStoreFactory = new NonSerializableStoreFactory()
+                }));
+
+            Assert.AreEqual("CacheConfiguration.CacheStoreFactory should be serializable: " +
+                            "Apache.Ignite.Core.Tests.Cache.Store.CacheStoreTest+NonSerializableStoreFactory",
+                            ex.Message);
+        }
+
+        /// <summary>
         /// Get's grid name for this test.
         /// </summary>
         /// <value>Grid name.</value>
@@ -577,6 +587,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             Assert.IsNotNull(customErr);
 
             Assert.AreEqual(customErr.Message, customErr.Details);
+        }
+
+        private class NonSerializableStoreFactory : IFactory<ICacheStore>
+        {
+            public ICacheStore CreateInstance()
+            {
+                return null;
+            }
         }
     }
 

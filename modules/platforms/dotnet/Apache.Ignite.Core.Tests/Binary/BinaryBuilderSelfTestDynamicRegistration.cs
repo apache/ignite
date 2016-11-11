@@ -15,24 +15,26 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.ExamplesDll.Datagrid
+namespace Apache.Ignite.Core.Tests.Binary
 {
-    using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.ExamplesDll.Binary;
+    using System.Collections.Generic;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
-    /// Example cache entry predicate.
+    /// Binary builder self test with dynamic type registration.
     /// </summary>
-    public class EmployeeStorePredicate : ICacheEntryFilter<int, Employee>
+    public class BinaryBuilderSelfTestDynamicRegistration : BinaryBuilderSelfTest
     {
-        /// <summary>
-        /// Returns a value indicating whether provided cache entry satisfies this predicate.
-        /// </summary>
-        /// <param name="entry">Cache entry.</param>
-        /// <returns>Value indicating whether provided cache entry satisfies this predicate.</returns>
-        public bool Invoke(ICacheEntry<int, Employee> entry)
+        /** <inheritdoc /> */
+        protected override ICollection<BinaryTypeConfiguration> GetTypeConfigurations()
         {
-            return entry.Key == 1;
+            // The only type to be registered is TestEnumRegistered,
+            // because unregistered enums are handled differently.
+
+            return new []
+            {
+                new BinaryTypeConfiguration(typeof(TestEnumRegistered))
+            };
         }
     }
 }

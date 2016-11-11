@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary.Structure;
 
@@ -51,10 +52,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="cfg">Configuration.</param>
         /// <param name="id">Type ID.</param>
-        public BinarySurrogateTypeDescriptor(BinaryConfiguration cfg, int id)
+        /// <param name="typeName">Name of the type.</param>
+        public BinarySurrogateTypeDescriptor(BinaryConfiguration cfg, int id, string typeName)
         {
+            Debug.Assert(cfg != null);
+
             _cfg = cfg;
             _id = id;
+            _name = typeName;
         }
 
         /// <summary>
@@ -163,6 +168,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         public BinaryObjectSchema Schema
         {
             get { return _schema; }
+        }
+
+        /** <inheritDoc /> */
+        public bool IsRegistered
+        {
+            get { return false; }
         }
     }
 }

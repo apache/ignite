@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     public class BinaryCompactFooterInteropTest
     {
         /** */
-        private const string PlatformSqlQueryTask = "org.apache.ignite.platform.PlatformSqlQueryTask";
+        public const string PlatformSqlQueryTask = "org.apache.ignite.platform.PlatformSqlQueryTask";
 
         /** */
         private IIgnite _grid;

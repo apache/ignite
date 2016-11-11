@@ -52,6 +52,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Type: object. */
         public const byte TypeObject = HdrFull;
 
+        /** Type: unregistered. */
+        public const byte TypeUnregistered = 0;
+
         /** Type: unsigned byte. */
         public const byte TypeByte = 1;
 
@@ -1525,7 +1528,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             if (Enum.GetUnderlyingType(enumType) == TypInt)
             {
-                var desc = marshaller.GetDescriptor(enumType);
+                var desc = marshaller.GetDescriptor(enumType, false);
 
                 return desc == null ? ObjTypeId : desc.TypeId;
             }
@@ -1732,7 +1735,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         public static int FieldId(int typeId, string fieldName, IBinaryNameMapper nameMapper,
             IBinaryIdMapper idMapper)
         {
-            Debug.Assert(typeId != 0);
             Debug.Assert(fieldName != null);
 
             fieldName = ConvertFieldName(fieldName, nameMapper);

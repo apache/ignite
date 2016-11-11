@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Examples
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using Apache.Ignite.Core.Tests.Process;
     using Apache.Ignite.ExamplesDll.Compute;
     using NUnit.Framework;
@@ -148,7 +149,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         // ReSharper disable once MemberCanBeMadeStatic.Global
         public IEnumerable<Example> TestCases
         {
-            get { return Example.GetExamples(); }
+            get { return Example.GetExamples().OrderBy(x => x.Name); }
         }
     }
 }

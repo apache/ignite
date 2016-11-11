@@ -56,36 +56,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             {
                 BinaryConfiguration = new BinaryConfiguration
                 {
-                    TypeConfigurations = new List<BinaryTypeConfiguration>
-                    {
-                        new BinaryTypeConfiguration(typeof (Empty)),
-                        new BinaryTypeConfiguration(typeof (Primitives)),
-                        new BinaryTypeConfiguration(typeof (PrimitiveArrays)),
-                        new BinaryTypeConfiguration(typeof (StringDateGuidEnum)),
-                        new BinaryTypeConfiguration(typeof (WithRaw)),
-                        new BinaryTypeConfiguration(typeof (MetaOverwrite)),
-                        new BinaryTypeConfiguration(typeof (NestedOuter)),
-                        new BinaryTypeConfiguration(typeof (NestedInner)),
-                        new BinaryTypeConfiguration(typeof (MigrationOuter)),
-                        new BinaryTypeConfiguration(typeof (MigrationInner)),
-                        new BinaryTypeConfiguration(typeof (InversionOuter)),
-                        new BinaryTypeConfiguration(typeof (InversionInner)),
-                        new BinaryTypeConfiguration(typeof (CompositeOuter)),
-                        new BinaryTypeConfiguration(typeof (CompositeInner)),
-                        new BinaryTypeConfiguration(typeof (CompositeArray)),
-                        new BinaryTypeConfiguration(typeof (CompositeContainer)),
-                        new BinaryTypeConfiguration(typeof (ToBinary)),
-                        new BinaryTypeConfiguration(typeof (Remove)),
-                        new BinaryTypeConfiguration(typeof (RemoveInner)),
-                        new BinaryTypeConfiguration(typeof (BuilderInBuilderOuter)),
-                        new BinaryTypeConfiguration(typeof (BuilderInBuilderInner)),
-                        new BinaryTypeConfiguration(typeof (BuilderCollection)),
-                        new BinaryTypeConfiguration(typeof (BuilderCollectionItem)),
-                        new BinaryTypeConfiguration(typeof (DecimalHolder)),
-                        new BinaryTypeConfiguration(TypeEmpty),
-                        new BinaryTypeConfiguration(typeof(TestEnumRegistered)),
-                        new BinaryTypeConfiguration(typeof(NameMapperTestType))
-                    },
+                    TypeConfigurations = GetTypeConfigurations(),
                     DefaultIdMapper = new IdMapper(),
                     DefaultNameMapper = new NameMapper(),
                     CompactFooter = GetCompactFooter()
@@ -95,6 +66,43 @@ namespace Apache.Ignite.Core.Tests.Binary
             _grid = (Ignite) Ignition.Start(cfg);
 
             _marsh = _grid.Marshaller;
+        }
+
+        /// <summary>
+        /// Gets the type configurations.
+        /// </summary>
+        protected virtual ICollection<BinaryTypeConfiguration> GetTypeConfigurations()
+        {
+            return new []
+            {
+                new BinaryTypeConfiguration(typeof (Empty)),
+                new BinaryTypeConfiguration(typeof (Primitives)),
+                new BinaryTypeConfiguration(typeof (PrimitiveArrays)),
+                new BinaryTypeConfiguration(typeof (StringDateGuidEnum)),
+                new BinaryTypeConfiguration(typeof (WithRaw)),
+                new BinaryTypeConfiguration(typeof (MetaOverwrite)),
+                new BinaryTypeConfiguration(typeof (NestedOuter)),
+                new BinaryTypeConfiguration(typeof (NestedInner)),
+                new BinaryTypeConfiguration(typeof (MigrationOuter)),
+                new BinaryTypeConfiguration(typeof (MigrationInner)),
+                new BinaryTypeConfiguration(typeof (InversionOuter)),
+                new BinaryTypeConfiguration(typeof (InversionInner)),
+                new BinaryTypeConfiguration(typeof (CompositeOuter)),
+                new BinaryTypeConfiguration(typeof (CompositeInner)),
+                new BinaryTypeConfiguration(typeof (CompositeArray)),
+                new BinaryTypeConfiguration(typeof (CompositeContainer)),
+                new BinaryTypeConfiguration(typeof (ToBinary)),
+                new BinaryTypeConfiguration(typeof (Remove)),
+                new BinaryTypeConfiguration(typeof (RemoveInner)),
+                new BinaryTypeConfiguration(typeof (BuilderInBuilderOuter)),
+                new BinaryTypeConfiguration(typeof (BuilderInBuilderInner)),
+                new BinaryTypeConfiguration(typeof (BuilderCollection)),
+                new BinaryTypeConfiguration(typeof (BuilderCollectionItem)),
+                new BinaryTypeConfiguration(typeof (DecimalHolder)),
+                new BinaryTypeConfiguration(TypeEmpty),
+                new BinaryTypeConfiguration(typeof(TestEnumRegistered)),
+                new BinaryTypeConfiguration(typeof(NameMapperTestType))
+            };
         }
 
         /// <summary>
