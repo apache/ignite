@@ -773,7 +773,20 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             cacheCtx.topology().beforeExchange(this, !centralizedAff);
         }
 
-        cctx.database().beforeExchange(this);
+        CacheState curState = cctx.cache().globalState();
+
+        CacheState newState = null;
+
+        if (!F.isEmpty(reqs)) {
+            for (DynamicCacheChangeRequest req : reqs) {
+                if (req.globalStateChange())
+                    newState = req.state();
+            }
+        }
+
+//        if (curState == CacheState.ACTIVE || newState == CacheState.ACTIVE)
+//            cctx.database().beforeExchange(this, newState == CacheState.ACTIVE);
+            cctx.database().beforeExchange(this, false);
 
         // If a backup request, synchronously wait for backup start.
         if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
@@ -795,12 +808,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
         }
 
-        if (!F.isEmpty(reqs)) {
-            for (DynamicCacheChangeRequest req : reqs) {
-                if (req.globalStateChange())
-                    cctx.cache().globalState(req.state());
-            }
-        }
+        if (newState != null && curState != newState)
+            cctx.cache().globalState(newState);
 
         if (crd.isLocal()) {
             if (remaining.isEmpty())
