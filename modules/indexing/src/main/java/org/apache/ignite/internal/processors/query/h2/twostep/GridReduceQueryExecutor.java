@@ -1289,7 +1289,7 @@ public class GridReduceQueryExecutor {
          * @throws IgniteCheckedException If failed.
          */
         protected Iter(ResultSet data) throws IgniteCheckedException {
-            super(data, true);
+            super(data, true, false);
         }
 
         /** {@inheritDoc} */

@@ -2230,7 +2230,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * @throws IgniteCheckedException If failed.
          */
         protected FieldsIterator(ResultSet data) throws IgniteCheckedException {
-            super(data, false);
+            super(data, false, true);
         }
 
         /** {@inheritDoc} */
@@ -2255,7 +2255,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * @throws IgniteCheckedException If failed.
          */
         protected KeyValIterator(ResultSet data) throws IgniteCheckedException {
-            super(data, false);
+            super(data, false, true);
         }
 
         /** {@inheritDoc} */
