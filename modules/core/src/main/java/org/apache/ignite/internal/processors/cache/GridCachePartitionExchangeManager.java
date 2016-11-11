@@ -121,7 +121,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private static final int EXCHANGE_HISTORY_SIZE = 1000;
 
     /** */
-    private final boolean skipFirstExchangeMsg = getBoolean("SKIP_FIRST_EXCHANGE_MSG", true);
+    private final boolean skipFirstExchangeMsg = getBoolean("SKIP_FIRST_EXCHANGE_MSG", false);
 
     /** Atomic reference for pending timeout object. */
     private AtomicReference<ResendTimeoutObject> pendingResend = new AtomicReference<>();
