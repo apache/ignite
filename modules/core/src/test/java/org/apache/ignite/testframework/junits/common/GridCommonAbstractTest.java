@@ -451,7 +451,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
             if (startTime != -1) {
                 if (startTime != g0.context().discovery().gridStartTime())
-                    fail("Found nodes from different clusters [allNodes=" + names + ']');
+                    fail("Found nodes from different clusters, probable some test does not stop nodes " +
+                        "[allNodes=" + names + ']');
             }
             else
                 startTime = g0.context().discovery().gridStartTime();
