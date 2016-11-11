@@ -1107,6 +1107,43 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
+                <xs:element name="swapSpaceSpi" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Swap space SPI.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="type" type="xs:string" use="required">
+                            <xs:annotation>
+                                <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="baseDirectory" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Base directory.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="maximumSparsity" type="xs:decimal">
+                            <xs:annotation>
+                                <xs:documentation>Maximum sparsity. This property defines maximum acceptable wasted file space to whole file size ratio. When this ratio becomes higher than specified number compacting thread starts working.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="maximumWriteQueueSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Maximum size of the write queue in bytes. If there are more values are waiting to be written to disk then specified size, SPI will block on write operation.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="readStripesNumber" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Read stripes number. Defines number of file channels to be used concurrently. Defaults to Environment.ProcessorCount.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="writeBufferSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of the write buffer, in bytes. Write to disk occurs only when this buffer is full.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
             </xs:all>
             <xs:attribute name="gridName" type="xs:string">
                 <xs:annotation>

@@ -67,6 +67,7 @@
     <Compile Include="Cache\Affinity\AffinityKeyTest.cs" />
     <Compile Include="Cache\Affinity\AffinityTopologyVersionTest.cs" />
     <Compile Include="Cache\CacheResultTest.cs" />
+    <Compile Include="Cache\CacheSwapSpaceTest.cs" />
     <Compile Include="Cache\Store\CacheStoreAdapterTest.cs" />
     <Compile Include="Collections\MultiValueDictionaryTest.cs" />
     <Compile Include="Collections\ReadOnlyCollectionTest.cs" />

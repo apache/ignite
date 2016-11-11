@@ -45,6 +45,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.SwapSpace.File;
     using Apache.Ignite.Core.Tests.Binary;
     using Apache.Ignite.Core.Transactions;
     using Apache.Ignite.NLog;
@@ -113,6 +114,7 @@ namespace Apache.Ignite.Core.Tests
                             <atomicConfiguration backups='2' cacheMode='Local' atomicSequenceReserveSize='250' />
                             <transactionConfiguration defaultTransactionConcurrency='Optimistic' defaultTransactionIsolation='RepeatableRead' defaultTimeout='0:1:2' pessimisticTransactionLogSize='15' pessimisticTransactionLogLinger='0:0:33' />
                             <logger type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+TestLogger, Apache.Ignite.Core.Tests' />
+                            <swapSpaceSpi type='FileSwapSpaceSpi' baseDirectory='abcd' maximumSparsity='0.7' maximumWriteQueueSize='25' readStripesNumber='36' writeBufferSize='47' />
                         </igniteConfig>";
             var reader = XmlReader.Create(new StringReader(xml));
 
@@ -199,6 +201,14 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(new TimeSpan(0, 1, 2), comm.IdleConnectionTimeout);
 
             Assert.IsInstanceOf<TestLogger>(cfg.Logger);
+
+            var swap = cfg.SwapSpaceSpi as FileSwapSpaceSpi;
+            Assert.IsNotNull(swap);
+            Assert.AreEqual("abcd", swap.BaseDirectory);
+            Assert.AreEqual(0.7f, swap.MaximumSparsity);
+            Assert.AreEqual(25, swap.MaximumWriteQueueSize);
+            Assert.AreEqual(36, swap.ReadStripesNumber);
+            Assert.AreEqual(47, swap.WriteBufferSize);
         }
 
         /// <summary>
@@ -599,7 +609,15 @@ namespace Apache.Ignite.Core.Tests
                 IsLateAffinityAssignment = false,
                 SpringConfigUrl = "test",
                 Logger = new IgniteNLogLogger(),
-                FailureDetectionTimeout = TimeSpan.FromMinutes(2)
+                FailureDetectionTimeout = TimeSpan.FromMinutes(2),
+                SwapSpaceSpi = new FileSwapSpaceSpi
+                {
+                    MaximumSparsity = 0.1f,
+                    MaximumWriteQueueSize = 55,
+                    WriteBufferSize = 66,
+                    ReadStripesNumber = 77,
+                    BaseDirectory = "test"
+                }
             };
         }
 
