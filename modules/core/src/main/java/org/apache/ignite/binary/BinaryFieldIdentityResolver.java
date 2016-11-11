@@ -27,8 +27,11 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import java.util.HashMap;
 
 /**
- * Identity implementation which use the list of provided fields to calculate the hash code and to perform equality
- * checks.
+ * Identity resolver implementation which use the list of provided fields to calculate the hash code and to perform
+ * equality checks.
+ * <p>
+ * Standard polynomial function with multiplier {@code 31} is used to calculate hash code. For example, for three
+ * fields {@code [a, b, c]}it would be {@code hash = 31 * (31 * a + b) + c}. Order of fields is important.
  */
 public class BinaryFieldIdentityResolver extends BinaryAbstractIdentityResolver {
     /** Mutex for synchronization. */

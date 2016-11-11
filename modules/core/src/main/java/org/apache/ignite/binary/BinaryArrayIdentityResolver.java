@@ -17,6 +17,8 @@
 
 package org.apache.ignite.binary;
 
+import java.util.Arrays;
+
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryObjectExImpl;
@@ -24,7 +26,9 @@ import org.apache.ignite.internal.binary.BinaryPrimitives;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * // TODO
+ * Identity resolver implementation which compares raw array content of the binary object.
+ * <p>
+ * Hash code is calculated in the same way as {@link Arrays#hashCode(byte[])} does.
  */
 public class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver {
     /** Singleton instance */
