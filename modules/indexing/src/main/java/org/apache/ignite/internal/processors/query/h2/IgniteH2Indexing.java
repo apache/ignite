@@ -1008,7 +1008,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (stmt instanceof GridSqlUpdate)
                     return doUpdate(cctx, (GridSqlUpdate) stmt, cur, pageSize);
                 else
-                    return doDelete(cctx, (GridSqlDelete) stmt, cur);
+                    return doDelete(cctx, (GridSqlDelete) stmt, cur, pageSize);
             }
         }
         finally {
@@ -1353,21 +1353,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         else {
             int resCnt = 0;
             Map<Object, Object> rows = new LinkedHashMap<>();
-            for (List<?> row : src) {
+
+            for (Iterator<List<?>> it = src.iterator(); it.hasNext();) {
+                List<?> row = it.next();
+
                 IgniteBiTuple t = rowToKeyValue(cctx, desc.type(), keySupplier, valSupplier, keyColIdx, valColIdx, cols,
                     row.toArray());
                 rows.put(t.getKey(), t.getValue());
 
-                if (pageSize > 0 && rows.size() == pageSize) {
+                if ((pageSize > 0 && rows.size() == pageSize) || !it.hasNext()) {
                     cctx.cache().putAll(rows);
                     resCnt += pageSize;
-                    rows.clear();
-                }
-            }
 
-            if (!rows.isEmpty()) {
-                cctx.cache().putAll(rows);
-                resCnt += rows.size();
+                    if (it.hasNext())
+                        rows.clear();
+                }
             }
 
             return resCnt;
@@ -2145,7 +2145,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         IgniteBiTuple<Integer, Object[]> updateRes = null;
 
         if (twoStepQry.initialStatement() instanceof GridSqlDelete)
-            updateRes = doDelete(cctx, (GridSqlDelete) twoStepQry.initialStatement(), cursor);
+            updateRes = doDelete(cctx, (GridSqlDelete) twoStepQry.initialStatement(), cursor, qry.getPageSize());
 
         if (twoStepQry.initialStatement() instanceof GridSqlUpdate)
             updateRes = doUpdate(cctx, (GridSqlUpdate) twoStepQry.initialStatement(), cursor, qry.getPageSize());
@@ -2217,30 +2217,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param cctx Cache context.
      * @param del DELETE statement.
      * @param cursor SELECT results.
+     * @param pageSize Page size for streaming.
      * @return Results of DELETE (number of items affected AND keys that failed to be updated).
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "ConstantConditions"})
     private IgniteBiTuple<Integer, Object[]> doDelete(GridCacheContext cctx, GridSqlDelete del,
-        QueryCursorImpl<List<?>> cursor)
-        throws IgniteCheckedException {
+        QueryCursorImpl<List<?>> cursor, int pageSize) throws IgniteCheckedException {
         GridSqlTable tbl = gridTableForElement(del.from());
 
         // With DELETE, we have only two columns - key and value.
         int res = 0;
-
-        Iterator<List<?>> it = cursor.iterator();
-        Map<Object, EntryProcessor<Object, Object, Boolean>> m = new HashMap<>();
-
-        while (it.hasNext()) {
-            List<?> e = it.next();
-            if (e.size() != 2) {
-                U.warn(log, "Invalid row size on DELETE - expected 2, got " + e.size());
-                continue;
-            }
-
-            m.put(e.get(0), new ModifyingEntryProcessor(e.get(1), RMV));
-            res++;
-        }
 
         // Switch to cache specified in query.
         cctx = cctx.shared().cacheContext(CU.cacheId(tbl.schema()));
@@ -2261,37 +2247,66 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 cctx.operationContextPerCall(newOpCtx);
         }
 
-        Map<Object, EntryProcessorResult<Boolean>> delRes;
+        // Keys that failed to DELETE due to concurrent updates.
+        List<Object> failedKeys = new ArrayList<>();
+
+        SQLException resEx = null;
 
         try {
-            delRes = cctx.cache().invokeAll(m);
+            Iterator<List<?>> it = cursor.iterator();
+            Map<Object, EntryProcessor<Object, Object, Boolean>> rows = new LinkedHashMap<>();
+
+            while (it.hasNext()) {
+                List<?> e = it.next();
+                if (e.size() != 2) {
+                    U.warn(log, "Invalid row size on DELETE - expected 2, got " + e.size());
+                    continue;
+                }
+
+                rows.put(e.get(0), new ModifyingEntryProcessor(e.get(1), RMV));
+
+                if ((pageSize > 0 && rows.size() == pageSize) || (!it.hasNext())) {
+                    GridTuple3<Integer, Object[], SQLException> batchRes = processBatch(cctx, rows);
+
+                    res += batchRes.get1();
+
+                    failedKeys.addAll(F.asList(batchRes.get2()));
+
+                    if (batchRes.get3() != null) {
+                        if (resEx == null)
+                            resEx = batchRes.get3();
+                        else
+                            resEx.setNextException(batchRes.get3());
+                    }
+
+                    if (it.hasNext())
+                        rows.clear(); // No need to clear after the last batch.
+                }
+            }
+
+            if (resEx != null) {
+                if (!F.isEmpty(failedKeys)) {
+                    // Don't go for a re-run if processing of some keys yielded exceptions and report keys that
+                    // had been modified concurrently right away.
+                    String msg = "Failed to DELETE some keys because they had been modified concurrently " +
+                        "[keys=" + failedKeys + ']';
+
+                    SQLException conEx = new SQLException(msg, ErrorCode.getState(ErrorCode.CONCURRENT_UPDATE_1),
+                        ErrorCode.CONCURRENT_UPDATE_1);
+
+                    conEx.setNextException(resEx);
+
+                    resEx = conEx;
+                }
+
+                throw new IgniteSQLException(resEx);
+            }
         }
         finally {
             cctx.operationContextPerCall(opCtx);
         }
 
-        if (F.isEmpty(delRes))
-            return new IgniteBiTuple<>(res, X.EMPTY_OBJECT_ARRAY);
-
-        SQLException resEx;
-
-        GridTuple3<Object[], SQLException, Integer> splitRes = splitErrors(delRes);
-
-        if (splitRes.get2() == null)
-            return new IgniteBiTuple<>(res, splitRes.get1());
-
-        // Everything left in errKeys is not erroneous keys, but duplicate keys
-        if (!F.isEmpty(splitRes.get1())) {
-            resEx = new SQLException("Failed to UPDATE some keys because they were modified concurrently " +
-                "[keys=" + Arrays.deepToString(splitRes.get1()) + ']',
-                ErrorCode.getState(ErrorCode.CONCURRENT_UPDATE_1), ErrorCode.CONCURRENT_UPDATE_1);
-
-            resEx.setNextException(splitRes.get2());
-        }
-        else
-            resEx = splitRes.get2();
-
-        throw new IgniteSQLException(resEx);
+        return new IgniteBiTuple<>(res, failedKeys.toArray());
     }
 
     /**
