@@ -102,6 +102,7 @@ import org.jsr166.ConcurrentLinkedDeque8;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PRELOAD_RESEND_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -118,6 +119,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.preloa
 public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     /** Exchange history size. */
     private static final int EXCHANGE_HISTORY_SIZE = 1000;
+
+    /** */
+    private final boolean skipFirstExchangeMsg = getBoolean("SKIP_FIRST_EXCHANGE_MSG", true);
 
     /** Atomic reference for pending timeout object. */
     private AtomicReference<ResendTimeoutObject> pendingResend = new AtomicReference<>();
@@ -300,9 +304,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
     };
 
+    public boolean skipFirstExchangeMessage() {
+        return skipFirstExchangeMsg;
+    }
+
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
+
+        if (skipFirstExchangeMsg)
+            cctx.kernalContext().addNodeAttribute("SKIP_FIRST_EXCHANGE_MSG", true);
 
         exchWorker = new ExchangeWorker();
 

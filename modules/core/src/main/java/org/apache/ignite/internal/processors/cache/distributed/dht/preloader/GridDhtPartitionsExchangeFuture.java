@@ -81,6 +81,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.*;
 
 /**
  * Future for exchanging partition maps.
@@ -90,9 +91,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** */
     public static final int DUMP_PENDING_OBJECTS_THRESHOLD =
         IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_DUMP_PENDING_OBJECTS_THRESHOLD, 10);
-
-    /** */
-    private static final boolean SKIP_FIRST_EXCHANGE_MSG = false;
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -742,31 +740,40 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
 
         if (crd.isLocal()) {
-            if (SKIP_FIRST_EXCHANGE_MSG && discoEvt.type() == EVT_NODE_JOINED && !discoEvt.eventNode().isLocal()) {
-                ClusterNode node = discoEvt.eventNode();
+            ClusterNode node = discoEvt.eventNode();
 
+            if (discoEvt.type() == EVT_NODE_JOINED && !discoEvt.eventNode().isLocal() && Boolean.TRUE.equals(node.attribute("SKIP_FIRST_EXCHANGE_MSG"))) {
                 assert !CU.clientNode(node) : discoEvt;
                 assert srvNodes.contains(node);
 
                 boolean rmv = remaining.remove(node.id());
                 assert rmv;
 
-                List<String> caches = new ArrayList<>();
+                Collection<String> caches = cctx.discovery().nodeCaches(topologyVersion(), node);
 
-                GridDhtPartitionsSingleMessage msg = new GridDhtPartitionsSingleMessage(exchangeId(),
-                    false,
-                    null,
-                    false);
+                if (!caches.isEmpty()) {
+                    GridDhtPartitionsSingleMessage msg = new GridDhtPartitionsSingleMessage(exchangeId(),
+                        false,
+                        null,
+                        false);
 
-                for (String cache : caches) {
-                    Map<Integer, GridDhtPartitionState> m = new HashMap<>();
+                    for (String cache : caches) {
+                        Map<Integer, GridDhtPartitionState> m = new HashMap<>();
 
-                    GridDhtPartitionMap2 partMap = new GridDhtPartitionMap2(node.id(), 0, topologyVersion(), m, true);
+                        GridDhtPartitionMap2 partMap = new GridDhtPartitionMap2(node.id(), 1, topologyVersion(), m, true);
 
-                    msg.addLocalPartitionMap(CU.cacheId(cache), partMap, null);
+                        GridAffinityAssignmentCache assign = cctx.affinity().cacheAssignment(CU.cacheId(cache));
+
+                        for (Integer part : assign.primaryPartitions(node.id(), topologyVersion()))
+                            partMap.put(part, MOVING);
+                        for (Integer part : assign.backupPartitions(node.id(), topologyVersion()))
+                            partMap.put(part, MOVING);
+
+                        msg.addLocalPartitionMap(CU.cacheId(cache), partMap, null);
+                    }
+
+                    updatePartitionSingleMap(msg);
                 }
-
-                updatePartitionSingleMap(msg);
             }
 
             if (remaining.isEmpty())
@@ -775,11 +782,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         else {
             boolean skipSnd = false;
 
-            if (SKIP_FIRST_EXCHANGE_MSG && discoEvt.type() == EVT_NODE_JOINED && discoEvt.eventNode().isLocal())
+            if (cctx.exchange().skipFirstExchangeMessage() && discoEvt.type() == EVT_NODE_JOINED && discoEvt.eventNode().isLocal())
                 skipSnd = true;
 
             if (!skipSnd)
                 sendPartitions(crd);
+            else
+                log.info("Skip first exchange message [topVer=" + topologyVersion() + ']');
         }
 
         initDone();

@@ -1621,14 +1621,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
-     * Gets cache remote nodes for cache with given name.
-     *
-     * @param cacheName Cache name.
      * @param topVer Topology version.
-     * @return Collection of cache nodes.
+     * @param node Node.
+     * @return DHT caches started on given node.
      */
-    public Collection<ClusterNode> remoteCacheNodes(@Nullable String cacheName, AffinityTopologyVersion topVer) {
-        return resolveDiscoCache(cacheName, topVer).remoteCacheNodes(cacheName, topVer.topologyVersion());
+    public Collection<String> nodeCaches(AffinityTopologyVersion topVer, ClusterNode node) {
+        return resolveDiscoCache(null, topVer).nodeCaches(node);
     }
 
     /**
@@ -2743,7 +2741,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         Collection<String> nodeCaches(ClusterNode node) {
-            return null;
+            List<String> res = new ArrayList<>();
+
+            for (Map.Entry<String, Collection<ClusterNode>> e : affCacheNodes.entrySet()) {
+                if (F.contains(e.getValue(), node))
+                    res.add(e.getKey());
+            }
+
+            return res;
         }
 
         /**
@@ -2821,17 +2826,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          */
         Collection<ClusterNode> cacheNodes(@Nullable String cacheName, final long topVer) {
             return filter(topVer, allCacheNodes.get(cacheName));
-        }
-
-        /**
-         * Gets all remote nodes that have cache with given name.
-         *
-         * @param cacheName Cache name.
-         * @param topVer Topology version.
-         * @return Collection of nodes.
-         */
-        Collection<ClusterNode> remoteCacheNodes(@Nullable String cacheName, final long topVer) {
-            return filter(topVer, rmtCacheNodes.get(cacheName));
         }
 
         /**
