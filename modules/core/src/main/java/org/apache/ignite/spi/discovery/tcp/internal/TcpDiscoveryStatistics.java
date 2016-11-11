@@ -628,6 +628,10 @@ public class TcpDiscoveryStatistics {
         return sockReadersCreated;
     }
 
+    public synchronized int socketReaders() {
+        return sockReadersCreated - sockReadersRmv;
+    }
+
     /**
      * Gets socket readers removed count.
      *
@@ -687,6 +691,7 @@ public class TcpDiscoveryStatistics {
 
     /** {@inheritDoc} */
     @Override public synchronized String toString() {
-        return "Stats [created=" + sockReadersCreated + ", rmvd=" + sockReadersRmv + ']';//S.toString(TcpDiscoveryStatistics.class, this);
+        //return "Stats [created=" + sockReadersCreated + ", rmvd=" + sockReadersRmv + ']';
+        return S.toString(TcpDiscoveryStatistics.class, this);
     }
 }
