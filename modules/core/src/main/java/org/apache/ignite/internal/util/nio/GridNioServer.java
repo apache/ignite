@@ -973,8 +973,15 @@ public class GridNioServer<T> {
                         if (ses.procWrite.get()) {
                             ses.procWrite.set(false);
 
-                            if (ses.writeQueue().isEmpty())
-                                key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+                            if (ses.writeQueue().isEmpty()) {
+                                if ((key.interestOps() & SelectionKey.OP_WRITE) != 0) {
+                                    key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+
+                                    writeSesCnt--;
+
+                                    assert writeSesCnt >= 0;
+                                }
+                            }
                             else
                                 ses.procWrite.set(true);
                         }
@@ -1020,6 +1027,11 @@ public class GridNioServer<T> {
                     req.onMessageWritten();
                 }
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ByteBufferNioClientWorker.class, this, super.toString());
         }
     }
 
@@ -1220,11 +1232,18 @@ public class GridNioServer<T> {
                             req = ses.pollFuture();
 
                             if (req == null && buf.position() == 0) {
-                                if (ses.procWrite.get()) {
+                                if (!this.writer || ses.procWrite.get()) {
                                     ses.procWrite.set(false);
 
-                                    if (ses.writeQueue().isEmpty())
-                                        key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+                                    if (ses.writeQueue().isEmpty()) {
+                                        if ((key.interestOps() & SelectionKey.OP_WRITE) != 0) {
+                                            key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+
+                                            writeSesCnt--;
+
+                                            assert writeSesCnt >= 0 : writeSesCnt;
+                                        }
+                                    }
                                     else
                                         ses.procWrite.set(true);
                                 }
@@ -1958,7 +1977,7 @@ public class GridNioServer<T> {
         /**
          * @param ses Session.
          */
-        final void registerWrite(GridSelectorNioSessionImpl ses) {
+        public final void registerWrite(GridSelectorNioSessionImpl ses) {
             SelectionKey key = ses.key();
 
             if (key.isValid()) {
@@ -2043,7 +2062,6 @@ public class GridNioServer<T> {
                         break;
                     }
                 }
-
 
                 sb.append("]").append(U.nl());
             }
@@ -3106,10 +3124,7 @@ public class GridNioServer<T> {
 
                     queue.offer((ByteBuffer)msg);
 
-                    SelectionKey key = ((GridSelectorNioSessionImpl)ses).key();
-
-                    if (key.isValid())
-                        key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
+                    ((GridSelectorNioSessionImpl)ses).worker().registerWrite((GridSelectorNioSessionImpl)ses);
 
                     return null;
                 }
