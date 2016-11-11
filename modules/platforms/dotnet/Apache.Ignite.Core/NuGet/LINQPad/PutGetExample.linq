@@ -39,7 +39,7 @@ void Main()
     using (var ignite = Ignition.Start())
     {
         // Create new cache
-        var cache = ignite.CreateCache<int, Organization>("orgs");
+        var cache = ignite.GetOrCreateCache<int, Organization>("orgs");
 
         // Put data entry to cache
         cache.Put(1, new Organization {Name = "Apache", Type="Private"});

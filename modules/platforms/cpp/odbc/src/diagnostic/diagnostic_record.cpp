@@ -40,8 +40,14 @@ namespace
     /** SQL state 01S01 constant. */
     const std::string STATE_01S01 = "01S01";
 
+    /** SQL state 22026 constant. */
+    const std::string STATE_22026 = "22026";
+
     /** SQL state 24000 constant. */
     const std::string STATE_24000 = "24000";
+
+    /** SQL state 07009 constant. */
+    const std::string STATE_07009 = "07009";
 
     /** SQL state 08001 constant. */
     const std::string STATE_08001 = "08001";
@@ -57,6 +63,9 @@ namespace
 
     /** SQL state HY001 constant. */
     const std::string STATE_HY001 = "HY001";
+
+    /** SQL state HY009 constant. */
+    const std::string STATE_HY009 = "HY009";
 
     /** SQL state HY010 constant. */
     const std::string STATE_HY010 = "HY010";
@@ -199,8 +208,14 @@ namespace ignite
                     case SQL_STATE_01S01_ERROR_IN_ROW:
                         return STATE_01S01;
 
+                    case SQL_STATE_22026_DATA_LENGTH_MISMATCH:
+                        return STATE_22026;
+
                     case SQL_STATE_24000_INVALID_CURSOR_STATE:
                         return STATE_24000;
+
+                    case SQL_STATE_07009_INVALID_DESCRIPTOR_INDEX:
+                        return STATE_07009;
 
                     case SQL_STATE_08001_CANNOT_CONNECT:
                         return STATE_08001;
@@ -216,6 +231,9 @@ namespace ignite
 
                     case SQL_STATE_HY001_MEMORY_ALLOCATION:
                         return STATE_HY001;
+
+                    case SQL_STATE_HY009_INVALID_USE_OF_NULL_POINTER:
+                        return STATE_HY009;
 
                     case SQL_STATE_HY010_SEQUENCE_ERROR:
                         return STATE_HY010;

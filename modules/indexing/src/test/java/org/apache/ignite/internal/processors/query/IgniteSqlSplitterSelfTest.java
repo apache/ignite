@@ -45,6 +45,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testsuites.IgniteIgnore;
 import org.springframework.util.StringUtils;
 
 /**
@@ -1000,6 +1001,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-1886", forceFailure = true)
     public void testFunctionNpe() {
         IgniteCache<Integer, User> userCache = ignite(0).createCache(
             cacheConfig("UserCache", true, Integer.class, User.class));

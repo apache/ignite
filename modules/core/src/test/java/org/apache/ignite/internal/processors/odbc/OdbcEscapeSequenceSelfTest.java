@@ -528,9 +528,10 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
             "select '{' + {fn func()} + '}' from table;"
         );
 
+        // quoted two single quotes should be interpret as apostrophe
         check(
-            "select '{\\'{fn test()}\\'}' from table;",
-            "select '{\\'{fn test()}\\'}' from table;"
+            "select '{''{fn test()}''}' from table;",
+            "select '{''{fn test()}''}' from table;"
         );
 
         checkFail("'{fn test()}");
@@ -538,6 +539,211 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
         checkFail("{fn func('arg)}");
 
         checkFail("{fn func(arg')}");
+    }
+
+
+    /**
+     * Test escape sequence series.
+     */
+    public void testSimpleCallProc() throws Exception {
+        check(
+            "CALL test()",
+            "{call test()}"
+        );
+
+        check(
+            "select CALL test()",
+            "select {call test()}"
+        );
+
+        check(
+            "select CALL test() from table;",
+            "select {call test()} from table;"
+        );
+
+        check(
+            "CALL func(field1) CALL func(field2)",
+            "{call func(field1)} {call func(field2)}"
+        );
+
+        check(
+            "select CALL func(field1), CALL func(field2)",
+            "select {call func(field1)}, {call func(field2)}"
+        );
+
+        check(
+            "select CALL func(field1), CALL func(field2) from table;",
+            "select {call func(field1)}, {call func(field2)} from table;"
+        );
+    }
+
+    /**
+     * Test simple nested escape sequences. Depth = 2.
+     */
+    public void testNestedCallProc() throws Exception {
+        check(
+            "CALL func1(field1, CALL func2(field2))",
+            "{call func1(field1, {call func2(field2)})}"
+        );
+
+        check(
+            "select CALL func1(field1, CALL func2(field2))",
+            "select {call func1(field1, {call func2(field2)})}"
+        );
+
+        check(
+            "select CALL func1(field1, CALL func2(field2), field3) from SomeTable;",
+            "select {call func1(field1, {call func2(field2)}, field3)} from SomeTable;"
+        );
+    }
+
+    /**
+     * Test nested escape sequences. Depth > 2.
+     */
+    public void testDeepNestedCallProc() {
+        check(
+            "CALL func1(CALL func2(CALL func3(field1)))",
+            "{call func1({call func2({call func3(field1)})})}"
+        );
+
+        check(
+            "CALL func1(CALL func2(CALL func3(CALL func4(field1))))",
+            "{call func1({call func2({call func3({call func4(field1)})})})}"
+        );
+
+        check(
+            "select CALL func1(field1, CALL func2(CALL func3(field2), field3))",
+            "select {call func1(field1, {call func2({call func3(field2)}, field3)})}"
+        );
+
+        check(
+            "select CALL func1(field1, CALL func2(CALL func3(field2), field3)) from SomeTable;",
+            "select {call func1(field1, {call func2({call func3(field2)}, field3)})} from SomeTable;"
+        );
+    }
+
+    /**
+     * Test series of nested escape sequences.
+     */
+    public void testNestedCallProcMixed() {
+        check(
+            "CALL func1(CALL func2(field1), CALL func3(field2))",
+            "{call func1({call func2(field1)}, {call func3(field2)})}"
+        );
+
+        check(
+            "select CALL func1(CALL func2(field1), CALL func3(field2)) from table;",
+            "select {call func1({call func2(field1)}, {call func3(field2)})} from table;"
+        );
+
+        check(
+            "CALL func1(CALL func2(CALL func3(field1))) CALL func1(CALL func2(field2))",
+            "{call func1({call func2({call func3(field1)})})} {call func1({call func2(field2)})}"
+        );
+    }
+
+    /**
+     * Test invalid escape sequence.
+     */
+    public void testFailedOnInvalidCallProcSequence() {
+        checkFail("{callfunc1()}");
+
+        checkFail("select {call func1(field1, {call func2(field2), field3)} from SomeTable;");
+
+        checkFail("select {call func1(field1, call func2(field2)}, field3)} from SomeTable;");
+    }
+
+    /**
+     * Test escape sequences with additional whitespace characters
+     */
+    public void testCallProcEscapeSequenceWithWhitespaces() throws Exception {
+        check("CALL func1()", "{ call func1()}");
+
+        check("CALL func1()", "{    call  func1()}");
+
+        check("CALL func1()", "{ \n call\nfunc1()}");
+
+        checkFail("{ \n func1()}");
+    }
+
+    /**
+     * Test escape sequence series.
+     */
+    public void testLikeEscapeSequence() throws Exception {
+        check(
+            "ESCAPE '\\'",
+            "{'\\'}"
+        );
+
+        check(
+            "ESCAPE '\\'",
+            "{escape '\\'}"
+        );
+
+        check(
+            "ESCAPE ''",
+            "{''}"
+        );
+
+        check(
+            "ESCAPE ''",
+            "{escape ''}"
+        );
+
+        check(
+            "select * from t where value LIKE '\\%AAA%' ESCAPE '\\'",
+            "select * from t where value LIKE '\\%AAA%' {'\\'}"
+        );
+
+        check(
+            "select * from t where value LIKE '\\%AAA%' ESCAPE '\\'",
+            "select * from t where value LIKE '\\%AAA%' {escape '\\'}"
+        );
+
+        check(
+            "select * from t where value LIKE '\\%AAA%' ESCAPE '\\' ORDER BY id;",
+            "select * from t where value LIKE '\\%AAA%' {'\\'} ORDER BY id;"
+        );
+
+        check(
+            "select * from t where value LIKE '\\%AAA%' ESCAPE '\\' ORDER BY id;",
+            "select * from t where value LIKE '\\%AAA%' {escape '\\'} ORDER BY id;"
+        );
+
+        check(
+            "select * from t where value LIKE '\\%AAA''s%' ESCAPE '\\'",
+            "select * from t where value LIKE '\\%AAA''s%' {escape '\\'}"
+        );
+    }
+
+    /**
+     * Test escape sequences with additional whitespace characters
+     */
+    public void testLikeEscapeSequenceWithWhitespaces() throws Exception {
+        check("ESCAPE '\\'", "{ '\\' }");
+        check("ESCAPE '\\'", "{ escape '\\'}");
+
+        check("ESCAPE '\\'", "{   '\\' }");
+        check("ESCAPE '\\'", "{   escape   '\\' }");
+
+        check("ESCAPE '\\'", "{ \n '\\' }");
+        check("ESCAPE '\\'", "{ \n escape\n'\\' }");
+    }
+
+    /**
+     * Test invalid escape sequence.
+     */
+    public void testLikeOnInvalidLikeEscapeSequence() {
+        checkFail("LIKE 'AAA's'");
+        checkFail("LIKE 'AAA\'s'");
+
+        checkFail("LIKE '\\%AAA%' {escape'\\' }");
+
+        checkFail("LIKE '\\%AAA%' {'\\' ORDER BY id");
+        checkFail("LIKE '\\%AAA%' {escape '\\' ORDER BY id;");
+
+        checkFail("LIKE '\\%AAA%' '\\'} ORDER BY id");
+        checkFail("LIKE '\\%AAA%' escape '\\'} ORDER BY id;");
     }
 
     /**

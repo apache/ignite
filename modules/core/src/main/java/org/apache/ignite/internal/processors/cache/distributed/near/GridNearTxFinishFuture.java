@@ -34,6 +34,8 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheReturn;
+import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
@@ -74,6 +76,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
     /** */
     public static final IgniteProductVersion PRIMARY_SYNC_TXS_SINCE = IgniteProductVersion.fromString("1.6.0");
+
+    /** */
+    public static final IgniteProductVersion ACK_DHT_ONE_PHASE_SINCE = IgniteProductVersion.fromString("1.6.8");
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -250,6 +255,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                         found = true;
 
                         assert f.node().id().equals(nodeId);
+
+                        if (res.returnValue() != null)
+                            tx.implicitSingleResult(res.returnValue());
 
                         f.onDhtFinishResponse(res);
                     }
@@ -432,6 +440,50 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         catch (IgniteCheckedException e) {
             onDone(e);
         }
+        finally {
+            if (commit &&
+                tx.onePhaseCommit() &&
+                !tx.writeMap().isEmpty()) // Readonly operations require no ack.
+                ackBackup();
+        }
+    }
+
+    /**
+     *
+     */
+    private void ackBackup() {
+        if (mappings.empty())
+            return;
+
+        if (!tx.needReturnValue() || !tx.implicit())
+            return; // GridCacheReturn was not saved at backup.
+
+        GridDistributedTxMapping mapping = mappings.singleMapping();
+
+        if (mapping != null) {
+            UUID nodeId = mapping.node().id();
+
+            Collection<UUID> backups = tx.transactionNodes().get(nodeId);
+
+            if (!F.isEmpty(backups)) {
+                assert backups.size() == 1 : backups;
+
+                UUID backupId = F.first(backups);
+
+                ClusterNode backup = cctx.discovery().node(backupId);
+
+                // Nothing to do if backup has left the grid.
+                if (backup == null) {
+                    // No-op.
+                }
+                else if (backup.isLocal())
+                    cctx.tm().removeTxReturn(tx.xidVersion());
+                else {
+                    if (ACK_DHT_ONE_PHASE_SINCE.compareToIgnoreTimestamp(backup.version()) <= 0)
+                        cctx.tm().sendDeferredAckResponse(backupId, tx.xidVersion());
+                }
+            }
+        }
     }
 
     /**
@@ -475,23 +527,48 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                         readyNearMappingFromBackup(mapping);
 
                         if (committed) {
-                            if (tx.syncMode() == FULL_SYNC) {
-                                GridCacheVersion nearXidVer = tx.nearXidVersion();
+                            try {
+                                if (tx.needReturnValue() && tx.implicit()) {
+                                    GridCacheReturnCompletableWrapper wrapper =
+                                        cctx.tm().getCommittedTxReturn(tx.xidVersion());
 
-                                assert nearXidVer != null : tx;
+                                    assert wrapper != null : tx.xidVersion();
 
-                                IgniteInternalFuture<?> fut = cctx.tm().remoteTxFinishFuture(nearXidVer);
+                                    GridCacheReturn retVal = wrapper.fut().get();
 
-                                fut.listen(new CI1<IgniteInternalFuture<?>>() {
-                                    @Override public void apply(IgniteInternalFuture<?> fut) {
-                                        mini.onDone(tx);
-                                    }
-                                });
+                                    assert retVal != null;
 
-                                return;
+                                    tx.implicitSingleResult(retVal);
+                                }
+
+                                if (tx.syncMode() == FULL_SYNC) {
+                                    GridCacheVersion nearXidVer = tx.nearXidVersion();
+
+                                    assert nearXidVer != null : tx;
+
+                                    IgniteInternalFuture<?> fut = cctx.tm().remoteTxFinishFuture(nearXidVer);
+
+                                    fut.listen(new CI1<IgniteInternalFuture<?>>() {
+                                        @Override public void apply(IgniteInternalFuture<?> fut) {
+                                            mini.onDone(tx);
+                                        }
+                                    });
+
+                                    return;
+                                }
+
+                                mini.onDone(tx);
                             }
+                            catch (IgniteCheckedException e) {
+                                if (msgLog.isDebugEnabled()) {
+                                    msgLog.debug("Near finish fut, failed to finish [" +
+                                        "txId=" + tx.nearXidVersion() +
+                                        ", node=" + backup.id() +
+                                        ", err=" + e + ']');
+                                }
 
-                            mini.onDone(tx);
+                                mini.onDone(e);
+                            }
                         }
                         else {
                             ClusterTopologyCheckedException cause =
@@ -504,7 +581,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                         }
                     }
                     else {
-                        GridDhtTxFinishRequest finishReq = checkCommittedRequest(mini.futureId());
+                        GridDhtTxFinishRequest finishReq = checkCommittedRequest(mini.futureId(), false);
 
                         // Preserve old behavior, otherwise response is not sent.
                         if (WAIT_REMOTE_TXS_SINCE.compareTo(backup.version()) > 0)
@@ -765,9 +842,10 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
     /**
      * @param miniId Mini future ID.
+     * @param waitRemoteTxs Wait for remote txs.
      * @return Finish request.
      */
-    private GridDhtTxFinishRequest checkCommittedRequest(IgniteUuid miniId) {
+    private GridDhtTxFinishRequest checkCommittedRequest(IgniteUuid miniId, boolean waitRemoteTxs) {
         GridDhtTxFinishRequest finishReq = new GridDhtTxFinishRequest(
             cctx.localNodeId(),
             futureId(),
@@ -791,7 +869,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             0,
             null,
             0,
-            tx.activeCachesDeploymentEnabled());
+            tx.activeCachesDeploymentEnabled(),
+            !waitRemoteTxs && (tx.needReturnValue() && tx.implicit()),
+            waitRemoteTxs);
 
         finishReq.checkCommitted(true);
 
@@ -872,9 +952,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                             add(mini);
 
-                            GridDhtTxFinishRequest req = checkCommittedRequest(mini.futureId());
-
-                            req.waitRemoteTransactions(true);
+                            GridDhtTxFinishRequest req = checkCommittedRequest(mini.futureId(), true);
 
                             for (UUID backupId : backups) {
                                 ClusterNode backup = cctx.discovery().node(backupId);

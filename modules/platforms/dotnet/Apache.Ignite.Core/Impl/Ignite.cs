@@ -274,6 +274,12 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public IClusterGroup ForDaemons()
+        {
+            return _prj.ForDaemons();
+        }
+
+        /** <inheritdoc /> */
         public IClusterGroup ForHost(IClusterNode node)
         {
             IgniteArgumentCheck.NotNull(node, "node");
@@ -479,13 +485,15 @@ namespace Apache.Ignite.Core.Impl
         /// </returns>
         public ICache<TK, TV> Cache<TK, TV>(IUnmanagedTarget nativeCache, bool keepBinary = false)
         {
-            return new CacheImpl<TK, TV>(this, nativeCache, _marsh, false, keepBinary, false, false);
+            return new CacheImpl<TK, TV>(this, nativeCache, _marsh, false, keepBinary, false);
         }
 
         /** <inheritdoc /> */
         public IClusterNode GetLocalNode()
         {
-            return _locNode ?? (_locNode = GetNodes().FirstOrDefault(x => x.IsLocal));
+            return _locNode ?? (_locNode =
+                       GetNodes().FirstOrDefault(x => x.IsLocal) ??
+                       ForDaemons().GetNodes().FirstOrDefault(x => x.IsLocal));
         }
 
         /** <inheritdoc /> */
@@ -509,7 +517,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public void ResetMetrics()
         {
-            UU.ProjectionResetMetrics(_prj.Target);
+            UU.TargetOutLong(_prj.Target, ClusterGroupImpl.OpResetMetrics);
         }
 
         /** <inheritdoc /> */

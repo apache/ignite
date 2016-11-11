@@ -459,11 +459,7 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
 
         for (TransactionConcurrency conc : TransactionConcurrency.values()) {
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                // TODO IGNITE-2971: delete this if when the issue will be fixed.
-                if (conc == TransactionConcurrency.OPTIMISTIC && isolation == TransactionIsolation.SERIALIZABLE)
-                    continue;
-
-                info(">>>>> Executing test using explicite txs [concurrency=" + conc + ", isolation=" + isolation + "]");
+                info(">>>>> Executing test using explicit txs [concurrency=" + conc + ", isolation=" + isolation + "]");
 
                 checkInvokeTx(conc, isolation);
 
@@ -671,10 +667,6 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
 
         for (TransactionConcurrency conc : TransactionConcurrency.values()) {
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                // TODO IGNITE-2971: delete this if when the issue will be fixed.
-                if (conc == TransactionConcurrency.OPTIMISTIC && isolation == TransactionIsolation.SERIALIZABLE)
-                    continue;
-
                 checkInvokeAsyncTx(conc, isolation);
 
                 jcache().removeAll();

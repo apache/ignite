@@ -29,6 +29,7 @@ import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorResult;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -1141,6 +1142,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean evt,
         boolean metrics,
         boolean keepBinary,
+        boolean oldValPresent,
+        @Nullable CacheObject oldVal,
         AffinityTopologyVersion topVer,
         CacheEntryPredicate[] filter,
         GridDrType drType,
@@ -1198,7 +1201,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             Map<UUID, CacheContinuousQueryListener> lsnrCol =
                 notifyContinuousQueries(tx) ? cctx.continuousQueries().updateListeners(internal, false) : null;
 
-            old = (retval || intercept || lsnrCol != null) ?
+            old = oldValPresent ? oldVal :
+                (retval || intercept || lsnrCol != null) ?
                 rawGetOrUnmarshalUnlocked(!retval && !isOffHeapValuesOnly()) : this.val;
 
             if (intercept) {
@@ -1333,6 +1337,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean evt,
         boolean metrics,
         boolean keepBinary,
+        boolean oldValPresent,
+        @Nullable CacheObject oldVal,
         AffinityTopologyVersion topVer,
         CacheEntryPredicate[] filter,
         GridDrType drType,
@@ -1403,7 +1409,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             Map<UUID, CacheContinuousQueryListener> lsnrCol =
                 notifyContinuousQueries(tx) ? cctx.continuousQueries().updateListeners(internal, false) : null;
 
-            old = (retval || intercept || lsnrCol != null) ?
+            old = oldValPresent ? oldVal : (retval || intercept || lsnrCol != null) ?
                 rawGetOrUnmarshalUnlocked(!retval && !isOffHeapValuesOnly()) : val;
 
             if (intercept) {
@@ -4191,8 +4197,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                                 }
                             }
                         }
-                        else
+                        else {
+                            if (this.expireTimeUnlocked() > 0)
+                                cctx.ttl().removeTrackedEntry(this);
+
                             clearIndex(prev);
+                        }
 
                         // Nullify value after swap.
                         value(null);
@@ -4245,8 +4255,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                                     }
                                 }
                             }
-                            else
+                            else {
+                                if (this.expireTimeUnlocked() > 0)
+                                    cctx.ttl().removeTrackedEntry(this);
+
                                 clearIndex(prevVal);
+                            }
 
                             // Nullify value after swap.
                             value(null);

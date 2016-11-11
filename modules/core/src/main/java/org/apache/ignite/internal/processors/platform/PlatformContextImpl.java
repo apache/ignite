@@ -118,9 +118,6 @@ public class PlatformContextImpl implements PlatformContext {
     /** Platform name. */
     private final String platform;
 
-    /**
-     * Static initializer.
-     */
     static {
         Set<Integer> evtTyps0 = new HashSet<>();
 
