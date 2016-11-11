@@ -92,6 +92,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_DUMP_PENDING_OBJECTS_THRESHOLD, 10);
 
     /** */
+    private static final boolean SKIP_FIRST_EXCHANGE_MSG = false;
+
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Dummy flag. */
@@ -431,6 +434,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         assert !dummy && !forcePreload : this;
 
         try {
+            log.info("Start exchange init [topVer=" + topologyVersion() + ']');
+
             srvNodes = new ArrayList<>(cctx.discovery().serverNodes(topologyVersion()));
 
             remaining.addAll(F.nodeIds(F.view(srvNodes, F.remoteNodes(cctx.localNodeId()))));
@@ -495,7 +500,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 default:
                     assert false;
+
             }
+
+            log.info("Finish exchange init [topVer=" + topologyVersion() + ']');
         }
         catch (IgniteInterruptedCheckedException e) {
             onDone(e);
@@ -734,11 +742,45 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
 
         if (crd.isLocal()) {
+            if (SKIP_FIRST_EXCHANGE_MSG && discoEvt.type() == EVT_NODE_JOINED && !discoEvt.eventNode().isLocal()) {
+                ClusterNode node = discoEvt.eventNode();
+
+                assert !CU.clientNode(node) : discoEvt;
+                assert srvNodes.contains(node);
+
+                boolean rmv = remaining.remove(node.id());
+                assert rmv;
+
+                List<String> caches = new ArrayList<>();
+
+                GridDhtPartitionsSingleMessage msg = new GridDhtPartitionsSingleMessage(exchangeId(),
+                    false,
+                    null,
+                    false);
+
+                for (String cache : caches) {
+                    Map<Integer, GridDhtPartitionState> m = new HashMap<>();
+
+                    GridDhtPartitionMap2 partMap = new GridDhtPartitionMap2(node.id(), 0, topologyVersion(), m, true);
+
+                    msg.addLocalPartitionMap(CU.cacheId(cache), partMap, null);
+                }
+
+                updatePartitionSingleMap(msg);
+            }
+
             if (remaining.isEmpty())
                 onAllReceived(false);
         }
-        else
-            sendPartitions(crd);
+        else {
+            boolean skipSnd = false;
+
+            if (SKIP_FIRST_EXCHANGE_MSG && discoEvt.type() == EVT_NODE_JOINED && discoEvt.eventNode().isLocal())
+                skipSnd = true;
+
+            if (!skipSnd)
+                sendPartitions(crd);
+        }
 
         initDone();
     }
@@ -1210,6 +1252,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private void onAllReceived(boolean discoThread) {
         try {
             assert crd.isLocal();
+
+            log.info("Coordinator exchange all received [topVer=" + topologyVersion() + ']');
 
             if (!crd.equals(cctx.discovery().serverNodes(topologyVersion()).get(0))) {
                 for (GridCacheContext cacheCtx : cctx.cacheContexts()) {

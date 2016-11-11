@@ -2742,6 +2742,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             this.nodeMap = nodeMap;
         }
 
+        Collection<String> nodeCaches(ClusterNode node) {
+            return null;
+        }
+
         /**
          * Adds node to map.
          *
