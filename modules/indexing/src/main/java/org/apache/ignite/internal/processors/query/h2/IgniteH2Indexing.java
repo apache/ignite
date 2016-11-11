@@ -104,6 +104,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatementSplitter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUpdate;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
@@ -1318,7 +1319,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             try {
                 bindParameters(stmt, F.asList(qry.getArgs()));
 
-                twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, qry.getArgs(),
+                twoStepQry = GridSqlStatementSplitter.split((JdbcPreparedStatement) stmt, qry.getArgs(),
                     failedKeys, grpByCollocated, distributedJoins);
 
                 //Let's verify (early) that the user is not trying to mess with the key or its fields directly

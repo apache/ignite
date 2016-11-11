@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatementSplitter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUpdate;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -185,11 +186,11 @@ class DmlStatementsProcessor {
 
                 if (stmt instanceof GridSqlInsert) {
                     GridSqlInsert ins = (GridSqlInsert) stmt;
-                    sel = GridSqlQuerySplitter.selectForInsertOrMerge(ins.rows(), ins.query());
+                    sel = GridSqlStatementSplitter.selectForInsertOrMerge(ins.rows(), ins.query());
                 }
                 else {
                     GridSqlMerge merge = (GridSqlMerge) stmt;
-                    sel = GridSqlQuerySplitter.selectForInsertOrMerge(merge.rows(), merge.query());
+                    sel = GridSqlStatementSplitter.selectForInsertOrMerge(merge.rows(), merge.query());
                 }
 
                 ResultSet rs = indexing.executeSqlQueryWithTimer(cctx.name(), conn, sel.getSQL(), F.asList(params), true,
@@ -220,9 +221,9 @@ class DmlStatementsProcessor {
                     GridTriple<GridSqlElement> singleUpdate;
 
                     if (stmt instanceof GridSqlUpdate)
-                        singleUpdate = GridSqlQuerySplitter.getSingleItemFilter((GridSqlUpdate) stmt);
+                        singleUpdate = GridSqlStatementSplitter.getSingleItemFilter((GridSqlUpdate) stmt);
                     else if (stmt instanceof GridSqlDelete)
-                        singleUpdate = GridSqlQuerySplitter.getSingleItemFilter((GridSqlDelete) stmt);
+                        singleUpdate = GridSqlStatementSplitter.getSingleItemFilter((GridSqlDelete) stmt);
                     else
                         throw createSqlException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
                             ErrorCode.PARSE_ERROR_1);
@@ -238,9 +239,9 @@ class DmlStatementsProcessor {
                 Integer keysParamIdx = !F.isEmpty(failedKeys) ? paramsCnt + 1 : null;
 
                 if (stmt instanceof GridSqlUpdate)
-                    map = GridSqlQuerySplitter.mapQueryForUpdate((GridSqlUpdate) stmt, keysParamIdx);
+                    map = GridSqlStatementSplitter.mapQueryForUpdate((GridSqlUpdate) stmt, keysParamIdx);
                 else
-                    map = GridSqlQuerySplitter.mapQueryForDelete((GridSqlDelete) stmt, keysParamIdx);
+                    map = GridSqlStatementSplitter.mapQueryForDelete((GridSqlDelete) stmt, keysParamIdx);
 
                 if (keysParamIdx != null) {
                     params = Arrays.copyOf(U.firstNotNull(params, X.EMPTY_OBJECT_ARRAY), paramsCnt + 1);
@@ -1282,7 +1283,7 @@ class DmlStatementsProcessor {
     private static GridSqlTable gridTableForElement(GridSqlElement target) {
         Set<GridSqlTable> tbls = new HashSet<>();
 
-        GridSqlQuerySplitter.collectAllGridTablesInTarget(target, tbls);
+        GridSqlStatementSplitter.collectAllGridTablesInTarget(target, tbls);
 
         if (tbls.size() != 1)
             throw createSqlException("Failed to determine target table", ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1);
@@ -1305,7 +1306,7 @@ class DmlStatementsProcessor {
 
         Set<GridSqlTable> tbls = new HashSet<>();
 
-        GridSqlQuerySplitter.collectAllGridTablesInTarget(updTarget, tbls);
+        GridSqlStatementSplitter.collectAllGridTablesInTarget(updTarget, tbls);
 
         if (tbls.size() != 1)
             throw createSqlException("Failed to determine target table for UPDATE", ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1);
