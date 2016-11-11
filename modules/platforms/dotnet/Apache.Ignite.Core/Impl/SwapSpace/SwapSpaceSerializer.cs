@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Impl.SwapSpace
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.SwapSpace;
     using Apache.Ignite.Core.SwapSpace.File;
-    using Apache.Ignite.Core.SwapSpace.Noop;
 
     /// <summary>
     /// SwapSpace config serializer.
@@ -34,8 +33,7 @@ namespace Apache.Ignite.Core.Impl.SwapSpace
         private enum Type : byte
         {
             None = 0,
-            File = 1,
-            Noop = 2
+            File = 1
         }
 
         /// <summary>
@@ -59,10 +57,6 @@ namespace Apache.Ignite.Core.Impl.SwapSpace
                 writer.WriteInt(fileSwap.ReadStripesNumber);
                 writer.WriteInt(fileSwap.WriteBufferSize);
 
-            }
-            else if (spi is NoopSwapSpaceSpi)
-            {
-                writer.WriteByte((byte) Type.Noop);
             }
             else
             {
@@ -91,9 +85,6 @@ namespace Apache.Ignite.Core.Impl.SwapSpace
                         ReadStripesNumber = reader.ReadInt(),
                         WriteBufferSize = reader.ReadInt()
                     };
-
-                case Type.Noop:
-                    return new NoopSwapSpaceSpi();
 
                 default:
                     throw new ArgumentOutOfRangeException("Invalid Swap Space SPI type: " + type);

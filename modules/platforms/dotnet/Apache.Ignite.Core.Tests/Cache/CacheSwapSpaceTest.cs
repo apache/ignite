@@ -26,7 +26,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.SwapSpace.File;
-    using Apache.Ignite.Core.SwapSpace.Noop;
     using NUnit.Framework;
 
     /// <summary>
@@ -56,34 +55,15 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration());
 
-            Assert.IsNull(cfg.SwapSpaceSpi);
-
             using (var ignite = Ignition.Start(cfg))
             {
                 // NoopSwapSpaceSpi is used by default.
-                Assert.IsInstanceOf<NoopSwapSpaceSpi>(ignite.GetConfiguration().SwapSpaceSpi);
+                Assert.IsNull(ignite.GetConfiguration().SwapSpaceSpi);
 
                 var ex = Assert.Throws<CacheException>(
                     () => ignite.CreateCache<int, int>(new CacheConfiguration {EnableSwap = true}));
 
                 Assert.IsTrue(ex.Message.EndsWith("has not swap SPI configured"));
-            }
-        }
-
-        /// <summary>
-        /// Tests noop swap space.
-        /// </summary>
-        [Test]
-        public void TestNoopSwapSpace()
-        {
-            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
-            {
-                SwapSpaceSpi = new NoopSwapSpaceSpi()
-            };
-
-            using (var ignite = Ignition.Start(cfg))
-            {
-                Assert.IsInstanceOf<NoopSwapSpaceSpi>(ignite.GetConfiguration().SwapSpaceSpi);
             }
         }
 

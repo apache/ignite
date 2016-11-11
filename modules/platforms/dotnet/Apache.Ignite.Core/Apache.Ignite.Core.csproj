@@ -474,7 +474,6 @@
     <Compile Include="Services\ServiceInvocationException.cs" />
     <Compile Include="SwapSpace\File\FileSwapSpaceSpi.cs" />
     <Compile Include="SwapSpace\ISwapSpaceSpi.cs" />
-    <Compile Include="SwapSpace\Noop\NoopSwapSpaceSpi.cs" />
     <Compile Include="Transactions\ITransaction.cs" />
     <Compile Include="Transactions\ITransactionMetrics.cs" />
     <Compile Include="Transactions\ITransactions.cs" />
