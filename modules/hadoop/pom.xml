@@ -168,7 +168,7 @@
 #
                                     ]]>
                                 </argument>
-                                <argument>org.apache.ignite</argument>
+                                <argument>org.apache.ignite.hadoop:org.apache.ignite.internal.processors.hadoop</argument>
                             </arguments>
                         </configuration>
                     </execution>
