@@ -190,6 +190,16 @@ public class BinaryFieldIdentityResolverSelfTest extends GridCommonAbstractTest 
     }
 
     /**
+     * Test equals for different type IDs.
+     */
+    public void testEqualsDifferenTypes() {
+        InnerClass obj1 = new InnerClass(1, "2", 3);
+        InnerClassBinarylizable obj2 = new InnerClassBinarylizable(1, "2", 3);
+
+        compareTwo(asBinary(obj1), asBinary(obj2), false);
+    }
+
+    /**
      * Compare two objects in different heap/offheap modes.
      *
      * @param obj1 Object 1.
