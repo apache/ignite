@@ -182,6 +182,10 @@ namespace ignite
 
                             memcpy(out->val, &uval, std::min<int>(SQL_MAX_NUMERIC_LEN, sizeof(uval)));
                         }
+
+                        if (resLenPtr)
+                            *resLenPtr = static_cast<SqlLen>(sizeof(SQL_NUMERIC_STRUCT));
+
                         break;
                     }
 
@@ -237,12 +241,16 @@ namespace ignite
             void ApplicationDataBuffer::PutNumToNumBuffer(Tin value)
             {
                 void* dataPtr = GetData();
+                SqlLen* resLenPtr = GetResLen();
 
                 if (dataPtr)
                 {
                     Tbuf* out = reinterpret_cast<Tbuf*>(dataPtr);
                     *out = static_cast<Tbuf>(value);
                 }
+
+                if (resLenPtr)
+                    *resLenPtr = static_cast<SqlLen>(sizeof(Tbuf));
             }
 
             template<typename CharT, typename Tin>
@@ -448,6 +456,8 @@ namespace ignite
             {
                 using namespace type_traits;
 
+                SqlLen* resLenPtr = GetResLen();
+
                 switch (type)
                 {
                     case IGNITE_ODBC_C_TYPE_CHAR:
@@ -476,13 +486,14 @@ namespace ignite
                         for (size_t i = 0; i < sizeof(guid->Data4); ++i)
                             guid->Data4[i] = (lsb >> (sizeof(guid->Data4) - i - 1) * 8) & 0xFF;
 
+                        if (resLenPtr)
+                            *resLenPtr = static_cast<SqlLen>(sizeof(SQLGUID));
+
                         break;
                     }
 
                     default:
                     {
-                        SqlLen* resLenPtr = GetResLen();
-
                         if (resLenPtr)
                             *resLenPtr = SQL_NO_TOTAL;
                     }
@@ -573,6 +584,8 @@ namespace ignite
             {
                 using namespace type_traits;
 
+                SqlLen* resLenPtr = GetResLen();
+
                 switch (type)
                 {
                     case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
@@ -637,6 +650,9 @@ namespace ignite
                         numeric->sign = unscaled.GetSign() < 0 ? 0 : 1;
                         numeric->precision = unscaled.GetPrecision();
 
+                        if (resLenPtr)
+                            *resLenPtr = static_cast<SqlLen>(sizeof(SQL_NUMERIC_STRUCT));
+
                         break;
                     }
 
@@ -644,8 +660,6 @@ namespace ignite
                     case IGNITE_ODBC_C_TYPE_BINARY:
                     default:
                     {
-                        SqlLen* resLenPtr = GetResLen();
-
                         if (resLenPtr)
                             *resLenPtr = SQL_NO_TOTAL;
                     }
@@ -716,6 +730,9 @@ namespace ignite
                         buffer->month = tmTime.tm_mon + 1;
                         buffer->day = tmTime.tm_mday;
 
+                        if (resLenPtr)
+                            *resLenPtr = static_cast<SqlLen>(sizeof(SQL_DATE_STRUCT));
+
                         break;
                     }
 
@@ -730,6 +747,9 @@ namespace ignite
                         buffer->minute = tmTime.tm_min;
                         buffer->second = tmTime.tm_sec;
                         buffer->fraction = 0;
+
+                        if (resLenPtr)
+                            *resLenPtr = static_cast<SqlLen>(sizeof(SQL_TIMESTAMP_STRUCT));
 
                         break;
                     }
@@ -830,6 +850,9 @@ namespace ignite
                         buffer->month = tmTime.tm_mon + 1;
                         buffer->day = tmTime.tm_mday;
 
+                        if (resLenPtr)
+                            *resLenPtr = static_cast<SqlLen>(sizeof(SQL_DATE_STRUCT));
+
                         break;
                     }
 
@@ -844,6 +867,9 @@ namespace ignite
                         buffer->minute = tmTime.tm_min;
                         buffer->second = tmTime.tm_sec;
                         buffer->fraction = value.GetSecondFraction();
+
+                        if (resLenPtr)
+                            *resLenPtr = static_cast<SqlLen>(sizeof(SQL_TIMESTAMP_STRUCT));
 
                         break;
                     }

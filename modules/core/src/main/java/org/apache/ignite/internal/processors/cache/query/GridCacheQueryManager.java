@@ -326,16 +326,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     * Increment fails counter.
-     */
-    public void onUnhandledException() {
-        final boolean statsEnabled = cctx.config().isStatisticsEnabled();
-
-        if (statsEnabled)
-            metrics.incrementOnFails();
-    }
-
-    /**
      * Processes cache query request.
      *
      * @param sndId Sender node id.

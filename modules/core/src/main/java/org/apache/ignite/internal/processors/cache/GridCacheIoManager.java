@@ -17,26 +17,50 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.events.UnhandledExceptionEvent;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.CacheGetFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -55,12 +79,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
-import static org.apache.ignite.events.EventType.EVT_UNHANDLED_EXCEPTION;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 
 /**
@@ -675,11 +693,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
-            case 59:
-                // No additional actions required, just skipping default switch section,
-                // since UnhandledException already registered.
-                break;
-
             case 114: {
                 processMessage(nodeId,msg,c);// Will be handled by Rebalance Demander.
             }
@@ -724,31 +737,10 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
-            default:{
-                String shortMsg = "Failed to send response to node. Unsupported direct type [message=" + msg + "]";
-
-                IgniteCheckedException e = new IgniteCheckedException(shortMsg, msg.classError());
-
-                registerUnhandledException(ctx, shortMsg, e);
-            }
+            default:
+                throw new IgniteCheckedException("Failed to send response to node. Unsupported direct type [message="
+                    + msg + "]", msg.classError());
         }
-    }
-
-    /**
-     * @param ctx Grid cache context.
-     * @param shortMsg Short message.
-     * @param ex Original Exception.
-     */
-    public static void registerUnhandledException(GridCacheContext ctx, String shortMsg, IgniteCheckedException ex) {
-        GridKernalContext kctx = ctx.kernalContext();
-
-        kctx.exceptionRegistry().onException(shortMsg, ex);
-
-        ClusterNode node = ctx.discovery().localNode();
-
-        UnhandledExceptionEvent evt = new UnhandledExceptionEvent(node, shortMsg, ex, EVT_UNHANDLED_EXCEPTION);
-
-        kctx.event().record(evt);
     }
 
     /**
