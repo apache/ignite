@@ -89,11 +89,13 @@ public interface GridQueryIndexing {
      * @param enforceJoinOrder Enforce join order of tables in the query.
      * @param timeout Query timeout in milliseconds.
      * @param cancel Query cancel.
+     * @param pageSize Page size for streaming.
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
     public GridQueryFieldsResult queryLocalSqlFields(@Nullable String spaceName, String qry,
-        Collection<Object> params, IndexingQueryFilter filter, boolean enforceJoinOrder, int timeout, GridQueryCancel cancel) throws IgniteCheckedException;
+        Collection<Object> params, IndexingQueryFilter filter, boolean enforceJoinOrder, int timeout,
+        GridQueryCancel cancel, int pageSize) throws IgniteCheckedException;
 
     /**
      * Executes regular query.

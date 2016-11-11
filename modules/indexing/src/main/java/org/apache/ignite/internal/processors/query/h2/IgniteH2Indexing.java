@@ -821,7 +821,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("unchecked")
     @Override public GridQueryFieldsResult queryLocalSqlFields(@Nullable final String spaceName, final String qry,
         @Nullable final Collection<Object> params, final IndexingQueryFilter filters, boolean enforceJoinOrder,
-        final int timeout, final GridQueryCancel cancel) throws IgniteCheckedException {
+        final int timeout, final GridQueryCancel cancel, int pageSize) throws IgniteCheckedException {
         final Connection conn = connectionForSpace(spaceName);
 
         initLocalQueryContext(conn, enforceJoinOrder, filters);
@@ -833,7 +833,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             if (!p.isQuery())
                 return updateLocalSqlFields(cacheContext(spaceName), stmt, params != null ? params.toArray() : null,
-                    filters, enforceJoinOrder, timeout, cancel);
+                    filters, enforceJoinOrder, timeout, cancel, pageSize);
 
             List<GridQueryFieldMetadata> meta;
 
@@ -858,27 +858,28 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * @param cctx
-     * @param stmt
-     * @param params
-     * @param filters
-     * @param enforceJoinOrder
-     * @param timeout
-     * @param cancel
-     * @return
-     * @throws IgniteCheckedException
+     * @param cctx Cache context.
+     * @param stmt Prepared statement.
+     * @param params Query parameters.
+     * @param filters Space name and key filter.
+     * @param enforceJoinOrder Enforce join order of tables in the query.
+     * @param timeout Query timeout in milliseconds.
+     * @param cancel Query cancel.
+     * @param pageSize Page size for streaming.
+     * @return Update result wrapped into {@link GridQueryFieldsResult}
+     * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
     private GridQueryFieldsResult updateLocalSqlFields(final GridCacheContext cctx, final PreparedStatement stmt,
         final Object[] params, final IndexingQueryFilter filters, boolean enforceJoinOrder,
-        int timeout, GridQueryCancel cancel) throws IgniteCheckedException {
+        int timeout, GridQueryCancel cancel, int pageSize) throws IgniteCheckedException {
         Object[] errKeys = null;
 
         int items = 0;
 
         for (int i = 0; i < DFLT_DML_RERUN_ATTEMPTS; i++) {
             IgniteBiTuple<Integer, Object[]> r = updateLocalSqlFields0(cctx, stmt, params, errKeys, filters,
-                enforceJoinOrder, timeout, cancel);
+                enforceJoinOrder, timeout, cancel, pageSize);
 
             if (F.isEmpty(r.get2())) {
                 return new GridQueryFieldsResultAdapter(Collections.<GridQueryFieldMetadata>emptyList(),
@@ -903,14 +904,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param failedKeys Keys to restrict UPDATE and DELETE operations with. Null or empty array means no restriction.
      * @param filters Filters.
      * @param enforceJoinOrder Enforce join order.
-     * @param timeout
-     *@param cancel @return Pair [number of successfully processed items; keys that have failed to be processed]
+     * @param timeout Query timeout in milliseconds.
+     * @param cancel Query cancel.
+     * @param pageSize Page size for streaming.
+     * @return Pair [number of successfully processed items; keys that have failed to be processed]
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("ConstantConditions")
     private IgniteBiTuple<Integer, Object[]> updateLocalSqlFields0(final GridCacheContext cctx,
         final PreparedStatement prepStmt, Object[] params, final Object[] failedKeys, final IndexingQueryFilter filters,
-        boolean enforceJoinOrder, int timeout, GridQueryCancel cancel) throws IgniteCheckedException {
+        boolean enforceJoinOrder, int timeout, GridQueryCancel cancel, int pageSize) throws IgniteCheckedException {
         Connection conn = connectionForSpace(cctx.name());
 
         initLocalQueryContext(conn, enforceJoinOrder, filters);
@@ -949,7 +952,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 int res;
 
                 if (stmt instanceof GridSqlMerge)
-                    res = doMerge(cctx, (GridSqlMerge) stmt, cur);
+                    res = doMerge(cctx, (GridSqlMerge) stmt, cur, pageSize);
                 else
                     res = doInsert(cctx, (GridSqlInsert) stmt, cur);
 
@@ -1017,8 +1020,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      *
      * @param cctx Cache context.
      * @param singleUpdate Triple {@code [key; value; new value]} to perform remove or replace with.
-     * @param stmt
-     * @param params
+     * @param stmt Statement.
+     * @param params Query parameters.
      * @return 1 if an item was affected, 0 otherwise.
      * @throws IgniteCheckedException if failed.
      */
@@ -1275,11 +1278,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param cctx Cache context.
      * @param gridStmt Grid SQL statement.
      * @param cursor Cursor to take inserted data from.
+     * @param pageSize Batch size to stream data from {@code cursor}.
      * @return Number of items affected.
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
-    private int doMerge(GridCacheContext cctx, GridSqlMerge gridStmt, QueryCursorImpl<List<?>> cursor)
+    private int doMerge(GridCacheContext cctx, GridSqlMerge gridStmt, QueryCursorImpl<List<?>> cursor, int pageSize)
         throws IgniteCheckedException {
         // This check also protects us from attempts to update key or its fields directly -
         // when no key except cache key can be used, it will serve only for uniqueness checks,
@@ -1346,14 +1350,26 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return 1;
         }
         else {
+            int resCnt = 0;
             Map<Object, Object> rows = new LinkedHashMap<>();
             for (List<?> row : src) {
                 IgniteBiTuple t = rowToKeyValue(cctx, desc.type(), keySupplier, valSupplier, keyColIdx, valColIdx, cols,
                     row.toArray());
                 rows.put(t.getKey(), t.getValue());
+
+                if (pageSize > 0 && rows.size() == pageSize) {
+                    cctx.cache().putAll(rows);
+                    resCnt += pageSize;
+                    rows.clear();
+                }
             }
-            cctx.cache().putAll(rows);
-            return rows.size();
+
+            if (!rows.isEmpty()) {
+                cctx.cache().putAll(rows);
+                resCnt += rows.size();
+            }
+
+            return resCnt;
         }
     }
 
@@ -2058,8 +2074,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             updateRes = doUpdate(cctx, (GridSqlUpdate) twoStepQry.initialStatement(), cursor);
 
         if (twoStepQry.initialStatement() instanceof GridSqlMerge)
-            updateRes = new IgniteBiTuple<>(doMerge(cctx, (GridSqlMerge) twoStepQry.initialStatement(), cursor),
-                X.EMPTY_OBJECT_ARRAY);
+            updateRes = new IgniteBiTuple<>(doMerge(cctx, (GridSqlMerge) twoStepQry.initialStatement(), cursor,
+                qry.getPageSize()), X.EMPTY_OBJECT_ARRAY);
 
         if (twoStepQry.initialStatement() instanceof GridSqlInsert)
             updateRes = new IgniteBiTuple<>(doInsert(cctx, (GridSqlInsert) twoStepQry.initialStatement(), cursor
