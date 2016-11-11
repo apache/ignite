@@ -172,8 +172,8 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         assert !forceTransformBackups;
         assert entryProcessor == null;
 
-        assert ttl < 0 : ttl;
-        assert conflictExpireTime < 0 : conflictExpireTime;
+        assert ttl <= 0 : ttl;
+        assert conflictExpireTime <= 0 : conflictExpireTime;
         assert conflictVer == null : conflictVer;
 
         this.key = key;
@@ -204,8 +204,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         assert !forceTransformBackups;
         assert entryProcessor == null;
 
-        assert ttl < 0 : ttl;
-        assert expireTime < 0 : expireTime;
+        assert ttl <= 0 : ttl;
 
         near(true);
 

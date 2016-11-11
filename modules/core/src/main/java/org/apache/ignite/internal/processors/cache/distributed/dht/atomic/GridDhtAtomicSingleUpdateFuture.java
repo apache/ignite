@@ -34,9 +34,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
@@ -177,9 +174,7 @@ class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture 
      */
     private boolean canUseSingleRequest(ClusterNode node) {
         return node.version().compareToIgnoreTimestamp(SINGLE_UPDATE_REQUEST) >= 0 &&
-            updateReq.conflictExpireTime(0) < 0 &&
-            updateReq.conflictTtl(0) < 0 &&
-            updateReq.conflictVersion(0) == null;
+            updateReq.expiry() == null;
     }
 
     /** {@inheritDoc} */
