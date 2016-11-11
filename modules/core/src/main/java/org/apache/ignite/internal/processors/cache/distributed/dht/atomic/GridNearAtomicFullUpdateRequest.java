@@ -26,6 +26,7 @@ import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -59,6 +60,35 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
 public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdateRequest {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Target node ID. */
+    @GridDirectTransient
+    protected UUID nodeId;
+
+    /** Future version. */
+    protected GridCacheVersion futVer;
+
+    /** Update version. Set to non-null if fastMap is {@code true}. */
+    protected GridCacheVersion updateVer;
+
+    /** Topology version. */
+    protected AffinityTopologyVersion topVer;
+
+    /** Write synchronization mode. */
+    protected CacheWriteSynchronizationMode syncMode;
+
+    /** Update operation. */
+    protected GridCacheOperation op;
+
+    /** Subject ID. */
+    protected UUID subjId;
+
+    /** Task name hash. */
+    protected int taskNameHash;
+
+    /** */
+    @GridDirectTransient
+    private GridNearAtomicUpdateResponse res;
 
     /** Fast map flag. */
     protected boolean fastMap;
@@ -186,18 +216,19 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         boolean addDepInfo,
         int maxEntryCnt
     ) {
-        super(
-            cacheId,
-            nodeId,
-            futVer,
-            updateVer,
-            topVer,
-            syncMode,
-            op,
-            subjId,
-            taskNameHash,
-            addDepInfo
-        );
+        assert futVer != null;
+
+        this.cacheId = cacheId;
+        this.nodeId = nodeId;
+        this.futVer = futVer;
+        this.updateVer = updateVer;
+
+        this.topVer = topVer;
+        this.syncMode = syncMode;
+        this.op = op;
+        this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
+        this.addDepInfo = addDepInfo;
 
         this.fastMap = fastMap;
         this.topLocked = topLocked;
@@ -220,6 +251,105 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         keys = new ArrayList<>(initSize);
 
         partIds = new ArrayList<>(initSize);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int lookupIndex() {
+        return CACHE_MSG_IDX;
+    }
+
+    /**
+     * @return Mapped node ID.
+     */
+    @Override public UUID nodeId() {
+        return nodeId;
+    }
+
+    /**
+     * @param nodeId Node ID.
+     */
+    @Override public void nodeId(UUID nodeId) {
+        this.nodeId = nodeId;
+    }
+
+    /**
+     * @return Subject ID.
+     */
+    @Override public UUID subjectId() {
+        return subjId;
+    }
+
+    /**
+     * @return Task name hash.
+     */
+    @Override public int taskNameHash() {
+        return taskNameHash;
+    }
+
+    /**
+     * @return Future version.
+     */
+    @Override public GridCacheVersion futureVersion() {
+        return futVer;
+    }
+
+    /**
+     * @return Update version for fast-map request.
+     */
+    @Override public GridCacheVersion updateVersion() {
+        return updateVer;
+    }
+
+    /**
+     * @return Topology version.
+     */
+    @Override public AffinityTopologyVersion topologyVersion() {
+        return topVer;
+    }
+
+    /**
+     * @return Cache write synchronization mode.
+     */
+    @Override public CacheWriteSynchronizationMode writeSynchronizationMode() {
+        return syncMode;
+    }
+
+    /**
+     * @return Update operation.
+     */
+    @Override public GridCacheOperation operation() {
+        return op;
+    }
+
+    /**
+     * @param res Response.
+     * @return {@code True} if current response was {@code null}.
+     */
+    @Override public boolean onResponse(GridNearAtomicUpdateResponse res) {
+        if (this.res == null) {
+            this.res = res;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return Response.
+     */
+    @Override @Nullable public GridNearAtomicUpdateResponse response() {
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return addDepInfo;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+        return ctx.atomicMessageLogger();
     }
 
     /** {@inheritDoc} */
@@ -542,98 +672,140 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         }
 
         switch (writer.state()) {
-            case 10:
+            case 3:
                 if (!writer.writeBoolean("clientReq", clientReq))
                     return false;
 
                 writer.incrementState();
 
-            case 11:
+            case 4:
                 if (!writer.writeMessage("conflictExpireTimes", conflictExpireTimes))
                     return false;
 
                 writer.incrementState();
 
-            case 12:
+            case 5:
                 if (!writer.writeMessage("conflictTtls", conflictTtls))
                     return false;
 
                 writer.incrementState();
 
-            case 13:
+            case 6:
                 if (!writer.writeCollection("conflictVers", conflictVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 14:
+            case 7:
                 if (!writer.writeCollection("entryProcessorsBytes", entryProcessorsBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
-            case 15:
+            case 8:
                 if (!writer.writeByteArray("expiryPlcBytes", expiryPlcBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 16:
+            case 9:
                 if (!writer.writeBoolean("fastMap", fastMap))
                     return false;
 
                 writer.incrementState();
 
-            case 17:
+            case 10:
                 if (!writer.writeObjectArray("filter", filter, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 18:
+            case 11:
+                if (!writer.writeMessage("futVer", futVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 12:
                 if (!writer.writeBoolean("hasPrimary", hasPrimary))
                     return false;
 
                 writer.incrementState();
 
-            case 19:
+            case 13:
                 if (!writer.writeObjectArray("invokeArgsBytes", invokeArgsBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
-            case 20:
+            case 14:
                 if (!writer.writeBoolean("keepBinary", keepBinary))
                     return false;
 
                 writer.incrementState();
 
-            case 21:
+            case 15:
                 if (!writer.writeCollection("keys", keys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 22:
+            case 16:
+                if (!writer.writeByte("op", op != null ? (byte)op.ordinal() : -1))
+                    return false;
+
+                writer.incrementState();
+
+            case 17:
                 if (!writer.writeCollection("partIds", partIds, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
 
-            case 23:
+            case 18:
                 if (!writer.writeBoolean("retval", retval))
                     return false;
 
                 writer.incrementState();
 
-            case 24:
+            case 19:
                 if (!writer.writeBoolean("skipStore", skipStore))
                     return false;
 
                 writer.incrementState();
 
-            case 25:
+            case 20:
+                if (!writer.writeUuid("subjId", subjId))
+                    return false;
+
+                writer.incrementState();
+
+            case 21:
+                if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
+                    return false;
+
+                writer.incrementState();
+
+            case 22:
+                if (!writer.writeInt("taskNameHash", taskNameHash))
+                    return false;
+
+                writer.incrementState();
+
+            case 23:
                 if (!writer.writeBoolean("topLocked", topLocked))
+                    return false;
+
+                writer.incrementState();
+
+            case 24:
+                if (!writer.writeMessage("topVer", topVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 25:
+                if (!writer.writeMessage("updateVer", updateVer))
                     return false;
 
                 writer.incrementState();
@@ -660,7 +832,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
             return false;
 
         switch (reader.state()) {
-            case 10:
+            case 3:
                 clientReq = reader.readBoolean("clientReq");
 
                 if (!reader.isLastRead())
@@ -668,7 +840,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 11:
+            case 4:
                 conflictExpireTimes = reader.readMessage("conflictExpireTimes");
 
                 if (!reader.isLastRead())
@@ -676,7 +848,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 12:
+            case 5:
                 conflictTtls = reader.readMessage("conflictTtls");
 
                 if (!reader.isLastRead())
@@ -684,7 +856,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 13:
+            case 6:
                 conflictVers = reader.readCollection("conflictVers", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -692,7 +864,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 14:
+            case 7:
                 entryProcessorsBytes = reader.readCollection("entryProcessorsBytes", MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
@@ -700,7 +872,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 15:
+            case 8:
                 expiryPlcBytes = reader.readByteArray("expiryPlcBytes");
 
                 if (!reader.isLastRead())
@@ -708,7 +880,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 16:
+            case 9:
                 fastMap = reader.readBoolean("fastMap");
 
                 if (!reader.isLastRead())
@@ -716,7 +888,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 17:
+            case 10:
                 filter = reader.readObjectArray("filter", MessageCollectionItemType.MSG, CacheEntryPredicate.class);
 
                 if (!reader.isLastRead())
@@ -724,7 +896,15 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 18:
+            case 11:
+                futVer = reader.readMessage("futVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 12:
                 hasPrimary = reader.readBoolean("hasPrimary");
 
                 if (!reader.isLastRead())
@@ -732,7 +912,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 19:
+            case 13:
                 invokeArgsBytes = reader.readObjectArray("invokeArgsBytes", MessageCollectionItemType.BYTE_ARR, byte[].class);
 
                 if (!reader.isLastRead())
@@ -740,7 +920,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 20:
+            case 14:
                 keepBinary = reader.readBoolean("keepBinary");
 
                 if (!reader.isLastRead())
@@ -748,7 +928,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 21:
+            case 15:
                 keys = reader.readCollection("keys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -756,7 +936,19 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 22:
+            case 16:
+                byte opOrd;
+
+                opOrd = reader.readByte("op");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                op = GridCacheOperation.fromOrdinal(opOrd);
+
+                reader.incrementState();
+
+            case 17:
                 partIds = reader.readCollection("partIds", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
@@ -764,7 +956,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 23:
+            case 18:
                 retval = reader.readBoolean("retval");
 
                 if (!reader.isLastRead())
@@ -772,7 +964,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 24:
+            case 19:
                 skipStore = reader.readBoolean("skipStore");
 
                 if (!reader.isLastRead())
@@ -780,8 +972,52 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 25:
+            case 20:
+                subjId = reader.readUuid("subjId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 21:
+                byte syncModeOrd;
+
+                syncModeOrd = reader.readByte("syncMode");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                syncMode = CacheWriteSynchronizationMode.fromOrdinal(syncModeOrd);
+
+                reader.incrementState();
+
+            case 22:
+                taskNameHash = reader.readInt("taskNameHash");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 23:
                 topLocked = reader.readBoolean("topLocked");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 24:
+                topVer = reader.readMessage("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 25:
+                updateVer = reader.readMessage("updateVer");
 
                 if (!reader.isLastRead())
                     return false;
