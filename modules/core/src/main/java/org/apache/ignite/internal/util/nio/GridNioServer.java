@@ -1379,7 +1379,7 @@ public class GridNioServer<T> {
                 ses.bytesSent(cnt);
 
                 if (!buf.hasRemaining())
-                    queue.remove(buf);
+                    queue.poll();
                 else
                     break;
             }
@@ -3124,7 +3124,10 @@ public class GridNioServer<T> {
 
                     queue.offer((ByteBuffer)msg);
 
-                    ((GridSelectorNioSessionImpl)ses).worker().registerWrite((GridSelectorNioSessionImpl)ses);
+                    GridSelectorNioSessionImpl ses0 = (GridSelectorNioSessionImpl)ses;
+
+                    if (!ses0.procWrite.get() && ses0.procWrite.compareAndSet(false, true))
+                        ses0.worker().registerWrite(ses0);
 
                     return null;
                 }
