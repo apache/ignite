@@ -60,6 +60,15 @@ namespace ignite
                  * Internal out operation.
                  *
                  * @param opType Operation type.
+                 * @param err Error.
+                 * @return Result.
+                 */
+                bool OutOp(int32_t opType, IgniteError* err);
+
+                /**
+                 * Internal out operation.
+                 *
+                 * @param opType Operation type.
                  * @param inOp Input.
                  * @param err Error.
                  * @return Result.
@@ -87,6 +96,15 @@ namespace ignite
                  * @param err Error.
                  */
                 void OutInOpX(int32_t opType, InputOperation& inOp, OutputOperation& outOp, IgniteError* err);
+
+                /**
+                * Internal out-in operation.
+                *
+                * @param opType Operation type.
+                * @param val Value.
+                * @param err Error.
+                */
+                int64_t OutInOpLong(int32_t opType, int64_t val, IgniteError* err);
 
                 /**
                  * Get environment shared pointer.

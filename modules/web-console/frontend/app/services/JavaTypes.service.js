@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-import _ from 'lodash';
-
 // Java built-in class names.
 import JAVA_CLASSES from '../data/java-classes.json';
 
@@ -42,6 +40,42 @@ const VALID_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-
  * Utility service for various check on java types.
  */
 export default class JavaTypes {
+    static $inject = ['igniteClusterDefaults', 'igniteCacheDefaults', 'igniteIgfsDefaults'];
+
+    constructor(clusterDflts, cacheDflts, igfsDflts) {
+        this.enumClasses = _.uniq(this._enumClassesAcc(_.merge(clusterDflts, cacheDflts, igfsDflts), []));
+        this.shortEnumClasses = _.map(this.enumClasses, (cls) => this.shortClassName(cls));
+    }
+
+    /**
+     * Collects recursive enum classes.
+     *
+     * @param root Root object.
+     * @param classes Collected classes.
+     * @return {Array.<String>}
+     * @private
+     */
+    _enumClassesAcc(root, classes) {
+        return _.reduce(root, (acc, val, key) => {
+            if (key === 'clsName')
+                acc.push(val);
+            else if (_.isObject(val))
+                this._enumClassesAcc(val, acc);
+
+            return acc;
+        }, classes);
+    }
+
+    /**
+     * Check if class name is non enum class in Ignite configuration.
+     *
+     * @param clsName
+     * @return {boolean}
+     */
+    nonEnum(clsName) {
+        return !_.includes(this.shortEnumClasses, clsName) && !_.includes(this.enumClasses, clsName);
+    }
+
     /**
      * @param clsName {String} Class name to check.
      * @returns {boolean} 'true' if provided class name is a not Java built in class.
@@ -52,12 +86,29 @@ export default class JavaTypes {
 
     /**
      * @param clsName Class name to check.
-     * @returns Full class name for java build-in types or source class otherwise.
+     * @returns {String} Full class name for java build-in types or source class otherwise.
      */
     fullClassName(clsName) {
         const type = _.find(JAVA_CLASSES, (clazz) => clsName === clazz.short);
 
         return type ? type.full : clsName;
+    }
+
+    /**
+     * Extract class name from full class name.
+     *
+     * @param clsName full class name.
+     * @return {String} Class name.
+     */
+    shortClassName(clsName) {
+        if (this.isJavaPrimitive(clsName))
+            return clsName;
+
+        const fullClsName = this.fullClassName(clsName);
+
+        const dotIdx = fullClsName.lastIndexOf('.');
+
+        return dotIdx > 0 ? fullClsName.substr(dotIdx + 1) : fullClsName;
     }
 
     /**
@@ -114,5 +165,18 @@ export default class JavaTypes {
      */
     isJavaPrimitive(clsName) {
         return _.includes(JAVA_PRIMITIVES, clsName);
+    }
+
+    /**
+     * Convert some name to valid java name.
+     *
+     * @param prefix To append to java name.
+     * @param name to convert.
+     * @returns {string} Valid java name.
+     */
+    toJavaName(prefix, name) {
+        const javaName = name ? this.shortClassName(name).replace(/[^A-Za-z_0-9]+/g, '_') : 'dflt';
+
+        return prefix + javaName.charAt(0).toLocaleUpperCase() + javaName.slice(1);
     }
 }

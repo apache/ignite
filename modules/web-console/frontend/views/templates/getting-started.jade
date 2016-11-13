@@ -19,7 +19,9 @@
         .modal-content
             #errors-container.modal-header.header
                 button.close(ng-click='close()' aria-hidden='true') &times;
-                h4.modal-title {{title}}
+                h4.modal-title 
+                    i.fa.fa-book
+                    | {{title}}
             .getting-started
                 .col-xs-12(ng-bind-html='message')
             .modal-footer

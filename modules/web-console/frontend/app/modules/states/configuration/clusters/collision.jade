@@ -25,7 +25,8 @@ include ../../../../../app/helpers/jade/mixins.jade
         ignite-form-panel-chevron
         label Collision configuration
         ignite-form-field-tooltip.tipLabel
-            | Configuration Collision SPI allows to regulate how grid jobs get executed when they arrive on a destination node for execution
+            | Configuration Collision SPI allows to regulate how grid jobs get executed when they arrive on a destination node for execution#[br]
+            | #[a(href="https://apacheignite.readme.io/docs/job-scheduling" target="_blank") More info]
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=form)
         .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
@@ -47,15 +48,15 @@ include ../../../../../app/helpers/jade/mixins.jade
                             <li>Custom - custom CollisionSpi implementation</li>\
                             <li>Default - jobs are activated immediately on arrival to mapped node</li>\
                         </ul>')
-                .settings-row(ng-show='#{modelCollisionKind} !== "Noop"')
+                .settings-row(ng-if='#{modelCollisionKind} !== "Noop"')
                     .panel-details
-                        div(ng-show='#{modelCollisionKind} === "JobStealing"')
+                        div(ng-if='#{modelCollisionKind} === "JobStealing"')
                             include ./collision/job-stealing.jade
-                        div(ng-show='#{modelCollisionKind} === "FifoQueue"')
+                        div(ng-if='#{modelCollisionKind} === "FifoQueue"')
                             include ./collision/fifo-queue.jade
-                        div(ng-show='#{modelCollisionKind} === "PriorityQueue"')
+                        div(ng-if='#{modelCollisionKind} === "PriorityQueue"')
                             include ./collision/priority-queue.jade
-                        div(ng-show='#{modelCollisionKind} === "Custom"')
+                        div(ng-if='#{modelCollisionKind} === "Custom"')
                             include ./collision/custom.jade
             .col-sm-6
                 -var model = 'backupItem.collision'
