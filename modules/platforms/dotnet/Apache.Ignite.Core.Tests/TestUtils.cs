@@ -284,7 +284,8 @@ namespace Apache.Ignite.Core.Tests
             var items = handleRegistry.GetItems().Where(x => !(x.Value is LifecycleBeanHolder)).ToList();
 
             if (items.Any())
-                Assert.Fail("HandleRegistry is not empty in grid '{0}':\n '{1}'", grid.Name,
+                Assert.Fail("HandleRegistry is not empty in grid '{0}' (expected {1}, actual {2}):\n '{3}'", 
+                    grid.Name, expectedCount, handleRegistry.Count,
                     items.Select(x => x.ToString()).Aggregate((x, y) => x + "\n" + y));
         }
 
