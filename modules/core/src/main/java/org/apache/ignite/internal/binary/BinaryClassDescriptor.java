@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import com.sun.tools.jdi.LinkedHashMap;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -31,12 +30,12 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
@@ -55,9 +54,6 @@ import org.jetbrains.annotations.Nullable;
  * Binary class descriptor.
  */
 public class BinaryClassDescriptor {
-    /** */
-    private static boolean FIELDS_SORTED_ORDER =
-        Boolean.getBoolean(IgniteSystemProperties.IGNITE_BINARY_SORT_OBJECT_FIELDS);
     /** */
     @GridToStringExclude
     private final BinaryContext ctx;
@@ -124,6 +120,9 @@ public class BinaryClassDescriptor {
 
     /** */
     private final Class<?>[] intfs;
+
+    /** Whether stable schema was published. */
+    private volatile boolean stableSchemaPublished;
 
     /**
      * @param ctx Context.
@@ -276,10 +275,12 @@ public class BinaryClassDescriptor {
                 ctor = null;
                 stableFieldsMeta = metaDataEnabled ? new HashMap<String, Integer>() : null;
 
-                Map<Object, BinaryFieldAccessor> fields0 = new TreeMap<>();
+                Map<Object, BinaryFieldAccessor> fields0;
 
-                if (!FIELDS_SORTED_ORDER)
-                    fields0 = new LinkedHashMap();
+                if (BinaryUtils.FIELDS_SORTED_ORDER)
+                    fields0 = new TreeMap<>();
+                else
+                    fields0 = new LinkedHashMap<>();
 
                 Set<String> duplicates = duplicateFields(cls);
 
@@ -458,13 +459,6 @@ public class BinaryClassDescriptor {
      */
     Map<String, Integer> fieldsMeta() {
         return stableFieldsMeta;
-    }
-
-    /**
-     * @return Schema.
-     */
-    private BinarySchema schema() {
-        return stableSchema;
     }
 
     /**
@@ -757,7 +751,7 @@ public class BinaryClassDescriptor {
                 break;
 
             case OBJECT:
-                if (userType && schemaReg.schema(stableSchema.schemaId()) == null) {
+                if (userType && !stableSchemaPublished) {
                     // Update meta before write object with new schema
                     BinaryMetadata meta = new BinaryMetadata(typeId, typeName, stableFieldsMeta,
                         affKeyFieldName, Collections.singleton(stableSchema), false);
@@ -765,6 +759,8 @@ public class BinaryClassDescriptor {
                     ctx.updateMetadata(typeId, meta);
 
                     schemaReg.addSchema(stableSchema.schemaId(), stableSchema);
+
+                    stableSchemaPublished = true;
                 }
 
                 if (preWrite(writer, obj)) {

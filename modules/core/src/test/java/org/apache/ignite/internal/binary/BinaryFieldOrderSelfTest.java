@@ -33,20 +33,14 @@ public class BinaryFieldOrderSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        GridTestUtils.setFieldValue(BinaryObjectBuilderImpl.class,
-            BinaryObjectBuilderImpl.class, "FIELDS_SORTED_ORDER", false);
-        GridTestUtils.setFieldValue(BinaryClassDescriptor.class,
-            BinaryClassDescriptor.class, "FIELDS_SORTED_ORDER", false);
+        GridTestUtils.setFieldValue(BinaryUtils.class, BinaryUtils.class, "FIELDS_SORTED_ORDER", false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testEqualsSortedOrder() throws Exception {
-        GridTestUtils.setFieldValue(BinaryObjectBuilderImpl.class,
-            BinaryObjectBuilderImpl.class, "FIELDS_SORTED_ORDER", true);
-        GridTestUtils.setFieldValue(BinaryClassDescriptor.class,
-            BinaryClassDescriptor.class, "FIELDS_SORTED_ORDER", true);
+        GridTestUtils.setFieldValue(BinaryUtils.class, BinaryUtils.class, "FIELDS_SORTED_ORDER", true);
 
         IgniteEx ignite = grid();
 
