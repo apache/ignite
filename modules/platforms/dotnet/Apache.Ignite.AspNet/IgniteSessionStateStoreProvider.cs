@@ -294,11 +294,20 @@ namespace Apache.Ignite.AspNet
 
             var data = (IgniteSessionStateStoreData) item;
 
-            if (!(lockId is long) || data.LockId != (long) lockId)
-                throw new IgniteException(string.Format(CultureInfo.InvariantCulture,
-                    "Invalid session release request, expected lockId: {0}, actual: {1}", data.LockId, lockId));
+            if (newItem)
+            {
+                var cache = _expiryCacheHolder.GetCacheWithExpiry(data.Timeout * 60);
 
-            SetAndUnlockItem(key, data);
+                PutItem(key, data, cache);
+            }
+            else
+            {
+                if (!(lockId is long) || data.LockId != (long) lockId)
+                    throw new IgniteException(string.Format(CultureInfo.InvariantCulture,
+                        "Invalid session release request, expected lockId: {0}, actual: {1}", data.LockId, lockId));
+
+                SetAndUnlockItem(key, data);
+            }
         }
 
         /// <summary>
@@ -333,7 +342,7 @@ namespace Apache.Ignite.AspNet
         /// </summary>
         /// <param name="context">The <see cref="T:System.Web.HttpContext" /> for the current request.</param>
         /// <param name="timeout">The session-state <see cref="P:System.Web.SessionState.HttpSessionState.Timeout" /> 
-        /// value for the new <see cref="T:System.Web.SessionState.SessionStateStoreData" />.</param>
+        /// value for the new <see cref="T:System.Web.SessionState.SessionStateStoreData" />, in minutes.</param>
         /// <returns>
         /// A new <see cref="T:System.Web.SessionState.SessionStateStoreData" /> for the current request.
         /// </returns>
@@ -349,7 +358,7 @@ namespace Apache.Ignite.AspNet
         /// <param name="id">The <see cref="P:System.Web.SessionState.HttpSessionState.SessionID" /> 
         /// for the current request.</param>
         /// <param name="timeout">The session <see cref="P:System.Web.SessionState.HttpSessionState.Timeout" /> 
-        /// for the current request.</param>
+        /// for the current request, in minutes.</param>
         public override void CreateUninitializedItem(HttpContext context, string id, int timeout)
         {
             var cache = _expiryCacheHolder.GetCacheWithExpiry((long) timeout * 60);

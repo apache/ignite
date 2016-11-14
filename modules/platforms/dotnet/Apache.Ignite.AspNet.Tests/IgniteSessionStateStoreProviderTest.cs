@@ -209,6 +209,24 @@ namespace Apache.Ignite.AspNet.Tests
             Assert.AreEqual(TimeSpan.Zero, lockAge);
             Assert.AreEqual(SessionStateActions.None, actions);
 
+            // SetAndRelease with no lock. This happens with certain versions of ASP.NET.
+            var item = provider.CreateNewStoreData(HttpContext, 7);
+            // ReSharper disable once AssignNullToNotNullAttribute (lockId is not supposed to be null, but it can be).
+            provider.SetAndReleaseItemExclusive(HttpContext, Id, item, null, true);
+
+            // Check added item.
+            res = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
+            Assert.IsNotNull(res);
+            Assert.IsNull(lockId);
+            Assert.AreEqual(7, res.Timeout);
+            Assert.IsFalse(locked);
+            Assert.AreEqual(TimeSpan.Zero, lockAge);
+            Assert.AreEqual(SessionStateActions.None, actions);
+
+            // Remove item.
+            // ReSharper disable once AssignNullToNotNullAttribute (lockId is not supposed to be null, but it can be).
+            provider.RemoveItem(HttpContext, Id, null, null);
+
             // Add item.
             provider.CreateUninitializedItem(HttpContext, Id, 7);
             
@@ -228,7 +246,7 @@ namespace Apache.Ignite.AspNet.Tests
             Assert.IsFalse(locked);
             Assert.AreEqual(TimeSpan.Zero, lockAge);
             Assert.AreEqual(SessionStateActions.None, actions);
-            provider.SetAndReleaseItemExclusive(HttpContext, Id, UpdateStoreData(res), lockId, true);
+            provider.SetAndReleaseItemExclusive(HttpContext, Id, UpdateStoreData(res), lockId, false);
 
             // Not locked, item present.
             res = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
@@ -331,20 +349,37 @@ namespace Apache.Ignite.AspNet.Tests
             Assert.IsFalse(GetProvider().SetItemExpireCallback(null));
 
             // Check there is no item.
-            var res = provider.GetItem(HttpContext, "myId", out locked, out lockAge, out lockId, out actions);
+            var res = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
             Assert.IsNull(res);
 
-            // Put an item.
-            provider.CreateUninitializedItem(HttpContext, "myId", 1);
+            // Put an item with CreateUninitializedItem and check.
+            provider.CreateUninitializedItem(HttpContext, Id, 1);
+            CheckExpiry(provider);
 
-            // Check that it is there.
-            res = provider.GetItem(HttpContext, "myId", out locked, out lockAge, out lockId, out actions);
+            // Put an item with SetAndReleaseItemExclusive and check.
+            var data = provider.CreateNewStoreData(HttpContext, 1);
+            provider.SetAndReleaseItemExclusive(HttpContext, Id, data, lockId, true);
+            CheckExpiry(provider);
+        }
+
+        /// <summary>
+        /// Checks item expiration.
+        /// </summary>
+        private static void CheckExpiry(SessionStateStoreProviderBase provider)
+        {
+            bool locked;
+            TimeSpan lockAge;
+            object lockId;
+            SessionStateActions actions;
+
+            // Check that item is present.
+            var res = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
             Assert.IsNotNull(res);
 
             // Wait a minute and check again.
             Thread.Sleep(TimeSpan.FromMinutes(1.05));
 
-            res = provider.GetItem(HttpContext, "myId", out locked, out lockAge, out lockId, out actions);
+            res = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
             Assert.IsNull(res);
         }
 

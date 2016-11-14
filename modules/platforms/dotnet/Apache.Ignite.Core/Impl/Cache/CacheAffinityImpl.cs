@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public int Partitions
         {
-            get { return (int) DoOutOp(OpPartitions); }
+            get { return (int) DoOutInOp(OpPartitions); }
         }
 
         /** <inheritDoc /> */

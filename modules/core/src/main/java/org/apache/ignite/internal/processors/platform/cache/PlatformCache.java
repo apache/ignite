@@ -58,6 +58,8 @@ import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.transactions.TransactionDeadlockException;
+import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.Nullable;
 
 import javax.cache.Cache;
@@ -385,23 +387,6 @@ public class PlatformCache extends PlatformAbstractTarget {
         this.cache = (IgniteCacheProxy)binCache;
         this.keepBinary = keepBinary;
         this.exts = exts;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected long processOutLong(int type) throws IgniteCheckedException {
-        switch (type) {
-            case OP_CLEAR_CACHE:
-                cache.clear();
-
-                return TRUE;
-
-            case OP_REMOVE_ALL2:
-                cache.removeAll();
-
-                return TRUE;
-        }
-
-        return super.processOutLong(type);
     }
 
     /**
@@ -1077,15 +1062,6 @@ public class PlatformCache extends PlatformAbstractTarget {
                 return TRUE;
             }
 
-            case OP_CLEAR_CACHE:
-                cache.clear();
-
-                return TRUE;
-
-            case OP_REMOVE_ALL2:
-                cache.removeAll();
-
-                return TRUE;
             case OP_REBALANCE: {
                 PlatformFutureUtils.listen(platformCtx, cache.rebalance().chain(new C1<IgniteFuture, Object>() {
                     @Override public Object apply(IgniteFuture fut) {
@@ -1095,6 +1071,16 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 return TRUE;
             }
+
+            case OP_CLEAR_CACHE:
+                cache.clear();
+
+                return TRUE;
+
+            case OP_REMOVE_ALL2:
+                cache.removeAll();
+
+                return TRUE;
         }
         return super.processInLongOutLong(type, val);
     }
@@ -1110,6 +1096,16 @@ public class PlatformCache extends PlatformAbstractTarget {
 
         if (e.getCause() instanceof EntryProcessorException)
             return (Exception)e.getCause();
+
+        TransactionDeadlockException deadlockException = X.cause(e, TransactionDeadlockException.class);
+
+        if (deadlockException != null)
+            return deadlockException;
+
+        TransactionTimeoutException timeoutException = X.cause(e, TransactionTimeoutException.class);
+
+        if (timeoutException != null)
+            return timeoutException;
 
         return super.convertException(e);
     }

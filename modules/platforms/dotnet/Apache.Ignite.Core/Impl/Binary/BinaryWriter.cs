@@ -1259,8 +1259,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 // Are we dealing with a well-known type?
                 var handler = BinarySystemHandlers.GetWriteHandler(type);
 
-                if (handler == null)  // We did our best, object cannot be marshalled.
-                    throw new BinaryObjectException("Unsupported object type [type=" + type + ", object=" + obj + ']');
+                if (handler == null) // We did our best, object cannot be marshalled.
+                    throw BinaryUtils.GetUnsupportedTypeException(type, obj);
                 
                 if (handler.SupportsHandles && WriteHandle(_stream.Position, obj))
                     return;
@@ -1316,7 +1316,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteLongField(*(long*)&val0);
             }
             else
-                throw new BinaryObjectException("Unsupported object type [type=" + type.FullName + ", object=" + val + ']');
+                throw BinaryUtils.GetUnsupportedTypeException(type, val);
         }
 
         /// <summary>
