@@ -742,7 +742,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (crd.isLocal()) {
             ClusterNode node = discoEvt.eventNode();
 
-            if (discoEvt.type() == EVT_NODE_JOINED && !discoEvt.eventNode().isLocal() && Boolean.TRUE.equals(node.attribute("SKIP_FIRST_EXCHANGE_MSG"))) {
+            Object attr = node.attribute("SKIP_FIRST_EXCHANGE_MSG");
+
+            boolean skipFirstExchange = Boolean.TRUE.equals(attr) || "true".equals(attr);
+
+            if (discoEvt.type() == EVT_NODE_JOINED && !node.isLocal() && skipFirstExchange) {
                 assert !CU.clientNode(node) : discoEvt;
                 assert srvNodes.contains(node);
 
