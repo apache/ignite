@@ -803,8 +803,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (cctx.exchange().skipFirstExchangeMessage() && discoEvt.type() == EVT_NODE_JOINED && discoEvt.eventNode().isLocal())
                 skipSnd = true;
 
-            if (!skipSnd)
+            if (!skipSnd) {
+                long sendStart = System.currentTimeMillis();
+
                 sendPartitions(crd);
+
+                log.info("Send parts time [topVer=" + topologyVersion() + ", time=" + (System.currentTimeMillis() - sendStart) + ']');
+            }
             else
                 log.info("Skip first exchange message [topVer=" + topologyVersion() + ']');
         }
