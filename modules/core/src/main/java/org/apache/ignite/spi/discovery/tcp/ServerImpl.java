@@ -176,7 +176,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         IgniteProductVersion.fromString("1.5.0");
 
     /** */
-    private static final boolean SEND_JOIN_REQ_DIRECTLY = getBoolean("SEND_JOIN_REQ_DIRECTLY", true);
+    private static final boolean SEND_JOIN_REQ_DIRECTLY = getBoolean("SEND_JOIN_REQ_DIRECTLY", false);
 
     /** */
     private IgniteThreadPoolExecutor utilityPool;
