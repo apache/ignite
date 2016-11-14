@@ -136,7 +136,7 @@ public class GridNioServer<T> {
 
     /** */
     private final boolean disablePark =
-        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_SELECTOR_PARK, false);
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_SELECTOR_PARK, true); // TODO
 
     /** Accept worker thread. */
     @GridToStringExclude
