@@ -356,7 +356,14 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
             int createdCnt = 0;
 
             for (IgniteInternalFuture<Object> fut : futs) {
-                Object res = fut.get();
+                Object res;
+
+                try {
+                    res = fut.get();
+                }
+                catch (Throwable t) {
+                    res = t;
+                }
 
                 if (res instanceof IgniteException || res instanceof IgniteCheckedException)
                     continue;
