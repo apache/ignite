@@ -418,6 +418,7 @@
     <Compile Include="Impl\Services\ServiceProxyInvoker.cs" />
     <Compile Include="Impl\Services\ServiceProxySerializer.cs" />
     <Compile Include="Impl\Services\Services.cs" />
+    <Compile Include="Impl\SwapSpace\SwapSpaceSerializer.cs" />
     <Compile Include="Impl\Transactions\Transaction.cs" />
     <Compile Include="Impl\Transactions\TransactionImpl.cs" />
     <Compile Include="Impl\Transactions\TransactionMetricsImpl.cs" />
@@ -471,6 +472,8 @@
     <Compile Include="Services\Package-Info.cs" />
     <Compile Include="Services\ServiceConfiguration.cs" />
     <Compile Include="Services\ServiceInvocationException.cs" />
+    <Compile Include="SwapSpace\File\FileSwapSpaceSpi.cs" />
+    <Compile Include="SwapSpace\ISwapSpaceSpi.cs" />
     <Compile Include="Transactions\ITransaction.cs" />
     <Compile Include="Transactions\ITransactionMetrics.cs" />
     <Compile Include="Transactions\ITransactions.cs" />
