@@ -531,7 +531,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridFutureAdapter.class, this, "state", state());
+        return S.toString(GridFutureAdapter.class, this, "state", state(), "hash", System.identityHashCode(this));
     }
 
     /**
