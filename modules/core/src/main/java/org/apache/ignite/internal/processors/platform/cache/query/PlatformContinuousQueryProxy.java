@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.cache.query;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 
@@ -45,7 +46,7 @@ public class PlatformContinuousQueryProxy extends PlatformAbstractTarget  {
     }
 
     /** {@inheritDoc} */
-    @Override public long outLong(int type) throws Exception {
+    @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         qry.close();
 
         return 0;

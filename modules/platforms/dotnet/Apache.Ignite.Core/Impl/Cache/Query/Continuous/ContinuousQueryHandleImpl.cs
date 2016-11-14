@@ -225,7 +225,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
 
                 try
                 {
-                    UU.TargetOutLong(_nativeQry, 0);
+                    UU.TargetInLongOutLong(_nativeQry, 0, 0);
                 }
                 finally
                 {

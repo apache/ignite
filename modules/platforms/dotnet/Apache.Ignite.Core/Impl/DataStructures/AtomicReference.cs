@@ -82,13 +82,13 @@ namespace Apache.Ignite.Core.Impl.DataStructures
         /** <inheritDoc /> */
         public bool IsClosed
         {
-            get { return DoOutOp((int) Op.IsClosed) == True; }
+            get { return DoOutInOp((int) Op.IsClosed) == True; }
         }
 
         /** <inheritDoc /> */
         public void Close()
         {
-            DoOutOp((int) Op.Close);
+            DoOutInOp((int) Op.Close);
         }
     }
 }

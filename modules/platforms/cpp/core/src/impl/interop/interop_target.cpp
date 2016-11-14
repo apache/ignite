@@ -72,9 +72,7 @@ namespace ignite
 
                 if (metaMgr->IsUpdatedSince(metaVer))
                 {
-                    BinaryTypeUpdaterImpl metaUpdater(env, javaRef);
-
-                    if (!metaMgr->ProcessPendingUpdates(&metaUpdater, err))
+                    if (!metaMgr->ProcessPendingUpdates(env.Get()->GetTypeUpdater(), err))
                         return 0;
                 }
 
@@ -115,7 +113,7 @@ namespace ignite
             {
                 JniErrorInfo jniErr;
 
-                long long res = env.Get()->Context()->TargetOutLong(javaRef, opType, &jniErr);
+                long long res = env.Get()->Context()->TargetInLongOutLong(javaRef, opType, 0, &jniErr);
 
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
