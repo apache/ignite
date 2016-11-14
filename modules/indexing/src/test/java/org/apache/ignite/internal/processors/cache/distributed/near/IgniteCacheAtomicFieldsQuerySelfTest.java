@@ -39,21 +39,4 @@ public class IgniteCacheAtomicFieldsQuerySelfTest extends IgniteCachePartitioned
     @Override protected NearCacheConfiguration nearConfiguration() {
         return null;
     }
-
-    /**
-     *
-     */
-    public void testUnsupportedOperations() {
-        try {
-            QueryCursor<List<?>> qry = grid(0).cache(null).query(new SqlFieldsQuery(
-                "update Person set name = ?").setArgs("Mary Poppins"));
-
-            qry.getAll();
-
-            fail("We don't support updates.");
-        }
-        catch (Exception e) {
-            X.println("___ " + e.getMessage());
-        }
-    }
 }
