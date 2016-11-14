@@ -350,7 +350,9 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             long updateSeq = this.updateSeq.incrementAndGet();
 
-            initPartitions0(exchFut, updateSeq);
+            ClusterNode oldest = CU.oldestAliveCacheServerNode(cctx.shared(), topVer);
+
+            initPartitions0(oldest, exchFut, updateSeq);
 
             consistencyCheck();
         }
@@ -363,10 +365,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @param exchFut Exchange future.
      * @param updateSeq Update sequence.
      */
-    private void initPartitions0(GridDhtPartitionsExchangeFuture exchFut, long updateSeq) {
+    private void initPartitions0(ClusterNode oldest, GridDhtPartitionsExchangeFuture exchFut, long updateSeq) {
         ClusterNode loc = cctx.localNode();
-
-        ClusterNode oldest = CU.oldestAliveCacheServerNode(cctx.shared(), topVer);
 
         assert oldest != null || cctx.kernalContext().clientNode();
 
@@ -407,12 +407,12 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         if (log.isDebugEnabled())
                             log.debug("Owned partition for oldest node: " + locPart);
 
-                        updateLocal(p, loc.id(), locPart.state(), updateSeq);
+                        updateLocal(oldest, p, loc.id(), locPart.state(), updateSeq);
                     }
                 }
             }
             else
-                createPartitions(aff, updateSeq);
+                createPartitions(oldest, aff, updateSeq);
         }
         else {
             // If preloader is disabled, then we simply clear out
@@ -429,7 +429,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         if (state.active()) {
                             locPart.rent(false);
 
-                            updateLocal(p, loc.id(), locPart.state(), updateSeq);
+                            updateLocal(oldest, p, loc.id(), locPart.state(), updateSeq);
 
                             if (log.isDebugEnabled())
                                 log.debug("Evicting partition with rebalancing disabled " +
@@ -443,7 +443,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         }
 
         if (node2part != null && node2part.valid())
-            checkEvictions(updateSeq, aff);
+            checkEvictions(oldest, updateSeq, aff);
 
         updateRebalanceVersion(aff);
     }
@@ -452,7 +452,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @param aff Affinity assignments.
      * @param updateSeq Update sequence.
      */
-    private void createPartitions(List<List<ClusterNode>> aff, long updateSeq) {
+    private void createPartitions(ClusterNode oldest, List<List<ClusterNode>> aff, long updateSeq) {
         ClusterNode loc = cctx.localNode();
 
         int num = cctx.affinity().partitions();
@@ -464,7 +464,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     // will be created in MOVING state.
                     GridDhtLocalPartition locPart = createPartition(p);
 
-                    updateLocal(p, loc.id(), locPart.state(), updateSeq);
+                    updateLocal(oldest, p, loc.id(), locPart.state(), updateSeq);
                 }
             }
             // If this node's map is empty, we pre-create local partitions,
@@ -533,11 +533,11 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             }
 
             if (affReady)
-                initPartitions0(exchFut, updateSeq);
+                initPartitions0(oldest, exchFut, updateSeq);
             else {
                 List<List<ClusterNode>> aff = cctx.affinity().idealAssignment();
 
-                createPartitions(aff, updateSeq);
+                createPartitions(oldest, aff, updateSeq);
             }
 
             consistencyCheck();
@@ -584,6 +584,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             long updateSeq = this.updateSeq.incrementAndGet();
 
+            ClusterNode oldest = CU.oldestAliveCacheServerNode(cctx.shared(), topVer);
+
             for (int p = 0; p < num; p++) {
                 GridDhtLocalPartition locPart = localPartition(p, topVer, false, false);
 
@@ -610,7 +612,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 assert owned : "Failed to own partition [cacheName" + cctx.name() + ", locPart=" +
                                     locPart + ']';
 
-                                updateLocal(p, loc.id(), locPart.state(), updateSeq);
+                                updateLocal(oldest, p, loc.id(), locPart.state(), updateSeq);
 
                                 changed = true;
 
@@ -630,7 +632,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                     locPart + ", owners = " + owners + ']');
                         }
                         else
-                            updateLocal(p, loc.id(), locPart.state(), updateSeq);
+                            updateLocal(oldest, p, loc.id(), locPart.state(), updateSeq);
                     }
                 }
                 else {
@@ -640,7 +642,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         if (state == MOVING) {
                             locPart.rent(false);
 
-                            updateLocal(p, loc.id(), locPart.state(), updateSeq);
+                            updateLocal(oldest, p, loc.id(), locPart.state(), updateSeq);
 
                             changed = true;
 
@@ -1129,7 +1131,9 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (!affVer.equals(AffinityTopologyVersion.NONE) && affVer.compareTo(topVer) >= 0) {
                 List<List<ClusterNode>> aff = cctx.affinity().assignments(topVer);
 
-                changed = checkEvictions(updateSeq, aff);
+                ClusterNode oldest = CU.oldestAliveCacheServerNode(cctx.shared(), topVer);
+
+                changed = checkEvictions(oldest, updateSeq, aff);
 
                 updateRebalanceVersion(aff);
             }
@@ -1254,7 +1258,9 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (!affVer.equals(AffinityTopologyVersion.NONE) && affVer.compareTo(topVer) >= 0) {
                 List<List<ClusterNode>> aff = cctx.affinity().assignments(topVer);
 
-                changed |= checkEvictions(updateSeq, aff);
+                ClusterNode oldest = CU.oldestAliveCacheServerNode(cctx.shared(), topVer);
+
+                changed |= checkEvictions(oldest, updateSeq, aff);
 
                 updateRebalanceVersion(aff);
             }
@@ -1276,7 +1282,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @param aff Affinity assignments.
      * @return Checks if any of the local partitions need to be evicted.
      */
-    private boolean checkEvictions(long updateSeq, List<List<ClusterNode>> aff) {
+    private boolean checkEvictions(ClusterNode oldest, long updateSeq, List<List<ClusterNode>> aff) {
         boolean changed = false;
 
         UUID locId = cctx.nodeId();
@@ -1299,7 +1305,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     if (nodeIds.containsAll(F.nodeIds(affNodes))) {
                         part.rent(false);
 
-                        updateLocal(part.id(), locId, part.state(), updateSeq);
+                        updateLocal(oldest, part.id(), locId, part.state(), updateSeq);
 
                         changed = true;
 
@@ -1324,7 +1330,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 if (locId.equals(n.id())) {
                                     part.rent(false);
 
-                                    updateLocal(part.id(), locId, part.state(), updateSeq);
+                                    updateLocal(oldest, part.id(), locId, part.state(), updateSeq);
 
                                     changed = true;
 
@@ -1353,11 +1359,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @param updateSeq Update sequence.
      */
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
-    private void updateLocal(int p, UUID nodeId, GridDhtPartitionState state, long updateSeq) {
+    private void updateLocal(ClusterNode oldest, int p, UUID nodeId, GridDhtPartitionState state, long updateSeq) {
         assert nodeId.equals(cctx.nodeId());
-
-        // In case if node joins, get topology at the time of joining node.
-        ClusterNode oldest = CU.oldestAliveCacheServerNode(cctx.shared(), topVer);
 
         assert oldest != null || cctx.kernalContext().clientNode();
 
@@ -1453,7 +1456,9 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         try {
             if (part.own()) {
-                updateLocal(part.id(), loc.id(), part.state(), updateSeq.incrementAndGet());
+                ClusterNode oldest = CU.oldestAliveCacheServerNode(cctx.shared(), topVer);
+
+                updateLocal(oldest, part.id(), loc.id(), part.state(), updateSeq.incrementAndGet());
 
                 consistencyCheck();
 
@@ -1481,7 +1486,9 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             long seq = updateSeq ? this.updateSeq.incrementAndGet() : this.updateSeq.get();
 
-            updateLocal(part.id(), cctx.localNodeId(), part.state(), seq);
+            ClusterNode oldest = CU.oldestAliveCacheServerNode(cctx.shared(), topVer);
+
+            updateLocal(oldest, part.id(), cctx.localNodeId(), part.state(), seq);
 
             consistencyCheck();
         }

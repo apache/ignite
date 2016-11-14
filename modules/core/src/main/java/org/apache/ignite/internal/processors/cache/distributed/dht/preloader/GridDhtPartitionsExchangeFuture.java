@@ -432,6 +432,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         assert !dummy && !forcePreload : this;
 
         try {
+            long initStart = System.currentTimeMillis();
+
             log.info("Start exchange init [topVer=" + topologyVersion() + ']');
 
             srvNodes = new ArrayList<>(cctx.discovery().serverNodes(topologyVersion()));
@@ -465,13 +467,21 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         cctx.affinity().initStartedCaches(crdNode, this, receivedCaches);
                 }
 
+                long affStart = System.currentTimeMillis();
+
                 if (CU.clientNode(discoEvt.eventNode()))
                     exchange = onClientNodeEvent(crdNode);
                 else
                     exchange = onServerNodeEvent(crdNode);
+
+                log.info("Affinity call time [topVer=" + topologyVersion() + ", time=" + (System.currentTimeMillis() - affStart) + ']');
             }
 
+            long topUpdateStart = System.currentTimeMillis();
+
             updateTopologies(crdNode);
+
+            log.info("Top update time [topVer=" + topologyVersion() + ", time=" + (System.currentTimeMillis() - topUpdateStart) + ']');
 
             switch (exchange) {
                 case ALL: {
@@ -501,7 +511,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             }
 
-            log.info("Finish exchange init [topVer=" + topologyVersion() + ']');
+            log.info("Finish exchange init [topVer=" + topologyVersion() + ", time=" + (System.currentTimeMillis() - initStart) + ']');
         }
         catch (IgniteInterruptedCheckedException e) {
             onDone(e);
@@ -725,6 +735,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         boolean topChanged = discoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT || affChangeMsg != null;
 
+        long beforeExchStart = System.currentTimeMillis();
+
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (cacheCtx.isLocal() || stopping(cacheCtx.cacheId()))
                 continue;
@@ -739,12 +751,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             cacheCtx.topology().beforeExchange(this, !centralizedAff);
         }
 
+        log.info("Before exchange time [topVer=" + topologyVersion() + ", time=" + (System.currentTimeMillis() - beforeExchStart) + ']');
+
         if (crd.isLocal()) {
             ClusterNode node = discoEvt.eventNode();
 
             Object attr = node.attribute("SKIP_FIRST_EXCHANGE_MSG");
 
-            boolean skipFirstExchange = Boolean.TRUE.equals(attr) || "true".equals(attr);
+            boolean skipFirstExchange = Boolean.TRUE.equals(attr) || ((attr instanceof String) && "true".equalsIgnoreCase((String)attr));
 
             if (discoEvt.type() == EVT_NODE_JOINED && !node.isLocal() && skipFirstExchange) {
                 assert !CU.clientNode(node) : discoEvt;

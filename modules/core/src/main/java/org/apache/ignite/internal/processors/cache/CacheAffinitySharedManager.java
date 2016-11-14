@@ -933,6 +933,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException If failed.
      */
     private void fetchAffinityOnJoin(GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
+        long start = System.currentTimeMillis();
+
         AffinityTopologyVersion topVer = fut.topologyVersion();
 
         List<GridDhtAssignmentFetchFuture> fetchFuts = new ArrayList<>();
@@ -967,6 +969,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             fetchAffinity(fut, cctx.cacheContext(cacheId).affinity().affinityCache(), fetchFut);
         }
+
+        log.info("Affinity fetch time [topVer=" + topVer + ", time=" + (System.currentTimeMillis() - start) + ']');
     }
 
     /**
@@ -1055,12 +1059,16 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     private void initCachesAffinity(GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
         assert !lateAffAssign;
 
+        long start = System.currentTimeMillis();
+
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (cacheCtx.isLocal())
                 continue;
 
             initAffinity(cacheCtx.affinity().affinityCache(), fut, false);
         }
+
+        log.info("Affinity init time [topVer=" + fut.topologyVersion() + ", time=" + (System.currentTimeMillis() - start) + ']');
     }
 
     /**
