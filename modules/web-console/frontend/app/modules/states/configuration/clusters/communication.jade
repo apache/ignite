@@ -26,7 +26,8 @@ include ../../../../../app/helpers/jade/mixins.jade
         label Communication
         ignite-form-field-tooltip.tipLabel
             | Configuration of communication with other nodes by TCP/IP
-            | Provide basic plumbing to send and receive grid messages and is utilized for all distributed grid operations
+            | Provide basic plumbing to send and receive grid messages and is utilized for all distributed grid operations#[br]
+            | #[a(href="https://apacheignite.readme.io/docs/network-config" target="_blank") More info]
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=form)
         .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
@@ -90,7 +91,7 @@ include ../../../../../app/helpers/jade/mixins.jade
                 .settings-row
                     +checkbox('Direct buffer', communication + '.directBuffer', '"directBuffer"',
                     'If value is true, then SPI will use ByteBuffer.allocateDirect(int) call<br/>\
-                    Otherwise, SPI will use ByteBuffer.allocate(int) call.')
+                    Otherwise, SPI will use ByteBuffer.allocate(int) call')
                 .settings-row
                     +checkbox('Direct send buffer', communication + '.directSendBuffer', '"directSendBuffer"', 'Flag defining whether direct send buffer should be used')
                 .settings-row

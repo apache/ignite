@@ -816,9 +816,9 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                                 }
 
                                 futs.add(pool.submit(loadCacheRange(em, clo, upperBound, null, 0)));
-                            }
 
-                            continue;
+                                continue;
+                            }
                         }
                         catch (SQLException e) {
                             log.warning("Failed to load entries from db in multithreaded mode, will try in single thread " +

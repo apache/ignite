@@ -19,11 +19,24 @@ import angular from 'angular';
 
 import igniteEventGroups from './EventGroups.provider';
 import igniteSidebar from './Sidebar.provider';
+import Version from './Version.service';
 
-import GeneratorXml from './generator/Xml.service';
-import GeneratorJava from './generator/Java.service';
+import clusterDefaults from './generator/defaults/cluster.provider';
+import clusterPlatformDefaults from './generator/defaults/cluster.platform.provider';
+import cacheDefaults from './generator/defaults/cache.provider';
+import cachePlatformDefaults from './generator/defaults/cache.platform.provider';
+import igfsDefaults from './generator/defaults/igfs.provider';
+
+import ConfigurationGenerator from './generator/ConfigurationGenerator';
+import PlatformGenerator from './generator/PlatformGenerator';
+
+import SpringTransformer from './generator/SpringTransformer.service';
+import JavaTransformer from './generator/JavaTransformer.service';
+import SharpTransformer from './generator/SharpTransformer.service';
 import GeneratorDocker from './generator/Docker.service';
 import GeneratorPom from './generator/Pom.service';
+import GeneratorProperties from './generator/Properties.service';
+import GeneratorReadme from './generator/Readme.service';
 
 import igniteSidebarDirective from './sidebar.directive';
 
@@ -32,10 +45,21 @@ angular
 .module('ignite-console.configuration', [
 
 ])
+.provider('igniteClusterDefaults', clusterDefaults)
+.provider('igniteClusterPlatformDefaults', clusterPlatformDefaults)
+.provider('igniteCacheDefaults', cacheDefaults)
+.provider('igniteCachePlatformDefaults', cachePlatformDefaults)
+.provider('igniteIgfsDefaults', igfsDefaults)
 .provider(...igniteEventGroups)
 .provider(...igniteSidebar)
 .directive(...igniteSidebarDirective)
-.service(...GeneratorXml)
-.service(...GeneratorJava)
+.service('IgniteVersion', Version)
+.service('IgniteConfigurationGenerator', ConfigurationGenerator)
+.service('IgnitePlatformGenerator', PlatformGenerator)
+.service('SpringTransformer', SpringTransformer)
+.service('JavaTransformer', JavaTransformer)
+.service('IgniteSharpTransformer', SharpTransformer)
+.service('IgnitePropertiesGenerator', GeneratorProperties)
+.service('IgniteReadmeGenerator', GeneratorReadme)
 .service(...GeneratorDocker)
 .service(...GeneratorPom);

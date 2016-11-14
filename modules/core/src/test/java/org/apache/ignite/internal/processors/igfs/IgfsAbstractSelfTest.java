@@ -61,6 +61,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
+import static org.apache.ignite.igfs.IgfsMode.PROXY;
+
 /**
  * Test fo regular igfs operations.
  */
@@ -529,7 +532,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     @SuppressWarnings("ConstantConditions")
     public void testMkdirsParentRoot() throws Exception {
-        Map<String, String> props = properties(null, null, "0555"); // mkdirs command doesn't propagate user info.
+        Map<String, String> props = null;
+
+        if (permissionsSupported())
+            props = properties(null, null, "0555"); // mkdirs command doesn't propagate user info.
 
         igfs.mkdirs(DIR, props);
 
@@ -657,6 +663,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     @SuppressWarnings("ConstantConditions")
     public void testFormat() throws Exception {
+        if (mode == PROXY)
+            return;
+
         final GridCacheAdapter<IgfsBlockKey, byte[]> dataCache = getDataCache(igfs);
 
         assert dataCache != null;
@@ -1010,7 +1019,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     public void testCreateNoClose() throws Exception {
-        if (dual)
+        if (mode != PRIMARY)
             return;
 
         create(igfs, paths(DIR, SUBDIR), null);
@@ -1089,7 +1098,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     public void testCreateDeleteNoClose() throws Exception {
-        if (dual)
+        if (mode != PRIMARY)
             return;
 
         create(igfs, paths(DIR, SUBDIR), null);
@@ -1143,7 +1152,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     public void testCreateDeleteParentNoClose() throws Exception {
-        if (dual)
+        if (mode != PRIMARY)
             return;
 
         create(igfs, paths(DIR, SUBDIR), null);
@@ -1304,77 +1313,76 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     public void testCreateConsistencyMultithreaded() throws Exception {
-        // TODO: Enable
-//        final AtomicBoolean stop = new AtomicBoolean();
-//
-//        final AtomicInteger createCtr = new AtomicInteger(); // How many times the file was re-created.
-//        final AtomicReference<Exception> err = new AtomicReference<>();
-//
-//        igfs.create(FILE, false).close();
-//
-//        int threadCnt = 50;
-//
-//        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-//            @SuppressWarnings("ThrowFromFinallyBlock")
-//            @Override public void run() {
-//                while (!stop.get() && err.get() == null) {
-//                    IgfsOutputStream os = null;
-//
-//                    try {
-//                        os = igfs.create(FILE, true);
-//
-//                        os.write(chunk);
-//
-//                        os.close();
-//
-//                        createCtr.incrementAndGet();
-//                    }
-//                    catch (IgniteException e) {
-//                        // No-op.
-//                    }
-//                    catch (IOException e) {
-//                        err.compareAndSet(null, e);
-//
-//                        Throwable[] chain = X.getThrowables(e);
-//
-//                        Throwable cause = chain[chain.length - 1];
-//
-//                        System.out.println("Failed due to IOException exception. Cause:");
-//                        cause.printStackTrace(System.out);
-//                    }
-//                    finally {
-//                        if (os != null)
-//                            try {
-//                                os.close();
-//                            }
-//                            catch (IOException ioe) {
-//                                throw new IgniteException(ioe);
-//                            }
-//                    }
-//                }
-//            }
-//        }, threadCnt);
-//
-//        long startTime = U.currentTimeMillis();
-//
-//        while (err.get() == null
-//                && createCtr.get() < 500
-//                && U.currentTimeMillis() - startTime < 60 * 1000)
-//            U.sleep(100);
-//
-//        stop.set(true);
-//
-//        fut.get();
-//
-//        awaitFileClose(igfs.asSecondary(), FILE);
-//
-//        if (err.get() != null) {
-//            X.println("Test failed: rethrowing first error: " + err.get());
-//
-//            throw err.get();
-//        }
-//
-//        checkFileContent(igfs, FILE, chunk);
+        final AtomicBoolean stop = new AtomicBoolean();
+
+        final AtomicInteger createCtr = new AtomicInteger(); // How many times the file was re-created.
+        final AtomicReference<Exception> err = new AtomicReference<>();
+
+        igfs.create(FILE, false).close();
+
+        int threadCnt = 50;
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
+            @SuppressWarnings("ThrowFromFinallyBlock")
+            @Override public void run() {
+                while (!stop.get() && err.get() == null) {
+                    IgfsOutputStream os = null;
+
+                    try {
+                        os = igfs.create(FILE, true);
+
+                        os.write(chunk);
+
+                        os.close();
+
+                        createCtr.incrementAndGet();
+                    }
+                    catch (IgniteException e) {
+                        // No-op.
+                    }
+                    catch (IOException e) {
+                        err.compareAndSet(null, e);
+
+                        Throwable[] chain = X.getThrowables(e);
+
+                        Throwable cause = chain[chain.length - 1];
+
+                        System.out.println("Failed due to IOException exception. Cause:");
+                        cause.printStackTrace(System.out);
+                    }
+                    finally {
+                        if (os != null)
+                            try {
+                                os.close();
+                            }
+                            catch (IOException ioe) {
+                                throw new IgniteException(ioe);
+                            }
+                    }
+                }
+            }
+        }, threadCnt);
+
+        long startTime = U.currentTimeMillis();
+
+        while (err.get() == null
+                && createCtr.get() < 500
+                && U.currentTimeMillis() - startTime < 60 * 1000)
+            U.sleep(100);
+
+        stop.set(true);
+
+        fut.get();
+
+        awaitFileClose(igfs.asSecondary(), FILE);
+
+        if (err.get() != null) {
+            X.println("Test failed: rethrowing first error: " + err.get());
+
+            throw err.get();
+        }
+
+        checkFileContent(igfs, FILE, chunk);
     }
 
     /**
@@ -1541,7 +1549,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     public void testAppendNoClose() throws Exception {
-        if (dual)
+        if (mode != PRIMARY)
             return;
 
         if (appendSupported()) {
@@ -1631,7 +1639,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     public void testAppendDeleteNoClose() throws Exception {
-        if (dual)
+        if (mode != PRIMARY)
             return;
 
         if (appendSupported()) {
@@ -1686,7 +1694,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     public void testAppendDeleteParentNoClose() throws Exception {
-        if (dual)
+        if (mode != PRIMARY)
             return;
 
         if (appendSupported()) {
@@ -2154,9 +2162,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
                     U.awaitQuiet(barrier);
 
                     try {
-                        igfs.delete(SUBDIR, true);
-
-                        return true;
+                        return igfs.delete(SUBDIR, true);
                     }
                     catch (IgniteException ignored) {
                         return false;
@@ -2169,9 +2175,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
                     U.awaitQuiet(barrier);
 
                     try {
-                        igfs.delete(SUBSUBDIR, true);
-
-                        return true;
+                        return igfs.delete(SUBSUBDIR, true);
                     }
                     catch (IgniteException ignored) {
                         return false;

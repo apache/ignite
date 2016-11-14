@@ -39,7 +39,8 @@
         "javaFieldType": "int"
       }
     ],
-    "caches": []
+    "caches": [],
+    "generatePojo": true
   },
   {
     "keyType": "Integer",
@@ -81,7 +82,8 @@
         "javaFieldType": "int"
       }
     ],
-    "caches": []
+    "caches": [],
+    "generatePojo": true
   },
   {
     "keyType": "Integer",
@@ -218,7 +220,8 @@
         "javaFieldType": "int"
       }
     ],
-    "caches": []
+    "caches": [],
+    "generatePojo": true
   },
   {
     "keyType": "Integer",
@@ -260,7 +263,8 @@
         "javaFieldType": "int"
       }
     ],
-    "caches": []
+    "caches": [],
+    "generatePojo": true
   },
   {
     "keyType": "Integer",
@@ -302,6 +306,7 @@
         "javaFieldType": "int"
       }
     ],
-    "caches": []
+    "caches": [],
+    "generatePojo": true
   }
 ]

@@ -77,7 +77,7 @@ public class PlatformDotNetSessionLockProcessor implements CacheEntryProcessor<S
         return new PlatformDotNetSessionLockResult(true, data, null, data.lockId());
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(PlatformDotNetSessionLockProcessor.class, this);
     }

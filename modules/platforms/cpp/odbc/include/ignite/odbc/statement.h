@@ -81,14 +81,14 @@ namespace ignite
              *
              * @param ptr Column binding offset pointer.
              */
-            void SetColumnBindOffsetPtr(size_t* ptr);
+            void SetColumnBindOffsetPtr(int* ptr);
 
             /**
              * Get column binding offset pointer.
              *
              * @return Column binding offset pointer.
              */
-            size_t* GetColumnBindOffsetPtr();
+            int* GetColumnBindOffsetPtr();
 
             /**
              * Get number of columns in the result set.
@@ -129,14 +129,14 @@ namespace ignite
              *
              * @param ptr Parameter binding offset pointer.
              */
-            void SetParamBindOffsetPtr(size_t* ptr);
+            void SetParamBindOffsetPtr(int* ptr);
 
             /**
              * Get parameter binding offset pointer.
              *
              * @return Parameter binding offset pointer.
              */
-            size_t* GetParamBindOffsetPtr();
+            int* GetParamBindOffsetPtr();
 
             /**
              * Get value of the column in the result set.
@@ -328,8 +328,32 @@ namespace ignite
              */
             uint16_t* GetRowStatusesPtr();
 
+            /**
+             * Select next parameter data for which is required.
+             *
+             * @param paramPtr Pointer to param id stored here.
+             */
+            void SelectParam(void** paramPtr);
+
+            /**
+             * Puts data for previously selected parameter or column.
+             *
+             * @param data Data.
+             * @param len Data length.
+             */
+            void PutData(void* data, SqlLen len);
+
         private:
             IGNITE_NO_COPY_ASSIGNMENT(Statement);
+
+            /**
+             * Bind parameter.
+             *
+             * @param paramIdx Parameter index.
+             * @param param Parameter.
+             * @return Operation result.
+             */
+            SqlResult InternalBindParameter(uint16_t paramIdx, const app::Parameter& param);
 
             /**
              * Get value of the column in the result set.
@@ -488,6 +512,21 @@ namespace ignite
             SqlResult InternalAffectedRows(int64_t& rowCnt);
 
             /**
+             * Select next parameter data for which is required.
+             *
+             * @param paramPtr Pointer to param id stored here.
+             */
+            SqlResult InternalSelectParam(void** paramPtr);
+
+            /**
+             * Puts data for previously selected parameter or column.
+             *
+             * @param data Data.
+             * @param len Data length.
+             */
+            SqlResult InternalPutData(void* data, SqlLen len);
+
+            /**
              * Constructor.
              * Called by friend classes.
              *
@@ -514,10 +553,13 @@ namespace ignite
             uint16_t* rowStatuses;
 
             /** Offset added to pointers to change binding of parameters. */
-            size_t* paramBindOffset;
+            int* paramBindOffset;
             
-            /* Offset added to pointers to change binding of column data. */
-            size_t* columnBindOffset;
+            /** Offset added to pointers to change binding of column data. */
+            int* columnBindOffset;
+
+            /** Index of the parameter, which is currently being set. */
+            uint16_t currentParamIdx;
         };
     }
 }

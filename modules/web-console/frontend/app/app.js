@@ -16,6 +16,7 @@
  */
 
 import '../public/stylesheets/style.scss';
+import '../app/directives/ui-grid-settings/ui-grid-settings.scss';
 import './helpers/jade/mixins.jade';
 
 import './app.config';
@@ -26,6 +27,7 @@ import './decorator/tooltip';
 import './modules/form/form.module';
 import './modules/agent/agent.module.js';
 import './modules/sql/sql.module';
+import './modules/nodes/nodes.module';
 import './modules/Demo/Demo.module.js';
 
 import './modules/states/signin.state';
@@ -43,7 +45,6 @@ import './modules/navbar/navbar.module';
 import './modules/configuration/configuration.module';
 import './modules/getting-started/GettingStarted.provider';
 import './modules/dialog/dialog.module';
-import './modules/version/Version.provider';
 import './modules/ace.module';
 import './modules/socket.module';
 import './modules/loading/loading.module';
@@ -61,12 +62,16 @@ import igniteOnClickFocus from './directives/on-click-focus.directive.js';
 import igniteOnEnter from './directives/on-enter.directive.js';
 import igniteOnEnterFocusMove from './directives/on-enter-focus-move.directive.js';
 import igniteOnEscape from './directives/on-escape.directive.js';
-import igniteUiAceDocker from './directives/ui-ace-docker/ui-ace-docker.directive';
+import igniteOnFocusOut from './directives/on-focus-out.directive.js';
+import igniteRestoreInputFocus from './directives/restore-input-focus.directive.js';
 import igniteUiAceJava from './directives/ui-ace-java/ui-ace-java.directive';
+import igniteUiAceSpring from './directives/ui-ace-spring/ui-ace-spring.directive';
+import igniteUiAceCSharp from './directives/ui-ace-sharp/ui-ace-sharp.directive';
 import igniteUiAcePojos from './directives/ui-ace-pojos/ui-ace-pojos.directive';
 import igniteUiAcePom from './directives/ui-ace-pom/ui-ace-pom.directive';
+import igniteUiAceDocker from './directives/ui-ace-docker/ui-ace-docker.directive';
 import igniteUiAceTabs from './directives/ui-ace-tabs.directive';
-import igniteUiAceXml from './directives/ui-ace-xml/ui-ace-xml.directive';
+import igniteRetainSelection from './directives/retain-selection.directive';
 
 // Services.
 import ChartColors from './services/ChartColors.service';
@@ -75,39 +80,29 @@ import Confirm from './services/Confirm.service.js';
 import ConfirmBatch from './services/ConfirmBatch.service.js';
 import CopyToClipboard from './services/CopyToClipboard.service';
 import Countries from './services/Countries.service';
+import ErrorPopover from './services/ErrorPopover.service';
 import Focus from './services/Focus.service';
+import FormUtils from './services/FormUtils.service';
 import InetAddress from './services/InetAddress.service';
 import JavaTypes from './services/JavaTypes.service';
+import SqlTypes from './services/SqlTypes.service';
+import LegacyTable from './services/LegacyTable.service';
+import LegacyUtils from './services/LegacyUtils.service';
 import Messages from './services/Messages.service';
 import ModelNormalizer from './services/ModelNormalizer.service.js';
-import LegacyTable from './services/LegacyTable.service';
-import ErrorPopover from './services/ErrorPopover.service';
-import FormUtils from './services/FormUtils.service';
-import LegacyUtils from './services/LegacyUtils.service';
 import UnsavedChangesGuard from './services/UnsavedChangesGuard.service';
-
-// Providers.
 
 // Filters.
 import byName from './filters/byName.filter';
+import defaultName from './filters/default-name.filter';
 import domainsValidation from './filters/domainsValidation.filter';
-import hasPojo from './filters/hasPojo.filter';
 import duration from './filters/duration.filter';
+import hasPojo from './filters/hasPojo.filter';
 
 // Generators
-import $generatorCommon from 'generator/generator-common';
-import $generatorJava from 'generator/generator-java';
-import $generatorOptional from 'generator/generator-optional';
-import $generatorProperties from 'generator/generator-properties';
-import $generatorReadme from 'generator/generator-readme';
-import $generatorXml from 'generator/generator-xml';
+import $generatorOptional from './modules/configuration/generator/generator-optional';
 
-window.$generatorCommon = $generatorCommon;
-window.$generatorJava = $generatorJava;
 window.$generatorOptional = $generatorOptional;
-window.$generatorProperties = $generatorProperties;
-window.$generatorReadme = $generatorReadme;
-window.$generatorXml = $generatorXml;
 
 // Controllers
 import admin from 'controllers/admin-controller';
@@ -153,6 +148,7 @@ angular
     'ignite-console.socket',
     'ignite-console.agent',
     'ignite-console.sql',
+    'ignite-console.nodes',
     'ignite-console.demo',
     // States.
     'ignite-console.states.login',
@@ -167,7 +163,6 @@ angular
     'ignite-console.navbar',
     'ignite-console.configuration',
     'ignite-console.getting-started',
-    'ignite-console.version',
     'ignite-console.loading',
     // Ignite configuration module.
     'ignite-console.config',
@@ -186,13 +181,20 @@ angular
 .directive(...igniteOnEnter)
 .directive(...igniteOnEnterFocusMove)
 .directive(...igniteOnEscape)
-.directive(...igniteUiAceDocker)
+.directive(...igniteUiAceSpring)
 .directive(...igniteUiAceJava)
+.directive(...igniteUiAceCSharp)
 .directive(...igniteUiAcePojos)
 .directive(...igniteUiAcePom)
+.directive(...igniteUiAceDocker)
 .directive(...igniteUiAceTabs)
-.directive(...igniteUiAceXml)
+.directive(...igniteRetainSelection)
+.directive('igniteOnFocusOut', igniteOnFocusOut)
+.directive('igniteRestoreInputFocus', igniteRestoreInputFocus)
 // Services.
+.service('IgniteErrorPopover', ErrorPopover)
+.service('JavaTypes', JavaTypes)
+.service('SqlTypes', SqlTypes)
 .service(...ChartColors)
 .service(...Clone)
 .service(...Confirm)
@@ -201,11 +203,9 @@ angular
 .service(...Countries)
 .service(...Focus)
 .service(...InetAddress)
-.service(...JavaTypes)
 .service(...Messages)
 .service(...ModelNormalizer)
 .service(...LegacyTable)
-.service('IgniteErrorPopover', ErrorPopover)
 .service(...FormUtils)
 .service(...LegacyUtils)
 .service(...UnsavedChangesGuard)
@@ -219,10 +219,11 @@ angular
 .controller(...igfs)
 .controller(...profile)
 // Filters.
-.filter(...hasPojo)
-.filter(...domainsValidation)
 .filter(...byName)
+.filter('defaultName', defaultName)
+.filter(...domainsValidation)
 .filter(...duration)
+.filter(...hasPojo)
 .config(['$stateProvider', '$locationProvider', '$urlRouterProvider', ($stateProvider, $locationProvider, $urlRouterProvider) => {
     // Set up the states.
     $stateProvider
@@ -254,16 +255,17 @@ angular
         _.forEach(angular.element('.modal'), (m) => angular.element(m).scope().$hide());
     });
 }])
-.run(['$rootScope', '$http', '$state', 'IgniteMessages', 'User',
-    ($root, $http, $state, Messages, User) => { // eslint-disable-line no-shadow
+.run(['$rootScope', '$http', '$state', 'IgniteMessages', 'User', 'IgniteNotebookData',
+    ($root, $http, $state, Messages, User, Notebook) => { // eslint-disable-line no-shadow
         $root.revertIdentity = () => {
             $http.get('/api/v1/admin/revert/identity')
-                .then(User.load)
+                .then(() => User.load())
                 .then((user) => {
                     $root.$broadcast('user', user);
 
                     $state.go('settings.admin');
                 })
+                .then(() => Notebook.load())
                 .catch(Messages.showError);
         };
     }

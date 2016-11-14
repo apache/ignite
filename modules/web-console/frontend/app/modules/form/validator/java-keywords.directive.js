@@ -17,21 +17,18 @@
 
 export default ['javaKeywords', ['JavaTypes', (JavaTypes) => {
     const link = (scope, el, attrs, [ngModel]) => {
-        if (_.isUndefined(attrs.javaKeywords) || !attrs.javaKeywords)
+        if (_.isNil(attrs.javaKeywords) || attrs.javaKeywords === 'false')
             return;
 
         const packageOnly = attrs.javaPackageName === 'package-only';
 
-        ngModel.$validators.javaKeywords = (value) => {
-            if (value) {
-                if (!JavaTypes.validIdentifier(value) || (!packageOnly && !JavaTypes.packageSpecified(value)))
-                    return true;
+        ngModel.$validators.javaKeywords = (value) => attrs.validationActive === 'false' ||
+            _.isEmpty(value) || !JavaTypes.validClassName(value) ||
+            (!packageOnly && !JavaTypes.packageSpecified(value)) ||
+            _.findIndex(value.split('.'), JavaTypes.isKeyword) < 0;
 
-                return _.findIndex(value.split('.'), JavaTypes.isKeywords) < 0;
-            }
-
-            return true;
-        };
+        if (attrs.validationActive !== 'always')
+            attrs.$observe('validationActive', () => ngModel.$validate());
     };
 
     return {

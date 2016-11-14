@@ -36,6 +36,7 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -174,7 +175,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             out.writeByte(GridBinaryMarshaller.OPTM_MARSH);
 
             try {
-                byte[] arr = ctx.optimizedMarsh().marshal(obj);
+                byte[] arr = U.marshal(ctx.optimizedMarsh(), obj);
 
                 writeInt(arr.length);
 
@@ -245,8 +246,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param userType User type flag.
      * @param registered Whether type is registered.
      * @param hashCode Hash code.
+     * @param isHashCodeSet Hash code presence flag.
      */
-    public void postWrite(boolean userType, boolean registered, int hashCode) {
+    public void postWrite(boolean userType, boolean registered, int hashCode, boolean isHashCodeSet) {
         short flags;
         boolean useCompactFooter;
 
@@ -302,6 +304,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
                 offset = 0;
             }
         }
+
+        if (!isHashCodeSet)
+            flags |= BinaryUtils.FLAG_EMPTY_HASH_CODE;
 
         // Actual write.
         int retPos = out.position();

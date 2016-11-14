@@ -18,22 +18,19 @@ include ../../../../../app/helpers/jade/mixins.jade
 
 -var form = 'cacheKeyCfg'
 -var model = 'backupItem.cacheKeyConfiguration'
--var items = model;
 
 .panel.panel-default(ng-form=form novalidate)
     .panel-heading(bs-collapse-toggle ng-click='ui.loadPanel("#{form}")')
         ignite-form-panel-chevron
         label Cache key configuration
         ignite-form-field-tooltip.tipLabel
-            | Cache key configuration allows to collocate objects in a partitioned cache based on field in cache key without explicit usage of annotations on user classes.
+            | Cache key configuration allows to collocate objects in a partitioned cache based on field in cache key without explicit usage of annotations on user classes
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=form)
         .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
             .col-sm-6
                 .settings-row
-                    -var form = form + 'TypeConfigurations'
-
-                    +ignite-form-group(ng-form=form ng-model=model)
+                    +ignite-form-group()
                         ignite-form-field-label
                             | Cache key configuration
                         ignite-form-group-tooltip
@@ -45,8 +42,8 @@ include ../../../../../app/helpers/jade/mixins.jade
                         .group-content(ng-repeat='model in #{model} track by $index')
                             hr(ng-if='$index !== 0')
                             .settings-row
-                                +java-class('Type name:', 'model.typeName', '"cacheKeyTypeName" + $index', 'true', 'true', 'Type name')
-                                    +table-remove-button(items, 'Remove cache key configuration')
+                                +java-class-autofocus('Type name:', 'model.typeName', '"cacheKeyTypeName" + $index', 'true', 'true', 'true', 'Type name')
+                                    +table-remove-button(model, 'Remove cache key configuration')
                             .settings-row
                                 +text('Affinity key field name:', 'model.affinityKeyFieldName', '"affinityKeyFieldName" + $index', true, 'Enter field name', 'Affinity key field name')
             .col-sm-6

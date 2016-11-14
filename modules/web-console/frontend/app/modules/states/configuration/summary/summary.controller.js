@@ -20,8 +20,8 @@ import JSZip from 'jszip';
 import saver from 'file-saver';
 
 export default [
-    '$rootScope', '$scope', '$http', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteLoading', '$filter', 'igniteConfigurationResource', 'JavaTypes', 'IgniteVersion', 'GeneratorDocker', 'GeneratorPom', 'IgniteFormUtils',
-    function($root, $scope, $http, LegacyUtils, Messages, Loading, $filter, Resource, JavaTypes, IgniteVersion, docker, pom, FormUtils) {
+    '$rootScope', '$scope', '$http', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteLoading', '$filter', 'IgniteConfigurationResource', 'JavaTypes', 'IgniteVersion', 'IgniteConfigurationGenerator', 'SpringTransformer', 'JavaTransformer', 'GeneratorDocker', 'GeneratorPom', 'IgnitePropertiesGenerator', 'IgniteReadmeGenerator', 'IgniteFormUtils',
+    function($root, $scope, $http, LegacyUtils, Messages, Loading, $filter, Resource, JavaTypes, Version, generator, spring, java, docker, pom, propsGenerator, readme, FormUtils) {
         const ctrl = this;
 
         $scope.ui = { ready: false };
@@ -81,6 +81,14 @@ export default [
             ]
         };
 
+        const loadFolder = {
+            type: 'folder',
+            name: 'load',
+            children: [
+                { type: 'file', name: 'LoadCaches.java' }
+            ]
+        };
+
         const javaStartupFolder = {
             type: 'folder',
             name: 'startup',
@@ -100,11 +108,18 @@ export default [
             ]
         };
 
+        const clnCfg = { type: 'file', name: 'client.xml' };
+        const srvCfg = { type: 'file', name: 'server.xml' };
+
         const resourcesFolder = {
             type: 'folder',
             name: 'resources',
             children: [
-                { type: 'file', name: 'secret.properties' }
+                {
+                    type: 'folder',
+                    name: 'META-INF',
+                    children: [clnCfg, srvCfg]
+                }
             ]
         };
 
@@ -123,10 +138,6 @@ export default [
             ]
         };
 
-        const clnCfg = { type: 'file', name: 'client.xml' };
-
-        const srvCfg = { type: 'file', name: 'server.xml' };
-
         const mainFolder = {
             type: 'folder',
             name: 'main',
@@ -137,11 +148,6 @@ export default [
             type: 'folder',
             name: 'project.zip',
             children: [
-                {
-                    type: 'folder',
-                    name: 'config',
-                    children: [clnCfg, srvCfg]
-                },
                 {
                     type: 'folder',
                     name: 'jdbc-drivers',
@@ -207,6 +213,16 @@ export default [
                 folder.children.push(leaf);
         }
 
+        function cacheHasDatasource(cache) {
+            if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind) {
+                const storeFactory = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
+
+                return !!(storeFactory && (storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : false) : storeFactory.dialect)); // eslint-disable-line no-nested-ternary
+            }
+
+            return false;
+        }
+
         $scope.selectItem = (cluster) => {
             delete ctrl.cluster;
 
@@ -223,13 +239,17 @@ export default [
 
             sessionStorage.summarySelectedId = $scope.clusters.indexOf(cluster);
 
-            mainFolder.children = [javaFolder];
-            javaFolder.children = [javaConfigFolder, javaStartupFolder];
+            mainFolder.children = [javaFolder, resourcesFolder];
 
-            if ($generatorCommon.secretPropertiesNeeded(cluster))
-                mainFolder.children.push(resourcesFolder);
+            if (_.find(cluster.caches, (cache) => !_.isNil(cache.cacheStoreFactory)))
+                javaFolder.children = [javaConfigFolder, loadFolder, javaStartupFolder];
+            else
+                javaFolder.children = [javaConfigFolder, javaStartupFolder];
 
-            if ($generatorJava.isDemoConfigured(cluster, $root.IgniteDemoMode))
+            if (_.nonNil(_.find(cluster.caches, cacheHasDatasource)) || cluster.sslEnabled)
+                resourcesFolder.children.push({ type: 'file', name: 'secret.properties' });
+
+            if (java.isDemoConfigured(cluster, $root.IgniteDemoMode))
                 javaFolder.children.push(demoFolder);
 
             if (cluster.discovery.kind === 'Jdbc' && cluster.discovery.Jdbc.dialect)
@@ -274,7 +294,6 @@ export default [
         // TODO IGNITE-2114: implemented as independent logic for download.
         $scope.downloadConfiguration = function() {
             const cluster = $scope.cluster;
-            const clientNearCfg = cluster.clientNearCfg;
 
             const zip = new JSZip();
 
@@ -287,48 +306,65 @@ export default [
             zip.file('Dockerfile', ctrl.data.docker);
             zip.file('.dockerignore', docker.ignoreFile());
 
-            const builder = $generatorProperties.generateProperties(cluster);
+            const cfg = generator.igniteConfiguration(cluster, false);
+            const clientCfg = generator.igniteConfiguration(cluster, true);
+            const clientNearCaches = _.filter(cluster.caches, (cache) => _.get(cache, 'clientNearConfiguration.enabled'));
 
-            if (builder)
-                zip.file('src/main/resources/secret.properties', builder.asString());
+            const secProps = propsGenerator.generate(cfg);
 
-            const srcPath = 'src/main/java/';
+            if (secProps)
+                zip.file('src/main/resources/secret.properties', secProps);
 
-            const serverXml = 'config/' + cluster.name + '-server.xml';
-            const clientXml = 'config/' + cluster.name + '-client.xml';
+            const srcPath = 'src/main/java';
+            const resourcesPath = 'src/main/resources';
 
-            zip.file(serverXml, $generatorXml.cluster(cluster));
-            zip.file(clientXml, $generatorXml.cluster(cluster, clientNearCfg));
+            const serverXml = `${cluster.name}-server.xml`;
+            const clientXml = `${cluster.name}-client.xml`;
 
-            zip.file(srcPath + 'config/ServerConfigurationFactory.java', $generatorJava.cluster(cluster, 'config', 'ServerConfigurationFactory', null));
-            zip.file(srcPath + 'config/ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'config', 'ClientConfigurationFactory', clientNearCfg));
+            const metaPath = `${resourcesPath}/META-INF`;
 
-            if ($generatorJava.isDemoConfigured(cluster, $root.IgniteDemoMode)) {
-                zip.file(srcPath + 'demo/DemoStartup.java', $generatorJava.nodeStartup(cluster, 'demo', 'DemoStartup',
+            zip.file(`${metaPath}/${serverXml}`, spring.igniteConfiguration(cfg).asString());
+            zip.file(`${metaPath}/${clientXml}`, spring.igniteConfiguration(clientCfg, clientNearCaches).asString());
+
+            const cfgPath = `${srcPath}/config`;
+
+            zip.file(`${cfgPath}/ServerConfigurationFactory.java`, java.igniteConfiguration(cfg, 'config', 'ServerConfigurationFactory').asString());
+            zip.file(`${cfgPath}/ClientConfigurationFactory.java`, java.igniteConfiguration(cfg, 'config', 'ClientConfigurationFactory', clientNearCaches).asString());
+
+            if (java.isDemoConfigured(cluster, $root.IgniteDemoMode)) {
+                zip.file(`${srcPath}/demo/DemoStartup.java`, java.nodeStartup(cluster, 'demo.DemoStartup',
                     'ServerConfigurationFactory.createConfiguration()', 'config.ServerConfigurationFactory'));
             }
 
-            zip.file(srcPath + 'startup/ServerNodeSpringStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ServerNodeSpringStartup', '"' + serverXml + '"'));
-            zip.file(srcPath + 'startup/ClientNodeSpringStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ClientNodeSpringStartup', '"' + clientXml + '"'));
+            // Generate loader for caches with configured store.
+            const cachesToLoad = _.filter(cluster.caches, (cache) => _.nonNil(cache.cacheStoreFactory));
 
-            zip.file(srcPath + 'startup/ServerNodeCodeStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ServerNodeCodeStartup',
+            if (_.nonEmpty(cachesToLoad))
+                zip.file(`${srcPath}/load/LoadCaches.java`, java.loadCaches(cachesToLoad, 'load', 'LoadCaches', `"${clientXml}"`));
+
+            const startupPath = `${srcPath}/startup`;
+
+            zip.file(`${startupPath}/ServerNodeSpringStartup.java`, java.nodeStartup(cluster, 'startup.ServerNodeSpringStartup', `"${serverXml}"`));
+            zip.file(`${startupPath}/ClientNodeSpringStartup.java`, java.nodeStartup(cluster, 'startup.ClientNodeSpringStartup', `"${clientXml}"`));
+
+            zip.file(`${startupPath}/ServerNodeCodeStartup.java`, java.nodeStartup(cluster, 'startup.ServerNodeCodeStartup',
                 'ServerConfigurationFactory.createConfiguration()', 'config.ServerConfigurationFactory'));
-            zip.file(srcPath + 'startup/ClientNodeCodeStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ClientNodeCodeStartup',
-                'ClientConfigurationFactory.createConfiguration()', 'config.ClientConfigurationFactory', clientNearCfg));
+            zip.file(`${startupPath}/ClientNodeCodeStartup.java`, java.nodeStartup(cluster, 'startup.ClientNodeCodeStartup',
+                'ClientConfigurationFactory.createConfiguration()', 'config.ClientConfigurationFactory', clientNearCaches));
 
-            zip.file('pom.xml', pom.generate(cluster, IgniteVersion.version).asString());
+            zip.file('pom.xml', pom.generate(cluster, Version.productVersion().ignite).asString());
 
-            zip.file('README.txt', $generatorReadme.readme().asString());
-            zip.file('jdbc-drivers/README.txt', $generatorReadme.readmeJdbc().asString());
+            zip.file('README.txt', readme.generate());
+            zip.file('jdbc-drivers/README.txt', readme.generateJDBC());
 
-            if (!ctrl.data.pojos)
-                ctrl.data.pojos = $generatorJava.pojos(cluster.caches);
+            if (_.isEmpty(ctrl.data.pojos))
+                ctrl.data.pojos = java.pojos(cluster.caches);
 
             for (const pojo of ctrl.data.pojos) {
                 if (pojo.keyClass && JavaTypes.nonBuiltInClass(pojo.keyType))
-                    zip.file(srcPath + pojo.keyType.replace(/\./g, '/') + '.java', pojo.keyClass);
+                    zip.file(`${srcPath}/${pojo.keyType.replace(/\./g, '/')}.java`, pojo.keyClass);
 
-                zip.file(srcPath + pojo.valueType.replace(/\./g, '/') + '.java', pojo.valueClass);
+                zip.file(`${srcPath}/${pojo.valueType.replace(/\./g, '/')}.java`, pojo.valueClass);
             }
 
             $generatorOptional.optionalContent(zip, cluster);

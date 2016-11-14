@@ -43,7 +43,7 @@ public class RandomSleeper {
     private Random random = new Random(System.currentTimeMillis());
 
     /** */
-    private int summary = 0;
+    private int summary;
 
     /**
      * Creates sleeper instance.

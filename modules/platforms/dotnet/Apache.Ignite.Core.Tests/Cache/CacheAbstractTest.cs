@@ -956,10 +956,17 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsFalse(cache0.ContainsKey(key0));
             Assert.IsFalse(cache0.ContainsKey(key1));
 
+            // Test sliding expiration
             cache0.Put(key0, key0);
             cache0.Put(key1, key1);
-            cache.Get(key0); 
-            cache.Get(key1);
+            for (var i = 0; i < 3; i++)
+            {
+                Thread.Sleep(50);
+
+                // Prolong expiration by touching the entry
+                cache.Get(key0);
+                cache.Get(key1);
+            }
             Assert.IsTrue(cache0.ContainsKey(key0));
             Assert.IsTrue(cache0.ContainsKey(key1));
             Thread.Sleep(200);
@@ -2458,7 +2465,49 @@ namespace Apache.Ignite.Core.Tests.Cache
                 // Expected
             }
         }
-        
+
+        /// <summary>
+        /// Tests the transaction deadlock detection.
+        /// </summary>
+        [Test]
+        public void TestTxDeadlockDetection()
+        {
+            if (!TxEnabled())
+                return;
+
+            var cache = Cache();
+
+            var keys0 = Enumerable.Range(1, 100).ToArray();
+
+            cache.PutAll(keys0.ToDictionary(x => x, x => x));
+
+            var barrier = new Barrier(2);
+
+            Action<int[]> increment = keys =>
+            {
+                using (var tx = Transactions.TxStart(TransactionConcurrency.Pessimistic,
+                    TransactionIsolation.RepeatableRead, TimeSpan.FromSeconds(0.5), 0))
+                {
+                    foreach (var key in keys)
+                        cache[key]++;
+
+                    barrier.SignalAndWait(500);
+
+                    tx.Commit();
+                }
+            };
+
+            // Increment keys within tx in different order to cause a deadlock.
+            var aex = Assert.Throws<AggregateException>(() =>
+                Task.WaitAll(Task.Factory.StartNew(() => increment(keys0)),
+                             Task.Factory.StartNew(() => increment(keys0.Reverse().ToArray()))));
+
+            Assert.AreEqual(2, aex.InnerExceptions.Count);
+
+            var deadlockEx = aex.InnerExceptions.OfType<TransactionDeadlockException>().First();
+            Assert.IsTrue(deadlockEx.Message.Trim().StartsWith("Deadlock detected:"), deadlockEx.Message);
+        }
+
         /// <summary>
         /// Test thraed-locals leak.
         /// </summary>

@@ -2,7 +2,5 @@
 *.log
 .npmrc
 node_modules
-serve/config/*.json
-serve/agent_dists/*.zip
 agent_dists/*.zip
 config/*.json

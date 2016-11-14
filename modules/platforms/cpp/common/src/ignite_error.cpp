@@ -70,7 +70,7 @@ namespace ignite
         return *this;
     }
 
-    IgniteError::~IgniteError()
+    IgniteError::~IgniteError() IGNITE_NO_THROW
     {
         ReleaseChars(msg);
     }

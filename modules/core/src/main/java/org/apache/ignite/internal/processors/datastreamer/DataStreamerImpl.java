@@ -1353,11 +1353,11 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     if (updaterBytes == null) {
                         assert rcvr != null;
 
-                        updaterBytes = ctx.config().getMarshaller().marshal(rcvr);
+                        updaterBytes = U.marshal(ctx, rcvr);
                     }
 
                     if (topicBytes == null)
-                        topicBytes = ctx.config().getMarshaller().marshal(topic);
+                        topicBytes = U.marshal(ctx, topic);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to marshal (request will not be sent).", e);
@@ -1488,7 +1488,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 try {
                     GridPeerDeployAware jobPda0 = jobPda;
 
-                    err = ctx.config().getMarshaller().unmarshal(
+                    err = U.unmarshal(ctx,
                         errBytes,
                         U.resolveClassLoader(jobPda0 != null ? jobPda0.classLoader() : null, ctx.config()));
                 }

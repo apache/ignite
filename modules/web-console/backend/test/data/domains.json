@@ -1,5 +1,7 @@
 [
   {
+    "_id" : "000000000000000000000001",
+    "space": "000000000000000000000001",
     "keyType": "Integer",
     "valueType": "model.Parking",
     "queryMetadata": "Configuration",
@@ -42,6 +44,8 @@
     "caches": []
   },
   {
+    "_id" : "000000000000000000000002",
+    "space": "000000000000000000000001",
     "keyType": "Integer",
     "valueType": "model.Department",
     "queryMetadata": "Configuration",
@@ -84,6 +88,8 @@
     "caches": []
   },
   {
+    "_id" : "000000000000000000000003",
+    "space": "000000000000000000000001",
     "keyType": "Integer",
     "valueType": "model.Employee",
     "queryMetadata": "Configuration",
@@ -221,6 +227,8 @@
     "caches": []
   },
   {
+    "_id" : "000000000000000000000004",
+    "space": "000000000000000000000001",
     "keyType": "Integer",
     "valueType": "model.Country",
     "queryMetadata": "Configuration",
@@ -263,6 +271,8 @@
     "caches": []
   },
   {
+    "_id" : "000000000000000000000005",
+    "space": "000000000000000000000001",
     "keyType": "Integer",
     "valueType": "model.Car",
     "queryMetadata": "Configuration",

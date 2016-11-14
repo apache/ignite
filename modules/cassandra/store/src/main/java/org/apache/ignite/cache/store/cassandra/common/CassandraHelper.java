@@ -20,9 +20,13 @@ package org.apache.ignite.cache.store.cassandra.common;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.exceptions.DriverException;
 import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.exceptions.ReadTimeoutException;
+
+import java.net.InetSocketAddress;
+import java.util.Map;
 import java.util.regex.Pattern;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -36,8 +40,15 @@ public class CassandraHelper {
     /** Cassandra error message if trying to create table inside nonexistent keyspace. */
     private static final Pattern KEYSPACE_EXIST_ERROR2 = Pattern.compile("Cannot add table '[0-9a-zA-Z_]+' to non existing keyspace.*");
 
+    /** Cassandra error message if trying to create table inside nonexistent keyspace. */
+    private static final Pattern KEYSPACE_EXIST_ERROR3 = Pattern.compile("Error preparing query, got ERROR INVALID: " +
+            "Keyspace [0-9a-zA-Z_]+ does not exist");
+
     /** Cassandra error message if specified table doesn't exist. */
-    private static final Pattern TABLE_EXIST_ERROR = Pattern.compile("unconfigured table [0-9a-zA-Z_]+");
+    private static final Pattern TABLE_EXIST_ERROR1 = Pattern.compile("unconfigured table [0-9a-zA-Z_]+");
+
+    /** Cassandra error message if specified table doesn't exist. */
+    private static final String TABLE_EXIST_ERROR2 = "Error preparing query, got ERROR INVALID: unconfigured table";
 
     /** Cassandra error message if trying to use prepared statement created from another session. */
     private static final String PREP_STATEMENT_CLUSTER_INSTANCE_ERROR = "You may have used a PreparedStatement that " +
@@ -85,10 +96,24 @@ public class CassandraHelper {
     public static boolean isTableAbsenceError(Throwable e) {
         while (e != null) {
             if (e instanceof InvalidQueryException &&
-                (TABLE_EXIST_ERROR.matcher(e.getMessage()).matches() ||
+                (TABLE_EXIST_ERROR1.matcher(e.getMessage()).matches() ||
                     KEYSPACE_EXIST_ERROR1.matcher(e.getMessage()).matches() ||
                     KEYSPACE_EXIST_ERROR2.matcher(e.getMessage()).matches()))
                 return true;
+
+            if (e instanceof NoHostAvailableException && ((NoHostAvailableException) e).getErrors() != null) {
+                NoHostAvailableException ex = (NoHostAvailableException)e;
+
+                for (Map.Entry<InetSocketAddress, Throwable> entry : ex.getErrors().entrySet()) {
+                    //noinspection ThrowableResultOfMethodCallIgnored
+                    Throwable error = entry.getValue();
+
+                    if (error instanceof DriverException &&
+                        (error.getMessage().contains(TABLE_EXIST_ERROR2) ||
+                             KEYSPACE_EXIST_ERROR3.matcher(error.getMessage()).matches()))
+                        return true;
+                }
+            }
 
             e = e.getCause();
         }

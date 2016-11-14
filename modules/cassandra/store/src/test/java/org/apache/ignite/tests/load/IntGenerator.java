@@ -26,7 +26,7 @@ public class IntGenerator implements Generator {
         long val = i / 10000;
 
         while (val > Integer.MAX_VALUE)
-            val = val / 2;
+            val /= 2;
 
         return (int)val;
     }

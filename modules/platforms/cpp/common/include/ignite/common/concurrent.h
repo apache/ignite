@@ -138,7 +138,8 @@ namespace ignite
                 {
                     if (ptr)
                     {
-                        impl = new SharedPointerImpl(ptr, reinterpret_cast<SharedPointerImpl::DeleterType>(&SharedPointerDefaultDeleter<T>));
+                        void(*deleter)(T*) = (void(*)(T*)) &SharedPointerDefaultDeleter<T>;
+                        impl = new SharedPointerImpl(ptr, reinterpret_cast<SharedPointerImpl::DeleterType>(deleter));
                         ImplEnableShared(ptr, impl);
                     }
                     else

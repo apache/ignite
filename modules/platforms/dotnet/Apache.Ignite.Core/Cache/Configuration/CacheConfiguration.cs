@@ -507,6 +507,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
         /// <summary>
         /// Flag indicating whether Ignite should use swap storage by default.
+        /// <para />
+        /// Enabling this requires configured <see cref="IgniteConfiguration.SwapSpaceSpi"/>.
         /// </summary>
         [DefaultValue(DefaultEnableSwap)]
         public bool EnableSwap { get; set; }
