@@ -184,7 +184,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
      * @param p Partition.
      * @return Partition data.
      */
-    @Nullable private CacheDataStore partitionData(int p) {
+    @Nullable public CacheDataStore partitionData(int p) {
         if (cctx.isLocal())
             return locCacheDataStore;
         else {

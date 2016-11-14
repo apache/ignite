@@ -321,6 +321,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
             }
 
             try {
+                System.out.println("!Cache.Get " +  node.consistentId() + " key = " + key.value(cctx.cacheObjectContext(), false));
                 cctx.io().send(node, req, cctx.ioPolicy());
             }
             catch (IgniteCheckedException e) {
