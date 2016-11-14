@@ -230,6 +230,11 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
+    @Override public Collection<IgniteCache> createCaches(Collection<CacheConfiguration> cacheCfgs) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg) {
         return null;
     }
@@ -261,6 +266,11 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
+    @Override public Collection<IgniteCache> getOrCreateCaches(Collection<CacheConfiguration> cacheCfgs) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createCache(String cacheName) {
         return null;
     }
@@ -272,6 +282,11 @@ public class IgniteMock implements Ignite {
 
     /** {@inheritDoc} */
     @Override public void destroyCache(String cacheName) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void destroyCaches(Collection<String> cacheNames) {
         // No-op.
     }
 

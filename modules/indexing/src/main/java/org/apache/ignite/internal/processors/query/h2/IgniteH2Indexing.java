@@ -996,7 +996,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 String longMsg = "Query execution is too long [time=" + time + " ms, sql='" + sql + '\'' +
                     ", plan=" + U.nl() + plan.getString(1) + U.nl() + ", parameters=" + params + "]";
 
-                LT.warn(log, null, longMsg, msg);
+                LT.warn(log, longMsg, msg);
             }
 
             return rs;
@@ -2566,7 +2566,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * @throws IgniteCheckedException If failed.
          */
         protected FieldsIterator(ResultSet data) throws IgniteCheckedException {
-            super(data, false);
+            super(data, false, true);
         }
 
         /** {@inheritDoc} */
@@ -2591,7 +2591,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * @throws IgniteCheckedException If failed.
          */
         protected KeyValIterator(ResultSet data) throws IgniteCheckedException {
-            super(data, false);
+            super(data, false, true);
         }
 
         /** {@inheritDoc} */

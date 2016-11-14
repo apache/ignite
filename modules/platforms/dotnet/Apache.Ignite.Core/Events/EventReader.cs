@@ -18,7 +18,7 @@
 namespace Apache.Ignite.Core.Events
 {
     using System;
-    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Event reader.
@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Events
         /// <param name="reader">Reader.</param>
         /// <returns>Deserialized event.</returns>
         /// <exception cref="System.InvalidCastException">Incompatible event type.</exception>
-        public static T Read<T>(IBinaryRawReader reader) where T : IEvent
+        public static T Read<T>(BinaryReader reader) where T : IEvent
         {
             var clsId = reader.ReadInt();
 
@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Events
         /// <param name="reader">Reader.</param>
         /// <returns>Created and deserialized instance.</returns>
         /// <exception cref="System.InvalidOperationException">Invalid event class id:  + clsId</exception>
-        private static IEvent CreateInstance(int clsId, IBinaryRawReader reader)
+        private static IEvent CreateInstance(int clsId, BinaryReader reader)
         {
             switch (clsId)
             {
