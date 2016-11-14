@@ -21,7 +21,7 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -30,9 +30,13 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -42,6 +46,28 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
+    protected final Marshaller marsh;
+
+    /**
+     *
+     */
+    IgniteCacheAbstractSqlDmlQuerySelfTest() {
+        try {
+            marsh = IgniteTestResources.getMarshaller();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+    }
+
+    /**
+     * @return whether {@link #marsh} is an instance of {@link BinaryMarshaller} or not.
+     */
+    private boolean isBinaryMarshaller() {
+        return marsh instanceof BinaryMarshaller;
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -75,18 +101,32 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonA
     }
 
     /** */
-    protected Object createPerson(int id, String name, String secondName) {
-        return new Person(id, name, secondName);
+    Object createPerson(int id, String name, String secondName) {
+        if (!isBinaryMarshaller())
+            return new Person(id, name, secondName);
+        else {
+            BinaryObjectBuilder bldr = ignite(0).binary().builder("Person");
+
+            bldr.setField("id", id);
+            bldr.setField("name", name);
+            bldr.setField("secondName", secondName);
+
+            return bldr.build();
+        }
+
     }
 
     /** */
     protected IgniteCache<?, ?> cache() {
-        return ignite(0).cache("S2P");
+        return ignite(0).cache("S2P").withKeepBinary();
     }
 
     /** */
     protected CacheConfiguration cacheConfig() {
-        return cacheConfig("S2P", true, false).setIndexedTypes(String.class, Person.class);
+        if (!isBinaryMarshaller())
+            return cacheConfig("S2P", true, false).setIndexedTypes(String.class, Person.class);
+        else
+            return createBinCacheConfig();
     }
 
     /** {@inheritDoc} */
@@ -112,7 +152,7 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonA
     /**
      *
      */
-    static CacheConfiguration createBinCacheConfig() {
+    private static CacheConfiguration createBinCacheConfig() {
         CacheConfiguration ccfg = cacheConfig("S2P", true, false);
 
         QueryEntity e = new QueryEntity(String.class.getName(), "Person");
@@ -132,19 +172,6 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonA
         ccfg.setQueryEntities(Collections.singletonList(e));
 
         return ccfg;
-    }
-
-    /**
-     *
-     */
-    BinaryObject createPersonBinary(int id, String name, String secondName) {
-        BinaryObjectBuilder bldr = ignite(0).binary().builder("Person");
-
-        bldr.setField("id", id);
-        bldr.setField("name", name);
-        bldr.setField("secondName", secondName);
-
-        return bldr.build();
     }
 
     /**

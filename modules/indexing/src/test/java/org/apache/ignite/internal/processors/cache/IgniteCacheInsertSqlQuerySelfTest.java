@@ -144,6 +144,7 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     /**
      *
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testDuplicateKeysException() {
         final IgniteCache<Integer, Integer> p = ignite(0).cache("I2I");
 
@@ -164,5 +165,39 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
         assertEquals(2, (int)p.get(1));
         assertEquals(5, (int)p.get(3));
         assertEquals(6, (int)p.get(5));
+    }
+
+    /**
+     *
+     */
+    public void testFieldsListIdentity() {
+        if (!isBinaryMarshaller())
+            return;
+
+        IgniteCache<Key3, Person> p = ignite(0).cache("K32P").withKeepBinary();
+
+        p.query(new SqlFieldsQuery(
+            "insert into Person (key, strKey, id, name) values (1, 'aa', ?, ?), (2, 'bb', 2, 'Alex')").setArgs(1, "Sergi"));
+
+        assertEquals(createPerson(1, "Sergi"), p.get(new Key3(1)));
+
+        assertEquals(createPerson(2, "Alex"), p.get(new Key3(2)));
+    }
+
+    /**
+     *
+     */
+    public void testCustomIdentity() {
+        if (!isBinaryMarshaller())
+            return;
+
+        IgniteCache<Key4, Person> p = ignite(0).cache("K42P").withKeepBinary();
+
+        p.query(new SqlFieldsQuery(
+            "insert into Person (key, strKey, id, name) values (1, 'aa', ?, ?), (2, 'bb', 2, 'Alex')").setArgs(1, "Sergi"));
+
+        assertEquals(createPerson(1, "Sergi"), p.get(new Key4(1)));
+
+        assertEquals(createPerson(2, "Alex"), p.get(new Key4(2)));
     }
 }

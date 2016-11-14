@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryAbstractIdentityResolver;
 import org.apache.ignite.binary.BinaryArrayIdentityResolver;
 import org.apache.ignite.binary.BinaryFieldIdentityResolver;
@@ -36,9 +37,13 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -48,6 +53,28 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
+    protected final Marshaller marsh;
+
+    /**
+     *
+     */
+    IgniteCacheAbstractInsertSqlQuerySelfTest() {
+        try {
+            marsh = IgniteTestResources.getMarshaller();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+    }
+
+    /**
+     * @return whether {@link #marsh} is an instance of {@link BinaryMarshaller} or not.
+     */
+    boolean isBinaryMarshaller() {
+        return marsh instanceof BinaryMarshaller;
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -95,7 +122,10 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3, false);
 
-        createCaches();
+        if (!isBinaryMarshaller())
+            createCaches();
+        else
+            createBinaryCaches();
     }
 
     /**
@@ -278,6 +308,12 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
         ignite(0).cache("K2P").clear();
         ignite(0).cache("K22P").clear();
         ignite(0).cache("I2I").clear();
+
+        if (isBinaryMarshaller()) {
+            ignite(0).cache("K32P").clear();
+            ignite(0).cache("K42P").clear();
+        }
+
         super.afterTest();
     }
 
@@ -285,21 +321,19 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
      *
      */
     Object createPerson(int id, String name) {
-        Person p = new Person(id);
-        p.name = name;
+        if (!isBinaryMarshaller()) {
+            Person p = new Person(id);
+            p.name = name;
 
-        return p;
-    }
+            return p;
+        }
+        else {
+            BinaryObjectBuilder o = grid(0).binary().builder("Person");
+            o.setField("id", id);
+            o.setField("name", name);
 
-    /**
-     *
-     */
-    final BinaryObject createPersonBinary(int id, String name) {
-        BinaryObjectBuilder o = grid(0).binary().builder("Person");
-        o.setField("id", id);
-        o.setField("name", name);
-
-        return o.build();
+            return o.build();
+        }
     }
 
     /**
