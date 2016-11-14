@@ -36,6 +36,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheWriter;
@@ -133,7 +134,6 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
@@ -157,6 +157,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.IgniteComponentType.JTA;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.CacheState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 
@@ -186,11 +187,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** Transaction interface implementation. */
     private IgniteTransactionsImpl transactions;
 
-    /** Global status. */
-    private volatile CacheState globalState;
+    /** Gl st lock. */
+    private final ReentrantLock glStLock = new ReentrantLock();
 
-    /** Activate futures. */
-    private ConcurrentMap<UUID, GridActivateFuture> actFuts = new ConcurrentHashMap8<>();
+    /** Global status. */
+    private CacheState globalState;
+
+    /** Activate. */
+    private boolean activateInProgress;
+
+    /**  */
+    private GridFutureAdapter<?> cacheReadyFut;
+
+    /** Action future. */
+    private GridActivateFuture actFut;
 
     /** Pending cache starts. */
     private ConcurrentMap<UUID, IgniteInternalFuture> pendingFuts = new ConcurrentHashMap<>();
@@ -2549,104 +2559,116 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public IgniteInternalFuture<?> changeGlobalState(CacheState state) {
         checkEmptyTransactions();
 
-        if (this.globalState == ACTIVE)
-            return new GridFinishedFuture<>();
-
-        if (state != ACTIVE)
-            throw new UnsupportedOperationException(state + " this operation is not supported");
-
-        final UUID requestId = UUID.randomUUID();
-
-        final GridActivateFuture actFut = new GridActivateFuture(requestId, ctx);
-
-        actFuts.putIfAbsent(requestId, actFut);
+        glStLock.lock();
 
         try {
-            //if call on client node, then send compute to server node for activate
-            if (ctx.config().isClientMode()) {
-                ClusterNode crd = ctx.discovery().serverNodes(AffinityTopologyVersion.NONE).get(0);
+            if (this.globalState == ACTIVE)
+                return new GridFinishedFuture<>();
 
-                IgniteCompute c = ((ClusterGroupAdapter)ctx.cluster().get().forNode(crd))
-                    .compute().withAsync();
+            if (state != ACTIVE)
+                throw new UnsupportedOperationException(state + " this operation is not supported");
 
-                c.run(new IgniteRunnable() {
-                    @IgniteInstanceResource
-                    private Ignite ignite;
+            if (actFut != null)
+                return actFut;
 
-                    @Override public void run() {
-                        ignite.active(true);
-                    }
-                });
+            final UUID requestId = UUID.randomUUID();
 
-                c.future().listen(new CI1<IgniteFuture>() {
-                    @Override public void apply(IgniteFuture fut) {
-                        try {
-                            fut.get();
+            final GridActivateFuture actFut = new GridActivateFuture(requestId, ctx);
 
-                            actFut.onDone();
+            this.actFut = actFut;
+
+            try {
+                //if call on client node, then send compute to server node for activate
+                if (ctx.config().isClientMode()) {
+                    ClusterNode crd = ctx.discovery().serverNodes(AffinityTopologyVersion.NONE).get(0);
+
+                    IgniteCompute c = ((ClusterGroupAdapter)ctx.cluster().get().forNode(crd))
+                        .compute().withAsync();
+
+                    c.run(new IgniteRunnable() {
+                        @IgniteInstanceResource
+                        private Ignite ignite;
+
+                        @Override public void run() {
+                            ignite.active(true);
                         }
-                        catch (IgniteException e) {
-                            actFut.onDone(e);
+                    });
+
+                    c.future().listen(new CI1<IgniteFuture>() {
+                        @Override public void apply(IgniteFuture fut) {
+                            try {
+                                fut.get();
+
+                                actFut.onDone();
+                            }
+                            catch (IgniteException e) {
+                                actFut.onDone(e);
+                            }
                         }
-                    }
-                });
-            }
-            else {
-                //if call on server node, then load all config and create request for start, and send batch custom event
-                sharedCtx.database().beforeActivate();
+                    });
+                }
+                else {
+                    //if call on server node, then load all config and create request for start, and send batch custom event
+                    sharedCtx.database().lock();
 
-                List<DynamicCacheChangeRequest> reqs = new ArrayList<>();
+                    List<DynamicCacheChangeRequest> reqs = new ArrayList<>();
 
-                Set<String> internalCaches = internalCachesNames();
+                    Set<String> internalCaches = internalCachesNames();
 
-                List<CacheConfiguration> cfgs = new ArrayList<>();
+                    List<CacheConfiguration> cfgs = new ArrayList<>();
 
-                //create request for change global state
-                //localNodeId (always server node) who initiated the activation, also localNodeId use on remote
-                //node for send activation response
-                DynamicCacheChangeRequest activateReq = new DynamicCacheChangeRequest(
-                    requestId, null, ctx.localNodeId()
-                );
+                    //create request for change global state
+                    //localNodeId (always server node) who initiated the activation, also localNodeId use on remote
+                    //node for send activation response
+                    DynamicCacheChangeRequest activateReq = new DynamicCacheChangeRequest(
+                        requestId, null, ctx.localNodeId()
+                    );
 
-                activateReq.state(state);
+                    activateReq.state(state);
 
-                reqs.add(activateReq);
+                    reqs.add(activateReq);
 
-                //read config
-                if (sharedCtx.pageStore() != null) {
-                    Set<String> savedCacheNames = sharedCtx.pageStore().savedCacheNames();
+                    //read config
+                    if (sharedCtx.pageStore() != null) {
+                        Set<String> savedCacheNames = sharedCtx.pageStore().savedCacheNames();
 
-                    if (!ctx.config().isDaemon() && sharedCtx.database().persistenceEnabled()) {
-                        for (String name : savedCacheNames) {
-                            CacheConfiguration cfg = sharedCtx.pageStore().readConfiguration(name);
+                        if (!ctx.config().isDaemon() && sharedCtx.database().persistenceEnabled()) {
+                            for (String name : savedCacheNames) {
+                                CacheConfiguration cfg = sharedCtx.pageStore().readConfiguration(name);
 
-                            if (cfg != null)
+                                if (cfg != null)
+                                    cfgs.add(cfg);
+                            }
+                        }
+
+                        //todo really need?
+                        for (CacheConfiguration cfg : ctx.config().getCacheConfiguration()) {
+                            if (!savedCacheNames.contains(cfg.getName()))
                                 cfgs.add(cfg);
                         }
                     }
+                    else
+                        Collections.addAll(cfgs, ctx.config().getCacheConfiguration());
 
-                    //todo really need?
-                    for (CacheConfiguration cfg : ctx.config().getCacheConfiguration()) {
-                        if (!savedCacheNames.contains(cfg.getName()))
-                            cfgs.add(cfg);
-                    }
+                    sharedCtx.database().unLock();
+
+                    //create requests
+                    for (CacheConfiguration cfg : cfgs)
+                        reqs.add(createRequest(cfg, internalCaches));
+
+                    //create futures and send requests
+                    initiateCacheChanges(reqs, true);
                 }
-                else
-                    Collections.addAll(cfgs, ctx.config().getCacheConfiguration());
-
-                //create requests
-                for (CacheConfiguration cfg : cfgs)
-                    reqs.add(createRequest(cfg, internalCaches));
-
-                //create futures and send requests
-                initiateCacheChanges(reqs, true);
             }
-        }
-        catch (IgniteCheckedException e) {
-            actFut.onDone(e);
-        }
+            catch (IgniteCheckedException e) {
+                actFut.onDone(e);
+            }
 
-        return actFut;
+            return actFut;
+        }
+        finally {
+            glStLock.unlock();
+        }
     }
 
     /**
@@ -2825,11 +2847,34 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         DynamicCacheChangeBatch batch,
         AffinityTopologyVersion topVer
     ) {
-        //todo validate dynamic request if activate
-        for (DynamicCacheChangeRequest req : batch.requests()) {
-            if (req.globalStateChange()){
-                if (globalState == ACTIVE)
-                    return false;
+        for (final DynamicCacheChangeRequest req : batch.requests()) {
+            if (req.globalStateChange()) {
+                glStLock.lock();
+                try {
+                    if (activateInProgress) {
+                        cacheReadyFut.listen(new CI1<IgniteInternalFuture>() {
+                            @Override public void apply(IgniteInternalFuture future) {
+                                try {
+                                    sendActivationResponse(req.requestId(), req.initiatingNodeId(), null);
+                                }
+                                catch (IgniteException e) {
+                                    sendActivationResponse(req.requestId(), req.initiatingNodeId(), e);
+                                }
+                            }
+                        });
+
+                        return false;
+                    }
+                    else{
+                        cacheReadyFut = new GridFutureAdapter<>();
+
+                        activateInProgress = true;
+                    }
+
+                }
+                finally {
+                    glStLock.unlock();
+                }
 
                 break;
             }
@@ -4037,14 +4082,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         UUID requestId = msg.getRequestId();
 
-        GridActivateFuture fut = actFuts.get(requestId);
+        GridActivateFuture fut = actFut;
 
-        if (fut != null && !fut.isDone()) {
+        if (fut != null && !fut.isDone() && requestId.equals(fut.requestId))
             fut.onResponse(msg);
-
-            if (fut.isDone())
-                actFuts.remove(requestId);
-        }
     }
 
     /**
@@ -4054,7 +4095,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         assert req != null;
         assert topVer != null;
 
-        GridActivateFuture fut = actFuts.get(req.requestId());
+        GridActivateFuture fut = actFut;
 
         if (fut != null) {
             Collection<ClusterNode> nodes = ctx.discovery().nodes(topVer);
@@ -4072,54 +4113,80 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param req Request.
      */
     private void activate(final DynamicCacheChangeRequest req){
-        if (globalState != ACTIVE && req.state() == ACTIVE) {
-            try {
-                globalState = req.state();
+        assert activateInProgress;
+        assert req.globalStateChange();
+        assert globalState != ACTIVE;
 
-                if (!req.initiatingNodeId().equals(ctx.localNodeId()))
-                    sharedCtx.database().beforeActivate();
+        glStLock.lock();
 
-                sharedCtx.wal().onKernalStart(false);
+        try {
+            final boolean isClient = ctx.config().isClientMode();
 
-                sharedCtx.database().onKernalStart(false);
+            final GridCacheSharedContext<?, ?> shCtx = sharedCtx;
 
-                if (sharedCtx.pageStore() != null)
-                    sharedCtx.pageStore().onKernalStart(false);
+            globalState = req.state();
 
-                ctx.marshallerContext().onMarshallerCacheStarted(ctx);
+            shCtx.database().beforeActivate();
 
-                if (!ctx.config().isDaemon())
-                    ctx.cacheObjects().onUtilityCacheStarted();
+            shCtx.wal().onKernalStart(false);
 
-                ctx.service().onUtilityCacheStarted();
+            shCtx.database().onKernalStart(false);
 
-                ctx.closure().runLocalSafe(new Runnable() {
-                    @Override public void run() {
-                        try {
-                            ctx.service().onKernalStart();
+            if (shCtx.pageStore() != null)
+                shCtx.pageStore().onKernalStart(false);
 
-                            ctx.dataStructures().onKernalStart();
+            ctx.marshallerContext().onMarshallerCacheStarted(ctx);
 
-                            //send ok status
-                            sendActivationResponse(req.requestId(), req.initiatingNodeId(), null);
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, e);
+            if (!ctx.config().isDaemon())
+                ctx.cacheObjects().onUtilityCacheStarted();
 
-                            //send fail to node which invoke activate
-                            sendActivationResponse(req.requestId(), req.initiatingNodeId(), e);
-                        }
+            ctx.service().onUtilityCacheStarted();
+
+            ctx.closure().runLocalSafe(new Runnable() {
+                @Override public void run() {
+                    try {
+                        ctx.service().onKernalStart();
+
+                        ctx.dataStructures().onKernalStart();
+
+                        shCtx.database().afterActivate();
+
+                        //send ok status
+                        sendActivationResponse(req.requestId(), req.initiatingNodeId(), null);
+
+                        cacheReadyFut.onDone();
+
+                        cacheReadyFut = null;
                     }
-                });
+                    catch (IgniteCheckedException e) {
+                        U.error(log, e);
 
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, e);
+                        //send fail to node which invoke activate
+                        sendActivationResponse(req.requestId(), req.initiatingNodeId(), e);
 
-                //send fail to node which invoke activate
-                sendActivationResponse(req.requestId(), req.initiatingNodeId(), e);
-            }
+                        cacheReadyFut.onDone(e);
+
+                        cacheReadyFut = null;
+                    }
+                }
+            });
         }
+        catch (IgniteCheckedException e) {
+            U.error(log, e);
+
+            //send fail to node which invoke activate
+            sendActivationResponse(req.requestId(), req.initiatingNodeId(), e);
+
+            cacheReadyFut.onDone(e);
+
+            cacheReadyFut = null;
+        }
+        finally {
+            activateInProgress = false;
+
+            glStLock.unlock();
+        }
+
     }
 
     /**
@@ -4135,7 +4202,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (ctx.localNodeId().equals(initNodeId))
                 processActivationResponse(actResp);
             else
-                sharedCtx.io().send(initNodeId, actResp, (byte)2);
+                sharedCtx.io().send(initNodeId, actResp, SYSTEM_POOL);
         }
         catch (IgniteCheckedException e) {
             log.error("Fail send activation response to " + initNodeId, e);
@@ -4254,7 +4321,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
-            actFuts.remove(requestId, this);
+            actFut = null;
 
             return super.onDone(res, err);
         }
