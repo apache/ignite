@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import java.math.BigDecimal;
 import java.net.URL;
 import java.sql.Time;
 import java.sql.Timestamp;

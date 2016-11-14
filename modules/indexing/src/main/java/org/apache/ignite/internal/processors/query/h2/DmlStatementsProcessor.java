@@ -68,7 +68,6 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlMerge;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlParameter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatementSplitter;

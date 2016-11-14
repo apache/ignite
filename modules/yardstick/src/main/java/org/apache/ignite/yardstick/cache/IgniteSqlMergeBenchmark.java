@@ -20,7 +20,6 @@ package org.apache.ignite.yardstick.cache;
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.yardstick.cache.model.SampleValue;
 
 /**
  * Ignite benchmark that performs SQL MERGE operations.

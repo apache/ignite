@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.QueryEntity;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Value descriptor which allows to extract fields from value object of given type.

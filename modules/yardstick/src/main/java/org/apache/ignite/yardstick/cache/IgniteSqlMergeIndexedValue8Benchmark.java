@@ -18,12 +18,9 @@
 package org.apache.ignite.yardstick.cache;
 
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.yardstick.cache.model.Person8;
-import org.yardstickframework.BenchmarkUtils;
 
 /**
  * Ignite benchmark that performs SQL MERGE operations for entity with indexed fields.

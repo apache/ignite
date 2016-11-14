@@ -21,18 +21,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.yardstick.cache.model.Person;
 import org.apache.ignite.yardstick.cache.model.Person1;
-import org.apache.ignite.yardstick.cache.model.Person2;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
-
-import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
  * Ignite benchmark that performs SQL DELETE operations.

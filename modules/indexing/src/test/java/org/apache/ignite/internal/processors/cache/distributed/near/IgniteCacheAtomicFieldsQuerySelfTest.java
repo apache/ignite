@@ -17,12 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.util.List;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.util.typedef.X;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 

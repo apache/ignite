@@ -17,13 +17,8 @@
 
 package org.apache.ignite.yardstick.cache;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;

@@ -23,8 +23,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.yardstick.cache.model.Person2;
 
-import static org.yardstickframework.BenchmarkUtils.println;
-
 /**
  * Ignite benchmark that performs SQL INSERT operations for entity with 2 indexed fields.
  */
