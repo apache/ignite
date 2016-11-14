@@ -103,10 +103,4 @@ public interface CacheObjectBinaryProcessor extends IgniteCacheObjectProcessor {
      * @throws IgniteException If failed.
      */
     public Object marshalToBinary(Object obj) throws IgniteException;
-
-    /**
-     * Register type in binary context.
-     * @param cls Class to register.
-     */
-    public void registerType(Class<?> cls);
 }

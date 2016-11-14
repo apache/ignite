@@ -29,15 +29,12 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.GridLeanMap;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -74,21 +71,6 @@ public final class X {
         "getLinkedCause",
         "getThrowable"
     };
-
-    private static final Map<Class<?>, Object> DEFAULTS;
-
-    static {
-        Map<Class<?>, Object> map = new HashMap<>();
-        map.put(boolean.class, false);
-        map.put(char.class, '\0');
-        map.put(byte.class, (byte) 0);
-        map.put(short.class, (short) 0);
-        map.put(int.class, 0);
-        map.put(long.class, 0L);
-        map.put(float.class, 0f);
-        map.put(double.class, 0d);
-        DEFAULTS = Collections.unmodifiableMap(map);
-    }
 
     /** The Method object for Java 1.4 getCause. */
     private static final Method THROWABLE_CAUSE_METHOD;
@@ -906,16 +888,5 @@ public final class X {
         catch (NumberFormatException ignored) {
             return dflt;
         }
-    }
-
-    /**
-     * @param type Value class.
-     * @param <T> Returned value type.
-     * @return Default value of primitive non Void {@code type}.
-     */
-    @SuppressWarnings("unchecked")
-    @Nullable public static <T> T defaultPrimitiveValue(Class<T> type) {
-        A.ensure(type != null && type.isPrimitive() && type != Void.TYPE, "Non void primitive type expected");
-        return (T) DEFAULTS.get(type);
     }
 }
