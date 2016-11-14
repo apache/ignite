@@ -56,7 +56,6 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -86,7 +85,7 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
         if (factory0 == null)
             factory0 = new CachingHadoopFileSystemFactory();
 
-        factory = HadoopDelegateUtils.fileSystemFactoryDelegate(factory0);
+        factory = HadoopDelegateUtils.fileSystemFactoryDelegate(getClass().getClassLoader(), factory0);
     }
 
     /** {@inheritDoc} */
