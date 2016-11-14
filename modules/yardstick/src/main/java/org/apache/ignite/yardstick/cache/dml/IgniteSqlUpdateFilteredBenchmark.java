@@ -15,30 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.cache;
+package org.apache.ignite.yardstick.cache.dml;
 
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
 import org.apache.ignite.yardstick.cache.model.Person;
 import org.yardstickframework.BenchmarkConfiguration;
 
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- * Ignite benchmark that performs put and SQL DELETE operations.
+ * Ignite benchmark that performs put and SQL UPDATE operations.
  */
-public class IgniteSqlDeleteFilteredBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
+public class IgniteSqlUpdateFilteredBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** */
     private AtomicInteger putCnt = new AtomicInteger();
 
     /** */
-    private AtomicInteger delCnt = new AtomicInteger();
+    private AtomicInteger updCnt = new AtomicInteger();
 
     /** */
-    private AtomicInteger delItemsCnt = new AtomicInteger();
+    private AtomicInteger updItemsCnt = new AtomicInteger();
 
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
@@ -54,12 +55,12 @@ public class IgniteSqlDeleteFilteredBenchmark extends IgniteCacheAbstractBenchma
 
             double maxSalary = salary + 1000;
 
-            int res = (Integer) cache().query(new SqlFieldsQuery("delete from Person where salary >= ? and salary <= ?")
-                .setArgs(salary, maxSalary)).getAll().get(0).get(0);
+            int res = (Integer) cache().query(new SqlFieldsQuery("update Person set salary = (salary - ?1 + ?2) / 2 " +
+                "where salary >= ?1 and salary <= ?2").setArgs(salary, maxSalary)).getAll().get(0).get(0);
 
-            delItemsCnt.getAndAdd(res);
+            updItemsCnt.getAndAdd(res);
 
-            delCnt.getAndIncrement();
+            updCnt.getAndIncrement();
         }
         else {
             int i = rnd.nextInt(args.range());
@@ -79,8 +80,8 @@ public class IgniteSqlDeleteFilteredBenchmark extends IgniteCacheAbstractBenchma
 
     /** {@inheritDoc} */
     @Override public void tearDown() throws Exception {
-        println(cfg, "Finished SQL DELETE query benchmark [putCnt=" + putCnt.get() + ", delCnt=" + delCnt.get() +
-            ", delItemsCnt=" + delItemsCnt.get() + ']');
+        println(cfg, "Finished SQL UPDATE query benchmark [putCnt=" + putCnt.get() + ", updCnt=" + updCnt.get() +
+            ", updItemsCnt=" + updItemsCnt.get() + ']');
 
         super.tearDown();
     }

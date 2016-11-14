@@ -15,33 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.cache;
+package org.apache.ignite.yardstick.cache.dml;
 
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.yardstick.cache.model.Person1;
+import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
+import org.apache.ignite.yardstick.cache.model.Person8;
 
 /**
- * Ignite benchmark that performs SQL INSERT operations for entity with 1 indexed field.
+ * Ignite benchmark that performs SQL MERGE operations for entity with indexed fields.
  */
-public class IgniteSqlInsertIndexedValue1Benchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
-    /** */
-    private final AtomicInteger insCnt = new AtomicInteger();
-
+public class IgniteSqlMergeIndexedValue8Benchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        int key = insCnt.getAndIncrement();
+        int key = nextRandom(args.range());
 
-        cache.query(new SqlFieldsQuery("insert into Person1(_key, _val) values (?, ?)")
-            .setArgs(key, new Person1(key)));
+        cache.query(new SqlFieldsQuery("merge into Person8(_key, _val) values (?, ?)").setArgs(key, new Person8(key)));
 
         return true;
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().cache("atomic-index-with-eviction");
+        return ignite().cache("atomic-index");
     }
 }
