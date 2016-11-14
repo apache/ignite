@@ -20,9 +20,7 @@ package org.apache.ignite.internal.processors.query;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.concurrent.TimeUnit;
-import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Field;
-import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.Time;
@@ -1812,9 +1810,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         try {
             Method getter = cls.getMethod(getBldr.toString());
-            Method setter = cls.getMethod(setBldr.toString());
 
-            return new MethodsAccessor(getter, setter);
+            Method setter;
+
+            try {
+                // Setter has to have the same name like 'setXxx' and single param of the same type
+                // as the return type of the getter.
+                setter = cls.getMethod(setBldr.toString(), getter.getReturnType());
+            }
+            catch (NoSuchMethodException ignore) {
+                // Have getter, but no setter - return read-only accessor.
+                return new ReadOnlyMethodsAccessor(getter, prop);
+            }
+
+            return new MethodsAccessor(getter, setter, prop);
         }
         catch (NoSuchMethodException ignore) {
             // No-op.
@@ -1822,15 +1831,26 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         getBldr = new StringBuilder("is");
         getBldr.append(prop);
-        getBldr.setCharAt(2, Character.toUpperCase(getBldr.charAt(3)));
+        getBldr.setCharAt(2, Character.toUpperCase(getBldr.charAt(2)));
 
         // We do nothing about setBldr here as it corresponds to setProperty name which is what we need
         // for boolean property setter as well
         try {
             Method getter = cls.getMethod(getBldr.toString());
-            Method setter = cls.getMethod(setBldr.toString());
 
-            return new MethodsAccessor(getter, setter);
+            Method setter;
+
+            try {
+                // Setter has to have the same name like 'setXxx' and single param of the same type
+                // as the return type of the getter.
+                setter = cls.getMethod(setBldr.toString(), getter.getReturnType());
+            }
+            catch (NoSuchMethodException ignore) {
+                // Have getter, but no setter - return read-only accessor.
+                return new ReadOnlyMethodsAccessor(getter, prop);
+            }
+
+            return new MethodsAccessor(getter, setter, prop);
         }
         catch (NoSuchMethodException ignore) {
             // No-op.
@@ -1846,11 +1866,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         try {
             Method getter = cls.getMethod(prop);
 
-            // For this case, setter has to have the same name and single param of the same type
-            // as the return type of the getter.
-            Method setter = cls.getMethod(prop, getter.getReturnType());
+            Method setter;
 
-            return new MethodsAccessor(getter, setter);
+            try {
+                // Setter has to have the same name and single param of the same type
+                // as the return type of the getter.
+                setter = cls.getMethod(prop, getter.getReturnType());
+            }
+            catch (NoSuchMethodException ignore) {
+                // Have getter, but no setter - return read-only accessor.
+                return new ReadOnlyMethodsAccessor(getter, prop);
+            }
+
+            return new MethodsAccessor(getter, setter, prop);
         }
         catch (NoSuchMethodException ignored) {
             // No-op.
@@ -2719,16 +2747,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** */
         private final Method setter;
 
+        /** */
+        private final String propName;
+
         /**
          * @param getter Getter method.
          * @param setter Setter method.
+         * @param propName Property name.
          */
-        private MethodsAccessor(Method getter, Method setter) {
+        private MethodsAccessor(Method getter, Method setter, String propName) {
             getter.setAccessible(true);
             setter.setAccessible(true);
 
             this.getter = getter;
             this.setter = setter;
+            this.propName = propName;
         }
 
         /** {@inheritDoc} */
@@ -2737,7 +2770,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 return getter.invoke(obj);
             }
             catch (Exception e) {
-                throw new IgniteCheckedException("Failed to invoke getter method", e);
+                throw new IgniteCheckedException("Failed to invoke getter method " +
+                    "[type=" + getType() + ", property=" + propName + ']', e);
             }
         }
 
@@ -2747,15 +2781,61 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 setter.invoke(obj, newVal);
             }
             catch (Exception e) {
-                throw new IgniteCheckedException("Failed to invoke setter method", e);
+                throw new IgniteCheckedException("Failed to invoke setter method " +
+                    "[type=" + getType() + ", property=" + propName + ']', e);
             }
         }
 
         /** {@inheritDoc} */
         @Override public String getPropertyName() {
-            String getterName = getter.getName();
+            return propName;
+        }
 
-            return getterName.startsWith("get") && getterName.length() > 3 ? getterName.substring(3) : getterName;
+        /** {@inheritDoc} */
+        @Override public Class<?> getType() {
+            return getter.getReturnType();
+        }
+    }
+
+    /** Accessor with getter only. */
+    private final static class ReadOnlyMethodsAccessor implements PropertyAccessor {
+        /** */
+        private final Method getter;
+
+        /** */
+        private final String propName;
+
+        /**
+         * @param getter Getter method.
+         * @param propName Property name.
+         */
+        private ReadOnlyMethodsAccessor(Method getter, String propName) {
+            getter.setAccessible(true);
+
+            this.getter = getter;
+            this.propName = propName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object getValue(Object obj) throws IgniteCheckedException {
+            try {
+                return getter.invoke(obj);
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException("Failed to invoke getter method " +
+                    "[type=" + getType() + ", property=" + propName + ']', e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setValue(Object obj, Object newVal) throws IgniteCheckedException {
+            throw new UnsupportedOperationException("Property is read-only [type=" + getType() +
+                ", property=" + propName + ']');
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getPropertyName() {
+            return propName;
         }
 
         /** {@inheritDoc} */
