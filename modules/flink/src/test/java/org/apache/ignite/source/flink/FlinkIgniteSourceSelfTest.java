@@ -155,8 +155,10 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
 
             resultList.add(testKey);
 
-            if(testKey == (evtCount-1))
+            if(testKey == (evtCount-1)){
                 igniteSrc.stop();
+                break;
+            }
         }
 
         Collections.sort(resultList);

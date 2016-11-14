@@ -57,7 +57,7 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
     private UUID rmtLsnrId;
 
     /** Flag for stopped state. */
-    private static volatile boolean stopped = true;
+    private volatile boolean stopped = false;
 
     /** Max number of events taken from the buffer at once. */
     private int evtBatchSize = DFLT_EVT_BATCH_SIZE;
@@ -122,7 +122,7 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
     public void start(IgnitePredicate<CacheEvent> filter, int... cacheEvts) throws Exception {
         A.notNull(cacheName, "Cache name");
 
-        this.stopped = false;
+        stopped = false;
 
         TaskRemoteFilter rmtLsnr = new TaskRemoteFilter(cacheName, filter);
 
