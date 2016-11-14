@@ -501,6 +501,18 @@
                                                 </xs:attribute>
                                             </xs:complexType>
                                         </xs:element>
+                                        <xs:element name="expiryPolicyFactory" minOccurs="0">
+                                            <xs:annotation>
+                                                <xs:documentation>Factory for IExpiryPolicy to be used for all cache operations, unless ICache.WithExpiryPolicy is called. Default is null, which means no expiration.</xs:documentation>
+                                            </xs:annotation>
+                                            <xs:complexType>
+                                                <xs:attribute name="type" type="xs:string" use="required">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                            </xs:complexType>
+                                        </xs:element>
                                     </xs:all>
                                     <xs:attribute name="name" type="xs:string">
                                         <xs:annotation>
