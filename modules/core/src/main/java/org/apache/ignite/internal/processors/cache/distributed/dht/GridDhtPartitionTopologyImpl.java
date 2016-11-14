@@ -1070,8 +1070,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
                     Long cntr = cntrMap.get(part.id());
 
-                    if (cntr != null)
-                        part.updateCounter(cntr);
+//                    if (cntr != null)
+//                        part.updateCounter(cntr);
                 }
             }
 
@@ -1200,8 +1200,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         if (cntrMap != null) {
                             Long cntr = cntrMap.get(p);
 
-                            if (cntr != null && cntr > locPart.updateCounter())
-                                locPart.updateCounter(cntr);
+                            if (cntr != null && cntr > locPart.updateCounter());
+//                                locPart.updateCounter(cntr);
                         }
                     }
                 }

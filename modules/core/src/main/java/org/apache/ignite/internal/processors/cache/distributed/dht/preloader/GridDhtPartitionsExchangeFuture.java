@@ -1518,14 +1518,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 }
             }
 
-            if (discoEvt.type() == EVT_NODE_JOINED) {
-                if (cctx.database().persistenceEnabled()) {
-                    for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                        log.error("!!Assign");
-                        assignPartitionStates(cacheCtx.topology());
-                    }
-                }
-            }
+//            if (discoEvt.type() == EVT_NODE_JOINED) {
+//                if (cctx.database().persistenceEnabled()) {
+//                    for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+//                        log.error("!!Assign");
+//                        assignPartitionStates(cacheCtx.topology());
+//                    }
+//                }
+//            }
 
 
             if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
