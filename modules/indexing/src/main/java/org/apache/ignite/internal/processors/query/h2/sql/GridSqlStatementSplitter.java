@@ -99,8 +99,8 @@ public final class GridSqlStatementSplitter {
             boolean collocatedGrpBy, final boolean distributedJoins) throws IgniteCheckedException {
         GridSqlStatement gridStmt = new GridSqlQueryParser().parse(prepared);
 
-        X.ensureX(gridStmt instanceof GridSqlInsert || gridStmt instanceof GridSqlMerge ||
-            gridStmt instanceof GridSqlUpdate || gridStmt instanceof GridSqlDelete, "SQL update operation expected");
+        assert gridStmt instanceof GridSqlInsert || gridStmt instanceof GridSqlMerge ||
+            gridStmt instanceof GridSqlUpdate || gridStmt instanceof GridSqlDelete : "SQL update operation expected";
 
         if (gridStmt instanceof GridSqlUpdate)
             return splitUpdate((GridSqlUpdate)gridStmt, params, keysFilter, collocatedGrpBy, distributedJoins);
@@ -127,7 +127,7 @@ public final class GridSqlStatementSplitter {
             sel = selectForInsertOrMerge(merge.rows(), merge.query());
         }
 
-        X.ensureX(target != null, "Failed to retrieve target for SQL update operation");
+        assert target != null : "Failed to retrieve target for SQL update operation";
 
         // Build resulting two step query.
         GridCacheTwoStepQuery res;
@@ -222,13 +222,13 @@ public final class GridSqlStatementSplitter {
 
         collectAllGridTablesInTarget(del.from(), tbls);
 
-        X.ensureX(tbls.size() == 1, "Failed to determine target table for DELETE");
+        assert tbls.size() == 1 : "Failed to determine target table for DELETE";
 
         GridSqlTable tbl = tbls.iterator().next();
 
         GridH2Table gridTbl = tbl.dataTable();
 
-        X.ensureX(gridTbl != null, "Failed to determine target grid table for DELETE");
+        assert gridTbl != null : "Failed to determine target grid table for DELETE";
 
         Column h2KeyCol = gridTbl.getColumn(GridH2AbstractKeyValueRow.KEY_COL);
 
@@ -430,13 +430,13 @@ public final class GridSqlStatementSplitter {
 
         collectAllGridTablesInTarget(update.target(), tbls);
 
-        X.ensureX(tbls.size() == 1, "Failed to determine target table for UPDATE");
+        assert tbls.size() == 1 : "Failed to determine target table for UPDATE";
 
         GridSqlTable tbl = tbls.iterator().next();
 
         GridH2Table gridTbl = tbl.dataTable();
 
-        X.ensureX(gridTbl != null, "Failed to determine target grid table for UPDATE");
+        assert gridTbl != null : "Failed to determine target grid table for UPDATE";
 
         Column h2KeyCol = gridTbl.getColumn(GridH2AbstractKeyValueRow.KEY_COL);
 

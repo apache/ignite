@@ -1399,7 +1399,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             twoStepCache.putIfAbsent(cachedQryKey, cachedQry);
         }
 
-        X.ensureX(twoStepQry.initialStatement() != null, "Source statement undefined");
+        assert twoStepQry.initialStatement() != null : "Source statement undefined";
 
         if (twoStepQry.initialStatement() instanceof GridSqlQuery)
             return new IgniteBiTuple<>(cursor, null);

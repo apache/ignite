@@ -208,7 +208,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
         else if (!loc && !CURSORS.replace(uuid, cursor, new Cursor(cursor.cursor, cursor.iter)))
             assert !CURSORS.containsKey(uuid) : "Concurrent cursor modification.";
 
-        X.ensureX(isQry != null, "Query flag must be set prior to returning result");
+        assert isQry != null : "Query flag must be set prior to returning result";
 
         return new QueryResult(uuid, finished, isQry, rows, cols, tbls, types);
     }

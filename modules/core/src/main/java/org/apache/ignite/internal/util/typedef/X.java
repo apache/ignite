@@ -918,15 +918,4 @@ public final class X {
         A.ensure(type != null && type.isPrimitive() && type != Void.TYPE, "Non void primitive type expected");
         return (T) DEFAULTS.get(type);
     }
-
-    /**
-     * Checks that given condition is {@code true}, otherwise throws {@link IgniteCheckedException} exception.
-     *
-     * @param cond Condition to check.
-     * @param desc Description of the condition to be used in error message.
-     */
-    public static void ensureX(boolean cond, String desc) throws IgniteCheckedException {
-        if (!cond)
-            throw new IgniteCheckedException(desc);
-    }
 }

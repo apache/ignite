@@ -690,7 +690,7 @@ class DmlStatementsProcessor {
 
             GridQueryProperty prop = desc.type().property(cols[i].columnName());
 
-            X.ensureX(prop != null, "Property '" + cols[i].columnName() + "' not found.");
+            assert prop != null : "Property '" + cols[i].columnName() + "' not found.";
 
             if (prop.key())
                 hasKeyProps = true;
@@ -782,7 +782,7 @@ class DmlStatementsProcessor {
 
             GridQueryProperty prop = desc.type().property(cols[i].columnName());
 
-            X.ensureX(prop != null, "Property '" + cols[i].columnName() + "' not found.");
+            assert prop != null : "Property '" + cols[i].columnName() + "' not found.";
 
             if (prop.key())
                 hasKeyProps = true;
