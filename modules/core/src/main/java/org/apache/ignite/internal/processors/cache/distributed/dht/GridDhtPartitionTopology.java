@@ -220,9 +220,10 @@ public interface GridDhtPartitionTopology {
         @Nullable Map<Integer, Long> cntrMap);
 
     /**
+     * @param skipZeros If {@code true} then filters out zero counters.
      * @return Partition update counters.
      */
-    public Map<Integer, Long> updateCounters();
+    public Map<Integer, Long> updateCounters(boolean skipZeros);
 
     /**
      * @param part Partition to own.
