@@ -629,11 +629,14 @@ public class BinaryContext {
                 );
 
                 if (descByCls.replace(cls, desc, desc0)) {
+                    Collection<BinarySchema> schemas =
+                        desc0.schema() != null ? Collections.singleton(desc.schema()) : null;
+
                     BinaryMetadata meta = new BinaryMetadata(desc0.typeId(),
                         desc0.typeName(),
                         desc0.fieldsMeta(),
                         desc0.affFieldKeyName(),
-                        null, desc0.isEnum());
+                        schemas, desc0.isEnum());
 
                     metaHnd.addMeta(desc0.typeId(), meta.wrap(this));
 

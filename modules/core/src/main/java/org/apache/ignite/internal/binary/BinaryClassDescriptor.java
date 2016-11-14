@@ -462,6 +462,13 @@ public class BinaryClassDescriptor {
     }
 
     /**
+     * @return Schema.
+     */
+    BinarySchema schema() {
+        return stableSchema;
+    }
+
+    /**
      * @return Whether typeId has been successfully registered by MarshallerContext or not.
      */
     public boolean registered() {
