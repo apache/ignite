@@ -64,8 +64,8 @@ class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
     ) {
         super(cctx, completionCb, writeVer, updateReq, updateRes);
 
-        keys = new ArrayList<>(updateReq.keys().size());
-        mappings = U.newHashMap(updateReq.keys().size());
+        keys = new ArrayList<>(updateReq.size());
+        mappings = U.newHashMap(updateReq.size());
     }
 
     /** {@inheritDoc} */
