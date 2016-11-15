@@ -48,7 +48,7 @@ public class GridRedisMessage implements GridClientMessage {
     private static final int AUX_OFFSET = 2;
 
     /** Request message parts. */
-    private final List<String> msgParts;
+    private transient final List<String> msgParts;
 
     /** Response. */
     private ByteBuffer response;

@@ -33,7 +33,7 @@ import org.apache.ignite.internal.util.typedef.CX1;
 /**
  * Redis command handler done via REST.
  */
-public abstract class GridRedisThruRestCommandHandler implements GridRedisCommandHandler {
+public abstract class GridRedisRestCommandHandler implements GridRedisCommandHandler {
     /** REST protocol handler. */
     protected final GridRestProtocolHandler hnd;
 
@@ -42,7 +42,7 @@ public abstract class GridRedisThruRestCommandHandler implements GridRedisComman
      *
      * @param hnd REST protocol handler.
      */
-    public GridRedisThruRestCommandHandler(final GridRestProtocolHandler hnd) {
+    public GridRedisRestCommandHandler(final GridRestProtocolHandler hnd) {
         this.hnd = hnd;
     }
 

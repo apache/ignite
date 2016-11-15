@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
 /**
  * Supported Redis-specific commands.
+ * See <a href="http://redis.io/commands">Redis commands</a> for details.
  * <p>
  * Cache operations are handled via REST.
  */

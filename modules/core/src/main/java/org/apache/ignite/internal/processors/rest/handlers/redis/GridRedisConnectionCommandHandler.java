@@ -58,7 +58,7 @@ public class GridRedisConnectionCommandHandler implements GridRedisCommandHandle
                 return new GridFinishedFuture<>(msg);
 
             case QUIT:
-                msg.setResponse(GridRedisProtocolParser.OkString());
+                msg.setResponse(GridRedisProtocolParser.oKString());
                 return new GridFinishedFuture<>(msg);
 
             case ECHO:

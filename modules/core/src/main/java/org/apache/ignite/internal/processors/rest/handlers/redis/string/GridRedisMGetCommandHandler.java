@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.rest.handlers.redis.string;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
@@ -28,7 +27,7 @@ import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
-import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisThruRestCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisRestCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridRedisGenericException;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
@@ -40,7 +39,7 @@ import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.Gri
 /**
  * Redis MGET command handler.
  */
-public class GridRedisMGetCommandHandler extends GridRedisThruRestCommandHandler {
+public class GridRedisMGetCommandHandler extends GridRedisRestCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
         MGET
@@ -71,10 +70,9 @@ public class GridRedisMGetCommandHandler extends GridRedisThruRestCommandHandler
 
         List<String> keys = msg.auxMKeys();
         Map<Object, Object> mget = U.newHashMap(keys.size());
-        Iterator<String> mgetIt = keys.iterator();
 
-        while (mgetIt.hasNext())
-            mget.put(mgetIt.next(), null);
+        for (String key : keys)
+            mget.put(key, null);
 
         restReq.values(mget);
 

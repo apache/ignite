@@ -1474,9 +1474,6 @@ public class IgnitionEx {
         /** REST requests executor service. */
         private ExecutorService restExecSvc;
 
-        /** Redis requests executor service. */
-        private ExecutorService redisExecSvc;
-
         /** Utility cache executor service. */
         private ExecutorService utilityCacheExecSvc;
 
@@ -2363,11 +2360,6 @@ public class IgnitionEx {
                 U.shutdownNow(getClass(), restExecSvc, log);
 
             restExecSvc = null;
-
-            if (redisExecSvc != null)
-                U.shutdownNow(getClass(), redisExecSvc, log);
-
-            redisExecSvc = null;
 
             U.shutdownNow(getClass(), utilityCacheExecSvc, log);
 

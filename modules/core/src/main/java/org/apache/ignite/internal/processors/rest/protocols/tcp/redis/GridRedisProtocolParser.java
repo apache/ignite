@@ -166,7 +166,7 @@ public class GridRedisProtocolParser {
     /**
      * @return Standard OK string.
      */
-    public static ByteBuffer OkString() {
+    public static ByteBuffer oKString() {
         return toSimpleString(OK);
     }
 

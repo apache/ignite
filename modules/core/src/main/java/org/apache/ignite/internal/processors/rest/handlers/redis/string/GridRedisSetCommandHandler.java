@@ -23,7 +23,7 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
-import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisThruRestCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisRestCommandHandler;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
@@ -41,7 +41,7 @@ import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.Gri
  * <p>
  * No key expiration is currently supported.
  */
-public class GridRedisSetCommandHandler extends GridRedisThruRestCommandHandler {
+public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
         SET
@@ -100,9 +100,9 @@ public class GridRedisSetCommandHandler extends GridRedisThruRestCommandHandler 
      */
     private boolean isNx(List<String> params) {
         if (params.size() >= 3)
-            return params.get(0).equalsIgnoreCase("nx") || params.get(2).equalsIgnoreCase("nx");
-        else
-            return params.get(0).equalsIgnoreCase("nx");
+            return "nx".equalsIgnoreCase(params.get(0)) || "nx".equalsIgnoreCase(params.get(2));
+
+        return "nx".equalsIgnoreCase(params.get(0));
     }
 
     /**
@@ -111,9 +111,9 @@ public class GridRedisSetCommandHandler extends GridRedisThruRestCommandHandler 
      */
     private boolean isXx(List<String> params) {
         if (params.size() >= 3)
-            return params.get(0).equalsIgnoreCase("xx") || params.get(2).equalsIgnoreCase("xx");
-        else
-            return params.get(0).equalsIgnoreCase("xx");
+            return "xx".equalsIgnoreCase(params.get(0)) || "xx".equalsIgnoreCase(params.get(2));
+
+        return "xx".equalsIgnoreCase(params.get(0));
     }
 
     /** {@inheritDoc} */
@@ -123,6 +123,6 @@ public class GridRedisSetCommandHandler extends GridRedisThruRestCommandHandler 
         if (resp == null)
             return GridRedisProtocolParser.nil();
 
-        return (!(boolean)resp ? GridRedisProtocolParser.nil() : GridRedisProtocolParser.OkString());
+        return (!(boolean)resp ? GridRedisProtocolParser.nil() : GridRedisProtocolParser.oKString());
     }
 }

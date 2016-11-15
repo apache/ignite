@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
-import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisThruRestCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisRestCommandHandler;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.Gri
 /**
  * Redis MSET command handler.
  */
-public class GridRedisMSetCommandHandler extends GridRedisThruRestCommandHandler {
+public class GridRedisMSetCommandHandler extends GridRedisRestCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
         MSET
@@ -80,6 +80,6 @@ public class GridRedisMSetCommandHandler extends GridRedisThruRestCommandHandler
 
     /** {@inheritDoc} */
     @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
-        return GridRedisProtocolParser.OkString();
+        return GridRedisProtocolParser.oKString();
     }
 }
