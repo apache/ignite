@@ -48,6 +48,9 @@ namespace Apache.Ignite.Examples.DataStructures
                 IAtomicReference<Guid> atomicRef = ignite.GetAtomicReference(
                     AtomicReferenceModifyAction.AtomicReferenceName, Guid.Empty, true);
 
+                // Make sure initial value is set to Empty.
+                atomicRef.Write(Guid.Empty);
+
                 // Attempt to modify the value on each node. Only one node will succeed.
                 ignite.GetCompute().Broadcast(new AtomicReferenceModifyAction());
                 
