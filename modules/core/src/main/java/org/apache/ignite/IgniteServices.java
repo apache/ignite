@@ -352,14 +352,15 @@ public interface IgniteServices extends IgniteAsyncSupport {
 
     /**
      * Gets a remote handle on the service with timeout. If service is available locally,
-     * then local instance is returned, otherwise, a remote proxy is dynamically
+     * then local instance is returned and timeout ignored, otherwise, a remote proxy is dynamically
      * created and provided for the specified service.
      *
      * @param name Service name.
      * @param svcItf Interface for the service.
      * @param sticky Whether or not Ignite should always contact the same remote
      *      service or try to load-balance between services.
-     * @param timeout If greater than 0 created proxy will wait for service availability only specified time.
+     * @param timeout If greater than 0 created proxy will wait for service availability only specified time,
+     *  and will limit remote service invocation time.
      * @return Either proxy over remote service or local service if it is deployed locally.
      * @throws IgniteException If failed to create service proxy.
      */
