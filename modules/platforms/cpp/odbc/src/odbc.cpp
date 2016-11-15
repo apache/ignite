@@ -1306,7 +1306,7 @@ namespace ignite
         SqlLen outResLen;
         ApplicationDataBuffer outBuffer(IGNITE_ODBC_C_TYPE_CHAR, msgBuf, msgBufLen, &outResLen);
 
-        outBuffer.PutString(record.GetMessage());
+        outBuffer.PutString(record.GetMessageText());
 
         if (msgResLen)
             *msgResLen = static_cast<SQLSMALLINT>(outResLen);
