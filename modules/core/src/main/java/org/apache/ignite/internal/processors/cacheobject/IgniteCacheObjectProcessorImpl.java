@@ -232,7 +232,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
                 ctx.kernalContext().affinity().partition0(ctx.cacheName(), obj, null);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to get partition: " + ctx.cacheName());
+            throw new IgniteCheckedException("Failed to get partition: " + ctx.cacheName());
         }
     }
 
