@@ -49,7 +49,7 @@ namespace Apache.Ignite.ExamplesDll.DataStructures
             // Replace empty value with current node id.
             Guid expectedValue = Guid.Empty;
 
-            Guid originalValue = atomicRef.CompareExchange(expectedValue, localNodeId);
+            Guid originalValue = atomicRef.CompareExchange(localNodeId, expectedValue);
 
             if (originalValue == expectedValue)
                 Console.WriteLine(">>> Successfully updated atomic reference on node {0}", localNodeId);
