@@ -97,28 +97,30 @@ mixin ipaddress-port-range-feedback(name)
 mixin uuid-feedback(name)
     +form-field-feedback(name, 'uuid', 'Invalid node ID!')
 
-//- Mixin for checkbox.
-mixin checkbox(lbl, model, name, tip)
-    +form-field-checkbox(lbl, model, name, false, false, tip)
-
 //- Function that convert enabled state to corresponding disabled state.
 -var enabledToDisabled = function (enabled) {
 -    return (enabled === false || enabled === true) ? !enabled : '!(' + enabled + ')';
 -}
 
+//- Mixin for checkbox.
+mixin checkbox(lbl, model, name, tip)
+    +form-field-checkbox(lbl, model, name, false, false, tip)
+
 //- Mixin for checkbox with enabled condition.
 mixin checkbox-enabled(lbl, model, name, enabled, tip)
     +form-field-checkbox(lbl, model, name, enabledToDisabled(enabled), false, tip)
 
-//- Mixin for java name field with enabled condition.
-mixin java-class(lbl, model, name, enabled, required, tip)
+//- Mixin for Java class name field with auto focus condition.
+mixin java-class-autofocus-placholder(lbl, model, name, enabled, required, autofocus, placeholder, tip, validationActive)
     -var errLbl = lbl.substring(0, lbl.length - 1)
 
-    +ignite-form-field-text(lbl, model, name, enabledToDisabled(enabled), required, 'Enter fully qualified class name', tip)(
+    +ignite-form-field-text(lbl, model, name, enabledToDisabled(enabled), required, placeholder, tip)(
         data-java-identifier='true'
         data-java-package-specified='true'
         data-java-keywords='true'
         data-java-built-in-class='true'
+        data-ignite-form-field-input-autofocus=autofocus
+        data-validation-active=validationActive ? '{{ #{validationActive} }}' : '"always"'
     )
         if  block
             block
@@ -128,14 +130,27 @@ mixin java-class(lbl, model, name, enabled, required, tip)
         +form-field-feedback(name, 'javaPackageSpecified', errLbl + ' does not have package specified!')
         +form-field-feedback(name, 'javaIdentifier', errLbl + ' is invalid Java identifier!')
 
+//- Mixin for Java class name field with auto focus condition.
+mixin java-class-autofocus(lbl, model, name, enabled, required, autofocus, tip, validationActive)
+    +java-class-autofocus-placholder(lbl, model, name, enabled, required, autofocus, 'Enter fully qualified class name', tip, validationActive)
+        if  block
+            block
+
+//- Mixin for Java class name field.
+mixin java-class(lbl, model, name, enabled, required, tip, validationActive)
+    +java-class-autofocus(lbl, model, name, enabled, required, 'false', tip, validationActive)
+        if  block
+            block
+
 //- Mixin for text field with enabled condition with options.
-mixin java-class-typeahead(lbl, model, name, options, enabled, required, placeholder, tip)
+mixin java-class-typeahead(lbl, model, name, options, enabled, required, placeholder, tip, validationActive)
     -var errLbl = lbl.substring(0, lbl.length - 1)
 
     +form-field-datalist(lbl, model, name, enabledToDisabled(enabled), required, placeholder, options, tip)(
         data-java-identifier='true'
         data-java-package-specified='allow-built-in'
         data-java-keywords='true'
+        data-validation-active=validationActive ? '{{ #{validationActive} }}' : '"always"'
     )
         +form-field-feedback(name, 'javaKeywords', errLbl + ' could not contains reserved Java keyword!')
         +form-field-feedback(name, 'javaPackageSpecified', errLbl + ' does not have package specified!')
@@ -234,22 +249,21 @@ mixin table-text-field(name, model, items, valid, save, placeholder, newItem)
     -var resetOnBlur = newItem ? '!stopblur && (group.add = [])' : 'field.edit = false'
     -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
 
-    if block
-        block
+    div(ignite-on-focus-out=onBlur)
+        if block
+            block
 
-    .input-tip
-        +ignite-form-field-input(name, model, false, 'true', placeholder)(
-            data-ignite-unique=items
-            data-ignite-form-field-input-autofocus='true'
-            ng-blur=onBlur
-            ignite-on-enter=onEnter
-            ignite-on-escape=onEscape
-        )
+        .input-tip
+            +ignite-form-field-input(name, model, false, 'true', placeholder)(
+                data-ignite-unique=items
+                data-ignite-form-field-input-autofocus='true'
+
+                ignite-on-enter=onEnter
+                ignite-on-escape=onEscape
+            )
 
 //- Mixin for table java class field.
 mixin table-java-class-field(lbl, name, model, items, valid, save, newItem)
-    -var errLbl = lbl.substring(0, lbl.length - 1)
-
     -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
     -var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
 
@@ -258,31 +272,28 @@ mixin table-java-class-field(lbl, name, model, items, valid, save, newItem)
     -var resetOnBlur = newItem ? '!stopblur && (group.add = [])' : 'field.edit = false'
     -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
 
-    if block
-        block
+    div(ignite-on-focus-out=onBlur)
+        +form-field-feedback(name, 'javaBuiltInClass', lbl + ' should not be the Java built-in class!')
+        +form-field-feedback(name, 'javaKeywords', lbl + ' could not contains reserved Java keyword!')
+        +form-field-feedback(name, 'javaPackageSpecified', lbl + ' does not have package specified!')
+        +form-field-feedback(name, 'javaIdentifier', lbl + ' is invalid Java identifier!')
 
-    +form-field-feedback(name, 'javaBuiltInClass', errLbl + ' should not be the Java built-in class!')
-    +form-field-feedback(name, 'javaKeywords', errLbl + ' could not contains reserved Java keyword!')
-    +form-field-feedback(name, 'javaPackageSpecified', errLbl + ' does not have package specified!')
-    +form-field-feedback(name, 'javaIdentifier', errLbl + ' is invalid Java identifier!')
+        if block
+            block
 
-    if block
-        block
+        .input-tip
+            +ignite-form-field-input(name, model, false, 'true', 'Enter fully qualified class name')(
+                data-java-identifier='true'
+                data-java-package-specified='true'
+                data-java-keywords='true'
+                data-java-built-in-class='true'
 
-    .input-tip
-        +ignite-form-field-input(name, model, false, 'true', 'Enter fully qualified class name')(
-            data-java-identifier='true'
-            data-java-package-specified='true'
-            data-java-keywords='true'
-            data-java-built-in-class='true'
+                data-ignite-unique=items
+                data-ignite-form-field-input-autofocus='true'
 
-            data-ignite-unique=items
-            data-ignite-form-field-input-autofocus='true'
-
-            ng-blur=onBlur
-            ignite-on-enter=onEnter
-            ignite-on-escape=onEscape
-        )
+                ignite-on-enter=onEnter
+                ignite-on-escape=onEscape
+            )
 
 //- Mixin for table java package field.
 mixin table-java-package-field(name, model, items, valid, save, newItem)
@@ -294,24 +305,24 @@ mixin table-java-package-field(name, model, items, valid, save, newItem)
     -var resetOnBlur = newItem ? '!stopblur && (group.add = [])' : 'field.edit = false'
     -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
 
-    +form-field-feedback(name, 'javaKeywords', 'Package name could not contains reserved Java keyword!')
-    +form-field-feedback(name, 'javaPackageName', 'Package name is invalid!')
+    div(ignite-on-focus-out=onBlur)
+        +form-field-feedback(name, 'javaKeywords', 'Package name could not contains reserved Java keyword!')
+        +form-field-feedback(name, 'javaPackageName', 'Package name is invalid!')
 
-    if block
-        block
+        if block
+            block
 
-    .input-tip
-        +ignite-form-field-input(name, model, false, 'true', 'Enter package name')(
-            data-java-keywords='true'
-            data-java-package-name='package-only'
+        .input-tip
+            +ignite-form-field-input(name, model, false, 'true', 'Enter package name')(
+                data-java-keywords='true'
+                data-java-package-name='package-only'
 
-            data-ignite-unique=items
-            data-ignite-form-field-input-autofocus='true'
+                data-ignite-unique=items
+                data-ignite-form-field-input-autofocus='true'
 
-            ng-blur=onBlur
-            ignite-on-enter=onEnter
-            ignite-on-escape=onEscape
-        )
+                ignite-on-enter=onEnter
+                ignite-on-escape=onEscape
+            )
 
 
 //- Mixin for table address field.
@@ -324,24 +335,26 @@ mixin table-address-field(name, model, items, valid, save, newItem, portRange)
     -var resetOnBlur = newItem ? '!stopblur && (group.add = [])' : 'field.edit = false'
     -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
 
-    +ipaddress-feedback(name)
-    +ipaddress-port-feedback(name)
-    +ipaddress-port-range-feedback(name)
+    div(ignite-on-focus-out=onBlur)
+        +ipaddress-feedback(name)
+        +ipaddress-port-feedback(name)
+        +ipaddress-port-range-feedback(name)
+        +form-field-feedback(name, 'required', 'IP address:port could not be empty!')
 
-    if block
-        block
+        if block
+            block
 
-    .input-tip
-        +ignite-form-field-input(name, model, false, 'true', 'IP address:port')(
-            data-ipaddress='true'
-            data-ipaddress-with-port='true'
-            data-ipaddress-with-port-range=portRange ? 'true' : null
-            data-ignite-unique=items
-            data-ignite-form-field-input-autofocus='true'
-            ng-blur=onBlur
-            ignite-on-enter=onEnter
-            ignite-on-escape=onEscape
-        )
+        .input-tip
+            +ignite-form-field-input(name, model, false, 'true', 'IP address:port')(
+                data-ipaddress='true'
+                data-ipaddress-with-port='true'
+                data-ipaddress-with-port-range=portRange ? 'true' : null
+                data-ignite-unique=items
+                data-ignite-form-field-input-autofocus='true'
+
+                ignite-on-enter=onEnter
+                ignite-on-escape=onEscape
+            )
 
 //- Mixin for table UUID field.
 mixin table-uuid-field(name, model, items, valid, save, newItem)
@@ -353,18 +366,19 @@ mixin table-uuid-field(name, model, items, valid, save, newItem)
     -var resetOnBlur = newItem ? '!stopblur && (group.add = [])' : 'field.edit = false'
     -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
 
-    if block
-        block
+    div(ignite-on-focus-out=onBlur)
+        if block
+            block
 
-    .input-tip
-        +ignite-form-field-input(name, model, false, 'true', 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx')(
-            data-uuid='true'
-            data-ignite-unique=items
-            data-ignite-form-field-input-autofocus='true'
-            ng-blur=onBlur
-            ignite-on-enter=onEnter
-            ignite-on-escape=onEscape
-        )
+        .input-tip
+            +ignite-form-field-input(name, model, false, 'true', 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx')(
+                data-uuid='true'
+                data-ignite-unique=items
+                data-ignite-form-field-input-autofocus='true'
+
+                ignite-on-enter=onEnter
+                ignite-on-escape=onEscape
+            )
 
 //- Mixin for table save button.
    "||" used instead of "&&" to workaround escaping of "&&" to "&amp;&amp;"
@@ -424,7 +438,7 @@ mixin evictionPolicy(model, name, enabled, required, tip)
         a.customize(ng-hide='__.expanded' ng-click='__.expanded = true') Show settings
         .panel-details(ng-if='__.expanded')
             .details-row
-                +number('Batch size', policy + '.batchSize', name + '+ "batchSize"', enabled, '1', '0',
+                +number('Batch size', policy + '.batchSize', name + '+ "batchSize"', enabled, '1', '1',
                     'Number of entries to remove on shrink')
             .details-row
                 +number('Max memory size', policy + '.maxMemorySize', name + '+ "maxMemorySize"', enabled, '0', '0',
@@ -443,18 +457,35 @@ mixin caches(model, tip)
     +dropdown-multiple('<span>Caches:</span>' + '<a ui-sref="base.configuration.caches({linkId: linkId()})"> (add)</a>',
         model + '.caches', '"caches"', true, 'Choose caches', 'No caches configured', 'caches', tip)
 
+//- Mixin for XML, Java, .Net preview.
+mixin preview(master, generator, detail)
+    ignite-ui-ace-tabs
+        .preview-panel(ng-init='mode = "spring"')
+            .preview-legend
+                a(ng-class='{active: mode === "spring"}' ng-click='mode = "spring"') Spring
+                a(ng-class='{active: mode === "java"}' ng-click='mode = "java"') Java
+                a(ng-class='{active: mode === "csharp"}' ng-click='mode = "csharp"') C#
+                //a(ng-class='{active: mode === "app.config"}' ng-click='mode = "app.config"') app.config
+            .preview-content(ng-switch='mode')
+                ignite-ui-ace-spring(ng-switch-when="spring" data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
+                ignite-ui-ace-java(ng-switch-when="java" data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
+                ignite-ui-ace-sharp(ng-switch-when="csharp" data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
+            .preview-content-empty(ng-if='!data')
+                label All Defaults
+
 //- Mixin for XML and Java preview.
 mixin preview-xml-java(master, generator, detail)
     ignite-ui-ace-tabs
-        .preview-panel
+        .preview-panel(ng-init='mode = "spring"')
             .preview-legend
-                a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
-                | &nbsp;
-                a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
-            .preview-content(ng-if='mode')
-                ignite-ui-ace-java(data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
-            .preview-content(ng-if='!mode')
-                ignite-ui-ace-xml(data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
+                a(ng-class='{active: mode === "spring"}' ng-click='mode = "spring"') Spring
+                a(ng-class='{active: mode === "java"}' ng-click='mode = "java"') Java
+                //a(ng-class='{active: mode === "csharp"}' ng-click='mode = "csharp"') C#
+                //a(ng-class='{active: mode === "app.config"}' ng-click='mode = "app.config"') app.config
+            .preview-content(ng-switch='mode')
+                ignite-ui-ace-spring(ng-switch-when="spring" data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
+                ignite-ui-ace-java(ng-switch-when="java" data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
+                //ignite-ui-ace-sharp(ng-switch-when="csharp" data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
             .preview-content-empty(ng-if='!data')
                 label All Defaults
 
@@ -503,7 +534,7 @@ mixin table-pair-edit(tbl, prefix, keyPlaceholder, valPlaceholder, keyJavaBuiltI
 
 //- Mixin for DB dialect.
 mixin dialect(lbl, model, name, required, tipTitle, genericDialectName, placeholder)
-    +dropdown(lbl, model, name, required, placeholder, '[\
+    +dropdown-required(lbl, model, name, 'true', required, placeholder, '[\
                 {value: "Generic", label: "' + genericDialectName + '"},\
                 {value: "Oracle", label: "Oracle"},\
                 {value: "DB2", label: "IBM DB2"},\

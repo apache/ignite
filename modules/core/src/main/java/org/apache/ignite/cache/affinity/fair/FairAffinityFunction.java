@@ -331,7 +331,7 @@ public class FairAffinityFunction implements AffinityFunction {
                 balance(tier, pendingParts, fullMap, topSnapshot, true);
 
                 if (!exclNeighborsWarn) {
-                    LT.warn(log, null, "Affinity function excludeNeighbors property is ignored " +
+                    LT.warn(log, "Affinity function excludeNeighbors property is ignored " +
                         "because topology has no enough nodes to assign backups.");
 
                     exclNeighborsWarn = true;
@@ -354,6 +354,10 @@ public class FairAffinityFunction implements AffinityFunction {
 
     /** {@inheritDoc} */
     @Override public int partition(Object key) {
+        if (key == null)
+            throw new IllegalArgumentException("Null key is passed for a partition calculation. " +
+                "Make sure that an affinity key that is used is initialized properly.");
+
         return U.safeAbs(hash(key.hashCode())) % parts;
     }
 
