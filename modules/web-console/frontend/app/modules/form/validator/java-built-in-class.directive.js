@@ -20,7 +20,11 @@ export default ['javaBuiltInClass', ['JavaTypes', (JavaTypes) => {
         if (_.isUndefined(attrs.javaBuiltInClass) || !attrs.javaBuiltInClass)
             return;
 
-        ngModel.$validators.javaBuiltInClass = (value) => JavaTypes.nonBuiltInClass(value);
+        ngModel.$validators.javaBuiltInClass = (value) => attrs.validationActive === 'false' ||
+            JavaTypes.nonBuiltInClass(value);
+
+        if (attrs.validationActive !== 'always')
+            attrs.$observe('validationActive', () => ngModel.$validate());
     };
 
     return {

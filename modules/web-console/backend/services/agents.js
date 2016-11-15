@@ -38,6 +38,7 @@ module.exports.factory = (_, fs, path, JSZip, settings, agentMgr, errors) => {
     class AgentsService {
         /**
          * Get agent archive with user agent configuration.
+         *
          * @returns {*} - readable stream for further piping. (http://stuk.github.io/jszip/documentation/api_jszip/generate_node_stream.html)
          */
         static getArchive(host, token) {

@@ -66,7 +66,8 @@ mixin table-db-field-edit(tbl, prefix, focusId, index)
         ignite-form-panel-chevron
         label Domain model for cache store
         ignite-form-field-tooltip.tipLabel
-            | Domain model properties for binding database with cache via POJO cache store
+            | Domain model properties for binding database with cache via POJO cache store#[br]
+            | #[a(href="https://apacheignite.readme.io/docs/persistent-store" target="_blank") More info]
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=form)
         .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
@@ -87,12 +88,12 @@ mixin table-db-field-edit(tbl, prefix, focusId, index)
                         .group-content(ng-show='(#{keyFields} && #{keyFields}.length > 0) || tableNewItemActive(keysTbl)')
                             table.links-edit(st-table=keyFields)
                                 tbody
-                                    tr(ng-repeat='item in #{keyFields}')
+                                    tr(ng-repeat='item in #{keyFields} track by $index')
                                         td
-                                            div(ng-show='!tableEditing(keysTbl, $index)')
+                                            div(ng-hide='tableEditing(keysTbl, $index)')
                                                 a.labelFormField(ng-click='tableStartEdit(backupItem, keysTbl, $index)') {{$index + 1}}) {{item.databaseFieldName}} / {{item.databaseFieldType}} / {{item.javaFieldName}} / {{item.javaFieldType}}
                                                 +btn-remove('tableRemove(backupItem, keysTbl, $index)', '"Remove key field"')
-                                            div(ng-show='tableEditing(keysTbl, $index)')
+                                            div(ng-if='tableEditing(keysTbl, $index)')
                                                 +table-db-field-edit('keysTbl', 'cur', '{{::keysTbl.focusId + $index}}', '$index')
                                 tfoot(ng-show='tableNewItemActive(keysTbl)')
                                     tr
@@ -110,12 +111,12 @@ mixin table-db-field-edit(tbl, prefix, focusId, index)
                         .group-content(ng-show='(#{valueFields} && #{valueFields}.length > 0) || tableNewItemActive(valuesTbl)')
                             table.links-edit(st-table=valueFields)
                                 tbody
-                                    tr(ng-repeat='item in #{valueFields}')
+                                    tr(ng-repeat='item in #{valueFields} track by $index')
                                         td
-                                            div(ng-show='!tableEditing(valuesTbl, $index)')
+                                            div(ng-hide='tableEditing(valuesTbl, $index)')
                                                 a.labelFormField(ng-click='tableStartEdit(backupItem, valuesTbl, $index)') {{$index + 1}}) {{item.databaseFieldName}} / {{item.databaseFieldType}} / {{item.javaFieldName}} / {{item.javaFieldType}}
                                                 +btn-remove('tableRemove(backupItem, valuesTbl, $index)', '"Remove key field"')
-                                            div(ng-show='tableEditing(valuesTbl, $index)')
+                                            div(ng-if='tableEditing(valuesTbl, $index)')
                                                 +table-db-field-edit('valuesTbl', 'cur', '{{::valuesTbl.focusId + $index}}', '$index')
                                 tfoot(ng-show='tableNewItemActive(valuesTbl)')
                                     tr

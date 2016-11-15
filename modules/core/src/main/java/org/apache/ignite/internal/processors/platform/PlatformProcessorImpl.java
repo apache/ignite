@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicLongImpl;
+import org.apache.ignite.internal.processors.platform.binary.PlatformBinaryProcessor;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtension;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinity;
@@ -54,6 +55,7 @@ import org.apache.ignite.internal.processors.platform.services.PlatformServices;
 import org.apache.ignite.internal.processors.platform.transactions.PlatformTransactions;
 import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -100,6 +102,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** Cache extensions. */
     private final PlatformCacheExtension[] cacheExts;
+
+    /** Cluster restart flag for the reconnect callback. */
+    private volatile boolean clusterRestarted;
 
     /**
      * Constructor.
@@ -378,11 +383,20 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
         platformCtx.gateway().onClientDisconnected();
+
+        // 1) onReconnected is called on all grid components.
+        // 2) After all of grid components have completed their reconnection, reconnectFut is completed.
+        reconnectFut.listen(new CI1<IgniteFuture<?>>() {
+            @Override public void apply(IgniteFuture<?> future) {
+                platformCtx.gateway().onClientReconnected(clusterRestarted);
+            }
+        });
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
-        platformCtx.gateway().onClientReconnected(clusterRestarted);
+        // Save the flag value for callback of reconnectFut.
+        this.clusterRestarted = clusterRestarted;
 
         return null;
     }
@@ -487,6 +501,11 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
             default:
                 assert false;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget binaryProcessor() {
+        return new PlatformBinaryProcessor(platformCtx);
     }
 
     /**

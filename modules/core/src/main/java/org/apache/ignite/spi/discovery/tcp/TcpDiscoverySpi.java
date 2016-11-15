@@ -1380,7 +1380,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         IgniteCheckedException err = null;
 
         try {
-            marshaller().marshal(msg, out);
+            U.marshal(marshaller(), msg, out);
         }
         catch (IgniteCheckedException e) {
             err = e;
@@ -1464,7 +1464,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         try {
             sock.setSoTimeout((int)timeout);
 
-            T res = marshaller().unmarshal(in == null ? sock.getInputStream() : in,
+            T res = U.unmarshal(marshaller(), in == null ? sock.getInputStream() : in,
                 U.resolveClassLoader(ignite.configuration()));
 
             return res;
@@ -1682,7 +1682,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
         for (Map.Entry<Integer, Serializable> entry : data.entrySet()) {
             try {
-                byte[] bytes = marshaller().marshal(entry.getValue());
+                byte[] bytes = U.marshal(marshaller(), entry.getValue());
 
                 data0.put(entry.getKey(), bytes);
             }
@@ -1713,7 +1713,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
         for (Map.Entry<Integer, byte[]> entry : data.entrySet()) {
             try {
-                Serializable compData = marshaller().unmarshal(entry.getValue(), clsLdr);
+                Serializable compData = U.unmarshal(marshaller(), entry.getValue(), clsLdr);
 
                 data0.put(entry.getKey(), compData);
             }
