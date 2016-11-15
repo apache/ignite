@@ -72,7 +72,7 @@ public class IgniteCacheObjectProcessorSelfTest extends GridCommonAbstractTest {
             }
         }
         catch (Exception e) {
-            assertEquals("Failed to get partition: test", e.getMessage());
+            assertTrue(e.getMessage().contains("Failed to get partition: test"));
         }
     }
 }
