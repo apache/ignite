@@ -24,7 +24,7 @@ namespace Apache.Ignite.Examples.DataStructures
     using Apache.Ignite.ExamplesDll.DataStructures;
 
     /// <summary>
-    /// Demonstrates distributed atomic long data structure, which has functionality 
+    /// Demonstrates distributed atomic sequence data structure, which has functionality 
     /// similar to <see cref="Interlocked"/>, but provides cluster-wide atomicity guarantees.
     /// <para />
     /// 1) Set this class as startup object (Apache.Ignite.Examples project -> right-click -> Properties ->
@@ -36,7 +36,7 @@ namespace Apache.Ignite.Examples.DataStructures
     /// Apache.Ignite.exe -configFileName=platforms\dotnet\examples\apache.ignite.examples\app.config -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 2) Start example.
     /// </summary>
-    public static class AtomicLongExample
+    public static class AtomicSequenceExample
     {
         [STAThread]
         public static void Main()
@@ -44,19 +44,11 @@ namespace Apache.Ignite.Examples.DataStructures
             using (var ignite = Ignition.StartFromApplicationConfiguration())
             {
                 Console.WriteLine();
-                Console.WriteLine(">>> Atomic long example started.");
+                Console.WriteLine(">>> Atomic sequence example started.");
 
-                IAtomicLong atomicLong = ignite.GetAtomicLong(AtomicLongIncrementAction.AtomicLongName, 0, true);
-
-                Console.WriteLine(">>> Atomic long initial value: " + atomicLong.Read());
-
-                // Broadcast an action that increments AtomicLong a number of times.
-                ignite.GetCompute().Broadcast(new AtomicLongIncrementAction());
-
-                Console.WriteLine("\n>>> Atomic long resulting value: " + atomicLong.Read());
+                // TODO:
             }
 
-            Console.WriteLine("\n>>> Check output on all nodes.");
             Console.WriteLine("\n>>> Example finished, press any key to exit ...");
             Console.ReadKey();
         }

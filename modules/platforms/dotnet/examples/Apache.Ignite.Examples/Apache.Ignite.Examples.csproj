@@ -61,6 +61,7 @@
     <Compile Include="Datagrid\TransactionDeadlockDetectionExample.cs" />
     <Compile Include="Datagrid\TransactionExample.cs" />
     <Compile Include="DataStructures\AtomicLongExample.cs" />
+    <Compile Include="DataStructures\AtomicSequenceExample.cs" />
     <Compile Include="Events\EventsExample.cs" />
     <Compile Include="Messaging\MessagingExample.cs" />
     <Compile Include="Misc\LifecycleExample.cs" />
