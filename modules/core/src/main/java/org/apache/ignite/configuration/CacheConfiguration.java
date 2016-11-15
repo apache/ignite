@@ -371,9 +371,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private transient Class<?>[] indexedTypes;
 
-    /** */
-    private boolean snapshotableIdx;
-
     /** Copy on read flag. */
     private boolean cpOnRead = DFLT_COPY_ON_READ;
 
@@ -466,7 +463,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         rebalancePoolSize = cc.getRebalanceThreadPoolSize();
         rebalanceTimeout = cc.getRebalanceTimeout();
         rebalanceThrottle = cc.getRebalanceThrottle();
-        snapshotableIdx = cc.isSnapshotableIndex();
         sqlSchema = cc.getSqlSchema();
         sqlEscapeAll = cc.isSqlEscapeAll();
         sqlFuncCls = cc.getSqlFunctionClasses();
@@ -1925,32 +1921,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setSqlOnheapRowCacheSize(int size) {
         this.sqlOnheapRowCacheSize = size;
-
-        return this;
-    }
-
-    /**
-     * Gets flag indicating whether SQL indexes should support snapshots.
-     *
-     * @return {@code True} if SQL indexes should support snapshots.
-     */
-    public boolean isSnapshotableIndex() {
-        return snapshotableIdx;
-    }
-
-    /**
-     * Sets flag indicating whether SQL indexes should support snapshots.
-     * <p>
-     * Default value is {@code false}.
-     * <p>
-     * <b>Note</b> that this flag is ignored if indexes are stored in offheap memory,
-     * for offheap indexes snapshots are always enabled.
-     *
-     * @param snapshotableIdx {@code True} if SQL indexes should support snapshots.
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setSnapshotableIndex(boolean snapshotableIdx) {
-        this.snapshotableIdx = snapshotableIdx;
 
         return this;
     }

@@ -35,7 +35,9 @@
 
 package org.apache.ignite.internal.util.snaptree;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.lang.*;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -2347,24 +2349,43 @@ public class SnapTreeMap<K, V> extends AbstractMap<K, V> implements ConcurrentNa
 
     //////////////// IgniteTree
 
-    /** {@inheritDoc} */
-    @Override public IgniteTree<K, V> headTree(final K toKey, final boolean inclusive) {
-        return new SubMap<K,V>(this, null, null, false, toKey, comparable(toKey), inclusive, false);
+    @Override public GridCursor<V> find(K lower, boolean lowerInclusive,
+                                        K upper, boolean upperInclusive) throws IgniteCheckedException {
+        if (lower == null)
+            if (upper == null) // all
+                return new GridCursorIteratorWrapper<>(values().iterator());
+            else // head
+                return new GridCursorIteratorWrapper<>(headMap(upper, upperInclusive).values().iterator());
+        else
+            if (upper == null) // tail
+                return new GridCursorIteratorWrapper<>(tailMap(lower, lowerInclusive).values().iterator());
+            else // interval
+                return new GridCursorIteratorWrapper<>(subMap(lower, lowerInclusive, upper, upperInclusive)
+                    .values().iterator());
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteTree<K, V> tailTree(final K fromKey, final boolean inclusive) {
-        return new SubMap<K,V>(this, fromKey, comparable(fromKey), inclusive, null, null, false, false);
+    public GridCursor<V> find(K lower, K upper) throws IgniteCheckedException {
+        return find(lower, true, upper, true);
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteTree<K, V> subTree(final K fromKey, final boolean fromInclusive, final K toKey,
-        final boolean toInclusive) {
-        final Comparable<? super K> fromCmp = comparable(fromKey);
-        if (fromCmp.compareTo(toKey) > 0) {
-            throw new IllegalArgumentException();
-        }
-        return new SubMap<K,V>(this, fromKey, fromCmp, fromInclusive, toKey, comparable(toKey), toInclusive, false);
+    public GridCursor<V> findAll() throws IgniteCheckedException {
+        return find(null, null);
+    }
+
+    @Override public V findOne(K key) throws IgniteCheckedException {
+        return get(key);
+    }
+
+    @Override public long treeSize() throws IgniteCheckedException {
+        return size();
+    }
+
+    @Override public V put(V value) throws IgniteCheckedException {
+        return put((K)value, value);
+    }
+
+    @Override public V removeNode(K key) throws IgniteCheckedException {
+        return remove(key);
     }
 
     private static class SubMap<K, V> extends AbstractMap<K, V> implements ConcurrentNavigableMap<K, V>, Serializable,
@@ -2893,20 +2914,43 @@ public class SnapTreeMap<K, V> extends AbstractMap<K, V> implements ConcurrentNa
 
         /////// IgniteTree
 
-        /** {@inheritDoc} */
-        @Override public IgniteTree<K, V> headTree(final K toKey, final boolean inclusive) {
-            return headMap(toKey, inclusive);
+        @Override public V findOne(K key) throws IgniteCheckedException {
+            return get(key);
         }
 
-        /** {@inheritDoc} */
-        @Override public IgniteTree<K, V> tailTree(final K fromKey, final boolean inclusive) {
-            return tailMap(fromKey, inclusive);
+        @Override public GridCursor<V> find(K lower, boolean lowerInclusive,
+                                            K upper, boolean upperInclusive) throws IgniteCheckedException {
+
+            if (lower == null)
+                if (upper == null) // all
+                    return new GridCursorIteratorWrapper<>(values().iterator());
+                else // head
+                    return new GridCursorIteratorWrapper<>(headMap(upper, upperInclusive).values().iterator());
+            else
+            if (upper == null) // tail
+                return new GridCursorIteratorWrapper<>(tailMap(lower, lowerInclusive).values().iterator());
+            else // interval
+                return new GridCursorIteratorWrapper<>(subMap(lower, lowerInclusive, upper, upperInclusive).values().iterator());
         }
 
-        /** {@inheritDoc} */
-        @Override public IgniteTree<K, V> subTree(final K fromKey, final boolean fromInclusive, final K toKey,
-            final boolean toInclusive) {
-            return subMap(fromKey, fromInclusive, toKey, toInclusive);
+        public GridCursor<V> find(K lower, K upper) throws IgniteCheckedException {
+            return find(lower, true, upper, true);
+        }
+
+        public GridCursor<V> findAll() throws IgniteCheckedException {
+            return find(null, null);
+        }
+
+        @Override public long treeSize() throws IgniteCheckedException {
+            return size();
+        }
+
+        @Override public V put(V value) throws IgniteCheckedException {
+            return put((K)value, value);
+        }
+
+        @Override public V removeNode(K key) throws IgniteCheckedException {
+            return remove(key);
         }
     }
 

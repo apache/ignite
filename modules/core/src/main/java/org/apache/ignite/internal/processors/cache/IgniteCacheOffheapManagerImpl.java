@@ -570,9 +570,11 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
      * @throws IgniteCheckedException If failed.
      */
     private long allocateForTree() throws IgniteCheckedException {
-        long pageId = cctx.shared().database().globalReuseList().takeRecycledPage();
+        ReuseList reuseList = cctx.shared().database().globalReuseList();
 
-        if (pageId == 0L)
+        long pageId;
+
+        if (reuseList == null || (pageId = reuseList.takeRecycledPage()) == 0L)
             pageId = cctx.shared().database().pageMemory().allocatePage(cctx.cacheId(), INDEX_PARTITION, FLAG_IDX);
 
         return pageId;

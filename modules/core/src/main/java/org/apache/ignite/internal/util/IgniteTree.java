@@ -17,20 +17,22 @@
 
 package org.apache.ignite.internal.util;
 
+import org.apache.ignite.*;
+import org.apache.ignite.internal.util.lang.*;
+
 import java.util.*;
 
 /**
  * Interface for ignite internal tree.
  */
-public interface IgniteTree<K, V> {
+public interface IgniteTree<L, T> {
     /**
-     * Associates the specified value with the specified key in this tree.
+     * Put value in this tree.
      *
-     * @param key key with which the specified value is to be associated
      * @param value value to be associated with the specified key
      * @return the previous value associated with key
      */
-    V put(K key, V value);
+    T put(T value) throws IgniteCheckedException;
 
     /**
      * Returns the value to which the specified key is mapped, or {@code null} if this tree contains no mapping for the
@@ -40,7 +42,36 @@ public interface IgniteTree<K, V> {
      * @return the value to which the specified key is mapped, or {@code null} if this tree contains no mapping for the
      * key
      */
-    V get(Object key);
+    T findOne(L key) throws IgniteCheckedException;
+
+    /**
+     * Returns a cursor from lower to upper bounds.
+     *
+     * @param lower Lower bound or {@code null} if unbounded.
+     * @param lowerInclusive {@code true} if the low bound
+     *        is to be included in the returned view
+     * @param upper Upper bound or {@code null} if unbounded.
+     * @param upperInclusive {@code true} if the upper bound
+     *        is to be included in the returned view
+     * @return Cursor.
+     */
+    GridCursor<T> find(L lower, boolean lowerInclusive,  L upper, boolean upperInclusive) throws IgniteCheckedException;
+
+    /**
+     * Returns a cursor from lower to upper bounds inclusive.
+     *
+     * @param lower Lower bound or {@code null} if unbounded.
+     * @param upper Upper bound or {@code null} if unbounded.
+     * @return Cursor.
+     */
+    GridCursor<T> find(L lower, L upper) throws IgniteCheckedException;
+
+    /**
+     * Returns a cursor over all values.
+     * @return Cursor.
+     * @throws IgniteCheckedException
+     */
+    GridCursor<T> findAll() throws IgniteCheckedException;
 
     /**
      * Removes the mapping for a key from this tree if it is present.
@@ -48,58 +79,12 @@ public interface IgniteTree<K, V> {
      * @param key key whose mapping is to be removed from the tree
      * @return the previous value associated with key, or null if there was no mapping for key.
      */
-    V remove(Object key);
+    T removeNode(L key) throws IgniteCheckedException;
 
     /**
      * Returns the number of elements in this tree.
      *
      * @return the number of elements in this tree
      */
-    int size();
-
-    /**
-     * Returns a {@link Collection} view of the values contained in this tree.
-     *
-     * @return a collection view of the values contained in this map
-     */
-    Collection<V> values();
-
-    /**
-     * Returns a view of the portion of this tree whose keys are less than (or equal to, if {@code inclusive} is true)
-     * {@code toKey}.  The returned tree is backed by this tree, so changes in the returned tree are reflected in this
-     * tree, and vice-versa.  The returned tree supports all optional tree operations that this tree supports.
-     *
-     * @param toKey high endpoint of the keys in the returned tree
-     * @param inclusive {@code true} if the high endpoint is to be included in the returned view
-     * @return a view of the portion of this tree whose keys are less than (or equal to, if {@code inclusive} is true)
-     * {@code toKey}
-     */
-    IgniteTree<K, V> headTree(K toKey, boolean inclusive);
-
-    /**
-     * Returns a view of the portion of this tree whose keys are greater than (or equal to, if {@code inclusive} is
-     * true) {@code fromKey}.  The returned tree is backed by this tree, so changes in the returned tree are reflected
-     * in this tree, and vice-versa.  The returned tree supports all optional tree operations that this tree supports.
-     *
-     * @param fromKey low endpoint of the keys in the returned tree
-     * @param inclusive {@code true} if the low endpoint is to be included in the returned view
-     * @return a view of the portion of this tree whose keys are greater than (or equal to, if {@code inclusive} is
-     * true) {@code fromKey}
-     */
-    IgniteTree<K, V> tailTree(K fromKey, boolean inclusive);
-
-    /**
-     * Returns a view of the portion of this tree whose keys range from {@code fromKey} to {@code toKey}.  If {@code
-     * fromKey} and {@code toKey} are equal, the returned tree is empty unless {@code fromInclusive} and {@code
-     * toInclusive} are both true.  The returned tree is backed by this tree, so changes in the returned tree are
-     * reflected in this tree, and vice-versa.  The returned tree supports all optional tree operations that this tree
-     * supports.
-     *
-     * @param fromKey low endpoint of the keys in the returned tree
-     * @param fromInclusive {@code true} if the low endpoint is to be included in the returned view
-     * @param toKey high endpoint of the keys in the returned tree
-     * @param toInclusive {@code true} if the high endpoint is to be included in the returned view
-     * @return a view of the portion of this tree whose keys range from {@code fromKey} to {@code toKey}
-     */
-    IgniteTree<K, V> subTree(final K fromKey, final boolean fromInclusive, final K toKey, final boolean toInclusive);
+    long treeSize() throws IgniteCheckedException;
 }

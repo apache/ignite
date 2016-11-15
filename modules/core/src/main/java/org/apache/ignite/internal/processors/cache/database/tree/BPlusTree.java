@@ -55,8 +55,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
-import org.apache.ignite.internal.util.GridArrays;
-import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridTreePrinter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -83,7 +82,7 @@ import static org.apache.ignite.internal.processors.cache.database.tree.util.Pag
  * Abstract B+Tree.
  */
 @SuppressWarnings({"RedundantThrowsDeclaration", "ConstantValueVariableUse"})
-public abstract class BPlusTree<L, T extends L> extends DataStructure {
+public abstract class BPlusTree<L, T extends L> extends DataStructure implements IgniteTree<L, T> {
     /** */
     private static final Object[] EMPTY = {};
 
@@ -752,6 +751,16 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
         }
     }
 
+    public GridCursor<T> find(L lower, boolean lowerInclusive,
+                              L upper, boolean upperInclusive) throws IgniteCheckedException {
+        // TODO inclusive / exclusive logic should be implemented
+        return find(lower, upper);
+    }
+
+    public GridCursor<T> findAll() throws IgniteCheckedException {
+        return find(null, null);
+    }
+
     /**
      * @param row Lookup row for exact match.
      * @return Found row.
@@ -1253,6 +1262,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
         return doRemove(row, false, null);
     }
 
+    @Override public T removeNode(L key) throws IgniteCheckedException {
+        return doRemove(key, false, null);
+    }
+
     /**
      * @param row Lookup row.
      * @param ceil If we can remove ceil row when we can not find exact.
@@ -1503,9 +1516,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
     }
 
     /**
-     * @param row Row.
-     * @return Old row.
-     * @throws IgniteCheckedException If failed.
+     * {@inheritDoc}
+     */
+    public final long treeSize() throws IgniteCheckedException {
+        return size();
+    }
+
+    /**
+     * {@inheritDoc}
      */
     public final T put(T row) throws IgniteCheckedException {
         return put(row, null);

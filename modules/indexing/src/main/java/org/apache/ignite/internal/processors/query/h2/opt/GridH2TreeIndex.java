@@ -18,13 +18,14 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableMap;
-import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
+import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.query.h2.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSnapTreeMap;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.snaptree.SnapTreeMap;
@@ -93,7 +94,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
             }
             else {
                 tree = new IgniteNavigableMapTree(
-                    new ConcurrentSkipListMap<>(
+                    new ConcurrentSkipListMap<GridSearchRowPointer, GridH2Row>(
                         new Comparator<GridSearchRowPointer>() {
                             @Override public int compare(GridSearchRowPointer o1, GridSearchRowPointer o2) {
                                 if (o1 instanceof ComparableRow)
@@ -178,16 +179,22 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
         // Fast path if we don't need to perform any filtering.
         if (f == null || f.forSpace((getTable()).spaceName()) == null)
-            return treeForRead().size();
+            try {
+                return treeForRead().treeSize();
+            } catch (IgniteCheckedException e) {
+                throw DbException.convert(e);
+            }
 
-        Iterator<GridH2Row> iter = doFind(null, false, null);
+        GridCursor<GridH2Row> cursor = doFind(null, false, null);
 
         long size = 0;
 
-        while (iter.hasNext()) {
-            iter.next();
-
-            size++;
+        try {
+            while (cursor.next())
+                size++;
+        }
+        catch (IgniteCheckedException e) {
+            throw DbException.convert(e);
         }
 
         return size;
@@ -240,12 +247,12 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, @Nullable SearchRow first, @Nullable SearchRow last) {
-        return new GridH2Cursor(doFind(first, true, last));
+        return new H2Cursor(doFind(first, true, last), null);
     }
 
     /** {@inheritDoc} */
     @Override public Cursor findNext(Session ses, SearchRow higherThan, SearchRow last) {
-        return new GridH2Cursor(doFind(higherThan, false, last));
+        return new H2Cursor(doFind(higherThan, false, last), null);
     }
 
     /**
@@ -257,7 +264,11 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
      * @return Row.
      */
     public GridH2Row findOne(GridH2Row row) {
-        return tree.get(row);
+        try {
+            return tree.findOne(row);
+        } catch (IgniteCheckedException e) {
+            throw DbException.convert(e);
+        }
     }
 
     /**
@@ -269,14 +280,14 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
      * @return Iterator over rows in given range.
      */
     @SuppressWarnings("unchecked")
-    private Iterator<GridH2Row> doFind(@Nullable SearchRow first, boolean includeFirst, @Nullable SearchRow last) {
+    private GridCursor<GridH2Row> doFind(@Nullable SearchRow first, boolean includeFirst, @Nullable SearchRow last) {
         IgniteTree t = treeForRead();
 
         return doFind0(t, first, includeFirst, last, threadLocalFilter());
     }
 
     /** {@inheritDoc} */
-    @Override protected final Iterator<GridH2Row> doFind0(
+    @Override protected final GridCursor<GridH2Row> doFind0(
         IgniteTree t,
         @Nullable SearchRow first,
         boolean includeFirst,
@@ -285,13 +296,13 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     ) {
         includeFirst &= first != null;
 
-        IgniteTree<GridSearchRowPointer, GridH2Row> range = subTree(t, comparable(first, includeFirst ? -1 : 1),
+        GridCursor<GridH2Row> range = subTree(t, comparable(first, includeFirst ? -1 : 1),
             comparable(last, 1));
 
         if (range == null)
-            return new GridEmptyIterator<>();
+            return EMPTY_CURSOR;
 
-        return filter(range.values().iterator(), filter);
+        return filter(range, filter);
     }
 
     /**
@@ -318,25 +329,19 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
      * @return Sub-map.
      */
     @SuppressWarnings({"IfMayBeConditional", "TypeMayBeWeakened"})
-    private IgniteTree subTree(IgniteTree tree,
+    private GridCursor<GridH2Row> subTree(IgniteTree tree,
         @Nullable GridSearchRowPointer first, @Nullable GridSearchRowPointer last) {
-        // We take exclusive bounds because it is possible that one search row will be equal to multiple key rows
-        // in tree and we must return them all.
-        if (first == null) {
-            if (last == null)
-                return tree;
-            else
-                return tree.headTree(last, false);
-        }
-        else {
-            if (last == null)
-                return tree.tailTree(first, false);
-            else {
-                if (compare(first, last) > 0)
-                    return null;
 
-                return tree.subTree(first, false, last, false);
-            }
+        if (first != null && last != null && compare(first, last) > 0)
+            return null;
+
+        try {
+            // We take exclusive bounds because it is possible that one search row will be equal to multiple key rows
+            // in tree and we must return them all.
+            return tree.find(first, false, last, false);
+        }
+        catch (IgniteCheckedException e) {
+            throw DbException.convert(e);
         }
     }
 
@@ -345,7 +350,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
      *
      * @return Rows iterator.
      */
-    Iterator<GridH2Row> rows() {
+    GridCursor<GridH2Row> rows() {
         return doFind(null, false, null);
     }
 
@@ -361,12 +366,22 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
     /** {@inheritDoc} */
     @Override public GridH2Row put(GridH2Row row) {
-        return tree.put(row, row);
+        try {
+            return tree.put(row);
+        }
+        catch (IgniteCheckedException e) {
+            throw DbException.convert(e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public GridH2Row remove(SearchRow row) {
-        return tree.remove(comparable(row, 0));
+        try {
+            return tree.removeNode(comparable(row, 0));
+        }
+        catch (IgniteCheckedException e) {
+            throw DbException.convert(e);
+        }
     }
 
     /**
@@ -471,14 +486,69 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
         long i = 0;
 
-        for (GridH2Row row : tree.values()) {
-            // Check for interruptions every 1000 iterations.
-            if (++i % 1000 == 0 && thread.isInterrupted())
-                throw new InterruptedException();
+        try {
+            GridCursor<GridH2Row> cursor = tree.findAll();
 
-            idx.tree.put(row, row);
+            while(cursor.next()) {
+                GridH2Row row = cursor.get();
+
+                // Check for interruptions every 1000 iterations.
+                if (++i % 1000 == 0 && thread.isInterrupted())
+                    throw new InterruptedException();
+
+                idx.tree.put(row);
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw DbException.convert(e);
         }
 
         return idx;
+    }
+
+    /**
+     * Adapter from {@link NavigableMap} to {@link IgniteTree}.
+     */
+    private final class IgniteNavigableMapTree implements IgniteTree<GridSearchRowPointer, GridH2Row> {
+        private NavigableMap<GridSearchRowPointer, GridH2Row> tree;
+
+        public IgniteNavigableMapTree(NavigableMap<GridSearchRowPointer, GridH2Row> tree) {
+            this.tree = tree;
+        }
+
+        @Override public GridH2Row put(GridH2Row value) throws IgniteCheckedException {
+            return tree.put(value, value);
+        }
+
+        @Override public GridH2Row findOne(GridSearchRowPointer key) throws IgniteCheckedException {
+            return tree.get(key);
+        }
+
+        @Override public GridCursor<GridH2Row> find(GridSearchRowPointer lower, boolean lowerInclusive,
+                                                    GridSearchRowPointer upper, boolean upperInclusive)
+            throws IgniteCheckedException {
+
+            NavigableMap<GridSearchRowPointer, GridH2Row> subMap =
+                tree.subMap(lower, lowerInclusive, upper, upperInclusive);
+
+            return new GridCursorIteratorWrapper<GridH2Row>(subMap.values().iterator());
+        }
+
+        public GridCursor<GridH2Row> find(GridSearchRowPointer lower, GridSearchRowPointer upper)
+            throws IgniteCheckedException {
+            return find(lower, true, upper, true);
+        }
+
+        public GridCursor<GridH2Row> findAll() throws IgniteCheckedException {
+            return find(null, null);
+        }
+
+        @Override public GridH2Row removeNode(GridSearchRowPointer key) throws IgniteCheckedException {
+            return tree.remove(key);
+        }
+
+        @Override public long treeSize() throws IgniteCheckedException {
+            return tree.size();
+        }
     }
 }
