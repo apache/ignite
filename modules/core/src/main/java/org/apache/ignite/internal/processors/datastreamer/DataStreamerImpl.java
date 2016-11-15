@@ -1919,7 +1919,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             AffinityTopologyVersion topVer = cctx.isLocal() ?
                 cctx.affinity().affinityTopologyVersion() :
-                cctx.topology().topologyVersion();
+                cctx.shared().exchange().readyAffinityVersion();
 
             GridCacheVersion ver = cctx.versions().isolatedStreamerVersion();
 
