@@ -252,7 +252,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             striped = new StripedExecutor(
                 !ctx.clientNode() ?
-                    Runtime.getRuntime().availableProcessors() - ((TcpCommunicationSpi)spi).getSelectorsCount() :
+                    Runtime.getRuntime().availableProcessors() :
                     4);
 
             // TODO
