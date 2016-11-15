@@ -40,6 +40,22 @@ namespace Apache.Ignite.ExamplesDll.DataStructures
         /// </summary>
         public void Invoke()
         {
+            // Get or create the atomic reference.
+            IAtomicReference<Guid> atomicRef = _ignite.GetAtomicReference(AtomicReferenceName, Guid.Empty, true);
+
+            // Get local node id.
+            Guid localNodeId = _ignite.GetCluster().GetLocalNode().Id;
+
+            // Replace empty value with current node id.
+            Guid expectedValue = Guid.Empty;
+
+            Guid originalValue = atomicRef.CompareExchange(expectedValue, localNodeId);
+
+            if (originalValue == expectedValue)
+                Console.WriteLine("Successfully updated atomic reference on node {0}", localNodeId);
+            else
+                Console.WriteLine("Failed to update atomic reference on node {0}, actual value is {1}", 
+                    localNodeId, originalValue);
         }
     }
 }
