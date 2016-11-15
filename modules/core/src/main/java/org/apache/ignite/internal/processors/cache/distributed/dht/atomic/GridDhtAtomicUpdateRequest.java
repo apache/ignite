@@ -54,30 +54,13 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     private static final long serialVersionUID = 0L;
 
     /** Future version. */
-    protected GridCacheVersion futVer;
+    private GridCacheVersion futVer;
 
     /** Write version. */
-    protected GridCacheVersion writeVer;
-
-    /** Write synchronization mode. */
-    protected CacheWriteSynchronizationMode syncMode;
+    private GridCacheVersion writeVer;
 
     /** Topology version. */
-    protected AffinityTopologyVersion topVer;
-
-    /** Force transform backups flag. */
-    protected boolean forceTransformBackups;
-
-    /** Subject ID. */
-    protected UUID subjId;
-
-    /** Task name hash. */
-    protected int taskNameHash;
-
-    /**
-     * Additional flags.
-     */
-    protected byte flags;
+    private AffinityTopologyVersion topVer;
 
     /** Keys to update. */
     @GridToStringInclude
@@ -110,6 +93,9 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     /** Near expire times. */
     private GridLongList nearExpireTimes;
 
+    /** Write synchronization mode. */
+    private CacheWriteSynchronizationMode syncMode;
+
     /** Near cache keys to update. */
     @GridToStringInclude
     @GridDirectCollection(KeyCacheObject.class)
@@ -119,6 +105,9 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     @GridToStringInclude
     @GridDirectCollection(CacheObject.class)
     private List<CacheObject> nearVals;
+
+    /** Force transform backups flag. */
+    private boolean forceTransformBackups;
 
     /** Entry processors. */
     @GridDirectTransient
@@ -143,15 +132,24 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     /** Entry processor arguments bytes. */
     private byte[][] invokeArgsBytes;
 
+    /** Subject ID. */
+    private UUID subjId;
+
+    /** Task name hash. */
+    private int taskNameHash;
+
     /** Partition. */
     private GridLongList updateCntrs;
-
-    /** Keep binary flag. */
-    private boolean keepBinary;
 
     /** */
     @GridDirectTransient
     private List<Integer> partIds;
+
+    /** Keep binary flag. */
+    private boolean keepBinary;
+
+    /** Additional flags. */
+    private byte flags;
 
     /**
      * Empty constructor required by {@link Externalizable}.

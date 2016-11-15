@@ -73,9 +73,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     /** Task name hash. */
     protected int taskNameHash;
 
-    /**
-     * Additional flags.
-     */
+    /** Additional flags. */
     protected byte flags;
 
     /** Keys to update. */
@@ -118,7 +116,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
      * @param taskNameHash Task name hash code.
      * @param addDepInfo Deployment info.
      */
-    public GridDhtAtomicSingleUpdateRequest(
+    GridDhtAtomicSingleUpdateRequest(
         int cacheId,
         UUID nodeId,
         GridCacheVersion futVer,
@@ -200,7 +198,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         EntryProcessor<Object, Object, Object> entryProcessor,
         long ttl,
         long expireTime) {
-
         assert !forceTransformBackups;
         assert entryProcessor == null;
 
@@ -240,12 +237,14 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     /** {@inheritDoc} */
     @Override public KeyCacheObject key(int idx) {
         assert idx == 0 : idx;
+
         return near() ? null : key;
     }
 
     /** {@inheritDoc} */
     @Override public int partitionId(int idx) {
         assert idx == 0 : idx;
+
         return partId;
     }
 
@@ -259,6 +258,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     /** {@inheritDoc} */
     @Override public KeyCacheObject nearKey(int idx) {
         assert idx == 0 : idx;
+
         return near() ? key : null;
     }
 
@@ -297,6 +297,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     /** {@inheritDoc} */
     @Override @Nullable public CacheObject previousValue(int idx) {
         assert idx == 0 : idx;
+
         return prevVal;
     }
 
@@ -310,42 +311,49 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     /** {@inheritDoc} */
     @Override @Nullable public EntryProcessor<Object, Object, Object> entryProcessor(int idx) {
         assert idx == 0 : idx;
+
         return null;
     }
 
     /** {@inheritDoc} */
     @Override @Nullable public EntryProcessor<Object, Object, Object> nearEntryProcessor(int idx) {
         assert idx == 0 : idx;
+
         return null;
     }
 
     /** {@inheritDoc} */
     @Override @Nullable public GridCacheVersion conflictVersion(int idx) {
         assert idx == 0 : idx;
+
         return null;
     }
 
     /** {@inheritDoc} */
     @Override public long ttl(int idx) {
         assert idx == 0 : idx;
+
         return CU.TTL_NOT_CHANGED;
     }
 
     /** {@inheritDoc} */
     @Override public long nearTtl(int idx) {
         assert idx == 0 : idx;
+
         return CU.TTL_NOT_CHANGED;
     }
 
     /** {@inheritDoc} */
     @Override public long conflictExpireTime(int idx) {
         assert idx == 0 : idx;
+
         return CU.EXPIRE_TIME_CALCULATE;
     }
 
     /** {@inheritDoc} */
     @Override public long nearExpireTime(int idx) {
         assert idx == 0 : idx;
+
         return CU.EXPIRE_TIME_CALCULATE;
     }
 
@@ -356,7 +364,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
     /** {@inheritDoc} */
     @Override public boolean keepBinary() {
-        return (flags & KEEP_BINARY_FLAG_MASK) == KEEP_BINARY_FLAG_MASK;
+        return isFlag(KEEP_BINARY_FLAG_MASK);
     }
 
     /**
