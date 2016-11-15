@@ -24,13 +24,13 @@ namespace Apache.Ignite.ExamplesDll.DataStructures
     using Apache.Ignite.Core.Resource;
 
     /// <summary>
-    /// Increments atomic long.
+    /// Increments atomic sequence.
     /// </summary>
     [Serializable]
-    public class AtomicLongIncrementAction : IComputeAction
+    public class AtomicReferenceModifyAction : IComputeAction
     {
         /** */
-        public const string AtomicLongName = "dotnet_atomic_long";
+        public const string AtomicReferenceName = "dotnet_atomic_reference";
 
         /** */
         [InstanceResource] private readonly IIgnite _ignite;
@@ -40,10 +40,6 @@ namespace Apache.Ignite.ExamplesDll.DataStructures
         /// </summary>
         public void Invoke()
         {
-            IAtomicLong atomicLong = _ignite.GetAtomicLong(AtomicLongName, 0, true);
-
-            for (int i = 0; i < 20; i++)
-                Console.WriteLine(">>> AtomicLong value has been incremented: " + atomicLong.Increment());
         }
     }
 }

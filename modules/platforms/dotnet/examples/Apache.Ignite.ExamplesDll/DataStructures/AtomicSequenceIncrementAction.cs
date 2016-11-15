@@ -32,11 +32,14 @@ namespace Apache.Ignite.ExamplesDll.DataStructures
         /** */
         public const string AtomicSequenceName = "dotnet_atomic_sequence";
 
+        /** */
         [InstanceResource] private readonly IIgnite _ignite;
 
+        /// <summary>
+        /// Invokes action.
+        /// </summary>
         public void Invoke()
         {
-            // Get or create an atomic sequence.
             IAtomicSequence atomicSequence = _ignite.GetAtomicSequence(AtomicSequenceName, 0, true);
 
             for (int i = 0; i < 20; i++)

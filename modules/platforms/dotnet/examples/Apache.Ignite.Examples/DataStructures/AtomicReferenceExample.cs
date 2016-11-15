@@ -19,6 +19,8 @@ namespace Apache.Ignite.Examples.DataStructures
 {
     using System;
     using Apache.Ignite.Core;
+    using Apache.Ignite.Core.DataStructures;
+    using Apache.Ignite.ExamplesDll.DataStructures;
 
     /// <summary>
     /// Demonstrates distributed atomic reference data structure.
@@ -42,7 +44,14 @@ namespace Apache.Ignite.Examples.DataStructures
                 Console.WriteLine();
                 Console.WriteLine(">>> Atomic reference example started.");
 
-                // TODO: attempt to replace a value on multiple nodes in multiple threads?
+                // Create atomic reference with a value of empty Guid.
+                IAtomicReference<Guid> atomicRef = ignite.GetAtomicReference(
+                    AtomicReferenceModifyAction.AtomicReferenceName, Guid.Empty, true);
+
+                // Attempt to modify the value on each node. Only one node will succeed.
+                ignite.GetCompute().Broadcast(new AtomicReferenceModifyAction());
+                
+                // Print the resulting value: Id of a node that has modified the reference.
             }
 
             Console.WriteLine("\n>>> Example finished, press any key to exit ...");
