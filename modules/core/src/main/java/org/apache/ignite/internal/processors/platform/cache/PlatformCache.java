@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
+import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQuery;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQueryProxy;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformFieldsQueryCursor;
@@ -858,7 +859,7 @@ public class PlatformCache extends PlatformAbstractTarget {
                 long update = reader.readLong();
                 long access = reader.readLong();
 
-                IgniteCache cache0 = rawCache.withExpiryPolicy(new InteropExpiryPolicy(create, update, access));
+                IgniteCache cache0 = rawCache.withExpiryPolicy(new PlatformExpiryPolicy(create, update, access));
 
                 return copy(cache0, keepBinary);
             }
@@ -1413,77 +1414,6 @@ public class PlatformCache extends PlatformAbstractTarget {
         /** <inheritDoc /> */
         @Override public boolean canWrite(Object obj, Throwable err) {
             return obj != null && err == null;
-        }
-    }
-
-    /**
-     * Interop expiry policy.
-     */
-    private static class InteropExpiryPolicy implements ExpiryPolicy {
-        /** Duration: unchanged. */
-        private static final long DUR_UNCHANGED = -2;
-
-        /** Duration: eternal. */
-        private static final long DUR_ETERNAL = -1;
-
-        /** Duration: zero. */
-        private static final long DUR_ZERO = 0;
-
-        /** Expiry for create. */
-        private final Duration create;
-
-        /** Expiry for update. */
-        private final Duration update;
-
-        /** Expiry for access. */
-        private final Duration access;
-
-        /**
-         * Constructor.
-         *
-         * @param create Expiry for create.
-         * @param update Expiry for update.
-         * @param access Expiry for access.
-         */
-        private InteropExpiryPolicy(long create, long update, long access) {
-            this.create = convert(create);
-            this.update = convert(update);
-            this.access = convert(access);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Duration getExpiryForCreation() {
-            return create;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Duration getExpiryForUpdate() {
-            return update;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Duration getExpiryForAccess() {
-            return access;
-        }
-
-        /**
-         * Convert encoded duration to actual duration.
-         *
-         * @param dur Encoded duration.
-         * @return Actual duration.
-         */
-        private static Duration convert(long dur) {
-            if (dur == DUR_UNCHANGED)
-                return null;
-            else if (dur == DUR_ETERNAL)
-                return Duration.ETERNAL;
-            else if (dur == DUR_ZERO)
-                return Duration.ZERO;
-            else {
-                assert dur > 0;
-
-                return new Duration(TimeUnit.MILLISECONDS, dur);
-            }
         }
     }
 
