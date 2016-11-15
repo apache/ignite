@@ -46,9 +46,18 @@ namespace Apache.Ignite.Examples.DataStructures
                 Console.WriteLine();
                 Console.WriteLine(">>> Atomic sequence example started.");
 
-                // TODO:
+                IAtomicSequence atomicSequence = 
+                    ignite.GetAtomicSequence(AtomicSequenceIncrementAction.AtomicSequenceName, 0, true);
+
+                Console.WriteLine(">>> Atomic sequence initial value: " + atomicSequence.Read());
+
+                // Broadcast an action that increments AtomicSequence a number of times.
+                ignite.GetCompute().Broadcast(new AtomicSequenceIncrementAction());
+
+                Console.WriteLine("\n>>> Atomic sequence resulting value: " + atomicSequence.Read());
             }
 
+            Console.WriteLine("\n>>> Check output on all nodes.");
             Console.WriteLine("\n>>> Example finished, press any key to exit ...");
             Console.ReadKey();
         }
