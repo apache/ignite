@@ -58,7 +58,7 @@ namespace Apache.Ignite.Examples.Datagrid
                         // Maximum number of entries that will be stored in Java heap. 
                         MaxSize = 10
                     },
-                    OffHeapMaxMemory = 0, // Unlimited off-heap space.
+                    OffHeapMaxMemory = 0 // Unlimited off-heap space.
                 };
 
                 ICache<int, byte[]> cache = ignite.GetOrCreateCache<int, byte[]>(cfg);
