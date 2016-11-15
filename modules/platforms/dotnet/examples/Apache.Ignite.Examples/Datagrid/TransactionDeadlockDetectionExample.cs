@@ -109,7 +109,7 @@ namespace Apache.Ignite.Examples.Datagrid
             }
             catch (TransactionDeadlockException e)
             {
-                // Print out detected deadlock details:
+                // Print out detected deadlock details (participating nodes, keys, etc):
                 Console.WriteLine("\n>>> Transaction deadlock in thread {0}: {1}", threadId, e.Message);
             }
             catch (Exception e)
