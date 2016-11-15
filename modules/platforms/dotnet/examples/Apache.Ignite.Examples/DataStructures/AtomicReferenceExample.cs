@@ -42,7 +42,7 @@ namespace Apache.Ignite.Examples.DataStructures
                 Console.WriteLine();
                 Console.WriteLine(">>> Atomic reference example started.");
 
-                // TODO
+                // TODO: attempt to replace a value on multiple nodes in multiple threads?
             }
 
             Console.WriteLine("\n>>> Example finished, press any key to exit ...");

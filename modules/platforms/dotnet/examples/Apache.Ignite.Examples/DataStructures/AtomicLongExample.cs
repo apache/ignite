@@ -53,6 +53,7 @@ namespace Apache.Ignite.Examples.DataStructures
                 // Broadcast an action that increments AtomicLong a number of times.
                 ignite.GetCompute().Broadcast(new AtomicLongIncrementAction());
 
+                // Resulting value will depend on number of participating nodes.
                 Console.WriteLine("\n>>> Atomic long resulting value: " + atomicLong.Read());
             }
 
