@@ -1,0 +1,76 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+mixin lbl(txt)
+    label.col-sm-2.required.labelFormField #{txt}
+
+.row(ng-controller='profileController')
+    .docs-content.greedy
+        .docs-header
+            h1 User profile
+            hr
+        .docs-body
+            form.form-horizontal(name='profileForm' novalidate)
+                .col-sm-10(style='padding: 0')
+                    .details-row
+                        +lbl('First name:')
+                        .col-xs-5.col-sm-4
+                            input#profile-firstname.form-control(ignite-on-enter-focus-move='profile-lastname' type='text' ng-model='user.firstName' placeholder='Input first name' required ignite-auto-focus)
+                    .details-row
+                        +lbl('Last name:')
+                        .col-xs-5.col-sm-4
+                            input#profile-lastname.form-control(ignite-on-enter-focus-move='profile-email' type='text' ng-model='user.lastName' placeholder='Input last name' required)
+                    .details-row
+                        +lbl('Email:')
+                        .col-xs-5.col-sm-4
+                            input#profile-email.form-control(ignite-on-enter-focus-move='profile-company' type='email' ng-model='user.email' placeholder='Input email' required)
+                    .details-row
+                        +lbl('Company:')
+                        .col-xs-5.col-sm-4
+                            input#profile-company.form-control(ignite-on-enter-focus-move='profile-country' type='text' ng-model='user.company' placeholder='Input company name' required)
+                    .details-row
+                        +lbl('Country:')
+                        .col-xs-5.col-sm-4
+                            button#profile-country.select-toggle.form-control(bs-select bs-options='item.name as item.name for item in countries' type='text' ng-model='user.country' placeholder='Choose your country' ng-required='true')
+                    .details-row
+                        .advanced-options
+                            i.fa(
+                            ng-click='toggleToken()'
+                            ng-class='expandedToken ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
+                            a(ng-click='toggleToken()') {{expandedToken ? 'Cancel security token changing...' : 'Show security token...'}}
+                        div(ng-if='expandedToken')
+                            +lbl('Security token:')
+                            label {{user.token || 'No security token. Regenerate please.'}}
+                            i.tipLabel.fa.fa-refresh(ng-click='generateToken()' bs-tooltip='' data-title='Generate random security token')
+                            i.tipLabel.fa.fa-clipboard(ignite-copy-to-clipboard='{{user.token}}' bs-tooltip='' data-title='Copy security token to clipboard')
+                            i.tipLabel.fa.fa-question-circle(ng-if=lines bs-tooltip='' data-title='The security token is used for authorization of web agent')
+                    .details-row
+                        .advanced-options
+                            i.fa(
+                            ng-click='togglePassword()'
+                            ng-class='expandedPassword ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
+                            a(ng-click='togglePassword()') {{expandedPassword ? 'Cancel password changing...' : 'Change password...'}}
+                        div(ng-if='expandedPassword')
+                            .details-row
+                                +lbl('New password:')
+                                .col-xs-5.col-sm-4
+                                    input#profile_password.form-control(ignite-on-enter-focus-move='profile_confirm' type='password' ng-model='user.password' placeholder='New password')
+                            .details-row
+                                +lbl('Confirm:')
+                                .col-xs-5.col-sm-4
+                                    input#profile_confirm.form-control(type='password' ng-model='user.confirm' ignite-match='user.password' placeholder='Confirm new password')
+                .col-xs-12.col-sm-12.details-row
+                    a.btn.btn-primary(ng-disabled='!profileCouldBeSaved()' ng-click='profileCouldBeSaved() && saveUser()' bs-tooltip='' data-title='{{saveBtnTipText()}}' data-placement='bottom' data-trigger='hover') Save

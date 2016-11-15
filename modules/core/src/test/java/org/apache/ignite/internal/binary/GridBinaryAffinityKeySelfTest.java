@@ -139,6 +139,8 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
 
             assertEquals(i, aff.affinityKey(ignite.binary().toBinary(new TestObject(i))));
 
+            assertEquals(i, aff.affinityKey(new AffinityKey(0, i)));
+
             BinaryObjectBuilder bldr = ignite.binary().builder("TestObject2");
 
             bldr.setField("affKey", i);
@@ -162,6 +164,8 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
             assertEquals(affProc.mapKeyToNode(null, i), affProc.mapKeyToNode(null, new TestObject(i)));
 
             assertEquals(affProc.mapKeyToNode(null, i), affProc.mapKeyToNode(null, cacheObj));
+
+            assertEquals(affProc.mapKeyToNode(null, new AffinityKey(0, i)), affProc.mapKeyToNode(null, i));
         }
     }
 
@@ -174,7 +178,18 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 1000; i++) {
             nodeId.set(null);
 
-            grid(0).compute().affinityRun(null, new TestObject(i), new IgniteRunnable() {
+            grid(0).compute().affinityRun((String)null, new TestObject(i), new IgniteRunnable() {
+                @IgniteInstanceResource
+                private Ignite ignite;
+
+                @Override public void run() {
+                    nodeId.set(ignite.configuration().getNodeId());
+                }
+            });
+
+            assertEquals(aff.mapKeyToNode(i).id(), nodeId.get());
+
+            grid(0).compute().affinityRun((String)null, new AffinityKey(0, i), new IgniteRunnable() {
                 @IgniteInstanceResource
                 private Ignite ignite;
 
@@ -196,7 +211,7 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 1000; i++) {
             nodeId.set(null);
 
-            grid(0).compute().affinityCall(null, new TestObject(i), new IgniteCallable<Object>() {
+            grid(0).compute().affinityCall((String)null, new TestObject(i), new IgniteCallable<Object>() {
                 @IgniteInstanceResource
                 private Ignite ignite;
 

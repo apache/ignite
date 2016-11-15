@@ -88,7 +88,7 @@ public class IgniteDynamicCacheStartStopConcurrentTest extends GridCommonAbstrac
 
             checkTopologyVersion(new AffinityTopologyVersion(NODES, minorVer));
 
-            ignite(0).compute().affinityRun(null, 1, new IgniteRunnable() {
+            ignite(0).compute().affinityRun((String)null, 1, new IgniteRunnable() {
                 @Override public void run() {
                     // No-op.
                 }

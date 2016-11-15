@@ -52,7 +52,12 @@ namespace Apache.Ignite.Core.Impl.Events
             RecordLocal = 6,
             EnableLocal = 8,
             DisableLocal = 9,
-            GetEnabledEvents = 10
+            GetEnabledEvents = 10,
+            IsEnabled = 12,
+            LocalListen = 13,
+            StopLocalListen = 14,
+            RemoteQueryAsync = 15,
+            WaitForLocalAsync = 16
         }
 
         /** Map from user func to local wrapper, needed for invoke/unsubscribe. */
@@ -62,9 +67,6 @@ namespace Apache.Ignite.Core.Impl.Events
         /** Cluster group. */
         private readonly IClusterGroup _clusterGroup;
         
-        /** Async instance. */
-        private readonly Lazy<Events> _asyncInstance;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="Events" /> class.
         /// </summary>
@@ -77,17 +79,6 @@ namespace Apache.Ignite.Core.Impl.Events
             Debug.Assert(clusterGroup != null);
 
             _clusterGroup = clusterGroup;
-
-            _asyncInstance = new Lazy<Events>(() => new Events(this));
-        }
-
-        /// <summary>
-        /// Initializes a new async instance.
-        /// </summary>
-        /// <param name="events">The events.</param>
-        private Events(Events events) : base(UU.EventsWithAsync(events.Target), events.Marshaller)
-        {
-            _clusterGroup = events.ClusterGroup;
         }
 
         /** <inheritDoc /> */
@@ -102,14 +93,6 @@ namespace Apache.Ignite.Core.Impl.Events
             get { return (Ignite) ClusterGroup.Ignite; }
         }
 
-        /// <summary>
-        /// Gets the asynchronous instance.
-        /// </summary>
-        private Events AsyncInstance
-        {
-            get { return _asyncInstance.Value; }
-        }
-
         /** <inheritDoc /> */
         public ICollection<T> RemoteQuery<T>(IEventFilter<T> filter, TimeSpan? timeout = null, params int[] types)
             where T : IEvent
@@ -117,14 +100,7 @@ namespace Apache.Ignite.Core.Impl.Events
             IgniteArgumentCheck.NotNull(filter, "filter");
 
             return DoOutInOp((int) Op.RemoteQuery,
-                writer =>
-                {
-                    writer.Write(filter);
-
-                    writer.WriteLong((long) (timeout == null ? 0 : timeout.Value.TotalMilliseconds));
-
-                    WriteEventTypes(types, writer);
-                },
+                writer => WriteRemoteQuery(filter, timeout, types, writer),
                 reader => ReadEvents<T>(reader));
         }
 
@@ -132,11 +108,11 @@ namespace Apache.Ignite.Core.Impl.Events
         public Task<ICollection<T>> RemoteQueryAsync<T>(IEventFilter<T> filter, TimeSpan? timeout = null, 
             params int[] types) where T : IEvent
         {
-            AsyncInstance.RemoteQuery(filter, timeout, types);
+            IgniteArgumentCheck.NotNull(filter, "filter");
 
             // ReSharper disable once RedundantTypeArgumentsOfMethod (won't compile in VS2010)
-            return GetFuture<ICollection<T>>((futId, futTyp) => UU.TargetListenFutureForOperation(AsyncInstance.Target, 
-                futId, futTyp, (int) Op.RemoteQuery), convertFunc: ReadEvents<T>).Task;
+            return DoOutOpAsync<ICollection<T>>((int) Op.RemoteQueryAsync,
+                w => WriteRemoteQuery(filter, timeout, types, w), convertFunc: ReadEvents<T>);
         }
 
         /** <inheritDoc /> */
@@ -154,6 +130,7 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public Guid? RemoteListen<T>(int bufSize = 1, TimeSpan? interval = null, bool autoUnsubscribe = true,
             IEventFilter<T> localListener = null, IEventFilter<T> remoteFilter = null, params int[] types)
             where T : IEvent
@@ -187,6 +164,7 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public Guid? RemoteListen<T>(int bufSize = 1, TimeSpan? interval = null, bool autoUnsubscribe = true,
             IEventFilter<T> localListener = null, IEventFilter<T> remoteFilter = null, IEnumerable<int> types = null)
             where T : IEvent
@@ -195,6 +173,7 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public void StopRemoteListen(Guid opId)
         {
             DoOutOp((int) Op.StopRemoteListen, writer =>
@@ -230,46 +209,53 @@ namespace Apache.Ignite.Core.Impl.Events
         /** <inheritDoc /> */
         public T WaitForLocal<T>(IEventFilter<T> filter, params int[] types) where T : IEvent
         {
-            long hnd = 0;
+            var hnd = GetFilterHandle(filter);
 
             try
             {
-                return WaitForLocal0(filter, ref hnd, types);
+                return DoOutInOp((int) Op.WaitForLocal,
+                    writer =>
+                    {
+                        writer.WriteObject(hnd);
+                        WriteEventTypes(types, writer);
+                    },
+                    reader => EventReader.Read<T>(Marshaller.StartUnmarshal(reader)));
             }
             finally
             {
-                if (filter != null)
-                    Ignite.HandleRegistry.Release(hnd);
+                if (hnd != null)
+                    Ignite.HandleRegistry.Release(hnd.Value);
             }
         }
 
         /** <inheritDoc /> */
         public Task<T> WaitForLocalAsync<T>(IEventFilter<T> filter, params int[] types) where T : IEvent
         {
-            long hnd = 0;
+            var hnd = GetFilterHandle(filter);
 
             try
             {
-                AsyncInstance.WaitForLocal0(filter, ref hnd, types);
+                var task = DoOutOpAsync((int) Op.WaitForLocalAsync, writer =>
+                {
+                    writer.WriteObject(hnd);
+                    WriteEventTypes(types, writer);
+                }, convertFunc: EventReader.Read<T>);
 
-                // ReSharper disable once RedundantTypeArgumentsOfMethod (won't compile in VS2010)
-                var fut = GetFuture<T>((futId, futTyp) => UU.TargetListenFutureForOperation(AsyncInstance.Target, futId,
-                    futTyp, (int) Op.WaitForLocal), convertFunc: reader => (T) EventReader.Read<IEvent>(reader));
-
-                if (filter != null)
+                if (hnd != null)
                 {
                     // Dispose handle as soon as future ends.
-                    fut.Task.ContinueWith(x => Ignite.HandleRegistry.Release(hnd));
+                    task.ContinueWith(x => Ignite.HandleRegistry.Release(hnd.Value));
                 }
 
-                return fut.Task;
+                return task;
             }
             catch (Exception)
             {
-                Ignite.HandleRegistry.Release(hnd);
+                if (hnd != null)
+                    Ignite.HandleRegistry.Release(hnd.Value);
+
                 throw;
             }
-
         }
 
         /** <inheritDoc /> */
@@ -335,7 +321,7 @@ namespace Apache.Ignite.Core.Impl.Events
                 // Should do this inside lock to avoid race with subscription
                 // ToArray is required because we are going to modify underlying dictionary during enumeration
                 foreach (var filter in GetLocalFilters(listener, types).ToArray())
-                    success |= UU.EventsStopLocalListen(Target, filter.Handle);
+                    success |= (DoOutInOp((int) Op.StopLocalListen, filter.Handle) == True);
 
                 return success;
             }
@@ -384,42 +370,17 @@ namespace Apache.Ignite.Core.Impl.Events
         /** <inheritDoc /> */
         public bool IsEnabled(int type)
         {
-            return UU.EventsIsEnabled(Target, type);
+            return DoOutInOp((int) Op.IsEnabled, type) == True;
         }
 
         /// <summary>
-        /// Waits for the specified events.
+        /// Gets the filter handle.
         /// </summary>
-        /// <typeparam name="T">Type of events.</typeparam>
-        /// <param name="filter">Optional filtering predicate. Event wait will end as soon as it returns false.</param>
-        /// <param name="handle">The filter handle, if applicable.</param>
-        /// <param name="types">Types of the events to wait for. 
-        /// If not provided, all events will be passed to the filter.</param>
-        /// <returns>Ignite event.</returns>
-        private T WaitForLocal0<T>(IEventFilter<T> filter, ref long handle, params int[] types) where T : IEvent
+        private long? GetFilterHandle<T>(IEventFilter<T> filter) where T : IEvent
         {
-            if (filter != null)
-                handle = Ignite.HandleRegistry.Allocate(new LocalEventFilter
-                {
-                    InvokeFunc = stream => InvokeLocalFilter(stream, filter)
-                });
-
-            var hnd = handle;
-
-            return DoOutInOp((int)Op.WaitForLocal,
-                writer =>
-                {
-                    if (filter != null)
-                    {
-                        writer.WriteBoolean(true);
-                        writer.WriteLong(hnd);
-                    }
-                    else
-                        writer.WriteBoolean(false);
-
-                    WriteEventTypes(types, writer);
-                },
-                reader => EventReader.Read<T>(Marshaller.StartUnmarshal(reader)));
+            return filter != null 
+                ? Ignite.HandleRegistry.Allocate(new LocalEventFilter<T>(Marshaller, filter)) 
+                : (long?) null;
         }
 
         /// <summary>
@@ -508,7 +469,11 @@ namespace Apache.Ignite.Core.Impl.Events
                     filters[type] = localFilter;
                 }
 
-                UU.EventsLocalListen(Target, localFilter.Handle, type);
+                DoOutOp((int) Op.LocalListen, (IBinaryStream s) =>
+                {
+                    s.WriteLong(localFilter.Handle);
+                    s.WriteInt(type);
+                });
             }
         }
 
@@ -542,20 +507,6 @@ namespace Apache.Ignite.Core.Impl.Events
             result.Handle = Ignite.HandleRegistry.Allocate(result);
 
             return result;
-        }
-
-        /// <summary>
-        /// Invokes local filter using data from specified stream.
-        /// </summary>
-        /// <typeparam name="T">Event object type.</typeparam>
-        /// <param name="stream">The stream.</param>
-        /// <param name="listener">The listener.</param>
-        /// <returns>Filter invocation result.</returns>
-        private bool InvokeLocalFilter<T>(IBinaryStream stream, IEventFilter<T> listener) where T : IEvent
-        {
-            var evt = EventReader.Read<T>(Marshaller.StartUnmarshal(stream));
-
-            return listener.Invoke(evt);
         }
 
         /// <summary>
@@ -606,17 +557,49 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /// <summary>
+        /// Writes the remote query.
+        /// </summary>
+        /// <param name="filter">The filter.</param>
+        /// <param name="timeout">The timeout.</param>
+        /// <param name="types">The types.</param>
+        /// <param name="writer">The writer.</param>
+        private static void WriteRemoteQuery<T>(IEventFilter<T> filter, TimeSpan? timeout, int[] types, 
+            IBinaryRawWriter writer)
+            where T : IEvent
+        {
+            writer.WriteObject(filter);
+
+            writer.WriteLong((long)(timeout == null ? 0 : timeout.Value.TotalMilliseconds));
+
+            WriteEventTypes(types, writer);
+        }
+
+        /// <summary>
         /// Local user filter wrapper.
         /// </summary>
-        private class LocalEventFilter : IInteropCallback
+        private class LocalEventFilter<T> : IInteropCallback where T : IEvent
         {
             /** */
-            public Func<IBinaryStream, bool> InvokeFunc;
+            private readonly Marshaller _marshaller;
+
+            /** */
+            private readonly IEventFilter<T> _listener;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="LocalEventFilter{T}"/> class.
+            /// </summary>
+            public LocalEventFilter(Marshaller marshaller, IEventFilter<T> listener)
+            {
+                _marshaller = marshaller;
+                _listener = listener;
+            }
 
             /** <inheritdoc /> */
             public int Invoke(IBinaryStream stream)
             {
-                return InvokeFunc(stream) ? 1 : 0;
+                var evt = EventReader.Read<T>(_marshaller.StartUnmarshal(stream));
+
+                return _listener.Invoke(evt) ? 1 : 0;
             }
         }
 

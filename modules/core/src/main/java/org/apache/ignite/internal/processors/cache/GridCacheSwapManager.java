@@ -138,6 +138,20 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             initOffHeap();
     }
 
+
+    /** {@inheritDoc} */
+    @Override protected void stop0(boolean cancel) {
+        if (offheapEnabled)
+            offheap.destruct(spaceName);
+
+        try {
+            clearSwap();
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to clear cache swap space", e);
+        }
+    }
+
     /**
      *
      */
@@ -820,6 +834,9 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         IgniteBiTuple<Long, Integer> ptr =
             offheap.valuePointer(spaceName, part, key, key.valueBytes(cctx.cacheObjectContext()));
 
+        if (cctx.config().isStatisticsEnabled())
+            cctx.cache().metrics0().onOffHeapRead(ptr != null);
+
         if (ptr != null) {
             assert ptr.get1() != null;
             assert ptr.get2() != null;
@@ -1224,17 +1241,16 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
     /**
      * @param key Key to remove.
+     * @param part Partition.
      * @throws IgniteCheckedException If failed.
      */
-    public void remove(final KeyCacheObject key) throws IgniteCheckedException {
+    public void remove(final KeyCacheObject key, int part) throws IgniteCheckedException {
         if (!offheapEnabled && !swapEnabled)
             return;
 
         checkIteratorQueue();
 
         final GridCacheQueryManager qryMgr = cctx.queries();
-
-        int part = cctx.affinity().partition(key);
 
         // First try offheap.
         if (offheapEnabled) {
@@ -1282,6 +1298,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @param expireTime Swap entry expiration time.
      * @param keyClsLdrId Class loader ID for entry key.
      * @param valClsLdrId Class loader ID for entry value.
+     * @param wasUnswapped {@code True} if currently value is removed from swap.
      * @throws IgniteCheckedException If failed.
      */
     void write(KeyCacheObject key,
@@ -1291,7 +1308,8 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         long ttl,
         long expireTime,
         @Nullable IgniteUuid keyClsLdrId,
-        @Nullable IgniteUuid valClsLdrId)
+        @Nullable IgniteUuid valClsLdrId,
+        boolean wasUnswapped)
         throws IgniteCheckedException {
         if (!offheapEnabled && !swapEnabled)
             return;
@@ -1323,7 +1341,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
         GridCacheQueryManager qryMgr = cctx.queries();
 
-        if (qryMgr.enabled())
+        if (wasUnswapped && qryMgr.enabled())
             qryMgr.onSwap(key);
     }
 
@@ -1603,14 +1621,15 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     }
 
     /**
+     * @param keepBinary Keep binary flag.
      * @return Lazy swap iterator.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> Iterator<Map.Entry<K, V>> lazySwapIterator() throws IgniteCheckedException {
+    public <K, V> Iterator<Map.Entry<K, V>> lazySwapIterator(boolean keepBinary) throws IgniteCheckedException {
         if (!swapEnabled)
             return new GridEmptyIterator<>();
 
-        return lazyIterator(cctx.gridSwap().rawIterator(spaceName));
+        return lazyIterator(cctx.gridSwap().rawIterator(spaceName), keepBinary);
     }
 
     /**
@@ -1663,13 +1682,14 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     }
 
     /**
+     * @param keepBinary Keep binary flag.
      * @return Lazy off-heap iterator.
      */
-    public <K, V> Iterator<Map.Entry<K, V>> lazyOffHeapIterator() {
+    public <K, V> Iterator<Map.Entry<K, V>> lazyOffHeapIterator(boolean keepBinary) {
         if (!offheapEnabled)
             return new GridEmptyCloseableIterator<>();
 
-        return lazyIterator(offheap.iterator(spaceName));
+        return lazyIterator(offheap.iterator(spaceName), keepBinary);
     }
 
     /**
@@ -1694,10 +1714,11 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * Gets lazy iterator for which key and value are lazily deserialized.
      *
      * @param it Closeable iterator.
+     * @param keepBinary Keep binary.
      * @return Lazy iterator.
      */
     private <K, V> Iterator<Map.Entry<K, V>> lazyIterator(
-        final GridCloseableIterator<? extends Map.Entry<byte[], byte[]>> it) {
+        final GridCloseableIterator<? extends Map.Entry<byte[], byte[]>> it, final boolean keepBinary) {
         if (it == null)
             return new GridEmptyIterator<>();
 
@@ -1710,7 +1731,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             @Override protected Map.Entry<K, V> onNext() {
                 final Map.Entry<byte[], byte[]> cur0 = it.next();
 
-                cur = new GridVersionedMapEntry<K, V>(cur0);
+                cur = new GridVersionedMapEntry<K, V>(cur0, keepBinary);
 
                 return cur;
             }
@@ -1990,6 +2011,22 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     public GridCloseableIterator<Map.Entry<byte[], byte[]>> rawSwapIterator(boolean primary, boolean backup)
         throws IgniteCheckedException
     {
+        return rawSwapIterator(primary, backup, cctx.affinity().affinityTopologyVersion());
+    }
+
+    /**
+     * @return Raw off-heap iterator.
+     * @param primary Include primaries.
+     * @param backup Include backups.
+     * @param topVer Affinity topology version.
+     * @throws IgniteCheckedException If failed.
+     */
+    public GridCloseableIterator<Map.Entry<byte[], byte[]>> rawSwapIterator(boolean primary, boolean backup,
+        AffinityTopologyVersion topVer)
+        throws IgniteCheckedException
+    {
+        assert topVer != null;
+
         if (!swapEnabled || (!primary && !backup))
             return new GridEmptyCloseableIterator<>();
 
@@ -1998,10 +2035,8 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         if (primary && backup)
             return swapMgr.rawIterator(spaceName);
 
-        AffinityTopologyVersion ver = cctx.affinity().affinityTopologyVersion();
-
-        Set<Integer> parts = primary ? cctx.affinity().primaryPartitions(cctx.localNodeId(), ver) :
-            cctx.affinity().backupPartitions(cctx.localNodeId(), ver);
+        Set<Integer> parts = primary ? cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer) :
+            cctx.affinity().backupPartitions(cctx.localNodeId(), topVer);
 
         return new CloseablePartitionsIterator<Map.Entry<byte[], byte[]>, Map.Entry<byte[], byte[]>>(parts) {
             @Override protected GridCloseableIterator<Map.Entry<byte[], byte[]>> partitionIterator(int part)
@@ -2039,11 +2074,14 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @param primary If {@code true} includes primary entries.
      * @param backup If {@code true} includes backup entries.
      * @param topVer Topology version.
+     * @param keepBinary Keep binary flag.
      * @return Swap entries iterator.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> Iterator<Cache.Entry<K, V>> swapIterator(boolean primary, boolean backup, AffinityTopologyVersion topVer)
-        throws IgniteCheckedException
+    public <K, V> Iterator<Cache.Entry<K, V>> swapIterator(boolean primary,
+        boolean backup,
+        AffinityTopologyVersion topVer,
+        boolean keepBinary) throws IgniteCheckedException
     {
         assert primary || backup;
 
@@ -2051,12 +2089,12 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             return new GridEmptyIterator<>();
 
         if (primary && backup)
-            return cacheEntryIterator(this.<K, V>lazySwapIterator());
+            return cacheEntryIterator(this.<K, V>lazySwapIterator(keepBinary));
 
         Set<Integer> parts = primary ? cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer) :
             cctx.affinity().backupPartitions(cctx.localNodeId(), topVer);
 
-        return new PartitionsIterator<K, V>(parts) {
+        return new PartitionsIterator<K, V>(parts, keepBinary) {
             @Override protected GridCloseableIterator<? extends Map.Entry<byte[], byte[]>> nextPartition(int part)
                 throws IgniteCheckedException
             {
@@ -2069,12 +2107,14 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @param primary If {@code true} includes primary entries.
      * @param backup If {@code true} includes backup entries.
      * @param topVer Topology version.
+     * @param keepBinary Keep binary flag.
      * @return Offheap entries iterator.
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> Iterator<Cache.Entry<K, V>> offheapIterator(boolean primary,
         boolean backup,
-        AffinityTopologyVersion topVer)
+        AffinityTopologyVersion topVer,
+        boolean keepBinary)
         throws IgniteCheckedException
     {
         assert primary || backup;
@@ -2083,12 +2123,12 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             return new GridEmptyIterator<>();
 
         if (primary && backup)
-            return cacheEntryIterator(this.<K, V>lazyOffHeapIterator());
+            return cacheEntryIterator(this.<K, V>lazyOffHeapIterator(keepBinary));
 
         Set<Integer> parts = primary ? cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer) :
             cctx.affinity().backupPartitions(cctx.localNodeId(), topVer);
 
-        return new PartitionsIterator<K, V>(parts) {
+        return new PartitionsIterator<K, V>(parts, keepBinary) {
             @Override protected GridCloseableIterator<? extends Map.Entry<byte[], byte[]>> nextPartition(int part) {
                 return offheap.iterator(spaceName, part);
             }
@@ -2120,6 +2160,9 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                             IgniteUuid valLdrId = swapEntry.valueClassLoaderId();
 
                             if (ldrId.equals(swapEntry.keyClassLoaderId())) {
+                                if (log.isTraceEnabled())
+                                    log.trace("onUndeploy remove key [ldrId=" + ldrId + ']');
+
                                 iter.removeX();
 
                                 undeployCnt++;
@@ -2136,6 +2179,9 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                                     if (val != null)
                                         valLdrId = cctx.deploy().getClassLoaderId(val.getClass().getClassLoader());
                                 }
+
+                                if (log.isTraceEnabled())
+                                    log.trace("onUndeploy remove value [ldrId=" + ldrId + ']');
 
                                 if (ldrId.equals(valLdrId)) {
                                     iter.removeX();
@@ -2304,17 +2350,25 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      *
      */
     private abstract class PartitionsIterator<K, V> extends PartitionsAbstractIterator<Cache.Entry<K, V>> {
+        /** */
+        private final boolean keepBinary;
+
         /**
          * @param parts Partitions
+         * @param keepBinary Keep binary flag.
          */
-        public PartitionsIterator(Collection<Integer> parts) {
+        public PartitionsIterator(Collection<Integer> parts, boolean keepBinary) {
             super(parts);
+
+            this.keepBinary = keepBinary;
+
+            advance();
         }
 
         /** {@inheritDoc} */
         @Override protected Iterator<Cache.Entry<K, V>> partitionIterator(int part)
             throws IgniteCheckedException {
-            return cacheEntryIterator(GridCacheSwapManager.this.<K, V>lazyIterator(nextPartition(part)));
+            return cacheEntryIterator(GridCacheSwapManager.this.<K, V>lazyIterator(nextPartition(part), keepBinary));
         }
 
         /**
@@ -2340,12 +2394,10 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         private T next;
 
         /**
-         * @param parts Partitions
+         * @param parts Partitions.
          */
         public PartitionsAbstractIterator(Collection<Integer> parts) {
             this.partIt = parts.iterator();
-
-            advance();
         }
 
         /** {@inheritDoc} */
@@ -2373,7 +2425,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         /**
          * Switches to next element.
          */
-        private void advance() {
+        protected final void advance() {
             next = null;
 
             do {
@@ -2517,23 +2569,26 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      */
     private class GridVersionedMapEntry<K,V> implements Map.Entry<K,V>, GridCacheVersionAware {
         /** */
-        private Map.Entry<byte[], byte[]> entry;
+        final private Map.Entry<byte[], byte[]> entry;
+
+        /** */
+        final private boolean keepBinary;
 
         /**
          * Constructor.
          *
          * @param entry Entry.
+         * @param keepBinary Keep binary.
          */
-        public GridVersionedMapEntry(Map.Entry<byte[], byte[]> entry) {
+        public GridVersionedMapEntry(Map.Entry<byte[], byte[]> entry, boolean keepBinary) {
             this.entry = entry;
+            this.keepBinary = keepBinary;
         }
 
         /** {@inheritDoc} */
         @Override public K getKey() {
             try {
-                KeyCacheObject key = cctx.toCacheKeyObject(entry.getKey());
-
-                return key.value(cctx.cacheObjectContext(), false);
+                return (K)cctx.unwrapBinaryIfNeeded(cctx.toCacheKeyObject(entry.getKey()), keepBinary);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -2547,7 +2602,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
                 assert e != null;
 
-                return e.value().value(cctx.cacheObjectContext(), false);
+                return (V)cctx.unwrapBinaryIfNeeded(e.value(), keepBinary);
             }
             catch (IgniteCheckedException ex) {
                 throw new IgniteException(ex);

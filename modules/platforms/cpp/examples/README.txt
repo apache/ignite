@@ -27,6 +27,7 @@ Before running examples ensure that:
    library is located in $JAVA_HOME/jre/lib/amd64/server directory.
  * For odbc-example additionaly ODBC Driver Manager must be present and installed on your platform and
    Apache Ignite ODBC driver must be built and installed according to instructions for your platform.
+ * For odbc-example make sure that path to Ignite libraries is added to LD_LIBRARY_PATH (usually it is /usr/local/lib).
 
 Running examples on Windows
 ----------------------------------

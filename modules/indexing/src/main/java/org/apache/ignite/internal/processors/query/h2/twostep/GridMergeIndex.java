@@ -18,18 +18,21 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
-import org.h2.engine.Constants;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
 import org.h2.index.Cursor;
@@ -41,7 +44,6 @@ import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_MERGE_TABLE_MAX_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
@@ -57,7 +59,7 @@ public abstract class GridMergeIndex extends BaseIndex {
     private final AtomicInteger expRowsCnt = new AtomicInteger(0);
 
     /** Remaining rows per source node ID. */
-    private final ConcurrentMap<UUID, Counter> remainingRows = new ConcurrentHashMap8<>();
+    private Map<UUID, Counter> remainingRows;
 
     /** */
     private final AtomicBoolean lastSubmitted = new AtomicBoolean();
@@ -110,7 +112,7 @@ public abstract class GridMergeIndex extends BaseIndex {
     protected final void checkSourceNodesAlive() {
         for (UUID nodeId : sources()) {
             if (!ctx.discovery().alive(nodeId)) {
-                fail(nodeId);
+                fail(nodeId, null);
 
                 return;
             }
@@ -136,11 +138,19 @@ public abstract class GridMergeIndex extends BaseIndex {
     }
 
     /**
-     * @param nodeId Node ID.
+     * Set source nodes.
+     *
+     * @param nodes Nodes.
      */
-    public void addSource(UUID nodeId) {
-        if (remainingRows.put(nodeId, new Counter()) != null)
-            throw new IllegalStateException();
+    public void setSources(Collection<ClusterNode> nodes) {
+        assert remainingRows == null;
+
+        remainingRows = U.newHashMap(nodes.size());
+
+        for (ClusterNode node : nodes) {
+            if (remainingRows.put(node.id(), new Counter()) != null)
+                throw new IllegalStateException("Duplicate node id: " + node.id());
+        }
     }
 
     /**
@@ -163,10 +173,17 @@ public abstract class GridMergeIndex extends BaseIndex {
     /**
      * @param nodeId Node ID.
      */
-    public void fail(UUID nodeId) {
+    public void fail(UUID nodeId, final CacheException e) {
         addPage0(new GridResultPage(null, nodeId, null) {
             @Override public boolean isFail() {
                 return true;
+            }
+
+            @Override public void fetchNextPage() {
+                if (e == null)
+                    super.fetchNextPage();
+                else
+                    throw e;
             }
         });
     }
@@ -283,8 +300,8 @@ public abstract class GridMergeIndex extends BaseIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter filter, SortOrder sortOrder) {
-        return getRowCountApproximation() + Constants.COST_ROW_OFFSET;
+    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder) {
+        return getCostRangeIndex(masks, getRowCountApproximation(), filters, filter, sortOrder, true);
     }
 
     /** {@inheritDoc} */
@@ -318,51 +335,9 @@ public abstract class GridMergeIndex extends BaseIndex {
     }
 
     /**
-     * Cursor over iterator.
-     */
-    protected class IteratorCursor implements Cursor {
-        /** */
-        protected Iterator<Row> iter;
-
-        /** */
-        protected Row cur;
-
-        /**
-         * @param iter Iterator.
-         */
-        public IteratorCursor(Iterator<Row> iter) {
-            assert iter != null;
-
-            this.iter = iter;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Row get() {
-            return cur;
-        }
-
-        /** {@inheritDoc} */
-        @Override public SearchRow getSearchRow() {
-            return get();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean next() {
-            cur = iter.hasNext() ? iter.next() : null;
-
-            return cur != null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean previous() {
-            throw DbException.getUnsupportedException("previous");
-        }
-    }
-
-    /**
      * Fetching cursor.
      */
-    protected class FetchingCursor extends IteratorCursor {
+    protected class FetchingCursor extends GridH2Cursor {
         /** */
         private Iterator<Row> stream;
 

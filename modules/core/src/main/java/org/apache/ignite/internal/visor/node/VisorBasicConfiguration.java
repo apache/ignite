@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.UUID;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,7 +43,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactObject
 /**
  * Data transfer object for node basic configuration properties.
  */
-public class VisorBasicConfiguration implements Serializable {
+public class VisorBasicConfiguration implements Serializable, LessNamingBean {
     /** */
     private static final long serialVersionUID = 0L;
 

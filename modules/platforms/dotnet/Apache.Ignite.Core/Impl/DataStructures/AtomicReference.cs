@@ -32,7 +32,9 @@ namespace Apache.Ignite.Core.Impl.DataStructures
         {
             Get = 1,
             Set = 2,
-            CompareAndSetAndGet = 3
+            CompareAndSetAndGet = 3,
+            Close = 4,
+            IsClosed = 5
         }
 
         /** */
@@ -80,13 +82,13 @@ namespace Apache.Ignite.Core.Impl.DataStructures
         /** <inheritDoc /> */
         public bool IsClosed
         {
-            get { return UnmanagedUtils.AtomicReferenceIsClosed(Target); }
+            get { return DoOutInOp((int) Op.IsClosed) == True; }
         }
 
         /** <inheritDoc /> */
         public void Close()
         {
-            UnmanagedUtils.AtomicReferenceClose(Target);
+            DoOutInOp((int) Op.Close);
         }
     }
 }

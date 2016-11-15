@@ -146,8 +146,8 @@ public class JdbcResultSet implements ResultSet {
 
             boolean loc = nodeId == null;
 
-            JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(),
-                null, loc, null, fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery());
+            JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), null, loc, null,
+                fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
 
             try {
                 JdbcQueryTask.QueryResult res =
@@ -182,7 +182,7 @@ public class JdbcResultSet implements ResultSet {
      * If this result set is associated with locally executed query then query cursor will also closed.
      */
     void closeInternal() throws SQLException  {
-        if (((JdbcConnection)stmt.getConnection()).nodeId() == null)
+        if (((JdbcConnection)stmt.getConnection()).nodeId() == null && uuid != null)
             JdbcQueryTask.remove(uuid);
 
         closed = true;
@@ -1484,11 +1484,16 @@ public class JdbcResultSet implements ResultSet {
         ensureHasCurrentRow();
 
         try {
-            T val = cls == String.class ? (T)String.valueOf(curr.get(colIdx - 1)) : (T)curr.get(colIdx - 1);
+            Object val = curr.get(colIdx - 1);
 
             wasNull = val == null;
 
-            return val;
+            if (val == null)
+                return null;
+            else if (cls == String.class)
+                return (T)String.valueOf(val);
+            else
+                return (T)val;
         }
         catch (IndexOutOfBoundsException ignored) {
             throw new SQLException("Invalid column index: " + colIdx);

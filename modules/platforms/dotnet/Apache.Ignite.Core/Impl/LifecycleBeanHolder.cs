@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl
     /// <summary>
     /// Lifecycle bean holder.
     /// </summary>
-    internal class LifecycleBeanHolder : ILifecycleBean
+    internal class LifecycleBeanHolder
     {
         /** Target bean. */
         private readonly ILifecycleBean _target;

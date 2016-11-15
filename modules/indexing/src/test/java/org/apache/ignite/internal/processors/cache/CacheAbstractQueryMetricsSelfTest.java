@@ -236,6 +236,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
         assertTrue(m.averageTime() >= 0);
         assertTrue(m.maximumTime() >= 0);
         assertTrue(m.minimumTime() >= 0);
+        assertTrue("On first execution minTime == maxTime", m.minimumTime() == m.maximumTime());
 
         // Execute again with the same parameters.
         cache.query(qry).getAll();
@@ -274,6 +275,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
         assertTrue(m.averageTime() >= 0);
         assertTrue(m.maximumTime() >= 0);
         assertTrue(m.minimumTime() >= 0);
+        assertTrue("On first execution minTime == maxTime", m.minimumTime() == m.maximumTime());
 
         // Execute again with the same parameters.
         cache.query(qry).iterator().next();
@@ -301,7 +303,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
         try {
             cache.query(qry).getAll();
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             // No-op.
         }
 
@@ -320,7 +322,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
         try {
             cache.query(qry).getAll();
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             // No-op.
         }
 

@@ -283,8 +283,6 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
      * @throws Exception If failed.
      */
     private void startSpis() throws Exception {
-        U.setWorkDirectory(null, U.getIgniteHome());
-
         spis.clear();
         nodes.clear();
         spiRsrcs.clear();

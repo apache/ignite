@@ -1,0 +1,9 @@
+{
+  "Generic": "org.apache.ignite.cache.store.jdbc.dialect.BasicJdbcDialect",
+  "Oracle": "org.apache.ignite.cache.store.jdbc.dialect.OracleDialect",
+  "DB2": "org.apache.ignite.cache.store.jdbc.dialect.DB2Dialect",
+  "SQLServer": "org.apache.ignite.cache.store.jdbc.dialect.SQLServerDialect",
+  "MySQL": "org.apache.ignite.cache.store.jdbc.dialect.MySQLDialect",
+  "PostgreSQL": "org.apache.ignite.cache.store.jdbc.dialect.BasicJdbcDialect",
+  "H2": "org.apache.ignite.cache.store.jdbc.dialect.H2Dialect"
+}

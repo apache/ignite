@@ -292,9 +292,7 @@ public class PlatformFutureUtils {
 
             BinaryRawWriterEx outWriter = ctx.writer(out);
 
-            outWriter.writeString(err.getClass().getName());
-            outWriter.writeString(err.getMessage());
-
+            PlatformUtils.writeError(err, outWriter);
             PlatformUtils.writeErrorData(err, outWriter);
 
             out.synchronize();

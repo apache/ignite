@@ -58,11 +58,14 @@ public interface HadoopJobInfo extends Serializable {
      * @param jobCls The job class.
      * @param jobId Job ID.
      * @param log Logger.
+     * @param libNames Optional additional native library names.
+     * @param helper HadoopHelper.
      * @return Job.
      * @throws IgniteCheckedException If failed.
      */
     public HadoopJob createJob(Class<? extends HadoopJob> jobCls,
-        HadoopJobId jobId, IgniteLogger log) throws IgniteCheckedException;
+        HadoopJobId jobId, IgniteLogger log, @Nullable String[] libNames, HadoopHelper helper)
+            throws IgniteCheckedException;
 
     /**
      * @return Number of reducers configured for job.

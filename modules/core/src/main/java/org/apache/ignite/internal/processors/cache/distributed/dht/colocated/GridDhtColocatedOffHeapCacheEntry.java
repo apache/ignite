@@ -21,6 +21,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Cache entry for colocated cache for off-heap tiered or off-heap values modes.
@@ -59,5 +60,12 @@ public class GridDhtColocatedOffHeapCacheEntry extends GridDhtColocatedCacheEntr
     /** {@inheritDoc} */
     @Override protected void offHeapPointer(long valPtr) {
         this.valPtr = valPtr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public synchronized String toString() {
+        return S.toString(GridDhtColocatedOffHeapCacheEntry.class, this,
+            "entry", System.identityHashCode(this),
+            "super", super.toString());
     }
 }

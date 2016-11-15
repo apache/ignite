@@ -82,4 +82,11 @@ public interface GridQueryTypeDescriptor {
      * @return If string representation of value should be full-text indexed.
      */
     public boolean valueTextIndex();
+
+    /**
+     * Returns affinity key field name or {@code null} for default.
+     *
+     * @return Affinity key.
+     */
+    public String affinityKey();
 }

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cache.store.jdbc;
 
-import java.nio.ByteBuffer;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -186,6 +185,12 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
     /** Hash calculator.  */
     protected JdbcTypeHasher hasher = JdbcTypeDefaultHasher.INSTANCE;
+
+    /** Types transformer. */
+    protected JdbcTypesTransformer transformer = JdbcTypesDefaultTransformer.INSTANCE;
+
+    /** Flag indicating that table and field names should be escaped in all SQL queries created by JDBC POJO store. */
+    private boolean sqlEscapeAll;
 
     /**
      * Get field value from object for use as query parameter.
@@ -410,95 +415,17 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
     }
 
     /**
-     * Retrieves the value of the designated column in the current row of this <code>ResultSet</code> object and
-     * will convert to the requested Java data type.
-     *
-     * @param rs Result set.
-     * @param colIdx Column index in result set.
-     * @param type Class representing the Java data type to convert the designated column to.
-     * @return Value in column.
-     * @throws SQLException If a database access error occurs or this method is called.
-     */
-    protected Object getColumnValue(ResultSet rs, int colIdx, Class<?> type) throws SQLException {
-        Object val = rs.getObject(colIdx);
-
-        if (val == null)
-            return null;
-
-        if (type == int.class)
-            return rs.getInt(colIdx);
-
-        if (type == long.class)
-            return rs.getLong(colIdx);
-
-        if (type == double.class)
-            return rs.getDouble(colIdx);
-
-        if (type == boolean.class || type == Boolean.class)
-            return rs.getBoolean(colIdx);
-
-        if (type == byte.class)
-            return rs.getByte(colIdx);
-
-        if (type == short.class)
-            return rs.getShort(colIdx);
-
-        if (type == float.class)
-            return rs.getFloat(colIdx);
-
-        if (type == Integer.class || type == Long.class || type == Double.class ||
-            type == Byte.class || type == Short.class ||  type == Float.class) {
-            Number num = (Number)val;
-
-            if (type == Integer.class)
-                return num.intValue();
-            else if (type == Long.class)
-                return num.longValue();
-            else if (type == Double.class)
-                return num.doubleValue();
-            else if (type == Byte.class)
-                return num.byteValue();
-            else if (type == Short.class)
-                return num.shortValue();
-            else if (type == Float.class)
-                return num.floatValue();
-        }
-
-        if (type == UUID.class) {
-            if (val instanceof UUID)
-                return val;
-
-            if (val instanceof byte[]) {
-                ByteBuffer bb = ByteBuffer.wrap((byte[])val);
-
-                long most = bb.getLong();
-                long least = bb.getLong();
-
-                return new UUID(most, least);
-            }
-
-            if (val instanceof String)
-                return UUID.fromString((String)val);
-        }
-
-        // Workaround for known issue with Oracle JDBC driver https://community.oracle.com/thread/2355464?tstart=0
-        if (type == java.sql.Date.class && val instanceof java.util.Date)
-            return new java.sql.Date(((java.util.Date)val).getTime());
-
-        return val;
-    }
-
-    /**
      * Construct load cache from range.
      *
      * @param em Type mapping description.
      * @param clo Closure that will be applied to loaded values.
      * @param lowerBound Lower bound for range.
      * @param upperBound Upper bound for range.
+     * @param fetchSize Number of rows to fetch from DB.
      * @return Callable for pool submit.
      */
     private Callable<Void> loadCacheRange(final EntryMapping em, final IgniteBiInClosure<K, V> clo,
-        @Nullable final Object[] lowerBound, @Nullable final Object[] upperBound) {
+        @Nullable final Object[] lowerBound, @Nullable final Object[] upperBound, final int fetchSize) {
         return new Callable<Void>() {
             @Override public Void call() throws Exception {
                 Connection conn = null;
@@ -511,6 +438,8 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                     stmt = conn.prepareStatement(lowerBound == null && upperBound == null
                         ? em.loadCacheQry
                         : em.loadCacheRangeQuery(lowerBound != null, upperBound != null));
+
+                    stmt.setFetchSize(fetchSize);
 
                     int idx = 1;
 
@@ -555,7 +484,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      * @return Callable for pool submit.
      */
     private Callable<Void> loadCacheFull(EntryMapping m, IgniteBiInClosure<K, V> clo) {
-        return loadCacheRange(m, clo, null, null);
+        return loadCacheRange(m, clo, null, null, dialect.getFetchSize());
     }
 
     /**
@@ -571,8 +500,8 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
         try {
             if (kind == TypeKind.BUILT_IN) {
                 if (flds.length != 1)
-                    throw new CacheException("More than one field for built in type [cache=" +  U.maskName(cacheName) +
-                        ", type=" + typeName + " ]");
+                    throw new CacheException("More than one field for built in type " +
+                        "[cache=" + U.maskName(cacheName) + ", type=" + typeName + " ]");
 
                 JdbcTypeField field = flds[0];
 
@@ -585,16 +514,16 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
             else
                 for (JdbcTypeField field : flds) {
                     if (field.getDatabaseFieldName() == null)
-                        throw new CacheException("Missing database name in mapping description [cache=" +
-                            U.maskName(cacheName) + ", type=" + typeName + " ]");
+                        throw new CacheException("Missing database name in mapping description " +
+                            "[cache=" + U.maskName(cacheName) + ", type=" + typeName + " ]");
 
                     if (field.getJavaFieldName() == null)
-                        throw new CacheException("Missing field name in mapping description [cache=" +
-                            U.maskName(cacheName) + ", type=" + typeName + " ]");
+                        throw new CacheException("Missing field name in mapping description " +
+                            "[cache=" + U.maskName(cacheName) + ", type=" + typeName + " ]");
 
                     if (field.getJavaFieldType() == null)
-                        throw new CacheException("Missing field type in mapping description [cache=" +
-                            U.maskName(cacheName) + ", type=" + typeName + " ]");
+                        throw new CacheException("Missing field type in mapping description " +
+                            "[cache=" + U.maskName(cacheName) + ", type=" + typeName + " ]");
                 }
         }
         catch (ClassNotFoundException e) {
@@ -724,7 +653,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
                     checkTypeConfiguration(cacheName, valKind, valType, type.getValueFields());
 
-                    entryMappings.put(keyTypeId, new EntryMapping(cacheName, dialect, type, keyKind, valKind));
+                    entryMappings.put(keyTypeId, new EntryMapping(cacheName, dialect, type, keyKind, valKind, sqlEscapeAll));
 
                     // Add one more binding to binary typeId for POJOs,
                     // because object could be passed to store in binary format.
@@ -733,7 +662,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
                         valKind = valKind == TypeKind.POJO ? TypeKind.BINARY : valKind;
 
-                        entryMappings.put(keyTypeId, new EntryMapping(cacheName, dialect, type, TypeKind.BINARY, valKind));
+                        entryMappings.put(keyTypeId, new EntryMapping(cacheName, dialect, type, TypeKind.BINARY, valKind, sqlEscapeAll));
                     }
                 }
 
@@ -775,6 +704,23 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
         return em;
     }
 
+    /**
+     * Find column index by database name.
+     *
+     * @param loadColIdxs Select query columns indexes.
+     * @param dbName Column name in database.
+     * @return Column index.
+     * @throws IllegalStateException if column not found.
+     */
+    protected Integer columnIndex(Map<String, Integer> loadColIdxs, String dbName) {
+        Integer colIdx = loadColIdxs.get(dbName.toUpperCase());
+
+        if (colIdx == null)
+            throw new IllegalStateException("Failed to find column index for database field: " + dbName);
+
+        return colIdx;
+    }
+
     /** {@inheritDoc} */
     @Override public void loadCache(final IgniteBiInClosure<K, V> clo, @Nullable Object... args)
         throws CacheLoaderException {
@@ -797,24 +743,42 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                     log.debug("Start loading entries from db using user queries from arguments...");
 
                 for (int i = 0; i < args.length; i += 2) {
-                    String keyType = args[i].toString();
+                    final String keyType = args[i].toString();
 
-                    String selQry = args[i + 1].toString();
+                    if (!F.exist(mappings.values(), new IgnitePredicate<EntryMapping>() {
+                        @Override public boolean apply(EntryMapping em) {
+                            return em.keyType().equals(keyType);
+                        }
+                    }))
+                        throw new CacheLoaderException("Provided key type is not found in store or cache configuration " +
+                            "[cache=" + U.maskName(cacheName) + ", key=" + keyType + "]");
+
+                    String qry = args[i + 1].toString();
 
                     EntryMapping em = entryMapping(cacheName, typeIdForTypeName(kindForName(keyType), keyType));
 
-                    futs.add(pool.submit(new LoadCacheCustomQueryWorker<>(em, selQry, clo)));
+                    if (log.isInfoEnabled())
+                        log.info("Started load cache using custom query [cache=" + U.maskName(cacheName) +
+                            ", keyType=" + keyType + ", query=" + qry + "]");
+
+                    futs.add(pool.submit(new LoadCacheCustomQueryWorker<>(em, qry, clo)));
                 }
             }
             else {
-                Collection<EntryMapping> entryMappings = mappings.values();
+                Collection<String> processedKeyTypes = new HashSet<>();
 
-                for (EntryMapping em : entryMappings) {
+                for (EntryMapping em : mappings.values()) {
+                    String keyType = em.keyType();
+
+                    if (processedKeyTypes.contains(keyType))
+                        continue;
+
+                    processedKeyTypes.add(keyType);
+
+                    if (log.isInfoEnabled())
+                        log.info("Started load cache [cache=" + U.maskName(cacheName) + ", keyType=" + keyType + "]");
+
                     if (parallelLoadCacheMinThreshold > 0) {
-                        if (log.isDebugEnabled())
-                            log.debug("Multithread loading entries from db [cache=" +  U.maskName(cacheName) +
-                                ", keyType=" + em.keyType() + " ]");
-
                         Connection conn = null;
 
                         try {
@@ -827,6 +791,10 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                             ResultSet rs = stmt.executeQuery();
 
                             if (rs.next()) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Multithread loading entries from db [cache=" + U.maskName(cacheName) +
+                                        ", keyType=" + keyType + "]");
+
                                 int keyCnt = em.keyCols.size();
 
                                 Object[] upperBound = new Object[keyCnt];
@@ -834,7 +802,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                                 for (int i = 0; i < keyCnt; i++)
                                     upperBound[i] = rs.getObject(i + 1);
 
-                                futs.add(pool.submit(loadCacheRange(em, clo, null, upperBound)));
+                                futs.add(pool.submit(loadCacheRange(em, clo, null, upperBound, 0)));
 
                                 while (rs.next()) {
                                     Object[] lowerBound = upperBound;
@@ -844,36 +812,36 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                                     for (int i = 0; i < keyCnt; i++)
                                         upperBound[i] = rs.getObject(i + 1);
 
-                                    futs.add(pool.submit(loadCacheRange(em, clo, lowerBound, upperBound)));
+                                    futs.add(pool.submit(loadCacheRange(em, clo, lowerBound, upperBound, 0)));
                                 }
 
-                                futs.add(pool.submit(loadCacheRange(em, clo, upperBound, null)));
+                                futs.add(pool.submit(loadCacheRange(em, clo, upperBound, null, 0)));
+
+                                continue;
                             }
-                            else
-                                futs.add(pool.submit(loadCacheFull(em, clo)));
                         }
-                        catch (SQLException ignored) {
-                            futs.add(pool.submit(loadCacheFull(em, clo)));
+                        catch (SQLException e) {
+                            log.warning("Failed to load entries from db in multithreaded mode, will try in single thread " +
+                                "[cache=" + U.maskName(cacheName) + ", keyType=" + keyType + " ]", e);
                         }
                         finally {
                             U.closeQuiet(conn);
                         }
                     }
-                    else {
-                        if (log.isDebugEnabled())
-                            log.debug("Single thread loading entries from db [cache=" +  U.maskName(cacheName) +
-                                ", keyType=" + em.keyType() + " ]");
 
-                        futs.add(pool.submit(loadCacheFull(em, clo)));
-                    }
+                    if (log.isDebugEnabled())
+                        log.debug("Single thread loading entries from db [cache=" + U.maskName(cacheName) +
+                            ", keyType=" + keyType + "]");
+
+                    futs.add(pool.submit(loadCacheFull(em, clo)));
                 }
             }
 
             for (Future<?> fut : futs)
                 U.get(fut);
 
-            if (log.isDebugEnabled())
-                log.debug("Cache loaded from db: " +  U.maskName(cacheName));
+            if (log.isInfoEnabled())
+                log.info("Finished load cache: " + U.maskName(cacheName));
         }
         catch (IgniteCheckedException e) {
             throw new CacheLoaderException("Failed to load cache: " + U.maskName(cacheName), e.getCause());
@@ -1140,7 +1108,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                         if (currKeyTypeId == null || !currKeyTypeId.equals(keyTypeId)) {
                             if (mergeStmt != null) {
                                 if (log.isDebugEnabled())
-                                    log.debug("Write entries to db [cache=" +  U.maskName(cacheName) +
+                                    log.debug("Write entries to db [cache=" + U.maskName(cacheName) +
                                         ", keyType=" + em.keyType() + ", cnt=" + prepared + "]");
 
                                 executeBatch(em, mergeStmt, "writeAll", fromIdx, prepared, lazyEntries);
@@ -1165,7 +1133,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
                         if (++prepared % batchSize == 0) {
                             if (log.isDebugEnabled())
-                                log.debug("Write entries to db [cache=" +  U.maskName(cacheName) +
+                                log.debug("Write entries to db [cache=" + U.maskName(cacheName) +
                                     ", keyType=" + em.keyType() + ", cnt=" + prepared + "]");
 
                             executeBatch(em, mergeStmt, "writeAll", fromIdx, prepared, lazyEntries);
@@ -1178,7 +1146,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
                     if (mergeStmt != null && prepared % batchSize != 0) {
                         if (log.isDebugEnabled())
-                            log.debug("Write entries to db [cache=" +  U.maskName(cacheName) +
+                            log.debug("Write entries to db [cache=" + U.maskName(cacheName) +
                                 ", keyType=" + em.keyType() + ", cnt=" + prepared + "]");
 
                         executeBatch(em, mergeStmt, "writeAll", fromIdx, prepared, lazyEntries);
@@ -1191,8 +1159,8 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
             }
             else {
                 if (log.isDebugEnabled())
-                    log.debug("Write entries to db one by one using update and insert statements [cache=" +
-                        U.maskName(cacheName) + ", cnt=" + entries.size() + "]");
+                    log.debug("Write entries to db one by one using update and insert statements " +
+                        "[cache=" + U.maskName(cacheName) + ", cnt=" + entries.size() + "]");
 
                 PreparedStatement insStmt = null;
 
@@ -1356,7 +1324,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
                 if (!currKeyTypeId.equals(keyTypeId)) {
                     if (log.isDebugEnabled())
-                        log.debug("Delete entries from db [cache=" +  U.maskName(cacheName) +
+                        log.debug("Delete entries from db [cache=" + U.maskName(cacheName) +
                             ", keyType=" + em.keyType() + ", cnt=" + prepared + "]");
 
                     executeBatch(em, delStmt, "deleteAll", fromIdx, prepared, lazyKeys);
@@ -1374,7 +1342,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
                 if (++prepared % batchSize == 0) {
                     if (log.isDebugEnabled())
-                        log.debug("Delete entries from db [cache=" +  U.maskName(cacheName) +
+                        log.debug("Delete entries from db [cache=" + U.maskName(cacheName) +
                             ", keyType=" + em.keyType() + ", cnt=" + prepared + "]");
 
                     executeBatch(em, delStmt, "deleteAll", fromIdx, prepared, lazyKeys);
@@ -1387,7 +1355,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
             if (delStmt != null && prepared % batchSize != 0) {
                 if (log.isDebugEnabled())
-                    log.debug("Delete entries from db [cache=" +  U.maskName(cacheName) +
+                    log.debug("Delete entries from db [cache=" + U.maskName(cacheName) +
                         ", keyType=" + em.keyType() + ", cnt=" + prepared + "]");
 
                 executeBatch(em, delStmt, "deleteAll", fromIdx, prepared, lazyKeys);
@@ -1597,6 +1565,24 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
     }
 
     /**
+     * Gets types transformer.
+     *
+     * @return Types transformer.
+     */
+    public JdbcTypesTransformer getTransformer() {
+        return transformer;
+    }
+
+    /**
+     * Sets types transformer.
+     *
+     * @param transformer Types transformer.
+     */
+    public void setTransformer(JdbcTypesTransformer transformer) {
+        this.transformer = transformer;
+    }
+
+    /**
      * Get maximum batch size for delete and delete operations.
      *
      * @return Maximum batch size.
@@ -1630,6 +1616,28 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      */
     public void setParallelLoadCacheMinimumThreshold(int parallelLoadCacheMinThreshold) {
         this.parallelLoadCacheMinThreshold = parallelLoadCacheMinThreshold;
+    }
+
+    /**
+     * If {@code true} all the SQL table and field names will be escaped with double quotes like
+     * ({@code "tableName"."fieldsName"}). This enforces case sensitivity for field names and
+     * also allows having special characters in table and field names.
+     *
+     * @return Flag value.
+     */
+    public boolean isSqlEscapeAll() {
+        return sqlEscapeAll;
+    }
+
+    /**
+     * If {@code true} all the SQL table and field names will be escaped with double quotes like
+     * ({@code "tableName"."fieldsName"}). This enforces case sensitivity for field names and
+     * also allows having special characters in table and field names.
+     *
+     * @param sqlEscapeAll Flag value.
+     */
+    public void setSqlEscapeAll(boolean sqlEscapeAll) {
+        this.sqlEscapeAll = sqlEscapeAll;
     }
 
     /**
@@ -1698,8 +1706,14 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
         /** Database key columns. */
         private final Collection<String> keyCols;
 
+        /** Database key columns prepared for building SQL queries.. */
+        private final Collection<String> sqlKeyCols;
+
         /** Database unique value columns. */
         private final Collection<String> cols;
+
+        /** Database unique value columns prepared for building SQL queries. */
+        private final Collection<String> sqlCols;
 
         /** Select query columns index. */
         private final Map<String, Integer> loadColIdxs;
@@ -1719,13 +1733,34 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
         /** Full table name. */
         private final String fullTblName;
 
+        /** Full table name prepared for building SQL queries. */
+        private final String sqlFullTblName;
+
+        /**
+         * Escape collection of column names.
+         * @param dialect Database dialect.
+         * @param cols Columns.
+         * @return Collection of escaped names.
+         */
+        private static Collection<String> escape(JdbcDialect dialect, Collection<String> cols) {
+            Collection<String> res = new ArrayList<>(cols.size());
+
+            for (String col : cols)
+                res.add(dialect.escape(col));
+
+            return res;
+        }
+
         /**
          * @param cacheName Cache name.
          * @param dialect JDBC dialect.
          * @param typeMeta Type metadata.
+         * @param keyKind Type kind.
+         * @param valKind Value kind.
+         * @param escape Escape SQL identifiers flag.
          */
         public EntryMapping(@Nullable String cacheName, JdbcDialect dialect, JdbcType typeMeta,
-            TypeKind keyKind, TypeKind valKind) {
+            TypeKind keyKind, TypeKind valKind, boolean escape) {
             this.cacheName = cacheName;
 
             this.dialect = dialect;
@@ -1752,36 +1787,52 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
             String tblName = typeMeta.getDatabaseTable();
 
-            fullTblName = F.isEmpty(schema) ? tblName : schema + "." + tblName;
+            Collection<String> uniqueValCols = databaseColumns(uniqValFlds);
 
-            Collection<String> uniqValCols = databaseColumns(uniqValFlds);
-
-            cols = F.concat(false, keyCols, uniqValCols);
+            cols = F.concat(false, keyCols, uniqueValCols);
 
             loadColIdxs = U.newHashMap(cols.size());
 
             int idx = 1;
 
             for (String col : cols)
-                loadColIdxs.put(col, idx++);
+                loadColIdxs.put(col.toUpperCase(), idx++);
 
-            loadCacheQry = dialect.loadCacheQuery(fullTblName, cols);
+            fullTblName = F.isEmpty(schema) ? tblName : schema + "." + tblName;
 
-            loadCacheSelRangeQry = dialect.loadCacheSelectRangeQuery(fullTblName, keyCols);
+            Collection<String> sqlUniqueValCols;
 
-            loadQrySingle = dialect.loadQuery(fullTblName, keyCols, cols, 1);
+            if (escape) {
+                sqlFullTblName = F.isEmpty(schema) ? dialect.escape(tblName) : dialect.escape(schema) + "." + dialect.escape(tblName);
 
-            maxKeysPerStmt = dialect.getMaxParameterCount() / keyCols.size();
+                sqlCols = escape(dialect, cols);
+                sqlKeyCols = escape(dialect, keyCols);
+                sqlUniqueValCols = escape(dialect, uniqueValCols);
+            }
+            else {
+                sqlFullTblName = fullTblName;
+                sqlCols = cols;
+                sqlKeyCols = keyCols;
+                sqlUniqueValCols = uniqueValCols;
+            }
 
-            loadQry = dialect.loadQuery(fullTblName, keyCols, cols, maxKeysPerStmt);
+            loadCacheQry = dialect.loadCacheQuery(sqlFullTblName, sqlCols);
 
-            insQry = dialect.insertQuery(fullTblName, keyCols, uniqValCols);
+            loadCacheSelRangeQry = dialect.loadCacheSelectRangeQuery(sqlFullTblName, sqlKeyCols);
 
-            updQry = dialect.updateQuery(fullTblName, keyCols, uniqValCols);
+            loadQrySingle = dialect.loadQuery(sqlFullTblName, sqlKeyCols, sqlCols, 1);
 
-            mergeQry = dialect.mergeQuery(fullTblName, keyCols, uniqValCols);
+            maxKeysPerStmt = dialect.getMaxParameterCount() / sqlKeyCols.size();
 
-            remQry = dialect.removeQuery(fullTblName, keyCols);
+            loadQry = dialect.loadQuery(sqlFullTblName, sqlKeyCols, sqlCols, maxKeysPerStmt);
+
+            insQry = dialect.insertQuery(sqlFullTblName, sqlKeyCols, sqlUniqueValCols);
+
+            updQry = dialect.updateQuery(sqlFullTblName, sqlKeyCols, sqlUniqueValCols);
+
+            mergeQry = dialect.mergeQuery(sqlFullTblName, sqlKeyCols, sqlUniqueValCols);
+
+            remQry = dialect.removeQuery(sqlFullTblName, sqlKeyCols);
         }
 
         /**
@@ -1842,7 +1893,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
             if (keyCnt == 1)
                 return loadQrySingle;
 
-            return dialect.loadQuery(fullTblName, keyCols, cols, keyCnt);
+            return dialect.loadQuery(sqlFullTblName, sqlKeyCols, sqlCols, keyCnt);
         }
 
         /**
@@ -1853,7 +1904,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
          * @return Query with range.
          */
         protected String loadCacheRangeQuery(boolean appendLowerBound, boolean appendUpperBound) {
-            return dialect.loadCacheRangeQuery(fullTblName, keyCols, cols, appendLowerBound, appendUpperBound);
+            return dialect.loadCacheRangeQuery(sqlFullTblName, sqlKeyCols, sqlCols, appendLowerBound, appendUpperBound);
         }
 
         /**
@@ -1913,10 +1964,6 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
         /** {@inheritDoc} */
         @Override public Void call() throws Exception {
-            if (log.isDebugEnabled())
-                log.debug("Load cache using custom query [cache= " + U.maskName(em.cacheName) +
-                    ", keyType=" + em.keyType() + ", query=" + qry + "]");
-
             Connection conn = null;
 
             PreparedStatement stmt = null;
@@ -1925,6 +1972,8 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                 conn = openConnection(true);
 
                 stmt = conn.prepareStatement(qry);
+
+                stmt.setFetchSize(dialect.getFetchSize());
 
                 ResultSet rs = stmt.executeQuery();
 

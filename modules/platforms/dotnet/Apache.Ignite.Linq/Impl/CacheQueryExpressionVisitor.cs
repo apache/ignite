@@ -242,13 +242,28 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+        public override Expression Visit(Expression expression)
+        {
+            var paramExpr = expression as ParameterExpression;
+
+            if (paramExpr != null)
+            {
+                // This happens only with compiled queries, where parameters come from enclosing lambda.
+                AppendParameter(paramExpr);
+                return expression;
+            }
+
+            return base.Visit(expression);
+        }
+
+        /** <inheritdoc /> */
         protected override Expression VisitQuerySourceReference(QuerySourceReferenceExpression expression)
         {
             // Count, sum, max, min expect a single field or *
             // In other cases we need both parts of cache entry
             var format = _useStar ? "{0}.*" : "{0}._key, {0}._val";
 
-            var tableName = Aliases.GetTableAlias(ExpressionWalker.GetCacheQueryable(expression));
+            var tableName = Aliases.GetTableAlias(expression);
 
             ResultBuilder.AppendFormat(format, tableName);
 
@@ -283,7 +298,7 @@ namespace Apache.Ignite.Linq.Impl
             {
                 var fieldName = GetFieldName(expression, queryable);
 
-                ResultBuilder.AppendFormat("{0}.{1}", Aliases.GetTableAlias(queryable), fieldName);
+                ResultBuilder.AppendFormat("{0}.{1}", Aliases.GetTableAlias(expression), fieldName);
             }
             else
                 AppendParameter(RegisterEvaluatedParameter(expression));
