@@ -402,6 +402,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
+        internal static IUnmanagedTarget ProcessorBinaryProcessor(IUnmanagedTarget target)
+        {
+            void* res = JNI.ProcessorBinaryProcessor(target.Context, target.Target);
+
+            return target.ChangeTarget(res);
+        }
+
         #endregion
 
         #region NATIVE METHODS: TARGET
@@ -423,14 +430,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal static IUnmanagedTarget TargetInStreamOutObject(IUnmanagedTarget target, int opType, long inMemPtr)
         {
-            void* res = JNI.TargetInStreanOutObject(target.Context, target.Target, opType, inMemPtr);
+            void* res = JNI.TargetInStreamOutObject(target.Context, target.Target, opType, inMemPtr);
 
             return target.ChangeTarget(res);
-        }
-
-        internal static void TargetInObjectStreamOutStream(IUnmanagedTarget target, int opType, void* arg, long inMemPtr, long outMemPtr)
-        {
-            JNI.TargetInObjectStreamOutStream(target.Context, target.Target, opType, arg, inMemPtr, outMemPtr);
         }
 
         internal static IUnmanagedTarget TargetInObjectStreamOutObjectStream(IUnmanagedTarget target, int opType, void* arg, long inMemPtr, long outMemPtr)
@@ -441,11 +443,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 return null;
 
             return target.ChangeTarget(res);
-        }
-
-        internal static long TargetOutLong(IUnmanagedTarget target, int opType)
-        {
-            return JNI.TargetOutLong(target.Context, target.Target, opType);
         }
 
         internal static void TargetOutStream(IUnmanagedTarget target, int opType, long memPtr)

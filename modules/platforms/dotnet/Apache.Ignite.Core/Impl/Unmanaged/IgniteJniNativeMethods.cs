@@ -123,6 +123,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorLoggerLog")]
         public static extern void ProcessorLoggerLog(void* ctx, void* obj, int level, sbyte* messsage, sbyte* category, sbyte* errorInfo);
 
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorBinaryProcessor")]
+        public static extern void* ProcessorBinaryProcessor(void* ctx, void* obj);
+
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetInStreamOutLong")]
         public static extern long TargetInStreamOutLong(void* ctx, void* target, int opType, long memPtr);
 
@@ -131,18 +134,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             long outMemPtr);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetInStreamOutObject")]
-        public static extern void* TargetInStreanOutObject(void* ctx, void* target, int opType, long memPtr);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetInObjectStreamOutStream")]
-        public static extern void TargetInObjectStreamOutStream(void* ctx, void* target, int opType,
-            void* arg, long inMemPtr, long outMemPtr);
+        public static extern void* TargetInStreamOutObject(void* ctx, void* target, int opType, long memPtr);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetInObjectStreamOutObjectStream")]
         public static extern void* TargetInObjectStreamOutObjectStream(void* ctx, void* target, int opType,
             void* arg, long inMemPtr, long outMemPtr);
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetOutLong")]
-        public static extern long TargetOutLong(void* ctx, void* target, int opType);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetOutStream")]
         public static extern void TargetOutStream(void* ctx, void* target, int opType, long memPtr);

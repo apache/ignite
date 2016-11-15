@@ -155,7 +155,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /** <inheritDoc /> */
         public void ResetMetrics()
         {
-            DoOutOp(OpResetMetrics);
+            DoOutInOp(OpResetMetrics);
         }
 
         /// <summary>
@@ -165,7 +165,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <returns>Final transaction state.</returns>
         internal TransactionState TxCommit(TransactionImpl tx)
         {
-            return (TransactionState) DoOutInOpLong(OpCommit, tx.Id);
+            return (TransactionState) DoOutInOp(OpCommit, tx.Id);
         }
 
         /// <summary>
@@ -175,7 +175,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <returns>Final transaction state.</returns>
         internal TransactionState TxRollback(TransactionImpl tx)
         {
-            return (TransactionState) DoOutInOpLong(OpRollback, tx.Id);
+            return (TransactionState) DoOutInOp(OpRollback, tx.Id);
         }
 
         /// <summary>
@@ -185,7 +185,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <returns>Final transaction state.</returns>
         internal int TxClose(TransactionImpl tx)
         {
-            return (int) DoOutInOpLong(OpClose, tx.Id);
+            return (int) DoOutInOp(OpClose, tx.Id);
         }
 
         /// <summary>
@@ -195,7 +195,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <returns>Transaction current state.</returns>
         internal TransactionState TxState(TransactionImpl tx)
         {
-            return (TransactionState) DoOutInOpLong(OpState, tx.Id);
+            return (TransactionState) DoOutInOp(OpState, tx.Id);
         }
 
         /// <summary>
@@ -205,7 +205,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <returns><c>true</c> if the flag was set.</returns>
         internal bool TxSetRollbackOnly(TransactionImpl tx)
         {
-            return DoOutInOpLong(OpSetRollbackOnly, tx.Id) == True;
+            return DoOutInOp(OpSetRollbackOnly, tx.Id) == True;
         }
 
         /// <summary>

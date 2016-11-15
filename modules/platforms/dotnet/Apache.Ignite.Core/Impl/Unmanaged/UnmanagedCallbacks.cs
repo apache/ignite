@@ -1109,16 +1109,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             switch (errType)
             {
                 case ErrGeneric:
-                    if (_ignite != null && errDataLen > 0)
-                    {
-                        // Stream disposal intentionally omitted: IGNITE-1598
-                        // ReSharper disable once ExpressionIsAlwaysNull
-                        var stream = new PlatformRawMemory(errData, errDataLen).GetStream();
-
-                        throw ExceptionUtils.GetException(_ignite, errCls, errMsg, stackTrace,
-                            _ignite.Marshaller.StartUnmarshal(stream));
-                    }
-
                     throw ExceptionUtils.GetException(_ignite, errCls, errMsg, stackTrace);
 
                 case ErrJvmInit:

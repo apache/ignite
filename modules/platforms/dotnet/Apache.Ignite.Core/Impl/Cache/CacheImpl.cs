@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Cache.Expiry;
     using Apache.Ignite.Core.Impl.Cache.Query;
     using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Common;
@@ -41,15 +42,6 @@ namespace Apache.Ignite.Core.Impl.Cache
     [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")]
     internal class CacheImpl<TK, TV> : PlatformTarget, ICache<TK, TV>, ICacheInternal, ICacheLockInternal
     {
-        /** Duration: unchanged. */
-        private const long DurUnchanged = -2;
-
-        /** Duration: eternal. */
-        private const long DurEternal = -1;
-
-        /** Duration: zero. */
-        private const long DurZero = 0;
-
         /** Ignite instance. */
         private readonly Ignite _ignite;
         
@@ -193,38 +185,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(plc, "plc");
 
-            long create = ConvertDuration(plc.GetExpiryForCreate());
-            long update = ConvertDuration(plc.GetExpiryForUpdate());
-            long access = ConvertDuration(plc.GetExpiryForAccess());
-
-            IUnmanagedTarget cache0 = DoOutOpObject((int)CacheOp.WithExpiryPolicy, w =>
-            {
-                w.WriteLong(create);
-                w.WriteLong(update);
-                w.WriteLong(access);
-            });
+            var cache0 = DoOutOpObject((int)CacheOp.WithExpiryPolicy, w => ExpiryPolicySerializer.WritePolicy(w, plc));
 
             return new CacheImpl<TK, TV>(_ignite, cache0, Marshaller, _flagSkipStore, _flagKeepBinary, _flagNoRetries);
-        }
-
-        /// <summary>
-        /// Convert TimeSpan to duration recognizable by Java.
-        /// </summary>
-        /// <param name="dur">.Net duration.</param>
-        /// <returns>Java duration in milliseconds.</returns>
-        private static long ConvertDuration(TimeSpan? dur)
-        {
-            if (dur.HasValue)
-            {
-                if (dur.Value == TimeSpan.MaxValue)
-                    return DurEternal;
-
-                long dur0 = (long)dur.Value.TotalMilliseconds;
-
-                return dur0 > 0 ? dur0 : DurZero;
-            }
-            
-            return DurUnchanged;
         }
 
         /** <inheritDoc /> */
@@ -632,7 +595,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public void Clear()
         {
-            DoOutOp((int) CacheOp.ClearCache);
+            DoOutInOp((int) CacheOp.ClearCache);
         }
 
         /** <inheritDoc /> */
@@ -742,7 +705,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public void RemoveAll()
         {
-            DoOutOp((int) CacheOp.RemoveAll2);
+            DoOutInOp((int) CacheOp.RemoveAll2);
         }
 
         /** <inheritDoc /> */
@@ -783,7 +746,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             var op = loc ? CacheOp.SizeLoc : CacheOp.Size;
 
-            return (int) DoOutInOpLong((int) op, modes0);
+            return (int) DoOutInOp((int) op, modes0);
         }
 
         /** <inheritDoc /> */
@@ -1312,7 +1275,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public void Enter(long id)
         {
-            DoOutInOpLong((int) CacheOp.EnterLock, id);
+            DoOutInOp((int) CacheOp.EnterLock, id);
         }
 
         /** <inheritdoc /> */
@@ -1328,13 +1291,13 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public void Exit(long id)
         {
-            DoOutInOpLong((int) CacheOp.ExitLock, id);
+            DoOutInOp((int) CacheOp.ExitLock, id);
         }
 
         /** <inheritdoc /> */
         public void Close(long id)
         {
-            DoOutInOpLong((int) CacheOp.CloseLock, id);
+            DoOutInOp((int) CacheOp.CloseLock, id);
         }
     }
 }
