@@ -80,8 +80,8 @@ public class IgniteSinkTask extends SinkTask {
             StreamerContext.getStreamer().perNodeParallelOperations(
                 Integer.parseInt(props.get(IgniteSinkConstants.CACHE_PER_NODE_PAR_OPS)));
 
-        if (props.containsKey(IgniteSinkConstants.ENTRY_TRANSFORMER_CLASS)) {
-            String transformerCls = props.get(IgniteSinkConstants.ENTRY_TRANSFORMER_CLASS);
+        if (props.containsKey(IgniteSinkConstants.SINGLE_TUPLE_EXTRACTOR_CLASS)) {
+            String transformerCls = props.get(IgniteSinkConstants.SINGLE_TUPLE_EXTRACTOR_CLASS);
             if (transformerCls != null && !transformerCls.isEmpty()) {
                 try {
                     Class<? extends StreamSingleTupleExtractor> clazz =
@@ -91,7 +91,7 @@ public class IgniteSinkTask extends SinkTask {
                     extractor = clazz.newInstance();
                 }
                 catch (Exception e) {
-                    log.error("Failed to instantiate the provided transformer!", e);
+                    throw new ConnectException("Failed to instantiate the provided transformer!", e);
                 }
             }
         }

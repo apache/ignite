@@ -37,5 +37,5 @@ public class IgniteSinkConstants {
     public static final String CACHE_PER_NODE_PAR_OPS = "cachePerNodeParOps";
 
     /** Class to transform the entry before feeding into cache. */
-    public static final String ENTRY_TRANSFORMER_CLASS = "entryTransformerCls";
+    public static final String SINGLE_TUPLE_EXTRACTOR_CLASS = "entryTransformerCls";
 }

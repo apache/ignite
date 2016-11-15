@@ -142,7 +142,7 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
     public void testSinkPutsWithoutTransformation() throws Exception {
         Map<String, String> sinkProps = makeSinkProps(Utils.join(TOPICS, ","));
 
-        sinkProps.remove(IgniteSinkConstants.ENTRY_TRANSFORMER_CLASS);
+        sinkProps.remove(IgniteSinkConstants.SINGLE_TUPLE_EXTRACTOR_CLASS);
 
         testSinkPuts(sinkProps, false);
     }
@@ -260,7 +260,7 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
         props.put(IgniteSinkConstants.CACHE_NAME, "testCache");
         props.put(IgniteSinkConstants.CACHE_ALLOW_OVERWRITE, "true");
         props.put(IgniteSinkConstants.CACHE_CFG_PATH, "example-ignite.xml");
-        props.put(IgniteSinkConstants.ENTRY_TRANSFORMER_CLASS,
+        props.put(IgniteSinkConstants.SINGLE_TUPLE_EXTRACTOR_CLASS,
             "org.apache.ignite.stream.kafka.connect.IgniteSinkConnectorTest$TestTransformer");
 
         return props;
