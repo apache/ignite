@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -48,7 +51,7 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
     private final Iterable<T> iterExec;
 
     /** Result type flag - result set or update counter. */
-    private final boolean isResSet;
+    private final boolean isQry;
 
     /** */
     private Iterator<T> iter;
@@ -79,12 +82,12 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
 
     /**
      * @param iterExec Query executor.
-     * @param isResSet Result type flag - {@code true} for query, {@code false} for update operation.
+     * @param isQry Result type flag - {@code true} for query, {@code false} for update operation.
      */
-    private QueryCursorImpl(Iterable<T> iterExec, GridQueryCancel cancel, boolean isResSet) {
+    public QueryCursorImpl(Iterable<T> iterExec, GridQueryCancel cancel, boolean isQry) {
         this.iterExec = iterExec;
         this.cancel = cancel;
-        this.isResSet = isResSet;
+        this.isQry = isQry;
     }
 
     /** {@inheritDoc} */
@@ -168,26 +171,11 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
     }
 
     /**
-     * Wrap result of DML operation (number of items affected) to Iterable suitable to be wrapped by cursor.
-     *
-     * @param itemsCnt Update result to wrap.
-     * @return Resulting Iterable.
-     */
-    @SuppressWarnings("unchecked")
-    public static QueryCursorImpl<List<?>> forUpdateResult(int itemsCnt) {
-        QueryCursorImpl<List<?>> res =
-            new QueryCursorImpl(Collections.singletonList(Collections.singletonList(itemsCnt)), null, false);
-        res.fieldsMeta(Collections.<GridQueryFieldMetadata>emptyList());
-
-        return res;
-    }
-
-    /**
      * @return {@code true} if this cursor corresponds to a {@link ResultSet} as a result of query,
      * {@code false} if query was modifying operation like INSERT, UPDATE, or DELETE.
      */
-    public boolean isResultSet() {
-        return isResSet;
+    public boolean isQuery() {
+        return isQry;
     }
 
     /**

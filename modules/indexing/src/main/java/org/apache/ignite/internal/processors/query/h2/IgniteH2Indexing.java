@@ -1216,15 +1216,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (items == 0)
                     return r.get1();
                 else {
-                    if (r.get1().isResultSet())
+                    if (r.get1().isQuery())
                         throw new IgniteSQLException("Unexpected result set in results of UPDATE or DELETE");
 
                     int cnt = (Integer) r.get1().getAll().get(0).get(0);
-                    return QueryCursorImpl.forUpdateResult(items + cnt);
+                    return DmlStatementsProcessor.cursorForUpdateResult(items + cnt);
                 }
             }
             else {
-                if (r.get1().isResultSet())
+                if (r.get1().isQuery())
                     throw new IgniteSQLException("Unexpected result set in results of UPDATE or DELETE");
 
                 items += (Integer) r.get1().getAll().get(0).get(0);
@@ -1377,9 +1377,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         if (twoStepQry.singleUpdate() != null) {
-            int res = DmlStatementsProcessor.doSingleUpdate(cctx, twoStepQry.singleUpdate(),
+            long res = DmlStatementsProcessor.doSingleUpdate(cctx, twoStepQry.singleUpdate(),
                 twoStepQry.initialStatement(), qry.getArgs());
-            return new IgniteBiTuple<>(QueryCursorImpl.forUpdateResult(res), X.EMPTY_OBJECT_ARRAY);
+            return new IgniteBiTuple<>(DmlStatementsProcessor.cursorForUpdateResult(res), X.EMPTY_OBJECT_ARRAY);
         }
 
         if (log.isDebugEnabled())
@@ -2720,7 +2720,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * Field descriptor.
      */
-    private static class SqlFieldMetadata implements GridQueryFieldMetadata {
+    static class SqlFieldMetadata implements GridQueryFieldMetadata {
         /** */
         private static final long serialVersionUID = 0L;
 

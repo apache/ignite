@@ -23,7 +23,6 @@ import java.net.*;
 import java.sql.*;
 import java.sql.Date;
 import java.util.*;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * JDBC prepared statement implementation.
@@ -31,11 +30,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 public class JdbcPreparedStatement extends JdbcStatement implements PreparedStatement {
     /** SQL query. */
     private final String sql;
-
-    /**
-     * Batch arguments.
-     */
-    private List<List<Object>> batchArgs;
 
     /**
      * H2's parsed statement to retrieve metadata from.
@@ -187,7 +181,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public void clearBatch() throws SQLException {
         ensureNotClosed();
 
-        batchArgs = null;
+        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
     }
 
     /** {@inheritDoc} */
@@ -209,39 +203,12 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public void addBatch() throws SQLException {
         ensureNotClosed();
 
-        if (batchArgs == null)
-            batchArgs = new ArrayList<>();
-
-        batchArgs.add(new ArrayList<>(args));
+        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public int[] executeBatch() throws SQLException {
-        rs = null;
-
-        updateCnt = -1;
-
-        if (batchArgs == null)
-            return U.EMPTY_INTS;
-
-        int[] res = new int[batchArgs.size()];
-
-        for (int i = 0; i < res.length; i++) {
-            try {
-                res[i] = doUpdate(sql, batchArgs.get(i).toArray());
-            }
-            catch (Exception e) {
-                res[i] = Statement.EXECUTE_FAILED;
-
-                Throwable cause = (e instanceof SQLException ? e.getCause() : e);
-
-                throw new BatchUpdateException("Failed to query Ignite.", res, U.firstNotNull(cause, e));
-            }
-        }
-
-        batchArgs = null;
-
-        return res;
+        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
     }
 
     /** {@inheritDoc} */

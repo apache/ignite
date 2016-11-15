@@ -136,7 +136,7 @@ class DmlStatementsProcessor {
         int items = 0;
 
         for (int i = 0; i < DFLT_DML_RERUN_ATTEMPTS; i++) {
-            IgniteBiTuple<Integer, Object[]> r = updateLocalSqlFields0(cctx, stmt, params, errKeys, filters,
+            IgniteBiTuple<Long, Object[]> r = updateLocalSqlFields0(cctx, stmt, params, errKeys, filters,
                 enforceJoinOrder, timeout, cancel);
 
             if (F.isEmpty(r.get2())) {
@@ -168,7 +168,7 @@ class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("ConstantConditions")
-    private IgniteBiTuple<Integer, Object[]> updateLocalSqlFields0(final GridCacheContext cctx,
+    private IgniteBiTuple<Long, Object[]> updateLocalSqlFields0(final GridCacheContext cctx,
         final PreparedStatement prepStmt, Object[] params, final Object[] failedKeys, final IndexingQueryFilter filters,
         boolean enforceJoinOrder, int timeout, GridQueryCancel cancel) throws IgniteCheckedException {
         Connection conn = indexing.connectionForSpace(cctx.name());
@@ -206,7 +206,7 @@ class DmlStatementsProcessor {
 
                 QueryCursorImpl<List<?>> cur = new QueryCursorImpl<>(it);
 
-                int res;
+                long res;
 
                 if (stmt instanceof GridSqlMerge)
                     res = doMerge(cctx, (GridSqlMerge) stmt, cur, 0);
@@ -283,7 +283,7 @@ class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
-    static int doSingleUpdate(GridCacheContext cctx, GridTriple<GridSqlElement> singleUpdate,
+    static long doSingleUpdate(GridCacheContext cctx, GridTriple<GridSqlElement> singleUpdate,
         GridSqlStatement stmt, Object[] params) throws IgniteCheckedException {
         GridSqlElement target;
 
@@ -330,12 +330,12 @@ class DmlStatementsProcessor {
      * @return Results of DELETE (number of items affected AND keys that failed to be updated).
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    private IgniteBiTuple<Integer, Object[]> doDelete(GridCacheContext cctx, GridSqlDelete del,
+    private IgniteBiTuple<Long, Object[]> doDelete(GridCacheContext cctx, GridSqlDelete del,
                                                       QueryCursorImpl<List<?>> cursor, int pageSize) throws IgniteCheckedException {
         GridSqlTable tbl = gridTableForElement(del.from());
 
         // With DELETE, we have only two columns - key and value.
-        int res = 0;
+        long res = 0;
 
         // Switch to cache specified in query.
         cctx = cctx.shared().cacheContext(CU.cacheId(tbl.schema()));
@@ -428,7 +428,7 @@ class DmlStatementsProcessor {
      *     had been modified concurrently (arguments for a re-run)].
      */
     @SuppressWarnings("unchecked")
-    private IgniteBiTuple<Integer, Object[]> doUpdate(GridCacheContext cctx, GridSqlUpdate update,
+    private IgniteBiTuple<Long, Object[]> doUpdate(GridCacheContext cctx, GridSqlUpdate update,
                                                       QueryCursorImpl<List<?>> cursor, int pageSize) throws IgniteCheckedException {
 
         GridSqlTable tbl = gridTableForElement(update.target());
@@ -479,7 +479,7 @@ class DmlStatementsProcessor {
         // otherwise we always want it to instantiate new object
         Supplier newValSupplier = createSupplier(cctx, desc.type(), newValColIdx, hasProps, false);
 
-        int res = 0;
+        long res = 0;
 
         // Switch to cache specified in query.
         cctx = cctx.shared().cacheContext(CU.cacheId(tbl.schema()));
@@ -655,7 +655,7 @@ class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
-    private int doMerge(GridCacheContext cctx, GridSqlMerge gridStmt, QueryCursorImpl<List<?>> cursor, int pageSize)
+    private long doMerge(GridCacheContext cctx, GridSqlMerge gridStmt, QueryCursorImpl<List<?>> cursor, int pageSize)
         throws IgniteCheckedException {
         // This check also protects us from attempts to update key or its fields directly -
         // when no key except cache key can be used, it will serve only for uniqueness checks,
@@ -754,7 +754,7 @@ class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed, particularly in case of duplicate keys.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    private int doInsert(GridCacheContext cctx, GridSqlInsert ins, QueryCursorImpl<List<?>> cursor, int pageSize)
+    private long doInsert(GridCacheContext cctx, GridSqlInsert ins, QueryCursorImpl<List<?>> cursor, int pageSize)
         throws IgniteCheckedException {
         GridSqlColumn[] cols = ins.columns();
 
@@ -1021,7 +1021,7 @@ class DmlStatementsProcessor {
      */
     IgniteBiTuple<QueryCursorImpl<List<?>>, Object[]> updateFromCursor(GridCacheContext<?, ?> cctx,
         GridSqlStatement statement, QueryCursorImpl<List<?>> cursor, int pageSize) throws IgniteCheckedException {
-        IgniteBiTuple<Integer, Object[]> updateRes = null;
+        IgniteBiTuple<Long, Object[]> updateRes = null;
 
         if (statement instanceof GridSqlDelete)
             updateRes = doDelete(cctx, (GridSqlDelete) statement, cursor, pageSize);
@@ -1037,7 +1037,7 @@ class DmlStatementsProcessor {
                 pageSize), X.EMPTY_OBJECT_ARRAY);
 
         if (updateRes != null)
-            return new IgniteBiTuple<>(QueryCursorImpl.forUpdateResult(updateRes.get1() - updateRes.get2().length),
+            return new IgniteBiTuple<>(cursorForUpdateResult(updateRes.get1() - updateRes.get2().length),
                 updateRes.get2());
         return null;
     }
@@ -1340,5 +1340,22 @@ class DmlStatementsProcessor {
                 return true;
 
         return false;
+    }
+
+    /**
+     * Wrap result of DML operation (number of items affected) to Iterable suitable to be wrapped by cursor.
+     *
+     * @param itemsCnt Update result to wrap.
+     * @return Resulting Iterable.
+     */
+    @SuppressWarnings("unchecked")
+    static QueryCursorImpl<List<?>> cursorForUpdateResult(long itemsCnt) {
+        QueryCursorImpl<List<?>> res =
+            new QueryCursorImpl(Collections.singletonList(Collections.singletonList(itemsCnt)), null, false);
+
+        res.fieldsMeta(Collections.<GridQueryFieldMetadata>
+            singletonList(new IgniteH2Indexing.SqlFieldMetadata(null, null, "count", Long.class.getName())));
+
+        return res;
     }
 }

@@ -113,7 +113,7 @@ class JdbcQueryTaskV2 implements IgniteCallable<JdbcQueryTaskV2.QueryResult> {
      */
     public JdbcQueryTaskV2(Ignite ignite, String cacheName, String sql,
                            Boolean isQry, boolean loc, Object[] args, int fetchSize, UUID uuid,
-                           Boolean locQry, boolean collocatedQry, boolean distributedJoins) {
+                           boolean locQry, boolean collocatedQry, boolean distributedJoins) {
         this.ignite = ignite;
         this.args = args;
         this.uuid = uuid;
@@ -164,7 +164,7 @@ class JdbcQueryTaskV2 implements IgniteCallable<JdbcQueryTaskV2.QueryResult> {
             QueryCursorImpl<List<?>> qryCursor = (QueryCursorImpl<List<?>>)cache.query(qry);
 
             if (isQry == null)
-                isQry = qryCursor.isResultSet();
+                isQry = qryCursor.isQuery();
 
             Collection<GridQueryFieldMetadata> meta = qryCursor.fieldsMeta();
 

@@ -74,7 +74,7 @@ public class JdbcStatement implements Statement {
     Map<String, Integer> fieldsIdxs = new HashMap<>();
 
     /** Current updated items count. */
-    int updateCnt = -1;
+    long updateCnt = -1;
 
     /** Batch statements. */
     private List<String> batch;
@@ -91,6 +91,7 @@ public class JdbcStatement implements Statement {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("deprecation")
     @Override public ResultSet executeQuery(String sql) throws SQLException {
         ensureNotClosed();
 
@@ -173,7 +174,11 @@ public class JdbcStatement implements Statement {
             JdbcQueryTaskV2.QueryResult qryRes =
                 loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
 
-            return updateCnt = updateCounterFromQueryResult(qryRes.getRows());
+            Long res = updateCounterFromQueryResult(qryRes.getRows());
+
+            updateCnt = res;
+
+            return res.intValue();
         }
         catch (IgniteSQLException e) {
             throw e.toJdbcException();
@@ -191,9 +196,9 @@ public class JdbcStatement implements Statement {
      * @return update counter, if found
      * @throws SQLException if getting an update counter from result proved to be impossible.
      */
-    private static int updateCounterFromQueryResult(List<List<?>> rows) throws SQLException {
+    private static Long updateCounterFromQueryResult(List<List<?>> rows) throws SQLException {
          if (F.isEmpty(rows))
-            return 0;
+            return 0L;
 
         if (rows.size() != 1)
             throw new SQLException("Expected number of rows of 1 for update operation");
@@ -205,10 +210,10 @@ public class JdbcStatement implements Statement {
 
         Object objRes = row.get(0);
 
-        if (!(objRes instanceof Integer))
+        if (!(objRes instanceof Long))
             throw new SQLException("Unexpected update result type");
 
-        return (Integer)objRes;
+        return (Long) objRes;
     }
 
     /** {@inheritDoc} */
@@ -378,11 +383,11 @@ public class JdbcStatement implements Statement {
     @Override public int getUpdateCount() throws SQLException {
         ensureNotClosed();
 
-        int res = updateCnt;
+        long res = updateCnt;
 
         updateCnt = -1;
 
-        return res;
+        return Long.valueOf(res).intValue();
     }
 
     /** {@inheritDoc} */
@@ -462,33 +467,7 @@ public class JdbcStatement implements Statement {
     @Override public int[] executeBatch() throws SQLException {
         ensureNotClosed();
 
-        rs = null;
-
-        updateCnt = -1;
-
-        if (F.isEmpty(batch))
-            return U.EMPTY_INTS;
-
-        int[] res = new int[batch.size()];
-
-        Object[] args = getArgs();
-
-        for (int i = 0; i < res.length; i++) {
-            try {
-                res[i] = doUpdate(batch.get(i), args);
-            }
-            catch (Exception e) {
-                res[i] = Statement.EXECUTE_FAILED;
-
-                Throwable cause = (e instanceof SQLException ? e.getCause() : e);
-
-                throw new BatchUpdateException("Failed to query Ignite.", res, U.firstNotNull(cause, e));
-            }
-        }
-
-        batch = null;
-
-        return res;
+        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
     }
 
     /** {@inheritDoc} */
@@ -640,7 +619,7 @@ public class JdbcStatement implements Statement {
      *
      * @throws SQLException If statement is closed.
      */
-    protected void ensureNotClosed() throws SQLException {
+    void ensureNotClosed() throws SQLException {
         if (closed)
             throw new SQLException("Statement is closed.");
     }
