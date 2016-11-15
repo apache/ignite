@@ -52,9 +52,9 @@ namespace Apache.Ignite.ExamplesDll.DataStructures
             Guid originalValue = atomicRef.CompareExchange(expectedValue, localNodeId);
 
             if (originalValue == expectedValue)
-                Console.WriteLine("Successfully updated atomic reference on node {0}", localNodeId);
+                Console.WriteLine(">>> Successfully updated atomic reference on node {0}", localNodeId);
             else
-                Console.WriteLine("Failed to update atomic reference on node {0}, actual value is {1}", 
+                Console.WriteLine(">>> Failed to update atomic reference on node {0}, actual value is {1}", 
                     localNodeId, originalValue);
         }
     }
