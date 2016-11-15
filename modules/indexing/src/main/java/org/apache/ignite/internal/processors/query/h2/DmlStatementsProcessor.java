@@ -734,7 +734,7 @@ class DmlStatementsProcessor {
 
                 if ((pageSize > 0 && rows.size() == pageSize) || !it.hasNext()) {
                     cctx.cache().putAll(rows);
-                    resCnt += pageSize;
+                    resCnt += rows.size();
 
                     if (it.hasNext())
                         rows.clear();
@@ -922,11 +922,11 @@ class DmlStatementsProcessor {
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
     private static GridTuple3<Integer, Object[], SQLException> processBatch(GridCacheContext cctx,
-                                                                            Map<Object, EntryProcessor<Object, Object, Boolean>> rows) throws IgniteCheckedException {
+        Map<Object, EntryProcessor<Object, Object, Boolean>> rows) throws IgniteCheckedException {
 
         Map<Object, EntryProcessorResult<Boolean>> res = cctx.cache().invokeAll(rows);
 
-        if (res.isEmpty())
+        if (F.isEmpty(res))
             return new GridTuple3<>(rows.size(), null, null);
 
         GridTuple3<Object[], SQLException, Integer> splitRes = splitErrors(res);
