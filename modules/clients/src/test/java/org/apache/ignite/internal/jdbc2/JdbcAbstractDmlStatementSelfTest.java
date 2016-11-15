@@ -29,6 +29,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -100,6 +101,8 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
      */
     IgniteConfiguration getBinaryConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = getConfiguration0(gridName);
+
+        cfg.setMarshaller(new BinaryMarshaller());
 
         CacheConfiguration ccfg = cfg.getCacheConfiguration()[0];
 

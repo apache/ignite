@@ -25,10 +25,6 @@ import org.apache.ignite.testframework.config.GridTestProperties;
  * JDBC test of MERGE statement w/binary marshaller - no nodes know about classes.
  */
 public class JdbcBinaryMarshallerMergeStatementSelfTest extends JdbcMergeStatementSelfTest {
-    static {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
-    }
-
     /** {@inheritDoc} */
     @Override protected String getCfgUrl() {
         return BASE_URL_BIN;
