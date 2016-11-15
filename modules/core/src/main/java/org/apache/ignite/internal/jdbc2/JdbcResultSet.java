@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -158,6 +159,9 @@ public class JdbcResultSet implements ResultSet {
                 it = res.getRows().iterator();
 
                 return next();
+            }
+            catch (IgniteSQLException e) {
+                throw e.toJdbcException();
             }
             catch (Exception e) {
                 throw new SQLException("Failed to query Ignite.", e);

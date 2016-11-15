@@ -311,7 +311,7 @@ public class JdbcStatement implements Statement {
         if (!conn.isDmlSupported()) {
             // We attempt to run a query without any checks as long as server does not support DML anyway,
             // so it simply will throw an exception when given a DML statement instead of a query.
-            executeQuery(sql);
+            rs = executeQuery(sql);
 
             return true;
         }
