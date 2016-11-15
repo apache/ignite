@@ -60,7 +60,6 @@ namespace Apache.Ignite.Examples.Datagrid
                     },
                     OffHeapMaxMemory = 1024*10, // 10 KB (maximum allowed off-heap space).
                     EnableSwap = true
-                    // TODO: Configure swap ? (IGNITE-4126)
                 };
 
                 ICache<int, byte[]> cache = ignite.GetOrCreateCache<int, byte[]>(cfg);
