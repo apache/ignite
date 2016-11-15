@@ -17,7 +17,7 @@
 
 // Controller for Clusters screen.
 export default ['clustersController', [
-    '$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'igniteEventGroups', 'DemoInfo', 'IgniteLegacyTable', 'igniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils',
+    '$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'igniteEventGroups', 'DemoInfo', 'IgniteLegacyTable', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils',
     function($root, $scope, $http, $state, $timeout, LegacyUtils, Messages, Confirm, Clone, Loading, ModelNormalizer, UnsavedChangesGuard, igniteEventGroups, DemoInfo, LegacyTable, Resource, ErrorPopover, FormUtils) {
         UnsavedChangesGuard.install($scope);
 
@@ -103,6 +103,46 @@ export default ['clustersController', [
                     else
                         $scope.backupItem.failoverSpi = {};
                 }
+                else if (field.type === 'loadBalancingSpi') {
+                    const newLoadBalancing = {Adaptive: {
+                        loadProbe: {
+                            Job: {useAverage: true},
+                            CPU: {
+                                useAverage: true,
+                                useProcessors: true
+                            },
+                            ProcessingTime: {useAverage: true}
+                        }
+                    }};
+
+                    if (LegacyUtils.isDefined($scope.backupItem.loadBalancingSpi))
+                        $scope.backupItem.loadBalancingSpi.push(newLoadBalancing);
+                    else
+                        $scope.backupItem.loadBalancingSpi = [newLoadBalancing];
+                }
+                else if (field.type === 'checkpointSpi') {
+                    const newCheckpointCfg = {
+                        FS: {
+                            directoryPaths: []
+                        },
+                        S3: {
+                            awsCredentials: {
+                                kind: 'Basic'
+                            },
+                            clientConfiguration: {
+                                retryPolicy: {
+                                    kind: 'Default'
+                                },
+                                useReaper: true
+                            }
+                        }
+                    };
+
+                    if (LegacyUtils.isDefined($scope.backupItem.checkpointSpi))
+                        $scope.backupItem.checkpointSpi.push(newCheckpointCfg);
+                    else
+                        $scope.backupItem.checkpointSpi = [newCheckpointCfg];
+                }
                 else
                     LegacyTable.tableNewItem(field);
             }
@@ -148,6 +188,8 @@ export default ['clustersController', [
         $scope.removeFailoverConfiguration = function(idx) {
             $scope.backupItem.failoverSpi.splice(idx, 1);
         };
+
+        $scope.supportedJdbcTypes = LegacyUtils.mkOptions(LegacyUtils.SUPPORTED_JDBC_TYPES);
 
         // We need to initialize backupItem with empty object in order to properly used from angular directives.
         $scope.backupItem = emptyCluster;
@@ -204,11 +246,20 @@ export default ['clustersController', [
 
         // When landing on the page, get clusters and show them.
         Resource.read()
-            .then(({spaces, clusters, caches, igfss}) => {
+            .then(({spaces, clusters, caches, domains, igfss}) => {
                 $scope.spaces = spaces;
+
                 $scope.clusters = clusters;
 
-                $scope.caches = _.map(caches, (cache) => ({value: cache._id, label: cache.name, cache}));
+                $scope.caches = _.map(caches, (cache) => {
+                    cache.domains = _.filter(domains, ({_id}) => _.includes(cache.domains, _id));
+
+                    if (_.get(cache, 'nodeFilter.kind') === 'IGFS')
+                        cache.nodeFilter.IGFS.instance = _.find(igfss, {_id: cache.nodeFilter.IGFS.igfs});
+
+                    return {value: cache._id, label: cache.name, cache};
+                });
+
                 $scope.igfss = _.map(igfss, (igfs) => ({value: igfs._id, label: igfs.name, igfs}));
 
                 _.forEach($scope.clusters, (cluster) => {
@@ -222,6 +273,9 @@ export default ['clustersController', [
 
                     if (!cluster.logger)
                         cluster.logger = {Log4j: { mode: 'Default'}};
+
+                    if (!cluster.eventStorage)
+                        cluster.eventStorage = { kind: 'Memory' };
                 });
 
                 if ($state.params.linkId)
@@ -259,6 +313,12 @@ export default ['clustersController', [
                         form.$setPristine();
                     else
                         form.$setDirty();
+
+                    $scope.clusterCaches = _.filter($scope.caches,
+                        (cache) => _.find($scope.backupItem.caches,
+                            (selCache) => selCache === cache.value
+                        )
+                    );
                 }, true);
 
                 $scope.$watch('ui.activePanels.length', () => {
@@ -278,6 +338,8 @@ export default ['clustersController', [
 
                 Loading.finish('loadingClustersScreen');
             });
+
+        $scope.clusterCaches = [];
 
         $scope.selectItem = function(item, backup) {
             function selectItem() {
@@ -300,7 +362,7 @@ export default ['clustersController', [
                 else
                     $scope.backupItem = emptyCluster;
 
-                $scope.backupItem = angular.merge({}, blank, $scope.backupItem);
+                $scope.backupItem = _.merge({}, blank, $scope.backupItem);
 
                 if ($scope.ui.inputForm) {
                     $scope.ui.inputForm.$error = {};
@@ -319,7 +381,7 @@ export default ['clustersController', [
         $scope.linkId = () => $scope.backupItem._id ? $scope.backupItem._id : 'create';
 
         function prepareNewItem(linkId) {
-            return angular.merge({}, blank, {
+            return _.merge({}, blank, {
                 space: $scope.spaces[0]._id,
                 discovery: {
                     kind: 'Multicast',
@@ -331,6 +393,7 @@ export default ['clustersController', [
                 communication: {tcpNoDelay: true},
                 connector: {noDelay: true},
                 collision: {kind: 'Noop', JobStealing: {stealingEnabled: true}, PriorityQueue: {starvationPreventionEnabled: true}},
+                eventStorage: {kind: 'Memory'},
                 failoverSpi: [],
                 logger: {Log4j: { mode: 'Default'}},
                 caches: linkId && _.find($scope.caches, {value: linkId}) ? [linkId] : [],
@@ -354,27 +417,45 @@ export default ['clustersController', [
                 (cache) => _.includes(item.caches, cache._id));
         }
 
+        const _objToString = (type, name, prefix = '') => {
+            if (type === 'checkpoint')
+                return prefix + ' checkpoint configuration';
+            if (type === 'cluster')
+                return prefix + ' discovery IP finder';
+
+            return `${prefix} ${type} "${name}"`;
+        };
+
         function checkCacheDatasources(item) {
             const caches = clusterCaches(item);
 
             const checkRes = LegacyUtils.checkDataSources(item, caches);
 
             if (!checkRes.checked) {
-                if (_.get(checkRes.secondObj, 'discovery.kind') === 'Jdbc') {
-                    return ErrorPopover.show('dialectInput',
-                        'Found cache "' + checkRes.firstObj.name + '" with the same data source bean name "' +
-                        item.discovery.Jdbc.dataSourceBean + '" and different database: "' +
-                        LegacyUtils.cacheStoreJdbcDialectsLabel(checkRes.secondDB) + '" in current cluster and "' +
-                        LegacyUtils.cacheStoreJdbcDialectsLabel(checkRes.firstDB) + '" in "' + checkRes.firstObj.name + '" cache',
-                        $scope.ui, 'general', 10000);
+                let ids;
+
+                if (checkRes.secondType === 'cluster')
+                    ids = { section: 'general', fieldId: 'dialectInput' };
+                else if (checkRes.secondType === 'cache')
+                    ids = { section: 'general', fieldId: 'cachesInput' };
+                else if (checkRes.secondType === 'checkpoint')
+                    ids = { section: 'checkpoint', fieldId: `checkpointJdbcDialect${checkRes.index}Input` };
+                else
+                    return true;
+
+                if (checkRes.firstType === checkRes.secondType && checkRes.firstType === 'cache') {
+                    return ErrorPopover.show(ids.fieldId, 'Found caches "' + checkRes.firstObj.name + '" and "' + checkRes.secondObj.name + '" with the same data source bean name "' +
+                        checkRes.firstDs.dataSourceBean + '" and different database: "' +
+                        LegacyUtils.cacheStoreJdbcDialectsLabel(checkRes.secondDs.dialect) + '" in ' + _objToString(checkRes.secondType, checkRes.secondObj.name) + ' and "' +
+                        LegacyUtils.cacheStoreJdbcDialectsLabel(checkRes.firstDs.dialect) + '" in ' + _objToString(checkRes.firstType, checkRes.firstObj.name),
+                        $scope.ui, ids.section, 10000);
                 }
 
-                return ErrorPopover.show('cachesInput',
-                    'Found caches "' + checkRes.firstObj.name + '" and "' + checkRes.secondObj.name + '" ' +
-                    'with the same data source bean name "' + checkRes.firstObj.cacheStoreFactory[checkRes.firstObj.cacheStoreFactory.kind].dataSourceBean +
-                    '" and different databases: "' + LegacyUtils.cacheStoreJdbcDialectsLabel(checkRes.firstDB) + '" in "' + checkRes.firstObj.name + '" and "' +
-                    LegacyUtils.cacheStoreJdbcDialectsLabel(checkRes.secondDB) + '" in "' + checkRes.secondObj.name + '" cache',
-                    $scope.ui, 'general', 10000);
+                return ErrorPopover.show(ids.fieldId, 'Found ' + _objToString(checkRes.firstType, checkRes.firstObj.name) + ' with the same data source bean name "' +
+                    checkRes.firstDs.dataSourceBean + '" and different database: "' +
+                    LegacyUtils.cacheStoreJdbcDialectsLabel(checkRes.secondDs.dialect) + '" in ' + _objToString(checkRes.secondType, checkRes.secondObj.name, 'current') + ' and "' +
+                    LegacyUtils.cacheStoreJdbcDialectsLabel(checkRes.firstDs.dialect) + '" in ' + _objToString(checkRes.firstType, checkRes.firstObj.name),
+                    $scope.ui, ids.section, 10000);
             }
 
             return true;
@@ -434,6 +515,38 @@ export default ['clustersController', [
             return true;
         }
 
+        function checkCheckpointSpis(item) {
+            const cfgs = item.checkpointSpi;
+
+            if (_.isEmpty(cfgs))
+                return true;
+
+            return _.isNil(_.find(cfgs, (cfg, ix) => {
+                if (_.isNil(cfg.kind)) {
+                    ErrorPopover.show('checkpointKind' + ix, 'Choose checkpoint implementation variant', $scope.ui, 'checkpoint');
+
+                    return true;
+                }
+
+                switch (cfg.kind) {
+                    case 'Cache':
+                        const cache = _.get(cfg, 'Cache.cache');
+
+                        if (_.isNil(cache) || !_.find($scope.backupItem.caches, (selCache) => cache === selCache)) {
+                            ErrorPopover.show('checkpointCacheCache' + ix, 'Choose cache from configured cluster caches', $scope.ui, 'checkpoint');
+
+                            return true;
+                        }
+
+                        break;
+
+                    default: break;
+                }
+
+                return false;
+            }));
+        }
+
         function checkCommunicationConfiguration(item) {
             const c = item.communication;
 
@@ -465,6 +578,20 @@ export default ['clustersController', [
             }
 
             return true;
+        }
+
+        function checkLoadBalancingConfiguration(item) {
+            const balancingSpis = item.loadBalancingSpi;
+
+            return _.isNil(_.find(balancingSpis, (curSpi, curIx) => {
+                if (_.find(balancingSpis, (spi, ix) => curIx > ix && curSpi.kind === spi.kind)) {
+                    ErrorPopover.show('loadBalancingKind' + curIx, 'Load balancing SPI of that type is already configured', $scope.ui, 'loadBalancing');
+
+                    return true;
+                }
+
+                return false;
+            }));
         }
 
         function checkSwapConfiguration(item) {
@@ -535,10 +662,16 @@ export default ['clustersController', [
             if (!checkCacheKeyConfiguration(item))
                 return false;
 
+            if (!checkCheckpointSpis(item))
+                return false;
+
             if (!checkCommunicationConfiguration(item))
                 return false;
 
             if (!checkDiscoveryConfiguration(item))
+                return false;
+
+            if (!checkLoadBalancingConfiguration(item))
                 return false;
 
             if (!checkSwapConfiguration(item))
@@ -564,7 +697,7 @@ export default ['clustersController', [
                     const idx = _.findIndex($scope.clusters, (cluster) => cluster._id === _id);
 
                     if (idx >= 0)
-                        angular.merge($scope.clusters[idx], item);
+                        _.assign($scope.clusters[idx], item);
                     else {
                         item._id = _id;
                         $scope.clusters.push(item);
@@ -595,10 +728,10 @@ export default ['clustersController', [
         $scope.saveItem = function() {
             const item = $scope.backupItem;
 
-            const swapSpi = LegacyUtils.autoClusterSwapSpiConfiguration(item, clusterCaches(item));
+            const swapConfigured = item.swapSpaceSpi && item.swapSpaceSpi.kind;
 
-            if (swapSpi)
-                angular.extend(item, swapSpi);
+            if (!swapConfigured && _.find(clusterCaches(item), (cache) => cache.swapEnabled))
+                _.merge(item, {swapSpaceSpi: {kind: 'FileSwapSpaceSpi'}});
 
             if (validate(item))
                 save(item);
