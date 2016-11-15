@@ -30,6 +30,11 @@ namespace Apache.Ignite.Examples.Datagrid
     /// <summary>
     /// This example demonstrates transaction deadlock detection mechanism.
     /// <para />
+    /// The feature simplifies debugging of distributed deadlocks that may be caused by your code. 
+    /// To enable the feature you should start an Ignite transaction with a non-zero timeout 
+    /// and catch TransactionDeadlockException that will contain deadlock details. 
+    /// For more information refer to https://apacheignite-net.readme.io/docs/transactions#deadlock-detection-in-pessimistic-transactions
+    /// <para />
     /// 1) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build).
     ///    Apache.Ignite.ExamplesDll.dll must appear in %IGNITE_HOME%/platforms/dotnet/examples/Apache.Ignite.ExamplesDll/bin/${Platform]/${Configuration} folder.
     /// 2) Set this class as startup object (Apache.Ignite.Examples project -> right-click -> Properties ->
