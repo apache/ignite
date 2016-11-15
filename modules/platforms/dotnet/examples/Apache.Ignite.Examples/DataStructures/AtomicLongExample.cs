@@ -55,6 +55,9 @@ namespace Apache.Ignite.Examples.DataStructures
 
                 Console.WriteLine("\n>>> Atomic long resulting value: " + atomicLong.Read());
             }
+
+            Console.WriteLine("\n>>> Example finished, press any key to exit ...");
+            Console.ReadKey();
         }
     }
 }
