@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisRestCommandHandler;
@@ -51,8 +52,8 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
     private static final int VAL_POS = 2;
 
     /** {@inheritDoc} */
-    public GridRedisSetCommandHandler(final GridRestProtocolHandler hnd) {
-        super(hnd);
+    public GridRedisSetCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd) {
+        super(log, hnd);
     }
 
     /** {@inheritDoc} */

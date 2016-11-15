@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.rest.handlers.redis.string;
 
-import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisRestCommandHandler;
@@ -58,8 +58,8 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
     private static final int DELTA_POS = 2;
 
     /** {@inheritDoc} */
-    public GridRedisIncrDecrCommandHandler(final GridRestProtocolHandler hnd) {
-        super(hnd);
+    public GridRedisIncrDecrCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd) {
+        super(log, hnd);
     }
 
     /** {@inheritDoc} */
@@ -99,7 +99,8 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
             try {
                 restReq.delta(Long.valueOf(msg.aux(DELTA_POS)));
             }
-            catch (NumberFormatException ignored) {
+            catch (NumberFormatException e) {
+                U.error(log, "Wrong increment delta!", e);
                 throw new GridRedisGenericException("An increment value must be numeric and in range!");
             }
         }
@@ -127,7 +128,7 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
             return GridRedisProtocolParser.toGenericError("Failed to increment!");
 
         if (restRes.getResponse() instanceof Long && (Long)restRes.getResponse() <= Long.MAX_VALUE)
-            return GridRedisProtocolParser.toInteger(new BigDecimal((Long)restRes.getResponse()).toString());
+            return GridRedisProtocolParser.toInteger(String.valueOf(restRes.getResponse()));
         else
             return GridRedisProtocolParser.toTypeError("Value is non-numeric or out of range!");
     }

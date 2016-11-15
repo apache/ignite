@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisRestCommandHandler;
@@ -55,8 +56,8 @@ public class GridRedisSetRangeCommandHandler extends GridRedisRestCommandHandler
     private static final int MAX_OFFSET = 536870911;
 
     /** {@inheritDoc} */
-    public GridRedisSetRangeCommandHandler(final GridRestProtocolHandler hnd) {
-        super(hnd);
+    public GridRedisSetRangeCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd) {
+        super(log, hnd);
     }
 
     /** {@inheritDoc} */
@@ -75,7 +76,8 @@ public class GridRedisSetRangeCommandHandler extends GridRedisRestCommandHandler
         try {
             off = Integer.parseInt(msg.aux(OFFSET_POS));
         }
-        catch (NumberFormatException ignored) {
+        catch (NumberFormatException e) {
+            U.error(log, "Erroneous offset!", e);
             throw new GridRedisGenericException("Offset is not an integer!");
         }
 

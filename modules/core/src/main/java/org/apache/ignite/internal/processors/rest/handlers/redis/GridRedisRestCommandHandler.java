@@ -20,12 +20,13 @@ package org.apache.ignite.internal.processors.rest.handlers.redis;
 import java.nio.ByteBuffer;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
+import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridRedisTypeException;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
-import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridRedisTypeException;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.CX1;
@@ -34,6 +35,9 @@ import org.apache.ignite.internal.util.typedef.CX1;
  * Redis command handler done via REST.
  */
 public abstract class GridRedisRestCommandHandler implements GridRedisCommandHandler {
+    /** Logger. */
+    protected final IgniteLogger log;
+
     /** REST protocol handler. */
     protected final GridRestProtocolHandler hnd;
 
@@ -42,7 +46,8 @@ public abstract class GridRedisRestCommandHandler implements GridRedisCommandHan
      *
      * @param hnd REST protocol handler.
      */
-    public GridRedisRestCommandHandler(final GridRestProtocolHandler hnd) {
+    public GridRedisRestCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd) {
+        this.log = log;
         this.hnd = hnd;
     }
 

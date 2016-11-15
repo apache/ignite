@@ -67,23 +67,23 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
         addCommandHandler(new GridRedisConnectionCommandHandler());
 
         // string commands.
-        addCommandHandler(new GridRedisGetCommandHandler(hnd));
-        addCommandHandler(new GridRedisSetCommandHandler(hnd));
-        addCommandHandler(new GridRedisMSetCommandHandler(hnd));
-        addCommandHandler(new GridRedisMGetCommandHandler(hnd));
-        addCommandHandler(new GridRedisIncrDecrCommandHandler(hnd));
-        addCommandHandler(new GridRedisAppendCommandHandler(hnd));
-        addCommandHandler(new GridRedisGetSetCommandHandler(hnd));
-        addCommandHandler(new GridRedisStrlenCommandHandler(hnd));
-        addCommandHandler(new GridRedisSetRangeCommandHandler(hnd));
-        addCommandHandler(new GridRedisGetRangeCommandHandler(hnd));
+        addCommandHandler(new GridRedisGetCommandHandler(log, hnd));
+        addCommandHandler(new GridRedisSetCommandHandler(log, hnd));
+        addCommandHandler(new GridRedisMSetCommandHandler(log, hnd));
+        addCommandHandler(new GridRedisMGetCommandHandler(log, hnd));
+        addCommandHandler(new GridRedisIncrDecrCommandHandler(log, hnd));
+        addCommandHandler(new GridRedisAppendCommandHandler(log, hnd));
+        addCommandHandler(new GridRedisGetSetCommandHandler(log, hnd));
+        addCommandHandler(new GridRedisStrlenCommandHandler(log, hnd));
+        addCommandHandler(new GridRedisSetRangeCommandHandler(log, hnd));
+        addCommandHandler(new GridRedisGetRangeCommandHandler(log, hnd));
 
         // key commands.
-        addCommandHandler(new GridRedisDelCommandHandler(hnd));
-        addCommandHandler(new GridRedisExistsCommandHandler(hnd));
+        addCommandHandler(new GridRedisDelCommandHandler(log, hnd));
+        addCommandHandler(new GridRedisExistsCommandHandler(log, hnd));
 
         // server commands.
-        addCommandHandler(new GridRedisDbSizeCommandHandler(hnd));
+        addCommandHandler(new GridRedisDbSizeCommandHandler(log, hnd));
     }
 
     /**
