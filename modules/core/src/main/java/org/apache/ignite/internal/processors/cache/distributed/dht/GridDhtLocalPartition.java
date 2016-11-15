@@ -33,6 +33,9 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -507,7 +510,23 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return {@code true} if cas succeeds.
      */
     private boolean casState(long reservations, GridDhtPartitionState toState) {
-        return state.compareAndSet(reservations, (reservations & 0xFFFF) | ((long)toState.ordinal() << 32));
+        if (cctx.shared().database().persistenceEnabled()) {
+            synchronized (this) {
+                boolean update = state.compareAndSet(reservations, (reservations & 0xFFFF) | ((long)toState.ordinal() << 32));
+
+                if (update)
+                    try {
+                        cctx.shared().wal().log(new PartitionMetaStateRecord(cctx.cacheId(),
+                            PageIdUtils.pageId(id, PageIdAllocator.FLAG_DATA, 0), toState));
+                    }
+                    catch (IgniteCheckedException e) {
+                        log.error("Error while writing to log", e);
+                    }
+
+                return update;
+            }
+        } else
+            return state.compareAndSet(reservations, (reservations & 0xFFFF) | ((long)toState.ordinal() << 32));
     }
 
     /**
