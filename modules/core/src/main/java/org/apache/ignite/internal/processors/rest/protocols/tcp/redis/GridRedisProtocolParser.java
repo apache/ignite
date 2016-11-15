@@ -304,9 +304,8 @@ public class GridRedisProtocolParser {
         buf.put(arrSize);
         buf.put(CRLF);
 
-        for (Object val : vals) {
+        for (Object val : vals)
             buf.put(toBulkString(val));
-        }
 
         buf.flip();
 

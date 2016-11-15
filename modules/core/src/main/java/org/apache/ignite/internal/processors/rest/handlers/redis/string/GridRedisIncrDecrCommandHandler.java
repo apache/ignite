@@ -81,14 +81,13 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
 
         GridRestResponse getResp = hnd.handle(getReq);
 
-        if (getResp.getResponse() == null) {
+        if (getResp.getResponse() == null)
             restReq.initial(0L);
-        }
         else {
             if (getResp.getResponse() instanceof Long && (Long)getResp.getResponse() <= Long.MAX_VALUE)
                 restReq.initial((Long)getResp.getResponse());
             else
-                throw new GridRedisGenericException("An initial value must be numeric and in range!");
+                throw new GridRedisGenericException("An initial value must be numeric and in range");
         }
 
         restReq.clientId(msg.clientId());
@@ -100,8 +99,8 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
                 restReq.delta(Long.valueOf(msg.aux(DELTA_POS)));
             }
             catch (NumberFormatException e) {
-                U.error(log, "Wrong increment delta!", e);
-                throw new GridRedisGenericException("An increment value must be numeric and in range!");
+                U.error(log, "Wrong increment delta", e);
+                throw new GridRedisGenericException("An increment value must be numeric and in range");
             }
         }
 
@@ -116,7 +115,7 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
                 restReq.command(ATOMIC_DECREMENT);
                 break;
             default:
-                assert false : "Unexpected command received!";
+                assert false : "Unexpected command received";
         }
 
         return restReq;
@@ -125,11 +124,11 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
     /** {@inheritDoc} */
     @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
         if (restRes.getResponse() == null)
-            return GridRedisProtocolParser.toGenericError("Failed to increment!");
+            return GridRedisProtocolParser.toGenericError("Failed to increment");
 
         if (restRes.getResponse() instanceof Long && (Long)restRes.getResponse() <= Long.MAX_VALUE)
             return GridRedisProtocolParser.toInteger(String.valueOf(restRes.getResponse()));
         else
-            return GridRedisProtocolParser.toTypeError("Value is non-numeric or out of range!");
+            return GridRedisProtocolParser.toTypeError("Value is non-numeric or out of range");
     }
 }

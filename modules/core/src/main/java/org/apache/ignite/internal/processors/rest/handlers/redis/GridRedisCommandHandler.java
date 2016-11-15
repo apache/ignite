@@ -29,11 +29,11 @@ public interface GridRedisCommandHandler {
     /**
      * @return Collection of supported commands.
      */
-    Collection<GridRedisCommand> supportedCommands();
+    public Collection<GridRedisCommand> supportedCommands();
 
     /**
      * @param msg Request message.
      * @return Future.
      */
-    IgniteInternalFuture<GridRedisMessage> handleAsync(GridRedisMessage msg);
+    public IgniteInternalFuture<GridRedisMessage> handleAsync(GridRedisMessage msg);
 }

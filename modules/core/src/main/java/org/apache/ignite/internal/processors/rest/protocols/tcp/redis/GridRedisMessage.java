@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -65,6 +66,11 @@ public class GridRedisMessage implements GridClientMessage {
         msgParts = new ArrayList<>(msgLen);
     }
 
+    /**
+     * Appends the specified part to the message.
+     *
+     * @param part Part to append.
+     */
     public void append(String part) {
         msgParts.add(part);
     }
@@ -150,8 +156,9 @@ public class GridRedisMessage implements GridClientMessage {
         return msgParts.subList(KEY_POS, msgParts.size());
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
-        return "GridRedisMessage [msg: " + msgParts + "]";
+        return S.toString(GridRedisMessage.class, this);
     }
 
     /**

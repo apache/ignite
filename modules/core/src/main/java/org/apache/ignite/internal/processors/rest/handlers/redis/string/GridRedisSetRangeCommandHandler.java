@@ -77,8 +77,8 @@ public class GridRedisSetRangeCommandHandler extends GridRedisRestCommandHandler
             off = Integer.parseInt(msg.aux(OFFSET_POS));
         }
         catch (NumberFormatException e) {
-            U.error(log, "Erroneous offset!", e);
-            throw new GridRedisGenericException("Offset is not an integer!");
+            U.error(log, "Erroneous offset", e);
+            throw new GridRedisGenericException("Offset is not an integer");
         }
 
         String val = String.valueOf(msg.aux(VAL_POS));
@@ -96,7 +96,7 @@ public class GridRedisSetRangeCommandHandler extends GridRedisRestCommandHandler
 
         int totalLen = off + val.length();
         if (off < 0 || totalLen > MAX_OFFSET)
-            throw new GridRedisGenericException("Offset is out of range!");
+            throw new GridRedisGenericException("Offset is out of range");
 
         GridRestCacheRequest putReq = new GridRestCacheRequest();
 

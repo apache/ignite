@@ -63,7 +63,7 @@ public class GridRedisGetSetCommandHandler extends GridRedisRestCommandHandler {
         assert msg != null;
 
         if (msg.messageSize() < 3)
-            throw new GridRedisGenericException("Wrong syntax!");
+            throw new GridRedisGenericException("Wrong syntax");
 
         GridRestCacheRequest restReq = new GridRestCacheRequest();
 

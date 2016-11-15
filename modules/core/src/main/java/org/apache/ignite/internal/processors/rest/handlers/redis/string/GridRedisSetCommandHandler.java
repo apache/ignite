@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisRestCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridRedisGenericException;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
@@ -73,7 +74,7 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
         restReq.command(CACHE_PUT);
 
         if (msg.messageSize() < 3)
-            throw new IgniteCheckedException("Invalid request!");
+            throw new GridRedisGenericException("Wrong number of arguments");
 
         restReq.value(msg.aux(VAL_POS));
 
@@ -89,7 +90,7 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
             else if (isXx(params))
                 restReq.command(CACHE_REPLACE);
 
-            // TODO: handle expiration options.
+            // TODO: IGNITE-4226, handle expiration options.
         }
 
         return restReq;

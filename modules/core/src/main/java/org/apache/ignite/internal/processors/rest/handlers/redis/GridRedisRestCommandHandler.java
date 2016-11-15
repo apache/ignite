@@ -66,7 +66,7 @@ public abstract class GridRedisRestCommandHandler implements GridRedisCommandHan
                         if (restRes.getSuccessStatus() == GridRestResponse.STATUS_SUCCESS)
                             msg.setResponse(makeResponse(restRes, msg.auxMKeys()));
                         else
-                            msg.setResponse(GridRedisProtocolParser.toGenericError("Operation error!"));
+                            msg.setResponse(GridRedisProtocolParser.toGenericError("Operation error"));
 
                         return msg;
                     }
