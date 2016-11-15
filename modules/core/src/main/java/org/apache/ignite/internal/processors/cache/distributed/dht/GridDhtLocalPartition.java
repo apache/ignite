@@ -538,35 +538,41 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      *
      */
     public void tryEvict() {
-        long reservations = state.get();
+        cctx.gate().enter();
 
-        int ord = (int)(reservations >> 32);
+        try {
+            long reservations = state.get();
 
-        if (ord != RENTING.ordinal() || (reservations & 0xFFFF) != 0 || groupReserved())
-            return;
+            int ord = (int)(reservations >> 32);
 
-        // Attempt to evict partition entries from cache.
-        clearAll();
+            if (ord != RENTING.ordinal() || (reservations & 0xFFFF) != 0 || groupReserved())
+                return;
 
-        if (isEmpty() && casState(reservations, EVICTED)) {
-            if (log.isDebugEnabled())
-                log.debug("Evicted partition: " + this);
+            // Attempt to evict partition entries from cache.
+            clearAll();
 
-            if (!GridQueryProcessor.isEnabled(cctx.config()))
-                clearSwap();
+            if (isEmpty() && casState(reservations, EVICTED)) {
+                if (log.isDebugEnabled())
+                    log.debug("Evicted partition: " + this);
 
-            if (cctx.isDrEnabled())
-                cctx.dr().partitionEvicted(id);
+                if (!GridQueryProcessor.isEnabled(cctx.config()))
+                    clearSwap();
 
-            cctx.continuousQueries().onPartitionEvicted(id);
+                if (cctx.isDrEnabled())
+                    cctx.dr().partitionEvicted(id);
 
-            cctx.dataStructures().onPartitionEvicted(id);
+                cctx.continuousQueries().onPartitionEvicted(id);
 
-            rent.onDone();
+                cctx.dataStructures().onPartitionEvicted(id);
 
-            ((GridDhtPreloader)cctx.preloader()).onPartitionEvicted(this, true);
+                rent.onDone();
 
-            clearDeferredDeletes();
+                ((GridDhtPreloader)cctx.preloader()).onPartitionEvicted(this, true);
+
+                clearDeferredDeletes();
+            }
+        }finally {
+            cctx.gate().leave();
         }
     }
 
