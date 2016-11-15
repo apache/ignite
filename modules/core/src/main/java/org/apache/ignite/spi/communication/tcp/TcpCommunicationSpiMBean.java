@@ -153,6 +153,16 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
     public int getReconnectCount();
 
     /**
+     * Defines how many non-blocking {@code selector.selectNow()} should be made before
+     * falling into {@code selector.select(long)} in NIO server. Long value. Default is {@code 0}.
+     * Can be set to {@code Long.MAX_VALUE} so selector threads will never block.
+     *
+     * @return Selector thread busy-loop iterations.
+     */
+    @MXBeanDescription("Selector thread busy-loop iterations.")
+    public long getSelectorSpins();
+
+    /**
      * Gets value for {@code TCP_NODELAY} socket option.
      *
      * @return {@code True} if TCP delay is disabled.

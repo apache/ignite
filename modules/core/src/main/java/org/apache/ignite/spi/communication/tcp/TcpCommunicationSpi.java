@@ -1000,6 +1000,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /** Count of selectors to use in TCP server. */
     private int selectorsCnt = DFLT_SELECTORS_CNT;
 
+    /**
+     * Defines how many non-blocking {@code selector.selectNow()} should be made before
+     * falling into {@code selector.select(long)} in NIO server. Long value. Default is {@code 0}.
+     * Can be set to {@code Long.MAX_VALUE} so selector threads will never block.
+     */
+    private long selectorSpins = IgniteSystemProperties.getLong("IGNITE_SELECTOR_SPINS", 0L); // TODO
+
     /** Address resolver. */
     private AddressResolver addrRslvr;
 
@@ -1414,6 +1421,22 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /** {@inheritDoc} */
     @Override public int getSelectorsCount() {
         return selectorsCnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getSelectorSpins() {
+        return selectorSpins;
+    }
+
+    /**
+     * Defines how many non-blocking {@code selector.selectNow()} should be made before
+     * falling into {@code selector.select(long)} in NIO server. Long value. Default is {@code 0}.
+     * Can be set to {@code Long.MAX_VALUE} so selector threads will never block.
+     *
+     * @param selectorSpins Selector thread busy-loop iterations.
+     */
+    public void setSelectorSpins(long selectorSpins) {
+        this.selectorSpins = selectorSpins;
     }
 
     /**
@@ -2010,6 +2033,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         .directMode(true)
                         .metricsListener(metricsLsnr)
                         .writeTimeout(sockWriteTimeout)
+                        .selectorSpins(selectorSpins)
                         .filters(filters)
                         .writerFactory(writerFactory)
                         .skipRecoveryPredicate(skipRecoveryPred)
@@ -2022,7 +2046,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 if (log.isInfoEnabled())
                     log.info("Successfully bound communication NIO server to TCP port " +
                         "[port=" + boundTcpPort + ", locHost=" + locHost + ", selectorsCnt=" + selectorsCnt +
-                        ", parkDisabled=" + srvr.parkDisabled() + ", selectorSpins=" + srvr.selectorSpins() + ']');
+                        ", selectorSpins=" + srvr.selectorSpins() + ']');
 
                 srvr.idleTimeout(idleConnTimeout);
 
@@ -3276,8 +3300,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             int queueLimit = unackedMsgsBufSize != 0 ? unackedMsgsBufSize : (maxSize * 5);
 
             GridNioRecoveryDescriptor old =
-                recoveryDescs.putIfAbsent(key, recovery = new GridNioRecoveryDescriptor(queueLimit, node, log,
-                    ackSndThreshold));
+                recoveryDescs.putIfAbsent(key, recovery = new GridNioRecoveryDescriptor(queueLimit, node, log));
 
             if (old != null)
                 recovery = old;

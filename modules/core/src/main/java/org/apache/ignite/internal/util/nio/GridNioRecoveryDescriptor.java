@@ -78,20 +78,15 @@ public class GridNioRecoveryDescriptor {
     /** Number of descriptor reservations (for info purposes). */
     private int reserveCnt;
 
-    /** Ack send threshold (from configuration). */
-    private final int ackSndThreshold;
-
     /**
      * @param queueLimit Maximum size of unacknowledged messages queue.
      * @param node Node.
      * @param log Logger.
-     * @param ackSndThreshold Ack send threshold.
      */
     public GridNioRecoveryDescriptor(
         int queueLimit,
         ClusterNode node,
-        IgniteLogger log,
-        int ackSndThreshold
+        IgniteLogger log
     ) {
         assert !node.isLocal() : node;
         assert queueLimit > 0;
@@ -101,14 +96,6 @@ public class GridNioRecoveryDescriptor {
         this.queueLimit = queueLimit;
         this.node = node;
         this.log = log;
-        this.ackSndThreshold = ackSndThreshold;
-    }
-
-    /**
-     * @return Ack send threshold.
-     */
-    public int ackSendThreshold() {
-        return ackSndThreshold;
     }
 
     /**

@@ -47,7 +47,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -130,13 +129,8 @@ public class GridNioServer<T> {
         }
     }
 
-    /** */
-    private final long selectorSpins =
-        IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_SELECTOR_SPINS, 0);
-
-    /** */
-    private final boolean disablePark =
-        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_SELECTOR_PARK, true); // TODO
+    /** Defines how many times selector should do {@code selectNow()} before doing {@code select(long)}. */
+    private long selectorSpins;
 
     /** Accept worker thread. */
     @GridToStringExclude
@@ -240,6 +234,9 @@ public class GridNioServer<T> {
      * @param selectorCnt Count of selectors and selecting threads.
      * @param gridName Grid name.
      * @param srvName Logical server name for threads identification.
+     * @param selectorSpins Defines how many non-blocking {@code selector.selectNow()} should be made before
+     *      falling into {@code selector.select(long)} in NIO server. Long value. Default is {@code 0}.
+     *      Can be set to {@code Long.MAX_VALUE} so selector threads will never block.
      * @param tcpNoDelay If TCP_NODELAY option should be set to accepted sockets.
      * @param directBuf Direct buffer flag.
      * @param order Byte order.
@@ -263,6 +260,7 @@ public class GridNioServer<T> {
         int selectorCnt,
         @Nullable String gridName,
         @Nullable String srvName,
+        long selectorSpins,
         boolean tcpNoDelay,
         boolean directBuf,
         ByteOrder order,
@@ -299,6 +297,7 @@ public class GridNioServer<T> {
         this.sockSndBuf = sockSndBuf;
         this.sndQueueLimit = sndQueueLimit;
         this.msgQueueLsnr = msgQueueLsnr;
+        this.selectorSpins = selectorSpins;
 
         filterChain = new GridNioFilterChain<>(log, lsnr, new HeadFilter(), filters);
 
@@ -438,13 +437,6 @@ public class GridNioServer<T> {
      */
     public InetSocketAddress localAddress() {
         return locAddr;
-    }
-
-    /**
-     * @return {@code True} if park is disabled.
-     */
-    public boolean parkDisabled() {
-        return disablePark;
     }
 
     /**
@@ -974,13 +966,8 @@ public class GridNioServer<T> {
                             ses.procWrite.set(false);
 
                             if (ses.writeQueue().isEmpty()) {
-                                if ((key.interestOps() & SelectionKey.OP_WRITE) != 0) {
+                                if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
                                     key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
-
-                                    writeSesCnt--;
-
-                                    assert writeSesCnt >= 0;
-                                }
                             }
                             else
                                 ses.procWrite.set(true);
@@ -1069,17 +1056,6 @@ public class GridNioServer<T> {
                 return;
             }
 
-            int pendingAcks0 = -1;
-
-            GridNioRecoveryDescriptor desc = null;
-
-            if (!disablePark && writer) {
-                desc = ((GridSelectorNioSessionImpl)key.attachment()).outRecoveryDescriptor();
-
-                if (desc != null)
-                    pendingAcks0 = desc.messagesRequests().size() % desc.ackSendThreshold();
-            }
-
             ReadableByteChannel sockCh = (ReadableByteChannel)key.channel();
 
             final GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
@@ -1131,12 +1107,6 @@ public class GridNioServer<T> {
             catch (IgniteCheckedException e) {
                 close(ses, e);
             }
-
-            if (!disablePark && pendingAcks0 != -1) {
-                assert desc != null;
-
-                pendingAcks -= pendingAcks0 - (desc.messagesRequests().size() % desc.ackSendThreshold());
-            }
         }
 
         /**
@@ -1146,27 +1116,10 @@ public class GridNioServer<T> {
          * @throws IOException If write failed.
          */
         @Override protected void processWrite(SelectionKey key) throws IOException {
-            int pendingAcks0 = -1;
-
-            GridNioRecoveryDescriptor desc = null;
-
-            if (!disablePark && writer) {
-                desc = ((GridSelectorNioSessionImpl)key.attachment()).outRecoveryDescriptor();
-
-                if (desc != null)
-                    pendingAcks0 = desc.messagesRequests().size() % desc.ackSendThreshold();
-            }
-
             if (sslFilter != null)
                 processWriteSsl(key);
             else
                 processWrite0(key);
-
-            if (!disablePark && pendingAcks0 != -1) {
-                assert desc != null;
-
-                pendingAcks += (desc.messagesRequests().size() % desc.ackSendThreshold()) - pendingAcks0;
-            }
         }
 
         /**
@@ -1232,17 +1185,12 @@ public class GridNioServer<T> {
                             req = ses.pollFuture();
 
                             if (req == null && buf.position() == 0) {
-                                if (!this.writer || ses.procWrite.get()) {
+                                if (ses.procWrite.get()) {
                                     ses.procWrite.set(false);
 
                                     if (ses.writeQueue().isEmpty()) {
-                                        if ((key.interestOps() & SelectionKey.OP_WRITE) != 0) {
+                                        if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
                                             key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
-
-                                            writeSesCnt--;
-
-                                            assert writeSesCnt >= 0 : writeSesCnt;
-                                        }
                                     }
                                     else
                                         ses.procWrite.set(true);
@@ -1435,17 +1383,12 @@ public class GridNioServer<T> {
                     req = ses.pollFuture();
 
                     if (req == null && buf.position() == 0) {
-                        if (!this.writer || ses.procWrite.get()) {
+                        if (ses.procWrite.get()) {
                             ses.procWrite.set(false);
 
                             if (ses.writeQueue().isEmpty()) {
-                                if ((key.interestOps() & SelectionKey.OP_WRITE) != 0) {
+                                if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
                                     key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
-
-                                    writeSesCnt--;
-
-                                    assert writeSesCnt >= 0 : writeSesCnt;
-                                }
                             }
                             else
                                 ses.procWrite.set(true);
@@ -1571,20 +1514,8 @@ public class GridNioServer<T> {
         private final GridConcurrentHashSet<GridSelectorNioSessionImpl> workerSessions =
             new GridConcurrentHashSet<>();
 
-        /** Writer worker flag. */
-        protected final boolean writer;
-
-        /** {@code True} if calls 'selector.select'. */
+        /** {@code True} if worker has called or is about to call {@code Selector.select()}. */
         private volatile boolean select;
-
-        /** {@code True} if calls 'LockSupport.park'. */
-        private volatile boolean park;
-
-        /** Number of sessions which require writes. */
-        protected int writeSesCnt;
-
-        /** */
-        protected int pendingAcks;
 
         /**
          * @param idx Index of this worker in server's array.
@@ -1600,8 +1531,6 @@ public class GridNioServer<T> {
             createSelector();
 
             this.idx = idx;
-
-            writer = idx % 2 == 1;
         }
 
         /** {@inheritDoc} */
@@ -1690,8 +1619,6 @@ public class GridNioServer<T> {
 
             if (select)
                 selector.wakeup();
-            else if (!disablePark && park)
-                LockSupport.unpark(clientThreads[idx]);
         }
 
         /** {@inheritDoc} */
@@ -1732,6 +1659,7 @@ public class GridNioServer<T> {
             try {
                 long lastIdleCheck = U.currentTimeMillis();
 
+                mainLoop:
                 while (!closed && selector.isOpen()) {
                     SessionChangeRequest req0;
 
@@ -1766,9 +1694,6 @@ public class GridNioServer<T> {
                                         SelectionKey.OP_READ | SelectionKey.OP_WRITE,
                                         ses);
 
-                                    // New session is registered with OP_WRITE interest.
-                                    writeSesCnt++;
-
                                     ses.key(key);
 
                                     ses.procWrite.set(true);
@@ -1784,13 +1709,6 @@ public class GridNioServer<T> {
                                         SelectionKey key = ses.key();
 
                                         assert key.channel() != null : key;
-
-                                        // Cancelling key with OP_WRITE interest - need to decrement counter.
-                                        if ((key.interestOps() & SelectionKey.OP_WRITE) != 0) {
-                                            writeSesCnt--;
-
-                                            assert writeSesCnt >= 0 : writeSesCnt;
-                                        }
 
                                         f.movedSocketChannel((SocketChannel)key.channel());
 
@@ -1878,46 +1796,36 @@ public class GridNioServer<T> {
                         }
                     }
 
-                    if (!disablePark && writer && writeSesCnt == 0 && pendingAcks == 0) {
-                        park = true;
-
-                        try {
-                            while (changeReqs.isEmpty()) {
-                                LockSupport.parkNanos(1_000_000_000);
-
-                                if (Thread.interrupted()) {
-                                    Thread.currentThread().interrupt();
-
-                                    return;
-                                }
-                            }
-
-                            assert !changeReqs.isEmpty();
-
-                            continue;
-                        }
-                        finally {
-                            park = false;
-                        }
-                    }
-
                     int res = 0;
 
-                    for (long i = 0; i < selectorSpins && res == 0; i++)
+                    for (long i = 0; i < selectorSpins && res == 0; i++) {
                         res = selector.selectNow();
 
-                    if (res > 0) {
-                        // Walk through the ready keys collection and process network events.
-                        if (selectedKeys == null)
-                            processSelectedKeys(selector.selectedKeys());
-                        else
-                            processSelectedKeysOptimized(selectedKeys.flip());
+                        if (res > 0) {
+                            // Walk through the ready keys collection and process network events.
+                            if (selectedKeys == null)
+                                processSelectedKeys(selector.selectedKeys());
+                            else
+                                processSelectedKeysOptimized(selectedKeys.flip());
+                        }
+
+                        if (!changeReqs.isEmpty())
+                            continue mainLoop;
+
+                        // Just in case we do busy selects.
+                        long now = U.currentTimeMillis();
+
+                        if (now - lastIdleCheck > 2000) {
+                            lastIdleCheck = now;
+
+                            checkIdle(selector.keys());
+                        }
+
+                        if (isCancelled())
+                            return;
                     }
 
-                    if (!changeReqs.isEmpty() ||
-                        (!disablePark && writer && pendingAcks == 0 && selectorSpins != 0))
-                        continue;
-
+                    // Falling to blocking select.
                     select = true;
 
                     try {
@@ -1981,11 +1889,9 @@ public class GridNioServer<T> {
             SelectionKey key = ses.key();
 
             if (key.isValid()) {
-                if ((key.interestOps() & SelectionKey.OP_WRITE) == 0) {
+                if ((key.interestOps() & SelectionKey.OP_WRITE) == 0)
                     key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
 
-                    writeSesCnt++;
-                }
 
                 // Update timestamp to protected against false write timeout.
                 ses.bytesSent(0);
@@ -2160,26 +2066,6 @@ public class GridNioServer<T> {
         }
 
         /**
-         * @return Always {@code true} to put it to assert statement.
-         */
-        protected boolean consistent() {
-            int wsCnt = 0;
-
-            for (SelectionKey key : selector.keys()) {
-                boolean opWrite = key.isValid() && (key.interestOps() & SelectionKey.OP_WRITE) != 0;
-
-                if (opWrite)
-                    wsCnt++;
-            }
-
-            assert wsCnt == writeSesCnt : "Worker in illegal state [actualWriteSesCnt=" + wsCnt +
-                ", calculatedWriteSesCnt=" + writeSesCnt +
-                ", worker=" + this + ']';
-
-            return true;
-        }
-
-        /**
          * Checks sessions assigned to a selector for timeouts.
          *
          * @param keys Keys registered to selector.
@@ -2221,9 +2107,6 @@ public class GridNioServer<T> {
                     close(ses,  e);
                 }
             }
-
-            // For test purposes only!
-            assert consistent();
         }
 
         /**
@@ -2340,12 +2223,6 @@ public class GridNioServer<T> {
 
                 // Shutdown input and output so that remote client will see correct socket close.
                 Socket sock = ((SocketChannel)key.channel()).socket();
-
-                if (key.isValid() && (key.interestOps() & SelectionKey.OP_WRITE) != 0) {
-                    writeSesCnt--;
-
-                    assert writeSesCnt >= 0 : writeSesCnt;
-                }
 
                 try {
                     try {
@@ -3243,6 +3120,9 @@ public class GridNioServer<T> {
         /** Name for threads identification. */
         private String srvName;
 
+        /** */
+        private long selectorSpins;
+
         /**
          * Finishes building the instance.
          *
@@ -3257,6 +3137,7 @@ public class GridNioServer<T> {
                 selectorCnt,
                 gridName,
                 srvName,
+                selectorSpins,
                 tcpNoDelay,
                 directBuf,
                 byteOrder,
@@ -3339,6 +3220,18 @@ public class GridNioServer<T> {
          */
         public Builder<T> serverName(@Nullable String srvName) {
             this.srvName = srvName;
+
+            return this;
+        }
+
+        /**
+         * @param selectorSpins Defines how many non-blocking {@code selector.selectNow()} should be made before
+         *      falling into {@code selector.select(long)} in NIO server. Long value. Default is {@code 0}.
+         *      Can be set to {@code Long.MAX_VALUE} so selector threads will never block.
+         * @return This for chaining.
+         */
+        public Builder<T> selectorSpins(long selectorSpins) {
+            this.selectorSpins = selectorSpins;
 
             return this;
         }
