@@ -42,6 +42,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.*;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
+import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
 import org.apache.ignite.platform.dotnet.*;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -57,6 +58,8 @@ import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpiMBean;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
+import javax.cache.configuration.Factory;
+import javax.cache.expiry.ExpiryPolicy;
 import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -186,8 +189,43 @@ public class PlatformConfigurationUtils {
 
         ccfg.setEvictionPolicy(readEvictionPolicy(in));
         ccfg.setAffinity(readAffinityFunction(in));
+        ccfg.setExpiryPolicyFactory(readExpiryPolicyFactory(in));
 
         return ccfg;
+    }
+
+    /**
+     * Reads the expiry policy factory.
+     *
+     * @param in Reader.
+     * @return Expiry policy factory.
+     */
+    private static Factory<? extends ExpiryPolicy> readExpiryPolicyFactory(BinaryRawReader in) {
+        if (!in.readBoolean())
+            return null;
+
+        return new PlatformExpiryPolicyFactory(in.readLong(), in.readLong(), in.readLong());
+    }
+
+    /**
+     * Writes the policy factory.
+     *
+     * @param out Writer.
+     */
+    private static void writeExpiryPolicyFactory(BinaryRawWriter out, Factory<? extends ExpiryPolicy> factory) {
+        if (!(factory instanceof PlatformExpiryPolicyFactory)) {
+            out.writeBoolean(false);
+
+            return;
+        }
+
+        out.writeBoolean(true);
+
+        PlatformExpiryPolicyFactory f = (PlatformExpiryPolicyFactory)factory;
+
+        out.writeLong(f.getCreate());
+        out.writeLong(f.getUpdate());
+        out.writeLong(f.getAccess());
     }
 
     /**
@@ -753,6 +791,7 @@ public class PlatformConfigurationUtils {
 
         writeEvictionPolicy(writer, ccfg.getEvictionPolicy());
         writeAffinityFunction(writer, ccfg.getAffinity());
+        writeExpiryPolicyFactory(writer, ccfg.getExpiryPolicyFactory());
     }
 
     /**
