@@ -50,6 +50,7 @@
     <Compile Include="Datagrid\ContinuousQueryFilter.cs" />
     <Compile Include="Datagrid\EmployeeStore.cs" />
     <Compile Include="Datagrid\ScanQueryFilter.cs" />
+    <Compile Include="DataStructures\AtomicLongIncrementAction.cs" />
     <Compile Include="Events\LocalListener.cs" />
     <Compile Include="Messaging\LocalListener.cs" />
     <Compile Include="Messaging\RemoteOrderedListener.cs" />
