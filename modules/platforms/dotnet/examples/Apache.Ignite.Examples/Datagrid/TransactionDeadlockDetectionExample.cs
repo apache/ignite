@@ -60,7 +60,7 @@ namespace Apache.Ignite.Examples.Datagrid
             using (var ignite = Ignition.StartFromApplicationConfiguration())
             {
                 Console.WriteLine();
-                Console.WriteLine(">>> Transaction deadlock example started.");
+                Console.WriteLine(">>> Transaction deadlock detection example started.");
 
                 var cache = ignite.GetOrCreateCache<int, int>(new CacheConfiguration
                 {
@@ -109,6 +109,7 @@ namespace Apache.Ignite.Examples.Datagrid
             }
             catch (TransactionDeadlockException e)
             {
+                // Print out detected deadlock details:
                 Console.WriteLine("\n>>> Transaction deadlock in thread {0}: {1}", threadId, e.Message);
             }
             catch (Exception e)
