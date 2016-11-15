@@ -610,14 +610,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private ExchangeType onCacheChangeRequest(boolean crd) throws IgniteCheckedException {
         assert !F.isEmpty(reqs) : this;
 
-        for (DynamicCacheChangeRequest req : reqs) {
-            if (req.globalStateChange()) {
-                cctx.cache().beforeActivate(req, topologyVersion());
-
-                break;
-            }
-        }
-
         boolean clientOnly = cctx.affinity().onCacheChangeRequest(this, crd, reqs);
 
         if (clientOnly) {
