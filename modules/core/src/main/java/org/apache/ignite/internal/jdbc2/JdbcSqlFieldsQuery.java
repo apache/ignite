@@ -21,19 +21,19 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * {@link SqlFieldsQuery} with taste of JDBC - it has additional flag indicating whether JDBC driver expects
+ * {@link SqlFieldsQuery} with JDBC flavor - it has additional flag indicating whether JDBC driver expects
  * this query to return a result set or an update counter. This class is not intended for use outside JDBC driver.
  */
 public final class JdbcSqlFieldsQuery extends SqlFieldsQuery {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Flag set by JDBC driver to enforce checks for correct operation type. Ignored if null. */
+    /** Flag set by JDBC driver to enforce checks for correct operation type. */
     private final boolean isQry;
 
     /**
      * @param sql SQL query.
-     * @param isQry Flag indicating whether this object denotes a query or an update operation. May be missing ({@code null}).
+     * @param isQry Flag indicating whether this object denotes a query or an update operation.
      */
     JdbcSqlFieldsQuery(String sql, boolean isQry) {
         super(sql);
@@ -41,9 +41,9 @@ public final class JdbcSqlFieldsQuery extends SqlFieldsQuery {
     }
 
     /**
-     * @return Flag indicating whether this object denotes a query or an update operation. May be missing ({@code null}).
+     * @return Flag indicating whether this object denotes a query or an update operation..
      */
-    @Nullable public Boolean isQuery() {
+    public boolean isQuery() {
         return isQry;
     }
 }

@@ -68,6 +68,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.jdbc2.JdbcSqlFieldsQuery;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -1310,6 +1311,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             finally {
                 GridH2QueryContext.clearThreadLocal();
             }
+
+            if (qry instanceof JdbcSqlFieldsQuery && ((JdbcSqlFieldsQuery) qry).isQuery() !=
+                GridSqlQueryParser.prepared((JdbcPreparedStatement) stmt).isQuery())
+                throw createSqlException("Given statement type does not match that declared by JDBC driver",
+                    ErrorCode.UNKNOWN_MODE_1);
 
             try {
                 bindParameters(stmt, F.asList(qry.getArgs()));

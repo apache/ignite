@@ -49,11 +49,8 @@ import org.apache.ignite.resources.IgniteInstanceResource;
  * Not closed cursors will be removed after {@link #RMV_DELAY} milliseconds.
  * This parameter can be configured via {@link IgniteSystemProperties#IGNITE_JDBC_DRIVER_CURSOR_REMOVE_DELAY}
  * system property.
- *
- * Deprecated due to introduction of DML features - see {@link JdbcQueryTaskV2}.
  */
-@Deprecated
-class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
+class JdbcQueryTaskV2 implements IgniteCallable<JdbcQueryTaskV2.QueryResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -80,6 +77,9 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
     /** Sql. */
     private final String sql;
 
+    /** Operation type flag - query or not. */
+    private Boolean isQry;
+
     /** Args. */
     private final Object[] args;
 
@@ -102,6 +102,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
      * @param ignite Ignite.
      * @param cacheName Cache name.
      * @param sql Sql query.
+     * @param isQry Operation type flag - query or not - to enforce query type check.
      * @param loc Local execution flag.
      * @param args Args.
      * @param fetchSize Fetch size.
@@ -110,14 +111,15 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
      * @param collocatedQry Collocated query flag.
      * @param distributedJoins Distributed joins flag.
      */
-    public JdbcQueryTask(Ignite ignite, String cacheName, String sql,
-        boolean loc, Object[] args, int fetchSize, UUID uuid,
-        boolean locQry, boolean collocatedQry, boolean distributedJoins) {
+    public JdbcQueryTaskV2(Ignite ignite, String cacheName, String sql,
+                           Boolean isQry, boolean loc, Object[] args, int fetchSize, UUID uuid,
+                           Boolean locQry, boolean collocatedQry, boolean distributedJoins) {
         this.ignite = ignite;
         this.args = args;
         this.uuid = uuid;
         this.cacheName = cacheName;
         this.sql = sql;
+        this.isQry = isQry;
         this.fetchSize = fetchSize;
         this.loc = loc;
         this.locQry = locQry;
@@ -126,7 +128,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
     }
 
     /** {@inheritDoc} */
-    @Override public JdbcQueryTask.QueryResult call() throws Exception {
+    @Override public JdbcQueryTaskV2.QueryResult call() throws Exception {
         Cursor cursor = CURSORS.get(uuid);
 
         List<String> tbls = null;
@@ -151,16 +153,20 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
                     throw new SQLException("Cache not found [cacheName=" + cacheName + ']');
             }
 
-            SqlFieldsQuery qry = new SqlFieldsQuery(sql).setArgs(args);
+            SqlFieldsQuery qry = (isQry != null ? new JdbcSqlFieldsQuery(sql, isQry) : new SqlFieldsQuery(sql))
+                .setArgs(args);
 
             qry.setPageSize(fetchSize);
             qry.setLocal(locQry);
             qry.setCollocated(collocatedQry);
             qry.setDistributedJoins(distributedJoins);
 
-            QueryCursor<List<?>> qryCursor = cache.query(qry);
+            QueryCursorImpl<List<?>> qryCursor = (QueryCursorImpl<List<?>>)cache.query(qry);
 
-            Collection<GridQueryFieldMetadata> meta = ((QueryCursorImpl<List<?>>)qryCursor).fieldsMeta();
+            if (isQry == null)
+                isQry = qryCursor.isResultSet();
+
+            Collection<GridQueryFieldMetadata> meta = qryCursor.fieldsMeta();
 
             tbls = new ArrayList<>(meta.size());
             cols = new ArrayList<>(meta.size());
@@ -200,7 +206,9 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
         else if (!loc && !CURSORS.replace(uuid, cursor, new Cursor(cursor.cursor, cursor.iter)))
             assert !CURSORS.containsKey(uuid) : "Concurrent cursor modification.";
 
-        return new QueryResult(uuid, finished, rows, cols, tbls, types);
+        assert isQry != null : "Query flag must be set prior to returning result";
+
+        return new QueryResult(uuid, finished, isQry, rows, cols, tbls, types);
     }
 
     /**
@@ -275,6 +283,9 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
         /** Finished. */
         private final boolean finished;
 
+        /** Result type - query or update. */
+        private final boolean isQry;
+
         /** Rows. */
         private final List<List<?>> rows;
 
@@ -290,13 +301,15 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
         /**
          * @param uuid UUID..
          * @param finished Finished.
+         * @param isQry
          * @param rows Rows.
          * @param cols Columns.
          * @param tbls Tables.
          * @param types Types.
          */
-        public QueryResult(UUID uuid, boolean finished, List<List<?>> rows, List<String> cols,
+        public QueryResult(UUID uuid, boolean finished, boolean isQry, List<List<?>> rows, List<String> cols,
             List<String> tbls, List<String> types) {
+            this.isQry = isQry;
             this.cols = cols;
             this.uuid = uuid;
             this.finished = finished;
@@ -345,6 +358,13 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
          */
         public boolean isFinished() {
             return finished;
+        }
+
+        /**
+         * @return {@code true} if it is result of a query operation, not update; {@code false} otherwise.
+         */
+        public boolean isQuery() {
+            return isQry;
         }
     }
 

@@ -109,7 +109,7 @@ public class JdbcStatement implements Statement {
 
         boolean loc = nodeId == null;
 
-        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), sql, true, loc, getArgs(),
+        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), sql, loc, getArgs(),
             fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
 
         try {
@@ -163,20 +163,23 @@ public class JdbcStatement implements Statement {
 
         boolean loc = nodeId == null;
 
-        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), sql, false, loc, args,
+        if (!conn.isDmlSupported())
+            throw new SQLException("Failed to query Ignite: DML operations are supported in versions 1.8.0 and newer");
+
+        JdbcQueryTaskV2 qryTask = new JdbcQueryTaskV2(loc ? ignite : null, conn.cacheName(), sql, false, loc, args,
             fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
 
         try {
-            JdbcQueryTask.QueryResult qryRes =
+            JdbcQueryTaskV2.QueryResult qryRes =
                 loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
 
-            return updateCnt = updateCounterFromQueryResult(qryRes);
+            return updateCnt = updateCounterFromQueryResult(qryRes.getRows());
         }
         catch (IgniteSQLException e) {
             throw e.toJdbcException();
         }
         catch (SQLException e) {
-            throw  e;
+            throw e;
         }
         catch (Exception e) {
             throw new SQLException("Failed to query Ignite.", e);
@@ -184,14 +187,12 @@ public class JdbcStatement implements Statement {
     }
 
     /**
-     * @param qryRes query result.
+     * @param rows query result.
      * @return update counter, if found
      * @throws SQLException if getting an update counter from result proved to be impossible.
      */
-    private static int updateCounterFromQueryResult(JdbcQueryTask.QueryResult qryRes) throws SQLException {
-        List<List<?>> rows = qryRes.getRows();
-
-        if (F.isEmpty(rows))
+    private static int updateCounterFromQueryResult(List<List<?>> rows) throws SQLException {
+         if (F.isEmpty(rows))
             return 0;
 
         if (rows.size() != 1)
@@ -307,6 +308,14 @@ public class JdbcStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public boolean execute(String sql) throws SQLException {
+        if (!conn.isDmlSupported()) {
+            // We attempt to run a query without any checks as long as server does not support DML anyway,
+            // so it simply will throw an exception when given a DML statement instead of a query.
+            executeQuery(sql);
+
+            return true;
+        }
+
         ensureNotClosed();
 
         rs = null;
@@ -324,11 +333,11 @@ public class JdbcStatement implements Statement {
 
         boolean loc = nodeId == null;
 
-        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), sql, null, loc, getArgs(),
+        JdbcQueryTaskV2 qryTask = new JdbcQueryTaskV2(loc ? ignite : null, conn.cacheName(), sql, null, loc, getArgs(),
             fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
 
         try {
-            JdbcQueryTask.QueryResult res =
+            JdbcQueryTaskV2.QueryResult res =
                 loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
 
             if (res.isQuery()) {
@@ -342,7 +351,7 @@ public class JdbcStatement implements Statement {
                 this.rs = rs;
             }
             else
-                updateCnt = updateCounterFromQueryResult(res);
+                updateCnt = updateCounterFromQueryResult(res.getRows());
 
             return res.isQuery();
         }
