@@ -41,7 +41,7 @@ namespace Apache.Ignite.Examples.Datagrid
     /// Apache.Ignite.exe -configFileName=platforms\dotnet\examples\apache.ignite.examples\app.config -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 2) Start example.
     /// </summary>
-    public class TransactionDeadlockExample
+    public class TransactionDeadlockDetectionExample
     {
         /// <summary>Cache name.</summary>
         private const string CacheName = "dotnet_cache_tx_deadlock";
