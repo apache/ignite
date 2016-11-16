@@ -15,23 +15,21 @@
  * limitations under the License.
  */
 
-.ignite-nodes-dialog {
-    label {
-        font-size: 18px;
-        margin-right: 20px;
-    }
+package org.apache.ignite.cache.query;
 
-    .ui-grid-pinned-container.ui-grid-pinned-container-left .ui-grid-cell:last-child,
-    .ui-grid-pinned-container.ui-grid-pinned-container-left .ui-grid-header-cell:last-child,
-    .ui-grid-header-cell:last-child .ui-grid-column-resizer.right {
-      //border-right: none;
-    }
+import org.apache.ignite.IgniteCheckedException;
 
-    .nodes-grid {
-        height: 320px;
-    }
-    .panel-body_collapse {
-        padding: 0;
-        margin: 0;
+/**
+ * The exception is thrown if a query was cancelled or timed out while executing.
+ */
+public class QueryCancelledException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /**
+     * Default constructor.
+     */
+    public QueryCancelledException() {
+        super("The query was cancelled while executing.");
     }
 }

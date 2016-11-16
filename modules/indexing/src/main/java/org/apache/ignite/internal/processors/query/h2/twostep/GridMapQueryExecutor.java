@@ -35,6 +35,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
@@ -53,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservabl
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
+import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
@@ -426,7 +428,8 @@ public class GridMapQueryExecutor {
             req.partitions(),
             null,
             req.pageSize(),
-            false);
+            false,
+            req.timeout());
     }
 
     /**
@@ -447,7 +450,8 @@ public class GridMapQueryExecutor {
             parts,
             req.tables(),
             req.pageSize(),
-            req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS));
+            req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS),
+            req.timeout());
     }
 
     /**
@@ -474,7 +478,8 @@ public class GridMapQueryExecutor {
         int[] parts,
         Collection<String> tbls,
         int pageSize,
-        boolean distributedJoins
+        boolean distributedJoins,
+        int timeout
     ) {
         // Prepare to run queries.
         GridCacheContext<?, ?> mainCctx = ctx.cache().context().cacheContext(cacheIds.get(0));
@@ -547,7 +552,7 @@ public class GridMapQueryExecutor {
 
                     nodeRess.cancelRequest(reqId);
 
-                    return;
+                    throw new QueryCancelledException();
                 }
 
                 // Run queries.
@@ -557,7 +562,9 @@ public class GridMapQueryExecutor {
 
                 for (GridCacheSqlQuery qry : qrys) {
                     ResultSet rs = h2.executeSqlQueryWithTimer(mainCctx.name(), conn, qry.query(),
-                        F.asList(qry.parameters()), true);
+                        F.asList(qry.parameters()), true,
+                        timeout,
+                        qr.cancels[qryIdx]);
 
                     if (evt) {
                         ctx.event().record(new CacheQueryExecutedEvent<>(
@@ -582,7 +589,7 @@ public class GridMapQueryExecutor {
                     if (qr.canceled) {
                         qr.result(qryIdx).close();
 
-                        return;
+                        throw new QueryCancelledException();
                     }
 
                     // Send the first page.
@@ -607,7 +614,7 @@ public class GridMapQueryExecutor {
             if (qr != null) {
                 nodeRess.remove(reqId, threadIdx, qr);
 
-                qr.cancel();
+                qr.cancel(false);
             }
 
             if (X.hasCause(e, GridH2RetryException.class))
@@ -661,10 +668,22 @@ public class GridMapQueryExecutor {
     private void onNextPageRequest(ClusterNode node, GridQueryNextPageRequest req) {
         NodeResults nodeRess = qryRess.get(node.id());
 
-        QueryResults qr = nodeRess == null ? null : nodeRess.get(req.queryRequestId(), req.threadIdx());
+        if (nodeRess == null) {
+            sendError(node, req.queryRequestId(), new CacheException("No node result found for request: " + req));
 
-        if (qr == null || qr.canceled)
+            return;
+        } else if (nodeRess.cancelled(req.queryRequestId())) {
+            sendError(node, req.queryRequestId(), new QueryCancelledException());
+
+            return;
+        }
+
+        QueryResults qr = nodeRess.get(req.queryRequestId(), req.threadIdx());
+
+        if (qr == null)
             sendError(node, req.queryRequestId(), new CacheException("No query result found for request: " + req));
+        else if (qr.canceled)
+            sendError(node, req.queryRequestId(), new QueryCancelledException());
         else
             sendNextPage(nodeRess, node, qr, req.query(), req.threadIdx(), req.pageSize());
     }
@@ -795,7 +814,7 @@ public class GridMapQueryExecutor {
 
         /**
          * Cancel all thread of given request.
-         * @param qryId Query ID.
+         * @param reqID Request ID.
          */
         public void cancelRequest(long reqID) {
             for (QueryThreadKey key : res.keySet()) {
@@ -803,7 +822,7 @@ public class GridMapQueryExecutor {
                     QueryResults removed = res.remove(key);
 
                     if (removed != null)
-                        removed.cancel();
+                        removed.cancel(true);
                 }
 
             }
@@ -834,7 +853,7 @@ public class GridMapQueryExecutor {
          */
         public void cancelAll() {
             for (QueryResults ress : res.values())
-                ress.cancel();
+                ress.cancel(true);
         }
 
         /**
@@ -886,7 +905,10 @@ public class GridMapQueryExecutor {
         private final AtomicReferenceArray<QueryResult> results;
 
         /** */
-        private final GridCacheContext<?, ?> cctx;
+        private final GridQueryCancel[] cancels;
+
+        /** */
+        private final GridCacheContext<?,?> cctx;
 
         /** */
         private volatile boolean canceled;
@@ -902,6 +924,10 @@ public class GridMapQueryExecutor {
             this.cctx = cctx;
 
             results = new AtomicReferenceArray<>(qrys);
+            cancels = new GridQueryCancel[qrys];
+
+            for (int i = 0; i < cancels.length; i++)
+                cancels[i] = new GridQueryCancel();
         }
 
         /**
@@ -938,9 +964,9 @@ public class GridMapQueryExecutor {
         }
 
         /**
-         *
+         * Cancels the query.
          */
-        void cancel() {
+        void cancel(boolean forceQryCancel) {
             if (canceled)
                 return;
 
@@ -949,8 +975,18 @@ public class GridMapQueryExecutor {
             for (int i = 0; i < results.length(); i++) {
                 QueryResult res = results.get(i);
 
-                if (res != null)
+                if (res != null) {
                     res.close();
+
+                    continue;
+                }
+
+                if (forceQryCancel) {
+                    GridQueryCancel cancel = cancels[i];
+
+                    if (cancel != null)
+                        cancel.cancel();
+                }
             }
         }
     }

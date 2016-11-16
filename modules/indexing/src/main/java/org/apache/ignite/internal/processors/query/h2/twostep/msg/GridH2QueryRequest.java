@@ -45,8 +45,8 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     private static final long serialVersionUID = 0L;
 
     /**
-     * Map query will not destroy context until explicit query cancel request
-     * will be received because distributed join requests can be received.
+     * Map query will not destroy context until explicit query cancel request will be received because distributed join
+     * requests can be received.
      */
     public static int FLAG_DISTRIBUTED_JOINS = 1;
 
@@ -84,6 +84,9 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     @GridToStringInclude
     @GridDirectCollection(String.class)
     private Collection<String> tbls;
+
+    /** */
+    private int timeout;
 
     /**
      * @param tbls Tables.
@@ -156,7 +159,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     /**
      * @return Explicit partitions mapping.
      */
-    public Map<UUID,int[]> partitions() {
+    public Map<UUID, int[]> partitions() {
         return parts;
     }
 
@@ -164,7 +167,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
      * @param parts Explicit partitions mapping.
      * @return {@code this}.
      */
-    public GridH2QueryRequest partitions(Map<UUID,int[]> parts) {
+    public GridH2QueryRequest partitions(Map<UUID, int[]> parts) {
         this.parts = parts;
 
         return this;
@@ -237,6 +240,23 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
      */
     public boolean isFlagSet(int flags) {
         return (this.flags & flags) == flags;
+    }
+
+    /**
+     * @return Timeout.
+     */
+    public int timeout() {
+        return timeout;
+    }
+
+    /**
+     * @param timeout New timeout.
+     * @return {@code this}.
+     */
+    public GridH2QueryRequest timeout(int timeout) {
+        this.timeout = timeout;
+
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -318,6 +338,12 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 writer.incrementState();
 
             case 8:
+                if (!writer.writeInt("timeout", timeout))
+                    return false;
+
+                writer.incrementState();
+
+            case 9:
                 if (!writer.writeInt("threadIdx", threadIdx))
                     return false;
 
@@ -402,6 +428,14 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 8:
+                timeout = reader.readInt("timeout");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 9:
                 threadIdx = reader.readInt("threadIdx");
 
                 if (!reader.isLastRead())
@@ -420,7 +454,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 9;
+        return 10;
     }
 
     /** {@inheritDoc} */
