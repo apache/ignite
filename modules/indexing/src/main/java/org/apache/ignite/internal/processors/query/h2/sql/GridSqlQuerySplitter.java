@@ -199,7 +199,6 @@ public class GridSqlQuerySplitter {
         GridCacheSqlQuery rdc = split(res, 0, mapQry, params, collocatedGrpBy);
 
         res.reduceQuery(rdc);
-        res.initialStatement(qry);
 
         // We do not have to look at each map query separately here, because if
         // the whole initial query is collocated, then all the map sub-queries

@@ -18,147 +18,30 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
-import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.lang.GridTriple;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.h2.command.Prepared;
-import org.h2.command.dml.Delete;
-import org.h2.command.dml.Explain;
-import org.h2.command.dml.Insert;
-import org.h2.command.dml.Merge;
-import org.h2.command.dml.Query;
-import org.h2.command.dml.Update;
-import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.table.Column;
 import org.h2.util.IntArray;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2CollocationModel.isCollocated;
-import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.prepared;
-import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.query;
-import static org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor.toArray;
-
 /**
- * Arbitrary SQL statement splitter (queries and DML statements).
+ * AST utils for DML
  */
-public final class GridSqlStatementSplitter {
+public final class DmlAstUtils {
     /**
      * Empty ctor to prevent initialization.
      */
-    private GridSqlStatementSplitter() {
+    private DmlAstUtils() {
         // No-op.
-    }
-
-    /**
-     * @param stmt Prepared statement.
-     * @param params Parameters.
-     * @param injectKeysFilter Whether only specific keys must be selected.
-     * @param collocatedGrpBy Whether the query has collocated GROUP BY keys.
-     * @param distributedJoins If distributed joins enabled.
-     * @return Two step query.
-     */
-    public static GridCacheTwoStepQuery split(JdbcPreparedStatement stmt, Object[] params, Object[] injectKeysFilter,
-        boolean collocatedGrpBy, boolean distributedJoins) throws IgniteCheckedException {
-        if (params == null)
-            params = GridCacheSqlQuery.EMPTY_PARAMS;
-
-        final Prepared prepared = prepared(stmt);
-
-        if (prepared instanceof Query || prepared instanceof Explain)
-            return GridSqlQuerySplitter.split(stmt, params, collocatedGrpBy, distributedJoins);
-
-        if (prepared instanceof Merge || prepared instanceof Update || prepared instanceof Insert ||
-            prepared instanceof Delete)
-            return GridSqlStatementSplitter.splitUpdateQuery(prepared, params, injectKeysFilter, collocatedGrpBy,
-                distributedJoins);
-
-        throw new UnsupportedOperationException("Query not supported [cls=" + prepared.getClass().getName() + "]");
-    }
-
-    /**
-     * @param prepared Prepared SQL INSERT, MERGE, UPDATE, or DELETE statement.
-     * @param params Parameters.
-     * @param keysFilter Whether only specific keys must be selected.
-     * @param collocatedGrpBy Collocated SELECT (for WHERE and subqueries).
-     * @param distributedJoins If distributed joins enabled.    @return Two step query.
-     */
-    private static GridCacheTwoStepQuery splitUpdateQuery(Prepared prepared, Object[] params, Object[] keysFilter,
-            boolean collocatedGrpBy, final boolean distributedJoins) throws IgniteCheckedException {
-        GridSqlStatement gridStmt = new GridSqlQueryParser().parse(prepared);
-
-        assert gridStmt instanceof GridSqlInsert || gridStmt instanceof GridSqlMerge ||
-            gridStmt instanceof GridSqlUpdate || gridStmt instanceof GridSqlDelete : "SQL update operation expected";
-
-        if (gridStmt instanceof GridSqlUpdate)
-            return splitUpdate((GridSqlUpdate)gridStmt, params, keysFilter, collocatedGrpBy, distributedJoins);
-
-        if (gridStmt instanceof GridSqlDelete)
-            return splitDelete((GridSqlDelete)gridStmt, params, keysFilter, collocatedGrpBy, distributedJoins);
-
-        GridSqlElement target;
-
-        GridSqlQuery sel;
-
-        boolean hasRows;
-
-        if (gridStmt instanceof GridSqlInsert) {
-            GridSqlInsert ins = (GridSqlInsert) gridStmt;
-            target = ins.into();
-            hasRows = !F.isEmpty(ins.rows());
-            sel = selectForInsertOrMerge(ins.rows(), ins.query());
-        }
-        else {
-            GridSqlMerge merge = (GridSqlMerge) gridStmt;
-            target = merge.into();
-            hasRows = !F.isEmpty(merge.rows());
-            sel = selectForInsertOrMerge(merge.rows(), merge.query());
-        }
-
-        assert target != null : "Failed to retrieve target for SQL update operation";
-
-        // Build resulting two step query.
-        GridCacheTwoStepQuery res;
-
-        if (!hasRows) // INSERT or MERGE from SELECT
-            res = GridSqlQuerySplitter.split(sel, params, collocatedGrpBy, distributedJoins);
-        else {
-            res = new GridCacheTwoStepQuery(new HashSet<String>(), new HashSet<String>());
-
-            IntArray paramIdxs = new IntArray(params.length);
-
-            GridCacheSqlQuery rdc = new GridCacheSqlQuery(sel.getSQL(),
-                findParams(sel, params, new ArrayList<>(), paramIdxs).toArray());
-
-            rdc.parameterIndexes(toArray(paramIdxs));
-
-            res.reduceQuery(rdc);
-
-            // We do not have to look at each map query separately here, because if
-            // the whole initial query is collocated, then all the map sub-queries
-            // will be collocated as well.
-            //
-            // Statement left for clarity - currently update operations don't really care much about joins.
-            res.distributedJoins(distributedJoins && !isCollocated(query(prepared)));
-        }
-
-        GridSqlQuerySplitter.collectAllTablesInFrom(target, res.schemas(), res.tables());
-
-        res.initialStatement(gridStmt);
-
-        return res;
     }
 
     /**
@@ -182,27 +65,6 @@ public final class GridSqlStatementSplitter {
 
             return subQry;
         }
-    }
-
-    /** */
-    @SuppressWarnings("ConstantConditions")
-    private static GridCacheTwoStepQuery splitDelete(GridSqlDelete del, Object[] params, Object[] keysFilter,
-                                                     boolean collocatedGrpBy, boolean distributedJoins) throws IgniteCheckedException {
-        GridTriple<GridSqlElement> singleUpdate = getSingleItemFilter(del);
-
-        if (singleUpdate != null)
-            return twoStepQueryForSingleItem(del, del.from(), singleUpdate);
-
-        int paramsCnt = F.isEmpty(params) ? 0 : params.length;
-        GridSqlSelect mapQry = mapQueryForDelete(del, !F.isEmpty(keysFilter) ? paramsCnt : null);
-
-        params = Arrays.copyOf(U.firstNotNull(params, X.EMPTY_OBJECT_ARRAY), paramsCnt + 1);
-        params[paramsCnt] = keysFilter;
-
-        GridCacheTwoStepQuery res = GridSqlQuerySplitter.split(mapQry, params, collocatedGrpBy, distributedJoins);
-        res.initialStatement(del);
-
-        return res;
     }
 
     /**
@@ -251,50 +113,6 @@ public final class GridSqlStatementSplitter {
         mapQry.limit(del.limit());
 
         return mapQry;
-    }
-
-    /** */
-    @SuppressWarnings("ConstantConditions")
-    private static GridCacheTwoStepQuery splitUpdate(GridSqlUpdate update, Object[] params, Object[] keysFilter,
-                                                     boolean collocatedGrpBy, boolean distributedJoins) throws IgniteCheckedException {
-        GridTriple<GridSqlElement> singleUpdate = getSingleItemFilter(update);
-
-        if (singleUpdate != null)
-            return twoStepQueryForSingleItem(update, update.target(), singleUpdate);
-
-        int paramsCnt = F.isEmpty(params) ? 0 : params.length;
-        GridSqlSelect mapQry = mapQueryForUpdate(update, !F.isEmpty(keysFilter) ? paramsCnt: null);
-
-        params = Arrays.copyOf(U.firstNotNull(params, X.EMPTY_OBJECT_ARRAY), paramsCnt + 1);
-        params[paramsCnt] = keysFilter;
-
-        GridCacheTwoStepQuery res = GridSqlQuerySplitter.split(mapQry, params, collocatedGrpBy, distributedJoins);
-        res.initialStatement(update);
-
-        return res;
-    }
-
-
-    /**
-     * @param stmt Initial statement.
-     * @param target Table or alias the statement points to.
-     * @param singleUpdate Operation arguments.
-     * @return Empty two step query that bears only initial statement and single operation arguments.
-     */
-    private static GridCacheTwoStepQuery twoStepQueryForSingleItem(GridSqlStatement stmt,
-                                                                   GridSqlElement target, GridTriple<GridSqlElement> singleUpdate) {
-        Set<String> schemas = new HashSet<>();
-        Set<String> tbls = new HashSet<>();
-
-        GridSqlQuerySplitter.collectAllTablesInFrom(target, schemas, tbls);
-
-        // No need to do any more parsing - we know that this statement affects one item at most.
-        GridCacheTwoStepQuery res = new GridCacheTwoStepQuery(schemas, tbls);
-
-        res.initialStatement(stmt);
-        res.singleUpdate(singleUpdate);
-
-        return res;
     }
 
     /**

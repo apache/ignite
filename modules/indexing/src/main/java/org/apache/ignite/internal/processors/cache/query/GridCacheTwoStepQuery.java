@@ -113,20 +113,6 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
-     * @return Initial statement.
-     */
-    public GridSqlStatement initialStatement() {
-        return initStmt;
-    }
-
-    /**
-     * @param initStmt Initial statement.
-     */
-    public void initialStatement(GridSqlStatement initStmt) {
-        this.initStmt = initStmt;
-    }
-
-    /**
      * @return {@code True} if reduce query can skip merge table creation and get data directly from merge index.
      */
     public boolean skipMergeTable() {
@@ -239,22 +225,6 @@ public class GridCacheTwoStepQuery {
      */
     public void spaces(Collection<String> spaces) {
         this.spaces = spaces;
-    }
-
-    /**
-     * @return Single item update arguments that given DELETE or UPDATE boils down to, null if it does not
-     * or if the given statement is of different type.
-     */
-    @Nullable public GridTriple<GridSqlElement> singleUpdate() {
-        return singleUpdate;
-    }
-
-    /**
-     * @param singleUpdate Single item update arguments that given DELETE or UPDATE boils down to, null if it does not
-     * or if the given statement is of different type.
-     */
-    public void singleUpdate(@Nullable GridTriple<GridSqlElement> singleUpdate) {
-        this.singleUpdate = singleUpdate;
     }
 
     /**

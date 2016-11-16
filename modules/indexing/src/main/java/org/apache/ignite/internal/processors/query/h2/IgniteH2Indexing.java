@@ -100,9 +100,8 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.processors.query.h2.opt.GridLuceneIndex;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatementSplitter;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -115,7 +114,6 @@ import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -813,8 +811,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement) stmt);
 
             if (!p.isQuery())
-                return dmlProc.updateLocalSqlFields(cacheContext(spaceName), stmt, params != null ? params.toArray() : null,
-                    filters, enforceJoinOrder, timeout, cancel);
+                return dmlProc.updateLocalSqlFields(cacheContext(spaceName), stmt, new SqlFieldsQuery(qry), cancel);
 
             List<GridQueryFieldMetadata> meta;
 
@@ -1205,47 +1202,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("unchecked")
     @Override public QueryCursor<List<?>> queryTwoStep(GridCacheContext<?,?> cctx, SqlFieldsQuery qry)
         throws IgniteCheckedException {
-        Object[] errKeys = null;
-
-        int items = 0;
-
-        for (int i = 0; i < DFLT_DML_RERUN_ATTEMPTS; i++) {
-            IgniteBiTuple<QueryCursorImpl<List<?>>, Object[]> r = queryTwoStep0(cctx, qry, errKeys);
-
-            if (F.isEmpty(r.get2())) {
-                if (items == 0)
-                    return r.get1();
-                else {
-                    if (r.get1().isQuery())
-                        throw new IgniteSQLException("Unexpected result set in results of UPDATE or DELETE");
-
-                    int cnt = (Integer) r.get1().getAll().get(0).get(0);
-                    return DmlStatementsProcessor.cursorForUpdateResult(items + cnt);
-                }
-            }
-            else {
-                if (r.get1().isQuery())
-                    throw new IgniteSQLException("Unexpected result set in results of UPDATE or DELETE");
-
-                items += (Integer) r.get1().getAll().get(0).get(0);
-                errKeys = r.get2();
-            }
-        }
-
-        throw createSqlException("Failed to update or delete some keys: " + Arrays.deepToString(errKeys),
-            ErrorCode.CONCURRENT_UPDATE_1);
-    }
-
-    /**
-     * Actually perform two-step query.
-     *
-     * @param cctx Cache context.
-     * @param qry Query.
-     * @param failedKeys Keys to restrict UPDATE and DELETE operation with. Null or empty array means no restriction.
-     * @return Pair [Query results cursor; keys that have failed to be processed (for UPDATE and DELETE only)]
-     */
-    private IgniteBiTuple<QueryCursorImpl<List<?>>, Object[]> queryTwoStep0(GridCacheContext<?,?> cctx, SqlFieldsQuery qry,
-        Object[] failedKeys) throws IgniteCheckedException {
         final String space = cctx.name();
         final String sqlQry = qry.getSql();
 
@@ -1258,14 +1214,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridCacheTwoStepQuery twoStepQry;
         List<GridQueryFieldMetadata> meta;
 
-        TwoStepCachedQuery cachedQry = null;
-        TwoStepCachedQueryKey cachedQryKey = null;
+        TwoStepCachedQuery cachedQry;
+        TwoStepCachedQueryKey cachedQryKey;
 
-        if (F.isEmpty(failedKeys)) {
-            cachedQryKey = new TwoStepCachedQueryKey(space, sqlQry, grpByCollocated,
-                distributedJoins, enforceJoinOrder);
-            cachedQry = twoStepCache.get(cachedQryKey);
-        }
+        cachedQryKey = new TwoStepCachedQueryKey(space, sqlQry, grpByCollocated,
+            distributedJoins, enforceJoinOrder);
+        cachedQry = twoStepCache.get(cachedQryKey);
 
         if (cachedQry != null) {
             twoStepQry = cachedQry.twoStepQry.copy(qry.getArgs());
@@ -1312,19 +1266,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 GridH2QueryContext.clearThreadLocal();
             }
 
-            if (qry instanceof JdbcSqlFieldsQuery && ((JdbcSqlFieldsQuery) qry).isQuery() !=
-                GridSqlQueryParser.prepared((JdbcPreparedStatement) stmt).isQuery())
+            Prepared prepared = GridSqlQueryParser.prepared((JdbcPreparedStatement) stmt);
+
+            if (qry instanceof JdbcSqlFieldsQuery && ((JdbcSqlFieldsQuery) qry).isQuery() != prepared.isQuery())
                 throw createSqlException("Given statement type does not match that declared by JDBC driver",
                     ErrorCode.UNKNOWN_MODE_1);
+
+            if (!prepared.isQuery())
+                return dmlProc.updateSqlFieldsTwoStep(cctx, stmt, qry);
 
             try {
                 bindParameters(stmt, F.asList(qry.getArgs()));
 
-                twoStepQry = GridSqlStatementSplitter.split((JdbcPreparedStatement) stmt, qry.getArgs(),
-                    failedKeys, grpByCollocated, distributedJoins);
-
-                //Let's verify (early) that the user is not trying to mess with the key or its fields directly
-                DmlStatementsProcessor.verifyUpdateColumns(twoStepQry.initialStatement());
+                twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement) stmt, qry.getArgs(),
+                    grpByCollocated, distributedJoins);
 
                 List<Integer> caches;
                 List<Integer> extraCaches = null;
@@ -1376,12 +1331,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
         }
 
-        if (twoStepQry.singleUpdate() != null) {
-            long res = DmlStatementsProcessor.doSingleUpdate(cctx, twoStepQry.singleUpdate(),
-                twoStepQry.initialStatement(), qry.getArgs());
-            return new IgniteBiTuple<>(DmlStatementsProcessor.cursorForUpdateResult(res), X.EMPTY_OBJECT_ARRAY);
-        }
-
         if (log.isDebugEnabled())
             log.debug("Parsed query: `" + sqlQry + "` into two step query: " + twoStepQry);
 
@@ -1394,18 +1343,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         cursor.fieldsMeta(meta);
 
-        // Don't cache re-runs of DML operations - they have non-empty failedKeys
-        if (cachedQry == null && !twoStepQry.explain() && cachedQryKey != null && F.isEmpty(failedKeys)) {
+        if (cachedQry == null && !twoStepQry.explain()) {
             cachedQry = new TwoStepCachedQuery(meta, twoStepQry.copy(null));
             twoStepCache.putIfAbsent(cachedQryKey, cachedQry);
         }
 
-        assert twoStepQry.initialStatement() != null : "Source statement undefined";
-
-        if (twoStepQry.initialStatement() instanceof GridSqlQuery)
-            return new IgniteBiTuple<>(cursor, null);
-        else
-            return dmlProc.updateFromCursor(cctx, twoStepQry.initialStatement(), cursor, qry.getPageSize());
+        return cursor;
     }
 
     /**

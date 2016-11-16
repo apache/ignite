@@ -33,6 +33,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import javax.cache.CacheException;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
@@ -43,6 +45,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryArrayIdentityResolver;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -56,7 +59,6 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
@@ -70,9 +72,10 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatementSplitter;
+import org.apache.ignite.internal.processors.query.h2.sql.DmlAstUtils;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUpdate;
+import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridPlainClosure;
 import org.apache.ignite.internal.util.lang.GridTriple;
@@ -84,11 +87,12 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.api.ErrorCode;
 import org.h2.command.Prepared;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.table.Column;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.DFLT_DML_RERUN_ATTEMPTS;
@@ -109,6 +113,16 @@ class DmlStatementsProcessor {
     private final static Set<Integer> WARNED_TYPES =
         Collections.newSetFromMap(new ConcurrentHashMap8<Integer, Boolean>());
 
+    /** Default size for update plan cache. */
+    private static final int PLAN_CACHE_SIZE = 1024;
+
+    /** Update plans cache. */
+    private final ConcurrentMap<String, UpdatePlan> planCache = new GridBoundedConcurrentLinkedHashMap<>(PLAN_CACHE_SIZE);
+
+    /** Dummy metadata for update result. */
+    private final static List<GridQueryFieldMetadata> UPDATE_RESULT_META = Collections.<GridQueryFieldMetadata>
+        singletonList(new IgniteH2Indexing.SqlFieldMetadata(null, null, "count", Long.class.getName()));
+
     /**
      * @param indexing indexing.
      */
@@ -117,35 +131,40 @@ class DmlStatementsProcessor {
     }
 
     /**
+     * Execute DML statement, possibly with few re-attempts in case of concurrent data modifications.
+     *
      * @param cctx Cache context.
-     * @param stmt Prepared statement.
-     * @param params Query parameters.
-     * @param filters Space name and key filter.
-     * @param enforceJoinOrder Enforce join order of tables in the query.
-     * @param timeout Query timeout in milliseconds.
-     * @param cancel Query cancel.
-     * @return Update result wrapped into {@link GridQueryFieldsResult}
+     * @param stmt JDBC statement.
+     * @param fieldsQry Original query.
+     * @param loc Query locality flag.
+     * @param cancel Cancel.
+     * @return Update result (modified items count and failed keys).
      * @throws IgniteCheckedException if failed.
      */
-    @SuppressWarnings("unchecked")
-    GridQueryFieldsResult updateLocalSqlFields(final GridCacheContext cctx, final PreparedStatement stmt,
-        final Object[] params, final IndexingQueryFilter filters, boolean enforceJoinOrder, int timeout,
-        GridQueryCancel cancel) throws IgniteCheckedException {
+    private UpdateResult executeUpdateStatement0(GridCacheContext cctx, PreparedStatement stmt,
+        SqlFieldsQuery fieldsQry, boolean loc, GridQueryCancel cancel) throws IgniteCheckedException {
         Object[] errKeys = null;
 
-        int items = 0;
+        long items = 0;
+
+        UpdatePlan plan = getPlanForStatement(stmt, null);
+
+        // Let's verify that user does not try to mess with key's columns directly
+        verifyUpdateColumns(plan.initStmt);
+
+        GridSqlTable tbl = gridTableForElement(plan.target);
+
+        // Switch to cache specified in query.
+        cctx = cctx.shared().cacheContext(CU.cacheId(tbl.schema()));
 
         for (int i = 0; i < DFLT_DML_RERUN_ATTEMPTS; i++) {
-            IgniteBiTuple<Long, Object[]> r = updateLocalSqlFields0(cctx, stmt, params, errKeys, filters,
-                enforceJoinOrder, timeout, cancel);
+            UpdateResult r = updateSqlFields(cctx, stmt, fieldsQry, loc, cancel, errKeys);
 
-            if (F.isEmpty(r.get2())) {
-                return new GridQueryFieldsResultAdapter(Collections.<GridQueryFieldMetadata>emptyList(),
-                    new IgniteSingletonIterator(Collections.singletonList(items + r.get1())));
-            }
+            if (F.isEmpty(r.errKeys))
+                return new UpdateResult(r.cnt + items, X.EMPTY_OBJECT_ARRAY);
             else {
-                items += r.get1();
-                errKeys = r.get2();
+                items += r.cnt;
+                errKeys = r.errKeys;
             }
         }
 
@@ -154,122 +173,206 @@ class DmlStatementsProcessor {
     }
 
     /**
+     * @param cctx Cache context.
+     * @param stmt Prepared statement.
+     * @param fieldsQry Initial query.
+     * @return Update result wrapped into {@link GridQueryFieldsResult}
+     * @throws IgniteCheckedException if failed.
+     */
+    @SuppressWarnings("unchecked")
+    QueryCursorImpl<List<?>> updateSqlFieldsTwoStep(GridCacheContext cctx, PreparedStatement stmt,
+        SqlFieldsQuery fieldsQry) throws IgniteCheckedException {
+        UpdateResult res = executeUpdateStatement0(cctx, stmt, fieldsQry, false, null);
+
+        // Exception should had been thrown if any keys failed to update.
+        assert F.isEmpty(res.errKeys);
+
+        return cursorForUpdateResult(res.cnt);
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param stmt Prepared statement.
+     * @param cancel Query cancel.
+     * @return Update result wrapped into {@link GridQueryFieldsResult}
+     * @throws IgniteCheckedException if failed.
+     */
+    @SuppressWarnings("unchecked")
+    GridQueryFieldsResult updateLocalSqlFields(GridCacheContext cctx, PreparedStatement stmt,
+        SqlFieldsQuery fieldsQry, GridQueryCancel cancel) throws IgniteCheckedException {
+        UpdateResult res = executeUpdateStatement0(cctx, stmt, fieldsQry, true, cancel);
+
+        // Exception should had been thrown if any keys failed to update.
+        assert F.isEmpty(res.errKeys);
+
+        return new GridQueryFieldsResultAdapter(UPDATE_RESULT_META,
+            new IgniteSingletonIterator(Collections.singletonList(res.cnt)));
+    }
+
+    /**
      * Actually perform SQL DML operation locally.
      *
      * @param cctx Cache context.
      * @param prepStmt Prepared statement for DML query.
-     * @param params Query params.
      * @param failedKeys Keys to restrict UPDATE and DELETE operations with. Null or empty array means no restriction.
-     * @param filters Filters.
-     * @param enforceJoinOrder Enforce join order.
-     * @param timeout Query timeout in milliseconds.
-     * @param cancel Query cancel.
      * @return Pair [number of successfully processed items; keys that have failed to be processed]
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("ConstantConditions")
-    private IgniteBiTuple<Long, Object[]> updateLocalSqlFields0(final GridCacheContext cctx,
-        final PreparedStatement prepStmt, Object[] params, final Object[] failedKeys, final IndexingQueryFilter filters,
-        boolean enforceJoinOrder, int timeout, GridQueryCancel cancel) throws IgniteCheckedException {
-        Connection conn = indexing.connectionForSpace(cctx.name());
+    private UpdateResult updateSqlFields(GridCacheContext cctx, PreparedStatement prepStmt,
+        SqlFieldsQuery fieldsQry, boolean loc, GridQueryCancel cancel, Object[] failedKeys) throws IgniteCheckedException {
+        Integer errKeysPos = null;
 
-        indexing.initLocalQueryContext(conn, enforceJoinOrder, filters);
+        if (!F.isEmpty(failedKeys))
+            errKeysPos = F.isEmpty(fieldsQry.getArgs()) ? 1 : fieldsQry.getArgs().length + 1;
 
-        try {
-            Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement) prepStmt);
+        UpdatePlan plan = getPlanForStatement(prepStmt, errKeysPos);
 
-            GridSqlStatement stmt = new GridSqlQueryParser().parse(p);
+        GridSqlStatement stmt = plan.initStmt;
 
-            if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert) {
-                GridSqlQuery sel;
+        Object[] params = fieldsQry.getArgs();
 
-                if (stmt instanceof GridSqlInsert) {
-                    GridSqlInsert ins = (GridSqlInsert) stmt;
-                    sel = GridSqlStatementSplitter.selectForInsertOrMerge(ins.rows(), ins.query());
+        if (plan.singleUpdate != null) {
+            assert F.isEmpty(failedKeys) && errKeysPos == null;
+
+            return new UpdateResult(doSingleUpdate(cctx, plan.singleUpdate, stmt, params), X.EMPTY_OBJECT_ARRAY);
+        }
+
+        assert plan.selectQry != null;
+
+        QueryCursorImpl<List<?>> cur;
+
+        // Do a two-step query only if locality flag is not set AND if plan's SELECT corresponds to an actual
+        // subquery and not some dummy stuff like "select 1, 2, 3;"
+        if (!loc && plan.isSubqry) {
+            SqlFieldsQuery newFieldsQry = new SqlFieldsQuery(plan.selectQry.getSQL(), fieldsQry.isCollocated())
+                .setArgs(params)
+                .setDistributedJoins(fieldsQry.isDistributedJoins())
+                .setEnforceJoinOrder(fieldsQry.isEnforceJoinOrder())
+                .setLocal(fieldsQry.isLocal())
+                .setPageSize(fieldsQry.getPageSize())
+                .setTimeout(fieldsQry.getTimeout(), TimeUnit.MILLISECONDS);
+
+            cur = (QueryCursorImpl<List<?>>) indexing.queryTwoStep(cctx, newFieldsQry);
+        }
+        else {
+            Connection conn = indexing.connectionForSpace(cctx.name());
+
+            ResultSet rs = indexing.executeSqlQueryWithTimer(cctx.name(), conn, plan.selectQry.getSQL(), F.asList(params),
+                true, fieldsQry.getTimeout(), cancel);
+
+            final Iterator<List<?>> rsIter = new IgniteH2Indexing.FieldsIterator(rs);
+
+            Iterable<List<?>> it = new Iterable<List<?>>() {
+                /**
+                 * {@inheritDoc}
+                 */
+                @Override public Iterator<List<?>> iterator() {
+                    return rsIter;
                 }
-                else {
-                    GridSqlMerge merge = (GridSqlMerge) stmt;
-                    sel = GridSqlStatementSplitter.selectForInsertOrMerge(merge.rows(), merge.query());
-                }
+            };
 
-                ResultSet rs = indexing.executeSqlQueryWithTimer(cctx.name(), conn, sel.getSQL(), F.asList(params), true,
-                    timeout, cancel);
+            cur = new QueryCursorImpl<>(it);
+        }
 
-                final Iterator<List<?>> rsIter = new IgniteH2Indexing.FieldsIterator(rs);
+        int pageSize = loc ? 0 : fieldsQry.getPageSize();
 
-                Iterable<List<?>> it = new Iterable<List<?>>() {
-                    /** {@inheritDoc} */
-                    @Override public Iterator<List<?>> iterator() {
-                        return rsIter;
-                    }
-                };
+        if (stmt instanceof GridSqlMerge)
+            return new UpdateResult(doMerge(cctx, (GridSqlMerge) stmt, cur, pageSize), X.EMPTY_OBJECT_ARRAY);
+        else if (stmt instanceof GridSqlInsert)
+            return new UpdateResult(doInsert(cctx, (GridSqlInsert) stmt, cur, pageSize), X.EMPTY_OBJECT_ARRAY);
+        else if (stmt instanceof GridSqlUpdate)
+            return doUpdate(cctx, (GridSqlUpdate) stmt, cur, pageSize);
+        else if (stmt instanceof GridSqlDelete)
+            return doDelete(cctx, cur, pageSize);
+        else
+            throw createSqlException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
+                ErrorCode.UNKNOWN_MODE_1);
+    }
 
-                QueryCursorImpl<List<?>> cur = new QueryCursorImpl<>(it);
+    /**
+     * Generate SELECT statements to retrieve data for modifications from and find fast UPDATE or DELETE args,
+     * if available.
+     *
+     * @param prepStmt JDBC statement.
+     * @return Update plan.
+     * @throws IgniteCheckedException if failed.
+     */
+    private UpdatePlan getPlanForStatement(PreparedStatement prepStmt, @Nullable Integer errKeysPos)
+        throws IgniteCheckedException {
+        Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement) prepStmt);
 
-                long res;
+        assert !p.isQuery();
 
-                if (stmt instanceof GridSqlMerge)
-                    res = doMerge(cctx, (GridSqlMerge) stmt, cur, 0);
-                else
-                    res = doInsert(cctx, (GridSqlInsert) stmt, cur, 0);
+        // getSQL returns field value, so it's fast
+        // Don't look for re-runs in cache, we don't cache them
+        UpdatePlan res = (errKeysPos == null ? planCache.get(p.getSQL()) : null);
 
-                return new IgniteBiTuple<>(res, X.EMPTY_OBJECT_ARRAY);
+        if (res != null)
+            return res;
+
+        GridSqlStatement stmt = new GridSqlQueryParser().parse(p);
+
+        GridSqlElement target;
+
+        if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert) {
+            GridSqlQuery sel;
+
+            boolean isSubqry;
+
+            if (stmt instanceof GridSqlInsert) {
+                GridSqlInsert ins = (GridSqlInsert) stmt;
+                target = ins.into();
+                sel = DmlAstUtils.selectForInsertOrMerge(ins.rows(), ins.query());
+                isSubqry = (ins.query() != null);
+            } else {
+                GridSqlMerge merge = (GridSqlMerge) stmt;
+                target = merge.into();
+                sel = DmlAstUtils.selectForInsertOrMerge(merge.rows(), merge.query());
+                isSubqry = (merge.query() != null);
             }
+
+            // Let's set the flag only for subqueries that have their FROM specified.
+            isSubqry = (isSubqry && sel instanceof GridSqlSelect && ((GridSqlSelect) sel).from() != null);
+
+            res = new UpdatePlan(stmt, target, sel, isSubqry, null);
+        }
+        else {
+            GridTriple<GridSqlElement> singleUpdate;
+
+            if (stmt instanceof GridSqlUpdate) {
+                GridSqlUpdate update = (GridSqlUpdate) stmt;
+                target = update.target();
+                singleUpdate = DmlAstUtils.getSingleItemFilter(update);
+            }
+            else if (stmt instanceof GridSqlDelete) {
+                GridSqlDelete del = (GridSqlDelete) stmt;
+                target = del.from();
+                singleUpdate = DmlAstUtils.getSingleItemFilter(del);
+            }
+            else
+                throw createSqlException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
+                    ErrorCode.UNKNOWN_MODE_1);
+
+            if (singleUpdate != null)
+                res = new UpdatePlan(stmt, target, null, false, singleUpdate);
             else {
-                if (F.isEmpty(failedKeys)) {
-                    GridTriple<GridSqlElement> singleUpdate;
-
-                    if (stmt instanceof GridSqlUpdate)
-                        singleUpdate = GridSqlStatementSplitter.getSingleItemFilter((GridSqlUpdate) stmt);
-                    else if (stmt instanceof GridSqlDelete)
-                        singleUpdate = GridSqlStatementSplitter.getSingleItemFilter((GridSqlDelete) stmt);
-                    else
-                        throw createSqlException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
-                            ErrorCode.PARSE_ERROR_1);
-
-                    if (singleUpdate != null)
-                        return new IgniteBiTuple<>(doSingleUpdate(cctx, singleUpdate, stmt, params), X.EMPTY_OBJECT_ARRAY);
-                }
-
-                GridSqlSelect map;
-
-                int paramsCnt = F.isEmpty(params) ? 0 : params.length;
-
-                Integer keysParamIdx = !F.isEmpty(failedKeys) ? paramsCnt + 1 : null;
+                GridSqlSelect sel;
 
                 if (stmt instanceof GridSqlUpdate)
-                    map = GridSqlStatementSplitter.mapQueryForUpdate((GridSqlUpdate) stmt, keysParamIdx);
+                    sel = DmlAstUtils.mapQueryForUpdate((GridSqlUpdate) stmt, errKeysPos);
                 else
-                    map = GridSqlStatementSplitter.mapQueryForDelete((GridSqlDelete) stmt, keysParamIdx);
+                    sel = DmlAstUtils.mapQueryForDelete((GridSqlDelete) stmt, errKeysPos);
 
-                if (keysParamIdx != null) {
-                    params = Arrays.copyOf(U.firstNotNull(params, X.EMPTY_OBJECT_ARRAY), paramsCnt + 1);
-                    params[paramsCnt] = failedKeys;
-                }
-
-                ResultSet rs = indexing.executeSqlQueryWithTimer(cctx.name(), conn, map.getSQL(), F.asList(params), true,
-                    timeout, cancel);
-
-                final Iterator<List<?>> rsIter = new IgniteH2Indexing.FieldsIterator(rs);
-
-                Iterable<List<?>> it = new Iterable<List<?>>() {
-                    /** {@inheritDoc} */
-                    @Override public Iterator<List<?>> iterator() {
-                        return rsIter;
-                    }
-                };
-
-                QueryCursorImpl<List<?>> cur = new QueryCursorImpl<>(it);
-
-                if (stmt instanceof GridSqlUpdate)
-                    return doUpdate(cctx, (GridSqlUpdate) stmt, cur, 0);
-                else
-                    return doDelete(cctx, (GridSqlDelete) stmt, cur, 0);
+                res = new UpdatePlan(stmt, target, sel, true, null);
             }
         }
-        finally {
-            GridH2QueryContext.clearThreadLocal();
-        }
+
+        // Don't cache re-runs
+        if (errKeysPos == null)
+            return U.firstNotNull(planCache.putIfAbsent(p.getSQL(), res), res);
+        else
+            return res;
     }
 
     /**
@@ -283,7 +386,7 @@ class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
-    static long doSingleUpdate(GridCacheContext cctx, GridTriple<GridSqlElement> singleUpdate,
+    private static long doSingleUpdate(GridCacheContext cctx, GridTriple<GridSqlElement> singleUpdate,
         GridSqlStatement stmt, Object[] params) throws IgniteCheckedException {
         GridSqlElement target;
 
@@ -293,7 +396,7 @@ class DmlStatementsProcessor {
             target = ((GridSqlDelete) stmt).from();
         else
             throw createSqlException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
-                ErrorCode.PARSE_ERROR_1);
+                ErrorCode.UNKNOWN_MODE_1);
 
         GridSqlTable tbl = gridTableForElement(target);
 
@@ -324,21 +427,15 @@ class DmlStatementsProcessor {
     /**
      * Perform DELETE operation on top of results of SELECT.
      * @param cctx Cache context.
-     * @param del DELETE statement.
      * @param cursor SELECT results.
      * @param pageSize Page size for streaming, anything <= 0 for single batch operations.
      * @return Results of DELETE (number of items affected AND keys that failed to be updated).
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    private IgniteBiTuple<Long, Object[]> doDelete(GridCacheContext cctx, GridSqlDelete del,
-                                                      QueryCursorImpl<List<?>> cursor, int pageSize) throws IgniteCheckedException {
-        GridSqlTable tbl = gridTableForElement(del.from());
-
+    private UpdateResult doDelete(GridCacheContext cctx, QueryCursorImpl<List<?>> cursor, int pageSize)
+        throws IgniteCheckedException {
         // With DELETE, we have only two columns - key and value.
         long res = 0;
-
-        // Switch to cache specified in query.
-        cctx = cctx.shared().cacheContext(CU.cacheId(tbl.schema()));
 
         CacheOperationContext opCtx = cctx.operationContextPerCall();
 
@@ -415,7 +512,7 @@ class DmlStatementsProcessor {
             cctx.operationContextPerCall(opCtx);
         }
 
-        return new IgniteBiTuple<>(res, failedKeys.toArray());
+        return new UpdateResult(res, failedKeys.toArray());
     }
 
     /**
@@ -428,8 +525,8 @@ class DmlStatementsProcessor {
      *     had been modified concurrently (arguments for a re-run)].
      */
     @SuppressWarnings("unchecked")
-    private IgniteBiTuple<Long, Object[]> doUpdate(GridCacheContext cctx, GridSqlUpdate update,
-                                                      QueryCursorImpl<List<?>> cursor, int pageSize) throws IgniteCheckedException {
+    private UpdateResult doUpdate(GridCacheContext cctx, GridSqlUpdate update,
+        QueryCursorImpl<List<?>> cursor, int pageSize) throws IgniteCheckedException {
 
         GridSqlTable tbl = gridTableForElement(update.target());
 
@@ -480,9 +577,6 @@ class DmlStatementsProcessor {
         Supplier newValSupplier = createSupplier(cctx, desc.type(), newValColIdx, hasProps, false);
 
         long res = 0;
-
-        // Switch to cache specified in query.
-        cctx = cctx.shared().cacheContext(CU.cacheId(tbl.schema()));
 
         CacheOperationContext opCtx = cctx.operationContextPerCall();
 
@@ -600,7 +694,7 @@ class DmlStatementsProcessor {
             cctx.operationContextPerCall(opCtx);
         }
 
-        return new IgniteBiTuple<>(res, failedKeys.toArray());
+        return new UpdateResult(res, failedKeys.toArray());
     }
 
     /**
@@ -711,9 +805,6 @@ class DmlStatementsProcessor {
             src = rowsCursorToRows(cursor);
         }
 
-        // Switch to cache specified in query.
-        cctx = cctx.shared().cacheContext(CU.cacheId(tbl.schema()));
-
         // If we have just one item to put, just do so
         if (singleRow) {
             IgniteBiTuple t = rowToKeyValue(cctx, desc.type(), keySupplier, valSupplier, keyColIdx, valColIdx, cols,
@@ -802,9 +893,6 @@ class DmlStatementsProcessor {
             singleRow = ins.rows().size() == 1;
             src = rowsCursorToRows(cursor);
         }
-
-        // Switch to cache specified in query.
-        cctx = cctx.shared().cacheContext(CU.cacheId(tbl.schema()));
 
         // If we have just one item to put, just do so
         if (singleRow) {
@@ -1012,37 +1100,6 @@ class DmlStatementsProcessor {
     }
 
     /**
-     * @param cctx Cache context.
-     * @param statement Statement.
-     * @param cursor Source data cursor.
-     * @param pageSize Page size for streaming.
-     * @return Pair [update results cursor; concurrently modified keys]Rnj y
-     * @throws IgniteCheckedException if failed.
-     */
-    IgniteBiTuple<QueryCursorImpl<List<?>>, Object[]> updateFromCursor(GridCacheContext<?, ?> cctx,
-        GridSqlStatement statement, QueryCursorImpl<List<?>> cursor, int pageSize) throws IgniteCheckedException {
-        IgniteBiTuple<Long, Object[]> updateRes = null;
-
-        if (statement instanceof GridSqlDelete)
-            updateRes = doDelete(cctx, (GridSqlDelete) statement, cursor, pageSize);
-
-        if (statement instanceof GridSqlUpdate)
-            updateRes = doUpdate(cctx, (GridSqlUpdate) statement, cursor, pageSize);
-
-        if (statement instanceof GridSqlMerge)
-            updateRes = new IgniteBiTuple<>(doMerge(cctx, (GridSqlMerge) statement, cursor, pageSize), X.EMPTY_OBJECT_ARRAY);
-
-        if (statement instanceof GridSqlInsert)
-            updateRes = new IgniteBiTuple<>(doInsert(cctx, (GridSqlInsert) statement, cursor,
-                pageSize), X.EMPTY_OBJECT_ARRAY);
-
-        if (updateRes != null)
-            return new IgniteBiTuple<>(cursorForUpdateResult(updateRes.get1() - updateRes.get2().length),
-                updateRes.get2());
-        return null;
-    }
-
-    /**
      * Set hash code to binary object if it does not have one.
      *
      * @param cctx Cache context.
@@ -1192,7 +1249,8 @@ class DmlStatementsProcessor {
         else if (element instanceof GridSqlParameter)
             return params[((GridSqlParameter)element).index()];
         else
-            throw new IgniteCheckedException("Unexpected SQL expression type [cls=" + element.getClass().getName() + ']');
+            throw createSqlException("Unexpected SQL expression type [cls=" + element.getClass().getName() + ']',
+                ErrorCode.UNKNOWN_DATA_TYPE_1);
     }
 
     /** */
@@ -1282,7 +1340,7 @@ class DmlStatementsProcessor {
     private static GridSqlTable gridTableForElement(GridSqlElement target) {
         Set<GridSqlTable> tbls = new HashSet<>();
 
-        GridSqlStatementSplitter.collectAllGridTablesInTarget(target, tbls);
+        DmlAstUtils.collectAllGridTablesInTarget(target, tbls);
 
         if (tbls.size() != 1)
             throw createSqlException("Failed to determine target table", ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1);
@@ -1295,7 +1353,7 @@ class DmlStatementsProcessor {
      *
      * @param statement Statement.
      */
-    static void verifyUpdateColumns(GridSqlStatement statement) throws IgniteCheckedException {
+    private static void verifyUpdateColumns(GridSqlStatement statement) throws IgniteCheckedException {
         if (statement == null || !(statement instanceof GridSqlUpdate))
             return;
 
@@ -1305,7 +1363,7 @@ class DmlStatementsProcessor {
 
         Set<GridSqlTable> tbls = new HashSet<>();
 
-        GridSqlStatementSplitter.collectAllGridTablesInTarget(updTarget, tbls);
+        DmlAstUtils.collectAllGridTablesInTarget(updTarget, tbls);
 
         if (tbls.size() != 1)
             throw createSqlException("Failed to determine target table for UPDATE", ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1);
@@ -1349,13 +1407,62 @@ class DmlStatementsProcessor {
      * @return Resulting Iterable.
      */
     @SuppressWarnings("unchecked")
-    static QueryCursorImpl<List<?>> cursorForUpdateResult(long itemsCnt) {
+    private static QueryCursorImpl<List<?>> cursorForUpdateResult(long itemsCnt) {
         QueryCursorImpl<List<?>> res =
             new QueryCursorImpl(Collections.singletonList(Collections.singletonList(itemsCnt)), null, false);
 
-        res.fieldsMeta(Collections.<GridQueryFieldMetadata>
-            singletonList(new IgniteH2Indexing.SqlFieldMetadata(null, null, "count", Long.class.getName())));
+        res.fieldsMeta(UPDATE_RESULT_META);
 
         return res;
+    }
+
+    /** Update result - modifications count and keys to re-run query with, if needed. */
+    private final static class UpdateResult {
+        /** Number of processed items. */
+        final long cnt;
+
+        /** Keys that failed to be UPDATEd or DELETEd due to concurrent modification of values. */
+        @NotNull
+        final Object[] errKeys;
+
+        /** */
+        @SuppressWarnings("ConstantConditions")
+        private UpdateResult(long cnt, Object[] errKeys) {
+            this.cnt = cnt;
+            this.errKeys = U.firstNotNull(errKeys, X.EMPTY_OBJECT_ARRAY);
+        }
+    }
+
+    /**
+     * Update plan - initial statement, matching SELECT query, collocation flag, and single entry update filter.
+     */
+    private final static class UpdatePlan {
+        /** Initial statement to drive the rest of the logic. */
+        private final GridSqlStatement initStmt;
+
+        /** Target element to be affected by {@link #initStmt}. */
+        private final GridSqlElement target;
+
+        /** SELECT statement built upon {@link #initStmt}. */
+        private final GridSqlQuery selectQry;
+
+        /** Subquery flag - returns {@code true} if {@link #selectQry} is a subquery, {@code false} otherwise. */
+        private final boolean isSubqry;
+
+        /** Entry filter for fast UPDATE or DELETE. */
+        private final GridTriple<GridSqlElement> singleUpdate;
+
+        /** */
+        private UpdatePlan(GridSqlStatement initStmt, GridSqlElement target, GridSqlQuery selectQry,
+                           boolean isSubqry, GridTriple<GridSqlElement> singleUpdate) {
+            assert initStmt != null;
+            assert target != null;
+
+            this.initStmt = initStmt;
+            this.target = target;
+            this.selectQry = selectQry;
+            this.isSubqry = isSubqry;
+            this.singleUpdate = singleUpdate;
+        }
     }
 }
