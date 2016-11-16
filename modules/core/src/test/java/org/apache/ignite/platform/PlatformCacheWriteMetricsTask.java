@@ -45,7 +45,7 @@ import java.util.Map;
 public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Object> {
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Long ptr) {
-        return Collections.singletonMap(new Job(ptr, F.first(subgrid)), F.first(subgrid));
+        return Collections.singletonMap(new Job(ptr), F.first(subgrid));
     }
 
     /** {@inheritDoc} */
@@ -64,16 +64,13 @@ public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Obje
         /** Stream ptr. */
         private final long ptr;
 
-        private final ClusterNode node;
-
         /**
          * Constructor.
          *
          * @param ptr Stream ptr.
          */
-        private Job(long ptr, ClusterNode node) {
+        private Job(long ptr) {
             this.ptr = ptr;
-            this.node = node;
         }
 
         /** {@inheritDoc} */
