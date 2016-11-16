@@ -172,7 +172,7 @@ class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture 
      * @return {@code true} if target node supports {@link GridNearAtomicSingleUpdateRequest}
      */
     private boolean canUseSingleRequest(ClusterNode node) {
-        return node.version().compareToIgnoreTimestamp(SINGLE_UPDATE_REQUEST) >= 0 &&
+        return node != null && node.version().compareToIgnoreTimestamp(SINGLE_UPDATE_REQUEST) >= 0 &&
             cctx.expiry() == null &&
             updateReq.expiry() == null &&
             !updateReq.hasConflictData();
