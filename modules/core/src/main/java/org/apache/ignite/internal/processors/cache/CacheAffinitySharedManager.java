@@ -192,7 +192,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 EqualAffinityCacheGroup grp = e.getValue();
 
                 if (grp.caches.containsKey(cacheId)) {
-                    assert cfg.affinityFunction().partitions() == grp.caches.values().iterator().next().affinityFunction().partitions();
+                    assert grp.equalAffinity(cfg);
 
                     return e.getKey();
                 }
