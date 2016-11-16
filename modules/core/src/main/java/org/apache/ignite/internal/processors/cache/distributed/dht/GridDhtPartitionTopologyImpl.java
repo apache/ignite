@@ -117,6 +117,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     /** */
     private volatile AffinityTopologyVersion rebalancedTopVer = AffinityTopologyVersion.NONE;
 
+    private volatile boolean treatAllPartitionAsLocal = false;
+
     /**
      * @param cctx Context.
      * @param entryFactory Entry factory.
@@ -479,6 +481,16 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     /** {@inheritDoc} */
     @Override public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut, boolean affReady)
         throws IgniteCheckedException {
+
+        DiscoveryEvent discoEvt = exchFut.discoveryEvent();
+
+        treatAllPartitionAsLocal = exchFut.activateCluster()
+            || (cctx.kernalContext().cache().globalState() == org.apache.ignite.internal.processors.cache.CacheState.ACTIVE
+            && discoEvt.type() == EventType.EVT_NODE_JOINED
+            && discoEvt.eventNode().isLocal()
+            && !cctx.kernalContext().clientNode()
+        );
+
         // Wait for rent outside of checkpoint lock.
         waitForRent();
 
@@ -575,6 +587,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
     /** {@inheritDoc} */
     @Override public boolean afterExchange(GridDhtPartitionsExchangeFuture exchFut) throws IgniteCheckedException {
+        treatAllPartitionAsLocal = false;
+
         boolean changed = waitForRent();
 
         ClusterNode loc = cctx.localNode();
@@ -755,10 +769,10 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             }
 
             if (loc == null) {
-//                if (!belongs)
-//                    throw new GridDhtInvalidPartitionException(p, "Creating partition which does not belong to " +
-//                        "local node (often may be caused by inconsistent 'key.hashCode()' implementation) " +
-//                        "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
+                if (!treatAllPartitionAsLocal && !belongs)
+                    throw new GridDhtInvalidPartitionException(p, "Creating partition which does not belong to " +
+                        "local node (often may be caused by inconsistent 'key.hashCode()' implementation) " +
+                        "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
 
                 locParts.set(p, loc = new GridDhtLocalPartition(cctx, p, entryFactory));
 
@@ -1070,8 +1084,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
                     Long cntr = cntrMap.get(part.id());
 
-//                    if (cntr != null)
-//                        part.updateCounter(cntr);
+                    if (cntr != null)
+                        part.updateCounter(cntr);
                 }
             }
 
@@ -1200,8 +1214,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         if (cntrMap != null) {
                             Long cntr = cntrMap.get(p);
 
-                            if (cntr != null && cntr > locPart.updateCounter());
-//                                locPart.updateCounter(cntr);
+                            if (cntr != null && cntr > locPart.updateCounter())
+                                locPart.updateCounter(cntr);
                         }
                     }
                 }

@@ -261,7 +261,8 @@ public class OffheapReadWriteLock {
 
             updated = releaseWithTag(state, tag);
 
-            assert updated != 0;
+            if (updated == 0)
+                assert updated != 0;
 
             if (GridUnsafe.compareAndSwapLong(null, lock, state, updated))
                 break;

@@ -150,9 +150,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /**
      * @param discoEvt Before exchange for the given discovery event.
-     * @param activate put true if after this exchange cluster will be activated
      */
-    public void beforeExchange(GridDhtPartitionsExchangeFuture discoEvt, boolean activate) throws IgniteCheckedException {
+    public void beforeExchange(GridDhtPartitionsExchangeFuture discoEvt) throws IgniteCheckedException {
         // No-op.
     }
 

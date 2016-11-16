@@ -520,8 +520,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
                 if (update)
                     try {
-                        cctx.shared().wal().log(new PartitionMetaStateRecord(cctx.cacheId(),
-                            PageIdUtils.pageId(id, PageIdAllocator.FLAG_DATA, 0), toState));
+                        cctx.shared().wal().log(new PartitionMetaStateRecord(cctx.cacheId(), id, toState));
                     }
                     catch (IgniteCheckedException e) {
                         log.error("Error while writing to log", e);

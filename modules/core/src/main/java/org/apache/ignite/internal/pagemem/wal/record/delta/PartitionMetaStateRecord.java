@@ -17,33 +17,29 @@
 
 package org.apache.ignite.internal.pagemem.wal.record.delta;
 
-import java.nio.ByteBuffer;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 
 /**
  *
  */
-public class PartitionMetaStateRecord extends PageDeltaRecord {
+public class PartitionMetaStateRecord extends WALRecord {
     /** State. */
     private final byte state;
 
+    /** Cache id. */
+    private final int cacheId;
+
+    private final int partId;
+
     /**
      * @param cacheId Cache ID.
-     * @param pageId Page ID.
+     * @param state Page ID.
      */
-    public PartitionMetaStateRecord(int cacheId, long pageId, GridDhtPartitionState state) {
-        super(cacheId, pageId);
+    public PartitionMetaStateRecord(int cacheId, int partId, GridDhtPartitionState state) {
+        this.cacheId = cacheId;
+        this.partId = partId;
         this.state = (byte)state.ordinal();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void applyDelta(ByteBuffer buf) throws IgniteCheckedException {
-        PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.forPage(buf);
-
-        io.setPartitionState(buf, state);
     }
 
     /** {@inheritDoc} */
@@ -56,5 +52,19 @@ public class PartitionMetaStateRecord extends PageDeltaRecord {
      */
     public byte state() {
         return state;
+    }
+
+    /**
+     * @return Cache ID.
+     */
+    public int cacheId() {
+        return cacheId;
+    }
+
+    /**
+     *
+     */
+    public int partId() {
+        return partId;
     }
 }

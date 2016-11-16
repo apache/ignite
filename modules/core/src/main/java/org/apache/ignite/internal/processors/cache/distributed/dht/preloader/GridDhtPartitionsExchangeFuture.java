@@ -202,6 +202,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** */
     private final ConcurrentMap<UUID, GridDhtPartitionsAbstractMessage> msgs = new ConcurrentHashMap8<>();
 
+    private transient volatile Boolean activateCluster;
+
     /**
      * Dummy future created to trigger reassignments if partition
      * topology changed while preloading.
@@ -394,6 +396,24 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         this.discoEvt = discoEvt;
 
         evtLatch.countDown();
+    }
+
+    public boolean activateCluster() {
+        if (activateCluster == null)
+            activateCluster = getGlobalState() == CacheState.ACTIVE;
+
+        return activateCluster;
+    }
+
+    private CacheState getGlobalState() {
+        if (!F.isEmpty(reqs)) {
+            for (DynamicCacheChangeRequest req : reqs) {
+                if (req.globalStateChange())
+                    return req.state();
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -760,6 +780,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         boolean topChanged = discoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT || affChangeMsg != null;
 
+        CacheState curState = cctx.cache().globalState();
+
+        CacheState newState = getGlobalState();
+
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (cacheCtx.isLocal() || stopping(cacheCtx.cacheId()))
                 continue;
@@ -774,21 +798,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             cacheCtx.topology().beforeExchange(this, !centralizedAff);
         }
 
-        CacheState curState = cctx.cache().globalState();
-
-        CacheState newState = null;
-
-        if (!F.isEmpty(reqs)) {
-            for (DynamicCacheChangeRequest req : reqs) {
-                if (req.globalStateChange()) {
-                    newState = req.state();
-
-                    break;
-                }
-            }
-        }
-
-        cctx.database().beforeExchange(this, newState == CacheState.ACTIVE);
+        cctx.database().beforeExchange(this);
 
         // If a backup request, synchronously wait for backup start.
         if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
