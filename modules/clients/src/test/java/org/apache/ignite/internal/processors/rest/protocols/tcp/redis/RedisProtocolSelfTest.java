@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -157,11 +159,19 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
     public void testGet() throws Exception {
         try (Jedis jedis = pool.getResource()) {
             jcache().put("getKey1", "getVal1");
-            jcache().put("getKey2", 0);
 
             Assert.assertEquals("getVal1", jedis.get("getKey1"));
-            Assert.assertEquals("0", jedis.get("getKey2"));
             Assert.assertNull(jedis.get("wrongKey"));
+
+            jcache().put("setDataTypeKey", new HashSet<String>(Arrays.asList("1", "2")));
+            try {
+                jedis.get("setDataTypeKey");
+
+                assert false : "Exception has to be thrown!";
+            }
+            catch (JedisDataException e) {
+                assertTrue(e.getMessage().startsWith("WRONGTYPE"));
+            }
         }
     }
 
@@ -170,10 +180,20 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
      */
     public void testGetSet() throws Exception {
         try (Jedis jedis = pool.getResource()) {
-            jcache().put("getSetKey1", 1);
+            jcache().put("getSetKey1", "1");
 
             Assert.assertEquals("1", jedis.getSet("getSetKey1", "0"));
             Assert.assertNull(jedis.get("getSetNonExistingKey"));
+
+            jcache().put("setDataTypeKey", new HashSet<String>(Arrays.asList("1", "2")));
+            try {
+                jedis.getSet("setDataTypeKey", "0");
+
+                assert false : "Exception has to be thrown!";
+            }
+            catch (JedisDataException e) {
+                assertTrue(e.getMessage().startsWith("WRONGTYPE"));
+            }
         }
     }
 
@@ -296,6 +316,16 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
         try (Jedis jedis = pool.getResource()) {
             Assert.assertEquals(5, (long)jedis.append("appendKey1", "Hello"));
             Assert.assertEquals(12, (long)jedis.append("appendKey1", " World!"));
+
+            jcache().put("setDataTypeKey", new HashSet<String>(Arrays.asList("1", "2")));
+            try {
+                jedis.append("setDataTypeKey", "");
+
+                assert false : "Exception has to be thrown!";
+            }
+            catch (JedisDataException e) {
+                assertTrue(e.getMessage().startsWith("WRONGTYPE"));
+            }
         }
     }
 
@@ -308,6 +338,16 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
 
             jcache().put("strlenKey", "abc");
             Assert.assertEquals(3, (long)jedis.strlen("strlenKey"));
+
+            jcache().put("setDataTypeKey", new HashSet<String>(Arrays.asList("1", "2")));
+            try {
+                jedis.strlen("setDataTypeKey");
+
+                assert false : "Exception has to be thrown!";
+            }
+            catch (JedisDataException e) {
+                assertTrue(e.getMessage().startsWith("WRONGTYPE"));
+            }
         }
     }
 
@@ -343,6 +383,16 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
 
             jcache().put("setRangeKey3", "Hello World");
             Assert.assertEquals(11, (long)jedis.setrange("setRangeKey3", 6, "Redis"));
+
+            jcache().put("setDataTypeKey", new HashSet<String>(Arrays.asList("1", "2")));
+            try {
+                jedis.setrange("setDataTypeKey", 0, "Redis");
+
+                assert false : "Exception has to be thrown!";
+            }
+            catch (JedisDataException e) {
+                assertTrue(e.getMessage().startsWith("WRONGTYPE"));
+            }
         }
     }
 
@@ -358,6 +408,16 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
             Assert.assertEquals("ing", jedis.getrange("getRangeKey", -3, -1));
             Assert.assertEquals("This is a string", jedis.getrange("getRangeKey", 0, -1));
             Assert.assertEquals("string", jedis.getrange("getRangeKey", 10, 100));
+
+            jcache().put("setDataTypeKey", new HashSet<String>(Arrays.asList("1", "2")));
+            try {
+                jedis.getrange("setDataTypeKey", 0, 1);
+
+                assert false : "Exception has to be thrown!";
+            }
+            catch (JedisDataException e) {
+                assertTrue(e.getMessage().startsWith("WRONGTYPE"));
+            }
         }
     }
 

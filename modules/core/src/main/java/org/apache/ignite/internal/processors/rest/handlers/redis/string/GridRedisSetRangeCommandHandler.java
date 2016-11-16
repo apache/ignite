@@ -111,6 +111,9 @@ public class GridRedisSetRangeCommandHandler extends GridRedisRestCommandHandler
             putReq.value(new String(dst));
         }
         else {
+            if (!(resp instanceof String))
+                return getReq;
+
             String cacheVal = String.valueOf(resp);
 
             cacheVal = cacheVal.substring(0, off) + val;
@@ -127,9 +130,12 @@ public class GridRedisSetRangeCommandHandler extends GridRedisRestCommandHandler
     @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
         if (restRes.getResponse() == null)
             return GridRedisProtocolParser.toInteger("0");
-        else {
+
+        if (restRes.getResponse() instanceof String) {
             int resLen = ((String)restRes.getResponse()).length();
             return GridRedisProtocolParser.toInteger(String.valueOf(resLen));
         }
+        else
+            return GridRedisProtocolParser.toTypeError("Operation against a key holding the wrong kind of value");
     }
 }

@@ -78,7 +78,12 @@ public class GridRedisGetSetCommandHandler extends GridRedisRestCommandHandler {
 
     /** {@inheritDoc} */
     @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
-        return (restRes.getResponse() == null ? GridRedisProtocolParser.nil()
-            : GridRedisProtocolParser.toBulkString(restRes.getResponse()));
+        if (restRes.getResponse() == null)
+            return GridRedisProtocolParser.nil();
+
+        if (restRes.getResponse() instanceof String)
+            return GridRedisProtocolParser.toBulkString(restRes.getResponse());
+        else
+            return GridRedisProtocolParser.toTypeError("Operation against a key holding the wrong kind of value");
     }
 }

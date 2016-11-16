@@ -81,7 +81,8 @@ public class GridRedisGetRangeCommandHandler extends GridRedisRestCommandHandler
     @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
         if (restRes.getResponse() == null)
             return GridRedisProtocolParser.toBulkString("");
-        else {
+
+        if (restRes.getResponse() instanceof String) {
             String res = String.valueOf(restRes.getResponse());
             int startOffset;
             int endOffset;
@@ -97,6 +98,8 @@ public class GridRedisGetRangeCommandHandler extends GridRedisRestCommandHandler
 
             return GridRedisProtocolParser.toBulkString(res.substring(startOffset, endOffset));
         }
+        else
+            return GridRedisProtocolParser.toTypeError("Operation against a key holding the wrong kind of value");
     }
 
     /**

@@ -101,9 +101,12 @@ public class GridRedisAppendCommandHandler extends GridRedisRestCommandHandler {
     @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
         if (restRes.getResponse() == null)
             return GridRedisProtocolParser.nil();
-        else {
+
+        if (restRes.getResponse() instanceof String) {
             int resLen = ((String)restRes.getResponse()).length();
             return GridRedisProtocolParser.toInteger(String.valueOf(resLen));
         }
+        else
+            return GridRedisProtocolParser.toTypeError("Operation against a key holding the wrong kind of value");
     }
 }
