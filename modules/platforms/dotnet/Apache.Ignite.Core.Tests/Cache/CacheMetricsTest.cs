@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Cache
 {
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Cache;
     using NUnit.Framework;
@@ -45,7 +46,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                     var reader = ((Ignite)ignite).Marshaller.StartUnmarshal(inStream);
 
-                    var metrics = new CacheMetricsImpl(reader);
+                    ICacheMetrics metrics = new CacheMetricsImpl(reader);
 
                     Assert.AreEqual(1, metrics.CacheHits);
                     Assert.AreEqual(2, metrics.CacheHitPercentage);
