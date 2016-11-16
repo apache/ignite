@@ -15,24 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.rest.protocols.tcp;
+package org.apache.ignite.internal.processors.rest.handlers.redis.exception;
+
+import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Type of message being parsed.
+ * Generic Redis protocol exception.
  */
-public enum GridClientPacketType {
-    /** Memcache protocol message. */
-    MEMCACHE,
+public class GridRedisGenericException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-    /** Redis protocol message. */
-    REDIS,
-
-    /** Ignite handshake. */
-    IGNITE_HANDSHAKE,
-
-    /** Ignite handshake response. */
-    IGNITE_HANDSHAKE_RES,
-
-    /** Ignite message. */
-    IGNITE
+    /**
+     * Creates a generic exception with given error message.
+     *
+     * @param msg Error message.
+     */
+    public GridRedisGenericException(String msg) {
+        super(msg);
+    }
 }
