@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePartialUpdateException;
@@ -911,59 +912,7 @@ public class PlatformCache extends PlatformAbstractTarget {
             case OP_METRICS:
                 CacheMetrics metrics = cache.localMetrics();
 
-                writer.writeLong(metrics.getCacheGets());
-                writer.writeLong(metrics.getCachePuts());
-                writer.writeLong(metrics.getCacheHits());
-                writer.writeLong(metrics.getCacheMisses());
-                writer.writeLong(metrics.getCacheTxCommits());
-                writer.writeLong(metrics.getCacheTxRollbacks());
-                writer.writeLong(metrics.getCacheEvictions());
-                writer.writeLong(metrics.getCacheRemovals());
-                writer.writeFloat(metrics.getAveragePutTime());
-                writer.writeFloat(metrics.getAverageGetTime());
-                writer.writeFloat(metrics.getAverageRemoveTime());
-                writer.writeFloat(metrics.getAverageTxCommitTime());
-                writer.writeFloat(metrics.getAverageTxRollbackTime());
-                writer.writeString(metrics.name());
-                writer.writeLong(metrics.getOverflowSize());
-                writer.writeLong(metrics.getOffHeapEntriesCount());
-                writer.writeLong(metrics.getOffHeapAllocatedSize());
-                writer.writeInt(metrics.getSize());
-                writer.writeInt(metrics.getKeySize());
-                writer.writeBoolean(metrics.isEmpty());
-                writer.writeInt(metrics.getDhtEvictQueueCurrentSize());
-                writer.writeInt(metrics.getTxThreadMapSize());
-                writer.writeInt(metrics.getTxXidMapSize());
-                writer.writeInt(metrics.getTxCommitQueueSize());
-                writer.writeInt(metrics.getTxPrepareQueueSize());
-                writer.writeInt(metrics.getTxStartVersionCountsSize());
-                writer.writeInt(metrics.getTxCommittedVersionsSize());
-                writer.writeInt(metrics.getTxRolledbackVersionsSize());
-                writer.writeInt(metrics.getTxDhtThreadMapSize());
-                writer.writeInt(metrics.getTxDhtXidMapSize());
-                writer.writeInt(metrics.getTxDhtCommitQueueSize());
-                writer.writeInt(metrics.getTxDhtPrepareQueueSize());
-                writer.writeInt(metrics.getTxDhtStartVersionCountsSize());
-                writer.writeInt(metrics.getTxDhtCommittedVersionsSize());
-                writer.writeInt(metrics.getTxDhtRolledbackVersionsSize());
-                writer.writeBoolean(metrics.isWriteBehindEnabled());
-                writer.writeInt(metrics.getWriteBehindFlushSize());
-                writer.writeInt(metrics.getWriteBehindFlushThreadCount());
-                writer.writeLong(metrics.getWriteBehindFlushFrequency());
-                writer.writeInt(metrics.getWriteBehindStoreBatchSize());
-                writer.writeInt(metrics.getWriteBehindTotalCriticalOverflowCount());
-                writer.writeInt(metrics.getWriteBehindCriticalOverflowCount());
-                writer.writeInt(metrics.getWriteBehindErrorRetryCount());
-                writer.writeInt(metrics.getWriteBehindBufferSize());
-                writer.writeString(metrics.getKeyType());
-                writer.writeString(metrics.getValueType());
-                writer.writeBoolean(metrics.isStoreByValue());
-                writer.writeBoolean(metrics.isStatisticsEnabled());
-                writer.writeBoolean(metrics.isManagementEnabled());
-                writer.writeBoolean(metrics.isReadThrough());
-                writer.writeBoolean(metrics.isWriteThrough());
-                writer.writeFloat(metrics.getCacheHitPercentage());
-                writer.writeFloat(metrics.getCacheMissPercentage());
+                writeCacheMetrics(writer, metrics);
 
                 break;
 
@@ -1359,6 +1308,68 @@ public class PlatformCache extends PlatformAbstractTarget {
         }
 
         throw new IgniteException("Platform cache extension is not registered [id=" + id + ']');
+    }
+
+    /**
+     * Writes cache metrics.
+     *
+     * @param writer Writer.
+     * @param metrics Metrics.
+     */
+    private static void writeCacheMetrics(BinaryRawWriter writer, CacheMetrics metrics) {
+        writer.writeLong(metrics.getCacheGets());
+        writer.writeLong(metrics.getCachePuts());
+        writer.writeLong(metrics.getCacheHits());
+        writer.writeLong(metrics.getCacheMisses());
+        writer.writeLong(metrics.getCacheTxCommits());
+        writer.writeLong(metrics.getCacheTxRollbacks());
+        writer.writeLong(metrics.getCacheEvictions());
+        writer.writeLong(metrics.getCacheRemovals());
+        writer.writeFloat(metrics.getAveragePutTime());
+        writer.writeFloat(metrics.getAverageGetTime());
+        writer.writeFloat(metrics.getAverageRemoveTime());
+        writer.writeFloat(metrics.getAverageTxCommitTime());
+        writer.writeFloat(metrics.getAverageTxRollbackTime());
+        writer.writeString(metrics.name());
+        writer.writeLong(metrics.getOverflowSize());
+        writer.writeLong(metrics.getOffHeapEntriesCount());
+        writer.writeLong(metrics.getOffHeapAllocatedSize());
+        writer.writeInt(metrics.getSize());
+        writer.writeInt(metrics.getKeySize());
+        writer.writeBoolean(metrics.isEmpty());
+        writer.writeInt(metrics.getDhtEvictQueueCurrentSize());
+        writer.writeInt(metrics.getTxThreadMapSize());
+        writer.writeInt(metrics.getTxXidMapSize());
+        writer.writeInt(metrics.getTxCommitQueueSize());
+        writer.writeInt(metrics.getTxPrepareQueueSize());
+        writer.writeInt(metrics.getTxStartVersionCountsSize());
+        writer.writeInt(metrics.getTxCommittedVersionsSize());
+        writer.writeInt(metrics.getTxRolledbackVersionsSize());
+        writer.writeInt(metrics.getTxDhtThreadMapSize());
+        writer.writeInt(metrics.getTxDhtXidMapSize());
+        writer.writeInt(metrics.getTxDhtCommitQueueSize());
+        writer.writeInt(metrics.getTxDhtPrepareQueueSize());
+        writer.writeInt(metrics.getTxDhtStartVersionCountsSize());
+        writer.writeInt(metrics.getTxDhtCommittedVersionsSize());
+        writer.writeInt(metrics.getTxDhtRolledbackVersionsSize());
+        writer.writeBoolean(metrics.isWriteBehindEnabled());
+        writer.writeInt(metrics.getWriteBehindFlushSize());
+        writer.writeInt(metrics.getWriteBehindFlushThreadCount());
+        writer.writeLong(metrics.getWriteBehindFlushFrequency());
+        writer.writeInt(metrics.getWriteBehindStoreBatchSize());
+        writer.writeInt(metrics.getWriteBehindTotalCriticalOverflowCount());
+        writer.writeInt(metrics.getWriteBehindCriticalOverflowCount());
+        writer.writeInt(metrics.getWriteBehindErrorRetryCount());
+        writer.writeInt(metrics.getWriteBehindBufferSize());
+        writer.writeString(metrics.getKeyType());
+        writer.writeString(metrics.getValueType());
+        writer.writeBoolean(metrics.isStoreByValue());
+        writer.writeBoolean(metrics.isStatisticsEnabled());
+        writer.writeBoolean(metrics.isManagementEnabled());
+        writer.writeBoolean(metrics.isReadThrough());
+        writer.writeBoolean(metrics.isWriteThrough());
+        writer.writeFloat(metrics.getCacheHitPercentage());
+        writer.writeFloat(metrics.getCacheMissPercentage());
     }
 
     /**
