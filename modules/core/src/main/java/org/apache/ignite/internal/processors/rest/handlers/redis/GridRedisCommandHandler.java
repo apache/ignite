@@ -15,24 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.rest.protocols.tcp;
+package org.apache.ignite.internal.processors.rest.handlers.redis;
+
+import java.util.Collection;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 
 /**
- * Type of message being parsed.
+ * Command handler.
  */
-public enum GridClientPacketType {
-    /** Memcache protocol message. */
-    MEMCACHE,
+public interface GridRedisCommandHandler {
+    /**
+     * @return Collection of supported commands.
+     */
+    public Collection<GridRedisCommand> supportedCommands();
 
-    /** Redis protocol message. */
-    REDIS,
-
-    /** Ignite handshake. */
-    IGNITE_HANDSHAKE,
-
-    /** Ignite handshake response. */
-    IGNITE_HANDSHAKE_RES,
-
-    /** Ignite message. */
-    IGNITE
+    /**
+     * @param msg Request message.
+     * @return Future.
+     */
+    public IgniteInternalFuture<GridRedisMessage> handleAsync(GridRedisMessage msg);
 }
