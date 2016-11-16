@@ -155,7 +155,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         checkQuery("select avg(old) from Person left join \"addr\".Address where Person.addrId = Address.id " +
             "and lower(Address.street) = lower(?)");
-        checkQuery("select avg(old) from Person right join Address where Person.addrId = Address.id " +
+        checkQuery("select avg(old) from Person right join \"addr\".Address where Person.addrId = Address.id " +
             "and lower(Address.street) = lower(?)");
 
         checkQuery("select avg(old) from Person, \"addr\".Address where Person.addrId = Address.id " +
