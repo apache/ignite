@@ -45,6 +45,9 @@ namespace Apache.Ignite.Examples.Datagrid
         /// <summary>Example cache name.</summary>
         private const string CacheName = "dotnet_multi_tiered_example_cache";
 
+        /// <summary>Cache entry size, in bytes..</summary>
+        private const int EntrySize = 1024;
+
         [STAThread]
         public static void Main()
         {
@@ -85,14 +88,14 @@ namespace Apache.Ignite.Examples.Datagrid
                         // Maximum number of entries that will be stored in Java heap. 
                         MaxSize = 10
                     },
-                    OffHeapMaxMemory = 1024 * 10, // Limit off-heap to 10 KB.
+                    OffHeapMaxMemory = EntrySize * 10, // Limit off-heap to 10 entries.
                     EnableSwap = true
                 };
 
                 ICache<int, byte[]> cache = ignite.GetOrCreateCache<int, byte[]>(cacheCfg);
 
                 // Sample data.
-                byte[] dataBytes = new byte[1024];
+                byte[] dataBytes = new byte[EntrySize];
 
                 // Filling out cache and printing its metrics.
                 PrintCacheMetrics(cache);
@@ -111,7 +114,7 @@ namespace Apache.Ignite.Examples.Datagrid
 
                 Console.WriteLine(">>> Waiting for metrics final update...");
 
-                Thread.Sleep(((TcpDiscoverySpi) ignite.GetConfiguration().DiscoverySpi).HeartbeatFrequency);
+                Thread.Sleep(TcpDiscoverySpi.DefaultHeartbeatFrequency);
 
                 PrintCacheMetrics(cache);
 
@@ -128,8 +131,8 @@ namespace Apache.Ignite.Examples.Datagrid
         {
             var metrics = cache.GetMetrics();
 
-            Console.WriteLine("\n>>> Cache entries layout: [Java heap={0}, Off-Heap={1}, Swap={2}]\n",
-                metrics.Size, metrics.OffHeapEntriesCount, metrics.OverflowSize);
+            Console.WriteLine("\n>>> Cache entries layout: [Java heap={0}, Off-Heap={1}, Swap={2}]",
+                metrics.Size, metrics.OffHeapEntriesCount, metrics.OverflowSize / EntrySize);
         }
     }
 }
