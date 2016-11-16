@@ -538,41 +538,35 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      *
      */
     public void tryEvict() {
-        cctx.gate().enter();
+        long reservations = state.get();
 
-        try {
-            long reservations = state.get();
+        int ord = (int)(reservations >> 32);
 
-            int ord = (int)(reservations >> 32);
+        if (ord != RENTING.ordinal() || (reservations & 0xFFFF) != 0 || groupReserved())
+            return;
 
-            if (ord != RENTING.ordinal() || (reservations & 0xFFFF) != 0 || groupReserved())
-                return;
+        // Attempt to evict partition entries from cache.
+        clearAll();
 
-            // Attempt to evict partition entries from cache.
-            clearAll();
+        if (isEmpty() && casState(reservations, EVICTED)) {
+            if (log.isDebugEnabled())
+                log.debug("Evicted partition: " + this);
 
-            if (isEmpty() && casState(reservations, EVICTED)) {
-                if (log.isDebugEnabled())
-                    log.debug("Evicted partition: " + this);
+            if (!GridQueryProcessor.isEnabled(cctx.config()))
+                clearSwap();
 
-                if (!GridQueryProcessor.isEnabled(cctx.config()))
-                    clearSwap();
+            if (cctx.isDrEnabled())
+                cctx.dr().partitionEvicted(id);
 
-                if (cctx.isDrEnabled())
-                    cctx.dr().partitionEvicted(id);
+            cctx.continuousQueries().onPartitionEvicted(id);
 
-                cctx.continuousQueries().onPartitionEvicted(id);
+            cctx.dataStructures().onPartitionEvicted(id);
 
-                cctx.dataStructures().onPartitionEvicted(id);
+            rent.onDone();
 
-                rent.onDone();
+            ((GridDhtPreloader)cctx.preloader()).onPartitionEvicted(this, true);
 
-                ((GridDhtPreloader)cctx.preloader()).onPartitionEvicted(this, true);
-
-                clearDeferredDeletes();
-            }
-        }finally {
-            cctx.gate().leave();
+            clearDeferredDeletes();
         }
     }
 

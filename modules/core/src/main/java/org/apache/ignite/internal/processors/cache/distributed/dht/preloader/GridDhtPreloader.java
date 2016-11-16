@@ -770,7 +770,14 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                             if (part != null)
                                 try {
-                                    part.tryEvict();
+                                    cctx.gate().enter();
+
+                                    try {
+                                        part.tryEvict();
+                                    }
+                                    finally {
+                                        cctx.gate().leave();
+                                    }
                                 }
                                 catch (Throwable ex) {
                                     LT.error(log, ex, "Partition eviction failed, this can cause grid hang.", true);
