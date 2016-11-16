@@ -167,6 +167,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         assert conflictExpireTime <= 0 : conflictExpireTime;
         assert conflictVer == null : conflictVer;
 
+        near(false);
         this.key = key;
         this.partId = partId;
         this.val = val;
@@ -218,7 +219,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
     /** {@inheritDoc} */
     @Override public boolean hasKey(KeyCacheObject key) {
-        return F.eq(this.key, key);
+        return !near() && F.eq(this.key, key);
     }
 
     /** {@inheritDoc} */
