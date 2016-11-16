@@ -3154,6 +3154,10 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestCacheMetrics()
         {
+            // TODO: Perform extensive local/global metrics in CacheMetricsTest
+            // TODO: Check EnableStatistics flag (config tests etc).
+
+
             var cache = Cache();
             var cache1 = Cache(1);
             var cache2 = Cache(2);
