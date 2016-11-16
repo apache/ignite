@@ -1437,8 +1437,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             for (Map.Entry<Integer, Long> e0 : e.getValue().partitionUpdateCounters(top.cacheId()).entrySet()) {
                 int p = e0.getKey();
 
-//                if (top.partitionState(e.getKey(), p) == GridDhtPartitionState.MOVING)
-//                    continue;
+                if (top.partitionState(e.getKey(), p) == GridDhtPartitionState.MOVING)
+                    continue;
 
                 Long cntr = e.getValue().partitionUpdateCounters(top.cacheId()).get(p);
 
