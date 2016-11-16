@@ -261,7 +261,7 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
         props.put(IgniteSinkConstants.CACHE_ALLOW_OVERWRITE, "true");
         props.put(IgniteSinkConstants.CACHE_CFG_PATH, "example-ignite.xml");
         props.put(IgniteSinkConstants.SINGLE_TUPLE_EXTRACTOR_CLASS,
-            "org.apache.ignite.stream.kafka.connect.IgniteSinkConnectorTest$TestTransformer");
+            "org.apache.ignite.stream.kafka.connect.IgniteSinkConnectorTest$TestExtractor");
 
         return props;
     }
@@ -293,7 +293,7 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
     /**
      * Test transformer.
      */
-    static class TestTransformer implements StreamSingleTupleExtractor<SinkRecord, String, String> {
+    static class TestExtractor implements StreamSingleTupleExtractor<SinkRecord, String, String> {
 
         /** {@inheritDoc} */
         @Override public Map.Entry<String, String> extract(SinkRecord msg) {
