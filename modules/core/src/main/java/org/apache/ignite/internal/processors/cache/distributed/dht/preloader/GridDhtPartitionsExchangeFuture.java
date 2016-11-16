@@ -1488,13 +1488,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 owners.add(cctx.localNodeId());
 
             top.setOwners(p, owners);
-//
-//            StringBuilder builder = new StringBuilder("!!Set Owners( " + p +  ") owners - ");
-//            for (UUID owner : owners) {
-//                builder.append(owner.toString()).append(", ");
-//            }
-//
-//            log.error(builder.toString());
         }
     }
 
@@ -1589,12 +1582,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
     }
 
+    /**
+     *
+     */
     private void assignPartitionsStates() {
         if (cctx.database().persistenceEnabled()) {
-            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                log.error("!!Assign");
+            for (GridCacheContext cacheCtx : cctx.cacheContexts())
                 assignPartitionStates(cacheCtx.topology());
-            }
         }
     }
 
