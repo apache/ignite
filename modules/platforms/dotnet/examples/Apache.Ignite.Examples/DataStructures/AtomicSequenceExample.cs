@@ -76,7 +76,7 @@ namespace Apache.Ignite.Examples.DataStructures
                 // Broadcast an action that increments AtomicSequence a number of times.
                 ignite.GetCompute().Broadcast(new AtomicSequenceIncrementAction());
 
-                // Resulting value will depend on number of participating nodes.
+                // Actual value will depend on number of participating nodes.
                 Console.WriteLine("\n>>> Atomic sequence current value: " + atomicSequence.Read());
             }
 
