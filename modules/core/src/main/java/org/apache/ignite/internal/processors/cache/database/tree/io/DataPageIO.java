@@ -400,12 +400,14 @@ public class DataPageIO extends PageIO {
 
         int directCnt = getDirectCount(buf);
 
-        assert directCnt > 0: directCnt;
+        assert directCnt > 0: "itemId=" + itemId + ", directCnt=" + directCnt + ", page=" + printPageLayout(buf);
 
         if (itemId >= directCnt) { // Need to do indirect lookup.
             int indirectCnt = getIndirectCount(buf);
 
-            assert indirectCnt > 0: indirectCnt; // Must have indirect items here.
+            // Must have indirect items here.
+            assert indirectCnt > 0: "itemId=" + itemId + ", directCnt=" + directCnt + ", indirectCnt=" + indirectCnt +
+                ", page=" + printPageLayout(buf);
 
             int indirectItemIdx = findIndirectItemIndex(buf, itemId, directCnt, indirectCnt);
 
