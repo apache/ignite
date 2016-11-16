@@ -3567,7 +3567,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param op Update operation.
      * @param val Write value.
      * @param writeVer Write version.
-     * @param topVer
      * @param expireTime Expire time.
      * @param updCntr Update counter.
      */
@@ -3577,8 +3576,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert cctx.atomic();
 
         try {
-            if (cctx.shared().wal() != null) {
-
+            if (cctx.shared().wal() != null)
                 cctx.shared().wal().log(new DataRecord(new DataEntry(
                     cctx.cacheId(),
                     key,
@@ -3589,7 +3587,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     expireTime,
                     partition(),
                     updCntr)));
-            }
         }
         catch (StorageException e) {
             throw new IgniteCheckedException("Failed to log ATOMIC cache update [key=" + key + ", op=" + op +

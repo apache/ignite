@@ -807,8 +807,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         dhtVer = explicitVer != null ? explicitVer : writeVersion();
 
                                     if (cctx.wal() != null && !writeEntries().isEmpty()
-                                        && op != NOOP && op != RELOAD && op != READ) {
-
+                                        && op != NOOP && op != RELOAD && op != READ)
                                         ptr = cctx.wal().log(new DataRecord(new DataEntry(
                                             cacheCtx.cacheId(),
                                             txEntry.key(),
@@ -819,7 +818,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             0,
                                             txEntry.key().partition(),
                                             txEntry.updateCounter())));
-                                    }
 
                                     if (op == CREATE || op == UPDATE) {
                                         GridCacheUpdateTxResult updRes = cached.innerSet(
