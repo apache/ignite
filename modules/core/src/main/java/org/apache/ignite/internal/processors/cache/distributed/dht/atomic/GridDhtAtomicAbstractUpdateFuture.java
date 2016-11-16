@@ -81,7 +81,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
     private final CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse> completionCb;
 
     /** Update request. */
-    private final GridNearAtomicAbstractUpdateRequest updateReq;
+    protected final GridNearAtomicAbstractUpdateRequest updateReq;
 
     /** Update response. */
     final GridNearAtomicUpdateResponse updateRes;
