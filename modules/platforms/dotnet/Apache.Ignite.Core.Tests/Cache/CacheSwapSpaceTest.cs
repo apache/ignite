@@ -113,7 +113,9 @@ namespace Apache.Ignite.Core.Tests.Cache
                 var metrics = cache.GetMetrics();
 
                 Assert.AreEqual(4, metrics.OffHeapEntriesCount);  // Entry takes more space than the value
-                Assert.AreEqual(3, metrics.OverflowSize / entrySize);  // 10 - 3 - 4 = 3
+                Assert.AreEqual(3, metrics.SwapEntriesCount);  // 10 - 3 - 4 = 3
+                Assert.AreEqual(3, metrics.OverflowSize / entrySize);
+                Assert.AreEqual(metrics.SwapSize, metrics.OverflowSize);
             }
         }
     }
