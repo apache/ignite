@@ -233,7 +233,7 @@ namespace Apache.Ignite.Core.Cache
         long OffHeapEntriesCount { get; }
 
         /// <summary>
-        /// Gets number of primary entries stored in off-heap memory.
+        /// Gets the number of primary entries stored in off-heap memory.
         /// </summary>
         /// <returns>
         /// Number of primary entries stored in off-heap memory.
@@ -268,7 +268,7 @@ namespace Apache.Ignite.Core.Cache
         /// The total number of get requests to the swap.
         /// </summary>
         /// <returns>
-        /// The number of gets.
+        /// The number of gets from the swap.
         /// </returns>
         long SwapGets { get; }
 
@@ -276,7 +276,7 @@ namespace Apache.Ignite.Core.Cache
         /// The total number of put requests to the swap.
         /// </summary>
         /// <returns>
-        /// The number of puts.
+        /// The number of puts to the swap.
         /// </returns>
         long SwapPuts { get; }
 
@@ -284,7 +284,7 @@ namespace Apache.Ignite.Core.Cache
         /// The total number of removals from the swap.
         /// </summary>
         /// <returns>
-        /// The number of removals.
+        /// The number of removals from the swap.
         /// </returns>
         long SwapRemovals { get; }
 
@@ -297,7 +297,7 @@ namespace Apache.Ignite.Core.Cache
         long SwapHits { get; }
 
         /// <summary>
-        /// A miss is a get request that is not satisfied by swap.
+        /// A number of get requests to that were not satisfied by the swap.
         /// </summary>
         /// <returns>
         /// The swap misses number.
@@ -313,10 +313,10 @@ namespace Apache.Ignite.Core.Cache
         long SwapEntriesCount { get; }
 
         /// <summary>
-        /// Gets size of swap.
+        /// Gets size of swap, in bytes.
         /// </summary>
         /// <returns>
-        /// Size of swap.
+        /// Size of swap, in bytes.
         /// </returns>
         long SwapSize { get; }
 
