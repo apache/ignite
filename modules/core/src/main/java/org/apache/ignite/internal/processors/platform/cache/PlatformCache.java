@@ -1316,7 +1316,10 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param writer Writer.
      * @param metrics Metrics.
      */
-    private static void writeCacheMetrics(BinaryRawWriter writer, CacheMetrics metrics) {
+    public static void writeCacheMetrics(BinaryRawWriter writer, CacheMetrics metrics) {
+        assert writer != null;
+        assert metrics != null;
+
         writer.writeLong(metrics.getCacheHits());
         writer.writeFloat(metrics.getCacheHitPercentage());
         writer.writeLong(metrics.getCacheMisses());
