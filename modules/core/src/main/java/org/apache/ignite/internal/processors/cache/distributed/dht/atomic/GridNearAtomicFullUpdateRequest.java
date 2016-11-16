@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteExternaliza
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -513,67 +514,54 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         return invokeArgs;
     }
 
-    /**
-     * @return Flag indicating whether this is fast-map udpate.
-     */
+    /** {@inheritDoc} */
     @Override public boolean fastMap() {
         return fastMap;
     }
 
-    /**
-     * @return Topology locked flag.
-     */
+    /** {@inheritDoc} */
     @Override public boolean topologyLocked() {
         return topLocked;
     }
 
-    /**
-     * @return {@code True} if request sent from client node.
-     */
+    /** {@inheritDoc} */
     @Override public boolean clientRequest() {
         return clientReq;
     }
 
-    /**
-     * @return Return value flag.
-     */
+    /** {@inheritDoc} */
     @Override public boolean returnValue() {
         return retval;
     }
 
-    /**
-     * @return Skip write-through to a persistent storage.
-     */
+    /** {@inheritDoc} */
     @Override public boolean skipStore() {
         return skipStore;
     }
 
-    /**
-     * @return Keep binary flag.
-     */
+    /** {@inheritDoc} */
     @Override public boolean keepBinary() {
         return keepBinary;
     }
 
-    /**
-     * @return Flag indicating whether this request contains primary keys.
-     */
+    /** {@inheritDoc} */
     @Override public boolean hasPrimary() {
         return hasPrimary;
     }
 
-    /**
-     * @return Filter.
-     */
+    /** {@inheritDoc} */
     @Override @Nullable public CacheEntryPredicate[] filter() {
         return filter;
     }
 
-    /**
-     * @return Expiry policy.
-     */
+    /** {@inheritDoc} */
     @Override public ExpiryPolicy expiry() {
         return expiryPlc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasConflictData() {
+        return F.size(conflictVers) > 0 || conflictTtls != null || conflictExpireTimes != null;
     }
 
     /**

@@ -115,7 +115,6 @@ class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture 
                 writeVer,
                 syncMode,
                 topVer,
-                forceTransformBackups,
                 updateReq.subjectId(),
                 updateReq.taskNameHash(),
                 cctx.deploymentEnabled(),
@@ -174,7 +173,9 @@ class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture 
      */
     private boolean canUseSingleRequest(ClusterNode node) {
         return node.version().compareToIgnoreTimestamp(SINGLE_UPDATE_REQUEST) >= 0 &&
-            updateReq.expiry() == null;
+            cctx.expiry() == null &&
+            updateReq.expiry() == null &&
+            !updateReq.hasConflictData();
     }
 
     /** {@inheritDoc} */
