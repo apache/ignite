@@ -54,8 +54,8 @@ namespace Apache.Ignite.Examples.DataStructures
                 // Attempt to modify the value on each node. Only one node will succeed.
                 ignite.GetCompute().Broadcast(new AtomicReferenceModifyAction());
                 
-                // Print the resulting value: Id of a node that has modified the reference.
-                Console.WriteLine("\n>>> Resulting atomic reference value: " + atomicRef.Read());
+                // Print current value which is equal to the Id of the node that has modified the reference first.
+                Console.WriteLine("\n>>> Current atomic reference value: " + atomicRef.Read());
             }
 
             Console.WriteLine("\n>>> Example finished, press any key to exit ...");

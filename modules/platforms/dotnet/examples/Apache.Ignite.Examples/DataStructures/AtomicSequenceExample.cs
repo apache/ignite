@@ -77,7 +77,7 @@ namespace Apache.Ignite.Examples.DataStructures
                 ignite.GetCompute().Broadcast(new AtomicSequenceIncrementAction());
 
                 // Resulting value will depend on number of participating nodes.
-                Console.WriteLine("\n>>> Atomic sequence resulting value: " + atomicSequence.Read());
+                Console.WriteLine("\n>>> Atomic sequence current value: " + atomicSequence.Read());
             }
 
             Console.WriteLine("\n>>> Check output on all nodes.");
