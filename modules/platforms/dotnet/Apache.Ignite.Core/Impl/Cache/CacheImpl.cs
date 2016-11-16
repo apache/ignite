@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache.Expiry;
@@ -894,7 +895,24 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public ICacheMetrics GetMetrics()
         {
-            return DoInOp((int)CacheOp.Metrics, stream =>
+            return DoInOp((int) CacheOp.GlobalMetrics, stream =>
+            {
+                IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
+
+                return new CacheMetricsImpl(reader);
+            });
+        }
+
+        /** <inheritDoc /> */
+        public ICacheMetrics GetMetrics(IClusterGroup clusterGroup)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritDoc /> */
+        public ICacheMetrics GetLocalMetrics()
+        {
+            return DoInOp((int) CacheOp.LocalMetrics, stream =>
             {
                 IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
 
