@@ -617,7 +617,7 @@ namespace Apache.Ignite.Core.Cache
         /// The default value is false.
         /// </summary>
         /// <returns>
-        /// true if management is enabled.
+        /// True if management is enabled.
         /// </returns>
         bool IsManagementEnabled { get; }
 
