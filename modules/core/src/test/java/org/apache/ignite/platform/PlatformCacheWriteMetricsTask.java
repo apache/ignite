@@ -174,7 +174,7 @@ public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Obje
 
         /** {@inheritDoc} */
         @Override public String name() {
-            return null;
+            return "myCache";
         }
 
         /** {@inheritDoc} */
