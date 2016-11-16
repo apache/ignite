@@ -1317,23 +1317,45 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param metrics Metrics.
      */
     private static void writeCacheMetrics(BinaryRawWriter writer, CacheMetrics metrics) {
+        writer.writeLong(metrics.getCacheHits());
+        writer.writeFloat(metrics.getCacheHitPercentage());
+        writer.writeLong(metrics.getCacheMisses());
+        writer.writeFloat(metrics.getCacheMissPercentage());
         writer.writeLong(metrics.getCacheGets());
         writer.writeLong(metrics.getCachePuts());
-        writer.writeLong(metrics.getCacheHits());
-        writer.writeLong(metrics.getCacheMisses());
-        writer.writeLong(metrics.getCacheTxCommits());
-        writer.writeLong(metrics.getCacheTxRollbacks());
-        writer.writeLong(metrics.getCacheEvictions());
         writer.writeLong(metrics.getCacheRemovals());
-        writer.writeFloat(metrics.getAveragePutTime());
+        writer.writeLong(metrics.getCacheEvictions());
         writer.writeFloat(metrics.getAverageGetTime());
+        writer.writeFloat(metrics.getAveragePutTime());
         writer.writeFloat(metrics.getAverageRemoveTime());
         writer.writeFloat(metrics.getAverageTxCommitTime());
         writer.writeFloat(metrics.getAverageTxRollbackTime());
+        writer.writeLong(metrics.getCacheTxCommits());
+        writer.writeLong(metrics.getCacheTxRollbacks());
         writer.writeString(metrics.name());
         writer.writeLong(metrics.getOverflowSize());
+        writer.writeLong(metrics.getOffHeapGets());
+        writer.writeLong(metrics.getOffHeapPuts());
+        writer.writeLong(metrics.getOffHeapRemovals());
+        writer.writeLong(metrics.getOffHeapEvictions());
+        writer.writeLong(metrics.getOffHeapHits());
+        writer.writeFloat(metrics.getOffHeapHitPercentage());
+        writer.writeLong(metrics.getOffHeapMisses());
+        writer.writeFloat(metrics.getOffHeapMissPercentage());
         writer.writeLong(metrics.getOffHeapEntriesCount());
+        writer.writeLong(metrics.getOffHeapPrimaryEntriesCount());
+        writer.writeLong(metrics.getOffHeapBackupEntriesCount());
         writer.writeLong(metrics.getOffHeapAllocatedSize());
+        writer.writeLong(metrics.getOffHeapMaxSize());
+        writer.writeLong(metrics.getSwapGets());
+        writer.writeLong(metrics.getSwapPuts());
+        writer.writeLong(metrics.getSwapRemovals());
+        writer.writeLong(metrics.getSwapHits());
+        writer.writeLong(metrics.getSwapMisses());
+        writer.writeLong(metrics.getSwapEntriesCount());
+        writer.writeLong(metrics.getSwapSize());
+        writer.writeFloat(metrics.getSwapHitPercentage());
+        writer.writeFloat(metrics.getSwapMissPercentage());
         writer.writeInt(metrics.getSize());
         writer.writeInt(metrics.getKeySize());
         writer.writeBoolean(metrics.isEmpty());
@@ -1368,8 +1390,6 @@ public class PlatformCache extends PlatformAbstractTarget {
         writer.writeBoolean(metrics.isManagementEnabled());
         writer.writeBoolean(metrics.isReadThrough());
         writer.writeBoolean(metrics.isWriteThrough());
-        writer.writeFloat(metrics.getCacheHitPercentage());
-        writer.writeFloat(metrics.getCacheMissPercentage());
     }
 
     /**
