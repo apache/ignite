@@ -15,15 +15,19 @@
  * limitations under the License.
  */
 
+// ReSharper disable AssignNullToNotNullAttribute
 namespace Apache.Ignite.Examples.Datagrid
 {
     using System;
+    using System.IO;
     using System.Threading;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Discovery.Tcp;
+    using Apache.Ignite.Core.Discovery.Tcp.Multicast;
+    using Apache.Ignite.Core.SwapSpace.File;
 
     /// <summary>
     /// This example demonstrates how multi-tiered Ignite cache stores data in various ways.
@@ -34,10 +38,7 @@ namespace Apache.Ignite.Examples.Datagrid
     ///     Application -> Startup object);
     /// 3) Start example (F5 or Ctrl+F5).
     /// <para />
-    /// This example can be run with standalone Apache Ignite.NET node:
-    /// 1) Run %IGNITE_HOME%/platforms/dotnet/bin/Apache.Ignite.exe:
-    /// Apache.Ignite.exe -configFileName=platforms\dotnet\examples\apache.ignite.examples\app.config -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
-    /// 2) Start example.
+    /// This example should be run without other nodes.
     /// </summary>
     public class MultiTieredCacheExample
     {
@@ -47,9 +48,35 @@ namespace Apache.Ignite.Examples.Datagrid
         [STAThread]
         public static void Main()
         {
-            using (var ignite = Ignition.StartFromApplicationConfiguration())
+            Console.WriteLine();
+            Console.WriteLine(">>> Lifecycle example started.");
+
+            // Configure swap in the current bin directory (where our assembly is located).
+            var binDir = Path.GetDirectoryName(typeof(MultiTieredCacheExample).Assembly.Location);
+            var swapDir = Path.Combine(binDir, "ignite-swap");
+
+            Console.WriteLine(">>> Swap space directory: " + swapDir);
+
+            var cfg = new IgniteConfiguration
             {
-                var cfg = new CacheConfiguration
+                DiscoverySpi = new TcpDiscoverySpi
+                {
+                    IpFinder = new TcpDiscoveryMulticastIpFinder
+                    {
+                        Endpoints = new[] { "127.0.0.1:47500" }
+                    }
+                },
+                SwapSpaceSpi = new FileSwapSpaceSpi
+                {
+                    BaseDirectory = swapDir
+                }
+            };
+
+            using (var ignite = Ignition.Start(cfg))
+            {
+                // TODO: Remote node check?
+
+                var cacheCfg = new CacheConfiguration
                 {
                     Name = CacheName,
                     Backups = 1,
@@ -58,10 +85,11 @@ namespace Apache.Ignite.Examples.Datagrid
                         // Maximum number of entries that will be stored in Java heap. 
                         MaxSize = 10
                     },
-                    OffHeapMaxMemory = 0 // Unlimited off-heap space.
+                    OffHeapMaxMemory = 1024 * 10, // Limit off-heap to 10 KB.
+                    EnableSwap = true
                 };
 
-                ICache<int, byte[]> cache = ignite.GetOrCreateCache<int, byte[]>(cfg);
+                ICache<int, byte[]> cache = ignite.GetOrCreateCache<int, byte[]>(cacheCfg);
 
                 // Sample data.
                 byte[] dataBytes = new byte[1024];
