@@ -45,6 +45,7 @@ public class PagePartitionMetaIO extends PageMetaIO {
         setSize(buf, 0);
         setUpdateCounter(buf, 0);
         setGlobalRemoveId(buf, 0);
+        setPartitionState(buf, (byte)-1);
     }
 
     /**

@@ -504,6 +504,10 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         }
     }
 
+    public void restoreState(GridDhtPartitionState stateToRestore) {
+        state.set(((long)stateToRestore.ordinal())  <<  32);
+    }
+
     /**
      * @param reservations Current aggregated value.
      * @param toState State to switch to.

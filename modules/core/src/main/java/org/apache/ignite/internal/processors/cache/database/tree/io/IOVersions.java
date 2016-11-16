@@ -77,7 +77,7 @@ public final class IOVersions<V extends PageIO> {
      */
     public V forVersion(int ver) {
         if (ver == 0)
-            System.out.println("!!!");
+            System.out.println("!!! for version 0");
 
         return vers[ver - 1];
     }
