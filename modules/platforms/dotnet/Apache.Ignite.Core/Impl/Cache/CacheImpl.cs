@@ -34,6 +34,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Impl.Cache.Expiry;
     using Apache.Ignite.Core.Impl.Cache.Query;
     using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Unmanaged;
 
@@ -906,7 +907,14 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public ICacheMetrics GetMetrics(IClusterGroup clusterGroup)
         {
-            throw new NotImplementedException();
+            IgniteArgumentCheck.NotNull(clusterGroup, "clusterGroup");
+
+            var prj = clusterGroup as ClusterGroupImpl;
+
+            if (prj == null)
+                throw new ArgumentException("Unexpected IClusterGroup implementation: " + clusterGroup.GetType());
+
+            return prj.GetCacheMetrics(Name);
         }
 
         /** <inheritDoc /> */
