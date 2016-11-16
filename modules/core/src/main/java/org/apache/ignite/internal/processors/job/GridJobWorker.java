@@ -790,6 +790,28 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                     }
                     else {
                         try {
+                            byte[] resBytes  = null;
+
+                            boolean loc = ctx.localNodeId().equals(sndNode.id()) && !ctx.config().isMarshalLocalJobs();
+
+                            // Try serialize response, and if exception - return to client.
+                            if (!loc) {
+                                try {
+                                    resBytes = U.marshal(marsh, res);
+                                }
+                                catch (IgniteCheckedException e) {
+                                    resBytes = U.marshal(marsh, null);
+
+                                    if (ex != null)
+                                        ex.addSuppressed(e);
+                                    else
+                                        ex = U.convertException(e);
+
+                                    U.error(log, "Failed to serialize job response [nodeId=" + taskNode.id() +
+                                        ", ses=" + ses + ", jobId=" + ses.getJobId() + ", job=" + job + ']', e);
+                                }
+                            }
+
                             if (ex != null) {
                                 if (isStarted) {
                                     // Job failed.
@@ -804,7 +826,6 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                             else if (!internal && ctx.event().isRecordable(EVT_JOB_FINISHED))
                                 evts = addEvent(evts, EVT_JOB_FINISHED, /*no message for success. */null);
 
-                            boolean loc = ctx.localNodeId().equals(sndNode.id()) && !ctx.config().isMarshalLocalJobs();
 
                             Map<Object, Object> attrs = jobCtx.getAttributes();
 
@@ -814,7 +835,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                                 ses.getJobId(),
                                 loc ? null : U.marshal(marsh, ex),
                                 loc ? ex : null,
-                                loc ? null: U.marshal(marsh, res),
+                                resBytes,
                                 loc ? res : null,
                                 loc ? null : U.marshal(marsh, attrs),
                                 loc ? attrs : null,
