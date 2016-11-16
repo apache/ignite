@@ -17,25 +17,14 @@
 
 package org.apache.ignite.stream.kafka.connect;
 
+import org.apache.kafka.connect.connector.Task;
+
 /**
- * Sink configuration strings.
+ * Sink connector mock for tests for using the task mock.
  */
-public class IgniteSinkConstants {
-    /** Ignite configuration file path. */
-    public static final String CACHE_CFG_PATH = "igniteCfg";
-
-    /** Cache name. */
-    public static final String CACHE_NAME = "cacheName";
-
-    /** Flag to enable overwriting existing values in cache. */
-    public static final String CACHE_ALLOW_OVERWRITE = "cacheAllowOverwrite";
-
-    /** Size of per-node buffer before data is sent to remote node. */
-    public static final String CACHE_PER_NODE_DATA_SIZE = "cachePerNodeDataSize";
-
-    /** Maximum number of parallel stream operations per node. */
-    public static final String CACHE_PER_NODE_PAR_OPS = "cachePerNodeParOps";
-
-    /** Class to transform the entry before feeding into cache. */
-    public static final String SINGLE_TUPLE_EXTRACTOR_CLASS = "singleTupleExtractorCls";
+public class IgniteSinkConnectorMock extends IgniteSinkConnector {
+    /** {@inheritDoc} */
+    @Override public Class<? extends Task> taskClass() {
+        return IgniteSinkTaskMock.class;
+    }
 }

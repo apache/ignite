@@ -18,24 +18,12 @@
 package org.apache.ignite.stream.kafka.connect;
 
 /**
- * Sink configuration strings.
+ * Sink task mock for tests. It avoids closing the grid from test to test.
  */
-public class IgniteSinkConstants {
-    /** Ignite configuration file path. */
-    public static final String CACHE_CFG_PATH = "igniteCfg";
-
-    /** Cache name. */
-    public static final String CACHE_NAME = "cacheName";
-
-    /** Flag to enable overwriting existing values in cache. */
-    public static final String CACHE_ALLOW_OVERWRITE = "cacheAllowOverwrite";
-
-    /** Size of per-node buffer before data is sent to remote node. */
-    public static final String CACHE_PER_NODE_DATA_SIZE = "cachePerNodeDataSize";
-
-    /** Maximum number of parallel stream operations per node. */
-    public static final String CACHE_PER_NODE_PAR_OPS = "cachePerNodeParOps";
-
-    /** Class to transform the entry before feeding into cache. */
-    public static final String SINGLE_TUPLE_EXTRACTOR_CLASS = "singleTupleExtractorCls";
+public class IgniteSinkTaskMock extends IgniteSinkTask {
+    /** {@inheritDoc} */
+    @Override public void stop() {
+        // Don't stop the grid for tests.
+        setStopped(true);
+    }
 }
