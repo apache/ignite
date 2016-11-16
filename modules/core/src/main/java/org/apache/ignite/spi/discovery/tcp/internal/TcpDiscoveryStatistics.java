@@ -691,7 +691,6 @@ public class TcpDiscoveryStatistics {
 
     /** {@inheritDoc} */
     @Override public synchronized String toString() {
-        //return "Stats [created=" + sockReadersCreated + ", rmvd=" + sockReadersRmv + ']';
         return S.toString(TcpDiscoveryStatistics.class, this);
     }
 }

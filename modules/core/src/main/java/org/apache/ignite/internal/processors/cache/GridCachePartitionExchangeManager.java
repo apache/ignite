@@ -121,7 +121,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private static final int EXCHANGE_HISTORY_SIZE = 1000;
 
     /** */
-    private final boolean skipFirstExchangeMsg = getBoolean("SKIP_FIRST_EXCHANGE_MSG", false);
+    private boolean skipFirstExchangeMsg;
 
     /** Atomic reference for pending timeout object. */
     private AtomicReference<ResendTimeoutObject> pendingResend = new AtomicReference<>();
@@ -312,8 +312,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
-        if (skipFirstExchangeMsg)
-            cctx.kernalContext().addNodeAttribute("SKIP_FIRST_EXCHANGE_MSG", true);
+        if (getBoolean("SKIP_FIRST_EXCHANGE_MSG", false)) {
+            if (cctx.kernalContext().config().isLateAffinityAssignment()) {
+                skipFirstExchangeMsg = true;
+
+                cctx.kernalContext().addNodeAttribute("SKIP_FIRST_EXCHANGE_MSG", true);
+            }
+            else
+                U.warn(log, "Can not use SKIP_FIRST_EXCHANGE_MSG optimization when late affinity assignment disabled.");
+        }
 
         exchWorker = new ExchangeWorker();
 

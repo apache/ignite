@@ -6115,8 +6115,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
             }
             finally {
-                if (locNode.order() == 1)
-                    log.info("Close sock [readers=" + spi.stats.socketReaders() + ", msg=" + msg + ", err=" + sockE + ']');
+                log.info("Close sock [readers=" + spi.stats.socketReaders() + ", msg=" + msg + ", err=" + sockE + ']');
 
                 if (clientMsgWrk != null) {
                     if (log.isDebugEnabled())
