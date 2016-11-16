@@ -3155,14 +3155,29 @@ namespace Apache.Ignite.Core.Tests.Cache
         public void TestCacheMetrics()
         {
             var cache = Cache();
+            var cache1 = Cache(1);
+            var cache2 = Cache(2);
 
             cache.Put(1, 1);
+            cache.Get(1);
 
-            var m = cache.GetMetrics();
+            Thread.Sleep(500);
 
-            Assert.AreEqual(cache.Name, m.CacheName);
+            var m1 = cache.GetLocalMetrics();
+            var m2 = cache1.GetLocalMetrics();
+            var m3 = cache2.GetLocalMetrics();
 
-            Assert.AreEqual(cache.GetSize(), m.Size);
+            // Local metrics
+            Assert.AreEqual(cache.Name, m1.CacheName);
+            Assert.AreEqual(cache.GetSize(), m1.Size);
+
+            // Global metrics
+            var globalMetrics = cache.GetMetrics();
+            Assert.AreEqual(cache.Name, globalMetrics.CacheName);
+            Assert.AreEqual(cache.GetSize(), globalMetrics.Size);
+
+            // Cluster metrics
+            // TODO
         }
 
         [Test]
