@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Cache
 {
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Cache;
     using NUnit.Framework;
@@ -27,6 +28,9 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// </summary>
     public class CacheMetricsTest
     {
+        /** */
+        private const string SecondGridName = "grid";
+
         /// <summary>
         /// Fixture set up.
         /// </summary>
@@ -34,7 +38,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         public void FixtureSetUp()
         {
             Ignition.Start(TestUtils.GetTestConfiguration());
-            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) {GridName = "grid2"});
+            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) {GridName = "SecondGridName" });
         }
 
         /// <summary>
@@ -52,6 +56,27 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestLocalMetrics()
         {
+            const string cacheName = "localMetrics";
+
+            var localCache = Ignition.GetIgnite().CreateCache<int, int>(new CacheConfiguration(cacheName)
+            {
+                EnableStatistics = true  // TODO: Add tests for this and XSD etc.
+            });
+
+            var remoteCache = Ignition.GetIgnite(SecondGridName).GetCache<int, int>(cacheName);
+
+            localCache.Put(1, 1);
+            localCache.Get(1);
+
+            var localMetrics = localCache.GetLocalMetrics();
+            Assert.AreEqual(cacheName, localMetrics.CacheName);
+            Assert.AreEqual(1, localMetrics.CacheGets);
+            Assert.AreEqual(1, localMetrics.CachePuts);
+
+            var remoteMetrics = remoteCache.GetLocalMetrics();
+            Assert.AreEqual(cacheName, remoteMetrics.CacheName);
+            Assert.AreEqual(0, remoteMetrics.CacheGets);
+            Assert.AreEqual(1, remoteMetrics.CachePuts);
 
         }
 
