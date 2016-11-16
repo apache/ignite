@@ -131,7 +131,10 @@ namespace Apache.Ignite.Examples.Datagrid
         {
             var metrics = cache.GetMetrics();
 
-            Console.WriteLine("\n>>> Cache entries layout: [Java heap={0}, Off-Heap={1}, Swap={2}]",
+            // TODO: OverflowSize is not a correct metric. Need to propagate other metrics to .NET.
+
+            Console.WriteLine("\n>>> Cache entries layout: [Total={0}, Java heap={1}, Off-Heap={2}, Swap={3}]",
+                cache.GetSize(CachePeekMode.All), 
                 metrics.Size, metrics.OffHeapEntriesCount, metrics.OverflowSize / EntrySize);
         }
     }
