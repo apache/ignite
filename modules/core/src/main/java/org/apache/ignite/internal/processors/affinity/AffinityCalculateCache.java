@@ -56,8 +56,11 @@ public class AffinityCalculateCache {
         if (affGrp != null && grpAssign != null) {
             List<List<ClusterNode>> calcAssign = grpAssign.get(affGrp);
 
-            if (calcAssign != null)
+            if (calcAssign != null) {
+                assert calcAssign.size() == aff.partitions() : calcAssign.size();
+
                 return calcAssign;
+            }
         }
 
         AffinityFunctionContext ctx = new GridAffinityFunctionContextImpl(nodes,
@@ -81,6 +84,8 @@ public class AffinityCalculateCache {
 
             grpAssign.put(affGrp, assign);
         }
+
+        assert assign.size() == aff.partitions() : assign.size();
 
         return assign;
     }

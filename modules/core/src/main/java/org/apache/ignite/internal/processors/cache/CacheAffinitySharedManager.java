@@ -104,6 +104,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         pendingAssignmentFetchFuts = new ConcurrentHashMap8<>();
 
     /** */
+    private int eqAffGrp;
+
+    /** */
     private final Map<Integer, EqualAffinityCacheGroup> eqAffCacheGroups = new HashMap<>();
 
     /**
@@ -188,17 +191,20 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             for (Map.Entry<Integer, EqualAffinityCacheGroup> e : eqAffCacheGroups.entrySet()) {
                 EqualAffinityCacheGroup grp = e.getValue();
 
-                if (grp.caches.containsKey(cacheId))
-                    return e.getKey();
+                if (grp.caches.containsKey(cacheId)) {
+                    assert cfg.affinityFunction().partitions() == grp.caches.values().iterator().next().affinityFunction().partitions();
 
-                if (e.getValue().equalAffinity(cfg)) {
-                    e.getValue().add(cacheId, cfg);
+                    return e.getKey();
+                }
+
+                if (grp.equalAffinity(cfg)) {
+                    grp.add(cacheId, cfg);
 
                     return e.getKey();
                 }
             }
 
-            Integer grp = eqAffCacheGroups.size();
+            Integer grp = eqAffGrp++;
 
             eqAffCacheGroups.put(grp, new EqualAffinityCacheGroup(cacheId, cfg));
 
@@ -526,6 +532,21 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
             else if (req.stop() || req.close()) {
                 cctx.cache().blockGateway(req);
+
+                if (req.stop()) {
+                    synchronized (eqAffCacheGroups) {
+                        for (Iterator<EqualAffinityCacheGroup> it = eqAffCacheGroups.values().iterator(); it.hasNext();) {
+                            EqualAffinityCacheGroup grp = it.next();
+
+                            if (grp.caches.remove(cacheId) != null) {
+                                if (grp.caches.isEmpty())
+                                    it.remove();
+
+                                break;
+                            }
+                        }
+                    }
+                }
 
                 if (crd) {
                     boolean rmvCache = false;

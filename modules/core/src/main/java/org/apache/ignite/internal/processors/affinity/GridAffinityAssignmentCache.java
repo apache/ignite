@@ -207,6 +207,8 @@ public class GridAffinityAssignmentCache {
      * @param assignment Assignment.
      */
     public void idealAssignment(List<List<ClusterNode>> assignment) {
+        assert assignment == null || assignment.size() == partsCnt : partsCnt;
+
         this.idealAssignment = assignment;
     }
 

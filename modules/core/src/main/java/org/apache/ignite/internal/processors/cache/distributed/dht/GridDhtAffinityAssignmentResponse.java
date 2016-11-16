@@ -142,9 +142,11 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
                 List<ClusterNode> nodes = new ArrayList<>(ids.size());
 
                 for (int j = 0; j < ids.size(); j++) {
-                    ClusterNode node = disco.node(topVer, ids.get(j));
+                    UUID nodeId = ids.get(j);
 
-                    assert node != null;
+                    ClusterNode node = disco.node(topVer, nodeId);
+
+                    assert node != null : nodeId;
 
                     nodes.add(node);
                 }

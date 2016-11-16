@@ -2581,6 +2581,17 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
             return !excludeNodes.contains(name);
         }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+
+            if (obj == null || !(getClass() == obj.getClass()))
+                return false;
+
+            return F.eq(excludeNodes, ((CacheNodeFilter)obj).excludeNodes);
+        }
     }
 
     /**
