@@ -273,6 +273,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             ReadThrough = reader.ReadBoolean();
             WriteThrough = reader.ReadBoolean();
             CacheStoreFactory = reader.ReadObject<IFactory<ICacheStore>>();
+            EnableStatistics = reader.ReadBoolean();
 
             var count = reader.ReadInt();
             QueryEntities = count == 0 ? null : Enumerable.Range(0, count).Select(x => new QueryEntity(reader)).ToList();
@@ -329,6 +330,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteBoolean(ReadThrough);
             writer.WriteBoolean(WriteThrough);
             writer.WriteObject(CacheStoreFactory);
+            writer.WriteBoolean(EnableStatistics);
 
             if (QueryEntities != null)
             {
@@ -704,5 +706,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Default is null, which means no expiration.
         /// </summary>
         public IFactory<IExpiryPolicy> ExpiryPolicyFactory { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether statistics gathering is enabled on a cache.
+        /// These statistics can be retrieved via <see cref="ICache{TK,TV}.GetMetrics()"/>.
+        /// </summary>
+        public bool EnableStatistics { get; set; }
     }
 }
