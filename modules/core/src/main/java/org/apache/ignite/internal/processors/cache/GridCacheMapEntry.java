@@ -42,8 +42,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheEntryExtras;
@@ -2093,7 +2091,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (updateCntr != null)
                     updateCntr0 = updateCntr;
 
-                logUpdate(op, updated, newVer, topVer, newExpireTime, updateCntr0);
+                logUpdate(op, updated, newVer, newExpireTime, updateCntr0);
 
                 storeValue(updated, newExpireTime, newVer);
 
@@ -2154,7 +2152,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (updateCntr != null)
                     updateCntr0 = updateCntr;
 
-                logUpdate(op, null, newVer, topVer, 0, updateCntr0);
+                logUpdate(op, null, newVer, 0, updateCntr0);
 
                 removeValue();
 
@@ -3574,25 +3572,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param updCntr Update counter.
      */
     protected void logUpdate(GridCacheOperation op, CacheObject val, GridCacheVersion writeVer,
-        AffinityTopologyVersion topVer, long expireTime, long updCntr) throws IgniteCheckedException {
+        long expireTime, long updCntr) throws IgniteCheckedException {
         // We log individual updates only in ATOMIC cache.
         assert cctx.atomic();
 
         try {
             if (cctx.shared().wal() != null) {
-                boolean owning = false;
-
-                GridDhtPartitionTopology top = cctx.dht().topology();
-
-                top.readLock();
-
-                try {
-                    GridDhtLocalPartition part = top.localPartition(partition(), topVer, false);
-                    owning = part.state() == GridDhtPartitionState.OWNING;
-                }
-                finally {
-                    top.readUnlock();
-                }
 
                 cctx.shared().wal().log(new DataRecord(new DataEntry(
                     cctx.cacheId(),
@@ -3603,7 +3588,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     writeVer,
                     expireTime,
                     partition(),
-                    owning ? updCntr : 0)));
+                    updCntr)));
             }
         }
         catch (StorageException e) {

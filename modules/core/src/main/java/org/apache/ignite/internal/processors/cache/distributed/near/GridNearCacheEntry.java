@@ -440,7 +440,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
     /** {@inheritDoc} */
     @Override protected void logUpdate(GridCacheOperation op, CacheObject val, GridCacheVersion ver,
-        AffinityTopologyVersion topVer, long expireTime, long updCntr)
+        long expireTime, long updCntr)
         throws IgniteCheckedException {
         // No-op: queries are disabled for near cache.
     }
