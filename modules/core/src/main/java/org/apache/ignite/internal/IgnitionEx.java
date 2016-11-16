@@ -36,6 +36,7 @@ import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -66,6 +67,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1454,10 +1456,10 @@ public class IgnitionEx {
         private volatile IgniteKernal grid;
 
         /** Executor service. */
-        private ThreadPoolExecutor execSvc;
+        private ExecutorService execSvc;
 
         /** System executor service. */
-        private ThreadPoolExecutor sysExecSvc;
+        private ExecutorService sysExecSvc;
 
         /** Management executor service. */
         private ThreadPoolExecutor mgmtExecSvc;
@@ -1640,27 +1642,41 @@ public class IgnitionEx {
                 ensureMultiInstanceSupport(myCfg.getSwapSpaceSpi());
             }
 
-            execSvc = new IgniteThreadPoolExecutor(
-                "pub",
-                cfg.getGridName(),
-                cfg.getPublicThreadPoolSize(),
-                cfg.getPublicThreadPoolSize(),
-                DFLT_THREAD_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>());
+            {
+                if (cfg.isUseStripedPool())
+                    execSvc = new StripedExecutor(cfg.getPublicThreadPoolSize(), cfg.getGridName(), "pub", log);
+                else {
+                    IgniteThreadPoolExecutor pool = new IgniteThreadPoolExecutor(
+                        "pub",
+                        cfg.getGridName(),
+                        cfg.getPublicThreadPoolSize(),
+                        cfg.getPublicThreadPoolSize(),
+                        DFLT_THREAD_KEEP_ALIVE_TIME,
+                        new LinkedBlockingQueue<Runnable>());
 
-            execSvc.allowCoreThreadTimeOut(true);
+                    pool.allowCoreThreadTimeOut(true);
 
-            // Note that since we use 'LinkedBlockingQueue', number of
-            // maximum threads has no effect.
-            sysExecSvc = new IgniteThreadPoolExecutor(
-                "sys",
-                cfg.getGridName(),
-                cfg.getSystemThreadPoolSize(),
-                cfg.getSystemThreadPoolSize(),
-                DFLT_THREAD_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>());
+                    execSvc = pool;
+                }
+            }
 
-            sysExecSvc.allowCoreThreadTimeOut(true);
+            {
+                if (cfg.isUseStripedPool())
+                    sysExecSvc = new StripedExecutor(cfg.getSystemThreadPoolSize(), cfg.getGridName(), "sys", log);
+                else {
+                    IgniteThreadPoolExecutor pool = new IgniteThreadPoolExecutor(
+                        "sys",
+                        cfg.getGridName(),
+                        cfg.getSystemThreadPoolSize(),
+                        cfg.getSystemThreadPoolSize(),
+                        DFLT_THREAD_KEEP_ALIVE_TIME,
+                        new LinkedBlockingQueue<Runnable>());
+
+                    pool.allowCoreThreadTimeOut(true);
+
+                    sysExecSvc = pool;
+                }
+            }
 
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.

@@ -74,6 +74,7 @@ import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi
 import org.apache.ignite.spi.swapspace.SwapSpaceSpi;
 import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.ssl.SslContextFactory;
+import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.STOP;
 
@@ -229,6 +230,9 @@ public class IgniteConfiguration {
 
     /** Logger. */
     private IgniteLogger log;
+
+    /** Use striped pool for public and system pools. */
+    private boolean useStripedPool = true;
 
     /** Public pool size. */
     private int pubPoolSize = DFLT_PUBLIC_THREAD_CNT;
@@ -559,6 +563,7 @@ public class IgniteConfiguration {
         timeSrvPortRange = cfg.getTimeServerPortRange();
         txCfg = cfg.getTransactionConfiguration();
         userAttrs = cfg.getUserAttributes();
+        useStripedPool = cfg.isUseStripedPool();
         utilityCacheKeepAliveTime = cfg.getUtilityCacheKeepAliveTime();
         utilityCachePoolSize = cfg.getUtilityCacheThreadPoolSize();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
@@ -709,6 +714,34 @@ public class IgniteConfiguration {
         this.log = log;
 
         return this;
+    }
+
+    /**
+     * Returns {@code true} if striped pool should be used for public
+     * pool and system pools. Default is {@code true}. If {@code false} then,
+     * {@link IgniteThreadPoolExecutor} is used.
+     * <p>
+     * Striped pool is better for typical cache operations and short-term
+     * compute jobs.
+     *
+     * @return {@code True} if striped pool should be used for public
+     * pool and system pools.
+     *
+     * @see #getPublicThreadPoolSize()
+     * @see #getSystemThreadPoolSize()
+     */
+    public boolean isUseStripedPool() {
+        return useStripedPool;
+    }
+
+    /**
+     * Enables/disables use of striped pools for public and system pools.
+     *
+     * @param useStripedPool {@code True} if striped pool should be used for public
+     * pool and system pools.
+     */
+    public void setUseStripedPool(boolean useStripedPool) {
+        this.useStripedPool = useStripedPool;
     }
 
     /**

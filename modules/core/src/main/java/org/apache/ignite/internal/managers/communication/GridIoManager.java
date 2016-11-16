@@ -30,8 +30,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -108,9 +108,6 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIM
  * Grid communication manager.
  */
 public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializable>> {
-    // TODO
-    private static final boolean STRIPED = Boolean.getBoolean("STRIPED_POOL");
-
     /** Empty array of message factories. */
     public static final MessageFactory[] EMPTY = {};
 
@@ -246,35 +243,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         assertParameter(discoDelay > 0, "discoveryStartupDelay > 0");
 
         startSpi();
-
-        if (STRIPED) {
-            CommunicationSpi spi = getSpi();
-
-            striped = new StripedExecutor(
-                !ctx.clientNode() ?
-                    Runtime.getRuntime().availableProcessors() :
-                    4);
-
-            // TODO
-            Thread t = new Thread(new Runnable() {
-                @Override public void run() {
-                    for (; ; ) {
-                        try {
-                            Thread.sleep(ctx.config().getMetricsLogFrequency());
-                        }
-                        catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-
-                        striped.dumpStats(log);
-                    }
-                }
-            });
-
-            t.setDaemon(true);
-
-            t.start();
-        }
 
         getSpi().setListener(commLsnr = new CommunicationListener<Serializable>() {
             @Override public void onMessage(UUID nodeId, Serializable msg, IgniteRunnable msgC) {
@@ -645,9 +613,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         if (log.isDebugEnabled())
             log.debug(stopInfo());
-
-        if (striped != null)
-            striped.stop();
     }
 
     /**
@@ -799,8 +764,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
     }
 
-    StripedExecutor striped;
-
     /**
      * @param nodeId Node ID.
      * @param msg Message.
@@ -839,16 +802,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
         }
 
-        if (STRIPED) {
-            int part = msg.partition();
-
-            striped.execute(part != -1 ? part : ThreadLocalRandom.current().nextInt(striped.stripes()), c);
-
-            return;
-        }
-
         try {
-            pools.poolForPolicy(plc).execute(c);
+            Executor exec = pools.poolForPolicy(plc);
+
+            if (exec instanceof StripedExecutor)
+                ((StripedExecutor)exec).execute(msg.partition(), c);
+            else
+                exec.execute(c);
         }
         catch (RejectedExecutionException e) {
             U.error(log, "Failed to process regular message due to execution rejection. Increase the upper bound " +
