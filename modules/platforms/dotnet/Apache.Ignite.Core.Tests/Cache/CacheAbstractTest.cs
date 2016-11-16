@@ -3152,39 +3152,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        public void TestCacheMetrics()
-        {
-            // TODO: Perform extensive local/global metrics in CacheMetricsTest
-            // TODO: Check EnableStatistics flag (config tests etc).
-
-
-            var cache = Cache();
-            var cache1 = Cache(1);
-            var cache2 = Cache(2);
-
-            cache.Put(1, 1);
-            cache.Get(1);
-
-            Thread.Sleep(500);
-
-            var m1 = cache.GetLocalMetrics();
-            var m2 = cache1.GetLocalMetrics();
-            var m3 = cache2.GetLocalMetrics();
-
-            // Local metrics
-            Assert.AreEqual(cache.Name, m1.CacheName);
-            Assert.AreEqual(cache.GetSize(), m1.Size);
-
-            // Global metrics
-            var globalMetrics = cache.GetMetrics();
-            Assert.AreEqual(cache.Name, globalMetrics.CacheName);
-            Assert.AreEqual(cache.GetSize(), globalMetrics.Size);
-
-            // Cluster metrics
-            // TODO
-        }
-
-        [Test]
         public void TestRebalance()
         {
             var cache = Cache();
