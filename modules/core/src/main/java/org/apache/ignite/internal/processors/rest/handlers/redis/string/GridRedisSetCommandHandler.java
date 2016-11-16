@@ -79,7 +79,6 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
         restReq.value(msg.aux(VAL_POS));
 
         if (msg.messageSize() >= 4) {
-
             List<String> params = msg.aux();
 
             // get rid of SET value.
@@ -90,7 +89,7 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
             else if (isXx(params))
                 restReq.command(CACHE_REPLACE);
 
-            // TODO: IGNITE-4226, handle expiration options.
+            // TODO: IGNITE-4226: Need properly handle expiration parameter.
         }
 
         return restReq;

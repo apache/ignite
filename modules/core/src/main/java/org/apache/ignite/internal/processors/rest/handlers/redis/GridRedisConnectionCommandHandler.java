@@ -55,14 +55,17 @@ public class GridRedisConnectionCommandHandler implements GridRedisCommandHandle
         switch (msg.command()) {
             case PING:
                 msg.setResponse(GridRedisProtocolParser.toSimpleString(PONG));
+
                 return new GridFinishedFuture<>(msg);
 
             case QUIT:
                 msg.setResponse(GridRedisProtocolParser.oKString());
+
                 return new GridFinishedFuture<>(msg);
 
             case ECHO:
                 msg.setResponse(GridRedisProtocolParser.toSimpleString(msg.key()));
+
                 return new GridFinishedFuture<>(msg);
         }
 

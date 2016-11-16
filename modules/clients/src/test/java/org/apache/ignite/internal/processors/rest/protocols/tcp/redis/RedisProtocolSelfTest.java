@@ -164,6 +164,7 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
             Assert.assertNull(jedis.get("wrongKey"));
 
             jcache().put("setDataTypeKey", new HashSet<String>(Arrays.asList("1", "2")));
+
             try {
                 jedis.get("setDataTypeKey");
 
@@ -186,6 +187,7 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
             Assert.assertNull(jedis.get("getSetNonExistingKey"));
 
             jcache().put("setDataTypeKey", new HashSet<String>(Arrays.asList("1", "2")));
+
             try {
                 jedis.getSet("setDataTypeKey", "0");
 
@@ -205,11 +207,12 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
             jcache().put("getKey1", "getVal1");
             jcache().put("getKey2", 0);
 
-            List<String> result = jedis.mget("getKey1", "getKey2", "wrongKey");
-            Assert.assertTrue(result.contains("getVal1"));
-            Assert.assertTrue(result.contains("0"));
+            List<String> res = jedis.mget("getKey1", "getKey2", "wrongKey");
 
-            // not supported.
+            Assert.assertTrue(res.contains("getVal1"));
+            Assert.assertTrue(res.contains("0"));
+
+//            not supported.
 //            fail("Incompatible! getAll() does not return null values!");
 //            Assert.assertTrue(result.contains("nil"));
         }
@@ -229,11 +232,13 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
             // test options.
             jedis.set("setKey1", "2", "nx");
             jedis.set("setKey3", "3", "nx");
+
             Assert.assertEquals("1", jcache().get("setKey1"));
             Assert.assertEquals("3", jcache().get("setKey3"));
 
             jedis.set("setKey1", "2", "xx");
             jedis.set("setKey4", "4", "xx");
+
             Assert.assertEquals("2", jcache().get("setKey1"));
             Assert.assertNull(jcache().get("setKey4"));
         }
@@ -260,11 +265,15 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
             Assert.assertEquals(-1, (long)jedis.decr("newKeyDecr"));
 
             jcache().put("incrKey1", 1L);
+
             Assert.assertEquals(2L, (long)jedis.incr("incrKey1"));
+
             jcache().put("decrKey1", 1L);
+
             Assert.assertEquals(0L, (long)jedis.decr("decrKey1"));
 
             jcache().put("nonInt", "abc");
+
             try {
                 jedis.incr("nonInt");
 
@@ -303,8 +312,11 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
             Assert.assertEquals(-2, (long)jedis.decrBy("newKeyDecr1", 2));
 
             jcache().put("incrKey2", 1L);
+
             Assert.assertEquals(3L, (long)jedis.incrBy("incrKey2", 2));
+
             jcache().put("decrKey2", 2L);
+
             Assert.assertEquals(0L, (long)jedis.decrBy("decrKey2", 2));
         }
     }
@@ -318,6 +330,7 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
             Assert.assertEquals(12, (long)jedis.append("appendKey1", " World!"));
 
             jcache().put("setDataTypeKey", new HashSet<String>(Arrays.asList("1", "2")));
+
             try {
                 jedis.append("setDataTypeKey", "");
 
@@ -337,9 +350,11 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
             Assert.assertEquals(0, (long)jedis.strlen("strlenKeyNonExisting"));
 
             jcache().put("strlenKey", "abc");
+
             Assert.assertEquals(3, (long)jedis.strlen("strlenKey"));
 
             jcache().put("setDataTypeKey", new HashSet<String>(Arrays.asList("1", "2")));
+
             try {
                 jedis.strlen("setDataTypeKey");
 
@@ -359,6 +374,7 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
             Assert.assertEquals(0, (long)jedis.setrange("setRangeKey1", 0, ""));
 
             jcache().put("setRangeKey2", "abc");
+
             Assert.assertEquals(3, (long)jedis.setrange("setRangeKey2", 0, ""));
 
             Assert.assertEquals(3, (long)jedis.setrange("setRangeKeyPadded", 2, "a"));
@@ -382,9 +398,11 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
             }
 
             jcache().put("setRangeKey3", "Hello World");
+
             Assert.assertEquals(11, (long)jedis.setrange("setRangeKey3", 6, "Redis"));
 
-            jcache().put("setDataTypeKey", new HashSet<String>(Arrays.asList("1", "2")));
+            jcache().put("setDataTypeKey", new HashSet<>(Arrays.asList("1", "2")));
+
             try {
                 jedis.setrange("setDataTypeKey", 0, "Redis");
 
@@ -404,12 +422,14 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
             Assert.assertEquals("", jedis.getrange("getRangeKeyNonExisting", 0, 0));
 
             jcache().put("getRangeKey", "This is a string");
+
             Assert.assertEquals("This", jedis.getrange("getRangeKey", 0, 3));
             Assert.assertEquals("ing", jedis.getrange("getRangeKey", -3, -1));
             Assert.assertEquals("This is a string", jedis.getrange("getRangeKey", 0, -1));
             Assert.assertEquals("string", jedis.getrange("getRangeKey", 10, 100));
 
             jcache().put("setDataTypeKey", new HashSet<String>(Arrays.asList("1", "2")));
+
             try {
                 jedis.getrange("setDataTypeKey", 0, 1);
 
@@ -459,6 +479,7 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
                         put(i, i);
                 }
             });
+
             Assert.assertEquals(100, (long)jedis.dbSize());
         }
     }

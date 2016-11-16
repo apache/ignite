@@ -84,19 +84,20 @@ public class GridRedisGetRangeCommandHandler extends GridRedisRestCommandHandler
 
         if (restRes.getResponse() instanceof String) {
             String res = String.valueOf(restRes.getResponse());
-            int startOffset;
-            int endOffset;
+            int startOff;
+            int endOff;
 
             try {
-                startOffset = boundedStartOffset(Integer.parseInt(params.get(START_OFFSET_POS)), res.length());
-                endOffset = boundedEndOffset(Integer.parseInt(params.get(END_OFFSET_POS)), res.length());
+                startOff = boundedStartOffset(Integer.parseInt(params.get(START_OFFSET_POS)), res.length());
+                endOff = boundedEndOffset(Integer.parseInt(params.get(END_OFFSET_POS)), res.length());
             }
             catch (NumberFormatException e) {
                 U.error(log, "Erroneous offset", e);
+
                 return GridRedisProtocolParser.toGenericError("Offset is not an integer");
             }
 
-            return GridRedisProtocolParser.toBulkString(res.substring(startOffset, endOffset));
+            return GridRedisProtocolParser.toBulkString(res.substring(startOff, endOff));
         }
         else
             return GridRedisProtocolParser.toTypeError("Operation against a key holding the wrong kind of value");

@@ -108,12 +108,15 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
             case INCR:
             case INCRBY:
                 restReq.command(ATOMIC_INCREMENT);
+
                 break;
 
             case DECR:
             case DECRBY:
                 restReq.command(ATOMIC_DECREMENT);
+
                 break;
+
             default:
                 assert false : "Unexpected command received";
         }

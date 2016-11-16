@@ -75,6 +75,7 @@ public class GridRedisStrlenCommandHandler extends GridRedisRestCommandHandler {
 
         if (restRes.getResponse() instanceof String) {
             int len = String.valueOf(restRes.getResponse()).length();
+
             return GridRedisProtocolParser.toInteger(String.valueOf(len));
         }
         else

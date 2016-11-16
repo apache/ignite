@@ -70,6 +70,7 @@ public class GridRedisExistsCommandHandler extends GridRedisRestCommandHandler {
         restReq.command(CACHE_GET_ALL);
 
         List<String> keys = msg.auxMKeys();
+
         Map<Object, Object> mget = U.newHashMap(keys.size());
 
         for (String key : keys)

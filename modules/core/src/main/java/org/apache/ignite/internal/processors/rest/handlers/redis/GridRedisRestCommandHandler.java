@@ -58,8 +58,7 @@ public abstract class GridRedisRestCommandHandler implements GridRedisCommandHan
         try {
             return hnd.handleAsync(asRestRequest(msg))
                 .chain(new CX1<IgniteInternalFuture<GridRestResponse>, GridRedisMessage>() {
-                    @Override
-                    public GridRedisMessage applyx(IgniteInternalFuture<GridRestResponse> f)
+                    @Override public GridRedisMessage applyx(IgniteInternalFuture<GridRestResponse> f)
                         throws IgniteCheckedException {
                         GridRestResponse restRes = f.get();
 

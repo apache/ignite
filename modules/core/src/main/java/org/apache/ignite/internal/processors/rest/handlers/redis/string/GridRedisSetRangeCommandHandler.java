@@ -73,6 +73,7 @@ public class GridRedisSetRangeCommandHandler extends GridRedisRestCommandHandler
             throw new GridRedisGenericException("Wrong number of arguments");
 
         int off;
+
         try {
             off = Integer.parseInt(msg.aux(OFFSET_POS));
         }
@@ -95,6 +96,7 @@ public class GridRedisSetRangeCommandHandler extends GridRedisRestCommandHandler
         Object resp = hnd.handle(getReq).getResponse();
 
         int totalLen = off + val.length();
+
         if (off < 0 || totalLen > MAX_OFFSET)
             throw new GridRedisGenericException("Offset is out of range");
 
@@ -106,6 +108,7 @@ public class GridRedisSetRangeCommandHandler extends GridRedisRestCommandHandler
 
         if (resp == null) {
             byte[] dst = new byte[totalLen];
+
             System.arraycopy(val.getBytes(), 0, dst, off, val.length());
 
             putReq.value(new String(dst));
