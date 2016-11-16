@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.AffinityCentralizedFunction;
 import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
@@ -110,34 +111,34 @@ public class GridAffinityAssignmentCache {
     /** */
     private final Object similarAffKey;
 
+    /** */
+    private final Integer affGrp;
+
     /**
      * Constructs affinity cached calculations.
      *
      * @param ctx Kernal context.
      * @param cacheName Cache name.
-     * @param aff Affinity function.
-     * @param nodeFilter Node filter.
-     * @param backups Number of backups.
+     * @param affCfg Affinity configuration.
      * @param locCache Local cache flag.
      */
     @SuppressWarnings("unchecked")
     public GridAffinityAssignmentCache(GridKernalContext ctx,
         String cacheName,
-        AffinityFunction aff,
-        IgnitePredicate<ClusterNode> nodeFilter,
-        int backups,
+        AffinityConfiguration affCfg,
         boolean locCache)
     {
         assert ctx != null;
-        assert aff != null;
-        assert nodeFilter != null;
 
         this.ctx = ctx;
-        this.aff = aff;
-        this.nodeFilter = nodeFilter;
         this.cacheName = cacheName;
-        this.backups = backups;
+        this.aff = affCfg.affinityFunction();
+        this.nodeFilter = affCfg.nodeFilter();
+        this.backups = affCfg.backups();
         this.locCache = locCache;
+
+        assert aff != null;
+        assert nodeFilter != null;
 
         cacheId = CU.cacheId(cacheName);
 
@@ -148,8 +149,9 @@ public class GridAffinityAssignmentCache {
         head = new AtomicReference<>(new GridAffinityAssignment(AffinityTopologyVersion.NONE));
 
         similarAffKey = ctx.affinity().similaryAffinityKey(aff, nodeFilter, backups, partsCnt);
-
         assert similarAffKey != null;
+
+        affGrp = locCache ? null : ctx.cache().context().affinity().equalAffinityGroup(cacheId, affCfg);
     }
 
     /**
@@ -255,7 +257,9 @@ public class GridAffinityAssignmentCache {
      * @return Affinity assignments.
      */
     @SuppressWarnings("IfMayBeConditional")
-    public List<List<ClusterNode>> calculate(AffinityTopologyVersion topVer, DiscoveryEvent discoEvt) {
+    public List<List<ClusterNode>> calculate(AffinityTopologyVersion topVer,
+        DiscoveryEvent discoEvt,
+        AffinityCalculateCache cache) {
         if (log.isDebugEnabled())
             log.debug("Calculating affinity [topVer=" + topVer + ", locNodeId=" + ctx.localNodeId() +
                 ", discoEvt=" + discoEvt + ']');
@@ -273,20 +277,28 @@ public class GridAffinityAssignmentCache {
         else
             sorted = Collections.singletonList(ctx.discovery().localNode());
 
-        List<List<ClusterNode>> assignment;
+        List<List<ClusterNode>> assignment = null;
 
         if (prevAssignment != null && discoEvt != null) {
             boolean affNode = CU.affinityNode(discoEvt.eventNode(), nodeFilter);
 
             if (!affNode)
                 assignment = prevAssignment;
-            else
-                assignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(sorted, prevAssignment,
-                    discoEvt, topVer, backups));
         }
-        else
-            assignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(sorted, prevAssignment, discoEvt,
-                topVer, backups));
+
+        if (assignment == null) {
+            if (cache != null)
+                assignment = cache.assignPartitions(aff, backups, sorted, prevAssignment, affGrp, similarAffKey);
+            else {
+                AffinityFunctionContext ctx = new GridAffinityFunctionContextImpl(sorted,
+                    prevAssignment,
+                    discoEvt,
+                    topVer,
+                    backups);
+
+                assignment = aff.assignPartitions(ctx);
+            }
+        }
 
         assert assignment != null;
 

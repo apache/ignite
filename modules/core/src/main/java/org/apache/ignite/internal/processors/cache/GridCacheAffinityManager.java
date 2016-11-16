@@ -26,6 +26,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
+import org.apache.ignite.internal.processors.affinity.AffinityConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.util.GridLeanSet;
@@ -67,9 +68,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
 
         aff = new GridAffinityAssignmentCache(cctx.kernalContext(),
             cctx.namex(),
-            affFunction,
-            cctx.config().getNodeFilter(),
-            cctx.config().getBackups(),
+            new AffinityConfiguration(affFunction, cctx.config().getNodeFilter(), cctx.config().getBackups()),
             cctx.isLocal());
     }
 
@@ -77,7 +76,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     @Override protected void onKernalStart0() throws IgniteCheckedException {
         if (cctx.isLocal())
             // No discovery event needed for local affinity.
-            aff.calculate(LOC_CACHE_TOP_VER, null);
+            aff.calculate(LOC_CACHE_TOP_VER, null, null);
     }
 
     /** {@inheritDoc} */
