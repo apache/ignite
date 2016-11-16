@@ -99,77 +99,77 @@ public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Obje
     private static class TestCacheMetrics implements CacheMetrics {
         /** {@inheritDoc} */
         @Override public long getCacheHits() {
-            return 0;
+            return 1;
         }
 
         /** {@inheritDoc} */
         @Override public float getCacheHitPercentage() {
-            return 0;
+            return 2;
         }
 
         /** {@inheritDoc} */
         @Override public long getCacheMisses() {
-            return 0;
+            return 3;
         }
 
         /** {@inheritDoc} */
         @Override public float getCacheMissPercentage() {
-            return 0;
+            return 4;
         }
 
         /** {@inheritDoc} */
         @Override public long getCacheGets() {
-            return 0;
+            return 5;
         }
 
         /** {@inheritDoc} */
         @Override public long getCachePuts() {
-            return 0;
+            return 6;
         }
 
         /** {@inheritDoc} */
         @Override public long getCacheRemovals() {
-            return 0;
+            return 7;
         }
 
         /** {@inheritDoc} */
         @Override public long getCacheEvictions() {
-            return 0;
+            return 8;
         }
 
         /** {@inheritDoc} */
         @Override public float getAverageGetTime() {
-            return 0;
+            return 9;
         }
 
         /** {@inheritDoc} */
         @Override public float getAveragePutTime() {
-            return 0;
+            return 10;
         }
 
         /** {@inheritDoc} */
         @Override public float getAverageRemoveTime() {
-            return 0;
+            return 11;
         }
 
         /** {@inheritDoc} */
         @Override public float getAverageTxCommitTime() {
-            return 0;
+            return 12;
         }
 
         /** {@inheritDoc} */
         @Override public float getAverageTxRollbackTime() {
-            return 0;
+            return 13;
         }
 
         /** {@inheritDoc} */
         @Override public long getCacheTxCommits() {
-            return 0;
+            return 14;
         }
 
         /** {@inheritDoc} */
         @Override public long getCacheTxRollbacks() {
-            return 0;
+            return 15;
         }
 
         /** {@inheritDoc} */
@@ -179,287 +179,287 @@ public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Obje
 
         /** {@inheritDoc} */
         @Override public long getOverflowSize() {
-            return 0;
+            return 16;
         }
 
         /** {@inheritDoc} */
         @Override public long getOffHeapGets() {
-            return 0;
+            return 17;
         }
 
         /** {@inheritDoc} */
         @Override public long getOffHeapPuts() {
-            return 0;
+            return 18;
         }
 
         /** {@inheritDoc} */
         @Override public long getOffHeapRemovals() {
-            return 0;
+            return 19;
         }
 
         /** {@inheritDoc} */
         @Override public long getOffHeapEvictions() {
-            return 0;
+            return 20;
         }
 
         /** {@inheritDoc} */
         @Override public long getOffHeapHits() {
-            return 0;
+            return 21;
         }
 
         /** {@inheritDoc} */
         @Override public float getOffHeapHitPercentage() {
-            return 0;
+            return 22;
         }
 
         /** {@inheritDoc} */
         @Override public long getOffHeapMisses() {
-            return 0;
+            return 23;
         }
 
         /** {@inheritDoc} */
         @Override public float getOffHeapMissPercentage() {
-            return 0;
+            return 24;
         }
 
         /** {@inheritDoc} */
         @Override public long getOffHeapEntriesCount() {
-            return 0;
+            return 25;
         }
 
         /** {@inheritDoc} */
         @Override public long getOffHeapPrimaryEntriesCount() {
-            return 0;
+            return 26;
         }
 
         /** {@inheritDoc} */
         @Override public long getOffHeapBackupEntriesCount() {
-            return 0;
+            return 27;
         }
 
         /** {@inheritDoc} */
         @Override public long getOffHeapAllocatedSize() {
-            return 0;
+            return 28;
         }
 
         /** {@inheritDoc} */
         @Override public long getOffHeapMaxSize() {
-            return 0;
+            return 29;
         }
 
         /** {@inheritDoc} */
         @Override public long getSwapGets() {
-            return 0;
+            return 30;
         }
 
         /** {@inheritDoc} */
         @Override public long getSwapPuts() {
-            return 0;
+            return 31;
         }
 
         /** {@inheritDoc} */
         @Override public long getSwapRemovals() {
-            return 0;
+            return 32;
         }
 
         /** {@inheritDoc} */
         @Override public long getSwapHits() {
-            return 0;
+            return 33;
         }
 
         /** {@inheritDoc} */
         @Override public long getSwapMisses() {
-            return 0;
+            return 34;
         }
 
         /** {@inheritDoc} */
         @Override public long getSwapEntriesCount() {
-            return 0;
+            return 35;
         }
 
         /** {@inheritDoc} */
         @Override public long getSwapSize() {
-            return 0;
+            return 36;
         }
 
         /** {@inheritDoc} */
         @Override public float getSwapHitPercentage() {
-            return 0;
+            return 37;
         }
 
         /** {@inheritDoc} */
         @Override public float getSwapMissPercentage() {
-            return 0;
+            return 38;
         }
 
         /** {@inheritDoc} */
         @Override public int getSize() {
-            return 0;
+            return 39;
         }
 
         /** {@inheritDoc} */
         @Override public int getKeySize() {
-            return 0;
+            return 40;
         }
 
         /** {@inheritDoc} */
         @Override public boolean isEmpty() {
-            return false;
+            return true;
         }
 
         /** {@inheritDoc} */
         @Override public int getDhtEvictQueueCurrentSize() {
-            return 0;
+            return 41;
         }
 
         /** {@inheritDoc} */
         @Override public int getTxThreadMapSize() {
-            return 0;
+            return 42;
         }
 
         /** {@inheritDoc} */
         @Override public int getTxXidMapSize() {
-            return 0;
+            return 43;
         }
 
         /** {@inheritDoc} */
         @Override public int getTxCommitQueueSize() {
-            return 0;
+            return 44;
         }
 
         /** {@inheritDoc} */
         @Override public int getTxPrepareQueueSize() {
-            return 0;
+            return 45;
         }
 
         /** {@inheritDoc} */
         @Override public int getTxStartVersionCountsSize() {
-            return 0;
+            return 46;
         }
 
         /** {@inheritDoc} */
         @Override public int getTxCommittedVersionsSize() {
-            return 0;
+            return 47;
         }
 
         /** {@inheritDoc} */
         @Override public int getTxRolledbackVersionsSize() {
-            return 0;
+            return 48;
         }
 
         /** {@inheritDoc} */
         @Override public int getTxDhtThreadMapSize() {
-            return 0;
+            return 49;
         }
 
         /** {@inheritDoc} */
         @Override public int getTxDhtXidMapSize() {
-            return 0;
+            return 50;
         }
 
         /** {@inheritDoc} */
         @Override public int getTxDhtCommitQueueSize() {
-            return 0;
+            return 51;
         }
 
         /** {@inheritDoc} */
         @Override public int getTxDhtPrepareQueueSize() {
-            return 0;
+            return 52;
         }
 
         /** {@inheritDoc} */
         @Override public int getTxDhtStartVersionCountsSize() {
-            return 0;
+            return 53;
         }
 
         /** {@inheritDoc} */
         @Override public int getTxDhtCommittedVersionsSize() {
-            return 0;
+            return 54;
         }
 
         /** {@inheritDoc} */
         @Override public int getTxDhtRolledbackVersionsSize() {
-            return 0;
+            return 55;
         }
 
         /** {@inheritDoc} */
         @Override public boolean isWriteBehindEnabled() {
-            return false;
+            return true;
         }
 
         /** {@inheritDoc} */
         @Override public int getWriteBehindFlushSize() {
-            return 0;
+            return 56;
         }
 
         /** {@inheritDoc} */
         @Override public int getWriteBehindFlushThreadCount() {
-            return 0;
+            return 57;
         }
 
         /** {@inheritDoc} */
         @Override public long getWriteBehindFlushFrequency() {
-            return 0;
+            return 58;
         }
 
         /** {@inheritDoc} */
         @Override public int getWriteBehindStoreBatchSize() {
-            return 0;
+            return 59;
         }
 
         /** {@inheritDoc} */
         @Override public int getWriteBehindTotalCriticalOverflowCount() {
-            return 0;
+            return 60;
         }
 
         /** {@inheritDoc} */
         @Override public int getWriteBehindCriticalOverflowCount() {
-            return 0;
+            return 61;
         }
 
         /** {@inheritDoc} */
         @Override public int getWriteBehindErrorRetryCount() {
-            return 0;
+            return 62;
         }
 
         /** {@inheritDoc} */
         @Override public int getWriteBehindBufferSize() {
-            return 0;
+            return 63;
         }
 
         /** {@inheritDoc} */
         @Override public String getKeyType() {
-            return null;
+            return "foo";
         }
 
         /** {@inheritDoc} */
         @Override public String getValueType() {
-            return null;
+            return "bar";
         }
 
         /** {@inheritDoc} */
         @Override public boolean isStoreByValue() {
-            return false;
+            return true;
         }
 
         /** {@inheritDoc} */
         @Override public boolean isStatisticsEnabled() {
-            return false;
+            return true;
         }
 
         /** {@inheritDoc} */
         @Override public boolean isManagementEnabled() {
-            return false;
+            return true;
         }
 
         /** {@inheritDoc} */
         @Override public boolean isReadThrough() {
-            return false;
+            return true;
         }
 
         /** {@inheritDoc} */
         @Override public boolean isWriteThrough() {
-            return false;
+            return true;
         }
     }
 }
