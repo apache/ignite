@@ -1645,7 +1645,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                             fut.onDone();
                                         }
                                     }
-                                }, /*system pool*/true);
+                                }, /*system pool*/false); //Todo: fix to not no use system pool properly.
                             }
                             else {
                                 U.log(log, "Skipping rebalancing (obsolete exchange ID) " +
