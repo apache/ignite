@@ -17,8 +17,10 @@
 
 namespace Apache.Ignite.Core.Tests.Cache
 {
+    using System.Threading;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Cache;
     using NUnit.Framework;
@@ -113,6 +115,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(1, localMetrics.Size);
             Assert.AreEqual(1, localMetrics.CacheGets);
             Assert.AreEqual(1, localMetrics.CachePuts);
+
+            // Wait for metrics to propagate.
+            Thread.Sleep(TcpDiscoverySpi.DefaultHeartbeatFrequency);
 
             var remoteMetrics = remoteCache.GetMetrics();
             Assert.IsTrue(remoteMetrics.IsStatisticsEnabled);
