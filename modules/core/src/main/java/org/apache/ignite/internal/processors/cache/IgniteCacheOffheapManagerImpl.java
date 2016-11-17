@@ -579,7 +579,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     }
 
     /** {@inheritDoc} */
-    @Override public RootPage rootPageForIndex(String idxName) throws IgniteCheckedException {
+    @Override public RootPage rootPageForIndex(String idxName, int partition) throws IgniteCheckedException {
+        // TODO
+
         long pageId = allocateForTree();
 
         return new RootPage(new FullPageId(pageId, cctx.cacheId()), true);
@@ -591,7 +593,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     }
 
     /** {@inheritDoc} */
-    @Override public ReuseList reuseListForIndex(String idxName) {
+    @Override public ReuseList reuseListForIndex(String idxName, int partition) {
         return cctx.shared().database().globalReuseList();
     }
 
