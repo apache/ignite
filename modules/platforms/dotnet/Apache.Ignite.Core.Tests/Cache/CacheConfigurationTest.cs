@@ -251,6 +251,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.WriteBehindEnabled, y.WriteBehindEnabled);
             Assert.AreEqual(x.WriteBehindFlushFrequency, y.WriteBehindFlushFrequency);
             Assert.AreEqual(x.WriteBehindFlushSize, y.WriteBehindFlushSize);
+            Assert.AreEqual(x.EnableStatistics, y.EnableStatistics);
 
             if (x.ExpiryPolicyFactory != null)
                 Assert.AreEqual(x.ExpiryPolicyFactory.CreateInstance().GetType(),
@@ -563,7 +564,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                     Partitions = 513,
                     ExcludeNeighbors = true
                 },
-                ExpiryPolicyFactory = new ExpiryFactory()
+                ExpiryPolicyFactory = new ExpiryFactory(),
+                EnableStatistics = true
             };
         }
         /// <summary>

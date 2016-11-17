@@ -61,8 +61,12 @@
     <Compile Include="Datagrid\StoreExample.cs" />
     <Compile Include="Datagrid\TransactionDeadlockDetectionExample.cs" />
     <Compile Include="Datagrid\TransactionExample.cs" />
+    <Compile Include="DataStructures\AtomicLongExample.cs" />
+    <Compile Include="DataStructures\AtomicReferenceExample.cs" />
+    <Compile Include="DataStructures\AtomicSequenceExample.cs" />
     <Compile Include="Events\EventsExample.cs" />
     <Compile Include="Messaging\MessagingExample.cs" />
+    <Compile Include="Misc\ClientReconnectExample.cs" />
     <Compile Include="Misc\LifecycleExample.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\IMapService.cs" />
