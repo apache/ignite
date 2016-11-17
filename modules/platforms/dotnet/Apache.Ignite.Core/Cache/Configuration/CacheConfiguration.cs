@@ -272,8 +272,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
             WriteSynchronizationMode = (CacheWriteSynchronizationMode) reader.ReadInt();
             ReadThrough = reader.ReadBoolean();
             WriteThrough = reader.ReadBoolean();
-            CacheStoreFactory = reader.ReadObject<IFactory<ICacheStore>>();
             EnableStatistics = reader.ReadBoolean();
+            CacheStoreFactory = reader.ReadObject<IFactory<ICacheStore>>();
 
             var count = reader.ReadInt();
             QueryEntities = count == 0 ? null : Enumerable.Range(0, count).Select(x => new QueryEntity(reader)).ToList();
@@ -329,8 +329,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteInt((int) WriteSynchronizationMode);
             writer.WriteBoolean(ReadThrough);
             writer.WriteBoolean(WriteThrough);
-            writer.WriteObject(CacheStoreFactory);
             writer.WriteBoolean(EnableStatistics);
+            writer.WriteObject(CacheStoreFactory);
 
             if (QueryEntities != null)
             {

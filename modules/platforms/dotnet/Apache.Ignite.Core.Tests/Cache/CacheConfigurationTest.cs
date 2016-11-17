@@ -563,7 +563,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                     Partitions = 513,
                     ExcludeNeighbors = true
                 },
-                ExpiryPolicyFactory = new ExpiryFactory()
+                ExpiryPolicyFactory = new ExpiryFactory(),
+                EnableStatistics = true
             };
         }
         /// <summary>
