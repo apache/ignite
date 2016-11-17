@@ -773,12 +773,17 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                                     part.tryEvict();
                                 }
                                 catch (Throwable ex) {
-                                    if (!cctx.kernalContext().isStopping())
-                                        LT.error(log, ex, "Partition eviction failed, this can cause grid hang.");
-                                    else
+                                    if (cctx.kernalContext().isStopping()) {
                                         LT.warn(log, ex, "Partition eviction failed (current node is stopping).",
                                             false,
                                             true);
+
+                                        partsToEvict.clear();
+
+                                        return true;
+                                    }
+                                    else
+                                        LT.error(log, ex, "Partition eviction failed, this can cause grid hang.");
                                 }
                         }
                         finally {
