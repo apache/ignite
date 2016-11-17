@@ -68,6 +68,7 @@
     <Compile Include="Binary\TypeResolverTest.cs" />
     <Compile Include="Cache\Affinity\AffinityKeyTest.cs" />
     <Compile Include="Cache\Affinity\AffinityTopologyVersionTest.cs" />
+    <Compile Include="Cache\CacheMetricsTest.cs" />
     <Compile Include="Cache\CacheResultTest.cs" />
     <Compile Include="Cache\CacheSwapSpaceTest.cs" />
     <Compile Include="Cache\Store\CacheStoreAdapterTest.cs" />
