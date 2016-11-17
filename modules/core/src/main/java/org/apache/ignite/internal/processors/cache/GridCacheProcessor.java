@@ -4123,11 +4123,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             fut.setRemaining(topVer);
 
         try {
-            final boolean isClient = ctx.config().isClientMode();
+            final boolean isServerNode = !ctx.config().isClientMode();
 
             globalState = req.state();
 
-            shCtx.database().beforeActivate();
+            if (isServerNode)
+                shCtx.database().beforeActivate();
 
             shCtx.wal().onKernalStart(false);
 
