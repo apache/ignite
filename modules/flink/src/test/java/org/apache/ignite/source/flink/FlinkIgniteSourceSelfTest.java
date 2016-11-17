@@ -81,6 +81,16 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests for the Flink source with Parallelism.
+     * Ignite started in source based on what is specified in the configuration file.
+     *
+     * @throws Exception
+     */
+    public void testFlinkIgniteSourceWithParallelism() throws Exception {
+        checkIgniteSource(1, 2, null);
+    }
+
+    /**
      * Tests for the Flink source with Integer Predicate Filter.
      * Ignite started in source based on what is specified in the configuration file.
      *
@@ -156,14 +166,20 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
             resultList.add(testKey);
 
             if(testKey == (evtCount-1)){
-                igniteSrc.stop();
+                igniteSrc.cancel();
                 break;
             }
         }
 
         Collections.sort(resultList);
 
-        assertEquals(eventList, resultList);
+        if (parallelismCnt == 1)
+            assertEquals(eventList, resultList);
+        else {
+            for (Integer i : eventList){
+                assertTrue(resultList.contains(i));
+            }
+        }
     }
 }
 

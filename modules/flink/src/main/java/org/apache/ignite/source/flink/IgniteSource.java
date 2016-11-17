@@ -138,27 +138,6 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
     }
 
     /**
-     * Stops Ignite source.
-     *
-     * @throws IgniteException If failed.
-     */
-    public void stop() throws IgniteException {
-        if (stopped)
-            return;
-
-        stopped = true;
-
-        if (rmtLsnrId != null && ignite != null) {
-            ignite.events(ignite.cluster().forCacheNodes(cacheName))
-                .stopRemoteListen(rmtLsnrId);
-
-            rmtLsnrId = null;
-
-            ignite.cache(cacheName).close();
-        }
-    }
-
-    /**
      * Transfers data from grid.
      *
      * @param ctx SourceContext.
@@ -187,7 +166,19 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
 
     /** {@inheritDoc} */
     @Override public void cancel() {
+        if (stopped)
+            return;
+
         stopped = true;
+
+        if (rmtLsnrId != null && ignite != null) {
+            ignite.events(ignite.cluster().forCacheNodes(cacheName))
+                .stopRemoteListen(rmtLsnrId);
+
+            rmtLsnrId = null;
+
+            ignite.cache(cacheName).close();
+        }
     }
 
     /**
