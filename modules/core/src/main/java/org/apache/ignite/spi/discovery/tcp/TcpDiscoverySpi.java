@@ -30,6 +30,7 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -294,6 +295,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     /** Default max number of messages that could be queued to send to client. (value is <tt>0</tt>).  */
     public static final int DFLT_CLIENT_SEND_MSG_QUEUE_LIMIT = 0;
 
+    /** Default value for use direct or heap buffer. (value is <tt>true</tt>) */
+    public static final boolean DFLT_CLIENT_NIO_DIRECT_BUF = true;
+
+    /** Default byte order for nio client buffers. (value is <tt>ByteOrder.nativeOrder()</tt>) */
+    public static final ByteOrder DFLT_CLIENT_NIO_BYTE_ORDER = ByteOrder.nativeOrder();
+
     /** Local address. */
     protected String locAddr;
 
@@ -396,6 +403,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
     /** Max number of messages that could be queued to send to client. */
     protected int clientSndMsgQueueLimit = DFLT_CLIENT_SEND_MSG_QUEUE_LIMIT;
+
+    /** Use direct or heap buffer flag. */
+    protected boolean clientNioDirectBuf = DFLT_CLIENT_NIO_DIRECT_BUF;
+
+    /** Byte order for nio client buffers. */
+    protected ByteOrder clientNioByteOrder = DFLT_CLIENT_NIO_BYTE_ORDER;
 
     /** Node authenticator. */
     protected DiscoverySpiNodeAuthenticator nodeAuth;
@@ -888,6 +901,55 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     @IgniteSpiConfiguration(optional = true)
     public void setClientSendMessageQueueLimit(final int clientMsgQueueLimit) {
         this.clientSndMsgQueueLimit = clientMsgQueueLimit;
+    }
+
+    /**
+     * Gets flag that indicates whether use direct buffer or heap buffer for nio client
+     * connections.
+     * <p>
+     *     Defaults to {@link #DFLT_CLIENT_NIO_DIRECT_BUF}
+     * </p>
+     *
+     * @return {@code True} if use direct buffer.
+     */
+    public boolean isClientDirectBuffer() {
+        return clientNioDirectBuf;
+    }
+
+    /**
+     * Sets flag that indicates whether use direct buffer or heap buffer for nio client
+     * connections.
+     *
+     * @param directBuf Direct buffer flag.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public void setClientDirectBuffer(boolean directBuf) {
+        this.clientNioDirectBuf = directBuf;
+    }
+
+    /**
+     * Gets byte order that is used in client nio buffers.
+     * <p>
+     *     Defaults to {@link #DFLT_CLIENT_NIO_BYTE_ORDER}
+     * </p>
+     *
+     * @return Client nio buffers byte order.
+     */
+    public ByteOrder getClientByteOrder() {
+        return clientNioByteOrder;
+    }
+
+    /**
+     * Sets byte order that is used in client nio buffers.
+     * <p>
+     *     Defaults to {@link #DFLT_CLIENT_NIO_BYTE_ORDER}
+     * </p>
+     *
+     * @param order Client nio buffers byte order.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public void setClientByteOrder(ByteOrder order) {
+        this.clientNioByteOrder = order;
     }
 
     /**
@@ -1569,7 +1631,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      * @return Future.
      */
     protected GridNioFuture<?> sendMessage(GridNioSession ses, @Nullable TcpDiscoveryAbstractMessage msg,
-        @Nullable byte[] msgBytes) {
+        @Nullable byte[] msgBytes) throws IgniteCheckedException {
         assert msg != null || msgBytes != null : "Null message to send";
 
         final GridNioFuture<?> fut;
@@ -1577,7 +1639,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         if (msgBytes != null)
             fut = ses.send(msgBytes);
         else
-            fut = ses.send(msg);
+            fut = ses.send(marshaller().marshal(msg));
 
         return fut;
     }

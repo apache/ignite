@@ -2189,24 +2189,29 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
                         fut.onDone(e);
                     }
 
-                    TestTcpDiscoverySpi.super.sendMessage(ses, msg, msgBytes).chain(new C1<IgniteInternalFuture<?>, Object>() {
-                        private static final long serialVersionUID = 0L;
+                    try {
+                        TestTcpDiscoverySpi.super.sendMessage(ses, msg, msgBytes).chain(new C1<IgniteInternalFuture<?>, Object>() {
+                            private static final long serialVersionUID = 0L;
 
-                        @Override public Object apply(final IgniteInternalFuture<?> igniteInternalFut) {
-                            try {
-                                final Object obj = igniteInternalFut.get();
+                            @Override public Object apply(final IgniteInternalFuture<?> igniteInternalFut) {
+                                try {
+                                    final Object obj = igniteInternalFut.get();
 
-                                fut.onDone(obj, null);
+                                    fut.onDone(obj, null);
 
-                                return obj;
+                                    return obj;
+                                }
+                                catch (IgniteCheckedException e) {
+                                    fut.onDone(e);
+                                }
+
+                                return null;
                             }
-                            catch (IgniteCheckedException e) {
-                                fut.onDone(e);
-                            }
-
-                            return null;
-                        }
-                    });
+                        });
+                    }
+                    catch (IgniteCheckedException e) {
+                        fut.onDone(e);
+                    }
                 }
             };
 
