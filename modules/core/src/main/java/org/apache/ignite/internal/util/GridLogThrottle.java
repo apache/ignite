@@ -109,6 +109,22 @@ public class GridLogThrottle {
      * @param e Error (optional).
      * @param msg Message.
      * @param quite Print warning anyway.
+     * @param byMsg Errors group by message, not by tuple(error, msg).
+     */
+    public static void warn(@Nullable IgniteLogger log, @Nullable Throwable e, String msg, boolean quite, boolean byMsg) {
+        assert !F.isEmpty(msg);
+
+        log(log, e, msg, null, LogLevel.WARN, quite, byMsg);
+    }
+
+
+    /**
+     * Logs warning if needed.
+     *
+     * @param log Logger.
+     * @param e Error (optional).
+     * @param msg Message.
+     * @param quite Print warning anyway.
      */
     public static void warn(@Nullable IgniteLogger log, @Nullable Throwable e, String msg, boolean quite) {
         assert !F.isEmpty(msg);
