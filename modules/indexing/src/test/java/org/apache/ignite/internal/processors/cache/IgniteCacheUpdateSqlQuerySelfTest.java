@@ -117,4 +117,34 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
         assertEqualsCollections(Arrays.asList("k3", createPerson(3, "Sylvia", "Green"), 3, "Sylvia", "Green"),
             leftovers.get(3));
     }
+
+    /**
+     *
+     */
+    public void testDefault() {
+        IgniteCache p = cache();
+
+        QueryCursor<List<?>> c = p.query(new SqlFieldsQuery("update Person p set id = DEFAULT, _val = ? where _key = ?")
+            .setArgs(createPerson(2, "Jo", "Woo"), "FirstKey"));
+
+        c.iterator();
+
+        c = p.query(new SqlFieldsQuery("select * from Person order by _key, id"));
+
+        List<List<?>> leftovers = c.getAll();
+
+        assertEquals(4, leftovers.size());
+
+        assertEqualsCollections(Arrays.asList("FirstKey", createPerson(0, "Jo", "Woo"), 0, "Jo", "Woo"),
+            leftovers.get(0));
+
+        assertEqualsCollections(Arrays.asList("SecondKey", createPerson(2, "Joe", "Black"), 2, "Joe", "Black"),
+            leftovers.get(1));
+
+        assertEqualsCollections(Arrays.asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
+            leftovers.get(2));
+
+        assertEqualsCollections(Arrays.asList("k3", createPerson(3, "Sylvia", "Green"), 3, "Sylvia", "Green"),
+            leftovers.get(3));
+    }
 }

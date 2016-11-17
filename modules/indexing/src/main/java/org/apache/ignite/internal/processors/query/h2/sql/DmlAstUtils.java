@@ -22,15 +22,27 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.lang.GridTriple;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.h2.expression.Expression;
 import org.h2.table.Column;
+import org.h2.table.Table;
 import org.h2.util.IntArray;
+import org.h2.value.DataType;
+import org.h2.value.Value;
+import org.h2.value.ValueDate;
+import org.h2.value.ValueInt;
+import org.h2.value.ValueString;
+import org.h2.value.ValueTime;
+import org.h2.value.ValueTimestamp;
+import org.h2.value.ValueTimestampUtc;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -47,16 +59,28 @@ public final class DmlAstUtils {
     /**
      * Create SELECT on which subsequent INSERT or MERGE will be based.
      *
+     * @param cols Columns to insert values into.
      * @param rows Rows to create pseudo-SELECT upon.
      * @param subQry Subquery to use rather than rows.
      * @return Subquery or pseudo-SELECT to evaluate inserted expressions.
      */
-    public static GridSqlQuery selectForInsertOrMerge(List<GridSqlElement[]> rows, GridSqlQuery subQry) {
+    public static GridSqlQuery selectForInsertOrMerge(GridSqlColumn[] cols, List<GridSqlElement[]> rows,
+        GridSqlQuery subQry) {
         if (!F.isEmpty(rows)) {
+            assert cols != null;
+
             GridSqlSelect sel = new GridSqlSelect();
 
-            for (GridSqlElement[] row : rows)
-                sel.addColumn(new GridSqlArray(F.asList(row)), true);
+            for (GridSqlElement[] row : rows) {
+                assert cols.length == row.length;
+
+                List<GridSqlElement> rowEls = new ArrayList<>(row.length);
+
+                for (int i = 0; i < row.length; i++)
+                    rowEls.add(elementOrDefault(row[i], cols[i]));
+
+                sel.addColumn(new GridSqlArray(rowEls), true);
+            }
 
             return sel;
         }
@@ -271,7 +295,7 @@ public final class DmlAstUtils {
             String newColName = "_upd_" + c.columnName();
             // We have to use aliases to cover cases when the user
             // wants to update _val field directly (if it's a literal)
-            GridSqlAlias alias = new GridSqlAlias(newColName, update.set().get(c.columnName()), true);
+            GridSqlAlias alias = new GridSqlAlias(newColName, elementOrDefault(update.set().get(c.columnName()), c), true);
             alias.resultType(c.resultType());
             mapQry.addColumn(alias, true);
         }
@@ -284,6 +308,58 @@ public final class DmlAstUtils {
         mapQry.limit(update.limit());
 
         return mapQry;
+    }
+
+    /**
+     * Do what we can to compute default value for this column (mimics H2 behavior).
+     * @see Table#getDefaultValue
+     * @see Column#validateConvertUpdateSequence
+     * @param el SQL element.
+     * @param col Column.
+     * @return {@link GridSqlConst#NULL}, if {@code el} is null, or {@code el} if
+     * it's not {@link GridSqlKeyword#DEFAULT}, or computed default value.
+     */
+    private static GridSqlElement elementOrDefault(GridSqlElement el, GridSqlColumn col) {
+        if (el == null)
+            return GridSqlConst.NULL;
+
+        if (el != GridSqlKeyword.DEFAULT)
+            return el;
+
+        Column h2Col = col.column();
+
+        Expression dfltExpr = h2Col.getDefaultExpression();
+
+        Value dfltVal;
+
+        try {
+            dfltVal = dfltExpr != null ? dfltExpr.getValue(null) : null;
+        }
+        catch (Exception e) {
+            throw new IgniteSQLException("Failed to evaluate default value for a column " + col.columnName());
+        }
+
+        if (dfltVal != null)
+            return new GridSqlConst(dfltVal);
+
+        int type = h2Col.getType();
+
+        DataType dt = DataType.getDataType(type);
+
+        if (dt.decimal)
+            dfltVal = ValueInt.get(0).convertTo(type);
+        else if (dt.type == Value.TIMESTAMP)
+            dfltVal = ValueTimestamp.fromMillis(U.currentTimeMillis());
+        else if (dt.type == Value.TIMESTAMP_UTC)
+            dfltVal = ValueTimestampUtc.fromMillis(U.currentTimeMillis());
+        else if (dt.type == Value.TIME)
+            dfltVal = ValueTime.fromNanos(0);
+        else if (dt.type == Value.DATE)
+            dfltVal = ValueDate.fromMillis(U.currentTimeMillis());
+        else
+            dfltVal = ValueString.get("").convertTo(type);
+
+        return new GridSqlConst(dfltVal);
     }
 
     /**

@@ -339,14 +339,14 @@ class DmlStatementsProcessor {
             GridSqlInsert ins = (GridSqlInsert) stmt;
             target = ins.into();
             cols = ins.columns();
-            sel = DmlAstUtils.selectForInsertOrMerge(ins.rows(), ins.query());
+            sel = DmlAstUtils.selectForInsertOrMerge(cols, ins.rows(), ins.query());
             isSubqry = (ins.query() != null);
         }
         else if (stmt instanceof GridSqlMerge) {
             GridSqlMerge merge = (GridSqlMerge) stmt;
             target = merge.into();
             cols = merge.columns();
-            sel = DmlAstUtils.selectForInsertOrMerge(merge.rows(), merge.query());
+            sel = DmlAstUtils.selectForInsertOrMerge(cols, merge.rows(), merge.query());
             isSubqry = (merge.query() != null);
         }
         else throw createSqlException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
