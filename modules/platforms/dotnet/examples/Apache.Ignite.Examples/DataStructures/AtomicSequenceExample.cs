@@ -27,7 +27,7 @@ namespace Apache.Ignite.Examples.DataStructures
     using Apache.Ignite.ExamplesDll.DataStructures;
 
     /// <summary>
-    /// Demonstrates distributed atomic sequence data structure, which has functionality 
+    /// The example demonstrates the usage of the distributed atomic sequence data structure, which has functionality 
     /// similar to <see cref="Interlocked"/>, but provides cluster-wide atomicity guarantees.
     /// <para />
     /// 1) Set this class as startup object (Apache.Ignite.Examples project -> right-click -> Properties ->

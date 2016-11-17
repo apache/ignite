@@ -23,7 +23,7 @@ namespace Apache.Ignite.Examples.DataStructures
     using Apache.Ignite.ExamplesDll.DataStructures;
 
     /// <summary>
-    /// Demonstrates distributed atomic reference data structure.
+    /// The example demonstrates the usage of the distributed atomic reference data structure.
     /// <para />
     /// 1) Set this class as startup object (Apache.Ignite.Examples project -> right-click -> Properties ->
     ///     Application -> Startup object);
