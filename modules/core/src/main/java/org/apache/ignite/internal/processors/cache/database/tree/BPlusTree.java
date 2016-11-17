@@ -298,6 +298,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
     private final GetPageHandler<Put> replace = new GetPageHandler<Put>() {
         @Override public Result run0(Page page, ByteBuffer buf, BPlusIO<L> io, Put p, int lvl)
             throws IgniteCheckedException {
+            // Check the triangle invariant.
+            if (io.getForward(buf) != p.fwdId)
+                return RETRY;
+
             assert p.btmLvl == 0 : "split is impossible with replace";
 
             final int cnt = io.getCount(buf);
@@ -1282,7 +1286,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
 
                             // If not found, then the tree grew beyond our call stack -> retry from the actual root.
                             if (res == RETRY || res == NOT_FOUND) {
-                                assert r.checkTailLevel(getRootLevel(r.meta));
+                                int root = getRootLevel(r.meta);
+
+                                boolean checkRes = r.checkTailLevel(root);
+
+                                assert checkRes : "tail=" + r.tail + ", root=" + root + ", res=" + res;
 
                                 checkInterrupted();
 
@@ -1786,7 +1794,18 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure {
                         if (p.needReplaceInner == TRUE) {
                             p.needReplaceInner = FALSE; // Protect from retries.
 
+                            long oldFwdId = p.fwdId;
+                            long oldPageId = p.pageId;
+
+                            // Set old args.
+                            p.fwdId = fwdId;
+                            p.pageId = pageId;
+
                             res = writePage(page, this, replace, p, lvl, RETRY);
+
+                            // Restore args.
+                            p.pageId = oldPageId;
+                            p.fwdId = oldFwdId;
 
                             if (res != FOUND)
                                 return res; // Need to retry.

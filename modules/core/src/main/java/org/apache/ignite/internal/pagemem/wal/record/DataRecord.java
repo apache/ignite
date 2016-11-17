@@ -19,6 +19,8 @@ package org.apache.ignite.internal.pagemem.wal.record;
 
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,6 +32,7 @@ import java.util.List;
  */
 public class DataRecord extends WALRecord {
     /** */
+    @GridToStringInclude
     private List<DataEntry> writeEntries;
 
     /** {@inheritDoc} */
@@ -78,5 +81,9 @@ public class DataRecord extends WALRecord {
      */
     public List<DataEntry> writeEntries() {
         return writeEntries == null ? Collections.<DataEntry>emptyList() : writeEntries;
+    }
+
+    @Override public String toString() {
+        return S.toString(DataRecord.class, this, super.toString());
     }
 }
