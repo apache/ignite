@@ -607,7 +607,12 @@ public class GridUnsafeMemory {
      * @return The same array as passed in one.
      */
     public byte[] readBytes(long ptr, byte[] arr, int off, int len) {
-        GridUnsafe.copyMemory(null, ptr, arr, GridUnsafe.BYTE_ARR_OFF + off, len);
+        if (len <= 16) {
+            for (int i = 0; i < len; i++)
+                GridUnsafe.putByte(arr, off + i, GridUnsafe.getByte(ptr + i));
+        }
+        else
+            GridUnsafe.copyMemory(null, ptr, arr, GridUnsafe.BYTE_ARR_OFF + off, len);
 
         return arr;
     }
