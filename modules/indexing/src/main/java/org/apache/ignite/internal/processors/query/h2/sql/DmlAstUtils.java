@@ -98,7 +98,7 @@ public final class DmlAstUtils {
      * @param keysParamIdx Index for .
      * @return SELECT statement.
      */
-    public static GridSqlSelect mapQueryForDelete(GridSqlDelete del, @Nullable Integer keysParamIdx) {
+    public static GridSqlSelect selectForDelete(GridSqlDelete del, @Nullable Integer keysParamIdx) {
         GridSqlSelect mapQry = new GridSqlSelect();
 
         mapQry.from(del.from());
@@ -261,7 +261,7 @@ public final class DmlAstUtils {
      * @param keysParamIdx Index of new param for the array of keys.
      * @return SELECT statement.
      */
-    public static GridSqlSelect mapQueryForUpdate(GridSqlUpdate update, @Nullable Integer keysParamIdx) {
+    public static GridSqlSelect selectForUpdate(GridSqlUpdate update, @Nullable Integer keysParamIdx) {
         GridSqlSelect mapQry = new GridSqlSelect();
 
         mapQry.from(update.target());
