@@ -52,7 +52,7 @@ namespace Apache.Ignite.Examples.Datagrid
                 Console.WriteLine(">>> Client node connected to the cluster");
 
                 // Creating a distributed and near cache.
-                NearCacheConfiguration nearCacheCfg = new NearCacheConfiguration
+                var nearCacheCfg = new NearCacheConfiguration
                 {
                     NearStartSize = 100,
                     EvictionPolicy = new LruEvictionPolicy
