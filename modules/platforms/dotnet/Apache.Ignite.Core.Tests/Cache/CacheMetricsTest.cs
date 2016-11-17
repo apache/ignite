@@ -65,19 +65,23 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             var remoteCache = Ignition.GetIgnite(SecondGridName).GetCache<int, int>(cacheName);
 
+            Assert.IsTrue(localCache.GetConfiguration().EnableStatistics);
+            Assert.IsTrue(remoteCache.GetConfiguration().EnableStatistics);
+
             localCache.Put(1, 1);
             localCache.Get(1);
 
             var localMetrics = localCache.GetLocalMetrics();
             Assert.AreEqual(cacheName, localMetrics.CacheName);
+            Assert.AreEqual(1, localMetrics.Size);
             Assert.AreEqual(1, localMetrics.CacheGets);
             Assert.AreEqual(1, localMetrics.CachePuts);
 
             var remoteMetrics = remoteCache.GetLocalMetrics();
             Assert.AreEqual(cacheName, remoteMetrics.CacheName);
+            Assert.AreEqual(1, remoteMetrics.Size);
             Assert.AreEqual(0, remoteMetrics.CacheGets);
             Assert.AreEqual(0, remoteMetrics.CachePuts);
-
         }
 
         /// <summary>
@@ -86,6 +90,32 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestGlobalMetrics()
         {
+            const string cacheName = "globalMetrics";
+
+            var localCache = Ignition.GetIgnite().CreateCache<int, int>(new CacheConfiguration(cacheName)
+            {
+                EnableStatistics = true
+            });
+
+            var remoteCache = Ignition.GetIgnite(SecondGridName).GetCache<int, int>(cacheName);
+
+            Assert.IsTrue(localCache.GetConfiguration().EnableStatistics);
+            Assert.IsTrue(remoteCache.GetConfiguration().EnableStatistics);
+
+            localCache.Put(1, 1);
+            localCache.Get(1);
+
+            var localMetrics = localCache.GetMetrics();
+            Assert.AreEqual(cacheName, localMetrics.CacheName);
+            Assert.AreEqual(1, localMetrics.Size);
+            Assert.AreEqual(1, localMetrics.CacheGets);
+            Assert.AreEqual(1, localMetrics.CachePuts);
+
+            var remoteMetrics = remoteCache.GetMetrics();
+            Assert.AreEqual(cacheName, remoteMetrics.CacheName);
+            Assert.AreEqual(1, remoteMetrics.Size);
+            Assert.AreEqual(1, remoteMetrics.CacheGets);
+            Assert.AreEqual(1, remoteMetrics.CachePuts);
 
         }
 
