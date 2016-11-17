@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Cache
 {
+    using System;
     using System.Threading;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -58,31 +59,15 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestLocalMetrics()
         {
-            const string cacheName = "localMetrics";
+            var metrics = GetLocalRemoteMetrics("localMetrics", c => c.GetLocalMetrics());
 
-            var localCache = Ignition.GetIgnite().CreateCache<int, int>(new CacheConfiguration(cacheName)
-            {
-                EnableStatistics = true
-            });
+            var localMetrics = metrics.Item1;
+            var remoteMetrics = metrics.Item2;
 
-            var remoteCache = Ignition.GetIgnite(SecondGridName).GetCache<int, int>(cacheName);
-
-            Assert.IsTrue(localCache.GetConfiguration().EnableStatistics);
-            Assert.IsTrue(remoteCache.GetConfiguration().EnableStatistics);
-
-            localCache.Put(1, 1);
-            localCache.Get(1);
-
-            var localMetrics = localCache.GetLocalMetrics();
-            Assert.IsTrue(localMetrics.IsStatisticsEnabled);
-            Assert.AreEqual(cacheName, localMetrics.CacheName);
             Assert.AreEqual(1, localMetrics.Size);
             Assert.AreEqual(1, localMetrics.CacheGets);
             Assert.AreEqual(1, localMetrics.CachePuts);
 
-            var remoteMetrics = remoteCache.GetLocalMetrics();
-            Assert.IsTrue(remoteMetrics.IsStatisticsEnabled);
-            Assert.AreEqual(cacheName, remoteMetrics.CacheName);
             Assert.AreEqual(0, remoteMetrics.Size);
             Assert.AreEqual(0, remoteMetrics.CacheGets);
             Assert.AreEqual(0, remoteMetrics.CachePuts);
@@ -94,37 +79,19 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestGlobalMetrics()
         {
-            const string cacheName = "globalMetrics";
+            var metrics = GetLocalRemoteMetrics("globalMetrics", c => c.GetMetrics());
 
-            var localCache = Ignition.GetIgnite().CreateCache<int, int>(new CacheConfiguration(cacheName)
-            {
-                EnableStatistics = true
-            });
+            var localMetrics = metrics.Item1;
+            var remoteMetrics = metrics.Item2;
 
-            var remoteCache = Ignition.GetIgnite(SecondGridName).GetCache<int, int>(cacheName);
-
-            Assert.IsTrue(localCache.GetConfiguration().EnableStatistics);
-            Assert.IsTrue(remoteCache.GetConfiguration().EnableStatistics);
-
-            localCache.Put(1, 1);
-            localCache.Get(1);
-
-            var localMetrics = localCache.GetMetrics();
-            Assert.IsTrue(localMetrics.IsStatisticsEnabled);
-            Assert.AreEqual(cacheName, localMetrics.CacheName);
             Assert.AreEqual(1, localMetrics.Size);
             Assert.AreEqual(1, localMetrics.CacheGets);
             Assert.AreEqual(1, localMetrics.CachePuts);
 
-            // Wait for metrics to propagate.
-            Thread.Sleep(TcpDiscoverySpi.DefaultHeartbeatFrequency);
-
-            var remoteMetrics = remoteCache.GetMetrics();
-            Assert.IsTrue(remoteMetrics.IsStatisticsEnabled);
-            Assert.AreEqual(cacheName, remoteMetrics.CacheName);
             Assert.AreEqual(0, remoteMetrics.Size);
             Assert.AreEqual(1, remoteMetrics.CacheGets);
             Assert.AreEqual(1, remoteMetrics.CachePuts);
+
         }
 
         /// <summary>
@@ -231,6 +198,39 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.AreEqual(true, metrics.IsReadThrough);
                 Assert.AreEqual(true, metrics.IsWriteThrough);
             }
+        }
+
+        /// <summary>
+        /// Creates a cache, performs put-get, returns metrics from both nodes.
+        /// </summary>
+        private static Tuple<ICacheMetrics, ICacheMetrics> GetLocalRemoteMetrics(string cacheName,
+                    Func<ICache<int, int>, ICacheMetrics> func)
+        {
+            var localCache = Ignition.GetIgnite().CreateCache<int, int>(new CacheConfiguration(cacheName)
+            {
+                EnableStatistics = true
+            });
+
+            var remoteCache = Ignition.GetIgnite(SecondGridName).GetCache<int, int>(cacheName);
+
+            Assert.IsTrue(localCache.GetConfiguration().EnableStatistics);
+            Assert.IsTrue(remoteCache.GetConfiguration().EnableStatistics);
+
+            localCache.Put(1, 1);
+            localCache.Get(1);
+
+            var localMetrics = func(localCache);
+            Assert.IsTrue(localMetrics.IsStatisticsEnabled);
+            Assert.AreEqual(cacheName, localMetrics.CacheName);
+
+            // Wait for metrics to propagate.
+            Thread.Sleep(TcpDiscoverySpi.DefaultHeartbeatFrequency);
+
+            var remoteMetrics = func(remoteCache);
+            Assert.IsTrue(remoteMetrics.IsStatisticsEnabled);
+            Assert.AreEqual(cacheName, remoteMetrics.CacheName);
+
+            return Tuple.Create(localMetrics, remoteMetrics);
         }
     }
 }
