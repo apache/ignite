@@ -21,10 +21,10 @@ namespace Apache.Ignite.ExamplesDll.Datagrid
     using Apache.Ignite.Core.Cache;
 
     /// <summary>
-    /// EntryProcessor that creates new cache entry.
+    /// EntryProocessor that increments cached values.
     /// </summary>
     [Serializable]
-    public class CachePutEntryProcessor : ICacheEntryProcessor<int, int, int, object>
+    public class CacheIncrementEntryProcessor : ICacheEntryProcessor<int, int, int, object>
     {
         /// <summary>
         /// Process an entry.
@@ -34,10 +34,10 @@ namespace Apache.Ignite.ExamplesDll.Datagrid
         /// <returns>
         /// Processing result.
         /// </returns>
+        /// <exception cref="System.NotImplementedException"></exception>
         public object Process(IMutableCacheEntry<int, int> entry, int arg)
         {
-            if (!entry.Exists)
-                entry.Value = entry.Key * arg;
+            entry.Value += arg;
 
             return null;
         }
