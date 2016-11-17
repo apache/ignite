@@ -146,7 +146,7 @@ class DmlStatementsProcessor {
 
         long items = 0;
 
-        UpdatePlan plan = getPlanForStatement(stmt, null);
+        UpdatePlan plan = getPlanForStatement(cctx, stmt, null);
 
         // Let's verify that user does not try to mess with key's columns directly
         verifyUpdateColumns(plan.initStmt);
@@ -219,7 +219,7 @@ class DmlStatementsProcessor {
         if (!F.isEmpty(failedKeys))
             errKeysPos = F.isEmpty(fieldsQry.getArgs()) ? 1 : fieldsQry.getArgs().length + 1;
 
-        UpdatePlan plan = getPlanForStatement(prepStmt, errKeysPos);
+        UpdatePlan plan = getPlanForStatement(cctx, prepStmt, errKeysPos);
 
         GridSqlStatement stmt = plan.initStmt;
 
@@ -271,11 +271,11 @@ class DmlStatementsProcessor {
         int pageSize = loc ? 0 : fieldsQry.getPageSize();
 
         if (stmt instanceof GridSqlMerge)
-            return new UpdateResult(doMerge(cctx, (GridSqlMerge) stmt, cur, pageSize), X.EMPTY_OBJECT_ARRAY);
+            return new UpdateResult(doMerge(cctx, (GridSqlMerge) stmt, plan, cur, pageSize), X.EMPTY_OBJECT_ARRAY);
         else if (stmt instanceof GridSqlInsert)
-            return new UpdateResult(doInsert(cctx, (GridSqlInsert) stmt, cur, pageSize), X.EMPTY_OBJECT_ARRAY);
+            return new UpdateResult(doInsert(cctx, (GridSqlInsert) stmt, plan, cur, pageSize), X.EMPTY_OBJECT_ARRAY);
         else if (stmt instanceof GridSqlUpdate)
-            return doUpdate(cctx, (GridSqlUpdate) stmt, cur, pageSize);
+            return doUpdate(cctx, (GridSqlUpdate) stmt, plan, cur, pageSize);
         else if (stmt instanceof GridSqlDelete)
             return doDelete(cctx, cur, pageSize);
         else
@@ -290,7 +290,8 @@ class DmlStatementsProcessor {
      * @param prepStmt JDBC statement.
      * @return Update plan.
      */
-    private UpdatePlan getPlanForStatement(PreparedStatement prepStmt, @Nullable Integer errKeysPos) {
+    private UpdatePlan getPlanForStatement(GridCacheContext cctx, PreparedStatement prepStmt,
+        @Nullable Integer errKeysPos) throws IgniteCheckedException {
         Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement) prepStmt);
 
         assert !p.isQuery();
@@ -304,66 +305,186 @@ class DmlStatementsProcessor {
 
         GridSqlStatement stmt = new GridSqlQueryParser().parse(p);
 
-        GridSqlElement target;
-
-        if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert) {
-            GridSqlQuery sel;
-
-            boolean isSubqry;
-
-            if (stmt instanceof GridSqlInsert) {
-                GridSqlInsert ins = (GridSqlInsert) stmt;
-                target = ins.into();
-                sel = DmlAstUtils.selectForInsertOrMerge(ins.rows(), ins.query());
-                isSubqry = (ins.query() != null);
-            } else {
-                GridSqlMerge merge = (GridSqlMerge) stmt;
-                target = merge.into();
-                sel = DmlAstUtils.selectForInsertOrMerge(merge.rows(), merge.query());
-                isSubqry = (merge.query() != null);
-            }
-
-            // Let's set the flag only for subqueries that have their FROM specified.
-            isSubqry = (isSubqry && sel instanceof GridSqlSelect && ((GridSqlSelect) sel).from() != null);
-
-            res = new UpdatePlan(stmt, target, sel, isSubqry, null);
-        }
-        else {
-            GridTriple<GridSqlElement> singleUpdate;
-
-            if (stmt instanceof GridSqlUpdate) {
-                GridSqlUpdate update = (GridSqlUpdate) stmt;
-                target = update.target();
-                singleUpdate = DmlAstUtils.getSingleItemFilter(update);
-            }
-            else if (stmt instanceof GridSqlDelete) {
-                GridSqlDelete del = (GridSqlDelete) stmt;
-                target = del.from();
-                singleUpdate = DmlAstUtils.getSingleItemFilter(del);
-            }
-            else
-                throw createSqlException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
-                    ErrorCode.UNKNOWN_MODE_1);
-
-            if (singleUpdate != null)
-                res = new UpdatePlan(stmt, target, null, false, singleUpdate);
-            else {
-                GridSqlSelect sel;
-
-                if (stmt instanceof GridSqlUpdate)
-                    sel = DmlAstUtils.mapQueryForUpdate((GridSqlUpdate) stmt, errKeysPos);
-                else
-                    sel = DmlAstUtils.mapQueryForDelete((GridSqlDelete) stmt, errKeysPos);
-
-                res = new UpdatePlan(stmt, target, sel, true, null);
-            }
-        }
+        if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)
+            res = planForInsert(cctx, stmt);
+        else
+            res = planForUpdate(cctx, stmt, errKeysPos);
 
         // Don't cache re-runs
         if (errKeysPos == null)
             return U.firstNotNull(planCache.putIfAbsent(p.getSQL(), res), res);
         else
             return res;
+    }
+
+    /**
+     * Prepare update plan for INSERT or MERGE.
+     *
+     * @param cctx Cache context.
+     * @param stmt INSERT or MERGE statement.
+     * @return Update plan.
+     * @throws IgniteCheckedException if failed.
+     */
+    @SuppressWarnings("ConstantConditions")
+    private static UpdatePlan planForInsert(GridCacheContext cctx, GridSqlStatement stmt) throws IgniteCheckedException {
+        GridSqlQuery sel;
+
+        GridSqlElement target;
+
+        GridSqlColumn[] cols;
+
+        boolean isSubqry;
+
+        if (stmt instanceof GridSqlInsert) {
+            GridSqlInsert ins = (GridSqlInsert) stmt;
+            target = ins.into();
+            cols = ins.columns();
+            sel = DmlAstUtils.selectForInsertOrMerge(ins.rows(), ins.query());
+            isSubqry = (ins.query() != null);
+        }
+        else if (stmt instanceof GridSqlMerge) {
+            GridSqlMerge merge = (GridSqlMerge) stmt;
+            target = merge.into();
+            cols = merge.columns();
+            sel = DmlAstUtils.selectForInsertOrMerge(merge.rows(), merge.query());
+            isSubqry = (merge.query() != null);
+        }
+        else throw createSqlException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
+            ErrorCode.UNKNOWN_MODE_1);
+
+        // Let's set the flag only for subqueries that have their FROM specified.
+        isSubqry = (isSubqry && sel instanceof GridSqlSelect && ((GridSqlSelect) sel).from() != null);
+
+        int keyColIdx = -1;
+        int valColIdx = -1;
+
+        boolean hasKeyProps = false;
+        boolean hasValProps = false;
+
+        GridSqlTable tbl = gridTableForElement(target);
+
+        GridH2RowDescriptor desc = tbl.dataTable().rowDescriptor();
+
+        for (int i = 0; i < cols.length; i++) {
+            if (cols[i].columnName().equalsIgnoreCase(KEY_FIELD_NAME)) {
+                keyColIdx = i;
+                continue;
+            }
+
+            if (cols[i].columnName().equalsIgnoreCase(VAL_FIELD_NAME)) {
+                valColIdx = i;
+                continue;
+            }
+
+            GridQueryProperty prop = desc.type().property(cols[i].columnName());
+
+            assert prop != null : "Property '" + cols[i].columnName() + "' not found.";
+
+            if (prop.key())
+                hasKeyProps = true;
+            else
+                hasValProps = true;
+        }
+
+        Supplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true);
+        Supplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false);
+
+        return new UpdatePlan(stmt, target, keySupplier, valSupplier, keyColIdx, valColIdx, sel, isSubqry, null);
+    }
+
+    /**
+     * Prepare update plan for UPDATE or DELETE.
+     *
+     * @param cctx Cache context.
+     * @param stmt UPDATE or DELETE statement.
+     * @param errKeysPos index to inject param for re-run keys at. Null if it's not a re-run plan.
+     * @return Update plan.
+     * @throws IgniteCheckedException if failed.
+     */
+    private static UpdatePlan planForUpdate(GridCacheContext cctx, GridSqlStatement stmt,
+        @Nullable Integer errKeysPos) throws IgniteCheckedException {
+        GridSqlElement target;
+
+        GridTriple<GridSqlElement> singleUpdate;
+
+        if (stmt instanceof GridSqlUpdate) {
+            GridSqlUpdate update = (GridSqlUpdate) stmt;
+            target = update.target();
+            singleUpdate = DmlAstUtils.getSingleItemFilter(update);
+        }
+        else if (stmt instanceof GridSqlDelete) {
+            GridSqlDelete del = (GridSqlDelete) stmt;
+            target = del.from();
+            singleUpdate = DmlAstUtils.getSingleItemFilter(del);
+        }
+        else
+            throw createSqlException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
+                ErrorCode.UNKNOWN_MODE_1);
+
+        if (singleUpdate != null)
+            return new UpdatePlan(stmt, target, null, null, -1, -1, null, false, singleUpdate);
+        else {
+            GridSqlSelect sel;
+
+            if (stmt instanceof GridSqlUpdate) {
+                GridSqlTable tbl = gridTableForElement(target);
+
+                GridH2Table gridTbl = tbl.dataTable();
+
+                GridH2RowDescriptor desc = gridTbl.rowDescriptor();
+
+                if (desc == null)
+                    throw createSqlException("Row descriptor undefined for table '" + gridTbl.getName() + "'",
+                        ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1);
+
+                boolean bin = cctx.binaryMarshaller();
+
+                List<GridSqlColumn> updatedCols = ((GridSqlUpdate) stmt).cols();
+
+                int valColIdx = -1;
+
+                for (int i = 0; i < updatedCols.size(); i++) {
+                    if (VAL_FIELD_NAME.equalsIgnoreCase(updatedCols.get(i).columnName())) {
+                        valColIdx = i;
+                        break;
+                    }
+                }
+
+                boolean hasNewVal = (valColIdx != -1);
+
+                // Statement updates distinct properties if it does not have _val in updated columns list
+                // or if its list of updated columns includes only _val, i.e. is single element.
+                boolean hasProps = !hasNewVal || updatedCols.size() > 1;
+
+                // Index of new _val in results of SELECT
+                if (hasNewVal)
+                    valColIdx += 2;
+
+                int newValColIdx;
+
+                if (!hasProps) // No distinct properties, only whole new value - let's take it
+                    newValColIdx = valColIdx;
+                else if (bin) // We update distinct columns in binary mode - let's choose correct index for the builder
+                    newValColIdx = (hasNewVal ? valColIdx : 1);
+                else // Distinct properties, non binary mode - let's instantiate.
+                    newValColIdx = -1;
+
+                // We want supplier to take present value only in case of binary mode as it will create
+                // whole new object as a result anyway, so we don't need to copy previous property values explicitly.
+                // Otherwise we always want it to instantiate new object whose properties we will later
+                // set to current values.
+                Supplier newValSupplier = createSupplier(cctx, desc.type(), newValColIdx, hasProps, false);
+
+                sel = DmlAstUtils.mapQueryForUpdate((GridSqlUpdate) stmt, errKeysPos);
+
+                return new UpdatePlan(stmt, target, null, newValSupplier, -1, valColIdx, sel, true, null);
+            }
+            else {
+                sel = DmlAstUtils.mapQueryForDelete((GridSqlDelete) stmt, errKeysPos);
+
+                return new UpdatePlan(stmt, target, null, null, -1, -1, sel, true, null);
+            }
+        }
     }
 
     /**
@@ -516,7 +637,7 @@ class DmlStatementsProcessor {
      *     had been modified concurrently (arguments for a re-run)].
      */
     @SuppressWarnings("unchecked")
-    private UpdateResult doUpdate(GridCacheContext cctx, GridSqlUpdate update,
+    private UpdateResult doUpdate(GridCacheContext cctx, GridSqlUpdate update, UpdatePlan plan,
         QueryCursorImpl<List<?>> cursor, int pageSize) throws IgniteCheckedException {
 
         GridSqlTable tbl = gridTableForElement(update.target());
@@ -535,37 +656,13 @@ class DmlStatementsProcessor {
 
         List<GridSqlColumn> updatedCols = update.cols();
 
-        int valColIdx = -1;
-
-        for (int i = 0; i < updatedCols.size(); i++) {
-            if (VAL_FIELD_NAME.equalsIgnoreCase(updatedCols.get(i).columnName())) {
-                valColIdx = i;
-                break;
-            }
-        }
+        int valColIdx = plan.valColIdx;
 
         boolean hasNewVal = (valColIdx != -1);
 
         // Statement updates distinct properties if it does not have _val in updated columns list
         // or if its list of updated columns includes only _val, i.e. is single element.
         boolean hasProps = !hasNewVal || updatedCols.size() > 1;
-
-        // Index of new _val in results of SELECT
-        if (hasNewVal)
-            valColIdx += 2;
-
-        int newValColIdx;
-
-        if (!hasProps) // No distinct properties, only whole new value - let's take it
-            newValColIdx = valColIdx;
-        else if (bin) // We update distinct columns in binary mode - let's choose correct index for the builder
-            newValColIdx = (hasNewVal ? valColIdx : 1);
-        else // Distinct properties, non binary mode - let's instantiate.
-            newValColIdx = -1;
-
-        // We want supplier to take present value only in case of binary mode as it will
-        // otherwise we always want it to instantiate new object
-        Supplier newValSupplier = createSupplier(cctx, desc.type(), newValColIdx, hasProps, false);
 
         long res = 0;
 
@@ -611,7 +708,7 @@ class DmlStatementsProcessor {
                     newColVals.put(updatedCols.get(i).columnName(), e.get(i + 2));
                 }
 
-                newVal = newValSupplier.apply(e);
+                newVal = plan.valSupplier.apply(e);
 
                 if (bin && !(val instanceof BinaryObject))
                     val = cctx.grid().binary().toBinary(val);
@@ -738,8 +835,8 @@ class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
-    private long doMerge(GridCacheContext cctx, GridSqlMerge gridStmt, QueryCursorImpl<List<?>> cursor, int pageSize)
-        throws IgniteCheckedException {
+    private long doMerge(GridCacheContext cctx, GridSqlMerge gridStmt, UpdatePlan plan, QueryCursorImpl<List<?>> cursor,
+        int pageSize) throws IgniteCheckedException {
         // This check also protects us from attempts to update key or its fields directly -
         // when no key except cache key can be used, it will serve only for uniqueness checks,
         // not for updates, and hence will allow putting new pairs only.
@@ -747,41 +844,9 @@ class DmlStatementsProcessor {
         if (keys.length != 1 || !keys[0].columnName().equalsIgnoreCase(KEY_FIELD_NAME))
             throw new CacheException("SQL MERGE does not support arbitrary keys");
 
-        GridSqlColumn[] cols = gridStmt.columns();
-
-        int keyColIdx = -1;
-        int valColIdx = -1;
-
-        boolean hasKeyProps = false;
-        boolean hasValProps = false;
-
         GridSqlTable tbl = gridTableForElement(gridStmt.into());
 
         GridH2RowDescriptor desc = tbl.dataTable().rowDescriptor();
-
-        for (int i = 0; i < cols.length; i++) {
-            if (cols[i].columnName().equalsIgnoreCase(KEY_FIELD_NAME)) {
-                keyColIdx = i;
-                continue;
-            }
-
-            if (cols[i].columnName().equalsIgnoreCase(VAL_FIELD_NAME)) {
-                valColIdx = i;
-                continue;
-            }
-
-            GridQueryProperty prop = desc.type().property(cols[i].columnName());
-
-            assert prop != null : "Property '" + cols[i].columnName() + "' not found.";
-
-            if (prop.key())
-                hasKeyProps = true;
-            else
-                hasValProps = true;
-        }
-
-        Supplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true);
-        Supplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false);
 
         Iterable<List<?>> src;
 
@@ -796,8 +861,9 @@ class DmlStatementsProcessor {
 
         // If we have just one item to put, just do so
         if (singleRow) {
-            IgniteBiTuple t = rowToKeyValue(cctx, desc.type(), keySupplier, valSupplier, keyColIdx, valColIdx, cols,
-                src.iterator().next().toArray());
+            IgniteBiTuple t = rowToKeyValue(cctx, desc.type(), plan.keySupplier, plan.valSupplier, plan.keyColIdx,
+                plan.valColIdx, gridStmt.columns(), src.iterator().next().toArray());
+
             cctx.cache().put(t.getKey(), t.getValue());
             return 1;
         }
@@ -808,8 +874,8 @@ class DmlStatementsProcessor {
             for (Iterator<List<?>> it = src.iterator(); it.hasNext();) {
                 List<?> row = it.next();
 
-                IgniteBiTuple t = rowToKeyValue(cctx, desc.type(), keySupplier, valSupplier, keyColIdx, valColIdx, cols,
-                    row.toArray());
+                IgniteBiTuple t = rowToKeyValue(cctx, desc.type(), plan.keySupplier, plan.valSupplier, plan.keyColIdx,
+                    plan.valColIdx, gridStmt.columns(), row.toArray());
                 rows.put(t.getKey(), t.getValue());
 
                 if ((pageSize > 0 && rows.size() == pageSize) || !it.hasNext()) {
@@ -834,43 +900,11 @@ class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed, particularly in case of duplicate keys.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    private long doInsert(GridCacheContext cctx, GridSqlInsert ins, QueryCursorImpl<List<?>> cursor, int pageSize)
-        throws IgniteCheckedException {
-        GridSqlColumn[] cols = ins.columns();
-
-        int keyColIdx = -1;
-        int valColIdx = -1;
-
-        boolean hasKeyProps = false;
-        boolean hasValProps = false;
-
+    private long doInsert(GridCacheContext cctx, GridSqlInsert ins, UpdatePlan plan, QueryCursorImpl<List<?>> cursor,
+        int pageSize) throws IgniteCheckedException {
         GridSqlTable tbl = gridTableForElement(ins.into());
 
         GridH2RowDescriptor desc = tbl.dataTable().rowDescriptor();
-
-        for (int i = 0; i < cols.length; i++) {
-            if (cols[i].columnName().equalsIgnoreCase(KEY_FIELD_NAME)) {
-                keyColIdx = i;
-                continue;
-            }
-
-            if (cols[i].columnName().equalsIgnoreCase(VAL_FIELD_NAME)) {
-                valColIdx = i;
-                continue;
-            }
-
-            GridQueryProperty prop = desc.type().property(cols[i].columnName());
-
-            assert prop != null : "Property '" + cols[i].columnName() + "' not found.";
-
-            if (prop.key())
-                hasKeyProps = true;
-            else
-                hasValProps = true;
-        }
-
-        Supplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true);
-        Supplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false);
 
         Iterable<List<?>> src;
 
@@ -885,8 +919,8 @@ class DmlStatementsProcessor {
 
         // If we have just one item to put, just do so
         if (singleRow) {
-            IgniteBiTuple t = rowToKeyValue(cctx, desc.type(), keySupplier, valSupplier, keyColIdx, valColIdx, cols,
-                src.iterator().next().toArray());
+            IgniteBiTuple t = rowToKeyValue(cctx, desc.type(), plan.keySupplier, plan.valSupplier, plan.keyColIdx,
+                plan.valColIdx, ins.columns(), src.iterator().next().toArray());
 
             if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
                 return 1;
@@ -928,8 +962,8 @@ class DmlStatementsProcessor {
                 while (it.hasNext()) {
                     List<?> row = it.next();
 
-                    final IgniteBiTuple t = rowToKeyValue(cctx, desc.type(), keySupplier, valSupplier, keyColIdx, valColIdx,
-                        cols, row.toArray());
+                    final IgniteBiTuple t = rowToKeyValue(cctx, desc.type(), plan.keySupplier, plan.valSupplier,
+                        plan.keyColIdx, plan.valColIdx, ins.columns(), row.toArray());
 
                     rows.put(t.getKey(), new InsertEntryProcessor(t.getValue()));
 
@@ -1037,7 +1071,7 @@ class DmlStatementsProcessor {
      */
     @SuppressWarnings({"unchecked", "ConstantConditions", "ResultOfMethodCallIgnored"})
     private IgniteBiTuple<?, ?> rowToKeyValue(GridCacheContext cctx, GridQueryTypeDescriptor desc, Supplier keySupplier,
-                                              Supplier valSupplier, int keyColIdx, int valColIdx, GridSqlColumn[] cols, Object[] row)
+        Supplier valSupplier, int keyColIdx, int valColIdx, GridSqlColumn[] cols, Object[] row)
         throws IgniteCheckedException {
 
         Object key = keySupplier.apply(F.asList(row));
@@ -1457,7 +1491,7 @@ class DmlStatementsProcessor {
     }
 
     /**
-     * Update plan - initial statement, matching SELECT query, collocation flag, and single entry update filter.
+     * Update plan - where to take data to update cache from and how to construct new keys and values, if needed.
      */
     private final static class UpdatePlan {
         /** Initial statement to drive the rest of the logic. */
@@ -1465,6 +1499,19 @@ class DmlStatementsProcessor {
 
         /** Target element to be affected by {@link #initStmt}. */
         private final GridSqlElement target;
+
+        /** Method to create key for INSERT or MERGE, ignored for UPDATE and DELETE. */
+        private final Supplier keySupplier;
+
+        /** Method to create value to put to cache, ignored for DELETE. */
+        private final Supplier valSupplier;
+
+        /** Index of key column, if it's explicitly mentioned in column list of MERGE or INSERT,
+         * ignored for UPDATE and DELETE. */
+        private final int keyColIdx;
+
+        /** Index of value column, if it's explicitly mentioned in column list. Ignored for UPDATE and DELETE. */
+        private final int valColIdx;
 
         /** SELECT statement built upon {@link #initStmt}. */
         private final GridSqlQuery selectQry;
@@ -1476,13 +1523,17 @@ class DmlStatementsProcessor {
         private final GridTriple<GridSqlElement> singleUpdate;
 
         /** */
-        private UpdatePlan(GridSqlStatement initStmt, GridSqlElement target, GridSqlQuery selectQry,
-                           boolean isSubqry, GridTriple<GridSqlElement> singleUpdate) {
+        private UpdatePlan(GridSqlStatement initStmt, GridSqlElement target, Supplier keySupplier, Supplier valSupplier,
+            int keyColIdx, int valColIdx, GridSqlQuery selectQry, boolean isSubqry, GridTriple<GridSqlElement> singleUpdate) {
             assert initStmt != null;
             assert target != null;
 
             this.initStmt = initStmt;
             this.target = target;
+            this.keySupplier = keySupplier;
+            this.valSupplier = valSupplier;
+            this.keyColIdx = keyColIdx;
+            this.valColIdx = valColIdx;
             this.selectQry = selectQry;
             this.isSubqry = isSubqry;
             this.singleUpdate = singleUpdate;
