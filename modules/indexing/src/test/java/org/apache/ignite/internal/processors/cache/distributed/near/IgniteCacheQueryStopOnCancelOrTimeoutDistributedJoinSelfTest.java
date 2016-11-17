@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -117,7 +118,7 @@ public class IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest extend
      * Validates clean state on all participating nodes after query cancellation.
      */
     @SuppressWarnings("unchecked")
-    private void checkCleanState() {
+    private void checkCleanState() throws IgniteCheckedException {
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteEx grid = grid(i);
 

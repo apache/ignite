@@ -210,6 +210,14 @@
                 <lgpl.folder>src/main/java-lgpl</lgpl.folder>
                 <lgpl.test.folder>src/test/java-lgpl</lgpl.test.folder>
             </properties>
+
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-geospatial</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
         </profile>
     </profiles>
 
