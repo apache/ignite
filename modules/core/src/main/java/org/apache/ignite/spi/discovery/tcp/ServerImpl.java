@@ -6060,7 +6060,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             ack.verify(locNodeId);
 
-            clientMsgWrk.sendMessage(ack, null);
+            clientMsgWrk.addMessage(ack, null);
 
             if (heartbeatMsg != null)
                 clientMsgWrk.metrics(heartbeatMsg.metrics());
