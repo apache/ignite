@@ -117,10 +117,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             var remoteMetrics = remoteCache.GetMetrics();
             Assert.IsTrue(remoteMetrics.IsStatisticsEnabled);
             Assert.AreEqual(cacheName, remoteMetrics.CacheName);
-            Assert.AreEqual(1, remoteMetrics.Size);
+            Assert.AreEqual(0, remoteMetrics.Size);
             Assert.AreEqual(1, remoteMetrics.CacheGets);
             Assert.AreEqual(1, remoteMetrics.CachePuts);
-
         }
 
         /// <summary>
