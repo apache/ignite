@@ -148,7 +148,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     public static final int OP_LOCK_ALL = 23;
 
     /** */
-    public static final int OP_METRICS = 24;
+    public static final int OP_LOCAL_METRICS = 24;
 
     /** */
     private static final int OP_PEEK = 25;
@@ -323,6 +323,9 @@ public class PlatformCache extends PlatformAbstractTarget {
 
     /** */
     public static final int OP_EXTENSION = 82;
+
+    /** */
+    public static final int OP_GLOBAL_METRICS = 83;
 
     /** Underlying JCache in binary mode. */
     private final IgniteCacheProxy cache;
@@ -907,12 +910,21 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 break;
 
-            case OP_METRICS:
+            case OP_LOCAL_METRICS: {
                 CacheMetrics metrics = cache.localMetrics();
 
                 writeCacheMetrics(writer, metrics);
 
                 break;
+            }
+
+            case OP_GLOBAL_METRICS: {
+                CacheMetrics metrics = cache.metrics();
+
+                writeCacheMetrics(writer, metrics);
+
+                break;
+            }
 
             case OP_GET_CONFIG:
                 CacheConfiguration ccfg = ((IgniteCache<Object, Object>)cache).
