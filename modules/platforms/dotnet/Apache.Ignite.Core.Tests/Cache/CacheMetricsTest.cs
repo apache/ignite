@@ -91,7 +91,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(0, remoteMetrics.Size);
             Assert.AreEqual(1, remoteMetrics.CacheGets);
             Assert.AreEqual(1, remoteMetrics.CachePuts);
-
         }
 
         /// <summary>
@@ -204,8 +203,10 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Creates a cache, performs put-get, returns metrics from both nodes.
         /// </summary>
         private static Tuple<ICacheMetrics, ICacheMetrics> GetLocalRemoteMetrics(string cacheName,
-                    Func<ICache<int, int>, ICacheMetrics> func)
+                    Func<ICache<int, int>, ICacheMetrics> func, Func<ICache<int, int>, ICacheMetrics> func2 = null)
         {
+            func2 = func2 ?? func;
+
             var localCache = Ignition.GetIgnite().CreateCache<int, int>(new CacheConfiguration(cacheName)
             {
                 EnableStatistics = true
@@ -226,7 +227,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             // Wait for metrics to propagate.
             Thread.Sleep(TcpDiscoverySpi.DefaultHeartbeatFrequency);
 
-            var remoteMetrics = func(remoteCache);
+            var remoteMetrics = func2(remoteCache);
             Assert.IsTrue(remoteMetrics.IsStatisticsEnabled);
             Assert.AreEqual(cacheName, remoteMetrics.CacheName);
 
