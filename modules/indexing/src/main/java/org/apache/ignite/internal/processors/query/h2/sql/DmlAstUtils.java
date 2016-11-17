@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -74,8 +74,7 @@ public final class DmlAstUtils {
      * @param keysParamIdx Index for .
      * @return SELECT statement.
      */
-    public static GridSqlSelect mapQueryForDelete(GridSqlDelete del, @Nullable Integer keysParamIdx)
-        throws IgniteCheckedException {
+    public static GridSqlSelect mapQueryForDelete(GridSqlDelete del, @Nullable Integer keysParamIdx) {
         GridSqlSelect mapQry = new GridSqlSelect();
 
         mapQry.from(del.from());
@@ -238,8 +237,7 @@ public final class DmlAstUtils {
      * @param keysParamIdx Index of new param for the array of keys.
      * @return SELECT statement.
      */
-    public static GridSqlSelect mapQueryForUpdate(GridSqlUpdate update, @Nullable Integer keysParamIdx)
-        throws IgniteCheckedException {
+    public static GridSqlSelect mapQueryForUpdate(GridSqlUpdate update, @Nullable Integer keysParamIdx) {
         GridSqlSelect mapQry = new GridSqlSelect();
 
         mapQry.from(update.target());
@@ -305,68 +303,124 @@ public final class DmlAstUtils {
     }
 
     /**
-     * @param stmt Statement.
+     * @param qry Select.
      * @param params Parameters.
      * @param target Extracted parameters.
      * @param paramIdxs Parameter indexes.
      * @return Extracted parameters list.
      */
-    private static List<Object> findParams(GridSqlStatement stmt, Object[] params, ArrayList<Object> target,
+    private static List<Object> findParams(GridSqlQuery qry, Object[] params, ArrayList<Object> target,
                                            IntArray paramIdxs) {
-        if (stmt instanceof GridSqlQuery)
-            return GridSqlQuerySplitter.findParams((GridSqlQuery) stmt, params, target, paramIdxs);
+        if (qry instanceof GridSqlSelect)
+            return findParams((GridSqlSelect)qry, params, target, paramIdxs);
 
-        if (stmt instanceof GridSqlMerge)
-            return findParams((GridSqlMerge)stmt, params, target, paramIdxs);
+        GridSqlUnion union = (GridSqlUnion)qry;
 
-        if (stmt instanceof GridSqlInsert)
-            return findParams((GridSqlInsert)stmt, params, target, paramIdxs);
+        findParams(union.left(), params, target, paramIdxs);
+        findParams(union.right(), params, target, paramIdxs);
+
+        findParams(qry.limit(), params, target, paramIdxs);
+        findParams(qry.offset(), params, target, paramIdxs);
 
         return target;
     }
 
     /**
-     * @param stmt Statement.
+     * @param qry Select.
      * @param params Parameters.
      * @param target Extracted parameters.
      * @param paramIdxs Parameter indexes.
      * @return Extracted parameters list.
      */
-    private static List<Object> findParams(GridSqlMerge stmt, Object[] params, ArrayList<Object> target,
+    private static List<Object> findParams(GridSqlSelect qry, Object[] params, ArrayList<Object> target,
                                            IntArray paramIdxs) {
         if (params.length == 0)
             return target;
 
-        for (GridSqlElement el : stmt.columns())
-            GridSqlQuerySplitter.findParams(el, params, target, paramIdxs);
+        for (GridSqlElement el : qry.columns(false))
+            findParams(el, params, target, paramIdxs);
 
-        for (GridSqlElement[] row : stmt.rows())
-            for (GridSqlElement el : row)
-                GridSqlQuerySplitter.findParams(el, params, target, paramIdxs);
+        findParams(qry.from(), params, target, paramIdxs);
+        findParams(qry.where(), params, target, paramIdxs);
+
+        // Don't search in GROUP BY and HAVING since they expected to be in select list.
+
+        findParams(qry.limit(), params, target, paramIdxs);
+        findParams(qry.offset(), params, target, paramIdxs);
 
         return target;
     }
 
     /**
-     * @param stmt Statement.
+     * @param el Element.
      * @param params Parameters.
      * @param target Extracted parameters.
      * @param paramIdxs Parameter indexes.
-     * @return Extracted parameters list.
      */
-    private static List<Object> findParams(GridSqlInsert stmt, Object[] params, ArrayList<Object> target,
-                                           IntArray paramIdxs) {
-        if (params.length == 0)
-            return target;
+    private static void findParams(@Nullable GridSqlElement el, Object[] params, ArrayList<Object> target,
+                                   IntArray paramIdxs) {
+        if (el == null)
+            return;
 
-        for (GridSqlElement el : stmt.columns())
-            GridSqlQuerySplitter.findParams(el, params, target, paramIdxs);
+        if (el instanceof GridSqlParameter) {
+            // H2 Supports queries like "select ?5" but first 4 non-existing parameters are need to be set to any value.
+            // Here we will set them to NULL.
+            final int idx = ((GridSqlParameter)el).index();
 
-        for (GridSqlElement[] row : stmt.rows())
-            for (GridSqlElement el : row)
-                GridSqlQuerySplitter.findParams(el, params, target, paramIdxs);
+            while (target.size() < idx)
+                target.add(null);
 
-        return target;
+            if (params.length <= idx)
+                throw new IgniteException("Invalid number of query parameters. " +
+                    "Cannot find " + idx + " parameter.");
+
+            Object param = params[idx];
+
+            if (idx == target.size())
+                target.add(param);
+            else
+                target.set(idx, param);
+
+            paramIdxs.add(idx);
+        }
+        else if (el instanceof GridSqlSubquery)
+            findParams(((GridSqlSubquery)el).select(), params, target, paramIdxs);
+        else
+            for (GridSqlElement child : el)
+                findParams(child, params, target, paramIdxs);
+    }
+
+    /**
+     * Processes all the tables and subqueries using the given closure.
+     *
+     * @param from FROM element.
+     * @param c Closure each found table and subquery will be passed to. If returns {@code true} the we need to stop.
+     * @return {@code true} If we have found.
+     */
+    private static boolean findTablesInFrom(GridSqlElement from, IgnitePredicate<GridSqlElement> c) {
+        if (from == null)
+            return false;
+
+        if (from instanceof GridSqlTable || from instanceof GridSqlSubquery)
+            return c.apply(from);
+
+        if (from instanceof GridSqlJoin) {
+            // Left and right.
+            if (findTablesInFrom(from.child(0), c))
+                return true;
+
+            if (findTablesInFrom(from.child(1), c))
+                return true;
+
+            // We don't process ON condition because it is not a joining part of from here.
+            return false;
+        }
+        else if (from instanceof GridSqlAlias)
+            return findTablesInFrom(from.child(), c);
+        else if (from instanceof GridSqlFunction)
+            return false;
+
+        throw new IllegalStateException(from.getClass().getName() + " : " + from.getSQL());
     }
 
     /**
@@ -374,7 +428,7 @@ public final class DmlAstUtils {
      * @param tbls Tables.
      */
     public static void collectAllGridTablesInTarget(GridSqlElement from, final Set<GridSqlTable> tbls) {
-        GridSqlQuerySplitter.findTablesInFrom(from, new IgnitePredicate<GridSqlElement>() {
+        findTablesInFrom(from, new IgnitePredicate<GridSqlElement>() {
             @Override public boolean apply(GridSqlElement el) {
                 if (el instanceof GridSqlTable)
                     tbls.add((GridSqlTable)el);

@@ -235,9 +235,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** */
     private GridTimeoutProcessor.CancelableTask stmtCacheCleanupTask;
 
-    /** */
-    static int DFLT_DML_RERUN_ATTEMPTS = 4;
-
     /**
      * Command in H2 prepared statement.
      */
@@ -339,9 +336,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** */
     private final ConcurrentMap<String, GridH2Table> dataTables = new ConcurrentHashMap8<>();
 
-    /** */
-    private final ConcurrentMap<String, String> dataTablesToTypes = new ConcurrentHashMap8<>();
-
     /** Statement cache. */
     private final ConcurrentHashMap<Thread, StatementCache> stmtCache = new ConcurrentHashMap<>();
 
@@ -384,7 +378,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * @return Logger.
      */
-    public IgniteLogger getLogger() {
+    IgniteLogger getLogger() {
         return log;
     }
 
@@ -800,7 +794,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("unchecked")
     @Override public GridQueryFieldsResult queryLocalSqlFields(@Nullable final String spaceName, final String qry,
         @Nullable final Collection<Object> params, final IndexingQueryFilter filters, boolean enforceJoinOrder,
-        final int timeout, final GridQueryCancel cancel) throws IgniteCheckedException {
+        final int timeout, final GridQueryCancel cancel)
+        throws IgniteCheckedException {
         final Connection conn = connectionForSpace(spaceName);
 
         initLocalQueryContext(conn, enforceJoinOrder, filters);
@@ -841,9 +836,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws SQLException If failed.
      */
     private static List<GridQueryFieldMetadata> meta(ResultSetMetaData rsMeta) throws SQLException {
-        if (rsMeta == null)
-            return Collections.emptyList();
-
         List<GridQueryFieldMetadata> meta = new ArrayList<>(rsMeta.getColumnCount());
 
         for (int i = 1; i <= rsMeta.getColumnCount(); i++) {
@@ -936,7 +928,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     private ResultSet executeSqlQuery(final Connection conn, final PreparedStatement stmt,
-                                      int timeoutMillis, @Nullable GridQueryCancel cancel)
+        int timeoutMillis, @Nullable GridQueryCancel cancel)
         throws IgniteCheckedException {
 
         if (timeoutMillis > 0)
@@ -984,12 +976,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     public ResultSet executeSqlQueryWithTimer(String space,
-                                              Connection conn,
-                                              String sql,
-                                              @Nullable Collection<Object> params,
-                                              boolean useStmtCache,
-                                              int timeoutMillis,
-                                              @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
+        Connection conn,
+        String sql,
+        @Nullable Collection<Object> params,
+        boolean useStmtCache,
+        int timeoutMillis,
+        @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
         return executeSqlQueryWithTimer(space, preparedStatementWithParams(conn, sql, params, useStmtCache),
             conn, sql, params, timeoutMillis, cancel);
     }
@@ -1007,11 +999,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     private ResultSet executeSqlQueryWithTimer(String space, PreparedStatement stmt,
-                                               Connection conn,
-                                               String sql,
-                                               @Nullable Collection<Object> params,
-                                               int timeoutMillis,
-                                               @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
+        Connection conn,
+        String sql,
+        @Nullable Collection<Object> params,
+        int timeoutMillis,
+        @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
         long start = U.currentTimeMillis();
 
         try {
@@ -1052,7 +1044,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param params Parameters collection.
      * @throws IgniteCheckedException If failed.
      */
-    private void bindParameters(PreparedStatement stmt, @Nullable Collection<Object> params) throws IgniteCheckedException {
+    public void bindParameters(PreparedStatement stmt, @Nullable Collection<Object> params) throws IgniteCheckedException {
         if (!F.isEmpty(params)) {
             int idx = 1;
 
@@ -1066,7 +1058,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param enforceJoinOrder Enforce join order of tables.
      * @param filter Filter.
      */
-    void initLocalQueryContext(Connection conn, boolean enforceJoinOrder, IndexingQueryFilter filter) {
+    private void initLocalQueryContext(Connection conn, boolean enforceJoinOrder, IndexingQueryFilter filter) {
         setupConnection(conn, false, enforceJoinOrder);
 
         GridH2QueryContext.set(new GridH2QueryContext(nodeId, nodeId, 0, LOCAL).filter(filter).distributedJoins(false));
@@ -1092,7 +1084,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final TableDescriptor tbl = tableDescriptor(spaceName, type);
 
         if (tbl == null)
-            throw createSqlException("Failed to find SQL table for type: " + type.name(), ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1);
+            throw createSqlException("Failed to find SQL table for type: " + type.name(),
+                ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1);
 
         String sql = generateQuery(qry, tbl);
 
@@ -1130,8 +1123,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <K, V> QueryCursor<Cache.Entry<K,V>> queryTwoStep(GridCacheContext<?,?> cctx, SqlQuery qry)
-        throws IgniteCheckedException {
+    @Override public <K, V> QueryCursor<Cache.Entry<K,V>> queryTwoStep(GridCacheContext<?,?> cctx, SqlQuery qry) {
         String type = qry.getType();
         String space = cctx.name();
 
@@ -1199,9 +1191,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public QueryCursor<List<?>> queryTwoStep(GridCacheContext<?,?> cctx, SqlFieldsQuery qry)
-        throws IgniteCheckedException {
+    @Override public QueryCursor<List<?>> queryTwoStep(GridCacheContext<?,?> cctx, SqlFieldsQuery qry) {
         final String space = cctx.name();
         final String sqlQry = qry.getSql();
 
@@ -1214,12 +1204,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridCacheTwoStepQuery twoStepQry;
         List<GridQueryFieldMetadata> meta;
 
-        TwoStepCachedQuery cachedQry;
-        TwoStepCachedQueryKey cachedQryKey;
-
-        cachedQryKey = new TwoStepCachedQueryKey(space, sqlQry, grpByCollocated,
+        final TwoStepCachedQueryKey cachedQryKey = new TwoStepCachedQueryKey(space, sqlQry, grpByCollocated,
             distributedJoins, enforceJoinOrder);
-        cachedQry = twoStepCache.get(cachedQryKey);
+        TwoStepCachedQuery cachedQry = twoStepCache.get(cachedQryKey);
 
         if (cachedQry != null) {
             twoStepQry = cachedQry.twoStepQry.copy(qry.getArgs());
@@ -1273,13 +1260,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     ErrorCode.UNKNOWN_MODE_1);
 
             if (!prepared.isQuery())
-                return dmlProc.updateSqlFieldsTwoStep(cctx, stmt, qry);
+                try {
+                    return dmlProc.updateSqlFieldsTwoStep(cctx, stmt, qry);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteSQLException("Failed to execute DML statement [qry=" + sqlQry + ", params=" +
+                        Arrays.deepToString(qry.getArgs()) + "]", e);
+                }
 
             try {
                 bindParameters(stmt, F.asList(qry.getArgs()));
 
-                twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement) stmt, qry.getArgs(),
-                    grpByCollocated, distributedJoins);
+                twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, qry.getArgs(), grpByCollocated,
+                    distributedJoins);
 
                 List<Integer> caches;
                 List<Integer> extraCaches = null;
@@ -1338,8 +1331,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridQueryCancel cancel = new GridQueryCancel();
 
-        QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(),
-            enforceJoinOrder, qry.getTimeout(), cancel), cancel);
+        QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
+            runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder, qry.getTimeout(), cancel), cancel);
 
         cursor.fieldsMeta(meta);
 
@@ -1558,9 +1551,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridH2Table res = GridH2Table.Engine.createTable(conn, sql.toString(), desc, tbl, tbl.schema.spaceName);
 
         if (dataTables.putIfAbsent(res.identifier(), res) != null)
-            throw new IllegalStateException("Table already exists: " + res.identifier());
-
-        if (dataTablesToTypes.putIfAbsent(res.identifier(), tbl.type().valueClass().getSimpleName()) != null)
             throw new IllegalStateException("Table already exists: " + res.identifier());
     }
 
@@ -3080,7 +3070,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         /** {@inheritDoc} */
         @Override public boolean isColumnKeyProperty(int col) {
             return props[col].key();
-
         }
 
         /** {@inheritDoc} */

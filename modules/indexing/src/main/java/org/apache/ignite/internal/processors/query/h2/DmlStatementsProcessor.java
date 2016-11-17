@@ -79,7 +79,6 @@ import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridPlainClosure;
 import org.apache.ignite.internal.util.lang.GridTriple;
-import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -95,7 +94,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
-import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.DFLT_DML_RERUN_ATTEMPTS;
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.VAL_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.createSqlException;
@@ -104,9 +102,10 @@ import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.cr
  *
  */
 class DmlStatementsProcessor {
-    /**
-     * Indexing.
-     */
+    /** Default number of attempts to re-run DELETE and UPDATE queries in case of concurrent modifications of values. */
+    private final static int DFLT_DML_RERUN_ATTEMPTS = 4;
+
+    /** Indexing. */
     private final IgniteH2Indexing indexing;
 
     /** Set of binary type ids for which warning about missing identity in configuration has been printed. */
@@ -141,7 +140,7 @@ class DmlStatementsProcessor {
      * @return Update result (modified items count and failed keys).
      * @throws IgniteCheckedException if failed.
      */
-    private UpdateResult executeUpdateStatement0(GridCacheContext cctx, PreparedStatement stmt,
+    private long updateSqlFields(GridCacheContext cctx, PreparedStatement stmt,
         SqlFieldsQuery fieldsQry, boolean loc, GridQueryCancel cancel) throws IgniteCheckedException {
         Object[] errKeys = null;
 
@@ -158,10 +157,10 @@ class DmlStatementsProcessor {
         cctx = cctx.shared().cacheContext(CU.cacheId(tbl.schema()));
 
         for (int i = 0; i < DFLT_DML_RERUN_ATTEMPTS; i++) {
-            UpdateResult r = updateSqlFields(cctx, stmt, fieldsQry, loc, cancel, errKeys);
+            UpdateResult r = executeUpdateStatement(cctx, stmt, fieldsQry, loc, cancel, errKeys);
 
             if (F.isEmpty(r.errKeys))
-                return new UpdateResult(r.cnt + items, X.EMPTY_OBJECT_ARRAY);
+                return r.cnt + items;
             else {
                 items += r.cnt;
                 errKeys = r.errKeys;
@@ -182,12 +181,9 @@ class DmlStatementsProcessor {
     @SuppressWarnings("unchecked")
     QueryCursorImpl<List<?>> updateSqlFieldsTwoStep(GridCacheContext cctx, PreparedStatement stmt,
         SqlFieldsQuery fieldsQry) throws IgniteCheckedException {
-        UpdateResult res = executeUpdateStatement0(cctx, stmt, fieldsQry, false, null);
+        long res = updateSqlFields(cctx, stmt, fieldsQry, false, null);
 
-        // Exception should had been thrown if any keys failed to update.
-        assert F.isEmpty(res.errKeys);
-
-        return cursorForUpdateResult(res.cnt);
+        return cursorForUpdateResult(res);
     }
 
     /**
@@ -200,13 +196,10 @@ class DmlStatementsProcessor {
     @SuppressWarnings("unchecked")
     GridQueryFieldsResult updateLocalSqlFields(GridCacheContext cctx, PreparedStatement stmt,
         SqlFieldsQuery fieldsQry, GridQueryCancel cancel) throws IgniteCheckedException {
-        UpdateResult res = executeUpdateStatement0(cctx, stmt, fieldsQry, true, cancel);
-
-        // Exception should had been thrown if any keys failed to update.
-        assert F.isEmpty(res.errKeys);
+        long res = updateSqlFields(cctx, stmt, fieldsQry, true, cancel);
 
         return new GridQueryFieldsResultAdapter(UPDATE_RESULT_META,
-            new IgniteSingletonIterator(Collections.singletonList(res.cnt)));
+            new IgniteSingletonIterator(Collections.singletonList(res)));
     }
 
     /**
@@ -219,7 +212,7 @@ class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("ConstantConditions")
-    private UpdateResult updateSqlFields(GridCacheContext cctx, PreparedStatement prepStmt,
+    private UpdateResult executeUpdateStatement(GridCacheContext cctx, PreparedStatement prepStmt,
         SqlFieldsQuery fieldsQry, boolean loc, GridQueryCancel cancel, Object[] failedKeys) throws IgniteCheckedException {
         Integer errKeysPos = null;
 
@@ -296,10 +289,8 @@ class DmlStatementsProcessor {
      *
      * @param prepStmt JDBC statement.
      * @return Update plan.
-     * @throws IgniteCheckedException if failed.
      */
-    private UpdatePlan getPlanForStatement(PreparedStatement prepStmt, @Nullable Integer errKeysPos)
-        throws IgniteCheckedException {
+    private UpdatePlan getPlanForStatement(PreparedStatement prepStmt, @Nullable Integer errKeysPos) {
         Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement) prepStmt);
 
         assert !p.isQuery();
@@ -472,17 +463,17 @@ class DmlStatementsProcessor {
                 rows.put(e.get(0), new ModifyingEntryProcessor(e.get(1), RMV));
 
                 if ((pageSize > 0 && rows.size() == pageSize) || (!it.hasNext())) {
-                    GridTuple3<Integer, Object[], SQLException> batchRes = processBatch(cctx, rows);
+                    BatchProcessingResult batchRes = processBatch(cctx, rows);
 
-                    res += batchRes.get1();
+                    res += batchRes.cnt;
 
-                    failedKeys.addAll(F.asList(batchRes.get2()));
+                    failedKeys.addAll(F.asList(batchRes.errKeys));
 
-                    if (batchRes.get3() != null) {
+                    if (batchRes.ex != null) {
                         if (resEx == null)
-                            resEx = batchRes.get3();
+                            resEx = batchRes.ex;
                         else
-                            resEx.setNextException(batchRes.get3());
+                            resEx.setNextException(batchRes.ex);
                     }
 
                     if (it.hasNext())
@@ -654,17 +645,17 @@ class DmlStatementsProcessor {
                 rows.put(key, new ModifyingEntryProcessor(srcVal, new EntryValueUpdater(newVal)));
 
                 if ((pageSize > 0 && rows.size() == pageSize) || (!it.hasNext())) {
-                    GridTuple3<Integer, Object[], SQLException> batchRes = processBatch(cctx, rows);
+                    BatchProcessingResult batchRes = processBatch(cctx, rows);
 
-                    res += batchRes.get1();
+                    res += batchRes.cnt;
 
-                    failedKeys.addAll(F.asList(batchRes.get2()));
+                    failedKeys.addAll(F.asList(batchRes.errKeys));
 
-                    if (batchRes.get3() != null) {
+                    if (batchRes.ex != null) {
                         if (resEx == null)
-                            resEx = batchRes.get3();
+                            resEx = batchRes.ex;
                         else
-                            resEx.setNextException(batchRes.get3());
+                            resEx.setNextException(batchRes.ex);
                     }
 
                     if (it.hasNext())
@@ -705,7 +696,7 @@ class DmlStatementsProcessor {
      * @return pair [array of duplicated/concurrently modified keys, SQL exception for erroneous keys] (exception is
      * null if all keys are duplicates/concurrently modified ones).
      */
-    private static GridTuple3<Object[], SQLException, Integer> splitErrors(Map<Object, EntryProcessorResult<Boolean>> res) {
+    private static BatchProcessingErrorResult splitErrors(Map<Object, EntryProcessorResult<Boolean>> res) {
         Set<Object> errKeys = new LinkedHashSet<>(res.keySet());
 
         SQLException currSqlEx = null;
@@ -733,11 +724,9 @@ class DmlStatementsProcessor {
 
                 errors++;
             }
-
-
         }
 
-        return new GridTuple3<>(errKeys.toArray(), firstSqlEx, errors);
+        return new BatchProcessingErrorResult(errKeys.toArray(), firstSqlEx, errors);
     }
 
     /**
@@ -945,35 +934,20 @@ class DmlStatementsProcessor {
                     rows.put(t.getKey(), new InsertEntryProcessor(t.getValue()));
 
                     if (!it.hasNext() || (pageSize > 0 && rows.size() == pageSize)) {
-                        GridTuple3<Integer, Object[], SQLException> batchRes = processBatch(cctx, rows);
+                        BatchProcessingResult batchRes = processBatch(cctx, rows);
 
-                        resCnt += batchRes.get1();
+                        resCnt += batchRes.cnt;
 
-                        duplicateKeys.addAll(F.asList(batchRes.get2()));
+                        duplicateKeys.addAll(F.asList(batchRes.errKeys));
 
-                        if (batchRes.get3() != null) {
+                        if (batchRes.ex != null) {
                             if (resEx == null)
-                                resEx = batchRes.get3();
+                                resEx = batchRes.ex;
                             else
-                                resEx.setNextException(batchRes.get3());
+                                resEx.setNextException(batchRes.ex);
                         }
 
                         rows.clear();
-                    }
-                }
-
-                if (!rows.isEmpty()) {
-                    GridTuple3<Integer, Object[], SQLException> batchRes = processBatch(cctx, rows);
-
-                    resCnt += batchRes.get1();
-
-                    duplicateKeys.addAll(F.asList(batchRes.get2()));
-
-                    if (batchRes.get3() != null) {
-                        if (resEx == null)
-                            resEx = batchRes.get3();
-                        else
-                            resEx.setNextException(batchRes.get3());
                     }
                 }
 
@@ -1009,19 +983,19 @@ class DmlStatementsProcessor {
      * @throws IgniteCheckedException
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    private static GridTuple3<Integer, Object[], SQLException> processBatch(GridCacheContext cctx,
+    private static BatchProcessingResult processBatch(GridCacheContext cctx,
         Map<Object, EntryProcessor<Object, Object, Boolean>> rows) throws IgniteCheckedException {
 
         Map<Object, EntryProcessorResult<Boolean>> res = cctx.cache().invokeAll(rows);
 
         if (F.isEmpty(res))
-            return new GridTuple3<>(rows.size(), null, null);
+            return new BatchProcessingResult(rows.size(), null, null);
 
-        GridTuple3<Object[], SQLException, Integer> splitRes = splitErrors(res);
+        BatchProcessingErrorResult splitRes = splitErrors(res);
 
-        int keysCnt = F.isEmpty(splitRes.get1()) ? 0 : splitRes.get1().length;
+        int keysCnt = splitRes.errKeys.length;
 
-        return new GridTuple3<>(rows.size() - keysCnt - splitRes.get3(), splitRes.get1(), splitRes.get2());
+        return new BatchProcessingResult(rows.size() - keysCnt - splitRes.cnt, splitRes.errKeys, splitRes.ex);
     }
 
     /**
@@ -1240,7 +1214,7 @@ class DmlStatementsProcessor {
      * @param params Params to use if {@code element} is a {@link GridSqlParameter}.
      * @return column value.
      */
-    private static Object getElementValue(GridSqlElement element, Object[] params) throws IgniteCheckedException {
+    private static Object getElementValue(GridSqlElement element, Object[] params) {
         if (element == null)
             return null;
 
@@ -1353,7 +1327,7 @@ class DmlStatementsProcessor {
      *
      * @param statement Statement.
      */
-    private static void verifyUpdateColumns(GridSqlStatement statement) throws IgniteCheckedException {
+    private static void verifyUpdateColumns(GridSqlStatement statement) {
         if (statement == null || !(statement instanceof GridSqlUpdate))
             return;
 
@@ -1430,6 +1404,55 @@ class DmlStatementsProcessor {
         private UpdateResult(long cnt, Object[] errKeys) {
             this.cnt = cnt;
             this.errKeys = U.firstNotNull(errKeys, X.EMPTY_OBJECT_ARRAY);
+        }
+    }
+
+    /** Result of processing an individual batch with {@link IgniteCache#invokeAll} including error details, if any. */
+    private final static class BatchProcessingResult {
+        /** Number of successfully processed items. */
+        final long cnt;
+
+        /** Keys that failed to be UPDATEd or DELETEd due to concurrent modification of values. */
+        @NotNull
+        final Object[] errKeys;
+
+        /** Chain of exceptions corresponding to failed keys. Null if no keys yielded an exception. */
+        final SQLException ex;
+
+        /** */
+        @SuppressWarnings("ConstantConditions")
+        private BatchProcessingResult(long cnt, Object[] errKeys, SQLException ex) {
+            this.cnt = cnt;
+            this.errKeys = U.firstNotNull(errKeys, X.EMPTY_OBJECT_ARRAY);
+            this.ex = ex;
+        }
+    }
+
+    /** Result of splitting keys whose processing resulted into an exception from those skipped by
+     * logic of {@link EntryProcessor}s (most likely INSERT duplicates, or UPDATE/DELETE keys whose values
+     * had been modified concurrently), counting and collecting entry processor exceptions.
+     */
+    private final static class BatchProcessingErrorResult {
+        /** Keys that failed to be processed by {@link EntryProcessor} (not due to an exception). */
+        @NotNull
+        final Object[] errKeys;
+
+        /** Number of entries whose processing resulted into an exception. */
+        final int cnt;
+
+        /** Chain of exceptions corresponding to failed keys. Null if no keys yielded an exception. */
+        final SQLException ex;
+
+        /** */
+        @SuppressWarnings("ConstantConditions")
+        private BatchProcessingErrorResult(@NotNull Object[] errKeys, SQLException ex, int exCnt) {
+            errKeys = U.firstNotNull(errKeys, X.EMPTY_OBJECT_ARRAY);
+            // When exceptions count must be zero, exceptions chain must be not null, and vice versa.
+            assert exCnt == 0 ^ ex != null;
+
+            this.errKeys = errKeys;
+            this.cnt = exCnt;
+            this.ex = ex;
         }
     }
 

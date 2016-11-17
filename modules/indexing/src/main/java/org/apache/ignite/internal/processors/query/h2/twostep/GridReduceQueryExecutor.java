@@ -481,7 +481,6 @@ public class GridReduceQueryExecutor {
      * @param cancel Query cancel.
      * @return Rows iterator.
      */
-    @SuppressWarnings("unchecked")
     public Iterator<List<?>> query(
         GridCacheContext<?, ?> cctx,
         GridCacheTwoStepQuery qry,
@@ -588,8 +587,6 @@ public class GridReduceQueryExecutor {
 
                 List<GridCacheSqlQuery> mapQrys = qry.mapQueries();
 
-                boolean hasMapQrys = !F.isEmpty(mapQrys);
-
                 if (qry.explain()) {
                     mapQrys = new ArrayList<>(qry.mapQueries().size());
 
@@ -613,7 +610,7 @@ public class GridReduceQueryExecutor {
                 if (oldStyle && distributedJoins)
                     throw new CacheException("Failed to enable distributed joins. Topology contains older data nodes.");
 
-                if (hasMapQrys && send(nodes,
+                if (send(nodes,
                     oldStyle ?
                         new GridQueryRequest(qryReqId,
                             r.pageSize,
@@ -663,7 +660,7 @@ public class GridReduceQueryExecutor {
                         }
                     }
                 }
-                else if (hasMapQrys) // Send failed.
+                else // Send failed.
                     retry = true;
 
                 Iterator<List<?>> resIter = null;
@@ -713,8 +710,7 @@ public class GridReduceQueryExecutor {
                                 r.conn,
                                 rdc.query(),
                                 F.asList(rdc.parameters()),
-                                // Let's use statements cache for 2-step queries that are free from map overhead
-                                F.isEmpty(qry.mapQueries()),
+                                false,
                                 timeoutMillis,
                                 cancel);
 
@@ -1396,5 +1392,4 @@ public class GridReduceQueryExecutor {
             return copy(msg, n, partsMap);
         }
     }
-
 }

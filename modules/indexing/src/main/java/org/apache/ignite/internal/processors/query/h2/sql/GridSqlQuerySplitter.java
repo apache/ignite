@@ -160,31 +160,16 @@ public class GridSqlQuerySplitter {
         if (params == null)
             params = GridCacheSqlQuery.EMPTY_PARAMS;
 
+        Set<String> tbls = new HashSet<>();
+        Set<String> schemas = new HashSet<>();
+
         final Prepared prepared = prepared(stmt);
 
         GridSqlStatement gridStmt = new GridSqlQueryParser().parse(prepared);
 
         assert gridStmt instanceof GridSqlQuery;
 
-        return split((GridSqlQuery) gridStmt, params, collocatedGrpBy,
-            distributedJoins && !isCollocated(query(prepared)));
-    }
-
-    /**
-     * @param qry Grid SQL select or union.
-     * @param params Parameters.
-     * @param collocatedGrpBy Collocated query.
-     * @param distributedJoins If distributed joins enabled.
-     * @return Two step query.
-     */
-    static GridCacheTwoStepQuery split(
-        GridSqlQuery qry,
-        Object[] params,
-        final boolean collocatedGrpBy,
-        final boolean distributedJoins
-    ) {
-        Set<String> tbls = new HashSet<>();
-        Set<String> schemas = new HashSet<>();
+        GridSqlQuery qry = (GridSqlQuery) gridStmt;
 
         qry = collectAllTables(qry, schemas, tbls);
 
@@ -203,7 +188,7 @@ public class GridSqlQuerySplitter {
         // We do not have to look at each map query separately here, because if
         // the whole initial query is collocated, then all the map sub-queries
         // will be collocated as well.
-        res.distributedJoins(distributedJoins);
+        res.distributedJoins(distributedJoins && !isCollocated(query(prepared)));
 
         return res;
     }
@@ -299,7 +284,7 @@ public class GridSqlQuerySplitter {
      * @param collocatedGroupBy Whether the query has collocated GROUP BY keys.
      * @return Reduce query for the given map query.
      */
-    static GridCacheSqlQuery split(GridCacheTwoStepQuery res, int splitIdx, final GridSqlSelect mapQry,
+    private static GridCacheSqlQuery split(GridCacheTwoStepQuery res, int splitIdx, final GridSqlSelect mapQry,
         Object[] params, boolean collocatedGroupBy) {
         final boolean explain = mapQry.explain();
 
@@ -499,7 +484,7 @@ public class GridSqlQuerySplitter {
      * @param schemas Schema names.
      * @param tbls Tables.
      */
-    static void collectAllTablesInFrom(GridSqlElement from, final Set<String> schemas, final Set<String> tbls) {
+    private static void collectAllTablesInFrom(GridSqlElement from, final Set<String> schemas, final Set<String> tbls) {
         findTablesInFrom(from, new IgnitePredicate<GridSqlElement>() {
             @Override public boolean apply(GridSqlElement el) {
                 if (el instanceof GridSqlTable) {
@@ -530,7 +515,7 @@ public class GridSqlQuerySplitter {
      * @param c Closure each found table and subquery will be passed to. If returns {@code true} the we need to stop.
      * @return {@code true} If we have found.
      */
-    static boolean findTablesInFrom(GridSqlElement from, IgnitePredicate<GridSqlElement> c) {
+    private static boolean findTablesInFrom(GridSqlElement from, IgnitePredicate<GridSqlElement> c) {
         if (from == null)
             return false;
 
@@ -584,7 +569,7 @@ public class GridSqlQuerySplitter {
      * @param paramIdxs Parameter indexes.
      * @return Extracted parameters list.
      */
-    static List<Object> findParams(GridSqlQuery qry, Object[] params, ArrayList<Object> target,
+    private static List<Object> findParams(GridSqlQuery qry, Object[] params, ArrayList<Object> target,
         IntArray paramIdxs) {
         if (qry instanceof GridSqlSelect)
             return findParams((GridSqlSelect)qry, params, target, paramIdxs);
@@ -632,7 +617,7 @@ public class GridSqlQuerySplitter {
      * @param target Extracted parameters.
      * @param paramIdxs Parameter indexes.
      */
-    static void findParams(@Nullable GridSqlElement el, Object[] params, ArrayList<Object> target,
+    private static void findParams(@Nullable GridSqlElement el, Object[] params, ArrayList<Object> target,
         IntArray paramIdxs) {
         if (el == null)
             return;
