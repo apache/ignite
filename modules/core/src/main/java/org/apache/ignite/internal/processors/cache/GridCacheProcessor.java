@@ -4190,9 +4190,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         globalState = INACTIVE;
                     }
                     finally {
-                        activateInProgress = false;
-
                         cacheReadyFut = null;
+
+                        activateInProgress = false;
 
                         glStLock.unlock();
                     }
