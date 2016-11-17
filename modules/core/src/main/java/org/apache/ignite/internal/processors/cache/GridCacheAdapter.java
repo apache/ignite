@@ -5443,7 +5443,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Global clear all.
      */
-    @GridInternal
     private static class GlobalClearAllJob extends TopologyVersionAwareJob {
         /** */
         private static final long serialVersionUID = 0L;
@@ -5482,7 +5481,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Global clear keys.
      */
-    @GridInternal
     private static class GlobalClearKeySetJob<K> extends TopologyVersionAwareJob {
         /** */
         private static final long serialVersionUID = 0L;
@@ -5527,7 +5525,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Global clear all for near cache.
      */
-    @GridInternal
     private static class GlobalClearAllNearJob extends GlobalClearAllJob {
         /** */
         private static final long serialVersionUID = 0L;
@@ -5558,7 +5555,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Global clear keys for near cache.
      */
-    @GridInternal
     private static class GlobalClearKeySetNearJob<K> extends GlobalClearKeySetJob<K> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -5590,7 +5586,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Internal callable for partition size calculation.
      */
-    @GridInternal
     private static class PartitionSizeLongJob extends TopologyVersionAwareJob {
         /** */
         private static final long serialVersionUID = 0L;
@@ -5636,7 +5631,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Internal callable for global size calculation.
      */
-    @GridInternal
     private static class SizeJob extends TopologyVersionAwareJob {
         /** */
         private static final long serialVersionUID = 0L;
@@ -5677,7 +5671,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Internal callable for global size calculation.
      */
-    @GridInternal
     private static class SizeLongJob extends TopologyVersionAwareJob {
         /** */
         private static final long serialVersionUID = 0L;
@@ -6523,6 +6516,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Size task.
      */
+    @GridInternal
     private static class SizeTask extends ComputeTaskAdapter<Object, Integer> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -6588,6 +6582,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Size task.
      */
+    @GridInternal
     private static class SizeLongTask extends ComputeTaskAdapter<Object, Long> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -6653,6 +6648,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Partition Size Long task.
      */
+    @GridInternal
     private static class PartitionSizeLongTask extends ComputeTaskAdapter<Object, Long> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -6737,6 +6733,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Clear task.
      */
+    @GridInternal
     private static class ClearTask<K> extends ComputeTaskAdapter<Object, Object> {
         /** */
         private static final long serialVersionUID = 0L;
