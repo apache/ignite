@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Memory
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Text;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
 
@@ -312,7 +313,7 @@ namespace Apache.Ignite.Core.Impl.Memory
             
             int curPos = EnsureWriteCapacityAndShift(byteCnt);
 
-            return encoding.GetBytes(chars, charCnt, _data + curPos, byteCnt);
+            return BinaryUtils.StringToUtf8Bytes(chars, charCnt, byteCnt, encoding, _data + curPos);
         }
 
         /// <summary>

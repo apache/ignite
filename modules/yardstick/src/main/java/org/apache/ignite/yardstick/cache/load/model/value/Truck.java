@@ -18,6 +18,7 @@
 package org.apache.ignite.yardstick.cache.load.model.value;
 
 import java.io.Serializable;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Cache value class
@@ -40,11 +41,11 @@ public class Truck extends Car implements Serializable {
      * @param make mark of truck
      * @param weight weight
      * @param color Color.
-     * @param capacity capacity
+     * @param cap capacity
      */
-    public Truck(int id, String make, double weight, Color color, double capacity) {
+    public Truck(int id, String make, double weight, Color color, double cap) {
         super(id, make, weight, color);
-        this.cap = capacity;
+        this.cap = cap;
     }
 
     /**
@@ -59,5 +60,10 @@ public class Truck extends Car implements Serializable {
      */
     public void setCap(double cap) {
         this.cap = cap;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(Truck.class, this);
     }
 }

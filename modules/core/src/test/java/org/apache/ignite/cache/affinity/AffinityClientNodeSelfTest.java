@@ -57,14 +57,14 @@ public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE4 = "cache4";
 
+    /** */
+    private static final String CACHE5 = "cache5";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        if (gridName.equals(getTestGridName(NODE_CNT - 1)))
-            cfg.setClientMode(true);
 
         CacheConfiguration ccfg1 = new CacheConfiguration();
 
@@ -92,7 +92,18 @@ public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
         ccfg4.setName(CACHE4);
         ccfg4.setNodeFilter(new TestNodesFilter());
 
-        cfg.setCacheConfiguration(ccfg1, ccfg2, ccfg3, ccfg4);
+        CacheConfiguration ccfg5 = new CacheConfiguration();
+
+        ccfg5.setBackups(1);
+        ccfg5.setName(CACHE5);
+
+        if (gridName.equals(getTestGridName(NODE_CNT - 1))) {
+            cfg.setClientMode(true);
+
+            cfg.setCacheConfiguration(ccfg5);
+        }
+        else
+            cfg.setCacheConfiguration(ccfg1, ccfg2, ccfg3, ccfg4);
 
         return cfg;
     }
@@ -122,6 +133,8 @@ public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
         checkCache(CACHE3, 2);
 
         checkCache(CACHE4, 3);
+
+        checkCache(CACHE5, 2);
 
         Ignite client = ignite(NODE_CNT - 1);
 
@@ -157,6 +170,8 @@ public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
     private void checkCache(String cacheName, int expNodes) {
         log.info("Test cache: " + cacheName);
 
+        Affinity<Object> aff0 = ignite(0).affinity(cacheName);
+
         Ignite client = ignite(NODE_CNT - 1);
 
         assertTrue(client.configuration().isClientMode());
@@ -166,15 +181,63 @@ public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < NODE_CNT; i++) {
             Ignite ignite = ignite(i);
 
-            Affinity<Integer> aff = ignite.affinity(cacheName);
+            Affinity<Object> aff = ignite.affinity(cacheName);
 
             for (int part = 0; part < aff.partitions(); part++) {
                 Collection<ClusterNode> nodes = aff.mapPartitionToPrimaryAndBackups(part);
 
                 assertEquals(expNodes, nodes.size());
+                assertEquals(aff0.mapPartitionToPrimaryAndBackups(part), nodes);
 
                 assertFalse(nodes.contains(clientNode));
+
+                assertEquals(aff0.partition(part), aff.partition(part));
+
+                TestKey key = new TestKey(part, part + 1);
+
+                assertEquals(aff0.partition(key), aff.partition(key));
+                assertEquals(aff0.mapKeyToPrimaryAndBackups(key), aff.mapKeyToPrimaryAndBackups(key));
             }
+        }
+    }
+
+    /**
+     *
+     */
+    static class TestKey {
+        /** */
+        private int id;
+
+        /** */
+        @AffinityKeyMapped
+        private int affId;
+
+        /**
+         * @param id ID.
+         * @param affId Affinity ID.
+         */
+        public TestKey(int id, int affId) {
+            this.id = id;
+            this.affId = affId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TestKey testKey = (TestKey)o;
+
+            return id == testKey.id;
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return id;
         }
     }
 

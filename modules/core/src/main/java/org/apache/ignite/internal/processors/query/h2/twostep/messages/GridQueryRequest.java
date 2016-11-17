@@ -20,13 +20,16 @@ package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -35,8 +38,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Query request.
  */
+@Deprecated
 @IgniteCodeGeneratingFail
-public class GridQueryRequest implements Message {
+public class GridQueryRequest implements Message, GridCacheQueryMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -66,6 +70,9 @@ public class GridQueryRequest implements Message {
     @GridToStringInclude
     private int[] parts;
 
+    /** */
+    private int timeout;
+
     /**
      * Default constructor.
      */
@@ -81,6 +88,7 @@ public class GridQueryRequest implements Message {
      * @param topVer Topology version.
      * @param extraSpaces All space names participating in query other than {@code space}.
      * @param parts Optional partitions for unstable topology.
+     * @param timeout Timeout in millis.
      */
     public GridQueryRequest(
         long reqId,
@@ -89,7 +97,8 @@ public class GridQueryRequest implements Message {
         Collection<GridCacheSqlQuery> qrys,
         AffinityTopologyVersion topVer,
         List<String> extraSpaces,
-        int[] parts) {
+        int[] parts,
+        int timeout) {
         this.reqId = reqId;
         this.pageSize = pageSize;
         this.space = space;
@@ -98,6 +107,7 @@ public class GridQueryRequest implements Message {
         this.topVer = topVer;
         this.extraSpaces = extraSpaces;
         this.parts = parts;
+        this.timeout = timeout;
     }
 
     /**
@@ -163,10 +173,35 @@ public class GridQueryRequest implements Message {
     }
 
     /**
+     * @return Timeout.
+     */
+    public int timeout() {
+        return this.timeout;
+    }
+
+    /**
      * @return Queries.
      */
-    public Collection<GridCacheSqlQuery> queries() throws IgniteCheckedException {
+    public Collection<GridCacheSqlQuery> queries() {
         return qrys;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void marshall(Marshaller m) {
+        if (F.isEmpty(qrys))
+            return;
+
+        for (GridCacheSqlQuery qry : qrys)
+            qry.marshall(m);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unmarshall(Marshaller m, GridKernalContext ctx) {
+        if (F.isEmpty(qrys))
+            return;
+
+        for (GridCacheSqlQuery qry : qrys)
+            qry.unmarshall(m, ctx);
     }
 
     /** {@inheritDoc} */
@@ -229,6 +264,12 @@ public class GridQueryRequest implements Message {
 
             case 6:
                 if (!writer.writeIntArray("parts", parts))
+                    return false;
+
+                writer.incrementState();
+
+            case 7:
+                if (!writer.writeInt("timeout", timeout))
                     return false;
 
                 writer.incrementState();
@@ -302,6 +343,14 @@ public class GridQueryRequest implements Message {
 
                 reader.incrementState();
 
+            case 7:
+                timeout = reader.readInt("timeout");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridQueryRequest.class);
@@ -314,6 +363,6 @@ public class GridQueryRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 8;
     }
 }

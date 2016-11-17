@@ -26,10 +26,13 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryFuture;
@@ -42,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocal;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxOnePhaseCommitAckRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
@@ -76,6 +80,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishFuture.FINISH_NEAR_ONE_PHASE_SINCE;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
@@ -92,6 +97,15 @@ public class IgniteTxHandler {
     /** Logger. */
     private IgniteLogger log;
 
+    /** */
+    private final IgniteLogger txPrepareMsgLog;
+
+    /** */
+    private final IgniteLogger txFinishMsgLog;
+
+    /** */
+    private final IgniteLogger txRecoveryMsgLog;
+
     /** Shared cache context. */
     private GridCacheSharedContext<?, ?> ctx;
 
@@ -100,8 +114,12 @@ public class IgniteTxHandler {
      * @param req Request.
      * @return Prepare future.
      */
-    public IgniteInternalFuture<?> processNearTxPrepareRequest(final UUID nearNodeId,
-        final GridNearTxPrepareRequest req) {
+    public IgniteInternalFuture<?> processNearTxPrepareRequest(final UUID nearNodeId, GridNearTxPrepareRequest req) {
+        if (txPrepareMsgLog.isDebugEnabled()) {
+            txPrepareMsgLog.debug("Received near prepare request [txId=" + req.version() +
+                ", node=" + nearNodeId + ']');
+        }
+
         IgniteInternalFuture<GridNearTxPrepareResponse> fut = prepareTx(nearNodeId, null, req);
 
         assert req.txState() != null || fut.error() != null ||
@@ -117,6 +135,10 @@ public class IgniteTxHandler {
         this.ctx = ctx;
 
         log = ctx.logger(IgniteTxHandler.class);
+
+        txRecoveryMsgLog = ctx.logger(CU.TX_MSG_RECOVERY_LOG_CATEGORY);
+        txPrepareMsgLog = ctx.logger(CU.TX_MSG_PREPARE_LOG_CATEGORY);
+        txFinishMsgLog = ctx.logger(CU.TX_MSG_FINISH_LOG_CATEGORY);
 
         ctx.io().addHandler(0, GridNearTxPrepareRequest.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
@@ -157,6 +179,12 @@ public class IgniteTxHandler {
         ctx.io().addHandler(0, GridDhtTxFinishRequest.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
                 processDhtTxFinishRequest(nodeId, (GridDhtTxFinishRequest)msg);
+            }
+        });
+
+        ctx.io().addHandler(0, GridDhtTxOnePhaseCommitAckRequest.class, new CI2<UUID, GridCacheMessage>() {
+            @Override public void apply(UUID nodeId, GridCacheMessage msg) {
+                processDhtTxOnePhaseCommitAckRequest(nodeId, (GridDhtTxOnePhaseCommitAckRequest)msg);
             }
         });
 
@@ -272,8 +300,11 @@ public class IgniteTxHandler {
         ClusterNode nearNode = ctx.node(nearNodeId);
 
         if (nearNode == null) {
-            if (log.isDebugEnabled())
-                log.debug("Received transaction request from node that left grid (will ignore): " + nearNodeId);
+            if (txPrepareMsgLog.isDebugEnabled()) {
+                txPrepareMsgLog.debug("Received near prepare from node that left grid (will ignore) [" +
+                    "txId=" + req.version() +
+                    ", node=" + nearNodeId + ']');
+            }
 
             return null;
         }
@@ -323,9 +354,11 @@ public class IgniteTxHandler {
 
             try {
                 if (top != null && needRemap(req.topologyVersion(), top.topologyVersion(), req)) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("Client topology version mismatch, need remap transaction [" +
-                            "reqTopVer=" + req.topologyVersion() +
+                    if (txPrepareMsgLog.isDebugEnabled()) {
+                        txPrepareMsgLog.debug("Topology version mismatch for near prepare, need remap transaction [" +
+                            "txId=" + req.version() +
+                            ", node=" + nearNodeId +
+                            ", reqTopVer=" + req.topologyVersion() +
                             ", locTopVer=" + top.topologyVersion() +
                             ", req=" + req + ']');
                     }
@@ -342,16 +375,25 @@ public class IgniteTxHandler {
                         req.deployInfo() != null);
 
                     try {
-                        ctx.io().send(nearNode, res, req.policy());
+                        ctx.io().send(nearNodeId, res, req.policy());
+
+                        if (txPrepareMsgLog.isDebugEnabled()) {
+                            txPrepareMsgLog.debug("Sent remap response for near prepare [txId=" + req.version() +
+                                ", node=" + nearNodeId + ']');
+                        }
                     }
                     catch (ClusterTopologyCheckedException ignored) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to send client tx remap response, client node failed " +
-                                "[node=" + nearNode + ", req=" + req + ']');
+                        if (txPrepareMsgLog.isDebugEnabled()) {
+                            txPrepareMsgLog.debug("Failed to send remap response for near prepare, node failed [" +
+                                "txId=" + req.version() +
+                                ", node=" + nearNodeId + ']');
+                        }
                     }
                     catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to send client tx remap response " +
-                            "[node=" + nearNode + ", req=" + req + ']', e);
+                        U.error(txPrepareMsgLog, "Failed to send remap response for near prepare " +
+                            "[txId=" + req.version() +
+                            ", node=" + nearNodeId +
+                            ", req=" + req + ']', e);
                     }
 
                     return new GridFinishedFuture<>(res);
@@ -503,11 +545,16 @@ public class IgniteTxHandler {
      * @param res Response.
      */
     private void processNearTxPrepareResponse(UUID nodeId, GridNearTxPrepareResponse res) {
+        if (txPrepareMsgLog.isDebugEnabled())
+            txPrepareMsgLog.debug("Received near prepare response [txId=" + res.version() + ", node=" + nodeId + ']');
+
         GridNearTxPrepareFutureAdapter fut = (GridNearTxPrepareFutureAdapter)ctx.mvcc()
             .<IgniteInternalTx>mvccFuture(res.version(), res.futureId());
 
         if (fut == null) {
-            U.warn(log, "Failed to find future for prepare response [sender=" + nodeId + ", res=" + res + ']');
+            U.warn(log, "Failed to find future for near prepare response [txId=" + res.version() +
+                ", node=" + nodeId +
+                ", res=" + res + ']');
 
             return;
         }
@@ -526,13 +573,19 @@ public class IgniteTxHandler {
      * @param res Response.
      */
     private void processNearTxFinishResponse(UUID nodeId, GridNearTxFinishResponse res) {
+        if (txFinishMsgLog.isDebugEnabled())
+            txFinishMsgLog.debug("Received near finish response [txId=" + res.xid() + ", node=" + nodeId + ']');
+
         ctx.tm().onFinishedRemote(nodeId, res.threadId());
 
         GridNearTxFinishFuture fut = (GridNearTxFinishFuture)ctx.mvcc().<IgniteInternalTx>future(res.futureId());
 
         if (fut == null) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to find future for finish response [sender=" + nodeId + ", res=" + res + ']');
+            if (txFinishMsgLog.isDebugEnabled()) {
+                txFinishMsgLog.debug("Failed to find future for near finish response [txId=" + res.xid() +
+                    ", node=" + nodeId +
+                    ", res=" + res + ']');
+            }
 
             return;
         }
@@ -548,11 +601,17 @@ public class IgniteTxHandler {
         GridDhtTxPrepareFuture fut = (GridDhtTxPrepareFuture)ctx.mvcc().mvccFuture(res.version(), res.futureId());
 
         if (fut == null) {
-            if (log.isDebugEnabled())
-                log.debug("Received response for unknown future (will ignore): " + res);
+            if (txPrepareMsgLog.isDebugEnabled()) {
+                txPrepareMsgLog.debug("Failed to find future for dht prepare response [txId=null" +
+                    ", dhtTxId=" + res.version() +
+                    ", node=" + nodeId +
+                    ", res=" + res + ']');
+            }
 
             return;
         }
+        else if (txPrepareMsgLog.isDebugEnabled())
+            txPrepareMsgLog.debug("Received dht prepare response [txId=" + fut.tx().nearXidVersion() + ", node=" + nodeId + ']');
 
         IgniteInternalTx tx = fut.tx();
 
@@ -575,10 +634,19 @@ public class IgniteTxHandler {
             GridNearTxFinishFuture fut = (GridNearTxFinishFuture)ctx.mvcc().<IgniteInternalTx>future(res.futureId());
 
             if (fut == null) {
-                if (log.isDebugEnabled())
-                    log.debug("Received response for unknown future (will ignore): " + res);
+                if (txFinishMsgLog.isDebugEnabled()) {
+                    txFinishMsgLog.debug("Failed to find future for dht finish check committed response [txId=null" +
+                        ", dhtTxId=" + res.xid() +
+                        ", node=" + nodeId +
+                        ", res=" + res + ']');
+                }
 
                 return;
+            }
+            else if (txFinishMsgLog.isDebugEnabled()) {
+                txFinishMsgLog.debug("Received dht finish check committed response [txId=" + fut.tx().nearXidVersion() +
+                    ", dhtTxId=" + res.xid() +
+                    ", node=" + nodeId + ']');
             }
 
             fut.onResult(nodeId, res);
@@ -587,10 +655,19 @@ public class IgniteTxHandler {
             GridDhtTxFinishFuture fut = (GridDhtTxFinishFuture)ctx.mvcc().<IgniteInternalTx>future(res.futureId());
 
             if (fut == null) {
-                if (log.isDebugEnabled())
-                    log.debug("Received response for unknown future (will ignore): " + res);
+                if (txFinishMsgLog.isDebugEnabled()) {
+                    txFinishMsgLog.debug("Failed to find future for dht finish response [txId=null" +
+                        ", dhtTxId=" + res.xid() +
+                        ", node=" + nodeId +
+                        ", res=" + res);
+                }
 
                 return;
+            }
+            else if (txFinishMsgLog.isDebugEnabled()) {
+                txFinishMsgLog.debug("Received dht finish response [txId=" + fut.tx().nearXidVersion() +
+                    ", dhtTxId=" + res.xid() +
+                    ", node=" + nodeId + ']');
             }
 
             fut.onResult(nodeId, res);
@@ -604,9 +681,12 @@ public class IgniteTxHandler {
      */
     @Nullable public IgniteInternalFuture<IgniteInternalTx> processNearTxFinishRequest(UUID nodeId,
         GridNearTxFinishRequest req) {
+        if (txFinishMsgLog.isDebugEnabled())
+            txFinishMsgLog.debug("Received near finish request [txId=" + req.version() + ", node=" + nodeId + ']');
+
         IgniteInternalFuture<IgniteInternalTx> fut = finish(nodeId, null, req);
 
-        assert req.txState() != null || fut.error() != null ||
+        assert req.txState() != null || (fut != null && fut.error() != null) ||
             (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
 
         return fut;
@@ -625,6 +705,10 @@ public class IgniteTxHandler {
 
         if (locTx != null)
             req.txState(locTx.txState());
+
+        // 'baseVersion' message field is re-used for version to be added in completed versions.
+        if (!req.commit() && req.baseVersion() != null)
+            ctx.tm().addRolledbackTx(null, req.baseVersion());
 
         // Transaction on local cache only.
         if (locTx != null && !locTx.nearLocallyMapped() && !locTx.colocatedLocallyMapped())
@@ -692,9 +776,11 @@ public class IgniteTxHandler {
         if (tx == null && !req.explicitLock()) {
             assert locTx == null : "DHT local tx should never be lost for near local tx: " + locTx;
 
-            U.warn(log, "Received finish request for completed transaction (the message may be too late " +
-                "and transaction could have been DGCed by now) [commit=" + req.commit() +
-                ", xid=" + req.version() + ']');
+            U.warn(txFinishMsgLog, "Received finish request for completed transaction (the message may be too late) [" +
+                "txId=" + req.version() +
+                ", dhtTxId=" + dhtVer +
+                ", node=" + nodeId +
+                ", commit=" + req.commit() + ']');
 
             // Always send finish response.
             GridCacheMessage res = new GridNearTxFinishResponse(req.version(), req.threadId(), req.futureId(),
@@ -702,17 +788,31 @@ public class IgniteTxHandler {
 
             try {
                 ctx.io().send(nodeId, res, req.policy());
+
+                if (txFinishMsgLog.isDebugEnabled()) {
+                    txFinishMsgLog.debug("Sent near finish response for completed tx [txId=" + req.version() +
+                        ", dhtTxId=" + dhtVer +
+                        ", node=" + nodeId + ']');
+                }
             }
             catch (Throwable e) {
                 // Double-check.
                 if (ctx.discovery().node(nodeId) == null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Node left while sending finish response [nodeId=" + nodeId + ", res=" + res +
-                            ']');
+                    if (txFinishMsgLog.isDebugEnabled()) {
+                        txFinishMsgLog.debug("Failed to send near finish response for completed tx, node failed [" +
+                            "txId=" + req.version() +
+                            ", dhtTxId=" + dhtVer +
+                            ", node=" + nodeId + ']');
+                    }
                 }
-                else
-                    U.error(log, "Failed to send finish response to node [nodeId=" + nodeId + ", " +
-                        "res=" + res + ']', e);
+                else {
+                    U.error(txFinishMsgLog, "Failed to send near finish response for completed tx, node failed [" +
+                        "txId=" + req.version() +
+                        ", dhtTxId=" + dhtVer +
+                        ", node=" + nodeId +
+                        ", req=" + req +
+                        ", res=" + res + ']', e);
+                }
 
                 if (e instanceof Error)
                     throw (Error)e;
@@ -825,15 +925,17 @@ public class IgniteTxHandler {
      * @param nodeId Sender node ID.
      * @param req Request.
      */
-    protected final void processDhtTxPrepareRequest(UUID nodeId, GridDhtTxPrepareRequest req) {
+    protected final void processDhtTxPrepareRequest(final UUID nodeId, final GridDhtTxPrepareRequest req) {
+        if (txPrepareMsgLog.isDebugEnabled()) {
+            txPrepareMsgLog.debug("Received dht prepare request [txId=" + req.nearXidVersion() +
+                ", dhtTxId=" + req.version() +
+                ", node=" + nodeId + ']');
+        }
+
         assert nodeId != null;
         assert req != null;
 
         assert req.transactionNodes() != null;
-
-        if (log.isDebugEnabled())
-            log.debug("Processing dht tx prepare request [locNodeId=" + ctx.localNodeId() +
-                ", nodeId=" + nodeId + ", req=" + req + ']');
 
         GridDhtTxRemote dhtTx = null;
         GridNearTxRemote nearTx = null;
@@ -864,14 +966,15 @@ public class IgniteTxHandler {
 
                 if (dhtTx != null) {
                     dhtTx.onePhaseCommit(true);
+                    dhtTx.needReturnValue(req.needReturnValue());
 
-                    finish(nodeId, dhtTx, req);
+                    finish(dhtTx, req);
                 }
 
                 if (nearTx != null) {
                     nearTx.onePhaseCommit(true);
 
-                    finish(nodeId, nearTx, req);
+                    finish(nearTx, req);
                 }
             }
         }
@@ -896,29 +999,63 @@ public class IgniteTxHandler {
                 req.deployInfo() != null);
         }
 
-        try {
-            // Reply back to sender.
-            ctx.io().send(nodeId, res, req.policy());
-        }
-        catch (IgniteCheckedException e) {
-            if (e instanceof ClusterTopologyCheckedException) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to send tx response to remote node (node left grid) [node=" + nodeId +
-                        ", xid=" + req.version());
+        if (req.onePhaseCommit()) {
+            IgniteInternalFuture completeFut;
+
+            IgniteInternalFuture<IgniteInternalTx> dhtFin = dhtTx == null ?
+                null : dhtTx.done() ? null : dhtTx.finishFuture();
+
+            final IgniteInternalFuture<IgniteInternalTx> nearFin = nearTx == null ?
+                null : nearTx.done() ? null : nearTx.finishFuture();
+
+            if (dhtFin != null && nearFin != null) {
+                GridCompoundFuture fut = new GridCompoundFuture();
+
+                fut.add(dhtFin);
+                fut.add(nearFin);
+
+                fut.markInitialized();
+
+                completeFut = fut;
             }
             else
-                U.warn(log, "Failed to send tx response to remote node (will rollback transaction) [node=" + nodeId +
-                    ", xid=" + req.version() + ", err=" + e.getMessage() + ']');
+                completeFut = dhtFin != null ? dhtFin : nearFin;
 
-            if (nearTx != null)
-                nearTx.rollback();
+            if (completeFut != null) {
+                final GridDhtTxPrepareResponse res0 = res;
+                final GridDhtTxRemote dhtTx0 = dhtTx;
+                final GridNearTxRemote nearTx0 = nearTx;
 
-            if (dhtTx != null)
-                dhtTx.rollback();
+                completeFut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
+                    @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
+                        sendReply(nodeId, req, res0, dhtTx0, nearTx0);
+                    }
+                });
+            }
+            else
+                sendReply(nodeId, req, res, dhtTx, nearTx);
         }
+        else
+            sendReply(nodeId, req, res, dhtTx, nearTx);
 
         assert req.txState() != null || res.error() != null ||
             (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param req Request.
+     */
+    protected final void processDhtTxOnePhaseCommitAckRequest(final UUID nodeId,
+        final GridDhtTxOnePhaseCommitAckRequest req) {
+        assert nodeId != null;
+        assert req != null;
+
+        if (log.isDebugEnabled())
+            log.debug("Processing dht tx one phase commit ack request [nodeId=" + nodeId + ", req=" + req + ']');
+
+        for (GridCacheVersion ver : req.versions())
+            ctx.tm().removeTxReturn(ver);
     }
 
     /**
@@ -930,20 +1067,17 @@ public class IgniteTxHandler {
         assert nodeId != null;
         assert req != null;
 
-        if (log.isDebugEnabled())
-            log.debug("Processing dht tx finish request [nodeId=" + nodeId + ", req=" + req + ']');
-
         if (req.checkCommitted()) {
             boolean committed = req.waitRemoteTransactions() || !ctx.tm().addRolledbackTx(null, req.version());
 
             if (!committed || !req.syncCommit())
-                sendReply(nodeId, req, committed);
+                sendReply(nodeId, req, committed, null);
             else {
                 IgniteInternalFuture<?> fut = ctx.tm().remoteTxFinishFuture(req.version());
 
                 fut.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> fut) {
-                        sendReply(nodeId, req, true);
+                        sendReply(nodeId, req, true, null);
                     }
                 });
             }
@@ -951,8 +1085,17 @@ public class IgniteTxHandler {
             return;
         }
 
-        GridDhtTxRemote dhtTx = ctx.tm().tx(req.version());
+        final GridDhtTxRemote dhtTx = ctx.tm().tx(req.version());
         GridNearTxRemote nearTx = ctx.tm().nearTx(req.version());
+
+        final GridCacheVersion nearTxId =
+            (dhtTx != null ? dhtTx.nearXidVersion() : (nearTx != null ? nearTx.nearXidVersion() : null));
+
+        if (txFinishMsgLog.isDebugEnabled()) {
+            txFinishMsgLog.debug("Received dht finish request [txId=" + nearTxId +
+                ", dhtTxId=" + req.version() +
+                ", node=" + nodeId + ']');
+        }
 
         // Safety - local transaction will finish explicitly.
         if (nearTx != null && nearTx.local())
@@ -969,7 +1112,7 @@ public class IgniteTxHandler {
             IgniteInternalFuture<IgniteInternalTx> dhtFin = dhtTx == null ?
                 null : dhtTx.done() ? null : dhtTx.finishFuture();
 
-            IgniteInternalFuture<IgniteInternalTx> nearFin = nearTx == null ?
+            final IgniteInternalFuture<IgniteInternalTx> nearFin = nearTx == null ?
                 null : nearTx.done() ? null : nearTx.finishFuture();
 
             if (dhtFin != null && nearFin != null) {
@@ -988,15 +1131,15 @@ public class IgniteTxHandler {
             if (completeFut != null) {
                 completeFut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
                     @Override public void apply(IgniteInternalFuture<IgniteInternalTx> igniteTxIgniteFuture) {
-                        sendReply(nodeId, req, true);
+                        sendReply(nodeId, req, true, nearTxId);
                     }
                 });
             }
             else
-                sendReply(nodeId, req, true);
+                sendReply(nodeId, req, true, nearTxId);
         }
         else
-            sendReply(nodeId, req, true);
+            sendReply(nodeId, req, true, null);
 
         assert req.txState() != null || (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
     }
@@ -1074,12 +1217,10 @@ public class IgniteTxHandler {
     }
 
     /**
-     * @param nodeId Node ID.
      * @param tx Transaction.
      * @param req Request.
      */
     protected void finish(
-        UUID nodeId,
         GridDistributedTxRemoteAdapter tx,
         GridDhtTxPrepareRequest req) throws IgniteTxHeuristicCheckedException {
         assert tx != null : "No transaction for one-phase commit prepare request: " + req;
@@ -1112,20 +1253,86 @@ public class IgniteTxHandler {
     }
 
     /**
+     * @param nodeId Node id.
+     * @param req Request.
+     * @param res Response.
+     * @param dhtTx Dht tx.
+     * @param nearTx Near tx.
+     */
+    protected void sendReply(UUID nodeId,
+        GridDhtTxPrepareRequest req,
+        GridDhtTxPrepareResponse res,
+        GridDhtTxRemote dhtTx,
+        GridNearTxRemote nearTx) {
+        try {
+            // Reply back to sender.
+            ctx.io().send(nodeId, res, req.policy());
+
+            if (txPrepareMsgLog.isDebugEnabled()) {
+                txPrepareMsgLog.debug("Sent dht prepare response [txId=" + req.nearXidVersion() +
+                    ", dhtTxId=" + req.version() +
+                    ", node=" + nodeId + ']');
+            }
+        }
+        catch (IgniteCheckedException e) {
+            if (e instanceof ClusterTopologyCheckedException) {
+                if (txPrepareMsgLog.isDebugEnabled()) {
+                    txPrepareMsgLog.debug("Failed to send dht prepare response, node left [txId=" + req.nearXidVersion() +
+                        ", dhtTxId=" + req.version() +
+                        ", node=" + nodeId + ']');
+                }
+            }
+            else {
+                U.warn(log, "Failed to send tx response to remote node (will rollback transaction) [" +
+                    "txId=" + req.nearXidVersion() +
+                    ", dhtTxId=" + req.version() +
+                    ", node=" + nodeId +
+                    ", err=" + e.getMessage() + ']');
+            }
+
+            if (nearTx != null)
+                nearTx.rollback();
+
+            if (dhtTx != null)
+                dhtTx.rollback();
+        }
+    }
+
+    /**
      * Sends tx finish response to remote node, if response is requested.
      *
      * @param nodeId Node id that originated finish request.
      * @param req Request.
      * @param committed {@code True} if transaction committed on this node.
+     * @param nearTxId Near tx version.
      */
-    protected void sendReply(UUID nodeId, GridDhtTxFinishRequest req, boolean committed) {
+    protected void sendReply(UUID nodeId, GridDhtTxFinishRequest req, boolean committed, GridCacheVersion nearTxId) {
         if (req.replyRequired() || req.checkCommitted()) {
             GridDhtTxFinishResponse res = new GridDhtTxFinishResponse(req.version(), req.futureId(), req.miniId());
 
             if (req.checkCommitted()) {
                 res.checkCommitted(true);
 
-                if (!committed) {
+                if (committed) {
+                    if (req.needReturnValue()) {
+                        try {
+                            GridCacheReturnCompletableWrapper wrapper = ctx.tm().getCommittedTxReturn(req.version());
+
+                            if (wrapper != null)
+                                res.returnValue(wrapper.fut().get());
+                            else
+                                assert !ctx.discovery().alive(nodeId) : nodeId;
+                        }
+                        catch (IgniteCheckedException e) {
+                            if (txFinishMsgLog.isDebugEnabled()) {
+                                txFinishMsgLog.debug("Failed to gain entry processor return value. [txId=" + nearTxId +
+                                    ", dhtTxId=" + req.version() +
+                                    ", node=" + nodeId + ']');
+                            }
+                        }
+                    }
+                }
+                else {
                     ClusterTopologyCheckedException cause =
                         new ClusterTopologyCheckedException("Primary node left grid.");
 
@@ -1136,18 +1343,39 @@ public class IgniteTxHandler {
 
             try {
                 ctx.io().send(nodeId, res, req.policy());
+
+                if (txFinishMsgLog.isDebugEnabled()) {
+                    txFinishMsgLog.debug("Sent dht tx finish response [txId=" + nearTxId +
+                        ", dhtTxId=" + req.version() +
+                        ", node=" + nodeId +
+                        ", checkCommitted=" + req.checkCommitted() + ']');
+                }
             }
             catch (Throwable e) {
                 // Double-check.
                 if (ctx.discovery().node(nodeId) == null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Node left while sending finish response [nodeId=" + nodeId + ", res=" + res + ']');
+                    if (txFinishMsgLog.isDebugEnabled()) {
+                        txFinishMsgLog.debug("Node left while send dht tx finish response [txId=" + nearTxId +
+                            ", dhtTxId=" + req.version() +
+                            ", node=" + nodeId + ']');
+                    }
                 }
-                else
-                    U.error(log, "Failed to send finish response to node [nodeId=" + nodeId + ", res=" + res + ']', e);
+                else {
+                    U.error(log, "Failed to send finish response to node [txId=" + nearTxId +
+                        ", dhtTxId=" + req.version() +
+                        ", nodeId=" + nodeId +
+                        ", res=" + res + ']', e);
+                }
 
                 if (e instanceof Error)
                     throw (Error)e;
+            }
+        }
+        else {
+            if (txFinishMsgLog.isDebugEnabled()) {
+                txFinishMsgLog.debug("Skip send dht tx finish response [txId=" + nearTxId +
+                    ", dhtTxId=" + req.version() +
+                    ", node=" + nodeId + ']');
             }
         }
     }
@@ -1239,6 +1467,49 @@ public class IgniteTxHandler {
 
                             if (info != null && !info.isNew() && !info.isDeleted())
                                 res.addPreloadEntry(info);
+                        }
+
+                        if (cacheCtx.readThroughConfigured() &&
+                            !entry.skipStore() &&
+                            entry.op() == TRANSFORM &&
+                            entry.oldValueOnPrimary() &&
+                            !entry.hasValue()) {
+                            while (true) {
+                                try {
+                                    GridCacheEntryEx cached = entry.cached();
+
+                                    if (cached == null)
+                                        cached = cacheCtx.cache().entryEx(entry.key(), req.topologyVersion());
+
+                                    CacheObject val = cached.innerGet(
+                                        /*ver*/null,
+                                        tx,
+                                        /*readSwap*/true,
+                                        /*readThrough*/false,
+                                        /*updateMetrics*/false,
+                                        /*evt*/false,
+                                        /*tmp*/false,
+                                        tx.subjectId(),
+                                        /*transformClo*/null,
+                                        tx.resolveTaskName(),
+                                        /*expiryPlc*/null,
+                                        /*keepBinary*/true);
+
+                                    if (val == null)
+                                        val = cacheCtx.toCacheObject(cacheCtx.store().load(null, entry.key()));
+
+                                    if (val != null)
+                                        entry.readValue(val);
+
+                                    break;
+                                }
+                                catch (GridCacheEntryRemovedException e) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Got entry removed exception, will retry: " + entry.txKey());
+
+                                    entry.cached(null);
+                                }
+                            }
                         }
                     }
                     catch (GridDhtInvalidPartitionException e) {
@@ -1363,8 +1634,10 @@ public class IgniteTxHandler {
      */
     protected void processCheckPreparedTxRequest(final UUID nodeId,
         final GridCacheTxRecoveryRequest req) {
-        if (log.isDebugEnabled())
-            log.debug("Processing check prepared transaction requests [nodeId=" + nodeId + ", req=" + req + ']');
+        if (txRecoveryMsgLog.isDebugEnabled()) {
+            txRecoveryMsgLog.debug("Received tx recovery request [txId=" + req.nearXidVersion() +
+                ", node=" + nodeId + ']');
+        }
 
         IgniteInternalFuture<Boolean> fut = req.nearTxCheck() ? ctx.tm().txCommitted(req.nearXidVersion()) :
             ctx.tm().txsPreparedOrCommitted(req.nearXidVersion(), req.transactions());
@@ -1411,23 +1684,32 @@ public class IgniteTxHandler {
     private void sendCheckPreparedResponse(UUID nodeId,
         GridCacheTxRecoveryRequest req,
         boolean prepared) {
-        GridCacheTxRecoveryResponse res =
-            new GridCacheTxRecoveryResponse(req.version(), req.futureId(), req.miniId(), prepared,
-                req.deployInfo() != null);
+        GridCacheTxRecoveryResponse res = new GridCacheTxRecoveryResponse(req.version(),
+            req.futureId(),
+            req.miniId(),
+            prepared,
+            req.deployInfo() != null);
 
         try {
-            if (log.isDebugEnabled())
-                log.debug("Sending check prepared transaction response [nodeId=" + nodeId + ", res=" + res + ']');
-
             ctx.io().send(nodeId, res, req.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+
+            if (txRecoveryMsgLog.isDebugEnabled()) {
+                txRecoveryMsgLog.debug("Sent tx recovery response [txId=" + req.nearXidVersion() +
+                    ", node=" + nodeId + ", res=" + res + ']');
+            }
         }
         catch (ClusterTopologyCheckedException ignored) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to send check prepared transaction response (did node leave grid?) [nodeId=" +
-                    nodeId + ", res=" + res + ']');
+            if (txRecoveryMsgLog.isDebugEnabled())
+                txRecoveryMsgLog.debug("Failed to send tx recovery response, node failed [" +
+                    ", txId=" + req.nearXidVersion() +
+                    ", node=" + nodeId +
+                    ", res=" + res + ']');
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to send response to node [nodeId=" + nodeId + ", res=" + res + ']', e);
+            U.error(txRecoveryMsgLog, "Failed to send tx recovery response [txId=" + req.nearXidVersion() +
+                ", node=" + nodeId +
+                ", req=" + req +
+                ", res=" + res + ']', e);
         }
     }
 
@@ -1436,14 +1718,19 @@ public class IgniteTxHandler {
      * @param res Response.
      */
     protected void processCheckPreparedTxResponse(UUID nodeId, GridCacheTxRecoveryResponse res) {
-        if (log.isDebugEnabled())
-            log.debug("Processing check prepared transaction response [nodeId=" + nodeId + ", res=" + res + ']');
+        if (txRecoveryMsgLog.isDebugEnabled()) {
+            txRecoveryMsgLog.debug("Received tx recovery response [txId=" + res.version() +
+                ", node=" + nodeId +
+                ", res=" + res + ']');
+        }
 
         GridCacheTxRecoveryFuture fut = (GridCacheTxRecoveryFuture)ctx.mvcc().future(res.futureId());
 
         if (fut == null) {
-            if (log.isDebugEnabled())
-                log.debug("Received response for unknown future (will ignore): " + res);
+            if (txRecoveryMsgLog.isDebugEnabled()) {
+                txRecoveryMsgLog.debug("Failed to find future for tx recovery response [txId=" + res.version() +
+                    ", node=" + nodeId + ", res=" + res + ']');
+            }
 
             return;
         }

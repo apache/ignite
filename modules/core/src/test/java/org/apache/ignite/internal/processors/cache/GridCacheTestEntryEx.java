@@ -349,7 +349,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public Cache.Entry wrapLazyValue() {
+    @Override public Cache.Entry wrapLazyValue(boolean keepBinary) {
         assert false;
 
         return null;
@@ -432,8 +432,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         @Nullable IgniteInternalTx tx,
         boolean readSwap,
         boolean readThrough,
-        boolean failFast,
-        boolean unmarshal,
         boolean updateMetrics,
         boolean evt,
         boolean tmp,
@@ -479,6 +477,8 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         boolean evt,
         boolean metrics,
         boolean keepBinary,
+        boolean hasOldVal,
+        @Nullable CacheObject oldVal,
         AffinityTopologyVersion topVer,
         CacheEntryPredicate[] filter,
         GridDrType drType,
@@ -558,6 +558,8 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         boolean evt,
         boolean metrics,
         boolean keepBinary,
+        boolean oldValPresent,
+        @Nullable CacheObject oldVal,
         AffinityTopologyVersion topVer,
         CacheEntryPredicate[] filter,
         GridDrType drType,
@@ -667,7 +669,8 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         long expireTime,
         boolean preload,
         AffinityTopologyVersion topVer,
-        GridDrType drType
+        GridDrType drType,
+        boolean fromStore
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert false;
 

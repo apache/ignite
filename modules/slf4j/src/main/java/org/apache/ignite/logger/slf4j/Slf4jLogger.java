@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
  * Here is an example of configuring SLF4J logger in Ignite configuration Spring file:
  * <pre name="code" class="xml">
  *      &lt;property name="gridLogger"&gt;
- *          &lt;bean class="org.apache.ignite.logger.slf4j.GridSlf4jLogger"/&gt;
+ *          &lt;bean class="org.apache.ignite.logger.slf4j.Slf4jLogger"/&gt;
  *      &lt;/property&gt;
  * </pre>
  * <p>

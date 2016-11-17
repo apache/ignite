@@ -70,7 +70,7 @@
                                         <property name="keyFields">
                                             <list>
                                                 <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
-                                                    <property name="databaseFieldName" value="id"/>
+                                                    <property name="databaseFieldName" value="ID"/>
                                                     <property name="databaseFieldType">
                                                         <util:constant static-field="java.sql.Types.INTEGER"/>
                                                     </property>
@@ -83,7 +83,7 @@
                                         <property name="valueFields">
                                             <list>
                                                 <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
-                                                    <property name="databaseFieldName" value="name"/>
+                                                    <property name="databaseFieldName" value="NAME"/>
                                                     <property name="databaseFieldType">
                                                         <util:constant static-field="java.sql.Types.VARCHAR"/>
                                                     </property>
@@ -91,7 +91,7 @@
                                                     <property name="javaFieldType" value="java.lang.String"/>
                                                 </bean>
                                                 <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
-                                                    <property name="databaseFieldName" value="city"/>
+                                                    <property name="databaseFieldName" value="CITY"/>
                                                     <property name="databaseFieldType">
                                                         <util:constant static-field="java.sql.Types.VARCHAR"/>
                                                     </property>
@@ -112,7 +112,7 @@
                                         <property name="keyFields">
                                             <list>
                                                 <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
-                                                    <property name="databaseFieldName" value="id"/>
+                                                    <property name="databaseFieldName" value="ID"/>
                                                     <property name="databaseFieldType">
                                                         <util:constant static-field="java.sql.Types.INTEGER"/>
                                                     </property>
@@ -125,7 +125,7 @@
                                         <property name="valueFields">
                                             <list>
                                                 <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
-                                                    <property name="databaseFieldName" value="name"/>
+                                                    <property name="databaseFieldName" value="NAME"/>
                                                     <property name="databaseFieldType">
                                                         <util:constant static-field="java.sql.Types.VARCHAR"/>
                                                     </property>
@@ -133,7 +133,7 @@
                                                     <property name="javaFieldType" value="java.lang.String"/>
                                                 </bean>
                                                 <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
-                                                    <property name="databaseFieldName" value="birthday"/>
+                                                    <property name="databaseFieldName" value="BIRTHDAY"/>
                                                     <property name="databaseFieldType">
                                                         <util:constant static-field="java.sql.Types.DATE"/>
                                                     </property>
