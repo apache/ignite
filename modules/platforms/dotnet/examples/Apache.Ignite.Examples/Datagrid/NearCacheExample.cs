@@ -69,13 +69,10 @@ namespace Apache.Ignite.Examples.Datagrid
                 for (int i = 0; i < 1000; i++)
                     cache.Put(i, i * 10);
 
-                Console.WriteLine(">>> Reading from the cache...");
+                Console.WriteLine(">>> Reading from near cache...");
 
-                // Reading data from cache.
                 for (int i = 0; i < 10; i++)
-                    Console.WriteLine(cache.Get(i));
-
-                // TODO: Metrics
+                    Console.WriteLine(cache.LocalPeek(i, CachePeekMode.Near));
 
                 Console.WriteLine();
                 Console.WriteLine(">>> Example finished, press any key to exit ...");
