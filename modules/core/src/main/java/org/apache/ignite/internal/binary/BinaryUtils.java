@@ -128,6 +128,10 @@ public class BinaryUtils {
     public static final boolean WRAP_TREES =
         !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES);
 
+    /** Whether to sort field in binary objects (doesn't affect Binarylizable). */
+    public static final boolean FIELDS_SORTED_ORDER =
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_BINARY_SORT_OBJECT_FIELDS);
+
     /** Field type names. */
     private static final String[] FIELD_TYPE_NAMES;
 

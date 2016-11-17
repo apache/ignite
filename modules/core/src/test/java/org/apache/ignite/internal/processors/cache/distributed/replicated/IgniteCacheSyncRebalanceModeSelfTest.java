@@ -34,7 +34,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class IgniteCacheSyncRebalanceModeSelfTest extends GridCommonAbstractTest {
     /** Entry count. */
     public static final int CNT = 100_000;
-    public static final String STATIC_CACHE_NAME = "static";
+
+    /** */
+    private static final String STATIC_CACHE_NAME = "static";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

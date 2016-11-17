@@ -25,14 +25,15 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -119,6 +120,9 @@ public class BinaryClassDescriptor {
 
     /** */
     private final Class<?>[] intfs;
+
+    /** Whether stable schema was published. */
+    private volatile boolean stableSchemaPublished;
 
     /**
      * @param ctx Context.
@@ -269,10 +273,14 @@ public class BinaryClassDescriptor {
             case OBJECT:
                 // Must not use constructor to honor transient fields semantics.
                 ctor = null;
-                ArrayList<BinaryFieldAccessor> fields0 = new ArrayList<>();
                 stableFieldsMeta = metaDataEnabled ? new HashMap<String, Integer>() : null;
 
-                BinarySchema.Builder schemaBuilder = BinarySchema.Builder.newBuilder();
+                Map<Object, BinaryFieldAccessor> fields0;
+
+                if (BinaryUtils.FIELDS_SORTED_ORDER)
+                    fields0 = new TreeMap<>();
+                else
+                    fields0 = new LinkedHashMap<>();
 
                 Set<String> duplicates = duplicateFields(cls);
 
@@ -300,9 +308,7 @@ public class BinaryClassDescriptor {
 
                             BinaryFieldAccessor fieldInfo = BinaryFieldAccessor.create(f, fieldId);
 
-                            fields0.add(fieldInfo);
-
-                            schemaBuilder.addField(fieldId);
+                            fields0.put(name, fieldInfo);
 
                             if (metaDataEnabled)
                                 stableFieldsMeta.put(name, fieldInfo.mode().typeId());
@@ -310,7 +316,12 @@ public class BinaryClassDescriptor {
                     }
                 }
 
-                fields = fields0.toArray(new BinaryFieldAccessor[fields0.size()]);
+                fields = fields0.values().toArray(new BinaryFieldAccessor[fields0.size()]);
+
+                BinarySchema.Builder schemaBuilder = BinarySchema.Builder.newBuilder();
+
+                for (BinaryFieldAccessor field : fields)
+                    schemaBuilder.addField(field.id);
 
                 stableSchema = schemaBuilder.build();
 
@@ -747,6 +758,18 @@ public class BinaryClassDescriptor {
                 break;
 
             case OBJECT:
+                if (userType && !stableSchemaPublished) {
+                    // Update meta before write object with new schema
+                    BinaryMetadata meta = new BinaryMetadata(typeId, typeName, stableFieldsMeta,
+                        affKeyFieldName, Collections.singleton(stableSchema), false);
+
+                    ctx.updateMetadata(typeId, meta);
+
+                    schemaReg.addSchema(stableSchema.schemaId(), stableSchema);
+
+                    stableSchemaPublished = true;
+                }
+
                 if (preWrite(writer, obj)) {
                     try {
                         for (BinaryFieldAccessor info : fields)
