@@ -99,7 +99,22 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestClusterGroupMetrics()
         {
+            var cluster = Ignition.GetIgnite().GetCluster();
 
+            // Get metrics in reverse way, so that first item is for second node and vice versa.
+            var metrics = GetLocalRemoteMetrics("clusterMetrics", c => c.GetMetrics(cluster.ForRemotes()), 
+                c => c.GetMetrics(cluster.ForLocal()));
+
+            var localMetrics = metrics.Item2;
+            var remoteMetrics = metrics.Item1;
+
+            Assert.AreEqual(1, localMetrics.Size);
+            Assert.AreEqual(1, localMetrics.CacheGets);
+            Assert.AreEqual(1, localMetrics.CachePuts);
+
+            Assert.AreEqual(0, remoteMetrics.Size);
+            Assert.AreEqual(0, remoteMetrics.CacheGets);
+            Assert.AreEqual(0, remoteMetrics.CachePuts);
         }
 
         /// <summary>
@@ -219,13 +234,13 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             localCache.Put(1, 1);
             localCache.Get(1);
+            
+            // Wait for metrics to propagate.
+            Thread.Sleep(TcpDiscoverySpi.DefaultHeartbeatFrequency);
 
             var localMetrics = func(localCache);
             Assert.IsTrue(localMetrics.IsStatisticsEnabled);
             Assert.AreEqual(cacheName, localMetrics.CacheName);
-
-            // Wait for metrics to propagate.
-            Thread.Sleep(TcpDiscoverySpi.DefaultHeartbeatFrequency);
 
             var remoteMetrics = func2(remoteCache);
             Assert.IsTrue(remoteMetrics.IsStatisticsEnabled);
