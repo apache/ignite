@@ -1423,13 +1423,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
     }
 
-    /**
-     * Assign node roles by partition update counters for a given topology.
-     *
-     * @param top Topology.
-     */
     private void assignPartitionStates(GridDhtPartitionTopology top) {
-        Map<Integer, Long> maxCntrs = new HashMap<>();
+        Map<Integer, CounterWithNodes> maxCntrs = new HashMap<>();
 
         for (Map.Entry<UUID, GridDhtPartitionsAbstractMessage> e : msgs.entrySet()) {
             assert e.getValue().partitionUpdateCounters(top.cacheId()) != null;
@@ -1437,8 +1432,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             for (Map.Entry<Integer, Long> e0 : e.getValue().partitionUpdateCounters(top.cacheId()).entrySet()) {
                 int p = e0.getKey();
 
-                GridDhtPartitionState state = top.partitionState(e.getKey(), p);
-                if (state == GridDhtPartitionState.OWNING && state != GridDhtPartitionState.RENTING)
+                UUID uuid = e.getKey();
+
+                GridDhtPartitionState state = top.partitionState(uuid, p);
+                if (state == GridDhtPartitionState.OWNING || state == GridDhtPartitionState.RENTING)
                     continue;
 
                 Long cntr = e.getValue().partitionUpdateCounters(top.cacheId()).get(p);
@@ -1446,49 +1443,48 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 if (cntr == null)
                     continue;
 
-                Long maxCntr = maxCntrs.get(p);
+                CounterWithNodes maxCntr = maxCntrs.get(p);
 
-                if (maxCntr == null || cntr > maxCntr)
-                    maxCntrs.put(p, cntr);
+                if (maxCntr == null || cntr > maxCntr.cnt)
+                    maxCntrs.put(p, new CounterWithNodes(cntr, uuid));
+                else if (cntr == maxCntr.cnt)
+                    maxCntr.nodes.add(uuid);
             }
         }
 
         for (GridDhtLocalPartition part : top.currentLocalPartitions()) {
-            Long maxCntr = maxCntrs.get(part.id());
+            GridDhtPartitionState state = top.partitionState(cctx.localNodeId(), part.id());
+            if (state == GridDhtPartitionState.OWNING || state == GridDhtPartitionState.RENTING)
+                continue;
 
-            if (maxCntr == null || part.updateCounter() > maxCntr)
-                maxCntrs.put(part.id(), part.updateCounter());
+            CounterWithNodes maxCntr = maxCntrs.get(part.id());
+
+            if (maxCntr == null || part.updateCounter() > maxCntr.cnt)
+                maxCntrs.put(part.id(), new CounterWithNodes(part.updateCounter(), cctx.localNodeId()));
+            else if (part.updateCounter() == maxCntr.cnt)
+                maxCntr.nodes.add(cctx.localNodeId());
         }
 
-        for (Map.Entry<Integer, Long> e : maxCntrs.entrySet()) {
+        for (Map.Entry<Integer, CounterWithNodes> e : maxCntrs.entrySet()) {
             int p = e.getKey();
-            long maxCntr = e.getValue();
+            long maxCntr = e.getValue().cnt;
 
             if (maxCntr == 0)
                 continue;
 
-            Set<UUID> owners = new HashSet<>();
+            top.setOwners(p, e.getValue().nodes);
+        }
+    }
 
-            for (Map.Entry<UUID, GridDhtPartitionsAbstractMessage> e0 : msgs.entrySet()) {
-                assert e0.getValue().partitionUpdateCounters(top.cacheId()) != null;
+    private static class CounterWithNodes {
+        private final long cnt;
 
-                Long cntr = e0.getValue().partitionUpdateCounters(top.cacheId()).get(p);
+        private final Set<UUID> nodes = new HashSet<>();
 
-                if (cntr == null)
-                    continue;
+        private CounterWithNodes(long cnt, UUID firstNode) {
+            this.cnt = cnt;
 
-                assert cntr <= maxCntr;
-
-                if (cntr == maxCntr)
-                    owners.add(e0.getKey());
-            }
-
-            GridDhtLocalPartition locPart = top.localPartition(p, topologyVersion(), false);
-
-            if (locPart != null && locPart.updateCounter() == maxCntr)
-                owners.add(cctx.localNodeId());
-
-            top.setOwners(p, owners);
+            nodes.add(firstNode);
         }
     }
 

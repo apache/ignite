@@ -762,7 +762,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             if (loc != null && loc.state() == EVICTED) {
                 locParts.set(p, loc = null);
 
-                if (!belongs)
+                if (!treatAllPartitionAsLocal && !belongs)
                     throw new GridDhtInvalidPartitionException(p, "Adding entry to evicted partition " +
                         "(often may be caused by inconsistent 'key.hashCode()' implementation) " +
                         "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
