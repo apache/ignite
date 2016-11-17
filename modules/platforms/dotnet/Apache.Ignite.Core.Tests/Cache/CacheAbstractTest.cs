@@ -3152,27 +3152,13 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        public void TestCacheMetrics()
-        {
-            var cache = Cache();
-
-            cache.Put(1, 1);
-
-            var m = cache.GetMetrics();
-
-            Assert.AreEqual(cache.Name, m.CacheName);
-
-            Assert.AreEqual(cache.GetSize(), m.Size);
-        }
-
-        [Test]
         public void TestRebalance()
         {
             var cache = Cache();
 
-            var fut = cache.Rebalance();
+            var task = cache.Rebalance();
 
-            
+            task.Wait();
         }
 
         [Test]

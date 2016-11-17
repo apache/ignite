@@ -29,6 +29,7 @@ namespace Apache.Ignite.AspNet.Tests
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Cluster;
     using NUnit.Framework;
 
     /// <summary>
@@ -474,6 +475,16 @@ namespace Apache.Ignite.AspNet.Tests
             }
 
             public ICacheMetrics GetMetrics()
+            {
+                throw new NotImplementedException();
+            }
+
+            public ICacheMetrics GetMetrics(IClusterGroup clusterGroup)
+            {
+                throw new NotImplementedException();
+            }
+
+            public ICacheMetrics GetLocalMetrics()
             {
                 throw new NotImplementedException();
             }
