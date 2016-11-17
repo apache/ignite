@@ -3156,9 +3156,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            var fut = cache.Rebalance();
+            var task = cache.Rebalance();
 
-            
+            task.Wait();
         }
 
         [Test]
