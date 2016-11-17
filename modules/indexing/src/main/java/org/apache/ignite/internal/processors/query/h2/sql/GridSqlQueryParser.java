@@ -737,7 +737,7 @@ public class GridSqlQueryParser {
 
         if (expression instanceof ValueExpression)
             // == comparison is legit, see ValueExpression#getSQL()
-            return expression == ValueExpression.getDefault() ? GridSqlConst.DEFAULT :
+            return expression == ValueExpression.getDefault() ? GridSqlKeyword.DEFAULT :
                 new GridSqlConst(expression.getValue(null));
 
         if (expression instanceof Operation) {

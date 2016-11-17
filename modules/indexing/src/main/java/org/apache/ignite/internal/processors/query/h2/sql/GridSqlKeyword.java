@@ -20,44 +20,27 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import java.util.Collections;
 import org.h2.command.Parser;
 import org.h2.expression.ValueExpression;
-import org.h2.value.Value;
-import org.h2.value.ValueBoolean;
-import org.h2.value.ValueNull;
-import org.h2.value.ValueString;
 
-/**
- * Constant value.
- */
-public class GridSqlConst extends GridSqlElement implements GridSqlValue {
-    /** */
-    public static final GridSqlElement NULL = new GridSqlConst(ValueNull.INSTANCE)
-        .resultType(GridSqlType.fromExpression(ValueExpression.getNull()));
-
-    /** */
-    public static final GridSqlElement TRUE = new GridSqlConst(ValueBoolean.get(true))
-        .resultType(GridSqlType.BOOLEAN);
-
-    /** */
-    private final Value val;
-
+/** Keyword (like DEFAULT). */
+public final class GridSqlKeyword extends GridSqlElement {
     /**
-     * @param val Value.
+     * Default update value - analogous to H2.
+     * @see ValueExpression#getDefault()
+     * @see Parser#parseUpdate()
      */
-    public GridSqlConst(Value val) {
+    public final static GridSqlKeyword DEFAULT = new GridSqlKeyword("DEFAULT");
+
+    /** Keyword to return as SQL. */
+    private final String keyword;
+
+    /** */
+    private GridSqlKeyword(String keyword) {
         super(Collections.<GridSqlElement>emptyList());
-
-        this.val = val;
-    }
-
-    /**
-     * @return Value.
-     */
-    public Value value() {
-        return val;
+        this.keyword = keyword;
     }
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
-        return val.getSQL();
+        return keyword;
     }
 }
