@@ -72,12 +72,14 @@ namespace Apache.Ignite.Core.Tests.Cache
             localCache.Get(1);
 
             var localMetrics = localCache.GetLocalMetrics();
+            Assert.IsTrue(localMetrics.IsStatisticsEnabled);
             Assert.AreEqual(cacheName, localMetrics.CacheName);
             Assert.AreEqual(1, localMetrics.Size);
             Assert.AreEqual(1, localMetrics.CacheGets);
             Assert.AreEqual(1, localMetrics.CachePuts);
 
             var remoteMetrics = remoteCache.GetLocalMetrics();
+            Assert.IsTrue(remoteMetrics.IsStatisticsEnabled);
             Assert.AreEqual(cacheName, remoteMetrics.CacheName);
             Assert.AreEqual(0, remoteMetrics.Size);
             Assert.AreEqual(0, remoteMetrics.CacheGets);
@@ -106,12 +108,14 @@ namespace Apache.Ignite.Core.Tests.Cache
             localCache.Get(1);
 
             var localMetrics = localCache.GetMetrics();
+            Assert.IsTrue(localMetrics.IsStatisticsEnabled);
             Assert.AreEqual(cacheName, localMetrics.CacheName);
             Assert.AreEqual(1, localMetrics.Size);
             Assert.AreEqual(1, localMetrics.CacheGets);
             Assert.AreEqual(1, localMetrics.CachePuts);
 
             var remoteMetrics = remoteCache.GetMetrics();
+            Assert.IsTrue(remoteMetrics.IsStatisticsEnabled);
             Assert.AreEqual(cacheName, remoteMetrics.CacheName);
             Assert.AreEqual(1, remoteMetrics.Size);
             Assert.AreEqual(1, remoteMetrics.CacheGets);
