@@ -34,8 +34,8 @@ public class GridSqlMerge extends GridSqlStatement {
     /** */
     private List<GridSqlElement[]> rows;
 
-    /** Insert subquery. */
-    private GridSqlQuery qry;
+    /** MERGE subquery. */
+    private GridSqlSubquery qry;
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
@@ -109,12 +109,12 @@ public class GridSqlMerge extends GridSqlStatement {
     }
 
     /** */
-    public GridSqlQuery query() {
+    public GridSqlSubquery query() {
         return qry;
     }
 
     /** */
-    public GridSqlMerge query(GridSqlQuery qry) {
+    public GridSqlMerge query(GridSqlSubquery qry) {
         this.qry = qry;
         return this;
     }

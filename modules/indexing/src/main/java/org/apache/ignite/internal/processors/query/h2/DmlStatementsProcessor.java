@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.h2.sql.DmlAstUtils;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUnion;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUpdate;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -353,7 +354,8 @@ class DmlStatementsProcessor {
             ErrorCode.UNKNOWN_MODE_1);
 
         // Let's set the flag only for subqueries that have their FROM specified.
-        isSubqry = (isSubqry && sel instanceof GridSqlSelect && ((GridSqlSelect) sel).from() != null);
+        isSubqry = (isSubqry && (sel instanceof GridSqlUnion ||
+            (sel instanceof GridSqlSelect && ((GridSqlSelect) sel).from() != null)));
 
         int keyColIdx = -1;
         int valColIdx = -1;
@@ -475,12 +477,12 @@ class DmlStatementsProcessor {
                 // set to current values.
                 Supplier newValSupplier = createSupplier(cctx, desc.type(), newValColIdx, hasProps, false);
 
-                sel = DmlAstUtils.mapQueryForUpdate((GridSqlUpdate) stmt, errKeysPos);
+                sel = DmlAstUtils.selectForUpdate((GridSqlUpdate) stmt, errKeysPos);
 
                 return new UpdatePlan(stmt, target, null, newValSupplier, -1, valColIdx, sel, true, null);
             }
             else {
-                sel = DmlAstUtils.mapQueryForDelete((GridSqlDelete) stmt, errKeysPos);
+                sel = DmlAstUtils.selectForDelete((GridSqlDelete) stmt, errKeysPos);
 
                 return new UpdatePlan(stmt, target, null, null, -1, -1, sel, true, null);
             }

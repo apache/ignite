@@ -31,8 +31,8 @@ public class GridSqlInsert extends GridSqlStatement {
     /** */
     private List<GridSqlElement[]> rows;
 
-    /** Insert subquery. */
-    private GridSqlQuery qry;
+    /** INSERT subquery. */
+    private GridSqlSubquery qry;
 
     /**
      * Not supported, introduced for clarity and correct SQL generation.
@@ -114,12 +114,12 @@ public class GridSqlInsert extends GridSqlStatement {
     }
 
     /** */
-    public GridSqlQuery query() {
+    public GridSqlSubquery query() {
         return qry;
     }
 
     /** */
-    public GridSqlInsert query(GridSqlQuery qry) {
+    public GridSqlInsert query(GridSqlSubquery qry) {
         this.qry = qry;
         return this;
     }
