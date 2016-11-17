@@ -14,15 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using System.Threading;
-using Apache.Ignite.Core;
-using Apache.Ignite.Core.Cache;
-using Apache.Ignite.Core.Common;
 
 namespace Apache.Ignite.Examples.Misc
 {
+    using System;
+    using System.Threading;
+    using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Events;
