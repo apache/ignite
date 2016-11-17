@@ -95,10 +95,6 @@ public class RestProcessorMultiStartSelfTest extends GridCommonAbstractTest {
             // Check that rest processer doesn't start.
             assertNotNull(rest);
             assertEquals(0, ((Map)GridTestUtils.getFieldValue(rest, "handlers")).size());
-
-            TimeUnit.HOURS.sleep(1);
-
-            stopGrid(0);
         }
         finally {
             stopAllGrids();
