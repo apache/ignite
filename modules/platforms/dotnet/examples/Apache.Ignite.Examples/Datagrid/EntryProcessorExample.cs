@@ -61,7 +61,7 @@ namespace Apache.Ignite.Examples.Datagrid
                 cache.Clear();
 
                 // Populate cache with Invoke.
-                var keys = Enumerable.Range(1, EntryCount).ToArray();
+                int[] keys = Enumerable.Range(1, EntryCount).ToArray();
 
                 foreach (var key in keys)
                     cache.Invoke(key, new CachePutEntryProcessor(), 10);
