@@ -641,7 +641,8 @@ namespace Apache.Ignite.Core.Tests
                             ExcludeNeighbors = true,
                             Partitions = 48
                         },
-                        ExpiryPolicyFactory = new MyPolicyFactory()
+                        ExpiryPolicyFactory = new MyPolicyFactory(),
+                        EnableStatistics = true
                     }
                 },
                 ClientMode = true,
