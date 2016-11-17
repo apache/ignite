@@ -192,10 +192,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private final ReentrantLock glStLock = new ReentrantLock();
 
     /** Global status. */
-    private CacheState globalState;
+    private volatile CacheState globalState;
 
     /** Activate. */
-    private boolean activateInProgress;
+    private volatile boolean activateInProgress;
 
     /** Cache ready future. */
     private GridFutureAdapter<?> cacheReadyFut;
@@ -1107,6 +1107,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache global state.
      */
     public CacheState globalState() {
+        if (activateInProgress)
+            return INACTIVE;
+
+        return globalState;
+    }
+
+    /**
+     *
+     */
+    public CacheState internalGlobalState(){
         return globalState;
     }
 
@@ -2581,7 +2591,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             try {
                 //if call on client node, then send compute to server node for activate
                 if (ctx.config().isClientMode()) {
-                    ClusterNode crd = ctx.discovery().serverNodes(AffinityTopologyVersion.NONE).get(0);
+                    AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
+
+                    ClusterNode crd = ctx.discovery().serverNodes(topVer).get(0);
 
                     IgniteCompute c = ((ClusterGroupAdapter)ctx.cluster().get().forNode(crd))
                         .compute().withAsync();
@@ -2852,32 +2864,26 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     ) {
         for (final DynamicCacheChangeRequest req : batch.requests()) {
             if (req.globalStateChange()) {
-                glStLock.lock();
-                try {
-                    if (activateInProgress) {
-                        cacheReadyFut.listen(new CI1<IgniteInternalFuture>() {
-                            @Override public void apply(IgniteInternalFuture fut) {
-                                try {
-                                    fut.get();
+                if (activateInProgress) {
+                    cacheReadyFut.listen(new CI1<IgniteInternalFuture>() {
+                        @Override public void apply(IgniteInternalFuture fut) {
+                            try {
+                                fut.get();
 
-                                    sendActivationResponse(req.requestId(), req.initiatingNodeId(), null);
-                                }
-                                catch (IgniteCheckedException e) {
-                                    sendActivationResponse(req.requestId(), req.initiatingNodeId(), e);
-                                }
+                                sendActivationResponse(req.requestId(), req.initiatingNodeId(), null);
                             }
-                        });
+                            catch (IgniteCheckedException e) {
+                                sendActivationResponse(req.requestId(), req.initiatingNodeId(), e);
+                            }
+                        }
+                    });
 
-                        return false;
-                    }
-                    else{
-                        cacheReadyFut = new GridFutureAdapter<>();
-
-                        activateInProgress = true;
-                    }
+                    return false;
                 }
-                finally {
-                    glStLock.unlock();
+                else{
+                    cacheReadyFut = new GridFutureAdapter<>();
+
+                    activateInProgress = true;
                 }
 
                 break;
@@ -4146,8 +4152,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             sendActivationResponse(req.requestId(), req.initiatingNodeId(), e);
 
             cacheReadyFut.onDone(e);
-
-            cacheReadyFut = null;
 
             globalState = INACTIVE;
 

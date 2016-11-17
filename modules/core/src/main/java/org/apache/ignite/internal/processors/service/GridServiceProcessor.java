@@ -217,7 +217,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         if (ctx.isDaemon())
             return;
 
-        if (ctx.cache().globalState() == CacheState.ACTIVE) {
+        if (ctx.cache().internalGlobalState() == CacheState.ACTIVE) {
             cache = ctx.cache().utilityCache();
 
             if (!ctx.clientNode())

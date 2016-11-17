@@ -364,6 +364,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public IgniteServices services() {
+        checkClusterState();
+
         return ((ClusterGroupAdapter)ctx.cluster().get().forServers()).services();
     }
 
@@ -389,6 +391,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public IgniteServices services(ClusterGroup grp) {
+        checkClusterState();
+
         return ((ClusterGroupAdapter)grp).services();
     }
 
@@ -2094,6 +2098,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     /*@java.test.only*/
     public <K, V> GridCacheAdapter<K, V> internalCache() {
+        checkClusterState();
+
         return internalCache(null);
     }
 
@@ -2107,6 +2113,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     /*@java.test.only*/
     public <K, V> GridCacheAdapter<K, V> internalCache(@Nullable String name) {
+        checkClusterState();
+
         return ctx.cache().internalCache(name);
     }
 
@@ -2359,6 +2367,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             return ctx.checkpoint().removeCheckpoint(key);
         }
         finally {
@@ -2446,6 +2456,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             return ctx.cache().transactions();
         }
         finally {
@@ -2461,6 +2473,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             return ctx.cache().publicCache(name);
         }
         finally {
@@ -2473,6 +2487,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             return ctx.cache().publicJCache(name, false, true);
         }
         catch (IgniteCheckedException e) {
@@ -2490,6 +2506,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             ctx.cache().dynamicStartCache(cacheCfg,
                 cacheCfg.getName(),
                 null,
@@ -2512,6 +2530,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             ctx.cache().createFromTemplate(cacheName).get();
 
             return ctx.cache().publicJCache(cacheName);
@@ -2531,6 +2551,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             if (ctx.cache().cache(cacheCfg.getName()) == null) {
                 ctx.cache().dynamicStartCache(cacheCfg,
                     cacheCfg.getName(),
@@ -2561,6 +2583,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             ctx.cache().dynamicStartCache(cacheCfg,
                 cacheCfg.getName(),
                 nearCfg,
@@ -2587,6 +2611,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             IgniteInternalCache<Object, Object> cache = ctx.cache().cache(cacheCfg.getName());
 
             if (cache == null) {
@@ -2625,6 +2651,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             ctx.cache().dynamicStartCache(null,
                 cacheName,
                 nearCfg,
@@ -2654,6 +2682,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             IgniteInternalCache<Object, Object> internalCache = ctx.cache().cache(cacheName);
 
             if (internalCache == null) {
@@ -2720,6 +2750,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             return ctx.cache().dynamicDestroyCache(cacheName, checkThreadTx);
         }
         finally {
@@ -2732,6 +2764,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             if (ctx.cache().cache(cacheName) == null)
                 ctx.cache().getOrCreateFromTemplate(cacheName, true).get();
 
@@ -2754,6 +2788,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             if (ctx.cache().cache(cacheName) == null)
                 return ctx.cache().getOrCreateFromTemplate(cacheName, checkThreadTx);
 
@@ -2771,6 +2807,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             ctx.cache().addCacheConfiguration(cacheCfg);
         }
         catch (IgniteCheckedException e) {
@@ -2788,6 +2826,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             return ctx.cache().publicCaches();
         }
         finally {
@@ -2800,6 +2840,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             return ctx.cache().publicCacheNames();
         }
         finally {
@@ -2812,6 +2854,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             return ctx.cache().utilityCache();
         }
         finally {
@@ -2824,6 +2868,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             return ctx.cache().cache(name);
         }
         finally {
@@ -2836,6 +2882,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             return ctx.cache().cache();
         }
         finally {
@@ -2849,6 +2897,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             return F.retain(ctx.cache().caches(), true, p);
         }
         finally {
@@ -2861,6 +2911,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             return ctx.<K, V>dataStream().dataStreamer(cacheName);
         }
         finally {
@@ -2873,6 +2925,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             IgniteFileSystem fs = ctx.igfs().igfs(name);
 
             if (fs == null)
@@ -2890,6 +2944,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             return ctx.igfs().igfs(name);
         }
         finally {
@@ -2902,6 +2958,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             return ctx.igfs().igfss();
         }
         finally {
@@ -2914,6 +2972,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             return ctx.hadoop().hadoop();
         }
         finally {
@@ -2935,6 +2995,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public IgniteBinary binary() {
+        checkClusterState();
+
         IgniteCacheObjectProcessor objProc = ctx.cacheObjects();
 
         return objProc.binary();
@@ -2969,6 +3031,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public <K> Affinity<K> affinity(String cacheName) {
+        checkClusterState();
+
         GridCacheAdapter<K, ?> cache = ctx.cache().internalCache(cacheName);
 
         if (cache != null)
@@ -3009,6 +3073,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             return ctx.dataStructures().sequence(name, initVal, create);
         }
         catch (IgniteCheckedException e) {
@@ -3024,6 +3090,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             return ctx.dataStructures().atomicLong(name, initVal, create);
         }
         catch (IgniteCheckedException e) {
@@ -3043,6 +3111,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             return ctx.dataStructures().atomicReference(name, initVal, create);
         }
         catch (IgniteCheckedException e) {
@@ -3061,6 +3131,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             return ctx.dataStructures().atomicStamped(name, initVal, initStamp, create);
         }
         catch (IgniteCheckedException e) {
@@ -3079,6 +3151,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             return ctx.dataStructures().countDownLatch(name, cnt, autoDel, create);
         }
         catch (IgniteCheckedException e) {
@@ -3099,6 +3173,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             return ctx.dataStructures().semaphore(name, cnt, failoverSafe, create);
         }
         catch (IgniteCheckedException e) {
@@ -3119,6 +3195,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             return ctx.dataStructures().reentrantLock(name, failoverSafe, fair, create);
         }
         catch (IgniteCheckedException e) {
@@ -3136,6 +3214,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             return ctx.dataStructures().queue(name, cap, cfg);
         }
         catch (IgniteCheckedException e) {
@@ -3152,6 +3232,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             return ctx.dataStructures().set(name, cfg);
         }
         catch (IgniteCheckedException e) {
@@ -3178,6 +3260,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         assert ctx != null;
 
         ctx.gateway().readUnlock();
+    }
+
+    /**
+     * Validate operation on cluster. Check current cluster state.
+     *
+     * @throws IgniteException if cluster in inActive state
+     */
+    private void checkClusterState()throws IgniteException{
+        CacheState curState = ctx.cache().globalState();
+
+        if (curState != CacheState.ACTIVE)
+            throw new IgniteException("can not perform operation, because cluster in " + curState + " state");
     }
 
     /**

@@ -1180,7 +1180,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (err != null)
             return err;
 
-        if (cctx.shared().cache().globalState() == CacheState.INACTIVE)
+        if (cctx.shared().cache().internalGlobalState() == CacheState.INACTIVE)
             return new CacheInvalidStateException(
                 "Failed to perform cache operation (cluster is not activated): " + cctx.name());
 

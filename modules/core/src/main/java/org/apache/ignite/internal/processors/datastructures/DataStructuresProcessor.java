@@ -215,7 +215,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        if (ctx.cache().globalState() == CacheState.ACTIVE){
+        if (ctx.cache().internalGlobalState() == CacheState.ACTIVE){
             utilityCache = (IgniteInternalCache)ctx.cache().utilityCache();
 
             utilityDataCache = (IgniteInternalCache)ctx.cache().utilityCache();
