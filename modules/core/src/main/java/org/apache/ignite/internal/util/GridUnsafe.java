@@ -1035,6 +1035,15 @@ public abstract class GridUnsafe {
         UNSAFE.copyMemory(src, dst, len);
     }
 
+    public static void copyMemory(byte[] b, int off, int len, long ptr) {
+        if (len <= 16) {
+            for (int i = 0; i < len; i++)
+                GridUnsafe.putByte(ptr + i, GridUnsafe.getByte(b, BYTE_ARR_OFF + off + i));
+        }
+        else
+            UNSAFE.copyMemory(b, BYTE_ARR_OFF + off, null, ptr, len);
+    }
+
     /**
      * Sets all bytes in a given block of memory to a copy of another block.
      *
