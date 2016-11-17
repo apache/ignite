@@ -31,14 +31,13 @@ namespace Apache.Ignite.Examples.Datagrid
 
     /// <summary>
     /// This example demonstrates how multi-tiered Ignite cache stores data in various ways.
+    /// NOTE: There must be no other cluster nodes running on the host.
     /// <para />
     /// 1) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build).
     ///    Apache.Ignite.ExamplesDll.dll must appear in %IGNITE_HOME%/platforms/dotnet/examples/Apache.Ignite.ExamplesDll/bin/${Platform]/${Configuration} folder.
     /// 2) Set this class as startup object (Apache.Ignite.Examples project -> right-click -> Properties ->
     ///     Application -> Startup object);
     /// 3) Start example (F5 or Ctrl+F5).
-    /// <para />
-    /// This example should be run without other nodes.
     /// </summary>
     public class MultiTieredCacheExample
     {
