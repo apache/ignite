@@ -77,8 +77,6 @@ namespace Apache.Ignite.Examples.Datagrid
 
             using (var ignite = Ignition.Start(cfg))
             {
-                // TODO: Remote node check?
-
                 var cacheCfg = new CacheConfiguration
                 {
                     Name = CacheName,
