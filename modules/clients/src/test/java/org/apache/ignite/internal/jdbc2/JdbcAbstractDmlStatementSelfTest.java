@@ -161,31 +161,31 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
 
                 switch (id) {
                     case 1:
-                        assert "p1".equals(rs.getString("_key"));
-                        assert "John".equals(rs.getString("firstName"));
-                        assert "White".equals(rs.getString("lastName"));
-                        assert rs.getInt("age") == 25;
+                        assertEquals("p1", rs.getString("_key"));
+                        assertEquals("John", rs.getString("firstName"));
+                        assertEquals("White", rs.getString("lastName"));
+                        assertEquals(25, rs.getInt("age"));
                         break;
 
                     case 2:
-                        assert "p2".equals(rs.getString("_key"));
-                        assert "Joe".equals(rs.getString("firstName"));
-                        assert "Black".equals(rs.getString("lastName"));
-                        assert rs.getInt("age") == 35;
+                        assertEquals("p2", rs.getString("_key"));
+                        assertEquals("Joe", rs.getString("firstName"));
+                        assertEquals("Black", rs.getString("lastName"));
+                        assertEquals(35, rs.getInt("age"));
                         break;
 
                     case 3:
-                        assert "p3".equals(rs.getString("_key"));
-                        assert "Mike".equals(rs.getString("firstName"));
-                        assert "Green".equals(rs.getString("lastName"));
-                        assert rs.getInt("age") == 40;
+                        assertEquals("p3", rs.getString("_key"));
+                        assertEquals("Mike", rs.getString("firstName"));
+                        assertEquals("Green", rs.getString("lastName"));
+                        assertEquals(40, rs.getInt("age"));
                         break;
 
                     case 4:
-                        assert "p4".equals(rs.getString("_key"));
-                        assert "Leah".equals(rs.getString("firstName"));
-                        assert "Grey".equals(rs.getString("lastName"));
-                        assert rs.getInt("age") == 22;
+                        assertEquals("p4", rs.getString("_key"));
+                        assertEquals("Leah", rs.getString("firstName"));
+                        assertEquals("Grey", rs.getString("lastName"));
+                        assertEquals(22, rs.getInt("age"));
                         break;
 
                     default:
