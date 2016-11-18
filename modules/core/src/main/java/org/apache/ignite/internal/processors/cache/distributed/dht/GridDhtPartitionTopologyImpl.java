@@ -117,6 +117,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     /** */
     private volatile AffinityTopologyVersion rebalancedTopVer = AffinityTopologyVersion.NONE;
 
+    /** */
+    private volatile boolean treatAllPartitionAsLocal;
+
     /**
      * @param cctx Context.
      * @param entryFactory Entry factory.
@@ -205,6 +208,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             if (state == RENTING || state == EVICTED) {
                 if (log.isDebugEnabled())
                     log.debug("Waiting for renting partition: " + part);
+
+                part.tryEvictAsync(false);
 
                 // Wait for partition to empty out.
                 if (longOpDumpTimeout > 0) {
@@ -479,6 +484,16 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     /** {@inheritDoc} */
     @Override public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut, boolean affReady)
         throws IgniteCheckedException {
+
+        DiscoveryEvent discoEvt = exchFut.discoveryEvent();
+
+        treatAllPartitionAsLocal = exchFut.activateCluster()
+            || (cctx.kernalContext().cache().globalState() == org.apache.ignite.internal.processors.cache.CacheState.ACTIVE
+            && discoEvt.type() == EventType.EVT_NODE_JOINED
+            && discoEvt.eventNode().isLocal()
+            && !cctx.kernalContext().clientNode()
+        );
+
         // Wait for rent outside of checkpoint lock.
         waitForRent();
 
@@ -575,6 +590,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
     /** {@inheritDoc} */
     @Override public boolean afterExchange(GridDhtPartitionsExchangeFuture exchFut) throws IgniteCheckedException {
+        treatAllPartitionAsLocal = false;
+
         boolean changed = waitForRent();
 
         ClusterNode loc = cctx.localNode();
@@ -748,14 +765,14 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             if (loc != null && loc.state() == EVICTED) {
                 locParts.set(p, loc = null);
 
-                if (!belongs)
+                if (!treatAllPartitionAsLocal && !belongs)
                     throw new GridDhtInvalidPartitionException(p, "Adding entry to evicted partition " +
                         "(often may be caused by inconsistent 'key.hashCode()' implementation) " +
                         "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
             }
 
             if (loc == null) {
-                if (!belongs)
+                if (!treatAllPartitionAsLocal && !belongs)
                     throw new GridDhtInvalidPartitionException(p, "Creating partition which does not belong to " +
                         "local node (often may be caused by inconsistent 'key.hashCode()' implementation) " +
                         "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
@@ -1185,14 +1202,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         assert locPart != null;
 
                         if (locPart.state() == OWNING) {
-                            try {
-                                cctx.offheap().clear(locPart);
-                            }
-                            catch (IgniteCheckedException ex) {
-                                throw new IgniteException(ex);
-                            }
-
-                            locParts.set(p, locPart = new GridDhtLocalPartition(cctx, p, entryFactory));
+                            locPart.moving();
 
                             changed = true;
                         }
@@ -1534,34 +1544,35 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     }
 
     /** {@inheritDoc} */
-    @Override public void setOwners(int p, Set<UUID> owners) {
+    @Override public boolean setOwners(int p, Set<UUID> owners, boolean skipUpdSeq) {
         lock.writeLock().lock();
 
         try {
+            boolean updated = skipUpdSeq;
+
             GridDhtLocalPartition locPart = locParts.get(p);
 
             if (locPart != null) {
-                if (locPart.state() == OWNING && !owners.contains(cctx.localNodeId())) {
-                    try {
-                        cctx.offheap().clear(locPart);
-                    }
-                    catch (IgniteCheckedException ex) {
-                        throw new IgniteException(ex);
-                    }
-
-                    locParts.set(p, new GridDhtLocalPartition(cctx, p, entryFactory));
-                }
+                if (locPart.state() == OWNING && !owners.contains(cctx.localNodeId()))
+                    locPart.moving();
             }
 
             for (Map.Entry<UUID, GridDhtPartitionMap2> e : node2part.entrySet()) {
                 if (!e.getValue().containsKey(p))
                     continue;
 
-                if (e.getValue().get(p) == OWNING && !owners.contains(e.getKey()))
+                if (e.getValue().get(p) == OWNING && !owners.contains(e.getKey())) {
                     e.getValue().put(p, MOVING);
+
+                    if (!updated) {
+                        updateSeq.incrementAndGet();
+
+                        updated = true;
+                    }
+                }
             }
 
-            part2node.put(p, owners);
+            return updated;
         }
         finally {
             lock.writeLock().unlock();

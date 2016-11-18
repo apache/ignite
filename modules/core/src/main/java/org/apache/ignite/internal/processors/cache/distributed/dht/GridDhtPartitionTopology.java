@@ -287,7 +287,9 @@ public interface GridDhtPartitionTopology {
      * Make nodes from provided set owners for a given partition.
      * State of all current owners that aren't contained in the set will be reset to MOVING.
      * @param p Partition ID.
+     * @param skipUpdSeq If should skip update sequence increment when updated.
      * @param owners Set of new owners.
+     * @return Whether update sequence was updated.
      */
-    public void setOwners(int p, Set<UUID> owners);
+    public boolean setOwners(int p, Set<UUID> owners, boolean skipUpdSeq);
 }

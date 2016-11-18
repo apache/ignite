@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.PagePartitio
 /**
  *
  */
-public class MetaPageUpdateRootsRecord extends PageDeltaRecord {
+public class MetaPageInitRecord extends InitNewPageRecord {
     /** */
     private long treeRoot;
 
@@ -39,12 +39,12 @@ public class MetaPageUpdateRootsRecord extends PageDeltaRecord {
     /**
      * @param cacheId Cache ID.
      * @param pageId Page ID.
+     * @param ioType IO type.
      * @param treeRoot Tree root.
      * @param reuseListRoot Reuse list root.
-     * @param ioType IO type.
      */
-    public MetaPageUpdateRootsRecord(int cacheId, long pageId, long treeRoot, long reuseListRoot, int ioType) {
-        super(cacheId, pageId);
+    public MetaPageInitRecord(int cacheId, long pageId, int ioType, int ioVer, long treeRoot, long reuseListRoot) {
+        super(cacheId, pageId, ioType, ioVer, pageId);
 
         assert ioType == PageIO.T_META || ioType == PageIO.T_PART_META;
 
@@ -80,12 +80,14 @@ public class MetaPageUpdateRootsRecord extends PageDeltaRecord {
             PageMetaIO.VERSIONS.forPage(buf) :
             PagePartitionMetaIO.VERSIONS.forPage(buf);
 
+        io.initNewPage(buf, newPageId);
+
         io.setTreeRoot(buf, treeRoot);
         io.setReuseListRoot(buf, reuseListRoot);
     }
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return RecordType.META_PAGE_UPDATE_ROOTS;
+        return RecordType.META_PAGE_INIT;
     }
 }

@@ -64,9 +64,6 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
-import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -75,7 +72,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IgniteCacheFutureImpl;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -1652,9 +1648,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             ExpiryPolicy plc = cctx.expiry();
 
-            boolean walEnabled = !cctx.isNear() && cctx.shared().wal() != null;
-            WALPointer ptr = null;
-
             Collection<Integer> reservedParts = new HashSet<>();
             Collection<Integer> ignoredParts = new HashSet<>();
 
@@ -1707,20 +1700,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                             expiryTime = CU.toExpireTime(ttl);
                         }
 
-                        if (walEnabled) {
-                            ptr = cctx.shared().wal().log(new DataRecord(new DataEntry(
-                                cctx.cacheId(),
-                                e.getKey(),
-                                e.getValue(),
-                                GridCacheOperation.CREATE,
-                                null,
-                                ver,
-                                expiryTime,
-                                entry.partition(),
-                                0
-                            )));
-                        }
-
                         entry.initialValue(e.getValue(),
                             ver,
                             ttl,
@@ -1762,8 +1741,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 }
 
                 try {
-                    if (walEnabled && ptr != null)
-                        cctx.shared().wal().fsync(ptr);
+                    if (!cctx.isNear() && cctx.shared().wal() != null)
+                        cctx.shared().wal().fsync(null);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to write preloaded entries into write-ahead log: " + e, e);

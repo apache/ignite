@@ -124,7 +124,7 @@ public abstract class WALRecord {
         PAGES_LIST_REMOVE_PAGE,
 
         /** */
-        META_PAGE_UPDATE_ROOTS,
+        META_PAGE_INIT,
 
         /** */
         PARTITION_META_PAGE_UPDATE_COUNTERS,
@@ -148,7 +148,10 @@ public abstract class WALRecord {
         META_PAGE_UPDATE_LAST_ALLOCATED_INDEX,
 
         /** Meta page update candidate allocated index. */
-        META_PAGE_UPDATE_CANDIDATE_ALLOCATED_INDEX
+        META_PAGE_UPDATE_CANDIDATE_ALLOCATED_INDEX,
+
+        /** Partition meta update state. */
+        PART_META_UPDATE_STATE
         ;
 
         /** */

@@ -2948,6 +2948,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             boolean update;
 
+            boolean walEnabled = !cctx.isNear() && cctx.shared().wal() != null;
+
             if (cctx.shared().database().persistenceEnabled()) {
                 unswap(false);
 
@@ -2996,6 +2998,20 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 if (!preload)
                     updateCntr = nextPartCounter(topVer);
+
+                if (walEnabled) {
+                    cctx.shared().wal().log(new DataRecord(new DataEntry(
+                        cctx.cacheId(),
+                        key,
+                        val,
+                        GridCacheOperation.CREATE,
+                        null,
+                        ver,
+                        expireTime,
+                        partition(),
+                        updateCntr
+                    )));
+                }
 
                 drReplicate(drType, val, ver, topVer);
 

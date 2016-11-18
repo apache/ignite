@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -502,12 +503,34 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     }
 
     /**
+     * @param stateToRestore State to restore.
+     */
+    public void restoreState(GridDhtPartitionState stateToRestore) {
+        state.set(((long)stateToRestore.ordinal())  <<  32);
+    }
+
+    /**
      * @param reservations Current aggregated value.
      * @param toState State to switch to.
      * @return {@code true} if cas succeeds.
      */
     private boolean casState(long reservations, GridDhtPartitionState toState) {
-        return state.compareAndSet(reservations, (reservations & 0xFFFF) | ((long)toState.ordinal() << 32));
+        if (cctx.shared().database().persistenceEnabled()) {
+            synchronized (this) {
+                boolean update = state.compareAndSet(reservations, (reservations & 0xFFFF) | ((long)toState.ordinal() << 32));
+
+                if (update)
+                    try {
+                        cctx.shared().wal().log(new PartitionMetaStateRecord(cctx.cacheId(), id, toState, updateCounter()));
+                    }
+                    catch (IgniteCheckedException e) {
+                        log.error("Error while writing to log", e);
+                    }
+
+                return update;
+            }
+        } else
+            return state.compareAndSet(reservations, (reservations & 0xFFFF) | ((long)toState.ordinal() << 32));
     }
 
     /**
@@ -535,6 +558,26 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                 evictHist = null;
 
                 return true;
+            }
+        }
+    }
+
+    /**
+     * Forcibly moves partition to a MOVING state.
+     */
+    void moving() {
+        while (true) {
+            long reservations = state.get();
+
+            int ord = (int)(reservations >> 32);
+
+            assert ord == OWNING.ordinal() : "Only OWNed partitions should be moved to MOVING state";
+
+            if (casState(reservations, MOVING)) {
+                if (log.isDebugEnabled())
+                    log.debug("Forcibly moved partition to a MOVING state: " + this);
+
+                break;
             }
         }
     }
