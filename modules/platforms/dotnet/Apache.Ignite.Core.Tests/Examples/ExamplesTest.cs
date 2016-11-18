@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         // ReSharper disable once MemberCanBeMadeStatic.Global
         public IEnumerable<Example> TestCasesLocal
         {
-            get { return Example.GetExamples(); }
+            get { return Example.GetExamples().Where(x => x.Name != "NearCacheExample"); }
         }
 
         /// <summary>
