@@ -80,6 +80,7 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
@@ -757,7 +758,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             onSqlException();
 
             throw new IgniteSQLException("Failed to drop database index table [type=" + tbl.type().name() +
-                ", table=" + tbl.fullTableName() + "]", e);
+                ", table=" + tbl.fullTableName() + "]", IgniteQueryErrorCode.TABLE_DROP_FAILED, e);
         }
         finally {
             U.close(stmt, log);
@@ -1084,8 +1085,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final TableDescriptor tbl = tableDescriptor(spaceName, type);
 
         if (tbl == null)
-            throw createSqlException("Failed to find SQL table for type: " + type.name(),
-                ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1);
+            throw new IgniteSQLException("Failed to find SQL table for type: " + type.name(),
+                IgniteQueryErrorCode.TABLE_NOT_FOUND);
 
         String sql = generateQuery(qry, tbl);
 
@@ -1130,7 +1131,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         TableDescriptor tblDesc = tableDescriptor(type, space);
 
         if (tblDesc == null)
-            throw createSqlException("Failed to find SQL table for type: " + type, ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1);
+            throw new IgniteSQLException("Failed to find SQL table for type: " + type,
+                IgniteQueryErrorCode.TABLE_NOT_FOUND);
 
         String sql;
 
@@ -1245,7 +1247,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         }
                         else
                             throw new IgniteSQLException("Failed to parse query: " + sqlQry, e.getSQLState(),
-                                e.getErrorCode());
+                                IgniteQueryErrorCode.PARSING);
                     }
                 }
             }
@@ -1256,8 +1258,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             Prepared prepared = GridSqlQueryParser.prepared((JdbcPreparedStatement) stmt);
 
             if (qry instanceof JdbcSqlFieldsQuery && ((JdbcSqlFieldsQuery) qry).isQuery() != prepared.isQuery())
-                throw createSqlException("Given statement type does not match that declared by JDBC driver",
-                    ErrorCode.UNKNOWN_MODE_1);
+                throw new IgniteSQLException("Given statement type does not match that declared by JDBC driver",
+                    IgniteQueryErrorCode.STMT_TYPE_MISMATCH);
 
             if (!prepared.isQuery())
                 try {
@@ -3142,19 +3144,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         private void updateLastUsage() {
             lastUsage = U.currentTimeMillis();
         }
-    }
-
-    /**
-     * Create an {@link IgniteSQLException} bearing details meaningful to JDBC for more detailed
-     * exceptions in the driver.
-     *
-     * @param msg Message.
-     * @param code H2 status code.
-     * @return {@link IgniteSQLException} with given details.
-     * @see ErrorCode
-     */
-    static IgniteSQLException createSqlException(String msg, int code) {
-        return new IgniteSQLException(msg, ErrorCode.getState(code), code);
     }
 
     /** {@inheritDoc} */

@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
 import org.h2.command.Prepared;
@@ -647,10 +649,17 @@ public class GridSqlQueryParser {
         if (qry instanceof Update)
             return parseUpdate((Update)qry);
 
-        if (qry instanceof Explain)
-            return parse(EXPLAIN_COMMAND.get((Explain)qry)).explain(true);
+        if (qry instanceof Explain) {
+            GridSqlStatement stmt = parse(EXPLAIN_COMMAND.get((Explain) qry));
 
-        throw new CacheException("Unsupported query: " + qry);
+            if (!(stmt instanceof GridSqlQuery))
+                throw new IgniteSQLException("EXPLAIN is not supported for DML statement: " + qry,
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            return stmt.explain(true);
+        }
+
+        throw new IgniteSQLException("Unsupported statement: " + qry, IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**

@@ -19,11 +19,14 @@ package org.apache.ignite.internal.processors.query;
 
 import java.sql.SQLException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Specific exception bearing information about query processing errors for more detailed
  * errors in JDBC driver.
+ *
+ * @see IgniteQueryErrorCode
  */
 public class IgniteSQLException extends IgniteException {
     /** */
@@ -32,7 +35,7 @@ public class IgniteSQLException extends IgniteException {
     /** State to return as {@link SQLException#SQLState} */
     private final String sqlState;
 
-    /** Code to return as {@link SQLException#vendorCode}, based on comprehensive H2's set of error codes */
+    /** Code to return as {@link SQLException#vendorCode} */
     private final int statusCode;
 
     /** */
@@ -57,9 +60,23 @@ public class IgniteSQLException extends IgniteException {
     }
 
     /** */
+    public IgniteSQLException(String msg, int statusCode, @Nullable Throwable cause) {
+        super(msg, cause);
+        this.sqlState = null;
+        this.statusCode = statusCode;
+    }
+
+    /** */
     public IgniteSQLException(String msg, String sqlState, int statusCode) {
         super(msg);
         this.sqlState = sqlState;
+        this.statusCode = statusCode;
+    }
+
+    /** */
+    public IgniteSQLException(String msg, int statusCode) {
+        super(msg);
+        this.sqlState = null;
         this.statusCode = statusCode;
     }
 

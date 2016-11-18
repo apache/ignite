@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -97,7 +98,7 @@ import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.VAL_FIELD_NAME;
-import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.createSqlException;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
 
 /**
  *
@@ -168,8 +169,8 @@ class DmlStatementsProcessor {
             }
         }
 
-        throw createSqlException("Failed to update or delete some keys: " + Arrays.deepToString(errKeys),
-            ErrorCode.CONCURRENT_UPDATE_1);
+        throw new IgniteSQLException("Failed to update or delete some keys: " + Arrays.deepToString(errKeys),
+            IgniteQueryErrorCode.CONCURRENT_UPDATE);
     }
 
     /**
@@ -280,8 +281,8 @@ class DmlStatementsProcessor {
         else if (stmt instanceof GridSqlDelete)
             return doDelete(cctx, cur, pageSize);
         else
-            throw createSqlException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
-                ErrorCode.UNKNOWN_MODE_1);
+            throw new IgniteSQLException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
+                IgniteQueryErrorCode.UNEXPECTED_OPERATION);
     }
 
     /**
@@ -350,8 +351,8 @@ class DmlStatementsProcessor {
             sel = DmlAstUtils.selectForInsertOrMerge(cols, merge.rows(), merge.query());
             isSubqry = (merge.query() != null);
         }
-        else throw createSqlException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
-            ErrorCode.UNKNOWN_MODE_1);
+        else throw new IgniteSQLException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
+            IgniteQueryErrorCode.UNEXPECTED_OPERATION);
 
         // Let's set the flag only for subqueries that have their FROM specified.
         isSubqry = (isSubqry && (sel instanceof GridSqlUnion ||
@@ -420,8 +421,8 @@ class DmlStatementsProcessor {
             singleUpdate = DmlAstUtils.getSingleItemFilter(del);
         }
         else
-            throw createSqlException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
-                ErrorCode.UNKNOWN_MODE_1);
+            throw new IgniteSQLException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
+                IgniteQueryErrorCode.UNEXPECTED_OPERATION);
 
         if (singleUpdate != null)
             return new UpdatePlan(stmt, target, null, null, -1, -1, null, false, singleUpdate);
@@ -436,8 +437,8 @@ class DmlStatementsProcessor {
                 GridH2RowDescriptor desc = gridTbl.rowDescriptor();
 
                 if (desc == null)
-                    throw createSqlException("Row descriptor undefined for table '" + gridTbl.getName() + "'",
-                        ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1);
+                    throw new IgniteSQLException("Row descriptor undefined for table '" + gridTbl.getName() + "'",
+                        IgniteQueryErrorCode.NULL_TABLE_DESCRIPTOR);
 
                 boolean bin = cctx.binaryMarshaller();
 
@@ -509,8 +510,8 @@ class DmlStatementsProcessor {
         else if (stmt instanceof GridSqlDelete)
             target = ((GridSqlDelete) stmt).from();
         else
-            throw createSqlException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
-                ErrorCode.UNKNOWN_MODE_1);
+            throw new IgniteSQLException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
+                IgniteQueryErrorCode.UNEXPECTED_OPERATION);
 
         GridSqlTable tbl = gridTableForElement(target);
 
@@ -545,7 +546,7 @@ class DmlStatementsProcessor {
      * @param pageSize Page size for streaming, anything <= 0 for single batch operations.
      * @return Results of DELETE (number of items affected AND keys that failed to be updated).
      */
-    @SuppressWarnings({"unchecked", "ConstantConditions"})
+    @SuppressWarnings({"unchecked", "ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
     private UpdateResult doDelete(GridCacheContext cctx, QueryCursorImpl<List<?>> cursor, int pageSize)
         throws IgniteCheckedException {
         // With DELETE, we have only two columns - key and value.
@@ -611,8 +612,7 @@ class DmlStatementsProcessor {
                     String msg = "Failed to DELETE some keys because they had been modified concurrently " +
                         "[keys=" + failedKeys + ']';
 
-                    SQLException conEx = new SQLException(msg, ErrorCode.getState(ErrorCode.CONCURRENT_UPDATE_1),
-                        ErrorCode.CONCURRENT_UPDATE_1);
+                    SQLException conEx = createJdbcSqlException(msg, IgniteQueryErrorCode.CONCURRENT_UPDATE);
 
                     conEx.setNextException(resEx);
 
@@ -638,7 +638,7 @@ class DmlStatementsProcessor {
      * @return Pair [cursor corresponding to results of UPDATE (contains number of items affected); keys whose values
      *     had been modified concurrently (arguments for a re-run)].
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
     private UpdateResult doUpdate(GridCacheContext cctx, GridSqlUpdate update, UpdatePlan plan,
         QueryCursorImpl<List<?>> cursor, int pageSize) throws IgniteCheckedException {
 
@@ -649,8 +649,8 @@ class DmlStatementsProcessor {
         GridH2RowDescriptor desc = gridTbl.rowDescriptor();
 
         if (desc == null)
-            throw createSqlException("Row descriptor undefined for table '" + gridTbl.getName() + "'",
-                ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1);
+            throw new IgniteSQLException("Row descriptor undefined for table '" + gridTbl.getName() + "'",
+                IgniteQueryErrorCode.NULL_TABLE_DESCRIPTOR);
 
         boolean bin = cctx.binaryMarshaller();
 
@@ -769,8 +769,7 @@ class DmlStatementsProcessor {
                     String msg = "Failed to UPDATE some keys because they had been modified concurrently " +
                         "[keys=" + failedKeys + ']';
 
-                    SQLException dupEx = new SQLException(msg, ErrorCode.getState(ErrorCode.DUPLICATE_KEY_1),
-                        ErrorCode.DUPLICATE_KEY_1);
+                    SQLException dupEx = createJdbcSqlException(msg, IgniteQueryErrorCode.CONCURRENT_UPDATE);
 
                     dupEx.setNextException(resEx);
 
@@ -810,7 +809,10 @@ class DmlStatementsProcessor {
                 e.getValue().get();
             }
             catch (EntryProcessorException ex) {
-                SQLException next = new SQLException("Failed to process key '" + e.getKey() + '\'', ex);
+                SQLException next = createJdbcSqlException("Failed to process key '" + e.getKey() + '\'',
+                    IgniteQueryErrorCode.ENTRY_PROCESSING);
+
+                next.initCause(ex);
 
                 if (currSqlEx != null)
                     currSqlEx.setNextException(next);
@@ -927,8 +929,8 @@ class DmlStatementsProcessor {
             if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
                 return 1;
             else
-                throw createSqlException("Duplicate key during INSERT [key=" + t.getKey() + ']',
-                    ErrorCode.DUPLICATE_KEY_1);
+                throw new IgniteSQLException("Duplicate key during INSERT [key=" + t.getKey() + ']',
+                    IgniteQueryErrorCode.DUPLICATE_KEY);
         }
         else {
             CacheOperationContext opCtx = cctx.operationContextPerCall();
@@ -991,8 +993,7 @@ class DmlStatementsProcessor {
                     String msg = "Failed to INSERT some keys because they are already in cache " +
                         "[keys=" + duplicateKeys + ']';
 
-                    SQLException dupEx = new SQLException(msg, ErrorCode.getState(ErrorCode.DUPLICATE_KEY_1),
-                        ErrorCode.DUPLICATE_KEY_1);
+                    SQLException dupEx = new SQLException(msg, null, IgniteQueryErrorCode.DUPLICATE_KEY);
 
                     if (resEx == null)
                         resEx = dupEx;
@@ -1080,10 +1081,10 @@ class DmlStatementsProcessor {
         Object val = valSupplier.apply(F.asList(row));
 
         if (key == null)
-            throw createSqlException("Key for INSERT or MERGE must not be null", ErrorCode.NULL_NOT_ALLOWED);
+            throw new IgniteSQLException("Key for INSERT or MERGE must not be null",  IgniteQueryErrorCode.NULL_KEY);
 
         if (val == null)
-            throw createSqlException("Value for INSERT or MERGE must not be null", ErrorCode.NULL_NOT_ALLOWED);
+            throw new IgniteSQLException("Value for INSERT or MERGE must not be null", IgniteQueryErrorCode.NULL_VALUE);
 
         for (int i = 0; i < cols.length; i++) {
             if (i == keyColIdx || i == valColIdx)
@@ -1259,8 +1260,8 @@ class DmlStatementsProcessor {
         else if (element instanceof GridSqlParameter)
             return params[((GridSqlParameter)element).index()];
         else
-            throw createSqlException("Unexpected SQL expression type [cls=" + element.getClass().getName() + ']',
-                ErrorCode.UNKNOWN_DATA_TYPE_1);
+            throw new IgniteSQLException("Unexpected SQL expression type [cls=" + element.getClass().getName() + ']',
+                IgniteQueryErrorCode.UNEXPECTED_ELEMENT_TYPE);
     }
 
     /** */
@@ -1353,7 +1354,7 @@ class DmlStatementsProcessor {
         DmlAstUtils.collectAllGridTablesInTarget(target, tbls);
 
         if (tbls.size() != 1)
-            throw createSqlException("Failed to determine target table", ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1);
+            throw new IgniteSQLException("Failed to determine target table", ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1);
 
         return tbls.iterator().next();
     }
@@ -1376,14 +1377,15 @@ class DmlStatementsProcessor {
         DmlAstUtils.collectAllGridTablesInTarget(updTarget, tbls);
 
         if (tbls.size() != 1)
-            throw createSqlException("Failed to determine target table for UPDATE", ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1);
+            throw new IgniteSQLException("Failed to determine target table for UPDATE", ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1);
 
         GridSqlTable tbl = tbls.iterator().next();
 
         GridH2Table gridTbl = tbl.dataTable();
 
         if (updateAffectsKeyColumns(gridTbl, update.set().keySet()))
-            throw createSqlException("SQL UPDATE can't modify key or its fields directly", ErrorCode.COLUMN_NOT_FOUND_1);
+            throw new IgniteSQLException("SQL UPDATE can't modify key or its fields directly",
+                IgniteQueryErrorCode.KEY_UPDATE);
     }
 
     /**
