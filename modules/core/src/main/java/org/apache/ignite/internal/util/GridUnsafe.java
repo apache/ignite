@@ -1038,7 +1038,7 @@ public abstract class GridUnsafe {
     public static void copyMemory(long ptr, byte[] b, int off, int len) {
         if (len <= 16) {
             for (int i = 0; i < len; i++)
-                GridUnsafe.putByte(b, BYTE_ARR_OFF + off + i, GridUnsafe.getByte(ptr + 1));
+                GridUnsafe.putByte(b, BYTE_ARR_OFF + off + i, GridUnsafe.getByte(ptr + i));
         }
         else
             UNSAFE.copyMemory(null, ptr, b, BYTE_ARR_OFF + off, len);
