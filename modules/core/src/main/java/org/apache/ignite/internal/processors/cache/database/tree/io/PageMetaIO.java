@@ -28,7 +28,10 @@ public class PageMetaIO extends PageIO {
     private static final int METASTORE_ROOT_OFF = PageIO.COMMON_HEADER_END;
 
     /** */
-    private static final int REUSE_LIST_ROOT_OFF = METASTORE_ROOT_OFF + 8;
+    private static final int TREE_ROOT_OFF = METASTORE_ROOT_OFF + 8;
+
+    /** */
+    private static final int REUSE_LIST_ROOT_OFF = TREE_ROOT_OFF + 8;
 
     /** Last successful backup id offset. */
     private static final int LAST_SUCCESSFUL_BACKUP_ID_OFF = REUSE_LIST_ROOT_OFF + 8;
@@ -68,7 +71,7 @@ public class PageMetaIO extends PageIO {
      * @param ver Version.
      */
     protected PageMetaIO(int type, int ver) {
-       super(type, ver);
+        super(type, ver);
     }
 
     /** {@inheritDoc} */
@@ -86,9 +89,25 @@ public class PageMetaIO extends PageIO {
 
     /**
      * @param buf Buffer.
-     * @return Meta store root page.
+     * @return Tree root page.
      */
     public long getTreeRoot(ByteBuffer buf) {
+        return buf.getLong(TREE_ROOT_OFF);
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param treeRoot Tree root
+     */
+    public void setTreeRoot(@NotNull ByteBuffer buf, long treeRoot) {
+        buf.putLong(TREE_ROOT_OFF, treeRoot);
+    }
+
+    /**
+     * @param buf Buffer.
+     * @return Meta store root page.
+     */
+    public long getMetaStoreRoot(ByteBuffer buf) {
         return buf.getLong(METASTORE_ROOT_OFF);
     }
 
@@ -96,7 +115,7 @@ public class PageMetaIO extends PageIO {
      * @param buf Buffer.
      * @param metastoreRoot metastore root
      */
-    public void setTreeRoot(@NotNull ByteBuffer buf, long metastoreRoot) {
+    public void setMetaStoreRoot(@NotNull ByteBuffer buf, long metastoreRoot) {
         buf.putLong(METASTORE_ROOT_OFF, metastoreRoot);
     }
 
@@ -175,6 +194,7 @@ public class PageMetaIO extends PageIO {
     public long getNextBackupTag(@NotNull ByteBuffer buf) {
         return buf.getLong(NEXT_BACKUP_TAG_OFF);
     }
+
     /**
      * @param buf Buffer.
      * @param lastAllocatedIdx Last allocated index.

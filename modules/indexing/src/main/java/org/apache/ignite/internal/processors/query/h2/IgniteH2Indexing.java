@@ -1546,7 +1546,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param type Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    public void rebuildIndexesFromHash(@Nullable String spaceName,
+    @Override public void rebuildIndexesFromHash(@Nullable String spaceName,
         GridQueryTypeDescriptor type) throws IgniteCheckedException {
         TableDescriptor tbl = tableDescriptor(spaceName, type);
 
