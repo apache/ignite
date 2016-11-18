@@ -54,6 +54,9 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     private long reqId;
 
     /** */
+    private int threadIdx;
+
+    /** */
     @GridToStringInclude
     @GridDirectCollection(Integer.class)
     private List<Integer> caches;
@@ -205,6 +208,23 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     }
 
     /**
+     *  @return thread index
+     */
+    public int threadIdx() {
+        return threadIdx;
+    }
+
+    /**
+     * @param threadIdx thread index
+     * @return {@code this}.
+     */
+    public GridH2QueryRequest threadIdx(int threadIdx) {
+        this.threadIdx = threadIdx;
+
+        return this;
+    }
+
+    /**
      * @param flags Flags.
      * @return {@code this}.
      */
@@ -322,6 +342,14 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                     return false;
 
                 writer.incrementState();
+
+            case 9:
+                if (!writer.writeInt("threadIdx", threadIdx))
+                    return false;
+
+                writer.incrementState();
+
+
         }
 
         return true;
@@ -406,6 +434,14 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                     return false;
 
                 reader.incrementState();
+
+            case 9:
+                threadIdx = reader.readInt("threadIdx");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridH2QueryRequest.class);
@@ -418,7 +454,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 9;
+        return 10;
     }
 
     /** {@inheritDoc} */
