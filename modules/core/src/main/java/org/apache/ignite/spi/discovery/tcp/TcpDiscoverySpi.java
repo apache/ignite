@@ -98,6 +98,9 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessa
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryEnsureDelivery;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+
 /**
  * Discovery SPI implementation that uses TCP/IP for node discovery.
  * <p>
@@ -988,7 +991,10 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
                 Collections.sort(sortedAddrs);
 
-                consistentId = U.consistentId(sortedAddrs, impl.boundPort());
+                if (getBoolean(IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT))
+                    consistentId = U.consistentId(sortedAddrs);
+                else
+                    consistentId = U.consistentId(sortedAddrs, impl.boundPort());
             }
             else
                 consistentId = cfgId;

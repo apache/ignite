@@ -8524,10 +8524,9 @@ public abstract class IgniteUtils {
 
     /**
      * @param addrs Node's addresses.
-     * @param port Port discovery number.
      * @return A string compatible with {@link ClusterNode#consistentId()} requirements.
      */
-    public static String consistentId(Collection<String> addrs, int port) {
+    public static String consistentId(Collection<String> addrs) {
         assert !F.isEmpty(addrs);
 
         StringBuilder sb = new StringBuilder();
@@ -8537,9 +8536,18 @@ public abstract class IgniteUtils {
 
         sb.delete(sb.length() - 1, sb.length());
 
-        sb.append(':').append(port);
-
         return sb.toString();
+    }
+
+    /**
+     * @param addrs Node's addresses.
+     * @param port Port discovery number.
+     * @return A string compatible with {@link ClusterNode#consistentId()} requirements.
+     */
+    public static String consistentId(Collection<String> addrs, int port) {
+        assert !F.isEmpty(addrs);
+
+        return consistentId(addrs) + ':' + port;
     }
 
     /**

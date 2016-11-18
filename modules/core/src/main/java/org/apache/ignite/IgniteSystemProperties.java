@@ -472,6 +472,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES = "IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES";
 
     /**
+     * When set to {@code true}, for consistent id will calculate by host name, without port, and you can use
+     * only one node for host in cluster.
+     */
+    public static final String IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT = "IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
