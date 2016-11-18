@@ -41,7 +41,7 @@ public class MetaPageUpdateNextBackupId extends PageDeltaRecord {
     @Override public void applyDelta(ByteBuffer buf) throws IgniteCheckedException {
         PageMetaIO io = PageMetaIO.VERSIONS.forPage(buf);
 
-        io.setNextBackupId(buf, nextBackupId);
+        io.setNextBackupTag(buf, nextBackupId);
     }
 
     /** {@inheritDoc} */

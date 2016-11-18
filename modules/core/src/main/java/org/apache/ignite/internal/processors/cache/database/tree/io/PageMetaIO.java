@@ -82,7 +82,7 @@ public class PageMetaIO extends PageIO {
         setReuseListRoot(buf, 0);
         setLastSuccessfulFullBackupId(buf, 0);
         setLastSuccessfulBackupId(buf, 0);
-        setNextBackupId(buf, 1);
+        setNextBackupTag(buf, 1);
         setLastAllocatedIndex(buf, 0);
         setCandidateAllocatedIndex(buf, 0);
     }
@@ -169,7 +169,7 @@ public class PageMetaIO extends PageIO {
      * @param buf Buffer.
      * @param nextBackupId Next backup id.
      */
-    public void setNextBackupId(@NotNull ByteBuffer buf, long nextBackupId) {
+    public void setNextBackupTag(@NotNull ByteBuffer buf, long nextBackupId) {
         buf.putLong(NEXT_BACKUP_TAG_OFF, nextBackupId);
     }
 
