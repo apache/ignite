@@ -491,7 +491,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 GridCacheEntryEx entry = cacheCtx.cache().entryEx(key);
 
                                 try {
-                                    GridCacheVersion setVer = entry.versionedValue(cacheVal, ver, null);
+                                    GridCacheVersion setVer = entry.versionedValue(cacheVal, ver, null, entry.ttl());
 
                                     boolean set = setVer != null;
 

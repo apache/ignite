@@ -1867,7 +1867,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         @Nullable final UUID subjId,
         final String taskName,
         final boolean deserializeBinary,
-        @Nullable IgniteCacheExpiryPolicy expiry,
+        @Nullable final IgniteCacheExpiryPolicy expiry,
         final boolean skipVals,
         final boolean keepCacheObjects,
         boolean canRemap,
@@ -2002,13 +2002,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                             GridCacheEntryEx entry = entryEx(key);
 
                                             try {
-                                                GridCacheVersion verSet = entry.versionedValue(cacheVal, ver, null);
-
-                                                if(expiry != null) {
-                                                    long ttl = expiry.forCreate();
-                                                    if(ttl != CU.TTL_NOT_CHANGED)
-                                                        entry.updateTtl(verSet, ttl);
-                                                }
+                                                long ttl = expiry != null ? expiry.forCreate() : 0;
+                                                GridCacheVersion verSet = entry.versionedValue(cacheVal, ver, null, ttl);
 
                                                 boolean set = verSet != null;
 

@@ -3539,7 +3539,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** {@inheritDoc} */
     @Override public synchronized GridCacheVersion versionedValue(CacheObject val,
         GridCacheVersion curVer,
-        GridCacheVersion newVer)
+        GridCacheVersion newVer,
+        long ttl)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
 
         checkObsolete();
@@ -3555,8 +3556,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     newVer = cctx.versions().next();
 
                 CacheObject old = rawGetOrUnmarshalUnlocked(false);
-
-                long ttl = ttlExtras();
 
                 long expTime = CU.toExpireTime(ttl);
 

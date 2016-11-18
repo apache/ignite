@@ -722,7 +722,8 @@ public interface GridCacheEntryEx {
      */
     public GridCacheVersion versionedValue(CacheObject val,
         @Nullable GridCacheVersion curVer,
-        @Nullable GridCacheVersion newVer)
+        @Nullable GridCacheVersion newVer,
+        long ttl)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
