@@ -121,7 +121,7 @@ class DmlStatementsProcessor {
 
     /** Dummy metadata for update result. */
     private final static List<GridQueryFieldMetadata> UPDATE_RESULT_META = Collections.<GridQueryFieldMetadata>
-        singletonList(new IgniteH2Indexing.SqlFieldMetadata(null, null, "count", Long.class.getName()));
+        singletonList(new IgniteH2Indexing.SqlFieldMetadata(null, null, "UPDATED", Long.class.getName()));
 
     /**
      * @param indexing indexing.

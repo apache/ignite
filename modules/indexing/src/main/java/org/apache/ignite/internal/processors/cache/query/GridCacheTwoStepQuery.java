@@ -21,12 +21,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
-import org.apache.ignite.internal.util.lang.GridTriple;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Two step map-reduce style query.
@@ -64,26 +60,11 @@ public class GridCacheTwoStepQuery {
     /** */
     private boolean skipMergeTbl;
 
-    /** Whether this query should avoid throwing an exception on duplicate key during INSERT. */
-    private boolean skipDuplicateKeys;
-
-    /** */
-    private GridSqlStatement initStmt;
-
     /** */
     private List<Integer> caches;
 
     /** */
     private List<Integer> extraCaches;
-
-    /**
-     * Triple [key; value; new value] this DELETE or UPDATE query is supposed to affect.<p>
-     * <b>new value</b> is present only for UPDATE.<p>
-     * <b>value</b> in this triple may be null. If this field is null then no matching filter found.
-     */
-    @Nullable
-    @GridToStringInclude
-    private GridTriple<GridSqlElement> singleUpdate;
 
     /**
      * @param schemas Schema names in query.
@@ -111,6 +92,7 @@ public class GridCacheTwoStepQuery {
     public boolean distributedJoins() {
         return distributedJoins;
     }
+
 
     /**
      * @return {@code True} if reduce query can skip merge table creation and get data directly from merge index.
@@ -246,13 +228,10 @@ public class GridCacheTwoStepQuery {
         cp.caches = caches;
         cp.extraCaches = extraCaches;
         cp.spaces = spaces;
-        cp.rdc = rdc != null ? rdc.copy(args) : null;
+        cp.rdc = rdc.copy(args);
         cp.skipMergeTbl = skipMergeTbl;
         cp.pageSize = pageSize;
         cp.distributedJoins = distributedJoins;
-        cp.initStmt = initStmt;
-        cp.singleUpdate = singleUpdate;
-        cp.skipDuplicateKeys = skipDuplicateKeys;
 
         for (int i = 0; i < mapQrys.size(); i++)
             cp.mapQrys.add(mapQrys.get(i).copy(args));

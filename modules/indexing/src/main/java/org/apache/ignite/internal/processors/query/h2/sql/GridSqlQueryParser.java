@@ -347,12 +347,12 @@ public class GridSqlQueryParser {
                 res = new GridSqlSubquery(parse(qry, idxQry));
             }
             else if (tbl instanceof FunctionTable)
-                res = parseExpression(FUNC_EXPR.get((FunctionTable) tbl), false);
+                res = parseExpression(FUNC_EXPR.get((FunctionTable)tbl), false);
             else if (tbl instanceof RangeTable) {
                 res = new GridSqlFunction(GridSqlFunctionType.SYSTEM_RANGE);
 
-                res.addChild(parseExpression(RANGE_MIN.get((RangeTable) tbl), false));
-                res.addChild(parseExpression(RANGE_MAX.get((RangeTable) tbl), false));
+                res.addChild(parseExpression(RANGE_MIN.get((RangeTable)tbl), false));
+                res.addChild(parseExpression(RANGE_MAX.get((RangeTable)tbl), false));
             }
             else
                 assert0(false, "Unexpected Table implementation [cls=" + tbl.getClass().getSimpleName() + ", " +
@@ -431,8 +431,8 @@ public class GridSqlQueryParser {
      * @param merge Merge.
      * @see <a href="http://h2database.com/html/grammar.html#merge">H2 merge spec</a>
      */
-    public GridSqlMerge parse(Merge merge) {
-        GridSqlMerge res = (GridSqlMerge) h2ObjToGridObj.get(merge);
+    private GridSqlMerge parseMerge(Merge merge) {
+        GridSqlMerge res = (GridSqlMerge)h2ObjToGridObj.get(merge);
 
         if (res != null)
             return res;
@@ -484,7 +484,7 @@ public class GridSqlQueryParser {
      * @param insert Insert.
      * @see <a href="http://h2database.com/html/grammar.html#insert">H2 insert spec</a>
      */
-    public GridSqlInsert parse(Insert insert) {
+    private GridSqlInsert parseInsert(Insert insert) {
         GridSqlInsert res = (GridSqlInsert)h2ObjToGridObj.get(insert);
 
         if (res != null)
@@ -531,8 +531,8 @@ public class GridSqlQueryParser {
      * @param del Delete.
      * @see <a href="http://h2database.com/html/grammar.html#delete">H2 delete spec</a>
      */
-    public GridSqlDelete parse(Delete del) {
-        GridSqlDelete res = (GridSqlDelete) h2ObjToGridObj.get(del);
+    private GridSqlDelete parseDelete(Delete del) {
+        GridSqlDelete res = (GridSqlDelete)h2ObjToGridObj.get(del);
 
         if (res != null)
             return res;
@@ -551,7 +551,7 @@ public class GridSqlQueryParser {
      * @param update Update.
      * @see <a href="http://h2database.com/html/grammar.html#update">H2 update spec</a>
      */
-    public GridSqlUpdate parse(Update update) {
+    private GridSqlUpdate parseUpdate(Update update) {
         GridSqlUpdate res = (GridSqlUpdate)h2ObjToGridObj.get(update);
 
         if (res != null)
@@ -636,16 +636,16 @@ public class GridSqlQueryParser {
             return parse((Query)qry, idxQry);
 
         if (qry instanceof Merge)
-            return parse((Merge)qry);
+            return parseMerge((Merge)qry);
 
         if (qry instanceof Insert)
-            return parse((Insert)qry);
+            return parseInsert((Insert)qry);
 
         if (qry instanceof Delete)
-            return parse((Delete) qry);
+            return parseDelete((Delete)qry);
 
         if (qry instanceof Update)
-            return parse((Update) qry);
+            return parseUpdate((Update)qry);
 
         if (qry instanceof Explain)
             return parse(EXPLAIN_COMMAND.get((Explain)qry)).explain(true);

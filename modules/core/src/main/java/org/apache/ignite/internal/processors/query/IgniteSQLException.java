@@ -67,11 +67,6 @@ public class IgniteSQLException extends IgniteException {
      * @return JDBC exception containing details from this instance.
      */
     public SQLException toJdbcException() {
-        if (getCause() == null)
-            return new SQLException(getMessage(), sqlState, statusCode);
-        else if (getCause() instanceof SQLException)
-            return (SQLException) getCause();
-        else
-            return new SQLException(getCause());
+        return new SQLException(getMessage(), sqlState, statusCode, this);
     }
 }
