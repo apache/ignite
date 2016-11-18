@@ -63,7 +63,7 @@ namespace Apache.Ignite.EntityFramework
         /// DbConfiguration.AddInterceptor method.
         /// </summary>
         private static readonly MethodInfo AddInterceptorMethodInfo = 
-            typeof(DbConfiguration).GetMethod("AddInterceptor");
+            typeof(DbConfiguration).GetMethod("AddInterceptor", BindingFlags.Instance | BindingFlags.NonPublic);
 
         /// <summary>
         /// DbConfiguration.AddInterceptor delegate.
