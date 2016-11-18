@@ -4115,15 +4115,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         boolean failed = false;
 
+        final boolean isServerNode = !ctx.config().isClientMode();
+
         glStLock.lock();
 
-        GridActivateFuture fut = actFut;
-
-        if (fut != null)
-            fut.setRemaining(topVer);
-
         try {
-            final boolean isServerNode = !ctx.config().isClientMode();
+            if (isServerNode){
+                GridActivateFuture fut = actFut;
+
+                if (fut != null)
+                    fut.setRemaining(topVer);
+            }
 
             globalState = req.state();
 
@@ -4172,7 +4174,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         ctx.dataStructures().onKernalStart();
 
-                        shCtx.database().afterActivate();
+                        if (isServerNode)
+                            shCtx.database().afterActivate();
 
                         //send ok status
                         sendActivationResponse(req.requestId(), req.initiatingNodeId(), null);
@@ -4211,6 +4214,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridActivationMessageResponse actResp = new GridActivationMessageResponse(
                 requestId, ctx.localNodeId(), ex
             );
+
+            System.out.println("send message to: " + initNodeId + " from: " + ctx.localNodeId());
 
             if (ctx.localNodeId().equals(initNodeId))
                 processActivationResponse(actResp);
