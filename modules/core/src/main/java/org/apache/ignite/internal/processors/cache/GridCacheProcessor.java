@@ -1905,16 +1905,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (!F.isEmpty(reqs)) {
-            for (final DynamicCacheChangeRequest req : reqs) {
-                if (req.globalStateChange()) {
-                    activate(topVer, req);
-
-                    break;
-                }
-            }
-        }
-
         if (!F.isEmpty(reqs) && err == null) {
             for (DynamicCacheChangeRequest req : reqs) {
                 String masked = maskNull(req.cacheName());
@@ -1943,6 +1933,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
 
                 completeStartFuture(req);
+            }
+        }
+
+        if (!F.isEmpty(reqs)) {
+            for (final DynamicCacheChangeRequest req : reqs) {
+                if (req.globalStateChange()) {
+                    activate(topVer, req);
+
+                    break;
+                }
             }
         }
     }
