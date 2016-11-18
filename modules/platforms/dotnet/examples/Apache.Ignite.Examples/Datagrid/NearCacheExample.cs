@@ -54,9 +54,9 @@ namespace Apache.Ignite.Examples.Datagrid
                 // Creating a distributed and near cache.
                 var nearCacheCfg = new NearCacheConfiguration
                 {
-                    NearStartSize = 100,
                     EvictionPolicy = new LruEvictionPolicy
                     {
+                        // Near cache will store only 10 recently accessed/used entries.
                         MaxSize = 10
                     }
                 };
@@ -66,6 +66,8 @@ namespace Apache.Ignite.Examples.Datagrid
                 ICache<int, int> cache = ignite.GetOrCreateCache<int, int>(
                     new CacheConfiguration(CacheName), nearCacheCfg);
 
+                // Adding data into the cache. 
+                // Latest 10 entries will be stored in the near cache on the client node side.
                 for (int i = 0; i < 1000; i++)
                     cache.Put(i, i * 10);
 
