@@ -30,7 +30,8 @@ namespace Apache.Ignite.Examples.Datagrid
     using Apache.Ignite.Core.SwapSpace.File;
 
     /// <summary>
-    /// This example demonstrates how multi-tiered Ignite cache stores data in various ways.
+    /// This example demonstrates on how to configure a multi-tiered Ignite cache that will store data in different 
+    /// memory spaces (on-heap, off-heap, swap) depending on the total cache size and eviction policies that are set.
     /// NOTE: There must be no other cluster nodes running on the host.
     /// <para />
     /// 1) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build).
@@ -82,11 +83,10 @@ namespace Apache.Ignite.Examples.Datagrid
                     Backups = 1,
                     EvictionPolicy = new LruEvictionPolicy
                     {
-                        // Maximum number of entries that will be stored in Java heap. 
-                        MaxSize = 10
+                        MaxSize = 10 // Maximum number of entries that will be stored in Java heap. 
                     },
                     OffHeapMaxMemory = EntrySize * 10, // Limit off-heap to 10 entries.
-                    EnableSwap = true
+                    EnableSwap = true // Data will be swapped to disk if there is no more space in off-heap space.
                 };
 
                 ICache<int, byte[]> cache = ignite.GetOrCreateCache<int, byte[]>(cacheCfg);
