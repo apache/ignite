@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -44,6 +45,8 @@ import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueTimestampUtc;
 import org.jetbrains.annotations.Nullable;
+
+import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateOperand;
 
 /**
  * AST utils for DML
@@ -143,7 +146,7 @@ public final class DmlAstUtils {
      * @return {@code null} if given statement directly updates {@code _val} column with a literal or param value
      * and filters by single non expression key (and, optionally,  by single non expression value).
      */
-    public static GridTriple<GridSqlElement> getSingleItemFilter(GridSqlUpdate update) {
+    public static GridTriple<FastUpdateOperand>getSingleItemFilter(GridSqlUpdate update) {
         IgnitePair<GridSqlElement> filter = findKeyValueEqulaityCondition(update.where());
 
         if (filter == null)
@@ -158,20 +161,39 @@ public final class DmlAstUtils {
         if (!(set instanceof GridSqlConst || set instanceof GridSqlParameter))
             return null;
 
-        return new GridTriple<>(filter.getKey(), filter.getValue(), set);
+        return new GridTriple<>(operandForElement(filter.getKey()), operandForElement(filter.getValue()),
+            operandForElement(set));
+    }
+
+    /**
+     * Create operand based on exact type of SQL element.
+     *
+     * @param el element.
+     * @return Operand.
+     */
+    private static FastUpdateOperand operandForElement(GridSqlElement el) {
+        assert el == null ^ (el instanceof GridSqlConst || el instanceof GridSqlParameter);
+
+        if (el == null)
+            return NULL_OPERAND;
+
+        if (el instanceof GridSqlConst)
+            return new ValueOperand(((GridSqlConst)el).value().getObject());
+        else
+            return new ParamOperand(((GridSqlParameter)el).index());
     }
 
     /**
      * @param del DELETE statement.
      * @return {@code true} if given statement filters by single non expression key.
      */
-    public static GridTriple<GridSqlElement> getSingleItemFilter(GridSqlDelete del) {
+    public static GridTriple<FastUpdateOperand> getSingleItemFilter(GridSqlDelete del) {
         IgnitePair<GridSqlElement> filter = findKeyValueEqulaityCondition(del.where());
 
         if (filter == null)
             return null;
 
-        return new GridTriple<>(filter.getKey(), filter.getValue(), null);
+        return new GridTriple<>(operandForElement(filter.getKey()), operandForElement(filter.getValue()), NULL_OPERAND);
     }
 
     /**
@@ -512,5 +534,49 @@ public final class DmlAstUtils {
                 return false;
             }
         });
+    }
+
+    /** Operand that always evaluates as {@code null}. */
+    private final static FastUpdateOperand NULL_OPERAND = new FastUpdateOperand() {
+        /** {@inheritDoc} */
+        @Override public Object apply(Object[] arg) throws IgniteCheckedException {
+            return null;
+        }
+    };
+
+    /** Simple constant value based operand. */
+    private final static class ValueOperand implements FastUpdateOperand {
+        /** Value to return. */
+        private final Object val;
+
+        /** */
+        private ValueOperand(Object val) {
+            this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object apply(Object[] arg) throws IgniteCheckedException {
+            return val;
+        }
+    }
+
+    /** Simple constant value based operand. */
+    private final static class ParamOperand implements FastUpdateOperand {
+        /** Value to return. */
+        private final int paramIdx;
+
+        /** */
+        private ParamOperand(int paramIdx) {
+            assert paramIdx >= 0;
+
+            this.paramIdx = paramIdx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object apply(Object[] arg) throws IgniteCheckedException {
+            assert arg.length > paramIdx;
+
+            return arg[paramIdx];
+        }
     }
 }

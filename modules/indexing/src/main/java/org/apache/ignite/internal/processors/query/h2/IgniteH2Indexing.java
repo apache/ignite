@@ -807,7 +807,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement) stmt);
 
             if (!p.isQuery())
-                return dmlProc.updateLocalSqlFields(cacheContext(spaceName), stmt, new SqlFieldsQuery(qry), cancel);
+                return dmlProc.updateLocalSqlFields(stmt, new SqlFieldsQuery(qry), cancel);
 
             List<GridQueryFieldMetadata> meta;
 
@@ -1263,7 +1263,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             if (!prepared.isQuery())
                 try {
-                    return dmlProc.updateSqlFieldsTwoStep(cctx, stmt, qry);
+                    return dmlProc.updateSqlFieldsTwoStep(stmt, qry);
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteSQLException("Failed to execute DML statement [qry=" + sqlQry + ", params=" +
