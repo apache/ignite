@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -264,42 +263,11 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
             Assert.assertEquals(1, (long)jedis.incr("newKeyIncr"));
             Assert.assertEquals(-1, (long)jedis.decr("newKeyDecr"));
 
-            jcache().put("incrKey1", 1L);
+            Assert.assertEquals(2, (long)jedis.incr("newKeyIncr"));
+            Assert.assertEquals(2, grid(0).atomicLong("newKeyIncr", 0, true).get());
 
-            Assert.assertEquals(2L, (long)jedis.incr("incrKey1"));
-
-            jcache().put("decrKey1", 1L);
-
-            Assert.assertEquals(0L, (long)jedis.decr("decrKey1"));
-
-            jcache().put("nonInt", "abc");
-
-            try {
-                jedis.incr("nonInt");
-
-                assert false : "Exception has to be thrown!";
-            }
-            catch (JedisDataException e) {
-                assertTrue(e.getMessage().startsWith("ERR"));
-            }
-            try {
-                jedis.decr("nonInt");
-
-                assert false : "Exception has to be thrown!";
-            }
-            catch (JedisDataException e) {
-                assertTrue(e.getMessage().startsWith("ERR"));
-            }
-
-            jcache().put("outOfRange", new BigInteger("234293482390480948029348230948"));
-            try {
-                jedis.incr("outOfRange");
-
-                assert false : "Exception has to be thrown!";
-            }
-            catch (JedisDataException e) {
-                assertTrue(e.getMessage().startsWith("ERR"));
-            }
+            Assert.assertEquals(-2, (long)jedis.decr("newKeyDecr"));
+            Assert.assertEquals(-2, grid(0).atomicLong("newKeyDecr", 0, true).get());
         }
     }
 
@@ -311,13 +279,11 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
             Assert.assertEquals(2, (long)jedis.incrBy("newKeyIncr1", 2));
             Assert.assertEquals(-2, (long)jedis.decrBy("newKeyDecr1", 2));
 
-            jcache().put("incrKey2", 1L);
+            Assert.assertEquals(4, (long)jedis.incrBy("newKeyIncr1", 2));
+            Assert.assertEquals(4, grid(0).atomicLong("newKeyIncr1", 0, true).get());
 
-            Assert.assertEquals(3L, (long)jedis.incrBy("incrKey2", 2));
-
-            jcache().put("decrKey2", 2L);
-
-            Assert.assertEquals(0L, (long)jedis.decrBy("decrKey2", 2));
+            Assert.assertEquals(-4, (long)jedis.decrBy("newKeyDecr1", 2));
+            Assert.assertEquals(-4, grid(0).atomicLong("newKeyDecr1", 0, true).get());
         }
     }
 

@@ -30,13 +30,11 @@ import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisC
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
 import org.apache.ignite.internal.processors.rest.request.DataStructuresRequest;
-import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.ATOMIC_DECREMENT;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.ATOMIC_INCREMENT;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.DECR;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.DECRBY;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.INCR;
@@ -73,23 +71,7 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
 
         DataStructuresRequest restReq = new DataStructuresRequest();
 
-        GridRestCacheRequest getReq = new GridRestCacheRequest();
-
-        getReq.clientId(msg.clientId());
-        getReq.key(msg.key());
-        getReq.command(CACHE_GET);
-
-        GridRestResponse getResp = hnd.handle(getReq);
-
-        if (getResp.getResponse() == null)
-            restReq.initial(0L);
-        else {
-            if (getResp.getResponse() instanceof Long && (Long)getResp.getResponse() <= Long.MAX_VALUE)
-                restReq.initial((Long)getResp.getResponse());
-            else
-                throw new GridRedisGenericException("An initial value must be numeric and in range");
-        }
-
+        restReq.initial(0L);
         restReq.clientId(msg.clientId());
         restReq.key(msg.key());
         restReq.delta(1L);
