@@ -160,14 +160,15 @@ namespace Apache.Ignite.EntityFramework
         {
             IgniteArgumentCheck.NotNull(ignite, "ignite");
 
-            InitializeIgniteCachingInternal(ignite, metaCacheConfiguration, dataCacheConfiguration, policy, 
-                this, AddInterceptor);
+            InitializeIgniteCachingInternal(this, ignite, metaCacheConfiguration, dataCacheConfiguration, policy, AddInterceptor);
         }
 
         /// <summary>
         /// Initializes Ignite caching for specified <see cref="DbConfiguration"/>.
         /// This method should be used when it is not possible to use or inherit <see cref="IgniteDbConfiguration"/>.
         /// </summary>
+        /// <param name="dbConfiguration"><see cref="DbConfiguration"/> instance to be initialized
+        /// for Ignite caching.</param>
         /// <param name="ignite">The ignite instance to use.</param>
         /// <param name="metaCacheConfiguration">
         /// Configuration of the metadata cache which holds entity set information. Null for default configuration. 
@@ -180,29 +181,29 @@ namespace Apache.Ignite.EntityFramework
         /// This cache tolerates lost data and can have no backups.
         /// </param>
         /// <param name="policy">The caching policy. Null for default <see cref="DbCachingPolicy" />.</param>
-        /// <param name="dbConfiguration"><see cref="DbConfiguration"/> instance to be initialized
-        /// for Ignite caching.</param>
-        /// <param name="addInterceptor"><see cref="DbConfiguration.AddInterceptor"/> method invoker.</param>
-        public static void InitializeIgniteCaching(IIgnite ignite, CacheConfiguration metaCacheConfiguration,
-            CacheConfiguration dataCacheConfiguration, IDbCachingPolicy policy, 
-            DbConfiguration dbConfiguration, Action<IDbInterceptor> addInterceptor)
+        public static void InitializeIgniteCaching(DbConfiguration dbConfiguration, IIgnite ignite,
+            CacheConfiguration metaCacheConfiguration, CacheConfiguration dataCacheConfiguration,
+            IDbCachingPolicy policy)
         {
             IgniteArgumentCheck.NotNull(ignite, "ignite");
             IgniteArgumentCheck.NotNull(dbConfiguration, "configuration");
-            IgniteArgumentCheck.NotNull(addInterceptor, "addInterceptor");
 
             IgniteArgumentCheck.Ensure(!(dbConfiguration is IgniteDbConfiguration), "dbConfiguration",
                 "IgniteDbConfiguration.InitializeIgniteCaching should not be called for IgniteDbConfiguration " +
                 "instance. This method should be used only when IgniteDbConfiguration can't be inherited.");
 
-            InitializeIgniteCachingInternal(ignite, metaCacheConfiguration, dataCacheConfiguration, policy, 
-                dbConfiguration, addInterceptor);
+            // TODO
+            Action<IDbInterceptor> addInterceptor = null;
+
+            InitializeIgniteCachingInternal(dbConfiguration, ignite, metaCacheConfiguration, dataCacheConfiguration, policy, addInterceptor);
         }
 
         /// <summary>
         /// Initializes Ignite caching for specified <see cref="DbConfiguration"/>.
         /// This method should be used when it is not possible to use or inherit <see cref="IgniteDbConfiguration"/>.
         /// </summary>
+        /// <param name="dbConfiguration"><see cref="DbConfiguration"/> instance to be initialized
+        /// for Ignite caching.</param>
         /// <param name="ignite">The ignite instance to use.</param>
         /// <param name="metaCacheConfiguration">
         /// Configuration of the metadata cache which holds entity set information. Null for default configuration. 
@@ -215,12 +216,8 @@ namespace Apache.Ignite.EntityFramework
         /// This cache tolerates lost data and can have no backups.
         /// </param>
         /// <param name="policy">The caching policy. Null for default <see cref="DbCachingPolicy" />.</param>
-        /// <param name="dbConfiguration"><see cref="DbConfiguration"/> instance to be initialized
-        /// for Ignite caching.</param>
         /// <param name="addInterceptor"><see cref="DbConfiguration.AddInterceptor"/> method invoker.</param>
-        private static void InitializeIgniteCachingInternal(IIgnite ignite, CacheConfiguration metaCacheConfiguration,
-            CacheConfiguration dataCacheConfiguration, IDbCachingPolicy policy, 
-            DbConfiguration dbConfiguration, Action<IDbInterceptor> addInterceptor)
+        private static void InitializeIgniteCachingInternal(DbConfiguration dbConfiguration, IIgnite ignite, CacheConfiguration metaCacheConfiguration, CacheConfiguration dataCacheConfiguration, IDbCachingPolicy policy, Action<IDbInterceptor> addInterceptor)
         {
             Debug.Assert(ignite != null);
             Debug.Assert(dbConfiguration != null);
