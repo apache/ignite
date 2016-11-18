@@ -4215,8 +4215,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 requestId, ctx.localNodeId(), ex
             );
 
-            System.out.println("send message to: " + initNodeId + " from: " + ctx.localNodeId());
-
             if (ctx.localNodeId().equals(initNodeId))
                 processActivationResponse(actResp);
             else
