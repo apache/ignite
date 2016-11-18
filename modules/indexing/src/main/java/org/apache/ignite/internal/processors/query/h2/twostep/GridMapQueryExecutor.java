@@ -442,7 +442,7 @@ public class GridMapQueryExecutor {
 
         onQueryRequest0(node,
             req.requestId(),
-            req.threadIdx(),
+            req.segmentId(),
             req.queries(),
             req.caches(),
             req.topologyVersion(),
@@ -457,7 +457,7 @@ public class GridMapQueryExecutor {
     /**
      * @param node Node authored request.
      * @param reqId Request ID.
-     * @param threadIdx thread index.
+     * @param segmentId index segment ID.
      * @param qrys Queries to execute.
      * @param cacheIds Caches which will be affected by these queries.
      * @param topVer Topology version.
@@ -470,7 +470,7 @@ public class GridMapQueryExecutor {
     private void onQueryRequest0(
         ClusterNode node,
         long reqId,
-        int threadIdx,
+        int segmentId,
         Collection<GridCacheSqlQuery> qrys,
         List<Integer> cacheIds,
         AffinityTopologyVersion topVer,
@@ -497,7 +497,7 @@ public class GridMapQueryExecutor {
             if (topVer != null) {
                 // Reserve primary for topology version or explicit partitions.
                 if (!reservePartitions(cacheIds, topVer, parts, reserved)) {
-                    sendRetry(node, reqId, threadIdx);
+                    sendRetry(node, reqId, segmentId);
 
                     return;
                 }
@@ -505,7 +505,7 @@ public class GridMapQueryExecutor {
 
             qr = new QueryResults(reqId, qrys.size(), mainCctx);
 
-            if (nodeRess.put(reqId, threadIdx, qr) != null)
+            if (nodeRess.put(reqId, segmentId, qr) != null)
                 throw new IllegalStateException();
 
             // Prepare query context.
@@ -518,7 +518,8 @@ public class GridMapQueryExecutor {
                 .distributedJoins(distributedJoins)
                 .pageSize(pageSize)
                 .topologyVersion(topVer)
-                .reservations(reserved);
+                .reservations(reserved)
+                .segment(segmentId);
 
             List<GridH2Table> snapshotedTbls = null;
 
@@ -562,7 +563,7 @@ public class GridMapQueryExecutor {
 
                 for (GridCacheSqlQuery qry : qrys) {
                     ResultSet rs = h2.executeSqlQueryWithTimer(mainCctx.name(), conn, qry.query(),
-                        F.asList(qry.parameters()), true,
+                        F.asList(qry.parameters()), false,
                         timeout,
                         qr.cancels[qryIdx]);
 
@@ -593,7 +594,7 @@ public class GridMapQueryExecutor {
                     }
 
                     // Send the first page.
-                    sendNextPage(nodeRess, node, qr, qryIdx, threadIdx, pageSize);
+                    sendNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize);
 
                     qryIdx++;
                 }
@@ -612,13 +613,13 @@ public class GridMapQueryExecutor {
         }
         catch (Throwable e) {
             if (qr != null) {
-                nodeRess.remove(reqId, threadIdx, qr);
+                nodeRess.remove(reqId, segmentId, qr);
 
                 qr.cancel(false);
             }
 
             if (X.hasCause(e, GridH2RetryException.class))
-                sendRetry(node, reqId, threadIdx);
+                sendRetry(node, reqId, segmentId);
             else {
                 U.error(log, "Failed to execute local query.", e);
 
@@ -678,14 +679,14 @@ public class GridMapQueryExecutor {
             return;
         }
 
-        QueryResults qr = nodeRess.get(req.queryRequestId(), req.threadIdx());
+        QueryResults qr = nodeRess.get(req.queryRequestId(), req.segmentId());
 
         if (qr == null)
             sendError(node, req.queryRequestId(), new CacheException("No query result found for request: " + req));
         else if (qr.canceled)
             sendError(node, req.queryRequestId(), new QueryCancelledException());
         else
-            sendNextPage(nodeRess, node, qr, req.query(), req.threadIdx(), req.pageSize());
+            sendNextPage(nodeRess, node, qr, req.query(), req.segmentId(), req.pageSize());
     }
 
     /**
@@ -693,10 +694,10 @@ public class GridMapQueryExecutor {
      * @param node Node.
      * @param qr Query results.
      * @param qry Query.
-     * @param threadIdx thread index
+     * @param segmentId index segment ID.
      * @param pageSize Page size.
      */
-    private void sendNextPage(NodeResults nodeRess, ClusterNode node, QueryResults qr, int qry, int threadIdx,
+    private void sendNextPage(NodeResults nodeRess, ClusterNode node, QueryResults qr, int qry, int segmentId,
         int pageSize) {
         QueryResult res = qr.result(qry);
 
@@ -712,13 +713,13 @@ public class GridMapQueryExecutor {
             res.close();
 
             if (qr.isAllClosed())
-                nodeRess.remove(qr.qryReqId, threadIdx, qr);
+                nodeRess.remove(qr.qryReqId, segmentId, qr);
         }
 
         try {
             boolean loc = node.isLocal();
 
-            GridQueryNextPageResponse msg = new GridQueryNextPageResponse(qr.qryReqId, threadIdx, qry, page,
+            GridQueryNextPageResponse msg = new GridQueryNextPageResponse(qr.qryReqId, segmentId, qry, page,
                 page == 0 ? res.rowCnt : -1,
                 res.cols,
                 loc ? null : toMessages(rows, new ArrayList<Message>(res.cols)),
@@ -739,13 +740,13 @@ public class GridMapQueryExecutor {
     /**
      * @param node Node.
      * @param reqId Request ID.
-     * @param threadIdx thread index.
+     * @param segmentId index segment ID.
      */
-    private void sendRetry(ClusterNode node, long reqId, int threadIdx) {
+    private void sendRetry(ClusterNode node, long reqId, int segmentId) {
         try {
             boolean loc = node.isLocal();
 
-            GridQueryNextPageResponse msg = new GridQueryNextPageResponse(reqId, threadIdx,
+            GridQueryNextPageResponse msg = new GridQueryNextPageResponse(reqId, segmentId,
             /*qry*/0, /*page*/0, /*allRows*/0, /*cols*/1,
                 loc ? null : Collections.<Message>emptyList(),
                 loc ? Collections.<Value[]>emptyList() : null);
@@ -779,7 +780,7 @@ public class GridMapQueryExecutor {
      */
     private static class NodeResults {
         /** */
-        private final ConcurrentMap<QueryThreadKey, QueryResults> res = new ConcurrentHashMap8<>();
+        private final ConcurrentMap<RequestKey, QueryResults> res = new ConcurrentHashMap8<>();
 
         /** */
         private final GridBoundedConcurrentLinkedHashMap<Long, Boolean> qryHist =
@@ -805,11 +806,11 @@ public class GridMapQueryExecutor {
 
         /**
          * @param reqId Query Request ID.
-         * @param threadIdx thread index.
-         * @return query thread results.
+         * @param segmentId index segment ID
+         * @return query partial results.
          */
-        public QueryResults get(long reqId, int threadIdx) {
-            return res.get(new QueryThreadKey(reqId, threadIdx));
+        public QueryResults get(long reqId, int segmentId) {
+            return res.get(new RequestKey(reqId, segmentId));
         }
 
         /**
@@ -817,7 +818,7 @@ public class GridMapQueryExecutor {
          * @param reqID Request ID.
          */
         public void cancelRequest(long reqID) {
-            for (QueryThreadKey key : res.keySet()) {
+            for (RequestKey key : res.keySet()) {
                 if (key.reqId == reqID) {
                     QueryResults removed = res.remove(key);
 
@@ -830,22 +831,22 @@ public class GridMapQueryExecutor {
 
         /**
          * @param reqId Query Request ID.
-         * @param threadIdx thread index.
+         * @param segmentId index segment ID.
          * @param qr Query Results.
          * @return {@code True} if removed.
          */
-        public boolean remove(long reqId, int threadIdx, QueryResults qr) {
-            return res.remove(new QueryThreadKey(reqId, threadIdx), qr);
+        public boolean remove(long reqId, int segmentId, QueryResults qr) {
+            return res.remove(new RequestKey(reqId, segmentId), qr);
         }
 
         /**
          * @param reqId Query Request ID.
-         * @param threadIdx thread index.
+         * @param segmentId index segment ID
          * @param qr Query Results.
          * @return previous value.
          */
-        public QueryResults put(long reqId, int threadIdx, QueryResults qr) {
-            return res.put(new QueryThreadKey(reqId, threadIdx), qr);
+        public QueryResults put(long reqId, int segmentId, QueryResults qr) {
+            return res.put(new RequestKey(reqId, segmentId), qr);
         }
 
         /**
@@ -859,17 +860,17 @@ public class GridMapQueryExecutor {
         /**
          *
          */
-        static class QueryThreadKey {
+        private static class RequestKey {
             /** */
             private long reqId;
 
             /** */
-            private int threadIdx;
+            private int segmentId;
 
             /** Constructor */
-            QueryThreadKey(long reqId, int threadIdx) {
+            RequestKey(long reqId, int segmentId) {
                 this.reqId = reqId;
-                this.threadIdx = threadIdx;
+                this.segmentId = segmentId;
             }
 
             /** {@inheritDoc} */
@@ -879,16 +880,16 @@ public class GridMapQueryExecutor {
                 if (o == null || getClass() != o.getClass())
                     return false;
 
-                QueryThreadKey thread = (QueryThreadKey)o;
+                RequestKey other = (RequestKey)o;
 
-                return reqId == thread.reqId && threadIdx == thread.threadIdx;
+                return reqId == other.reqId && segmentId == other.segmentId;
 
             }
 
             /** {@inheritDoc} */
             @Override public int hashCode() {
                 int result = (int)(reqId ^ (reqId >>> 32));
-                result = 31 * result + threadIdx;
+                result = 31 * result + segmentId;
                 return result;
             }
         }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -31,6 +32,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.h2.api.TableEngine;
 import org.h2.command.ddl.CreateTableData;
@@ -73,10 +75,12 @@ public class GridH2Table extends TableBase {
     private final GridH2RowDescriptor desc;
 
     /** */
-    private final ArrayList<Index> idxs;
+    private final ArrayList<Index>[] idxs;
 
     /** */
     private final ReadWriteLock lock;
+
+    private final int segments;
 
     /** */
     private boolean destroyed;
@@ -85,7 +89,7 @@ public class GridH2Table extends TableBase {
     private final Set<Session> sessions = Collections.newSetFromMap(new ConcurrentHashMap8<Session,Boolean>());
 
     /** */
-    private final AtomicReference<Object[]> actualSnapshot = new AtomicReference<>();
+    private final AtomicReference<Object[][]> actualSnapshot = new AtomicReference<>();
 
     /** */
     private IndexColumn affKeyCol;
@@ -103,10 +107,14 @@ public class GridH2Table extends TableBase {
      * @param desc Row descriptor.
      * @param idxsFactory Indexes factory.
      * @param spaceName Space name.
+     * @param segments number of index segments.
      */
     public GridH2Table(CreateTableData createTblData, @Nullable GridH2RowDescriptor desc, IndexesFactory idxsFactory,
-        @Nullable String spaceName) {
+        @Nullable String spaceName, int segments) {
         super(createTblData);
+        assert segments >= 1;
+
+        this.segments = segments;
 
         assert idxsFactory != null;
 
@@ -138,15 +146,18 @@ public class GridH2Table extends TableBase {
             }
         }
 
-        // Indexes must be created in the end when everything is ready.
-        idxs = idxsFactory.createIndexes(this);
+        idxs = new ArrayList[segments];
 
-        assert idxs != null;
-        assert idxs.size() >= 1;
+        for (int s = 0; s < segments; s++) {
+            // Indexes must be created in the end when everything is ready.
+            idxs[s] = idxsFactory.createIndexes(this);
 
-        // Add scan index at 0 which is required by H2.
-        idxs.add(0, new ScanIndex(index(0)));
+            assert idxs[s] != null;
+            assert idxs[s].size() >= 1;
 
+            // Add scan index at 0 which is required by H2.
+            idxs[s].add(0, new ScanIndex(index(s, 0)));
+        }
         snapshotEnabled = desc == null || desc.snapshotableIndex();
 
         lock = snapshotEnabled ? new ReentrantReadWriteLock() : null;
@@ -215,7 +226,9 @@ public class GridH2Table extends TableBase {
     private boolean onSwapUnswap(CacheObject key, @Nullable CacheObject val) throws IgniteCheckedException {
         assert key != null;
 
-        GridH2TreeIndex pk = pk();
+        int seg = segment(key);
+
+        GridH2TreeIndex pk = pk(seg);
 
         assert desc != null;
 
@@ -293,7 +306,7 @@ public class GridH2Table extends TableBase {
         if (!snapshotEnabled)
             return;
 
-        Object[] snapshots;
+        Object[][] snapshots;
 
         Lock l;
 
@@ -385,38 +398,50 @@ public class GridH2Table extends TableBase {
      * @return New indexes data snapshot.
      */
     @SuppressWarnings("unchecked")
-    private Object[] doSnapshotIndexes(Object[] snapshots, GridH2QueryContext qctx) {
+    private Object[][] doSnapshotIndexes(Object[][] snapshots, GridH2QueryContext qctx) {
         assert snapshotEnabled;
 
-        if (snapshots == null) // Nothing to reuse, create new snapshots.
-            snapshots = new Object[idxs.size() - 1];
+        for(int seg=0; seg <segments; seg++) {
+            if (snapshots == null) // Nothing to reuse, create new snapshots.
+                snapshots = new Object[segments][idxs[seg].size() - 1];
 
-        // Take snapshots on all except first which is scan.
-        for (int i = 1, len = idxs.size(); i < len; i++) {
-            Object s = snapshots[i - 1];
+            // Take snapshots on all except first which is scan.
+            for (int i = 1, len = idxs[seg].size(); i < len; i++) {
+                Object s = snapshots[seg][i - 1];
 
-            boolean reuseExisting = s != null;
+                boolean reuseExisting = s != null;
 
-            s = index(i).takeSnapshot(s, qctx);
+                s = index(seg, i).takeSnapshot(s, qctx);
 
-            if (reuseExisting && s == null) { // Existing snapshot was invalidated before we were able to reserve it.
-                // Release already taken snapshots.
-                if (qctx != null)
-                    qctx.clearSnapshots();
+                if (reuseExisting && s == null) { // Existing snapshot was invalidated before we were able to reserve it.
+                    // Release already taken snapshots.
+                    if (qctx != null)
+                        qctx.clearSnapshots();
 
-                for (int j = 1; j < i; j++)
-                    index(j).releaseSnapshot();
+                    for (int j = 1; j < i; j++)
+                        index(seg, j).releaseSnapshot();
 
-                // Drop invalidated snapshot.
-                actualSnapshot.compareAndSet(snapshots, null);
+                    // Drop invalidated snapshot.
+                    actualSnapshot.compareAndSet(snapshots, null);
 
-                return null;
+                    return null;
+                }
+
+                snapshots[seg][i - 1] = s;
             }
-
-            snapshots[i - 1] = s;
         }
 
         return snapshots;
+    }
+
+    /**
+     * @param qctx Query context
+     * @return index currentSegment Id
+     */
+    private int currentSegment(GridH2QueryContext qctx) {
+        assert qctx !=null;
+
+        return qctx.segment();
     }
 
     /** {@inheritDoc} */
@@ -435,8 +460,10 @@ public class GridH2Table extends TableBase {
 
             destroyed = true;
 
-            for (int i = 1, len = idxs.size(); i < len; i++)
-                index(i).destroy();
+            for (int s = 0; s < segments; s++) {
+                for (int i = 1, len = idxs[s].size(); i < len; i++)
+                    index(s, i).destroy();
+            }
         }
         finally {
             unlock(l);
@@ -459,7 +486,8 @@ public class GridH2Table extends TableBase {
         if (!snapshotEnabled)
             return;
 
-        releaseSnapshots0(idxs);
+        for (int s = 0; s < segments; s++)
+            releaseSnapshots0(idxs[s]);
     }
 
     /**
@@ -503,20 +531,22 @@ public class GridH2Table extends TableBase {
     /**
      * Gets index by index.
      *
+     * @param seg index currentSegment Id.
      * @param idx Index in list.
      * @return Index.
      */
-    private GridH2IndexBase index(int idx) {
-        return (GridH2IndexBase)idxs.get(idx);
+    private GridH2IndexBase index(int seg, int idx) {
+        return (GridH2IndexBase)idxs[seg].get(idx);
     }
 
     /**
      * Gets primary key.
      *
+     * @param seg index currentSegment Id.
      * @return Primary key.
      */
-    private GridH2TreeIndex pk() {
-        return (GridH2TreeIndex)idxs.get(1);
+    private GridH2TreeIndex pk(int seg) {
+        return (GridH2TreeIndex)idxs[seg].get(1);
     }
 
     /**
@@ -539,7 +569,9 @@ public class GridH2Table extends TableBase {
             desc.guard().begin();
 
         try {
-            GridH2TreeIndex pk = pk();
+            int seg = segment(row);
+
+            GridH2TreeIndex pk = pk(seg);
 
             if (!del) {
                 GridH2Row old = pk.put(row); // Put to PK.
@@ -552,14 +584,14 @@ public class GridH2Table extends TableBase {
                 else if (old == null)
                     size.increment();
 
-                int len = idxs.size();
+                int len = idxs[seg].size();
 
                 int i = 1;
 
                 // Put row if absent to all indexes sequentially.
                 // Start from 2 because 0 - Scan (don't need to update), 1 - PK (already updated).
                 while (++i < len) {
-                    GridH2IndexBase idx = index(i);
+                    GridH2IndexBase idx = index(seg, i);
 
                     assert !idx.getIndexType().isUnique() : "Unique indexes are not supported: " + idx;
 
@@ -590,10 +622,10 @@ public class GridH2Table extends TableBase {
 
                     // Remove row from all indexes.
                     // Start from 2 because 0 - Scan (don't need to update), 1 - PK (already updated).
-                    for (int i = 2, len = idxs.size(); i < len; i++) {
-                        Row res = index(i).remove(old);
+                    for (int i = 2, len = idxs[seg].size(); i < len; i++) {
+                        Row res = index(seg, i).remove(old);
 
-                        assert eq(pk, res, old): "\n" + old + "\n" + res + "\n" + i + " -> " + index(i).getName();
+                        assert eq(pk, res, old) : "\n" + old + "\n" + res + "\n" + i + " -> " + index(seg, i).getName();
                     }
                 }
                 else
@@ -611,6 +643,66 @@ public class GridH2Table extends TableBase {
             if (mem != null)
                 desc.guard().end();
         }
+    }
+
+    /** */
+    private static Field KEY_FIELD;
+
+    /** */
+    static {
+        try {
+            KEY_FIELD = GridH2AbstractKeyValueRow.class.getDeclaredField("key");
+            KEY_FIELD.setAccessible(true);
+        }
+        catch (NoSuchFieldException e) {
+            KEY_FIELD = null;
+        }
+    }
+
+    /**
+     * @param key cache key object
+     * @return index currentSegment Id for given key
+     * */
+    private int segment(CacheObject key) {
+        int partition = desc.context().affinity().partition(key);
+        return partition % segments;
+    }
+
+    /**
+     * @param row
+     * @return index currentSegment Id for given row
+     * */
+    private int segment(GridH2Row row) {
+        assert row != null;
+
+        CacheObject key;
+
+        if (desc != null && desc.context() != null) {
+            GridCacheContext<?, ?> ctx = desc.context();
+
+            assert ctx != null;
+
+            if (row instanceof GridH2AbstractKeyValueRow && KEY_FIELD != null) {
+                try {
+                    Object o = KEY_FIELD.get(row);
+
+                    if (o instanceof CacheObject)
+                        key = (CacheObject)o;
+                    else
+                        key = ctx.toCacheKeyObject(o);
+
+                }
+                catch (IllegalAccessException e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+            else
+                key = ctx.toCacheKeyObject(row.getValue(0));
+        }
+        else
+            return 0;
+
+        return segment(key);
     }
 
     /**
@@ -631,10 +723,10 @@ public class GridH2Table extends TableBase {
      * @return Indexes.
      */
     ArrayList<GridH2IndexBase> indexes() {
-        ArrayList<GridH2IndexBase> res = new ArrayList<>(idxs.size() - 1);
+        ArrayList<GridH2IndexBase> res = new ArrayList<>(idxs[0].size() - 1); //TODO: fix currentSegment number or tests
 
-        for (int i = 1, len = idxs.size(); i < len ; i++)
-            res.add(index(i));
+        for (int i = 1, len = idxs[0].size(); i < len; i++)
+            res.add(index(0, i));
 
         return res;
     }
@@ -648,25 +740,32 @@ public class GridH2Table extends TableBase {
 
         Lock l = lock(true, Long.MAX_VALUE);
 
-        ArrayList<Index> idxs0 = new ArrayList<>(idxs);
+        ArrayList<Index> idxs0[] = new ArrayList[segments];
 
         try {
             snapshotIndexes(null); // Allow read access while we are rebuilding indexes.
 
-            for (int i = 1, len = idxs.size(); i < len; i++) {
-                GridH2IndexBase newIdx = index(i).rebuild();
+            for (int s = 0; s < segments; s++) {
+                idxs0[s] = new ArrayList<>(idxs[s]);
 
-                idxs.set(i, newIdx);
+                for (int i = 1, len = idxs[s].size(); i < len; i++) {
+                    GridH2IndexBase newIdx = index(s, i).rebuild();
 
-                if (i == 1) // ScanIndex at 0 and actualSnapshot can contain references to old indexes, reset them.
-                    idxs.set(0, new ScanIndex(newIdx));
+                    idxs[s].set(i, newIdx);
+
+                    if (i == 1) // ScanIndex at 0 and actualSnapshot can contain references to old indexes, reset them.
+                        idxs[s].set(0, new ScanIndex(newIdx));
+                }
             }
         }
         catch (InterruptedException e) {
             throw new IgniteInterruptedException(e);
         }
         finally {
-            releaseSnapshots0(idxs0);
+            for (int s = 0; s < segments; s++) {
+                if (idxs0[s] != null)
+                    releaseSnapshots0(idxs0[s]);
+            }
 
             unlock(l);
         }
@@ -715,7 +814,9 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @Override public ArrayList<Index> getIndexes() {
-        return idxs;
+        int segment = currentSegment(GridH2QueryContext.get());
+
+        return idxs[segment];
     }
 
     /** {@inheritDoc} */
@@ -797,9 +898,12 @@ public class GridH2Table extends TableBase {
         /** */
         private static String spaceName;
 
+        /** */
+        private static int segmentsCount;
+
         /** {@inheritDoc} */
         @Override public TableBase createTable(CreateTableData createTblData) {
-            resTbl = new GridH2Table(createTblData, rowDesc, idxsFactory, spaceName);
+            resTbl = new GridH2Table(createTblData, rowDesc, idxsFactory, spaceName, segmentsCount);
 
             return resTbl;
         }
@@ -812,12 +916,16 @@ public class GridH2Table extends TableBase {
          * @param desc Row descriptor.
          * @param factory Indexes factory.
          * @param space Space name.
-         * @throws SQLException If failed.
+         * @param segCnt number of index segments.
          * @return Created table.
+         * @throws SQLException If failed.
          */
         public static synchronized GridH2Table createTable(Connection conn, String sql,
-            @Nullable GridH2RowDescriptor desc, IndexesFactory factory, String space)
+            @Nullable GridH2RowDescriptor desc, IndexesFactory factory, String space, int segCnt)
             throws SQLException {
+            assert segCnt > 1 : "index segments";
+
+            segmentsCount = segCnt;
             rowDesc = desc;
             idxsFactory = factory;
             spaceName = space;
@@ -826,7 +934,7 @@ public class GridH2Table extends TableBase {
                 try (Statement s = conn.createStatement()) {
                     s.execute(sql + " engine \"" + Engine.class.getName() + "\"");
                 }
-
+                System.out.println(sql);
                 return resTbl;
             }
             finally {

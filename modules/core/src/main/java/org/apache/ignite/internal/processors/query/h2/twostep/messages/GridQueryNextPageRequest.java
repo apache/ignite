@@ -34,7 +34,7 @@ public class GridQueryNextPageRequest implements Message {
     private long qryReqId;
 
     /** */
-    private int threadIdx;
+    private int segmentId;
 
     /** */
     private int qry;
@@ -52,13 +52,13 @@ public class GridQueryNextPageRequest implements Message {
     /**
      * @param qryReqId Query request ID.
      * @param qry Query.
-     * @param threadIdx thread index.
+     * @param segmentId index segment ID.
      * @param pageSize Page size.
      */
-    public GridQueryNextPageRequest(long qryReqId, int qry, int threadIdx, int pageSize) {
+    public GridQueryNextPageRequest(long qryReqId, int qry, int segmentId, int pageSize) {
         this.qryReqId = qryReqId;
         this.qry = qry;
-        this.threadIdx = threadIdx;
+        this.segmentId = segmentId;
         this.pageSize = pageSize;
     }
 
@@ -76,9 +76,9 @@ public class GridQueryNextPageRequest implements Message {
         return qry;
     }
 
-    /** @return thread index */
-    public int threadIdx() {
-        return threadIdx;
+    /** @return index segment ID */
+    public int segmentId() {
+        return segmentId;
     }
 
     /**
@@ -129,7 +129,7 @@ public class GridQueryNextPageRequest implements Message {
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeInt("threadIdx", threadIdx))
+                if (!writer.writeInt("segmentId", segmentId))
                     return false;
 
                 writer.incrementState();
@@ -172,7 +172,7 @@ public class GridQueryNextPageRequest implements Message {
                 reader.incrementState();
 
             case 3:
-                threadIdx = reader.readInt("threadIdx");
+                segmentId = reader.readInt("segmentId");
 
                 if (!reader.isLastRead())
                     return false;

@@ -141,17 +141,17 @@ public abstract class GridMergeIndex extends BaseIndex {
      * Set source nodes.
      *
      * @param nodes Nodes.
-     * @param threadsCnt threads per node
+     * @param segmentsCnt index segments per table
      */
-    public void setSources(Collection<ClusterNode> nodes, int threadsCnt) {
+    public void setSources(Collection<ClusterNode> nodes, int segmentsCnt) {
         assert remainingRows == null;
 
         remainingRows = U.newHashMap(nodes.size());
 
         for (ClusterNode node : nodes) {
-            Counter[] counters = new Counter[threadsCnt];
+            Counter[] counters = new Counter[segmentsCnt];
 
-            for (int i = 0; i < threadsCnt; i++)
+            for (int i = 0; i < segmentsCnt; i++)
                 counters[i] = new Counter();
 
             if (remainingRows.put(node.id(), counters) != null)
@@ -201,7 +201,7 @@ public abstract class GridMergeIndex extends BaseIndex {
     public final void addPage(GridResultPage page) {
         int pageRowsCnt = page.rowsInPage();
 
-        Counter cnt = remainingRows.get(page.source())[page.res.threadIdx()];
+        Counter cnt = remainingRows.get(page.source())[page.res.segmentId()];
 
         // RemainingRowsCount should be updated before page adding to avoid race
         // in GridMergeIndexUnsorted cursor iterator
@@ -263,7 +263,13 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @param page Page.
      */
     protected void fetchNextPage(GridResultPage page) {
-        if (remainingRows.get(page.source())[page.res.threadIdx()].get() != 0)
+        Counter[] counters = remainingRows.get(page.source());
+
+        int segId = page.res.segmentId();
+
+        Counter counter = counters[segId];
+
+        if (counter.get() != 0)
             page.fetchNextPage();
     }
 

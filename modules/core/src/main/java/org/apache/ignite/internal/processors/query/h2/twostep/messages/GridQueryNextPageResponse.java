@@ -42,7 +42,7 @@ public class GridQueryNextPageResponse implements Message {
     private long qryReqId;
 
     /** */
-    private int threadIdx;
+    private int segmentId;
 
     /** */
     private int qry;
@@ -76,7 +76,7 @@ public class GridQueryNextPageResponse implements Message {
 
     /**
      * @param qryReqId Query request ID.
-     * @param threadIdx thread index.
+     * @param segmentId index segment ID.
      * @param qry Query.
      * @param page Page.
      * @param allRows All rows count.
@@ -84,13 +84,13 @@ public class GridQueryNextPageResponse implements Message {
      * @param vals Values for rows in this page added sequentially.
      * @param plainRows Not marshalled rows for local node.
      */
-    public GridQueryNextPageResponse(long qryReqId, int threadIdx, int qry, int page, int allRows, int cols,
+    public GridQueryNextPageResponse(long qryReqId, int segmentId, int qry, int page, int allRows, int cols,
         Collection<Message> vals, Collection<?> plainRows) {
         assert vals != null ^ plainRows != null;
         assert cols > 0 : cols;
 
         this.qryReqId = qryReqId;
-        this.threadIdx = threadIdx;
+        this.segmentId = segmentId;
         this.qry = qry;
         this.page = page;
         this.allRows = allRows;
@@ -107,10 +107,10 @@ public class GridQueryNextPageResponse implements Message {
     }
 
     /**
-     * @return Thread index.
+     * @return index segment ID.
      */
-    public int threadIdx() {
-        return threadIdx;
+    public int segmentId() {
+        return segmentId;
     }
 
     /**
@@ -215,7 +215,7 @@ public class GridQueryNextPageResponse implements Message {
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeInt("threadIdx", threadIdx))
+                if (!writer.writeInt("segmentId", segmentId))
                     return false;
 
                 writer.incrementState();
@@ -290,7 +290,7 @@ public class GridQueryNextPageResponse implements Message {
                 reader.incrementState();
 
             case 7:
-                threadIdx = reader.readInt("threadIdx");
+                segmentId = reader.readInt("segmentId");
 
                 if (!reader.isLastRead())
                     return false;

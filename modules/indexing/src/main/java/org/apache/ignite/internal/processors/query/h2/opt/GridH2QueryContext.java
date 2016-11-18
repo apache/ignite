@@ -79,6 +79,9 @@ public class GridH2QueryContext {
     private UUID[] partsNodes;
 
     /** */
+    private int segmentId;
+
+    /** */
     private boolean distributedJoins;
 
     /** */
@@ -224,6 +227,20 @@ public class GridH2QueryContext {
         }
 
         return nodeIds[p];
+    }
+
+    /** @return index segment Id */
+    public int segment() {
+        return segmentId;
+    }
+
+    /**
+     * @param seg index segment Id
+     */
+    public GridH2QueryContext segment(int seg) {
+        this.segmentId = seg;
+
+        return this;
     }
 
     /**

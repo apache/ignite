@@ -23,7 +23,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -113,11 +112,8 @@ public class GridReduceQueryExecutor {
     /** */
     private static final IgniteProductVersion DISTRIBUTED_JOIN_SINCE = IgniteProductVersion.fromString("1.7.0");
 
-    /**  */
-    public static final int DEFAULT_QUERY_LOCAL_PARALLELISM_LEVEL = 4;
-
     /** TODO: add parametr to configuration */
-    public final int queryLocalParallelismLevel = DEFAULT_QUERY_LOCAL_PARALLELISM_LEVEL;
+    public final int queryLocalParallelismLevel;
 
     /** */
     private GridKernalContext ctx;
@@ -169,7 +165,7 @@ public class GridReduceQueryExecutor {
     private final GridSpinBusyLock busyLock;
 
     /** */
-    private final CIX2<ClusterNode, Message> locNodeHnd = new CIX2<ClusterNode, Message>() {
+    private final CIX2<ClusterNode,Message> locNodeHnd = new CIX2<ClusterNode,Message>() {
         @Override public void applyx(ClusterNode locNode, Message msg) {
             h2.mapQueryExecutor().onMessage(locNode.id(), msg);
         }
@@ -178,8 +174,9 @@ public class GridReduceQueryExecutor {
     /**
      * @param busyLock Busy lock.
      */
-    public GridReduceQueryExecutor(GridSpinBusyLock busyLock) {
+    public GridReduceQueryExecutor(GridSpinBusyLock busyLock, int queryLocalParallelismLevel) {
         this.busyLock = busyLock;
+        this.queryLocalParallelismLevel = queryLocalParallelismLevel;
     }
 
     /**
@@ -299,7 +296,7 @@ public class GridReduceQueryExecutor {
     private void onNextPage(final ClusterNode node, GridQueryNextPageResponse msg) {
         final long qryReqId = msg.queryRequestId();
         final int qry = msg.query();
-        final int threadIdx = msg.threadIdx();
+        final int seg = msg.segmentId();
 
         final QueryRun r = runs.get(qryReqId);
 
@@ -332,7 +329,7 @@ public class GridReduceQueryExecutor {
                     }
 
                     try {
-                        GridQueryNextPageRequest msg0 = new GridQueryNextPageRequest(qryReqId, qry, threadIdx, pageSize);
+                        GridQueryNextPageRequest msg0 = new GridQueryNextPageRequest(qryReqId, qry, seg, pageSize);
 
                         if (node.isLocal())
                             h2.mapQueryExecutor().onMessage(ctx.localNodeId(), msg0);
@@ -621,15 +618,7 @@ public class GridReduceQueryExecutor {
 
                 boolean send = true;
 
-                final int threadCnt = queryLocalParallelismLevel;
-
-                Map<UUID, int[]>[] splitPartsMap = null;
-                final Map<UUID, int[]> parts = convert(partsMap);
-
-                if (threadCnt > 1)
-                    splitPartsMap = buildThreadPartMap(cctx, topVer, nodes, threadCnt, parts);
-
-                for (int threadIdx = 0; threadIdx < threadCnt; threadIdx++) {
+                for (int threadIdx = 0; threadIdx < queryLocalParallelismLevel; threadIdx++) {
                     send &= send(nodes,
                         oldStyle ?
                             new GridQueryRequest(qryReqId,
@@ -646,9 +635,9 @@ public class GridReduceQueryExecutor {
                                 .pageSize(r.pageSize)
                                 .caches(qry.caches())
                                 .tables(distributedJoins ? qry.tables() : null)
-                                .partitions(splitPartsMap == null ? parts : splitPartsMap[threadIdx])
+                                .partitions(convert(partsMap))
                                 .queries(mapQrys)
-                                .threadIdx(threadIdx)
+                                .segmentId(threadIdx)
                                 .flags(distributedJoins ? GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS : 0)
                                 .timeout(timeoutMillis),
                         oldStyle && partsMap != null ? new ExplicitPartitionsSpecializer(partsMap) : null,
@@ -789,44 +778,6 @@ public class GridReduceQueryExecutor {
                 }
             }
         }
-    }
-
-    /** */
-    private Map<UUID, int[]>[] buildThreadPartMap(GridCacheContext<?, ?> cctx, AffinityTopologyVersion topVer,
-        Collection<ClusterNode> nodes, int threadCnt, Map<UUID, int[]> parts) {
-        Map<UUID, int[]>[] splitPartsMap = new Map[threadCnt];
-
-        for (int i = 0; i < threadCnt; i++)
-            splitPartsMap[i] = new HashMap<>();
-
-        for (ClusterNode node : nodes) {
-            int[] nodeParts = (parts != null) ? parts.get(node.id()) :
-                toIntArray(cctx.affinity().primaryPartitions(node.id(), topVer));
-
-            int partsPerThread = (nodeParts.length / threadCnt) + 1;
-
-            for (int i = 0, idx = 0; i < threadCnt; i++, idx += partsPerThread) {
-                int to = (nodeParts.length < idx + partsPerThread) ? nodeParts.length : idx + partsPerThread;
-
-                int[] threadParts = Arrays.copyOfRange(nodeParts, idx, to);
-
-                Arrays.sort(threadParts);
-
-                splitPartsMap[i].put(node.id(), threadParts);
-            }
-        }
-        return splitPartsMap;
-    }
-
-    /** */
-    private int[] toIntArray(Set<Integer> partitions) {
-        int i = 0;
-        int[] primaryPartitions = new int[partitions.size()];
-
-        for (Integer p : partitions)
-            primaryPartitions[i++] = p;
-
-        return primaryPartitions;
     }
 
     /**

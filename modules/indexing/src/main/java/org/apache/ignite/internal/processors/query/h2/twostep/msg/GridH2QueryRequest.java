@@ -54,7 +54,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     private long reqId;
 
     /** */
-    private int threadIdx;
+    private int segmentId;
 
     /** */
     @GridToStringInclude
@@ -208,18 +208,18 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     }
 
     /**
-     *  @return thread index
+     *  @return index segment ID.
      */
-    public int threadIdx() {
-        return threadIdx;
+    public int segmentId() {
+        return segmentId;
     }
 
     /**
-     * @param threadIdx thread index
+     * @param seg index segment ID.
      * @return {@code this}.
      */
-    public GridH2QueryRequest threadIdx(int threadIdx) {
-        this.threadIdx = threadIdx;
+    public GridH2QueryRequest segmentId(int seg) {
+        this.segmentId = seg;
 
         return this;
     }
@@ -344,7 +344,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeInt("threadIdx", threadIdx))
+                if (!writer.writeInt("segmentId", segmentId))
                     return false;
 
                 writer.incrementState();
@@ -436,7 +436,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 9:
-                threadIdx = reader.readInt("threadIdx");
+                segmentId = reader.readInt("segmentId");
 
                 if (!reader.isLastRead())
                     return false;

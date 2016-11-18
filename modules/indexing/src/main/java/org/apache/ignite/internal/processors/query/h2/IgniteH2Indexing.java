@@ -250,6 +250,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     }
 
+
+    /**  */
+    public static final int DEFAULT_QUERY_LOCAL_PARALLELISM_LEVEL = 4;
+
+    /** */
+    private final int queryLocalParallelismLevel = DEFAULT_QUERY_LOCAL_PARALLELISM_LEVEL;
+
     /** Logger. */
     @LoggerResource
     private IgniteLogger log;
@@ -1502,7 +1509,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridH2RowDescriptor desc = new RowDescriptor(tbl.type(), schema);
 
-        GridH2Table res = GridH2Table.Engine.createTable(conn, sql.toString(), desc, tbl, tbl.schema.spaceName);
+        GridH2Table res = GridH2Table.Engine.createTable(conn, sql.toString(), desc, tbl, tbl.schema.spaceName, queryLocalParallelismLevel);
 
         if (dataTables.putIfAbsent(res.identifier(), res) != null)
             throw new IllegalStateException("Table already exists: " + res.identifier());
@@ -1740,7 +1747,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             marshaller = ctx.config().getMarshaller();
 
             mapQryExec = new GridMapQueryExecutor(busyLock);
-            rdcQryExec = new GridReduceQueryExecutor(busyLock);
+            rdcQryExec = new GridReduceQueryExecutor(busyLock, queryLocalParallelismLevel);
 
             mapQryExec.start(ctx, this);
             rdcQryExec.start(ctx, this);
