@@ -723,6 +723,9 @@ namespace Apache.Ignite.EntityFramework.Tests
             {
                 Assert.AreEqual("blog1", ctx.Blogs.Single().Name);
             }
+
+            Assert.AreEqual(1, _cache.GetSize());
+            Assert.AreEqual(1, _metaCache.GetSize());
         }
 
         /// <summary>
@@ -976,7 +979,7 @@ namespace Apache.Ignite.EntityFramework.Tests
         {
             public MyDbConfiguration2()
             {
-                // TODO
+                IgniteDbConfiguration.InitializeIgniteCaching(this, Ignition.GetIgnite(), null, null, null);
             }
         }
 
