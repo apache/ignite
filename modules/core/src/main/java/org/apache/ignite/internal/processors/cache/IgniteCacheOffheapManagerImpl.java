@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
+import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
@@ -80,6 +81,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
     /** */
     protected final ConcurrentMap<Integer, CacheDataStore> partDataStores = new ConcurrentHashMap<>();
+
+    /** */
+    protected final GridStripedLock partDataStoreLock = new GridStripedLock(16);
 
     /** */
     protected PendingEntriesTree pendingEntries;
@@ -645,11 +649,18 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
     /** {@inheritDoc} */
     @Override public final CacheDataStore createCacheDataStore(int p) throws IgniteCheckedException {
-        CacheDataStore dataStore = createCacheDataStore0(p);
+        partDataStoreLock.lock(p);
 
-        partDataStores.put(p, dataStore);
+        try {
+            CacheDataStore dataStore = createCacheDataStore0(p);
 
-        return dataStore;
+            partDataStores.put(p, dataStore);
+
+            return dataStore;
+        }
+        finally {
+            partDataStoreLock.unlock(p);
+        }
     }
 
     /**
@@ -682,6 +693,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
     /** {@inheritDoc} */
     @Override public void destroyCacheDataStore(int p, CacheDataStore store) throws IgniteCheckedException {
+        partDataStoreLock.lock(p);
+
         try {
             partDataStores.remove(p, store);
 
@@ -689,6 +702,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
+        }
+        finally {
+            partDataStoreLock.unlock(p);
         }
     }
 
@@ -1198,7 +1214,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         /** {@inheritDoc} */
-        @Override public KeySearchRow getLookupRow(BPlusTree<KeySearchRow,?> tree, ByteBuffer buf, int idx) {
+        @Override public KeySearchRow getLookupRow(BPlusTree<KeySearchRow, ?> tree, ByteBuffer buf, int idx) {
             int hash = getHash(buf, idx);
             long link = getLink(buf, idx);
 
@@ -1257,7 +1273,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         /** {@inheritDoc} */
-        @Override public KeySearchRow getLookupRow(BPlusTree<KeySearchRow,?> tree, ByteBuffer buf, int idx) {
+        @Override public KeySearchRow getLookupRow(BPlusTree<KeySearchRow, ?> tree, ByteBuffer buf, int idx) {
 
             int hash = getHash(buf, idx);
             long link = getLink(buf, idx);
