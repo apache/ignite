@@ -1035,7 +1035,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 m.addLocalPartitionMap(cacheCtx.cacheId(), locMap);
 
-                m.partitionUpdateCounters(cacheCtx.cacheId(), cacheCtx.topology().updateCounters());
+                synchronized (cctx.exchange().interruptLock()) {
+                    if (Thread.currentThread().isInterrupted())
+                        throw new IgniteCheckedException("Thread is interrupted: " + Thread.currentThread());
+
+                    m.partitionUpdateCounters(cacheCtx.cacheId(), cacheCtx.topology().updateCounters());
+                }
             }
         }
 
@@ -1423,6 +1428,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
     }
 
+    /**
+     * @param top Topology to assign.
+     */
     private void assignPartitionStates(GridDhtPartitionTopology top) {
         Map<Integer, CounterWithNodes> maxCntrs = new HashMap<>();
 
@@ -1435,10 +1443,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 UUID uuid = e.getKey();
 
                 GridDhtPartitionState state = top.partitionState(uuid, p);
-                if (state == GridDhtPartitionState.OWNING)
+
+                if (state != GridDhtPartitionState.OWNING)
                     continue;
 
-                Long cntr = e.getValue().partitionUpdateCounters(top.cacheId()).get(p);
+                Long cntr = e0.getValue();
 
                 if (cntr == null)
                     continue;
@@ -1452,18 +1461,22 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
         }
 
+        // Also must process counters from the local node.
         for (GridDhtLocalPartition part : top.currentLocalPartitions()) {
             GridDhtPartitionState state = top.partitionState(cctx.localNodeId(), part.id());
-            if (state == GridDhtPartitionState.OWNING)
+
+            if (state != GridDhtPartitionState.OWNING)
                 continue;
 
             CounterWithNodes maxCntr = maxCntrs.get(part.id());
 
-            if (maxCntr == null || part.updateCounter() > maxCntr.cnt)
+            if (maxCntr == null || part.initialUpdateCounter() > maxCntr.cnt)
                 maxCntrs.put(part.id(), new CounterWithNodes(part.updateCounter(), cctx.localNodeId()));
-            else if (part.updateCounter() == maxCntr.cnt)
+            else if (part.initialUpdateCounter() == maxCntr.cnt)
                 maxCntr.nodes.add(cctx.localNodeId());
         }
+
+        boolean updated = false;
 
         for (Map.Entry<Integer, CounterWithNodes> e : maxCntrs.entrySet()) {
             int p = e.getKey();
@@ -1472,7 +1485,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (maxCntr == 0)
                 continue;
 
-            top.setOwners(p, e.getValue().nodes);
+            updated = top.setOwners(p, e.getValue().nodes, updated);
         }
     }
 
@@ -1492,9 +1505,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * Detect lost partitions.
      */
     private void detectLostPartitions() {
-        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-            if (!cacheCtx.isLocal())
-                cacheCtx.topology().detectLostPartitions(discoEvt);
+        synchronized (cctx.exchange().interruptLock()) {
+            if (Thread.currentThread().isInterrupted())
+                return;
+
+            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                if (!cacheCtx.isLocal())
+                    cacheCtx.topology().detectLostPartitions(discoEvt);
+            }
         }
     }
 
@@ -1502,9 +1520,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      *
      */
     private void resetLostPartitions() {
-        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-            if (!cacheCtx.isLocal())
-                cacheCtx.topology().resetLostPartitions();
+        synchronized (cctx.exchange().interruptLock()) {
+            if (Thread.currentThread().isInterrupted())
+                return;
+
+            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                if (!cacheCtx.isLocal())
+                    cacheCtx.topology().resetLostPartitions();
+            }
         }
     }
 

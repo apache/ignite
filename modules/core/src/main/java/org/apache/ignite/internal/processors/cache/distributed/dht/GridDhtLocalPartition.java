@@ -502,6 +502,9 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         }
     }
 
+    /**
+     * @param stateToRestore State to restore.
+     */
     public void restoreState(GridDhtPartitionState stateToRestore) {
         state.set(((long)stateToRestore.ordinal())  <<  32);
     }
@@ -555,6 +558,26 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                 evictHist = null;
 
                 return true;
+            }
+        }
+    }
+
+    /**
+     * Forcibly moves partition to a MOVING state.
+     */
+    void moving() {
+        while (true) {
+            long reservations = state.get();
+
+            int ord = (int)(reservations >> 32);
+
+            assert ord == OWNING.ordinal() : "Only OWNed partitions should be moved to MOVING state";
+
+            if (casState(reservations, MOVING)) {
+                if (log.isDebugEnabled())
+                    log.debug("Forcibly moved partition to a MOVING state: " + this);
+
+                break;
             }
         }
     }
