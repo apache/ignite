@@ -214,6 +214,8 @@ public class H2PartitionedTreeIndex extends GridH2IndexBase implements Comparato
 
         final NavigableMap<GridH2Row, GridCursor<GridH2Row>> nextResults;
 
+        GridH2Row current;
+
         /** */
         final long time = U.currentTimeMillis();
 
@@ -238,7 +240,7 @@ public class H2PartitionedTreeIndex extends GridH2IndexBase implements Comparato
 
         /** {@inheritDoc} */
         @Override public Row get() {
-            return nextResults.firstKey();
+            return current;
         }
 
         private boolean next(GridCursor<GridH2Row> cursor) throws IgniteCheckedException {
@@ -277,10 +279,12 @@ public class H2PartitionedTreeIndex extends GridH2IndexBase implements Comparato
 
                 GridCursor<GridH2Row> cursor = nextResults.remove(nextResults.firstKey());
 
+                current = cursor.get();
+
                 if (next(cursor))
                     nextResults.put(cursor.get(), cursor);
 
-                return !nextResults.isEmpty();
+                return true;
             }
             catch (IgniteCheckedException e) {
                 throw DbException.convert(e);
