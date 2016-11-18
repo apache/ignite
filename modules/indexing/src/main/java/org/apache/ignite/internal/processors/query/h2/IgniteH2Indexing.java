@@ -2617,7 +2617,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             Index idx;
 
-            if (cctx.isDht())
+            if (cctx.isDht() || cctx.isDhtAtomic())
                 idx = new H2PartitionedTreeIndex(
                     cctx,
                     tbl,
