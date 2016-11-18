@@ -30,16 +30,21 @@ public class PartitionMetaStateRecord extends WALRecord {
     /** Cache id. */
     private final int cacheId;
 
+    /** Partition id. */
     private final int partId;
+
+    /** Update counter. */
+    private final long updateCounter;
 
     /**
      * @param cacheId Cache ID.
      * @param state Page ID.
      */
-    public PartitionMetaStateRecord(int cacheId, int partId, GridDhtPartitionState state) {
+    public PartitionMetaStateRecord(int cacheId, int partId, GridDhtPartitionState state, long updateCounter) {
         this.cacheId = cacheId;
         this.partId = partId;
         this.state = (byte)state.ordinal();
+        this.updateCounter = updateCounter;
     }
 
     /** {@inheritDoc} */
@@ -66,5 +71,12 @@ public class PartitionMetaStateRecord extends WALRecord {
      */
     public int partId() {
         return partId;
+    }
+
+    /**
+     *
+     */
+    public long updateCounter() {
+        return updateCounter;
     }
 }

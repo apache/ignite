@@ -1435,7 +1435,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 UUID uuid = e.getKey();
 
                 GridDhtPartitionState state = top.partitionState(uuid, p);
-                if (state == GridDhtPartitionState.OWNING || state == GridDhtPartitionState.RENTING)
+                if (state == GridDhtPartitionState.OWNING)
                     continue;
 
                 Long cntr = e.getValue().partitionUpdateCounters(top.cacheId()).get(p);
@@ -1454,7 +1454,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         for (GridDhtLocalPartition part : top.currentLocalPartitions()) {
             GridDhtPartitionState state = top.partitionState(cctx.localNodeId(), part.id());
-            if (state == GridDhtPartitionState.OWNING || state == GridDhtPartitionState.RENTING)
+            if (state == GridDhtPartitionState.OWNING)
                 continue;
 
             CounterWithNodes maxCntr = maxCntrs.get(part.id());
