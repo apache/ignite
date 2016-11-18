@@ -24,8 +24,8 @@ namespace Apache.Ignite.Examples.Datagrid
     using Apache.Ignite.ExamplesDll.Datagrid;
 
     /// <summary>
-    /// This example demonstrates co-locating a closure with data, creating and modifying
-    /// cache entries with EntryProcessor.
+    /// This examples demonstrates the affinity collocation of a closure with data by showing how
+    /// cache entries can be created and modified with an EntryProcessor.
     /// <para />
     /// 1) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build).
     ///    Apache.Ignite.ExamplesDll.dll must appear in %IGNITE_HOME%/platforms/dotnet/examples/Apache.Ignite.ExamplesDll/bin/${Platform]/${Configuration} folder.
