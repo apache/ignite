@@ -822,7 +822,12 @@ namespace Apache.Ignite.EntityFramework.Tests
         {
             public MyDbConfiguration() : base(Ignition.GetIgnite(), null, null, Policy)
             {
-                // No-op.
+                var ex = Assert.Throws<ArgumentException>(() => IgniteDbConfiguration.InitializeIgniteCaching(
+                    this, Ignition.GetIgnite(), null, null, Policy));
+
+                Assert.IsTrue(ex.Message.StartsWith("'dbConfiguration' argument is invalid: " +
+                                                    "IgniteDbConfiguration.InitializeIgniteCaching should not " +
+                                                    "be called for IgniteDbConfiguration instance."), ex.Message);
             }
         }
 
