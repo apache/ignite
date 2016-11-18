@@ -708,27 +708,6 @@ namespace Apache.Ignite.EntityFramework.Tests
         }
 
         /// <summary>
-        /// Tests custom initialization via InitializeIgniteCaching method.
-        /// </summary>
-        [Test]
-        public void TestCustomInitializeIgniteCaching()
-        {
-            using (var ctx = GetDbContext2())
-            {
-                ctx.Blogs.Add(new Blog {Name = "blog1"});
-                ctx.SaveChanges();
-            }
-
-            using (var ctx = GetDbContext2())
-            {
-                Assert.AreEqual("blog1", ctx.Blogs.Single().Name);
-            }
-
-            Assert.IsTrue(_cache.Any());
-            Assert.IsTrue(_metaCache.Any());
-        }
-
-        /// <summary>
         /// Creates and removes a blog.
         /// </summary>
         private void CreateRemoveBlog()
@@ -837,14 +816,6 @@ namespace Apache.Ignite.EntityFramework.Tests
         private static BloggingContext GetDbContext()
         {
             return new BloggingContext(ConnectionString);
-        }
-
-        /// <summary>
-        /// Gets the database context.
-        /// </summary>
-        private static BloggingContext2 GetDbContext2()
-        {
-            return new BloggingContext2(ConnectionString);
         }
 
         private class MyDbConfiguration : IgniteDbConfiguration
@@ -970,28 +941,6 @@ namespace Apache.Ignite.EntityFramework.Tests
                     ? base.GetCachingMode(queryInfo)
                     : GetCachingStrategyFunc(queryInfo);
             }
-        }
-
-        /// <summary>
-        /// Db configuration that does not inherit IgniteDbConfiguration
-        /// </summary>
-        private class MyDbConfiguration2 : DbConfiguration
-        {
-            public MyDbConfiguration2()
-            {
-                IgniteDbConfiguration.InitializeIgniteCaching(this, Ignition.GetIgnite(), null, null, null);
-            }
-        }
-
-        [DbConfigurationType(typeof(MyDbConfiguration2))]
-        private class BloggingContext2 : DbContext
-        {
-            public BloggingContext2(string nameOrConnectionString) : base(nameOrConnectionString)
-            {
-                // No-op.
-            }
-
-            public virtual DbSet<Blog> Blogs { get; set; }
         }
     }
 }
