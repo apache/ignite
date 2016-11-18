@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         // ReSharper disable once MemberCanBeMadeStatic.Global
         public IEnumerable<Example> TestCasesLocal
         {
-            get { return Example.GetExamples(); }
+            get { return Example.GetExamples().Where(x => x.Name != "NearCacheExample"); }
         }
 
         /// <summary>
@@ -155,8 +155,9 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             get
             {
-                return Example.GetExamples()
-                    .Where(x => !new[] {"LifecycleExample", "ClientReconnectExample"}.Contains(x.Name));
+                var localOnly = new[] {"LifecycleExample", "ClientReconnectExample", "MultiTieredCacheExample" };
+
+                return Example.GetExamples().Where(x => !localOnly.Contains(x.Name));
             }
         }
     }
