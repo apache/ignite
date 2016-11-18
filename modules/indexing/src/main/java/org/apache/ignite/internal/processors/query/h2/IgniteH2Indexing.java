@@ -57,7 +57,6 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -543,14 +542,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         try {
             if (obj == null)
                 stmt.setNull(idx, Types.VARCHAR);
-            if (obj instanceof BinaryObject) {
-                Object obj0 = ((BinaryObject)obj).deserialize();
-
-                if (obj0 == null)
-                    stmt.setNull(idx, Types.VARCHAR);
-                else
-                    stmt.setObject(idx, obj0);
-            }
             else
                 stmt.setObject(idx, obj);
         }
