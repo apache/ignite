@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
@@ -200,6 +201,23 @@ public class H2PartitionedTreeIndex extends GridH2IndexBase implements Comparato
 
     @Override public long getRowCountApproximation() {
         return 10_000; // TODO
+    }
+
+    /** {@inheritDoc} */
+    @Override public void destroy() {
+        try {
+            for (Map.Entry<Integer, H2Tree> entry : trees.entrySet()) {
+                entry.getValue().destroy();
+
+                cctx.offheap().dropRootPageForIndex(entry.getValue().getName(), entry.getKey());
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+        finally {
+            super.destroy();
+        }
     }
 
     /**

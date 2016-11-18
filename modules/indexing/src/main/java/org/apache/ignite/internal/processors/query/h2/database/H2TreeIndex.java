@@ -199,7 +199,7 @@ public class H2TreeIndex extends GridH2IndexBase {
         try {
             tree.destroy();
 
-            cctx.offheap().dropRootPageForIndex(tree.getName());
+            cctx.offheap().dropRootPageForIndex(tree.getName(), -1);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

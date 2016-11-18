@@ -588,7 +588,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     }
 
     /** {@inheritDoc} */
-    @Override public void dropRootPageForIndex(String idxName) throws IgniteCheckedException {
+    @Override public void dropRootPageForIndex(String idxName, int partition) throws IgniteCheckedException {
         // No-op.
     }
 
