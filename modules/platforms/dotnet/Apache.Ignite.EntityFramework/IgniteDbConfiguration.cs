@@ -26,6 +26,7 @@ namespace Apache.Ignite.EntityFramework
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
+    using System.Reflection;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
@@ -57,6 +58,18 @@ namespace Apache.Ignite.EntityFramework
         /// Suffix for the data cache name.
         /// </summary>
         private const string DataCacheSuffix = "_data";
+
+        /// <summary>
+        /// DbConfiguration.AddInterceptor method.
+        /// </summary>
+        private static readonly MethodInfo AddInterceptorMethodInfo = 
+            typeof(DbConfiguration).GetMethod("AddInterceptor");
+
+        /// <summary>
+        /// DbConfiguration.AddInterceptor delegate.
+        /// </summary>
+        private static readonly Action<object, IDbInterceptor> AddInterceptorDelegate =
+            (dbConfig, interceptor) => AddInterceptorMethodInfo.Invoke(dbConfig, new object[] {interceptor});
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteDbConfiguration"/> class.
@@ -160,7 +173,7 @@ namespace Apache.Ignite.EntityFramework
         {
             IgniteArgumentCheck.NotNull(ignite, "ignite");
 
-            InitializeIgniteCachingInternal(this, ignite, metaCacheConfiguration, dataCacheConfiguration, policy, AddInterceptor);
+            InitializeIgniteCachingInternal(this, ignite, metaCacheConfiguration, dataCacheConfiguration, policy);
         }
 
         /// <summary>
@@ -192,10 +205,8 @@ namespace Apache.Ignite.EntityFramework
                 "IgniteDbConfiguration.InitializeIgniteCaching should not be called for IgniteDbConfiguration " +
                 "instance. This method should be used only when IgniteDbConfiguration can't be inherited.");
 
-            // TODO
-            Action<IDbInterceptor> addInterceptor = null;
-
-            InitializeIgniteCachingInternal(dbConfiguration, ignite, metaCacheConfiguration, dataCacheConfiguration, policy, addInterceptor);
+            InitializeIgniteCachingInternal(dbConfiguration, ignite, metaCacheConfiguration, dataCacheConfiguration, 
+                policy);
         }
 
         /// <summary>
@@ -216,12 +227,12 @@ namespace Apache.Ignite.EntityFramework
         /// This cache tolerates lost data and can have no backups.
         /// </param>
         /// <param name="policy">The caching policy. Null for default <see cref="DbCachingPolicy" />.</param>
-        /// <param name="addInterceptor"><see cref="DbConfiguration.AddInterceptor"/> method invoker.</param>
-        private static void InitializeIgniteCachingInternal(DbConfiguration dbConfiguration, IIgnite ignite, CacheConfiguration metaCacheConfiguration, CacheConfiguration dataCacheConfiguration, IDbCachingPolicy policy, Action<IDbInterceptor> addInterceptor)
+        private static void InitializeIgniteCachingInternal(DbConfiguration dbConfiguration, IIgnite ignite, 
+            CacheConfiguration metaCacheConfiguration, CacheConfiguration dataCacheConfiguration, 
+            IDbCachingPolicy policy)
         {
             Debug.Assert(ignite != null);
             Debug.Assert(dbConfiguration != null);
-            Debug.Assert(addInterceptor != null);
 
             metaCacheConfiguration = metaCacheConfiguration ?? GetDefaultMetaCacheConfiguration();
             dataCacheConfiguration = dataCacheConfiguration ?? GetDefaultDataCacheConfiguration();
@@ -230,7 +241,7 @@ namespace Apache.Ignite.EntityFramework
 
             var txHandler = new DbTransactionInterceptor(efCache);
 
-            addInterceptor(txHandler);
+            AddInterceptorDelegate(dbConfiguration, txHandler);
 
             RegisterProviderServicesReplacer(dbConfiguration, policy, efCache, txHandler);
         }
