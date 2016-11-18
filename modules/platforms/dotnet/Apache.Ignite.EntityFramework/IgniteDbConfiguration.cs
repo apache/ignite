@@ -17,9 +17,11 @@
 
 namespace Apache.Ignite.EntityFramework
 {
+    using System;
     using System.Configuration;
     using System.Data.Entity;
     using System.Data.Entity.Core.Common;
+    using System.Data.Entity.Infrastructure.DependencyResolution;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using Apache.Ignite.Core;
@@ -165,9 +167,31 @@ namespace Apache.Ignite.EntityFramework
 
             AddInterceptor(txHandler);
 
-            // SetProviderServices is not suitable. We should replace whatever provider there is with our proxy.
-            Loaded += (sender, args) => args.ReplaceService<DbProviderServices>(
-                (services, a) => new DbProviderServicesProxy(services, policy, efCache, txHandler));
+            RegisterProviderServicesReplacer(this, policy, efCache, txHandler);
+        }
+
+        /// <summary>
+        /// Registers the provider services replacer.
+        /// </summary>
+        private static void RegisterProviderServicesReplacer(DbConfiguration config, 
+            IDbCachingPolicy policy, DbCache efCache, DbTransactionInterceptor txHandler)
+        {
+            EventHandler<DbConfigurationLoadedEventArgs> onLoaded = null;
+
+            onLoaded = (sender, args) =>
+            {
+                // Replace provider services for specific instance only and unsubscribe.
+                if (ReferenceEquals(config, sender))
+                {
+                    // SetProviderServices is not suitable. We should replace whatever provider there is with our proxy.
+                    args.ReplaceService<DbProviderServices>(
+                        (services, a) => new DbProviderServicesProxy(services, policy, efCache, txHandler));
+
+                    Loaded -= onLoaded;
+                }
+            };
+
+            Loaded += onLoaded;
         }
 
         /// <summary>
