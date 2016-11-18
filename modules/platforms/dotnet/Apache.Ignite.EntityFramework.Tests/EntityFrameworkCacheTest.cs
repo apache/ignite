@@ -724,8 +724,8 @@ namespace Apache.Ignite.EntityFramework.Tests
                 Assert.AreEqual("blog1", ctx.Blogs.Single().Name);
             }
 
-            Assert.AreEqual(1, _cache.GetSize());
-            Assert.AreEqual(1, _metaCache.GetSize());
+            Assert.IsTrue(_cache.Any());
+            Assert.IsTrue(_metaCache.Any());
         }
 
         /// <summary>
