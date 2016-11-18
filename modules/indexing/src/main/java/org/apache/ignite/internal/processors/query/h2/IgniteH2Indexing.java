@@ -543,8 +543,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         try {
             if (obj == null)
                 stmt.setNull(idx, Types.VARCHAR);
-            if (obj instanceof BinaryObject)
-                stmt.setObject(idx,((BinaryObject)obj).deserialize());
+            if (obj instanceof BinaryObject) {
+                Object obj0 = ((BinaryObject)obj).deserialize();
+
+                if (obj0 == null)
+                    stmt.setNull(idx, Types.VARCHAR);
+                else
+                    stmt.setObject(idx, obj0);
+            }
             else
                 stmt.setObject(idx, obj);
         }
