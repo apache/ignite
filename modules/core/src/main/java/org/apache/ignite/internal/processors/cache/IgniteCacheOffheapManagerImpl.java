@@ -83,7 +83,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     protected final ConcurrentMap<Integer, CacheDataStore> partDataStores = new ConcurrentHashMap<>();
 
     /** */
-    protected final GridStripedLock partDataStoreLock = new GridStripedLock(16);
+    protected final CacheDataStore removedStore = new CacheDataStoreImpl(-1, null, null, null);
 
     /** */
     protected PendingEntriesTree pendingEntries;
@@ -649,18 +649,17 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
     /** {@inheritDoc} */
     @Override public final CacheDataStore createCacheDataStore(int p) throws IgniteCheckedException {
-        partDataStoreLock.lock(p);
+        CacheDataStore dataStore = null;
+        CacheDataStore oldStore = null;
 
-        try {
-            CacheDataStore dataStore = createCacheDataStore0(p);
+        do {
+            dataStore = createCacheDataStore0(p);
 
-            partDataStores.put(p, dataStore);
-
-            return dataStore;
+            oldStore = partDataStores.putIfAbsent(p, dataStore);
         }
-        finally {
-            partDataStoreLock.unlock(p);
-        }
+        while (oldStore != null);
+
+        return dataStore;
     }
 
     /**
@@ -693,8 +692,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
     /** {@inheritDoc} */
     @Override public void destroyCacheDataStore(int p, CacheDataStore store) throws IgniteCheckedException {
-        partDataStoreLock.lock(p);
-
         try {
             partDataStores.remove(p, store);
 
@@ -702,9 +699,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
-        }
-        finally {
-            partDataStoreLock.unlock(p);
         }
     }
 
