@@ -18,7 +18,6 @@
 namespace Apache.Ignite.EntityFramework.Tests
 {
     using System;
-    using System.Data.Entity;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
@@ -102,15 +101,6 @@ namespace Apache.Ignite.EntityFramework.Tests
         }
 
         /// <summary>
-        /// Tests the InitializeIgniteCaching method.
-        /// </summary>
-        [Test]
-        public void TestInitializeIgniteCaching()
-        {
-            // TODO:
-        }
-
-        /// <summary>
         /// Checks that specified cache exists and stops all Ignite instances.
         /// </summary>
         // ReSharper disable once UnusedParameter.Local
@@ -142,22 +132,6 @@ namespace Apache.Ignite.EntityFramework.Tests
             {
                 Ignition.StopAll(true);
             }
-        }
-
-        /// <summary>
-        /// Test config.
-        /// </summary>
-        private class MyDbConfiguration : DbConfiguration
-        {
-            // No-op.
-        }
-
-        /// <summary>
-        /// Test config.
-        /// </summary>
-        private class MyIgniteDbConfiguration : IgniteDbConfiguration
-        {
-            // No-op.
         }
     }
 }
