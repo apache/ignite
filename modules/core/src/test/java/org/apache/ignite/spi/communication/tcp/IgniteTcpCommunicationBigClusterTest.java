@@ -34,7 +34,10 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
     private static final long RUNNING_TIMESPAN = 1_000L;
 
     /** */
-    private static final long ADDED_MESSAGE_DELAY = 1_000L;
+    private static final long COMMUNICATION_TIMEOUT = 1_000L;
+
+    /** Should be about of the COMMUNICATION_TIMEOUT value to get the error */
+    private static final long ADDED_MESSAGE_DELAY = COMMUNICATION_TIMEOUT;
 
     /** */
     private static final long BROADCAST_PERIOD = 100L;
@@ -61,8 +64,8 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
         cfg.setDiscoverySpi(discovery);
 
         TcpCommunicationSpi communication = new TcpCommunicationSpi();
-        communication.setConnectTimeout(500L);
-        communication.setMaxConnectTimeout(500L);
+        communication.setConnectTimeout(COMMUNICATION_TIMEOUT);
+        communication.setMaxConnectTimeout(COMMUNICATION_TIMEOUT);
         communication.setReconnectCount(1);
         cfg.setCommunicationSpi(communication);
 
