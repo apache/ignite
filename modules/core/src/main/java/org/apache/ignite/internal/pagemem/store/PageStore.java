@@ -88,4 +88,9 @@ public interface PageStore {
      * @throws IgniteCheckedException If sync failed (IO error occurred).
      */
     public void sync() throws IgniteCheckedException;
+
+    /**
+     * @throws IgniteCheckedException If sync failed (IO error occurred).
+     */
+    public void ensure() throws IgniteCheckedException;
 }
