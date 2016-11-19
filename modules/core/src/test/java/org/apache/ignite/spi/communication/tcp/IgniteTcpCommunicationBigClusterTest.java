@@ -8,7 +8,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.text.MessageFormat;
@@ -32,13 +31,15 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
     private static final int IGNITE_NODES_NUMBER = 10;
 
     /** */
-    private static final long RUNNING_TIMESPAN = 10_000L;
+    private static final long RUNNING_TIMESPAN = 1_000L;
 
     /** */
-    private static final long MESSAGE_DELAY = 5_000L;
+    private static final long ADDED_MESSAGE_DELAY = 1_000L;
 
     /** */
-    private static final long BROADCAST_PERIOD = 1000L;
+    private static final long BROADCAST_PERIOD = 100L;
+
+    private static final String CONTROL_ANSWER = "ignite";
 
     /** */
     private static final Logger LOGGER = Logger.getLogger(IgniteTcpCommunicationBigClusterTest.class.getName());
@@ -59,21 +60,12 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
         discovery.setIpFinder(ipFinder);
         cfg.setDiscoverySpi(discovery);
 
-        /*CacheConfiguration cacheCache = new CacheConfiguration();
-        cacheCache.setName("cache");
-        cacheCache.setCacheMode(CacheMode.PARTITIONED);
-        cacheCache.setBackups(0);
-        cacheCache.setAtomicityMode(CacheAtomicityMode.ATOMIC);*/
+        TcpCommunicationSpi communication = new TcpCommunicationSpi();
+        communication.setConnectTimeout(500L);
+        communication.setMaxConnectTimeout(500L);
+        communication.setReconnectCount(1);
+        cfg.setCommunicationSpi(communication);
 
-        /** ONHEAP_TIERED
-         cacheCache.setMemoryMode(CacheMemoryMode.ONHEAP_TIERED);
-         cacheCache.setOffHeapMaxMemory(0); */
-
-        /** OFFHEAP_TIERED
-         cacheCache.setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED);
-         cacheCache.setOffHeapMaxMemory(512L << 20); */
-
-        // cfg.setCacheConfiguration(cacheCache);
         return cfg;
     }
 
@@ -135,10 +127,10 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
             for (; ; ) {
                 Thread.sleep(BROADCAST_PERIOD);
                 Collection<String> results = ignite.compute().broadcast(() -> {
-                    return "ignite";
+                    return CONTROL_ANSWER;
                 });
                 for (String result : results)
-                    if (!"ignite".equals(result))
+                    if (!CONTROL_ANSWER.equals(result))
                         throw new IllegalArgumentException("Wrong answer from node: " + result);
                 if (count != results.size())
                     printf("Computed results: node = {0}, count = {1}", ignite.name(), count = results.size());
@@ -157,10 +149,9 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
 
         /** */
         @Override protected boolean ensured(TcpDiscoveryAbstractMessage msg) {
-            if (msg instanceof TcpDiscoveryNodeAddedMessage
-                || msg instanceof TcpDiscoveryNodeAddFinishedMessage)
+            if (ADDED_MESSAGE_DELAY > 0 && msg instanceof TcpDiscoveryNodeAddFinishedMessage)
                 try {
-                    Thread.sleep(MESSAGE_DELAY);
+                    Thread.sleep(ADDED_MESSAGE_DELAY);
                 }
                 catch (InterruptedException | IgniteInterruptedException ex) {
                     println("Long delivery of TcpDiscoveryNodeAddFinishedMessage interrupted");
