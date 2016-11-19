@@ -42,13 +42,16 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
     /** */
     private static final long BROADCAST_PERIOD = 100L;
 
+    /** */
     private static final String CONTROL_ANSWER = "ignite";
 
     /** */
     private static final Logger LOGGER = Logger.getLogger(IgniteTcpCommunicationBigClusterTest.class.getName());
 
+    /** */
     private static final Level LOG_LEVEL = Level.SEVERE;
 
+    /** */
     private CountDownLatch startLatch;
 
     /** */
@@ -75,21 +78,32 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
     /** */
     private static void println(String str) {
         LOGGER.log(LOG_LEVEL, str);
+        logFirstMessageCount();
     }
 
     /** */
     private static void println(String str, Throwable ex) {
         LOGGER.log(LOG_LEVEL, str, ex);
+        logFirstMessageCount();
     }
 
     /** */
     private static void printf(String format, Object... args) {
         LOGGER.log(LOG_LEVEL, MessageFormat.format(format, args));
+        logFirstMessageCount();
     }
 
     /** */
     private static void printf(String format, Throwable ex, Object... args) {
         LOGGER.log(LOG_LEVEL, MessageFormat.format(format, args), ex);
+        logFirstMessageCount();
+    }
+
+    /** */
+    private static void logFirstMessageCount() {
+        LOGGER.log(LOG_LEVEL, MessageFormat.format("onFirstMessage: started = {0}, active = {1}",
+            TcpCommunicationSpi.FIRST_MESSAGE_STARTED_COUNT.get(),
+            TcpCommunicationSpi.FIRST_MESSAGE_ACTIVE_COUNT.get()));
     }
 
     /** */
