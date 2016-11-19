@@ -501,6 +501,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             GridTcpNioCommunicationClient client =
                                     connected(recoveryDesc, ses, rmtNode, msg0.received(), true, !hasShmemClient);
 
+                            // here the RecoveryLastReceivedMessage is in the session queue
                             fut.onDone(client);
                         }
                         finally {
@@ -2746,6 +2747,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                                 i += read;
                             }
 
+                            // will got here rcvCnt = 0 if read timeout have been occurred and the channel was closed
                             rcvCnt = buf.getLong(1);
                         }
 
