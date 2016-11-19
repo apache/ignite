@@ -46,7 +46,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.Ignite;
@@ -239,12 +238,6 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META
 @IgniteSpiConsistencyChecked(optional = false)
 public class TcpCommunicationSpi extends IgniteSpiAdapter
     implements CommunicationSpi<Message>, TcpCommunicationSpiMBean {
-
-    /** */
-    public static final AtomicInteger FIRST_MESSAGE_STARTED_COUNT = new AtomicInteger();
-    /** */
-    public static final AtomicInteger FIRST_MESSAGE_ACTIVE_COUNT = new AtomicInteger();
-
     /** IPC error message. */
     public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
         "(switching to TCP, may be slower).";
@@ -554,12 +547,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     }
 
                     try {
-                        log.error("onFirstMessage enter, node = " + getLocalNodeId());
-                        FIRST_MESSAGE_STARTED_COUNT.incrementAndGet();
-                        FIRST_MESSAGE_ACTIVE_COUNT.incrementAndGet();
                         onFirstMessage(ses, msg);
-                        FIRST_MESSAGE_ACTIVE_COUNT.decrementAndGet();
-                        log.error("onFirstMessage exit, node = " + getLocalNodeId());
                     }
                     finally {
                         connectGate.leave();
