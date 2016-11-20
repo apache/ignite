@@ -115,6 +115,7 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -206,6 +207,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** Node ID in GridNioSession. */
     private static final int NODE_ID_META = GridNioSessionMetaKey.nextUniqueKey();
+
+    /** Size of the send queue. */
+    private static final int MSG_QUEUE_SIZE_META = GridNioSessionMetaKey.nextUniqueKey();
 
     /**
      * Number of tries to reopen ServerSocketChannel on 'SocketException: Invalid argument'.
@@ -487,7 +491,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 // Respond to client without message length.
                 byte[] msg0 = (byte[])msg;
 
-                ByteBuffer res = ByteBuffer.allocateDirect(msg0.length);
+                ByteBuffer res = directBuf ? ByteBuffer.allocateDirect(msg0.length) : ByteBuffer.wrap(msg0);
 
                 res.put(msg0);
 
@@ -538,6 +542,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                 .gridName(gridName)
                 .daemon(false)
                 .writeTimeout(writeTimeout)
+                .messageQueueSizeListener(new IgniteBiInClosure<GridNioSession, Integer>() {
+                    @Override public void apply(GridNioSession ses, Integer size) {
+                        ses.addMeta(MSG_QUEUE_SIZE_META, size);
+                    }
+                })
                 .build();
         }
         catch (Exception e) {
@@ -5667,7 +5676,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 meta.put(GridNioSessionMetaKey.SSL_ENGINE.ordinal(), ((NioSslSocket)sock).sslEngine);
             }
 
-            ses = (GridNioSession)clientNioSrv.createSession(ch, meta).get();
+            ses = clientNioSrv.createSession(ch, meta).get();
 
             state = WorkerState.STARTED;
         }
@@ -5693,6 +5702,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (state == WorkerState.STOPPED)
                 return new GridFinishedFuture<>();
+
+            log.warning("== " + ses);
 
             final IgniteInternalFuture<Object> res = ses.close().chain(new C1<IgniteInternalFuture<Boolean>, Object>() {
                 @Override public Object apply(final IgniteInternalFuture<Boolean> fut) {
@@ -5845,6 +5856,16 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         public WorkerState state() {
             return state;
+        }
+
+        /**
+         * @return Send queue size after adding message, in other words it may return 0
+         * only when no messages were sent after creation.
+         */
+        int queueSize() {
+            Integer size = ses.meta(MSG_QUEUE_SIZE_META);
+
+            return size == null ? 0 : size;
         }
 
         /** {@inheritDoc} */
@@ -6060,7 +6081,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             ack.verify(locNodeId);
 
-            clientMsgWrk.addMessage(ack, null);
+            clientMsgWrk.sendMessage(ack, null);
 
             if (heartbeatMsg != null)
                 clientMsgWrk.metrics(heartbeatMsg.metrics());
@@ -7759,17 +7780,27 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+            boolean skipWait = false;
+            final int batchSize = 50;
+
             while (!isCancelled()) {
                 for (final ClientNioMessageWorker worker : nioWorkers) {
                     if (worker.state == WorkerState.JOINED && worker.sending.compareAndSet(false, true)) {
                         T2<TcpDiscoveryAbstractMessage, byte[]> msg;
 
-                        do {
-                            msg = worker.msgQueue.poll();
+                        if (worker.queueSize() < 2) {
+                            int cnt = batchSize;
 
-                            if (msg != null)
-                                worker.sendMessage(msg.get1(), msg.get2());
-                        } while(msg != null);
+                            do {
+                                msg = worker.msgQueue.poll();
+
+                                if (msg != null)
+                                    worker.sendMessage(msg.get1(), msg.get2());
+
+                                skipWait = msg != null;
+                            }
+                            while (msg != null && --cnt > 0);
+                        }
 
                         boolean res = worker.sending.compareAndSet(true, false);
 
@@ -7777,7 +7808,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                nioSem.tryAcquire(1000, TimeUnit.MILLISECONDS);
+                if (!skipWait)
+                    nioSem.tryAcquire(1000, TimeUnit.MILLISECONDS);
             }
         }
     }

@@ -295,8 +295,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     /** Default max number of messages that could be queued to send to client. (value is <tt>0</tt>).  */
     public static final int DFLT_CLIENT_SEND_MSG_QUEUE_LIMIT = 0;
 
-    /** Default value for use direct or heap buffer. (value is <tt>true</tt>) */
-    public static final boolean DFLT_CLIENT_NIO_DIRECT_BUF = true;
+    /** Default value for use direct or heap buffer. (value is <tt>false</tt>) */
+    public static final boolean DFLT_CLIENT_NIO_DIRECT_BUF = false;
 
     /** Default byte order for nio client buffers. (value is <tt>ByteOrder.nativeOrder()</tt>) */
     public static final ByteOrder DFLT_CLIENT_NIO_BYTE_ORDER = ByteOrder.nativeOrder();

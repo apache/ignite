@@ -38,7 +38,7 @@ public class GridBufferedParser implements GridNioParser {
     private static final int BUF_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** */
-    private final boolean directBuf;
+    protected final boolean directBuf;
 
     /** */
     private final ByteOrder order; // TODO: GG-6460
