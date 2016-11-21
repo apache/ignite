@@ -241,9 +241,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     implements CommunicationSpi<Message>, TcpCommunicationSpiMBean {
 
     /** */
-    public static final AtomicInteger FIRST_MESSAGE_STARTED_COUNT = new AtomicInteger();
+    public static final AtomicInteger STARTED_COUNT = new AtomicInteger();
     /** */
-    public static final AtomicInteger FIRST_MESSAGE_ACTIVE_COUNT = new AtomicInteger();
+    public static final AtomicInteger ACTIVE_COUNT = new AtomicInteger();
 
     /** IPC error message. */
     public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
@@ -554,12 +554,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     }
 
                     try {
-                        log.error("onFirstMessage enter, node = " + getLocalNodeId());
-                        FIRST_MESSAGE_STARTED_COUNT.incrementAndGet();
-                        FIRST_MESSAGE_ACTIVE_COUNT.incrementAndGet();
                         onFirstMessage(ses, msg);
-                        FIRST_MESSAGE_ACTIVE_COUNT.decrementAndGet();
-                        log.error("onFirstMessage exit, node = " + getLocalNodeId());
                     }
                     finally {
                         connectGate.leave();
@@ -1597,6 +1592,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteSpiContext getSpiContext() {
+        STARTED_COUNT.incrementAndGet();
+        ACTIVE_COUNT.incrementAndGet();
         if (ctxInitLatch.getCount() > 0) {
             if (log.isDebugEnabled())
                 log.debug("Waiting for context initialization.");
@@ -1612,6 +1609,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             }
         }
 
+        ACTIVE_COUNT.decrementAndGet();
         return super.getSpiContext();
     }
 

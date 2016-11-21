@@ -40,6 +40,7 @@ import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocketFactory;
@@ -218,6 +219,12 @@ import org.jetbrains.annotations.Nullable;
 @DiscoverySpiOrderSupport(true)
 @DiscoverySpiHistorySupport(true)
 public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, TcpDiscoverySpiMBean {
+
+    /** */
+    public static final AtomicInteger JOIN_TOPOLOGY_STARTED_COUNT = new AtomicInteger();
+    /** */
+    public static final AtomicInteger JOIN_TOPOLOGY_ACTIVE_COUNT = new AtomicInteger();
+
     /** Failure detection timeout feature major version. */
     final static byte FAILURE_DETECTION_MAJOR_VER = 1;
 

@@ -28,16 +28,16 @@ import java.util.logging.Logger;
 public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest {
 
     /** */
-    private static final int IGNITE_NODES_NUMBER = 10;
-
-    /** */
-    private static final long RUNNING_TIMESPAN = 1_000L;
+    private static final int IGNITE_NODES_NUMBER = 3;
 
     /** */
     private static final long COMMUNICATION_TIMEOUT = 1_000L;
 
     /** Should be about of the COMMUNICATION_TIMEOUT value to get the error */
-    private static final long ADDED_MESSAGE_DELAY = COMMUNICATION_TIMEOUT;
+    private static final long ADDED_MESSAGE_DELAY = 10 * COMMUNICATION_TIMEOUT;
+
+    /** */
+    private static final long RUNNING_TIMESPAN = 3600_1000L;
 
     /** */
     private static final long BROADCAST_PERIOD = 100L;
@@ -53,6 +53,10 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
 
     /** */
     private CountDownLatch startLatch;
+
+    @Override protected long getTestTimeout() {
+        return Math.max(super.getTestTimeout(), RUNNING_TIMESPAN * 2);
+    }
 
     /** */
     private static IgniteConfiguration config(String gridName) {
@@ -78,32 +82,35 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
     /** */
     private static void println(String str) {
         LOGGER.log(LOG_LEVEL, str);
-        logFirstMessageCount();
+        logCounters();
     }
 
     /** */
     private static void println(String str, Throwable ex) {
         LOGGER.log(LOG_LEVEL, str, ex);
-        logFirstMessageCount();
+        logCounters();
     }
 
     /** */
     private static void printf(String format, Object... args) {
         LOGGER.log(LOG_LEVEL, MessageFormat.format(format, args));
-        logFirstMessageCount();
+        logCounters();
     }
 
     /** */
     private static void printf(String format, Throwable ex, Object... args) {
         LOGGER.log(LOG_LEVEL, MessageFormat.format(format, args), ex);
-        logFirstMessageCount();
+        logCounters();
     }
 
     /** */
-    private static void logFirstMessageCount() {
-        LOGGER.log(LOG_LEVEL, MessageFormat.format("onFirstMessage: started = {0}, active = {1}",
-            TcpCommunicationSpi.FIRST_MESSAGE_STARTED_COUNT.get(),
-            TcpCommunicationSpi.FIRST_MESSAGE_ACTIVE_COUNT.get()));
+    private static void logCounters() {
+        LOGGER.log(LOG_LEVEL, MessageFormat.format(
+            "joinTopology: started = {0}, active = {1}; getSpiContext: started = {2}, active = {3}",
+            TcpDiscoverySpi.JOIN_TOPOLOGY_STARTED_COUNT.get(),
+            TcpDiscoverySpi.JOIN_TOPOLOGY_ACTIVE_COUNT.get(),
+            TcpCommunicationSpi.STARTED_COUNT.get(),
+            TcpCommunicationSpi.ACTIVE_COUNT.get()));
     }
 
     /** */
