@@ -1128,6 +1128,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 ", singleMsgUpdateTime=" + exchFut.singleMsgUpdateTime +
                 ", singleMsgUpdateCnt=" + exchFut.singleMsgUpdateCnt +
                 ", singleMsgUpdateMaxTime=" + exchFut.singleMsgUpdateMaxTime +
+                ", singleMsgUpdateMinTime=" + exchFut.singleMsgUpdateMinTime +
                 ", err=" + err + ']');
         }
         else

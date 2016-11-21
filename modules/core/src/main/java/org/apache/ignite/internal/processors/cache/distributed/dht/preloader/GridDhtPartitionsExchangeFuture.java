@@ -111,6 +111,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private final Set<UUID> remaining = new HashSet<>();
 
     /** */
+    @GridToStringExclude
+    private int pendingSingleUpdates;
+
+    /** */
     public int singleMsgUpdateCnt;
 
     /** */
@@ -118,6 +122,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /** */
     public long singleMsgUpdateMaxTime;
+
+    /** */
+    public long singleMsgUpdateMinTime = Long.MAX_VALUE;
 
     /** */
     @GridToStringExclude
@@ -1244,34 +1251,66 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     private void processMessage(ClusterNode node, GridDhtPartitionsSingleMessage msg) {
         boolean allReceived = false;
+        boolean updateSingleMap = false;
 
         synchronized (mux) {
             assert crd != null;
 
             if (crd.isLocal()) {
-                long start = U.currentTimeMillis();
-
                 if (remaining.remove(node.id())) {
-                    updatePartitionSingleMap(msg);
+                    updateSingleMap = true;
+
+                    pendingSingleUpdates++;
 
                     allReceived = remaining.isEmpty();
                 }
 
                 singleMsgUpdateCnt++;
-
-                long time = U.currentTimeMillis() - start;
-
-                if (time > singleMsgUpdateMaxTime)
-                    singleMsgUpdateMaxTime = time;
-
-                singleMsgUpdateTime += time;
             }
             else
                 singleMsgs.put(node, msg);
         }
 
-        if (allReceived)
+        if (updateSingleMap) {
+            long start = U.currentTimeMillis();
+
+            try {
+                updatePartitionSingleMap(msg);
+            }
+            finally {
+                synchronized (mux) {
+                    long time = U.currentTimeMillis() - start;
+
+                    if (time > singleMsgUpdateMaxTime)
+                        singleMsgUpdateMaxTime = time;
+                    if (time < singleMsgUpdateMinTime)
+                        singleMsgUpdateMinTime = time;
+
+                    singleMsgUpdateTime += time;
+
+                    assert pendingSingleUpdates > 0;
+
+                    pendingSingleUpdates--;
+
+                    if (pendingSingleUpdates == 0)
+                        mux.notifyAll();
+                }
+            }
+        }
+
+        if (allReceived) {
+            synchronized (mux) {
+                try {
+                    while (pendingSingleUpdates > 0)
+                        U.wait(mux);
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    U.warn(log, "Failed to wait for partition map updates.");
+                }
+            }
+
             onAllReceived(false);
+        }
     }
 
     /**

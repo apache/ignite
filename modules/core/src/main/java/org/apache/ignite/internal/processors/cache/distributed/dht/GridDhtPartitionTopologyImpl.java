@@ -1174,22 +1174,17 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             if (cntrMap != null) {
                 for (Map.Entry<Integer, Long> e : cntrMap.entrySet()) {
-                    Long cntr = this.cntrMap.get(e.getKey());
+                    Integer p = e.getKey();
+
+                    Long cntr = this.cntrMap.get(p);
 
                     if (cntr == null || cntr < e.getValue())
-                        this.cntrMap.put(e.getKey(), e.getValue());
-                }
+                        this.cntrMap.put(p, e.getValue());
 
-                for (int i = 0; i < locParts.length; i++) {
-                    GridDhtLocalPartition part = locParts[i];
+                    GridDhtLocalPartition part = locParts[p];
 
-                    if (part == null)
-                        continue;
-
-                    Long cntr = cntrMap.get(part.id());
-
-                    if (cntr != null)
-                        part.updateCounter(cntr);
+                    if (part != null)
+                        part.updateCounter(e.getValue());
                 }
             }
 
