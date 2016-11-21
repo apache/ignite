@@ -200,6 +200,9 @@ namespace ignite
 
                 LoggerLogHandler loggerLog;
                 LoggerIsLevelEnabledHandler loggerIsLevelEnabled;
+
+                InLongOutLongHandler inLongOutLong;
+                InObjectStreamOutStreamHandler inObjectStreamOutStream;
             };
 
             /**
