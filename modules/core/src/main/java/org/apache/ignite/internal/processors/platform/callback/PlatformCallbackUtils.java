@@ -572,6 +572,16 @@ public class PlatformCallbackUtils {
     static native boolean loggerIsLevelEnabled(long envPtr, int level);
 
     /**
+     * Performs a generic long-long operation.
+     *
+     * @param envPtr Environment pointer.
+     * @param type Operation code.
+     * @param val Value.
+     * @return Value.
+     */
+    static native long inLongOutLong(long envPtr, int type, long val);
+
+    /**
      * Private constructor.
      */
     private PlatformCallbackUtils() {
