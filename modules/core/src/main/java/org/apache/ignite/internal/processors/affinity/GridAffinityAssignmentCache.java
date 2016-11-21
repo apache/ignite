@@ -152,6 +152,8 @@ public class GridAffinityAssignmentCache {
         assert similarAffKey != null;
 
         affGrp = locCache ? null : ctx.cache().context().affinity().equalAffinityGroup(cacheId, affCfg);
+
+        log.info("Initialized cache affinity group [cache=" + cacheName + ", grp=" + affGrp + ']');
     }
 
     /**

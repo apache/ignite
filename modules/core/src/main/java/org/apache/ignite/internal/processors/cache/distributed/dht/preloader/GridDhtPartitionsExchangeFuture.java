@@ -111,6 +111,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private final Set<UUID> remaining = new HashSet<>();
 
     /** */
+    public int singleMsgUpdateCnt;
+
+    /** */
+    public long singleMsgUpdateTime;
+
+    /** */
+    public long singleMsgUpdateMaxTime;
+
+    /** */
     @GridToStringExclude
     private List<ClusterNode> srvNodes;
 
@@ -803,11 +812,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 skipSnd = true;
 
             if (!skipSnd) {
-                long sendStart = System.currentTimeMillis();
+                long sndStart = System.currentTimeMillis();
 
                 sendPartitions(crd);
 
-                log.info("Send parts time [topVer=" + topologyVersion() + ", time=" + (System.currentTimeMillis() - sendStart) + ']');
+                log.info("Send parts time [topVer=" + topologyVersion() + ", time=" + (System.currentTimeMillis() - sndStart) + ']');
             }
             else
                 log.info("Skip first exchange message [topVer=" + topologyVersion() + ']');
@@ -1240,11 +1249,22 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             assert crd != null;
 
             if (crd.isLocal()) {
+                long start = U.currentTimeMillis();
+
                 if (remaining.remove(node.id())) {
                     updatePartitionSingleMap(msg);
 
                     allReceived = remaining.isEmpty();
                 }
+
+                singleMsgUpdateCnt++;
+
+                long time = U.currentTimeMillis() - start;
+
+                if (time > singleMsgUpdateMaxTime)
+                    singleMsgUpdateMaxTime = time;
+
+                singleMsgUpdateTime += time;
             }
             else
                 singleMsgs.put(node, msg);

@@ -1123,7 +1123,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (log.isDebugEnabled())
             log.debug("Exchange done [topVer=" + topVer + ", fut=" + exchFut + ", err=" + err + ']');
 
-        log.info("Exchange done [topVer=" + topVer + ", err=" + err + ']');
+        if (exchFut.singleMsgUpdateCnt > 0) {
+            log.info("Exchange done [topVer=" + topVer +
+                ", singleMsgUpdateTime=" + exchFut.singleMsgUpdateTime +
+                ", singleMsgUpdateCnt=" + exchFut.singleMsgUpdateCnt +
+                ", singleMsgUpdateMaxTime=" + exchFut.singleMsgUpdateMaxTime +
+                ", err=" + err + ']');
+        }
+        else
+            log.info("Exchange done [topVer=" + topVer + ", err=" + err + ']');
 
         IgniteProductVersion minVer = cctx.localNode().version();
         IgniteProductVersion maxVer = cctx.localNode().version();

@@ -42,9 +42,27 @@ public class AffinityCalculateCache {
     /** */
     private Map<Integer, List<List<ClusterNode>>> grpAssign;
 
+    /** */
+    private int calcCnt;
+
+    /** */
+    private long lateAffTime;
+
     public AffinityCalculateCache(AffinityTopologyVersion topVer, DiscoveryEvent discoEvt) {
         this.topVer = topVer;
         this.discoEvt = discoEvt;
+    }
+
+    public int calculateCount() {
+        return calcCnt;
+    }
+
+    public void addLateAffinityCalculateTime(long time) {
+        lateAffTime += time;
+    }
+
+    public long lateAffinityCalculateTime() {
+        return lateAffTime;
     }
 
     public List<List<ClusterNode>> assignPartitions(AffinityFunction aff,
@@ -62,6 +80,8 @@ public class AffinityCalculateCache {
                 return calcAssign;
             }
         }
+
+        calcCnt++;
 
         AffinityFunctionContext ctx = new GridAffinityFunctionContextImpl(nodes,
             prevAssignment,

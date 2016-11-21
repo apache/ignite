@@ -1191,6 +1191,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
 
             centralizedAff = true;
+
+            log.info("Initialized affinity on node left [topVer=" + fut.topologyVersion() +
+                ", calcCnt=" + affCache.calculateCount() + ']');
         }
         else {
             initCachesAffinity(fut);
@@ -1379,32 +1382,38 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         final AffinityCalculateCache affCache = new AffinityCalculateCache(fut.topologyVersion(), fut.discoveryEvent());
 
-        if (!crd) {
-            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                if (cacheCtx.isLocal())
-                    continue;
+        try {
+            if (!crd) {
+                for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                    if (cacheCtx.isLocal())
+                        continue;
 
-                boolean latePrimary = cacheCtx.rebalanceEnabled();
+                    boolean latePrimary = cacheCtx.rebalanceEnabled();
 
-                initAffinityOnNodeJoin(fut, cacheCtx.affinity().affinityCache(), null, latePrimary, affCache);
-            }
-
-            return null;
-        }
-        else {
-            final WaitRebalanceInfo waitRebalanceInfo = new WaitRebalanceInfo(topVer);
-
-            forAllRegisteredCaches(new IgniteInClosureX<DynamicCacheDescriptor>() {
-                @Override public void applyx(DynamicCacheDescriptor cacheDesc) throws IgniteCheckedException {
-                    CacheHolder cache = cache(fut, cacheDesc);
-
-                    boolean latePrimary = cache.rebalanceEnabled;
-
-                    initAffinityOnNodeJoin(fut, cache.affinity(), waitRebalanceInfo, latePrimary, affCache);
+                    initAffinityOnNodeJoin(fut, cacheCtx.affinity().affinityCache(), null, latePrimary, affCache);
                 }
-            });
 
-            return waitRebalanceInfo;
+                return null;
+            }
+            else {
+                final WaitRebalanceInfo waitRebalanceInfo = new WaitRebalanceInfo(topVer);
+
+                forAllRegisteredCaches(new IgniteInClosureX<DynamicCacheDescriptor>() {
+                    @Override public void applyx(DynamicCacheDescriptor cacheDesc) throws IgniteCheckedException {
+                        CacheHolder cache = cache(fut, cacheDesc);
+
+                        boolean latePrimary = cache.rebalanceEnabled;
+
+                        initAffinityOnNodeJoin(fut, cache.affinity(), waitRebalanceInfo, latePrimary, affCache);
+                    }
+                });
+
+                return waitRebalanceInfo;
+            }
+        }
+        finally {
+            log.info("Initialized affinity on node join [topVer=" + topVer +
+                ", calcCnt=" + affCache.calculateCount() + ", lateAffCalcTime=" + affCache.lateAffinityCalculateTime() + ']');
         }
     }
 
@@ -1432,14 +1441,16 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         assert affTopVer.topologyVersion() > 0 : "Affinity is not initialized [cache=" + aff.cacheName() +
             ", topVer=" + affTopVer + ", node=" + cctx.localNodeId() + ']';
 
-        List<List<ClusterNode>> curAff = aff.assignments(affTopVer);
-
-        assert aff.idealAssignment() != null : "Previous assignment is not available.";
-
         List<List<ClusterNode>> idealAssignment = aff.calculate(topVer, fut.discoveryEvent(), affCache);
         List<List<ClusterNode>> newAssignment = null;
 
         if (latePrimary) {
+            long start = U.currentTimeMillis();
+
+            List<List<ClusterNode>> curAff = aff.assignments(affTopVer);
+
+            assert aff.idealAssignment() != null : "Previous assignment is not available.";
+
             for (int p = 0; p < idealAssignment.size(); p++) {
                 List<ClusterNode> newNodes = idealAssignment.get(p);
                 List<ClusterNode> curNodes = curAff.get(p);
@@ -1462,6 +1473,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     newAssignment.set(p, nodes0);
                 }
             }
+
+            if (affCache != null)
+                affCache.addLateAffinityCalculateTime(U.currentTimeMillis() - start);
         }
 
         if (newAssignment == null)
