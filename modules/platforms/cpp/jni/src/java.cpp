@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// ReSharper disable once CppUnusedIncludeDirective
 #include <cstring>   // needed only on linux
 #include <string>
 #include <exception>
@@ -314,6 +315,9 @@ namespace ignite
             JniMethod M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_DESTROY = JniMethod("affinityFunctionDestroy", "(JJ)V", true);
 
             JniMethod M_PLATFORM_CALLBACK_UTILS_CONSOLE_WRITE = JniMethod("consoleWrite", "(Ljava/lang/String;Z)V", true);
+
+            JniMethod M_PLATFORM_CALLBACK_UTILS_IN_LONG_OUT_LONG = JniMethod("inLongOutLong", "(JIJ)J", true);
+            JniMethod M_PLATFORM_CALLBACK_UTILS_IN_OBJECT_STREAM_OUT_STREAM = JniMethod("inObjectStreamOutStream", "(JIJJLjava/lang/Object;)J", true);
 
             const char* C_PLATFORM_UTILS = "org/apache/ignite/internal/processors/platform/utils/PlatformUtils";
             JniMethod M_PLATFORM_UTILS_REALLOC = JniMethod("reallocate", "(JI)V", true);
@@ -619,7 +623,7 @@ namespace ignite
 
             void RegisterNatives(JNIEnv* env) {
                 {
-					JNINativeMethod methods[62];
+					JNINativeMethod methods[64];
 
                     int idx = 0;
 
@@ -705,6 +709,9 @@ namespace ignite
 
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_LOGGER_LOG, reinterpret_cast<void*>(JniLoggerLog));
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_LOGGER_IS_LEVEL_ENABLED, reinterpret_cast<void*>(JniLoggerIsLevelEnabled));
+
+                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_IN_LONG_OUT_LONG, reinterpret_cast<void*>(JniInLongOutLong));
+                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_IN_OBJECT_STREAM_OUT_STREAM, reinterpret_cast<void*>(JniInObjectStreamOutStream));
 
                     jint res = env->RegisterNatives(FindClass(env, C_PLATFORM_CALLBACK_UTILS), methods, idx);
 
