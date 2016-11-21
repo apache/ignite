@@ -42,9 +42,8 @@ class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture 
     /** */
     private static final long serialVersionUID = 0L;
 
-    // TODO: 24.10.16 add correct version
     /** */
-    private static final IgniteProductVersion SINGLE_UPDATE_REQUEST = IgniteProductVersion.fromString("1.8.0");
+    private static final IgniteProductVersion SINGLE_UPDATE_REQUEST = IgniteProductVersion.fromString("1.7.4");
 
     /** Future keys. */
     private KeyCacheObject key;
@@ -96,21 +95,19 @@ class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture 
 
     /** {@inheritDoc} */
     @Override protected GridDhtAtomicAbstractUpdateRequest createRequest(
-        UUID nodeId,
+        ClusterNode node,
         GridCacheVersion futVer,
         GridCacheVersion writeVer,
         CacheWriteSynchronizationMode syncMode,
         @NotNull AffinityTopologyVersion topVer,
         boolean forceTransformBackups
     ) {
-        ClusterNode node = cctx.node(nodeId);
-
         if (canUseSingleRequest(node)) {
             assert !forceTransformBackups;
 
             return new GridDhtAtomicSingleUpdateRequest(
                 cctx.cacheId(),
-                nodeId,
+                node.id(),
                 futVer,
                 writeVer,
                 syncMode,
@@ -124,7 +121,7 @@ class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture 
         else {
             return new GridDhtAtomicUpdateRequest(
                 cctx.cacheId(),
-                nodeId,
+                node.id(),
                 futVer,
                 writeVer,
                 syncMode,
@@ -172,7 +169,7 @@ class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture 
      * @return {@code true} if target node supports {@link GridNearAtomicSingleUpdateRequest}
      */
     private boolean canUseSingleRequest(ClusterNode node) {
-        return node != null && node.version().compareToIgnoreTimestamp(SINGLE_UPDATE_REQUEST) >= 0 &&
+        return node.version().compareToIgnoreTimestamp(SINGLE_UPDATE_REQUEST) >= 0 &&
             cctx.expiry() == null &&
             updateReq.expiry() == null &&
             !updateReq.hasConflictData();

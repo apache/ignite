@@ -49,7 +49,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Keep serialized flag. */
+    /** Near cache key flag. */
     private static final int NEAR_FLAG_MASK = 0x80;
 
     /** Future version. */
@@ -73,15 +73,15 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     /** Additional flags. */
     protected byte flags;
 
-    /** Keys to update. */
+    /** Key to update. */
     @GridToStringInclude
     protected KeyCacheObject key;
 
-    /** Values to update. */
+    /** Value to update. */
     @GridToStringInclude
     protected CacheObject val;
 
-    /** Previous values. */
+    /** Previous value. */
     @GridToStringInclude
     protected CacheObject prevVal;
 
@@ -111,6 +111,8 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param addDepInfo Deployment info.
+     * @param keepBinary Keep binary flag.
+     * @param skipStore Skip store flag.
      */
     GridDhtAtomicSingleUpdateRequest(
         int cacheId,
@@ -134,8 +136,10 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         this.taskNameHash = taskNameHash;
         this.addDepInfo = addDepInfo;
 
-        setFlag(skipStore, SKIP_STORE_FLAG_MASK);
-        setFlag(keepBinary, KEEP_BINARY_FLAG_MASK);
+        if (skipStore)
+            setFlag(true, SKIP_STORE_FLAG_MASK);
+        if (keepBinary)
+            setFlag(true, KEEP_BINARY_FLAG_MASK);
     }
 
     /**
@@ -162,12 +166,12 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         @Nullable Long updateCntr
     ) {
         assert entryProcessor == null;
-
         assert ttl <= 0 : ttl;
         assert conflictExpireTime <= 0 : conflictExpireTime;
         assert conflictVer == null : conflictVer;
 
         near(false);
+
         this.key = key;
         this.partId = partId;
         this.val = val;
@@ -177,7 +181,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
         if (updateCntr != null)
             this.updateCntr = updateCntr;
-
     }
 
     /**
@@ -193,7 +196,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         long ttl,
         long expireTime) {
         assert entryProcessor == null;
-
         assert ttl <= 0 : ttl;
 
         near(true);
@@ -662,5 +664,4 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     @Override public String toString() {
         return S.toString(GridDhtAtomicSingleUpdateRequest.class, this, "super", super.toString());
     }
-
 }

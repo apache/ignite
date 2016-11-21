@@ -193,7 +193,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
 
                 if (updateReq == null) {
                     updateReq = createRequest(
-                        nodeId,
+                        node,
                         futVer,
                         writeVer,
                         syncMode,
@@ -260,7 +260,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
                     continue;
 
                 updateReq = createRequest(
-                    nodeId,
+                    node,
                     futVer,
                     writeVer,
                     syncMode,
@@ -399,10 +399,16 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
     }
 
     /**
-     * Creates DHT request
+     * @param node Node.
+     * @param futVer Future version.
+     * @param writeVer Update version.
+     * @param syncMode Write synchronization mode.
+     * @param topVer Topology version.
+     * @param forceTransformBackups Force transform backups flag.
+     * @return Request.
      */
     protected abstract GridDhtAtomicAbstractUpdateRequest createRequest(
-        UUID nodeId,
+        ClusterNode node,
         GridCacheVersion futVer,
         GridCacheVersion writeVer,
         CacheWriteSynchronizationMode syncMode,

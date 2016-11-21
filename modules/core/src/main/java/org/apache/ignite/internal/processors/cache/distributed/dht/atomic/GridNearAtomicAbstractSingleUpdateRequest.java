@@ -155,12 +155,18 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
         this.taskNameHash = taskNameHash;
         this.addDepInfo = addDepInfo;
 
-        fastMap(fastMap);
-        topologyLocked(topLocked);
-        returnValue(retval);
-        skipStore(skipStore);
-        keepBinary(keepBinary);
-        clientRequest(clientReq);
+        if (fastMap)
+            fastMap(true);
+        if (topLocked)
+            topologyLocked(true);
+        if (retval)
+            returnValue(true);
+        if (skipStore)
+            skipStore(true);
+        if (keepBinary)
+            keepBinary(true);
+        if (clientReq)
+            clientRequest(true);
     }
 
     /** {@inheritDoc} */

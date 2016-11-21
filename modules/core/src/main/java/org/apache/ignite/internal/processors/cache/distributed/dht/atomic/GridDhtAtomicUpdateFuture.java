@@ -121,13 +121,15 @@ class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridDhtAtomicAbstractUpdateRequest createRequest(UUID nodeId, GridCacheVersion futVer,
-        GridCacheVersion writeVer, CacheWriteSynchronizationMode syncMode, @NotNull AffinityTopologyVersion topVer,
+    @Override protected GridDhtAtomicAbstractUpdateRequest createRequest(ClusterNode node,
+        GridCacheVersion futVer,
+        GridCacheVersion writeVer,
+        CacheWriteSynchronizationMode syncMode,
+        @NotNull AffinityTopologyVersion topVer,
         boolean forceTransformBackups) {
-
         return new GridDhtAtomicUpdateRequest(
             cctx.cacheId(),
-            nodeId,
+            node.id(),
             futVer,
             writeVer,
             syncMode,
