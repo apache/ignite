@@ -24,46 +24,48 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
 /**
- * Reset compute grid query metrics.
+ * Reset query detail metrics.
  */
 @GridInternal
-public class VisorCacheResetQueryMetricsTask extends VisorOneNodeTask<String, Void> {
+public class VisorCacheResetQueryDetailMetricsTask extends VisorOneNodeTask<Void, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCacheResetQueryMetricsJob job(String arg) {
-        return new VisorCacheResetQueryMetricsJob(arg, debug);
+    @Override protected VisorCacheResetQueryDetailMetricsJob job(Void arg) {
+        return new VisorCacheResetQueryDetailMetricsJob(arg, debug);
     }
 
     /**
-     * Job that reset cache query metrics.
+     * Job that reset query detail metrics.
      */
-    private static class VisorCacheResetQueryMetricsJob extends VisorJob<String, Void> {
+    private static class VisorCacheResetQueryDetailMetricsJob extends VisorJob<Void, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
-         * @param arg Cache name to reset query metrics for.
+         * @param arg Task argument.
          * @param debug Debug flag.
          */
-        private VisorCacheResetQueryMetricsJob(String arg, boolean debug) {
+        private VisorCacheResetQueryDetailMetricsJob(Void arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(String cacheName) {
-            IgniteCache cache = ignite.cache(cacheName);
+        @Override protected Void run(Void arg) {
+            for (String cacheName : ignite.cacheNames()) {
+                IgniteCache cache = ignite.cache(cacheName);
 
-            if (cache != null)
-                cache.resetQueryMetrics();
+                if (cache != null)
+                    cache.resetQueryDetailMetrics();
+            }
 
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorCacheResetQueryMetricsJob.class, this);
+            return S.toString(VisorCacheResetQueryDetailMetricsJob.class, this);
         }
     }
 }

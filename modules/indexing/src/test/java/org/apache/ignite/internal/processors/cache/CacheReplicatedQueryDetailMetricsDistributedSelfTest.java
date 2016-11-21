@@ -17,29 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Serializable;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
- * Key for system utility cache.
+ * Tests for replicated distributed cache query metrics.
  */
-public abstract class GridCacheUtilityKey<K extends GridCacheUtilityKey> implements GridCacheInternal, Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class CacheReplicatedQueryDetailMetricsDistributedSelfTest extends CacheAbstractQueryDetailMetricsSelfTest {
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public final boolean equals(Object obj) {
-        return obj == this || obj != null && obj.getClass() == getClass() && equalsx((K)obj);
+    @Override protected void beforeTest() throws Exception {
+        gridCnt = 2;
+        cacheMode = REPLICATED;
+
+        super.beforeTest();
     }
-
-    /**
-     * Child-specific equals method.
-     *
-     * @param key Key.
-     * @return {@code True} if equals.
-     */
-    protected abstract boolean equalsx(K key);
-
-    /** {@inheritDoc} */
-    public abstract int hashCode();
 }

@@ -17,14 +17,50 @@
 
 package org.apache.ignite.cache.query;
 
-import org.apache.ignite.internal.processors.cache.query.CacheQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
 
 /**
- * Cache query metrics used to obtain statistics on query. Metrics for particular query
- * can be get via {@link CacheQuery#metrics()} method or aggregated metrics for all queries
- * via {@link CacheQuery#metrics()}.
+ * Query metrics aggregated by query type and its textual representation.
+ *
+ * Query detail metrics could be enabled via {@link CacheConfiguration#setQueryDetailMetricsSize(int)} method.
  */
-public interface QueryMetrics {
+public interface QueryDetailMetrics {
+    /**
+     * @return Query type.
+     */
+    public String queryType();
+
+    /**
+     * @return Textual representation of query.
+     */
+    public String query();
+
+    /**
+     * @return Cache where query was executed.
+     */
+    public String cache();
+
+    /**
+     * Gets total number execution of query.
+     *
+     * @return Number of executions.
+     */
+    public int executions();
+
+    /**
+     * Gets number of completed execution of query.
+     *
+     * @return Number of completed executions.
+     */
+    public int completions();
+
+    /**
+     * Gets number of times a query execution failed.
+     *
+     * @return Number of times a query execution failed.
+     */
+    public int failures();
+
     /**
      * Gets minimum execution time of query.
      *
@@ -47,16 +83,16 @@ public interface QueryMetrics {
     public double averageTime();
 
     /**
-     * Gets total number execution of query.
+     * Gets total time of all query executions.
      *
-     * @return Number of executions.
+     * @return Total time of all query executions.
      */
-    public int executions();
+    public long totalTime();
 
     /**
-     * Gets total number of times a query execution failed.
+     * Gets latest query start time.
      *
-     * @return Total number of times a query execution failed.
+     * @return Latest time query was stared.
      */
-    public int fails();
+    public long lastStartTime();
 }

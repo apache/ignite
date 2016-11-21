@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.query.Query;
