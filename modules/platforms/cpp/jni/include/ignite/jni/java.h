@@ -567,6 +567,9 @@ namespace ignite
 
             JNIEXPORT void JNICALL JniLoggerLog(JNIEnv *env, jclass cls, jlong envPtr, jint level, jstring message, jstring category, jstring errorInfo, jlong memPtr);
             JNIEXPORT jboolean JNICALL JniLoggerIsLevelEnabled(JNIEnv *env, jclass cls, jlong envPtr, jint level);
+
+            JNIEXPORT jlong JNICALL JniInLongOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint type, jlong val);
+            JNIEXPORT jlong JNICALL JniInObjectStreamOutStream(JNIEnv *env, jclass cls, jlong envPtr, jint type, jlong inMemPtr, jlong outMemPtr, jobject arg);
         }
     }
 }

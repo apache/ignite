@@ -1933,6 +1933,14 @@ namespace ignite
             JNIEXPORT jboolean JNICALL JniLoggerIsLevelEnabled(JNIEnv *env, jclass cls, jlong envPtr, jint level) {
                 IGNITE_SAFE_FUNC(env, envPtr, LoggerIsLevelEnabledHandler, loggerIsLevelEnabled, level);
             }
+
+            JNIEXPORT jlong JNICALL JniInLongOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint type, jlong val) {
+                IGNITE_SAFE_FUNC(env, envPtr, InLongOutLongHandler, inLongOutLong, type, val);
+            }
+
+            JNIEXPORT jlong JNICALL JniInObjectStreamOutStream(JNIEnv *env, jclass cls, jlong envPtr, jint type, jlong inMemPtr, jlong outMemPtr, jobject arg) {
+                IGNITE_SAFE_FUNC(env, envPtr, InObjectStreamOutStreamHandler, inObjectStreamOutStream, type, inMemPtr, outMemPtr, arg);
+            }
         }
     }
 }
