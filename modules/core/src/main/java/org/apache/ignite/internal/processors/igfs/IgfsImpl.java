@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.eviction.igfs.IgfsPerBlockLruEvictionPolicy;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
@@ -1284,9 +1285,23 @@ public final class IgfsImpl implements IgfsEx {
                         if (info == null)
                             throw new IgfsPathNotFoundException("File not found: " + path);
 
-                        return Collections.<IgfsBlockLocation>singleton(
-                                new IgfsBlockLocationImpl(0, info.length(),
-                                    Collections.singleton(igfsCtx.localNode())));
+                        // Simple affinity maps all blocks to local node.
+                        Collection<ClusterNode> nodes = Collections.singleton(igfsCtx.localNode());
+
+                        long blockLen = maxLen > 0 ? maxLen : cfg.getBlockSize();
+
+                        Collection<IgfsBlockLocation> blocks = new ArrayList<>();
+
+                        long off = start;
+                        long end = start + len;
+
+                        for (; off + blockLen < end; off += blockLen)
+                            blocks.add(new IgfsBlockLocationImpl(off, blockLen, nodes));
+
+                        blocks.add(new IgfsBlockLocationImpl(off, Math.min(blockLen, end - off),
+                            nodes));
+
+                        return blocks;
                     }
                 }
 
