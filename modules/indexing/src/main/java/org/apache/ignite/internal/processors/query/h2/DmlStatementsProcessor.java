@@ -446,7 +446,7 @@ public class DmlStatementsProcessor {
 
         boolean bin = cctx.binaryMarshaller();
 
-        String[] updatedColNames = null;
+        String[] updatedColNames = plan.colNames;
 
         int valColIdx = plan.valColIdx;
 
