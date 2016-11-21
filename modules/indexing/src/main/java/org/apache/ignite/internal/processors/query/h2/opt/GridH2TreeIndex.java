@@ -527,6 +527,8 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         @Override public GridCursor<GridH2Row> find(GridSearchRowPointer lower, boolean lowerInclusive,
                                                     GridSearchRowPointer upper, boolean upperInclusive)
             throws IgniteCheckedException {
+            if (lower == null || upper == null)
+                throw new NullPointerException();
 
             NavigableMap<GridSearchRowPointer, GridH2Row> subMap =
                 tree.subMap(lower, lowerInclusive, upper, upperInclusive);

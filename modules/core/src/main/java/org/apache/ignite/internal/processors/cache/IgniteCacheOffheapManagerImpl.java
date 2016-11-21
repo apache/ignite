@@ -897,7 +897,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
         /** {@inheritDoc} */
         @Override public GridCursor<? extends CacheDataRow> cursor() throws IgniteCheckedException {
-            return dataTree.find(null, null);
+            return dataTree.findAll();
         }
 
         /** {@inheritDoc} */

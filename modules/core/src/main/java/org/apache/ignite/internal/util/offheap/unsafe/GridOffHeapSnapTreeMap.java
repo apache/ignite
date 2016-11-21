@@ -3845,6 +3845,8 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
 
     @Override public GridCursor<V> find(K lower, boolean lowerInclusive,  K upper, boolean upperInclusive)
         throws IgniteCheckedException {
+        if (lower == null || upper == null)
+            throw new NullPointerException();
 
         final Comparable<? super K> fromCmp = comparable(lower);
 
@@ -4495,6 +4497,8 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
 
         @Override public GridCursor<V> find(K lower, boolean lowerInclusive,  K upper, boolean upperInclusive)
             throws IgniteCheckedException {
+            if (lower == null || upper == null)
+                throw new NullPointerException();
 
             SubMap subMap = subMap(lower, lowerInclusive, upper, upperInclusive);
 

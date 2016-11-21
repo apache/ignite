@@ -753,8 +753,20 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     public GridCursor<T> find(L lower, boolean lowerInclusive,
                               L upper, boolean upperInclusive) throws IgniteCheckedException {
-        // TODO inclusive / exclusive logic should be implemented
-        return find(lower, upper);
+        if (lower == null || upper == null)
+            throw new NullPointerException();
+
+        ForwardCursor cursor = new ForwardCursor(lower, upper);
+
+        if (!lowerInclusive)
+            cursor.lowerShift = 1;
+
+        if (!upperInclusive)
+            cursor.upperShift = -1;
+
+        cursor.find();
+
+        return cursor;
     }
 
     public GridCursor<T> findAll() throws IgniteCheckedException {
@@ -3464,6 +3476,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** */
         private final L upperBound;
 
+        /** */
+        private int upperShift = 1; // Initially it is -1 to handle multiple equal rows.
+
         /**
          * @param lowerBound Lower bound.
          * @param upperBound Upper bound.
@@ -3535,8 +3550,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             // Compare with the last row on the page.
             int cmp = compare(io, buf, cnt - 1, upperBound);
 
-            if (cmp > 0) {
-                int idx = findInsertionPoint(io, buf, low, cnt, upperBound, 1);
+            if (cmp > 0 || (cmp == 0 && upperShift == -1)) {
+                int idx = findInsertionPoint(io, buf, low, cnt, upperBound, upperShift);
 
                 assert idx < 0;
 

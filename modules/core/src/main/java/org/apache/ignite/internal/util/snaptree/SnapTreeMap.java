@@ -2350,18 +2350,12 @@ public class SnapTreeMap<K, V> extends AbstractMap<K, V> implements ConcurrentNa
     //////////////// IgniteTree
 
     @Override public GridCursor<V> find(K lower, boolean lowerInclusive,
-                                        K upper, boolean upperInclusive) throws IgniteCheckedException {
-        if (lower == null)
-            if (upper == null) // all
-                return new GridCursorIteratorWrapper<>(values().iterator());
-            else // head
-                return new GridCursorIteratorWrapper<>(headMap(upper, upperInclusive).values().iterator());
-        else
-            if (upper == null) // tail
-                return new GridCursorIteratorWrapper<>(tailMap(lower, lowerInclusive).values().iterator());
-            else // interval
-                return new GridCursorIteratorWrapper<>(subMap(lower, lowerInclusive, upper, upperInclusive)
-                    .values().iterator());
+        K upper, boolean upperInclusive) throws IgniteCheckedException {
+        if (lower == null || upper == null)
+            throw new NullPointerException();
+
+        return new GridCursorIteratorWrapper<>(subMap(lower, lowerInclusive, upper, upperInclusive)
+            .values().iterator());
     }
 
     public GridCursor<V> find(K lower, K upper) throws IgniteCheckedException {
@@ -2921,16 +2915,11 @@ public class SnapTreeMap<K, V> extends AbstractMap<K, V> implements ConcurrentNa
         @Override public GridCursor<V> find(K lower, boolean lowerInclusive,
                                             K upper, boolean upperInclusive) throws IgniteCheckedException {
 
-            if (lower == null)
-                if (upper == null) // all
-                    return new GridCursorIteratorWrapper<>(values().iterator());
-                else // head
-                    return new GridCursorIteratorWrapper<>(headMap(upper, upperInclusive).values().iterator());
-            else
-            if (upper == null) // tail
-                return new GridCursorIteratorWrapper<>(tailMap(lower, lowerInclusive).values().iterator());
-            else // interval
-                return new GridCursorIteratorWrapper<>(subMap(lower, lowerInclusive, upper, upperInclusive).values().iterator());
+            if (lower == null || upper == null)
+                throw new NullPointerException();
+
+            return new GridCursorIteratorWrapper<>(subMap(lower, lowerInclusive, upper, upperInclusive)
+                .values().iterator());
         }
 
         public GridCursor<V> find(K lower, K upper) throws IgniteCheckedException {
