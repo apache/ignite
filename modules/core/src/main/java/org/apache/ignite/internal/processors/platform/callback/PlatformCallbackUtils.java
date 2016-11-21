@@ -588,9 +588,10 @@ public class PlatformCallbackUtils {
      * @param type Operation code.
      * @param outMemPtr Out memory stream.
      * @param inMemPtr In memory stream.
+     * @param arg Object argument.
      * @return Value.
      */
-    static native long inObjectStreamOutStream(long envPtr, int type, long outMemPtr, long inMemPtr);
+    static native long inObjectStreamOutStream(long envPtr, int type, long outMemPtr, long inMemPtr, Object arg);
 
     /**
      * Private constructor.

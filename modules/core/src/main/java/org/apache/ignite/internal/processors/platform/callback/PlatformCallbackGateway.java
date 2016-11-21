@@ -999,7 +999,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return PlatformCallbackUtils.affinityFunctionInit(envPtr, memPtr, baseFunc);
+            return PlatformCallbackUtils.inObjectStreamOutStream(envPtr, 0, memPtr, 0, baseFunc);
         }
         finally {
             leave();
