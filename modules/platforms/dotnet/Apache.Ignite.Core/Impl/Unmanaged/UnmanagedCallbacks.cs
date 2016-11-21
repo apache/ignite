@@ -299,7 +299,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 affinityFunctionDestroy = CreateFunctionPointer((AffinityFunctionDestroyDelegate)AffinityFunctionDestroy),
 
                 loggerLog = CreateFunctionPointer((LoggerLogDelegate)LoggerLog),
-                loggerIsLevelEnabled = CreateFunctionPointer((LoggerIsLevelEnabledDelegate)LoggerIsLevelEnabled)
+                loggerIsLevelEnabled = CreateFunctionPointer((LoggerIsLevelEnabledDelegate)LoggerIsLevelEnabled),
+
+                inLongOutLong = CreateFunctionPointer((InLongOutLongDelegate)InLongOutLong),
+                inObjectStreamOutStream = CreateFunctionPointer((InObjectStreamOutStreamDelegate)InObjectStreamOutStream)
             };
 
             _cbsPtr = Marshal.AllocHGlobal(UU.HandlersSize());
@@ -316,6 +319,22 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             get { return _handleRegistry; }
         }
+
+        #region IMPLEMENTATION: STREAMS
+
+        private long InObjectStreamOutStream(void* target, int type, long inMemPtr, long outMemPtr, void* arg)
+        {
+            // TODO: Switch
+            return AffinityFunctionInit(target, inMemPtr, arg);
+        }
+
+        private long InLongOutLong(void* target, int type, long val)
+        {
+            // TODO: Switch
+            return CacheStoreCreate(target, val);
+        }
+
+        #endregion
 
         #region IMPLEMENTATION: CACHE
 

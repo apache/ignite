@@ -107,5 +107,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal void* loggerLog;
         internal void* loggerIsLevelEnabled;
+
+        internal void* inLongOutLong;
+        internal void* inObjectStreamOutStream;
     }
 }
