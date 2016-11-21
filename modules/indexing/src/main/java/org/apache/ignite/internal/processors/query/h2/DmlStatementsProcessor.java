@@ -60,7 +60,6 @@ import org.apache.ignite.internal.processors.query.h2.dml.Supplier;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.lang.GridTriple;
@@ -820,7 +819,7 @@ public class DmlStatementsProcessor {
     }
 
     /**
-     * Convert bunch of {@link GridSqlElement}s into key-value pair to be inserted to cache.
+     * Convert array of Objects into key-value pair to be inserted to cache.
      *
      * @param cctx Cache context.
      * @param desc Table descriptor.
