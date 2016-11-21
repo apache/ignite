@@ -1569,12 +1569,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             for (Integer cacheId : orderMap.get(order)) {
                                 GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
 
-                                Runnable cur = cacheCtx.preloader().addAssignments(assignsMap.get(cacheId),
+                                GridDhtPreloaderAssignments assignments = assignsMap.get(cacheId);
+
+                                Runnable cur = cacheCtx.preloader().addAssignments(assignments,
                                     forcePreload,
                                     cnt,
                                     r);
 
-                                if (cur != null)
+                                if (cur != null && !assignments.isEmpty())
                                     rebList.add(cacheCtx.name());
 
                                 rebFuts.add(cacheCtx.preloader().rebalanceFuture());
@@ -1588,9 +1590,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 fut.get();
 
                         if (r != null) {
-                            Collections.reverse(rebList);
+                            if (!rebList.isEmpty()) {
+                                Collections.reverse(rebList);
 
-                            U.log(log, "Cache rebalancing scheduled: [order=" + rebList + "]");
+                                U.log(log, "Cache rebalancing scheduled: [order=" + rebList + "]");
+                            }
 
                             if (futQ.isEmpty()) {
                                 U.log(log, "Rebalancing required " +

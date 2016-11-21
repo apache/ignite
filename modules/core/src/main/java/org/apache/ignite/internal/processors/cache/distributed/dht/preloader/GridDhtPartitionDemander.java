@@ -287,25 +287,37 @@ public class GridDhtPartitionDemander {
                     }
                 });
 
+            if (assigns.isEmpty()) {
+                U.log(log, "Rebalancing is not required.");
+
+                ((GridFutureAdapter)cctx.preloader().syncFuture()).onDone();
+            }
+
             return new Runnable() {
                 @Override public void run() {
-                    try {
-                        requestPartitions(fut, assigns);
+                    if (assigns.isEmpty()) {
+                        rebalanceFut.onDone(true); // Starts next cache preloading (according to order).
+
+                        return;
                     }
-                    catch (ClusterTopologyCheckedException e){
+
+                    try {
+                        requestPartitions(rebalanceFut, assigns);
+                    }
+                    catch (ClusterTopologyCheckedException e) {
                         log.warning("Failed to send initial demand request to node.", e);
 
-                        fut.cancel();
+                        rebalanceFut.cancel();
                     }
                     catch (IgniteCheckedException e) {
                         log.error("Failed to send initial demand request to node.", e);
 
-                        fut.cancel();
+                        rebalanceFut.cancel();
                     }
                     catch (Throwable th) {
                         log.error("Runtime error caught during initial demand request sending.", th);
 
-                        fut.cancel();
+                        rebalanceFut.cancel();
 
                         if (th instanceof Error)
                             throw th;
@@ -351,12 +363,6 @@ public class GridDhtPartitionDemander {
         RebalanceFuture fut,
         GridDhtPreloaderAssignments assigns
     ) throws IgniteCheckedException {
-        if (assigns.isEmpty()) {
-            fut.doneIfEmpty(assigns.cancelled());
-
-            return;
-        }
-
         if (topologyChanged(fut)) {
             fut.cancel();
 
@@ -382,7 +388,7 @@ public class GridDhtPartitionDemander {
 
             //Check remote node rebalancing API version.
             if (node.version().compareTo(GridDhtPreloader.REBALANCING_VER_2_SINCE) >= 0) {
-                U.log(log, "Starting rebalancing [cache=" + cctx.name() + ", mode=" + cfg.getRebalanceMode() +
+                U.log(log, "Starting rebalancing [mode=" + cfg.getRebalanceMode() +
                     ", fromNode=" + node.id() + ", partitionsCount=" + parts.size() +
                     ", topology=" + fut.topologyVersion() + ", updateSeq=" + fut.updateSeq + "]");
 
@@ -841,24 +847,6 @@ public class GridDhtPartitionDemander {
         }
 
         /**
-         * @param cancelled Is cancelled.
-         */
-        private void doneIfEmpty(boolean cancelled) {
-            synchronized (this) {
-                if (isDone())
-                    return;
-
-                assert remaining.isEmpty();
-
-                if (log.isDebugEnabled())
-                    log.debug("Rebalancing is not required [cache=" + cctx.name() +
-                        ", topology=" + topVer + "]");
-
-                checkIsDone(cancelled, true);
-            }
-        }
-
-        /**
          * Cancels this future.
          *
          * @return {@code True}.
@@ -981,8 +969,7 @@ public class GridDhtPartitionDemander {
 
                 if (parts.isEmpty()) {
                     U.log(log, "Completed " + ((remaining.size() == 1 ? "(final) " : "") +
-                        "rebalancing [cache=" + cctx.name() +
-                        ", fromNode=" + nodeId + ", topology=" + topologyVersion() +
+                        "rebalancing [fromNode=" + nodeId + ", topology=" + topologyVersion() +
                         ", time=" + (U.currentTimeMillis() - t.get1()) + " ms]"));
 
                     remaining.remove(nodeId);
