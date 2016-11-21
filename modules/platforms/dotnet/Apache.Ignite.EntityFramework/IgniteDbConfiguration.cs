@@ -17,11 +17,16 @@
 
 namespace Apache.Ignite.EntityFramework
 {
+    using System;
     using System.Configuration;
     using System.Data.Entity;
     using System.Data.Entity.Core.Common;
+    using System.Data.Entity.Infrastructure.DependencyResolution;
+    using System.Data.Entity.Infrastructure.Interception;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
+    using System.Reflection;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
@@ -53,6 +58,18 @@ namespace Apache.Ignite.EntityFramework
         /// Suffix for the data cache name.
         /// </summary>
         private const string DataCacheSuffix = "_data";
+
+        /// <summary>
+        /// DbConfiguration.AddInterceptor method.
+        /// </summary>
+        private static readonly MethodInfo AddInterceptorMethodInfo = 
+            typeof(DbConfiguration).GetMethod("AddInterceptor", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        /// <summary>
+        /// DbConfiguration.AddInterceptor delegate.
+        /// </summary>
+        private static readonly Action<object, IDbInterceptor> AddInterceptorDelegate =
+            (dbConfig, interceptor) => AddInterceptorMethodInfo.Invoke(dbConfig, new object[] {interceptor});
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteDbConfiguration"/> class.
@@ -156,6 +173,67 @@ namespace Apache.Ignite.EntityFramework
         {
             IgniteArgumentCheck.NotNull(ignite, "ignite");
 
+            InitializeIgniteCachingInternal(this, ignite, metaCacheConfiguration, dataCacheConfiguration, policy);
+        }
+
+        /// <summary>
+        /// Initializes Ignite caching for specified <see cref="DbConfiguration"/>.
+        /// This method should be used when it is not possible to use or inherit <see cref="IgniteDbConfiguration"/>.
+        /// </summary>
+        /// <param name="dbConfiguration"><see cref="DbConfiguration"/> instance to be initialized
+        /// for Ignite caching.</param>
+        /// <param name="ignite">The ignite instance to use.</param>
+        /// <param name="metaCacheConfiguration">
+        /// Configuration of the metadata cache which holds entity set information. Null for default configuration. 
+        /// <para />
+        /// This cache holds small amount of data, but should not lose entries. At least one backup recommended.
+        /// </param>
+        /// <param name="dataCacheConfiguration">
+        /// Configuration of the data cache which holds query results. Null for default configuration.
+        /// <para />
+        /// This cache tolerates lost data and can have no backups.
+        /// </param>
+        /// <param name="policy">The caching policy. Null for default <see cref="DbCachingPolicy" />.</param>
+        public static void InitializeIgniteCaching(DbConfiguration dbConfiguration, IIgnite ignite,
+            CacheConfiguration metaCacheConfiguration, CacheConfiguration dataCacheConfiguration,
+            IDbCachingPolicy policy)
+        {
+            IgniteArgumentCheck.NotNull(ignite, "ignite");
+            IgniteArgumentCheck.NotNull(dbConfiguration, "configuration");
+
+            IgniteArgumentCheck.Ensure(!(dbConfiguration is IgniteDbConfiguration), "dbConfiguration",
+                "IgniteDbConfiguration.InitializeIgniteCaching should not be called for IgniteDbConfiguration " +
+                "instance. This method should be used only when IgniteDbConfiguration can't be inherited.");
+
+            InitializeIgniteCachingInternal(dbConfiguration, ignite, metaCacheConfiguration, dataCacheConfiguration, 
+                policy);
+        }
+
+        /// <summary>
+        /// Initializes Ignite caching for specified <see cref="DbConfiguration"/>.
+        /// This method should be used when it is not possible to use or inherit <see cref="IgniteDbConfiguration"/>.
+        /// </summary>
+        /// <param name="dbConfiguration"><see cref="DbConfiguration"/> instance to be initialized
+        /// for Ignite caching.</param>
+        /// <param name="ignite">The ignite instance to use.</param>
+        /// <param name="metaCacheConfiguration">
+        /// Configuration of the metadata cache which holds entity set information. Null for default configuration. 
+        /// <para />
+        /// This cache holds small amount of data, but should not lose entries. At least one backup recommended.
+        /// </param>
+        /// <param name="dataCacheConfiguration">
+        /// Configuration of the data cache which holds query results. Null for default configuration.
+        /// <para />
+        /// This cache tolerates lost data and can have no backups.
+        /// </param>
+        /// <param name="policy">The caching policy. Null for default <see cref="DbCachingPolicy" />.</param>
+        private static void InitializeIgniteCachingInternal(DbConfiguration dbConfiguration, IIgnite ignite, 
+            CacheConfiguration metaCacheConfiguration, CacheConfiguration dataCacheConfiguration, 
+            IDbCachingPolicy policy)
+        {
+            Debug.Assert(ignite != null);
+            Debug.Assert(dbConfiguration != null);
+
             metaCacheConfiguration = metaCacheConfiguration ?? GetDefaultMetaCacheConfiguration();
             dataCacheConfiguration = dataCacheConfiguration ?? GetDefaultDataCacheConfiguration();
 
@@ -163,11 +241,33 @@ namespace Apache.Ignite.EntityFramework
 
             var txHandler = new DbTransactionInterceptor(efCache);
 
-            AddInterceptor(txHandler);
+            AddInterceptorDelegate(dbConfiguration, txHandler);
 
-            // SetProviderServices is not suitable. We should replace whatever provider there is with our proxy.
-            Loaded += (sender, args) => args.ReplaceService<DbProviderServices>(
-                (services, a) => new DbProviderServicesProxy(services, policy, efCache, txHandler));
+            RegisterProviderServicesReplacer(dbConfiguration, policy, efCache, txHandler);
+        }
+
+        /// <summary>
+        /// Registers the provider services replacer.
+        /// </summary>
+        private static void RegisterProviderServicesReplacer(DbConfiguration config, 
+            IDbCachingPolicy policy, DbCache efCache, DbTransactionInterceptor txHandler)
+        {
+            EventHandler<DbConfigurationLoadedEventArgs> onLoaded = null;
+
+            onLoaded = (sender, args) =>
+            {
+                // Replace provider services for specific instance only and unsubscribe.
+                if (ReferenceEquals(config, sender))
+                {
+                    // SetProviderServices is not suitable. We should replace whatever provider there is with our proxy.
+                    args.ReplaceService<DbProviderServices>(
+                        (services, a) => new DbProviderServicesProxy(services, policy, efCache, txHandler));
+
+                    Loaded -= onLoaded;
+                }
+            };
+
+            Loaded += onLoaded;
         }
 
         /// <summary>
