@@ -1290,7 +1290,7 @@ public final class IgfsImpl implements IgfsEx {
 
                         long blockLen = maxLen > 0 ? maxLen : cfg.getBlockSize();
 
-                        Collection<IgfsBlockLocation> blocks = new ArrayList<>();
+                        Collection<IgfsBlockLocation> blocks = new ArrayList<>((int)(1 + len / blockLen));
 
                         long off = start;
                         long end = start + len;
