@@ -888,6 +888,7 @@
                                             <substitution expression="\1${new.client.version}\2" />
                                             <fileset dir="${basedir}/">
                                                 <include name="**/configure.ac" />
+                                                <include name="**/configure.acrel" />
                                             </fileset>
                                         </replaceregexp>
 
