@@ -36,6 +36,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.FETCH_FORWARD;
@@ -160,7 +161,7 @@ public class JdbcStatement implements Statement {
 
         UUID nodeId = conn.nodeId();
 
-        UUID uuid = UUID.randomUUID();
+        IgniteUuid uuid = IgniteUuid.randomUuid();
 
         boolean loc = nodeId == null;
 
@@ -334,7 +335,7 @@ public class JdbcStatement implements Statement {
 
         UUID nodeId = conn.nodeId();
 
-        UUID uuid = UUID.randomUUID();
+        IgniteUuid uuid = IgniteUuid.randomUuid();
 
         boolean loc = nodeId == null;
 

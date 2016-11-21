@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
@@ -41,6 +40,7 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
@@ -62,14 +62,14 @@ class JdbcQueryTaskV2 implements IgniteCallable<JdbcQueryTaskV2.QueryResult> {
     private static final ScheduledExecutorService SCHEDULER = Executors.newScheduledThreadPool(1);
 
     /** Open cursors. */
-    private static final ConcurrentMap<UUID, Cursor> CURSORS = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<IgniteUuid, Cursor> CURSORS = new ConcurrentHashMap<>();
 
     /** Ignite. */
     @IgniteInstanceResource
     private Ignite ignite;
 
     /** Uuid. */
-    private final UUID uuid;
+    private final IgniteUuid uuid;
 
     /** Cache name. */
     private final String cacheName;
@@ -106,13 +106,13 @@ class JdbcQueryTaskV2 implements IgniteCallable<JdbcQueryTaskV2.QueryResult> {
      * @param loc Local execution flag.
      * @param args Args.
      * @param fetchSize Fetch size.
-     * @param uuid UUID.
+     * @param uuid IgniteUuid.
      * @param locQry Local query flag.
      * @param collocatedQry Collocated query flag.
      * @param distributedJoins Distributed joins flag.
      */
     public JdbcQueryTaskV2(Ignite ignite, String cacheName, String sql,
-                           Boolean isQry, boolean loc, Object[] args, int fetchSize, UUID uuid,
+                           Boolean isQry, boolean loc, Object[] args, int fetchSize, IgniteUuid uuid,
                            boolean locQry, boolean collocatedQry, boolean distributedJoins) {
         this.ignite = ignite;
         this.args = args;
@@ -214,10 +214,10 @@ class JdbcQueryTaskV2 implements IgniteCallable<JdbcQueryTaskV2.QueryResult> {
     /**
      * Schedules removal of stored cursor in case of remote query execution.
      *
-     * @param uuid Cursor UUID.
+     * @param uuid Cursor IgniteUuid.
      * @param delay Delay in milliseconds.
      */
-    private void scheduleRemoval(final UUID uuid, long delay) {
+    private void scheduleRemoval(final IgniteUuid uuid, long delay) {
         assert !loc;
 
         SCHEDULER.schedule(new CAX() {
@@ -244,11 +244,11 @@ class JdbcQueryTaskV2 implements IgniteCallable<JdbcQueryTaskV2.QueryResult> {
     }
 
     /**
-     * @param uuid Cursor UUID.
+     * @param uuid Cursor IgniteUuid.
      * @param c Cursor.
      * @return {@code true} If succeeded.
      */
-    private static boolean remove(UUID uuid, Cursor c) {
+    private static boolean remove(IgniteUuid uuid, Cursor c) {
         boolean rmv = CURSORS.remove(uuid, c);
 
         if (rmv)
@@ -260,9 +260,9 @@ class JdbcQueryTaskV2 implements IgniteCallable<JdbcQueryTaskV2.QueryResult> {
     /**
      * Closes and removes cursor.
      *
-     * @param uuid Cursor UUID.
+     * @param uuid Cursor IgniteUuid.
      */
-    static void remove(UUID uuid) {
+    static void remove(IgniteUuid uuid) {
         Cursor c = CURSORS.remove(uuid);
 
         if (c != null)
@@ -278,7 +278,7 @@ class JdbcQueryTaskV2 implements IgniteCallable<JdbcQueryTaskV2.QueryResult> {
         private static final long serialVersionUID = 0L;
 
         /** Uuid. */
-        private final UUID uuid;
+        private final IgniteUuid uuid;
 
         /** Finished. */
         private final boolean finished;
@@ -299,7 +299,7 @@ class JdbcQueryTaskV2 implements IgniteCallable<JdbcQueryTaskV2.QueryResult> {
         private final List<String> types;
 
         /**
-         * @param uuid UUID..
+         * @param uuid IgniteUuid..
          * @param finished Finished.
          * @param isQry
          * @param rows Rows.
@@ -307,7 +307,7 @@ class JdbcQueryTaskV2 implements IgniteCallable<JdbcQueryTaskV2.QueryResult> {
          * @param tbls Tables.
          * @param types Types.
          */
-        public QueryResult(UUID uuid, boolean finished, boolean isQry, List<List<?>> rows, List<String> cols,
+        public QueryResult(IgniteUuid uuid, boolean finished, boolean isQry, List<List<?>> rows, List<String> cols,
             List<String> tbls, List<String> types) {
             this.isQry = isQry;
             this.cols = cols;
@@ -347,9 +347,9 @@ class JdbcQueryTaskV2 implements IgniteCallable<JdbcQueryTaskV2.QueryResult> {
         }
 
         /**
-         * @return Query UUID.
+         * @return Query IgniteUuid.
          */
-        public UUID getUuid() {
+        public IgniteUuid getUuid() {
             return uuid;
         }
 

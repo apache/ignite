@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -53,7 +54,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class JdbcResultSet implements ResultSet {
     /** Uuid. */
-    private final UUID uuid;
+    private final Object uuid;
 
     /** Statement. */
     private final JdbcStatement stmt;
@@ -100,7 +101,7 @@ public class JdbcResultSet implements ResultSet {
      * @param types Types.
      * @param fields Fields.
      */
-    JdbcResultSet(@Nullable UUID uuid, JdbcStatement stmt, List<String> tbls, List<String> cols,
+    JdbcResultSet(@Nullable Object uuid, JdbcStatement stmt, List<String> tbls, List<String> cols,
         List<String> types, Collection<List<?>> fields, boolean finished) {
         assert stmt != null;
         assert tbls != null;
@@ -147,8 +148,32 @@ public class JdbcResultSet implements ResultSet {
 
             boolean loc = nodeId == null;
 
+            if (uuid != null && uuid instanceof IgniteUuid) {
+                JdbcQueryTaskV2 qryTask = new JdbcQueryTaskV2(loc ? ignite : null, conn.cacheName(), null, true, loc, null,
+                    fetchSize, (IgniteUuid) uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+
+                try {
+                    JdbcQueryTaskV2.QueryResult res =
+                        loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
+
+                    finished = res.isFinished();
+
+                    it = res.getRows().iterator();
+
+                    return next();
+                }
+                catch (IgniteSQLException e) {
+                    throw e.toJdbcException();
+                }
+                catch (Exception e) {
+                    throw new SQLException("Failed to query Ignite.", e);
+                }
+            }
+
+            assert uuid instanceof UUID;
+
             JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), null, loc, null,
-                fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+                fetchSize, (UUID) uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
 
             try {
                 JdbcQueryTask.QueryResult res =
@@ -186,8 +211,15 @@ public class JdbcResultSet implements ResultSet {
      * If this result set is associated with locally executed query then query cursor will also closed.
      */
     void closeInternal() throws SQLException  {
-        if (((JdbcConnection)stmt.getConnection()).nodeId() == null && uuid != null)
-            JdbcQueryTask.remove(uuid);
+        if (((JdbcConnection)stmt.getConnection()).nodeId() == null && uuid != null) {
+            if (uuid instanceof UUID)
+                JdbcQueryTask.remove((UUID) uuid);
+            else {
+                assert uuid instanceof IgniteUuid;
+
+                JdbcQueryTaskV2.remove((IgniteUuid) uuid);
+            }
+        }
 
         closed = true;
     }
