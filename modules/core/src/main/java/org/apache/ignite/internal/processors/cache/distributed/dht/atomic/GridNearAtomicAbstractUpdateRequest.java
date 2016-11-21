@@ -35,7 +35,6 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessage implements GridCacheDeployable {
-
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 

@@ -59,7 +59,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
  * DHT atomic cache near update future.
  */
 public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpdateFuture {
-    // TODO: 24.10.16 add correct version
     /** */
     private static final IgniteProductVersion SINGLE_UPDATE_REQUEST = IgniteProductVersion.fromString("1.7.4");
 
@@ -668,7 +667,9 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
      * @return {@code True} can use 'single' update requests.
      */
     private boolean canUseSingleRequest(ClusterNode node) {
-        return expiryPlc == null && node != null && node.version().compareToIgnoreTimestamp(SINGLE_UPDATE_REQUEST) >= 0;
+        assert node != null;
+
+        return expiryPlc == null && node.version().compareToIgnoreTimestamp(SINGLE_UPDATE_REQUEST) >= 0;
     }
 
     /** {@inheritDoc} */

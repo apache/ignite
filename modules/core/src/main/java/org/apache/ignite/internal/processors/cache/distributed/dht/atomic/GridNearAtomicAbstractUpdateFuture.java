@@ -258,8 +258,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
         if (cctx.localNodeId().equals(nodeId)) {
             cache.updateAllAsyncInternal(nodeId, req,
                 new CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse>() {
-                    @Override
-                    public void apply(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
+                    @Override public void apply(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
                         onResult(res.nodeId(), res, false);
                     }
                 });

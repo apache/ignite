@@ -39,6 +39,9 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNearAtomicAbstractUpdateRequest {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private static final CacheEntryPredicate[] NO_FILTER = new CacheEntryPredicate[0];
 
     /** Fast map flag mask. */
@@ -62,9 +65,6 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
     /** Return value flag. */
     private static final int RET_VAL_FLAG_MASK = 0x40;
 
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Target node ID. */
     @GridDirectTransient
     protected UUID nodeId;
@@ -73,7 +73,7 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
     protected GridCacheVersion futVer;
 
     /** Update version. Set to non-null if fastMap is {@code true}. */
-    protected GridCacheVersion updateVer;
+    private GridCacheVersion updateVer;
 
     /** Topology version. */
     protected AffinityTopologyVersion topVer;

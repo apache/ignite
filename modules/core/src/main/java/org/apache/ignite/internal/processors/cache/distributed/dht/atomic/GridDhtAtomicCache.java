@@ -2969,8 +2969,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         Collection<GridCacheDrInfo> drPutVals;
         Collection<GridCacheVersion> drRmvVals;
 
-        int size = req.size();
-
         if (req.conflictVersions() == null) {
             vals = req.values();
 
@@ -2978,6 +2976,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             drRmvVals = null;
         }
         else if (req.operation() == UPDATE) {
+            int size = req.keys().size();
 
             drPutVals = new ArrayList<>(size);
 

@@ -63,53 +63,28 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
     /** Target node ID. */
     @GridDirectTransient
-    protected UUID nodeId;
+    private UUID nodeId;
 
     /** Future version. */
-    protected GridCacheVersion futVer;
-
-    /** Update version. Set to non-null if fastMap is {@code true}. */
-    protected GridCacheVersion updateVer;
-
-    /** Topology version. */
-    protected AffinityTopologyVersion topVer;
-
-    /** Write synchronization mode. */
-    protected CacheWriteSynchronizationMode syncMode;
-
-    /** Update operation. */
-    protected GridCacheOperation op;
-
-    /** Subject ID. */
-    protected UUID subjId;
-
-    /** Task name hash. */
-    protected int taskNameHash;
-
-    /** */
-    @GridDirectTransient
-    private GridNearAtomicUpdateResponse res;
+    private GridCacheVersion futVer;
 
     /** Fast map flag. */
-    protected boolean fastMap;
+    private boolean fastMap;
+
+    /** Update version. Set to non-null if fastMap is {@code true}. */
+    private GridCacheVersion updateVer;
+
+    /** Topology version. */
+    private AffinityTopologyVersion topVer;
 
     /** Topology locked flag. Set if atomic update is performed inside TX or explicit lock. */
-    protected boolean topLocked;
+    private boolean topLocked;
 
-    /** Flag indicating whether request contains primary keys. */
-    protected boolean hasPrimary;
+    /** Write synchronization mode. */
+    private CacheWriteSynchronizationMode syncMode;
 
-    /** Skip write-through to a persistent storage. */
-    protected boolean skipStore;
-
-    /** */
-    protected boolean clientReq;
-
-    /** Keep binary flag. */
-    protected boolean keepBinary;
-
-    /** Return value flag. */
-    protected boolean retval;
+    /** Update operation. */
+    private GridCacheOperation op;
 
     /** Keys to update. */
     @GridToStringInclude
@@ -132,6 +107,13 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     @GridDirectCollection(byte[].class)
     private List<byte[]> entryProcessorsBytes;
 
+    /** Optional arguments for entry processor. */
+    @GridDirectTransient
+    private Object[] invokeArgs;
+
+    /** Entry processor arguments bytes. */
+    private byte[][] invokeArgsBytes;
+
     /** Conflict versions. */
     @GridDirectCollection(GridCacheVersion.class)
     private List<GridCacheVersion> conflictVers;
@@ -142,22 +124,40 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     /** Conflict expire times. */
     private GridLongList conflictExpireTimes;
 
-    /** Optional arguments for entry processor. */
-    @GridDirectTransient
-    protected Object[] invokeArgs;
-
-    /** Entry processor arguments bytes. */
-    protected byte[][] invokeArgsBytes;
+    /** Return value flag. */
+    private boolean retval;
 
     /** Expiry policy. */
     @GridDirectTransient
-    protected ExpiryPolicy expiryPlc;
+    private ExpiryPolicy expiryPlc;
 
     /** Expiry policy bytes. */
-    protected byte[] expiryPlcBytes;
+    private byte[] expiryPlcBytes;
 
     /** Filter. */
-    protected CacheEntryPredicate[] filter;
+    private CacheEntryPredicate[] filter;
+
+    /** Flag indicating whether request contains primary keys. */
+    private boolean hasPrimary;
+
+    /** Subject ID. */
+    private UUID subjId;
+
+    /** Task name hash. */
+    private int taskNameHash;
+
+    /** Skip write-through to a persistent storage. */
+    private boolean skipStore;
+
+    /** */
+    private boolean clientReq;
+
+    /** Keep binary flag. */
+    private boolean keepBinary;
+
+    /** */
+    @GridDirectTransient
+    private GridNearAtomicUpdateResponse res;
 
     /** Maximum possible size of inner collections. */
     @GridDirectTransient
@@ -221,26 +221,23 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         this.cacheId = cacheId;
         this.nodeId = nodeId;
         this.futVer = futVer;
+        this.fastMap = fastMap;
         this.updateVer = updateVer;
 
         this.topVer = topVer;
+        this.topLocked = topLocked;
         this.syncMode = syncMode;
         this.op = op;
+        this.retval = retval;
+        this.expiryPlc = expiryPlc;
+        this.invokeArgs = invokeArgs;
+        this.filter = filter;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
-        this.addDepInfo = addDepInfo;
-
-        this.fastMap = fastMap;
-        this.topLocked = topLocked;
-        this.retval = retval;
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
         this.clientReq = clientReq;
-
-        this.filter = filter;
-
-        this.invokeArgs = invokeArgs;
-        this.expiryPlc = expiryPlc;
+        this.addDepInfo = addDepInfo;
 
         // By default ArrayList expands to array of 10 elements on first add. We cannot guess how many entries
         // will be added to request because of unknown affinity distribution. However, we DO KNOW how many keys
@@ -258,73 +255,52 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         return CACHE_MSG_IDX;
     }
 
-    /**
-     * @return Mapped node ID.
-     */
+    /** {@inheritDoc} */
     @Override public UUID nodeId() {
         return nodeId;
     }
 
-    /**
-     * @param nodeId Node ID.
-     */
+    /** {@inheritDoc} */
     @Override public void nodeId(UUID nodeId) {
         this.nodeId = nodeId;
     }
 
-    /**
-     * @return Subject ID.
-     */
+    /** {@inheritDoc} */
     @Override public UUID subjectId() {
         return subjId;
     }
 
-    /**
-     * @return Task name hash.
-     */
+    /** {@inheritDoc} */
     @Override public int taskNameHash() {
         return taskNameHash;
     }
 
-    /**
-     * @return Future version.
-     */
+    /** {@inheritDoc} */
     @Override public GridCacheVersion futureVersion() {
         return futVer;
     }
 
-    /**
-     * @return Update version for fast-map request.
-     */
+    /** {@inheritDoc} */
     @Override public GridCacheVersion updateVersion() {
         return updateVer;
     }
 
-    /**
-     * @return Topology version.
-     */
+    /** {@inheritDoc} */
     @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
-    /**
-     * @return Cache write synchronization mode.
-     */
+    /** {@inheritDoc} */
     @Override public CacheWriteSynchronizationMode writeSynchronizationMode() {
         return syncMode;
     }
 
-    /**
-     * @return Update operation.
-     */
+    /** {@inheritDoc} */
     @Override public GridCacheOperation operation() {
         return op;
     }
 
-    /**
-     * @param res Response.
-     * @return {@code True} if current response was {@code null}.
-     */
+    /** {@inheritDoc} */
     @Override public boolean onResponse(GridNearAtomicUpdateResponse res) {
         if (this.res == null) {
             this.res = res;
@@ -335,9 +311,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         return false;
     }
 
-    /**
-     * @return Response.
-     */
+    /** {@inheritDoc} */
     @Override @Nullable public GridNearAtomicUpdateResponse response() {
         return res;
     }
@@ -555,39 +529,26 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         return keepBinary;
     }
 
-    /**
-     * @return Flag indicating whether this request contains primary keys.
-     */
+    /** {@inheritDoc} */
     @Override public boolean hasPrimary() {
         return hasPrimary;
     }
 
-    /**
-     * @return Filter.
-     */
-    @Override @Nullable public CacheEntryPredicate[] filter() {
+    /** {@inheritDoc} */
+    @Nullable @Override public CacheEntryPredicate[] filter() {
         return filter;
     }
 
-    /**
-     * @return Expiry policy.
-     */
+    /** {@inheritDoc} */
     @Override public ExpiryPolicy expiry() {
         return expiryPlc;
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * @param ctx
-     */
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        if (expiryPlc != null && expiryPlcBytes == null)
-            expiryPlcBytes = CU.marshal(cctx, new IgniteExternalizableExpiryPolicy(expiryPlc));
 
         prepareMarshalCacheObjects(keys, cctx);
 
@@ -605,6 +566,9 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
             if (!hasFilter)
                 filter = null;
         }
+
+        if (expiryPlc != null && expiryPlcBytes == null)
+            expiryPlcBytes = CU.marshal(cctx, new IgniteExternalizableExpiryPolicy(expiryPlc));
 
         if (op == TRANSFORM) {
             // force addition of deployment info for entry processors if P2P is enabled globally.
@@ -627,17 +591,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        if (expiryPlcBytes != null && expiryPlc == null)
-            expiryPlc = U.unmarshal(ctx, expiryPlcBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-
         finishUnmarshalCacheObjects(keys, cctx, ldr);
-
-        if (filter != null) {
-            for (CacheEntryPredicate p : filter) {
-                if (p != null)
-                    p.finishUnmarshal(cctx, ldr);
-            }
-        }
 
         if (op == TRANSFORM) {
             if (entryProcessors == null)
@@ -648,6 +602,16 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         }
         else
             finishUnmarshalCacheObjects(vals, cctx, ldr);
+
+        if (filter != null) {
+            for (CacheEntryPredicate p : filter) {
+                if (p != null)
+                    p.finishUnmarshal(cctx, ldr);
+            }
+        }
+
+        if (expiryPlcBytes != null && expiryPlc == null)
+            expiryPlc = U.unmarshal(ctx, expiryPlcBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         if (partIds != null && !partIds.isEmpty()) {
             assert partIds.size() == keys.size();
