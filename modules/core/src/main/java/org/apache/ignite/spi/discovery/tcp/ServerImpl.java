@@ -337,12 +337,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         spi.stats.onJoinStarted();
 
-        log.error("joinTopology enter, node = " + getLocalNodeId());
-        TcpDiscoverySpi.JOIN_TOPOLOGY_STARTED_COUNT.incrementAndGet();
-        TcpDiscoverySpi.JOIN_TOPOLOGY_ACTIVE_COUNT.incrementAndGet();
         joinTopology();
-        TcpDiscoverySpi.JOIN_TOPOLOGY_ACTIVE_COUNT.decrementAndGet();
-        log.error("joinTopology exit, node = " + getLocalNodeId());
 
         spi.stats.onJoinFinished();
 

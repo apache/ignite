@@ -1,9 +1,11 @@
 package org.apache.ignite.spi.communication.tcp;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -28,16 +30,16 @@ import java.util.logging.Logger;
 public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest {
 
     /** */
-    private static final int IGNITE_NODES_NUMBER = 3;
+    private static final int IGNITE_NODES_NUMBER = 10;
 
     /** */
-    private static final long COMMUNICATION_TIMEOUT = 1_000L;
+    private static final long COMMUNICATION_TIMEOUT = 1000;
 
     /** Should be about of the COMMUNICATION_TIMEOUT value to get the error */
-    private static final long ADDED_MESSAGE_DELAY = 10 * COMMUNICATION_TIMEOUT;
+    private static final long ADDED_MESSAGE_DELAY = 2 * COMMUNICATION_TIMEOUT;
 
     /** */
-    private static final long RUNNING_TIMESPAN = 3600_1000L;
+    private static final long RUNNING_TIMESPAN = ADDED_MESSAGE_DELAY * IGNITE_NODES_NUMBER;
 
     /** */
     private static final long BROADCAST_PERIOD = 100L;
@@ -54,10 +56,6 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
     /** */
     private CountDownLatch startLatch;
 
-    @Override protected long getTestTimeout() {
-        return Math.max(super.getTestTimeout(), RUNNING_TIMESPAN * 2);
-    }
-
     /** */
     private static IgniteConfiguration config(String gridName) {
         IgniteConfiguration cfg = new IgniteConfiguration();
@@ -70,11 +68,11 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
         discovery.setIpFinder(ipFinder);
         cfg.setDiscoverySpi(discovery);
 
-        TcpCommunicationSpi communication = new TcpCommunicationSpi();
-        communication.setConnectTimeout(COMMUNICATION_TIMEOUT);
-        communication.setMaxConnectTimeout(COMMUNICATION_TIMEOUT);
-        communication.setReconnectCount(1);
-        cfg.setCommunicationSpi(communication);
+        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
+        commSpi.setConnectTimeout(COMMUNICATION_TIMEOUT);
+        commSpi.setMaxConnectTimeout(2 * COMMUNICATION_TIMEOUT);
+        commSpi.setReconnectCount(1);
+        cfg.setCommunicationSpi(commSpi);
 
         return cfg;
     }
@@ -105,12 +103,17 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
 
     /** */
     private static void logCounters() {
-        LOGGER.log(LOG_LEVEL, MessageFormat.format(
+        /*LOGGER.log(LOG_LEVEL, MessageFormat.format(
             "joinTopology: started = {0}, active = {1}; getSpiContext: started = {2}, active = {3}",
             TcpDiscoverySpi.JOIN_TOPOLOGY_STARTED_COUNT.get(),
             TcpDiscoverySpi.JOIN_TOPOLOGY_ACTIVE_COUNT.get(),
             TcpCommunicationSpi.STARTED_COUNT.get(),
-            TcpCommunicationSpi.ACTIVE_COUNT.get()));
+            TcpCommunicationSpi.ACTIVE_COUNT.get()));*/
+    }
+
+    /** */
+    @Override protected long getTestTimeout() {
+        return Math.max(super.getTestTimeout(), RUNNING_TIMESPAN * 2);
     }
 
     /** */
@@ -130,6 +133,13 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
         execSvc.shutdownNow();
         execSvc.awaitTermination(1, TimeUnit.MINUTES);
         println("Stopped all nodes");
+        final IgniteExceptionRegistry exReg = IgniteExceptionRegistry.get();
+        if (exReg.errorCount() > 0) {
+            for (IgniteExceptionRegistry.ExceptionInfo info : exReg.getErrors(0L))
+                if (info.error() instanceof IgniteCheckedException
+                    && "HandshakeTimeoutException".equals(info.error().getClass().getSimpleName()))
+                    throw new IgniteCheckedException("Test failed", info.error());
+        }
     }
 
     /** */
