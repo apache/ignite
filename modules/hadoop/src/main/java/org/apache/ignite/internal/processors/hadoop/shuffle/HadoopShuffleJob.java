@@ -108,6 +108,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     /** */
     private final IgniteLogger log;
 
+    /** Buffer size. */
+    private final int bufSize;
+
     /**
      * @param locReduceAddr Local reducer address.
      * @param log Logger.
@@ -119,10 +122,25 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      */
     public HadoopShuffleJob(T locReduceAddr, IgniteLogger log, HadoopJob job, GridUnsafeMemory mem,
         int totalReducerCnt, int[] locReducers) throws IgniteCheckedException {
+        this(locReduceAddr, log, job, mem, totalReducerCnt, locReducers, MSG_BUF_SIZE);
+    }
+
+    /**
+     * @param locReduceAddr Local reducer address.
+     * @param log Logger.
+     * @param job Job.
+     * @param mem Memory.
+     * @param totalReducerCnt Amount of reducers in the Job.
+     * @param locReducers Reducers will work on current node.
+     * @throws IgniteCheckedException If error.
+     */
+    public HadoopShuffleJob(T locReduceAddr, IgniteLogger log, HadoopJob job, GridUnsafeMemory mem,
+        int totalReducerCnt, int[] locReducers, int bufSize) throws IgniteCheckedException {
         this.locReduceAddr = locReduceAddr;
         this.job = job;
         this.mem = mem;
         this.log = log.getLogger(HadoopShuffleJob.class);
+        this.bufSize = bufSize;
 
         if (!F.isEmpty(locReducers)) {
             for (int rdc : locReducers) {
@@ -311,7 +329,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                 continue; // Skip empty map and local node.
 
             if (msgs[i] == null)
-                msgs[i] = new HadoopShuffleMessage(job.id(), i, MSG_BUF_SIZE);
+                msgs[i] = new HadoopShuffleMessage(job.id(), i, bufSize);
 
             final int idx = i;
 
@@ -416,7 +434,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         });
 
         msgs[idx] = newBufMinSize == 0 ? null : new HadoopShuffleMessage(job.id(), idx,
-            Math.max(MSG_BUF_SIZE, newBufMinSize));
+            Math.max(bufSize, newBufMinSize));
     }
 
     /** {@inheritDoc} */
