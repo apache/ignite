@@ -175,8 +175,6 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                 @Override protected void body() throws InterruptedException {
                     try {
                         while (!isCancelled()) {
-                            Thread.sleep(5);
-
                             collectUpdatesAndSend(false);
                         }
                     }
