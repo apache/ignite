@@ -261,7 +261,7 @@ public class GridAffinityAssignmentCache {
     @SuppressWarnings("IfMayBeConditional")
     public List<List<ClusterNode>> calculate(AffinityTopologyVersion topVer,
         DiscoveryEvent discoEvt,
-        AffinityCalculateCache cache) {
+        @Nullable AffinityCalculateCache cache) {
         if (log.isDebugEnabled())
             log.debug("Calculating affinity [topVer=" + topVer + ", locNodeId=" + ctx.localNodeId() +
                 ", discoEvt=" + discoEvt + ']');
