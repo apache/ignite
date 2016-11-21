@@ -107,7 +107,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Operation: prepare .Net. */
         private const int OpPrepareDotNet = 1;
 
-        private delegate int CacheStoreInvokeCallbackDelegate(void* target, long objPtr, long memPtr);
         private delegate void CacheStoreDestroyCallbackDelegate(void* target, long objPtr);
         private delegate long CacheStoreSessionCreateCallbackDelegate(void* target, long storePtr);
 
@@ -216,7 +215,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 target = IntPtr.Zero.ToPointer(), // Target is not used in .Net as we rely on dynamic FP creation.
 
-                cacheStoreInvoke = CreateFunctionPointer((CacheStoreInvokeCallbackDelegate) CacheStoreInvoke),
                 cacheStoreDestroy = CreateFunctionPointer((CacheStoreDestroyCallbackDelegate) CacheStoreDestroy),
 
                 cacheStoreSessionCreate = CreateFunctionPointer((CacheStoreSessionCreateCallbackDelegate) CacheStoreSessionCreate),
@@ -329,6 +327,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 case UnmanagedCallbackOp.CacheStoreCreate:
                     return CacheStoreCreate(val);
 
+                case UnmanagedCallbackOp.CacheStoreInvoke:
+                    return CacheStoreInvoke(val);
+
                 default:
                     throw new InvalidOperationException("Invalid callback code: " + type);
             }
@@ -377,17 +378,17 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
-        private int CacheStoreInvoke(void* target, long objPtr, long memPtr)
+        private int CacheStoreInvoke(long memPtr)
         {
             return SafeCall(() =>
             {
-                var t = _handleRegistry.Get<CacheStore>(objPtr, true);
-
                 using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
                     try
                     {
-                        return t.Invoke(stream, _ignite);
+                        var store = _handleRegistry.Get<CacheStore>(stream.ReadLong(), true);
+
+                        return store.Invoke(stream, _ignite);
                     }
                     catch (Exception e)
                     {
