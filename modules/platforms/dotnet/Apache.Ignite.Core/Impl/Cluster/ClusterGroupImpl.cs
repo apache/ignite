@@ -24,12 +24,13 @@ namespace Apache.Ignite.Core.Impl.Cluster
     using System.Linq;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Binary.Metadata;
+    using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Compute;
     using Apache.Ignite.Core.Impl.Events;
@@ -43,7 +44,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
     /// <summary>
     /// Ignite projection implementation.
     /// </summary>
-    internal class ClusterGroupImpl : PlatformTarget, IClusterGroupEx
+    internal class ClusterGroupImpl : PlatformTarget, IClusterGroup
     {
         /** Attribute: platform. */
         private const string AttrPlatform = "org.apache.ignite.platform";
@@ -53,9 +54,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
 
         /** Initial topver; invalid from Java perspective, so update will be triggered when this value is met. */
         private const int TopVerInit = 0;
-
-        /** */
-        private const int OpAllMetadata = 1;
 
         /** */
         private const int OpForAttribute = 2;
@@ -76,9 +74,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
         private const int OpForNodeIds = 7;
 
         /** */
-        private const int OpGetMeta = 8;
-
-        /** */
         private const int OpMetrics = 9;
 
         /** */
@@ -95,9 +90,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
 
         /** */
         private const int OpTopology = 14;
-
-        /** */
-        private const int OpSchema = 15;
 
         /** */
         private const int OpForRemotes = 17;
@@ -121,7 +113,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         private const int OpForServers = 23;
         
         /** */
-        private const int OpPutMeta = 24;
+        private const int OpCacheMetrics = 24;
         
         /** Initial Ignite instance. */
         private readonly Ignite _ignite;
@@ -511,6 +503,29 @@ namespace Apache.Ignite.Core.Impl.Cluster
         }
 
         /// <summary>
+        /// Resets the metrics.
+        /// </summary>
+        public void ResetMetrics()
+        {
+            DoOutInOp(OpResetMetrics);
+        }
+
+        /// <summary>
+        /// Gets the cache metrics within this cluster group.
+        /// </summary>
+        /// <param name="cacheName">Name of the cache.</param>
+        /// <returns>Metrics.</returns>
+        public ICacheMetrics GetCacheMetrics(string cacheName)
+        {
+            return DoOutInOp(OpCacheMetrics, w => w.WriteString(cacheName), stream =>
+            {
+                IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
+
+                return new CacheMetricsImpl(reader);
+            });
+        }
+
+        /// <summary>
         /// Creates new Cluster Group from given native projection.
         /// </summary>
         /// <param name="prj">Native projection.</param>
@@ -555,118 +570,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
             Debug.Assert(_nodes != null, "At least one topology update should have occurred.");
 
             return _nodes;
-        }
-
-        /** <inheritDoc /> */
-        public IBinaryType GetBinaryType(int typeId)
-        {
-            return DoOutInOp<IBinaryType>(OpGetMeta, 
-                writer => writer.WriteInt(typeId),
-                stream =>
-                {
-                    var reader = Marshaller.StartUnmarshal(stream, false);
-
-                    return reader.ReadBoolean() ? new BinaryType(reader) : null;
-                }
-            );
-        }
-
-        /// <summary>
-        /// Gets metadata for all known types.
-        /// </summary>
-        public List<IBinaryType> GetBinaryTypes()
-        {
-            return DoInOp(OpAllMetadata, s =>
-            {
-                var reader = Marshaller.StartUnmarshal(s);
-
-                var size = reader.ReadInt();
-
-                var res = new List<IBinaryType>(size);
-
-                for (var i = 0; i < size; i++)
-                    res.Add(reader.ReadBoolean() ? new BinaryType(reader) : null);
-
-                return res;
-            });
-        }
-
-        /// <summary>
-        /// Gets the schema.
-        /// </summary>
-        public int[] GetSchema(int typeId, int schemaId)
-        {
-            return DoOutInOp<int[]>(OpSchema, writer =>
-            {
-                writer.WriteInt(typeId);
-                writer.WriteInt(schemaId);
-            });
-        }
-
-        /// <summary>
-        /// Resets local I/O, job, and task execution metrics.
-        /// </summary>
-        public void ResetMetrics()
-        {
-            DoOutInOp(OpResetMetrics);
-        }
-
-        /// <summary>
-        /// Put binary types to Grid.
-        /// </summary>
-        /// <param name="types">Binary types.</param>
-        public void PutBinaryTypes(ICollection<BinaryType> types)
-        {
-            DoOutOp(OpPutMeta, w =>
-            {
-                w.WriteInt(types.Count);
-
-                foreach (var meta in types)
-                {
-                    w.WriteInt(meta.TypeId);
-                    w.WriteString(meta.TypeName);
-                    w.WriteString(meta.AffinityKeyFieldName);
-
-                    IDictionary<string, int> fields = meta.GetFieldsMap();
-
-                    w.WriteInt(fields.Count);
-
-                    foreach (var field in fields)
-                    {
-                        w.WriteString(field.Key);
-                        w.WriteInt(field.Value);
-                    }
-
-                    w.WriteBoolean(meta.IsEnum);
-
-                    // Send schemas
-                    var desc = meta.Descriptor;
-                    Debug.Assert(desc != null);
-
-                    var count = 0;
-                    var countPos = w.Stream.Position;
-                    w.WriteInt(0);  // Reserve for count
-
-                    foreach (var schema in desc.Schema.GetAll())
-                    {
-                        w.WriteInt(schema.Key);
-
-                        var ids = schema.Value;
-                        w.WriteInt(ids.Length);
-
-                        foreach (var id in ids)
-                            w.WriteInt(id);
-
-                        count++;
-                    }
-
-                    w.Stream.WriteInt(countPos, count);
-                }
-
-                Marshaller.FinishMarshal(w);
-            });
-
-            Marshaller.OnBinaryTypesSent(types);
         }
     }
 }

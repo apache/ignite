@@ -49,6 +49,9 @@ namespace Apache.Ignite.Core.Impl
         protected const int Error = -1;
 
         /** */
+        public const int OpNone = -2;
+
+        /** */
         private static readonly Dictionary<Type, FutureType> IgniteFutureTypeMap
             = new Dictionary<Type, FutureType>
             {
@@ -964,14 +967,6 @@ namespace Apache.Ignite.Core.Impl
         {
             if (_disposed)
                 throw new ObjectDisposedException(GetType().Name, "Object has been disposed.");
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether this instance is disposed.
-        /// </summary>
-        protected bool IsDisposed
-        {
-            get { return _disposed; }
         }
     }
 }

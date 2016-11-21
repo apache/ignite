@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.concurrent.TimeUnit;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
@@ -83,6 +84,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -454,6 +456,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     @Override public void onKernalStop(boolean cancel) {
         super.onKernalStop(cancel);
 
+        if (cancel && idx != null)
+            try {
+                while (!busyLock.tryBlock(500))
+                    idx.cancelAllQueries();
+
+                return;
+            }
+            catch (InterruptedException e) {
+                U.warn(log, "Interrupted while waiting for active queries cancellation.");
+
+                Thread.currentThread().interrupt();
+            }
+
         busyLock.block();
     }
 
@@ -719,6 +734,43 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param space Space.
+     * @param clause Clause.
+     * @param params Parameters collection.
+     * @param resType Result type.
+     * @param filters Filters.
+     * @return Key/value rows.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> query(final String space, final String clause,
+        final Collection<Object> params, final String resType, final IndexingQueryFilter filters)
+        throws IgniteCheckedException {
+        checkEnabled();
+
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to execute query (grid is stopping).");
+
+        try {
+            final GridCacheContext<?, ?> cctx = ctx.cache().internalCache(space).context();
+
+            return executeQuery(cctx, new IgniteOutClosureX<GridCloseableIterator<IgniteBiTuple<K, V>>>() {
+                @Override public GridCloseableIterator<IgniteBiTuple<K, V>> applyx() throws IgniteCheckedException {
+                    TypeDescriptor type = typesByName.get(new TypeName(space, resType));
+
+                    if (type == null || !type.registered())
+                        throw new CacheException("Failed to find SQL table for type: " + resType);
+
+                    return idx.queryLocalSql(space, clause, params, type, filters);
+                }
+            }, false);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
      * @param cctx Cache context.
      * @param qry Query.
      * @return Cursor.
@@ -731,7 +783,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         try {
             return executeQuery(cctx, new IgniteOutClosureX<QueryCursor<List<?>>>() {
-                @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
+                @Override public QueryCursor<List<?>> applyx() {
                     return idx.queryTwoStep(cctx, qry);
                 }
             }, true);
@@ -868,6 +920,24 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param timeout Timeout.
+     * @param timeUnit Time unit.
+     * @return Converted time.
+     */
+    public static int validateTimeout(int timeout, TimeUnit timeUnit) {
+        A.ensure(timeUnit != TimeUnit.MICROSECONDS && timeUnit != TimeUnit.NANOSECONDS,
+            "timeUnit minimal resolution is millisecond.");
+
+        A.ensure(timeout >= 0, "timeout value should be non-negative.");
+
+        long tmp = TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
+
+        A.ensure(timeout <= Integer.MAX_VALUE, "timeout value too large.");
+
+        return (int) tmp;
+    }
+
+    /**
      * Closeable iterator.
      */
     private interface ClIter<X> extends AutoCloseable, Iterator<X> {
@@ -888,20 +958,26 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             return executeQuery(cctx, new IgniteOutClosureX<QueryCursor<List<?>>>() {
                 @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
-                    String space = cctx.name();
-                    String sql = qry.getSql();
-                    Object[] args = qry.getArgs();
+                    final String space = cctx.name();
+                    final String sql = qry.getSql();
+                    final Object[] args = qry.getArgs();
+                    final GridQueryCancel cancel = new GridQueryCancel();
 
                     final GridQueryFieldsResult res = idx.queryLocalSqlFields(space, sql, F.asList(args),
-                        idx.backupFilter(requestTopVer.get(), null), qry.isEnforceJoinOrder());
-
-                    sendQueryExecutedEvent(sql, args);
+                        idx.backupFilter(requestTopVer.get(), null), qry.isEnforceJoinOrder(), qry.getTimeout(), cancel);
 
                     QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(new Iterable<List<?>>() {
                         @Override public Iterator<List<?>> iterator() {
-                            return new GridQueryCacheObjectsIterator(res.iterator(), cctx, keepBinary);
+                            try {
+                                sendQueryExecutedEvent(sql, args);
+
+                                return new GridQueryCacheObjectsIterator(res.iterator(), cctx, keepBinary);
+                            }
+                            catch (IgniteCheckedException e) {
+                                throw new IgniteException(e);
+                            }
                         }
-                    });
+                    }, cancel);
 
                     cursor.fieldsMeta(res.metaData());
 
@@ -1002,14 +1078,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Type name.
      */
     public static String typeName(String clsName) {
-        int packageEnd = clsName.lastIndexOf('.');
+        int pkgEnd = clsName.lastIndexOf('.');
 
-        if (packageEnd >= 0 && packageEnd < clsName.length() - 1)
-            clsName = clsName.substring(packageEnd + 1);
+        if (pkgEnd >= 0 && pkgEnd < clsName.length() - 1)
+            clsName = clsName.substring(pkgEnd + 1);
 
-        if (clsName.endsWith("[]")) {
+        if (clsName.endsWith("[]"))
             clsName = clsName.substring(0, clsName.length() - 2) + "_array";
-        }
 
         int parentEnd = clsName.lastIndexOf('$');
 

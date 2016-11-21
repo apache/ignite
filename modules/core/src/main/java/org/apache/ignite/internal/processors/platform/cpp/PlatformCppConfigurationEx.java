@@ -77,12 +77,12 @@ public class PlatformCppConfigurationEx extends PlatformCppConfiguration impleme
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public Collection<PlatformCacheExtension> cacheExtensions() {
+    @Override public PlatformLogger logger() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformLogger logger() {
+    @Override @Nullable public Collection<PlatformCacheExtension> cacheExtensions() {
         return null;
     }
 

@@ -152,6 +152,12 @@ namespace Apache.Ignite.Core
                 throw new ConfigurationErrorsException(string.Format("Could not find {0} with name '{1}'",
                     typeof(IgniteConfigurationSection).Name, sectionName));
 
+            if (section.IgniteConfiguration == null)
+                throw new ConfigurationErrorsException(
+                    string.Format("{0} with name '{1}' is defined in <configSections>, " +
+                                  "but not present in configuration.",
+                        typeof(IgniteConfigurationSection).Name, sectionName));
+
             return Start(section.IgniteConfiguration);
         }
 
@@ -175,6 +181,12 @@ namespace Apache.Ignite.Core
             if (section == null)
                 throw new ConfigurationErrorsException(
                     string.Format("Could not find {0} with name '{1}' in file '{2}'",
+                        typeof(IgniteConfigurationSection).Name, sectionName, configPath));
+
+            if (section.IgniteConfiguration == null)
+                throw new ConfigurationErrorsException(
+                    string.Format("{0} with name '{1}' in file '{2}' is defined in <configSections>, " +
+                                  "but not present in configuration.",
                         typeof(IgniteConfigurationSection).Name, sectionName, configPath));
 
             return Start(section.IgniteConfiguration);

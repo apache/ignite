@@ -19,13 +19,15 @@ import _ from 'lodash';
 import commonConfig from './common';
 import devConfig from './environments/development';
 import prodConfig from './environments/production';
+import testConfig from './environments/test';
 
 const env = process.env.NODE_ENV || 'production';
 
 // Config by environments.
 const configs = {
     production: prodConfig,
-    development: devConfig
+    development: devConfig,
+    test: testConfig
 };
 
 // Load config file by environment

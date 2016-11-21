@@ -24,7 +24,8 @@ include ../../../../../app/helpers/jade/mixins.jade
         ignite-form-panel-chevron
         label IGFS
         ignite-form-field-tooltip.tipLabel
-            | IGFS (Ignite In-Memory File System) configurations assigned to cluster
+            | IGFS (Ignite In-Memory File System) configurations assigned to cluster#[br]
+            | #[a(href="https://apacheignite-fs.readme.io/docs/in-memory-file-system" target="_blank") More info]
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=form)
         .panel-body(ng-if='ui.isPanelLoaded("#{form}")')

@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Impl
     using System;
     using System.Collections.Generic;
     using System.ComponentModel;
-    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.IO;
@@ -28,7 +27,6 @@ namespace Apache.Ignite.Core.Impl
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
@@ -238,6 +236,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Formats the Win32 error.
         /// </summary>
+        [ExcludeFromCodeCoverage]
         private static string FormatWin32Error(int errorCode)
         {
             if (errorCode == NativeMethods.ERROR_BAD_EXE_FORMAT)
@@ -464,7 +463,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="reader">Reader.</param>
         /// <param name="pred">The predicate.</param>
         /// <returns> Nodes list or null. </returns>
-        public static List<IClusterNode> ReadNodes(IBinaryRawReader reader, Func<ClusterNodeImpl, bool> pred = null)
+        public static List<IClusterNode> ReadNodes(BinaryReader reader, Func<ClusterNodeImpl, bool> pred = null)
         {
             var cnt = reader.ReadInt();
 
@@ -473,7 +472,7 @@ namespace Apache.Ignite.Core.Impl
 
             var res = new List<IClusterNode>(cnt);
 
-            var ignite = ((BinaryReader)reader).Marshaller.Ignite;
+            var ignite = reader.Marshaller.Ignite;
 
             if (pred == null)
             {
@@ -492,26 +491,6 @@ namespace Apache.Ignite.Core.Impl
             }
 
             return res;
-        }
-
-        /// <summary>
-        /// Writes the node collection to a stream.
-        /// </summary>
-        /// <param name="writer">The writer.</param>
-        /// <param name="nodes">The nodes.</param>
-        public static void WriteNodes(IBinaryRawWriter writer, ICollection<IClusterNode> nodes)
-        {
-            Debug.Assert(writer != null);
-
-            if (nodes != null)
-            {
-                writer.WriteInt(nodes.Count);
-
-                foreach (var node in nodes)
-                    writer.WriteGuid(node.Id);
-            }
-            else
-                writer.WriteInt(-1);
         }
     }
 }

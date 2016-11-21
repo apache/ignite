@@ -35,7 +35,7 @@
     <url>http://ignite.apache.org</url>
 
     <properties>
-        <storm.version>0.10.0</storm.version>
+        <storm.version>1.0.2</storm.version>
     </properties>
 
     <dependencies>

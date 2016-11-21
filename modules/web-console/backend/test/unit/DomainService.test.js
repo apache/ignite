@@ -19,56 +19,46 @@ const assert = require('chai').assert;
 const injector = require('../injector');
 const testDomains = require('../data/domains.json');
 const testAccounts = require('../data/accounts.json');
+const testSpaces = require('../data/spaces.json');
 
 let domainService;
 let mongo;
 let errors;
+let db;
 
 suite('DomainsServiceTestsSuite', () => {
-    const prepareUserSpaces = () => {
-        return mongo.Account.create(testAccounts)
-            .then((accounts) => {
-                return Promise.all(accounts.map((account) => mongo.Space.create(
-                    [
-                        {name: 'Personal space', owner: account._id, demo: false},
-                        {name: 'Demo space', owner: account._id, demo: true}
-                    ]
-                )))
-                    .then((spaces) => [accounts, spaces]);
-            });
-    };
-
     suiteSetup(() => {
         return Promise.all([injector('services/domains'),
             injector('mongo'),
-            injector('errors')])
-            .then(([_domainService, _mongo, _errors]) => {
+            injector('errors'),
+            injector('dbHelper')])
+            .then(([_domainService, _mongo, _errors, _db]) => {
                 mongo = _mongo;
                 domainService = _domainService;
                 errors = _errors;
+                db = _db;
             });
     });
 
-    setup(() => {
-        return Promise.all([
-            mongo.DomainModel.remove().exec(),
-            mongo.Account.remove().exec(),
-            mongo.Space.remove().exec()
-        ]);
-    });
+    setup(() => db.init());
 
     test('Create new domain', (done) => {
-        domainService.batchMerge([testDomains[0]])
+        const dupleDomain = Object.assign({}, testDomains[0], {valueType: 'other.Type'});
+
+        delete dupleDomain._id;
+
+        domainService.batchMerge([dupleDomain])
             .then((results) => {
                 const domain = results.savedDomains[0];
 
-                assert.isNotNull(domain._id);
+                assert.isObject(domain);
+                assert.isDefined(domain._id);
 
-                return domain._id;
+                return mongo.DomainModel.findById(domain._id);
             })
-            .then((domainId) => mongo.DomainModel.findById(domainId))
             .then((domain) => {
-                assert.isNotNull(domain);
+                assert.isObject(domain);
+                assert.isDefined(domain._id);
             })
             .then(done)
             .catch(done);
@@ -77,27 +67,31 @@ suite('DomainsServiceTestsSuite', () => {
     test('Update existed domain', (done) => {
         const newValType = 'value.Type';
 
-        domainService.batchMerge([testDomains[0]])
-            .then((results) => {
-                const domain = results.savedDomains[0];
+        const domainBeforeMerge = Object.assign({}, testDomains[0], {valueType: newValType});
 
-                const domainBeforeMerge = Object.assign({}, testDomains[0], {_id: domain._id, valueType: newValType});
+        domainService.batchMerge([domainBeforeMerge])
+            .then(({savedDomains, generatedCaches}) => {
+                assert.isArray(savedDomains);
+                assert.isArray(generatedCaches);
 
-                return domainService.batchMerge([domainBeforeMerge]);
+                assert.equal(1, savedDomains.length);
+                assert.equal(0, generatedCaches.length);
+
+                return mongo.DomainModel.findById(savedDomains[0]._id);
             })
-            .then((results) => mongo.DomainModel.findById(results.savedDomains[0]._id))
-            .then((domainAfterMerge) => {
-                assert.equal(domainAfterMerge.valueType, newValType);
-            })
+            .then((domainAfterMerge) =>
+                assert.equal(domainAfterMerge.valueType, newValType)
+            )
             .then(done)
             .catch(done);
     });
 
     test('Create duplicated domain', (done) => {
-        const dupleDomain = Object.assign({}, testDomains[0], {_id: null});
+        const dupleDomain = Object.assign({}, testDomains[0]);
 
-        domainService.batchMerge([testDomains[0]])
-            .then(() => domainService.batchMerge([dupleDomain]))
+        delete dupleDomain._id;
+
+        domainService.batchMerge([dupleDomain])
             .catch((err) => {
                 assert.instanceOf(err, errors.DuplicateKeyException);
 
@@ -106,27 +100,20 @@ suite('DomainsServiceTestsSuite', () => {
     });
 
     test('Remove existed domain', (done) => {
-        domainService.batchMerge([testDomains[0]])
-            .then((results) => {
-                const domain = results.savedDomains[0];
-
-                return mongo.DomainModel.findById(domain._id)
-                    .then((foundDomain) => domainService.remove(foundDomain._id))
-                    .then(({rowsAffected}) => {
-                        assert.equal(rowsAffected, 1);
-                    })
-                    .then(() => mongo.DomainModel.findById(domain._id))
-                    .then((notFoundDomain) => {
-                        assert.isNull(notFoundDomain);
-                    });
-            })
+        domainService.remove(testDomains[0]._id)
+            .then(({rowsAffected}) =>
+                assert.equal(rowsAffected, 1)
+            )
+            .then(() => mongo.DomainModel.findById(testDomains[0]._id))
+            .then((notFoundDomain) =>
+                assert.isNull(notFoundDomain)
+            )
             .then(done)
             .catch(done);
     });
 
     test('Remove domain without identifier', (done) => {
-        domainService.batchMerge([testDomains[0]])
-            .then(() => domainService.remove())
+        domainService.remove()
             .catch((err) => {
                 assert.instanceOf(err, errors.IllegalArgumentException);
 
@@ -137,47 +124,28 @@ suite('DomainsServiceTestsSuite', () => {
     test('Remove missed domain', (done) => {
         const validNoExistingId = 'FFFFFFFFFFFFFFFFFFFFFFFF';
 
-        domainService.batchMerge([testDomains[0]])
-            .then(() => domainService.remove(validNoExistingId))
-            .then(({rowsAffected}) => {
-                assert.equal(rowsAffected, 0);
-            })
-            .then(done)
-            .catch(done);
-    });
-
-    test('Remove all domains in space', (done) => {
-        prepareUserSpaces()
-            .then(([accounts, spaces]) => {
-                const currentUser = accounts[0];
-                const userDomain = Object.assign({}, testDomains[0], {space: spaces[0][0]._id});
-
-                return domainService.batchMerge([userDomain])
-                    .then(() => domainService.removeAll(currentUser._id, false));
-            })
-            .then(({rowsAffected}) => {
-                assert.equal(rowsAffected, 1);
-            })
+        domainService.remove(validNoExistingId)
+            .then(({rowsAffected}) =>
+                assert.equal(rowsAffected, 0)
+            )
             .then(done)
             .catch(done);
     });
 
     test('Get all domains by space', (done) => {
-        prepareUserSpaces()
-            .then(([accounts, spaces]) => {
-                const userDomain = Object.assign({}, testDomains[0], {space: spaces[0][0]._id});
+        domainService.listBySpaces(testSpaces[0]._id)
+            .then((domains) =>
+                assert.equal(domains.length, 5)
+            )
+            .then(done)
+            .catch(done);
+    });
 
-                return domainService.batchMerge([userDomain])
-                    .then((results) => {
-                        const domain = results.savedDomains[0];
-
-                        return domainService.listBySpaces(spaces[0][0]._id)
-                            .then((domains) => {
-                                assert.equal(domains.length, 1);
-                                assert.equal(domains[0]._id.toString(), domain._id.toString());
-                            });
-                    });
-            })
+    test('Remove all domains in space', (done) => {
+        domainService.removeAll(testAccounts[0]._id, false)
+            .then(({rowsAffected}) =>
+                assert.equal(rowsAffected, 5)
+            )
             .then(done)
             .catch(done);
     });

@@ -338,7 +338,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @return Dummy value which is never returned.
      * @throws IgniteCheckedException Exception to be thrown.
      */
-    private <T> T throwUnsupported(int type) throws IgniteCheckedException {
+    protected <T> T throwUnsupported(int type) throws IgniteCheckedException {
         throw new IgniteCheckedException("Unsupported operation type: " + type);
     }
 
