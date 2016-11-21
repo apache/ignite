@@ -1856,12 +1856,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             // No-op.
         }
 
-        try {
-            return new FieldAccessor(cls.getDeclaredField(prop));
-        }
-        catch (NoSuchFieldException ignored) {
-            // No-op.
-        }
+        Class cls0 = cls;
+
+        while (cls0 != null)
+            try {
+                return new FieldAccessor(cls0.getDeclaredField(prop));
+            }
+            catch (NoSuchFieldException ignored) {
+                cls0 = cls0.getSuperclass();
+            }
 
         try {
             Method getter = cls.getMethod(prop);
