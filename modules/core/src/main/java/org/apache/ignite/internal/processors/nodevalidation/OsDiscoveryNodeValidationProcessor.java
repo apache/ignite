@@ -58,7 +58,7 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
                     ", rmtNodeAddrs=" + U.addressesAsString(node) +
                     ", locNodeId=" + locNode.id() + ", rmtNodeId=" + node.id() + ']';
 
-                LT.warn(log, null, errMsg);
+                LT.warn(log, errMsg);
 
                 // Always output in debug.
                 if (log.isDebugEnabled())
