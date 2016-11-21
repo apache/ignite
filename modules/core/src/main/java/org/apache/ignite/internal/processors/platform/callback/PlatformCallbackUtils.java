@@ -582,6 +582,17 @@ public class PlatformCallbackUtils {
     static native long inLongOutLong(long envPtr, int type, long val);
 
     /**
+     * Performs a generic out-in operation.
+     *
+     * @param envPtr Environment pointer.
+     * @param type Operation code.
+     * @param outMemPtr Out memory stream.
+     * @param inMemPtr In memory stream.
+     * @return Value.
+     */
+    static native long inObjectStreamOutStream(long envPtr, int type, long outMemPtr, long inMemPtr);
+
+    /**
      * Private constructor.
      */
     private PlatformCallbackUtils() {
