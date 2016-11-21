@@ -83,7 +83,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
 
     /** Completion callback. */
     @GridToStringExclude
-    private final CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb;
+    private final CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse> completionCb;
 
     /** Mappings. */
     @GridToStringInclude
@@ -93,7 +93,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
     private Map<KeyCacheObject, GridDhtCacheEntry> nearReadersEntries;
 
     /** Update request. */
-    private final GridNearAtomicUpdateRequest updateReq;
+    private final GridNearAtomicAbstractUpdateRequest updateReq;
 
     /** Update response. */
     private final GridNearAtomicUpdateResponse updateRes;
@@ -119,9 +119,9 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
      */
     public GridDhtAtomicUpdateFuture(
         GridCacheContext cctx,
-        CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
+        CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
         GridCacheVersion writeVer,
-        GridNearAtomicUpdateRequest updateReq,
+        GridNearAtomicAbstractUpdateRequest updateReq,
         GridNearAtomicUpdateResponse updateRes
     ) {
         this.cctx = cctx;
@@ -137,8 +137,8 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
             log = U.logger(cctx.kernalContext(), logRef, GridDhtAtomicUpdateFuture.class);
         }
 
-        keys = new ArrayList<>(updateReq.keys().size());
-        mappings = U.newHashMap(updateReq.keys().size());
+        keys = new ArrayList<>(updateReq.size());
+        mappings = U.newHashMap(updateReq.size());
 
         waitForExchange = !(updateReq.topologyLocked() || (updateReq.fastMap() && !updateReq.clientRequest()));
     }
