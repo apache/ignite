@@ -430,20 +430,41 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     @SuppressWarnings("BusyWait")
     protected void awaitPartitionMapExchange() throws InterruptedException {
-        awaitPartitionMapExchange(false, false);
+        awaitPartitionMapExchange(false, false, null);
     }
 
     /**
      * @param waitEvicts If {@code true} will wait for evictions finished.
      * @param waitNode2PartUpdate If {@code true} will wait for nodes node2part info update finished.
+     * @param nodes Optional nodes.
      * @throws InterruptedException If interrupted.
      */
     @SuppressWarnings("BusyWait")
-    protected void awaitPartitionMapExchange(boolean waitEvicts, boolean waitNode2PartUpdate) throws InterruptedException {
+    protected void awaitPartitionMapExchange(boolean waitEvicts,
+        boolean waitNode2PartUpdate,
+        @Nullable Collection<ClusterNode> nodes)
+        throws InterruptedException {
         long timeout = 30_000;
 
+        long startTime = -1;
+
+        Set<String> names = new HashSet<>();
+
         for (Ignite g : G.allGrids()) {
+            if (nodes != null && !nodes.contains(g.cluster().localNode()))
+                continue;
+
             IgniteKernal g0 = (IgniteKernal)g;
+
+            names.add(g0.configuration().getGridName());
+
+            if (startTime != -1) {
+                if (startTime != g0.context().discovery().gridStartTime())
+                    fail("Found nodes from different clusters, probable some test does not stop nodes " +
+                        "[allNodes=" + names + ']');
+            }
+            else
+                startTime = g0.context().discovery().gridStartTime();
 
             for (IgniteCacheProxy<?, ?> c : g0.context().cache().jcaches()) {
                 CacheConfiguration cfg = c.context().config();

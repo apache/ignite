@@ -1958,8 +1958,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 req.template(true);
 
-                req.deploymentId(desc.deploymentId());
-
                 reqs.add(req);
             }
 
@@ -1971,6 +1969,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         batch.clientNodes(clientNodesMap);
 
         batch.clientReconnect(reconnect);
+
+        // Reset random batch ID so that serialized batches with the same descriptors will be exactly the same.
+        batch.id(null);
 
         return batch;
     }
