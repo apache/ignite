@@ -47,6 +47,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
@@ -273,6 +274,8 @@ public class DmlStatementsProcessor {
     private UpdatePlan getPlanForStatement(String spaceName, PreparedStatement prepStmt,
         @Nullable Integer errKeysPos) throws IgniteCheckedException {
         Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement) prepStmt);
+
+        spaceName = GridCacheUtils.namexx(spaceName);
 
         ConcurrentMap<String, UpdatePlan> spacePlans = planCache.get(spaceName);
 
