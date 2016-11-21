@@ -1551,7 +1551,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             int order = cacheCtx.config().getRebalanceOrder();
 
-                            orderMap.putIfAbsent(order, new ArrayList<>(size));
+                            if (orderMap.get(order) == null)
+                                orderMap.put(order, new ArrayList<>(size));
 
                             orderMap.get(order).add(cacheId);
                         }
