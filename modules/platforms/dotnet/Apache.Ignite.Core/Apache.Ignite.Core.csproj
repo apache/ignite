@@ -428,6 +428,7 @@
     <Compile Include="Impl\Unmanaged\IgniteJniNativeMethods.cs" />
     <Compile Include="Impl\Unmanaged\IUnmanagedTarget.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedCallbackHandlers.cs" />
+    <Compile Include="Impl\Unmanaged\UnmanagedCallbackOp.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedCallbacks.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedContext.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedNonReleaseableTarget.cs" />
