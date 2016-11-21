@@ -24,7 +24,6 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary.IO;
-    using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
     /// Grid future implementation.
