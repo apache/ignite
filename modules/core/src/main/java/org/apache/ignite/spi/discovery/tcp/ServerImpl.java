@@ -2610,6 +2610,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             checkConnection();
 
+            sendHeartbeatMessage();
+
             checkHeartbeatsReceiving();
 
             checkPendingCustomMessages();
