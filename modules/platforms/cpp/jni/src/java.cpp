@@ -1946,7 +1946,8 @@ namespace ignite
             }
 
             JNIEXPORT jlong JNICALL JniInObjectStreamOutStream(JNIEnv *env, jclass cls, jlong envPtr, jint type, jlong inMemPtr, jlong outMemPtr, jobject arg) {
-                IGNITE_SAFE_FUNC(env, envPtr, InObjectStreamOutStreamHandler, inObjectStreamOutStream, type, inMemPtr, outMemPtr, arg);
+                void* argRef = arg ? env->NewGlobalRef(arg) : 0;
+                IGNITE_SAFE_FUNC(env, envPtr, InObjectStreamOutStreamHandler, inObjectStreamOutStream, type, inMemPtr, outMemPtr, argRef);
             }
         }
     }
