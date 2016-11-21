@@ -107,7 +107,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Operation: prepare .Net. */
         private const int OpPrepareDotNet = 1;
 
-        private delegate long CacheStoreCreateCallbackDelegate(void* target, long memPtr);
         private delegate int CacheStoreInvokeCallbackDelegate(void* target, long objPtr, long memPtr);
         private delegate void CacheStoreDestroyCallbackDelegate(void* target, long objPtr);
         private delegate long CacheStoreSessionCreateCallbackDelegate(void* target, long storePtr);
@@ -217,7 +216,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 target = IntPtr.Zero.ToPointer(), // Target is not used in .Net as we rely on dynamic FP creation.
 
-                cacheStoreCreate = CreateFunctionPointer((CacheStoreCreateCallbackDelegate) CacheStoreCreate),
                 cacheStoreInvoke = CreateFunctionPointer((CacheStoreInvokeCallbackDelegate) CacheStoreInvoke),
                 cacheStoreDestroy = CreateFunctionPointer((CacheStoreDestroyCallbackDelegate) CacheStoreDestroy),
 
@@ -329,7 +327,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             switch (op)
             {
                 case UnmanagedCallbackOp.CacheStoreCreate:
-                    return CacheStoreCreate(target, val);
+                    return CacheStoreCreate(val);
 
                 default:
                     throw new InvalidOperationException("Invalid callback code: " + type);
@@ -354,7 +352,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region IMPLEMENTATION: CACHE
 
-        private long CacheStoreCreate(void* target, long memPtr)
+        private long CacheStoreCreate(long memPtr)
         {
             return SafeCall(() =>
             {
