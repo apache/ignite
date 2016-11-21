@@ -747,7 +747,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
         loc = locParts.get(p);
 
-        if (loc != null && loc.state() != EVICTED)
+        GridDhtPartitionState state = loc != null ? loc.state() : null;
+
+        if (loc != null && state != EVICTED && state != RENTING)
             return loc;
 
         if (!create)
@@ -760,15 +762,20 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         try {
             loc = locParts.get(p);
 
+            state = loc != null ? loc.state() : null;
+
             boolean belongs = cctx.affinity().localNode(p, topVer);
 
-            if (loc != null && loc.state() == EVICTED) {
+            if (loc != null && state == EVICTED) {
                 locParts.set(p, loc = null);
 
                 if (!treatAllPartitionAsLocal && !belongs)
                     throw new GridDhtInvalidPartitionException(p, "Adding entry to evicted partition " +
                         "(often may be caused by inconsistent 'key.hashCode()' implementation) " +
                         "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
+            }
+            else if (loc != null && state == RENTING) {
+                throw new GridDhtInvalidPartitionException(p, "Adding entry to partition that is concurrently evicted.");
             }
 
             if (loc == null) {

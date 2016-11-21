@@ -92,7 +92,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
 
         locPart = ctx.topology().localPartition(p, topVer, true);
 
-        assert locPart != null;
+        assert locPart != null : locPart;
     }
 
     /** {@inheritDoc} */
