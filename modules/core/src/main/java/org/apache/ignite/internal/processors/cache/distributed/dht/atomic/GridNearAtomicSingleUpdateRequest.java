@@ -226,6 +226,11 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
         return CU.EXPIRE_TIME_CALCULATE;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean hasConflictData() {
+        return false;
+    }
+
     /**
      * {@inheritDoc}
      *
