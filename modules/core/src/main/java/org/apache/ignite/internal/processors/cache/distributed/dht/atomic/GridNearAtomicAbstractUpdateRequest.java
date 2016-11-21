@@ -223,4 +223,9 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
      * @return Key.
      */
     public abstract KeyCacheObject key(int idx);
+
+    /**
+     * @return {@code True} if request does not have conflict data.
+     */
+    public abstract boolean hasConflictData();
 }
