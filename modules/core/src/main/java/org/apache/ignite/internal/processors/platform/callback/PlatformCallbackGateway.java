@@ -61,7 +61,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return PlatformCallbackUtils.cacheStoreCreate(envPtr, memPtr);
+            return PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.CacheStoreCreate, memPtr);
         }
         finally {
             leave();
@@ -999,7 +999,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return PlatformCallbackUtils.inObjectStreamOutStream(envPtr, 0, memPtr, 0, baseFunc);
+            return PlatformCallbackUtils.inObjectStreamOutStream(envPtr, PlatformCallbackOp.AffinityFunctionInit,
+                memPtr, 0, baseFunc);
         }
         finally {
             leave();

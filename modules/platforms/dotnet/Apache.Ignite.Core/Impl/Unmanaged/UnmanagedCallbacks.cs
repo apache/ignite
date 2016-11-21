@@ -324,15 +324,30 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private long InLongOutLong(void* target, int type, long val)
         {
-            // TODO: Switch
-            return CacheStoreCreate(target, val);
+            var op = (UnmanagedCallbackOp) type;
+
+            switch (op)
+            {
+                case UnmanagedCallbackOp.CacheStoreCreate:
+                    return CacheStoreCreate(target, val);
+
+                default:
+                    throw new InvalidOperationException("Invalid callback code: " + type);
+            }
         }
 
         private long InObjectStreamOutStream(void* target, int type, long inMemPtr, long outMemPtr, void* arg)
         {
-            // TODO: Reuse streams?? Is it possible?
-            // TODO: Switch
-            return AffinityFunctionInit(target, inMemPtr, arg);
+            var op = (UnmanagedCallbackOp)type;
+
+            switch (op)
+            {
+                case UnmanagedCallbackOp.AffinityFunctionInit:
+                    return AffinityFunctionInit(target, inMemPtr, arg);
+
+                default:
+                    throw new InvalidOperationException("Invalid callback code: " + type);
+            }
         }
 
         #endregion
