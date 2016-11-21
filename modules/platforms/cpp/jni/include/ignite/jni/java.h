@@ -111,7 +111,7 @@ namespace ignite
             typedef void(JNICALL *LoggerLogHandler)(void* target, int level, const char* messageChars, int messageCharsLen, const char* categoryChars, int categoryCharsLen, const char* errorInfoChars, int errorInfoCharsLen, long long memPtr);
             typedef bool(JNICALL *LoggerIsLevelEnabledHandler)(void* target, int level);
             
-            typedef long long(JNICALL *InLongOutLongHandler)(void* target, int type, long val);
+            typedef long long(JNICALL *InLongOutLongHandler)(void* target, int type, long long val);
             typedef long long(JNICALL *InObjectStreamOutStreamHandler)(void* target, int type, long long inMemPtr, long long outMemPtr, void* arg);
 
             /**
