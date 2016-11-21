@@ -68,7 +68,7 @@ public final class DmlAstUtils {
      * @return Subquery or pseudo-SELECT to evaluate inserted expressions.
      */
     public static GridSqlQuery selectForInsertOrMerge(GridSqlColumn[] cols, List<GridSqlElement[]> rows,
-        GridSqlSubquery subQry) {
+        GridSqlQuery subQry) {
         if (!F.isEmpty(rows)) {
             assert cols != null;
 
@@ -90,7 +90,7 @@ public final class DmlAstUtils {
         else {
             assert subQry != null;
 
-            return subQry.select();
+            return subQry;
         }
     }
 
