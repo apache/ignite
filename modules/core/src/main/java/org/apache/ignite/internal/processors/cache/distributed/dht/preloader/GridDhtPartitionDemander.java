@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -249,45 +248,16 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * @param name Cache name.
-     * @param fut Future.
-     * @throws IgniteCheckedException If failed.
-     */
-    private boolean waitForCacheRebalancing(String name, RebalanceFuture fut) throws IgniteCheckedException {
-        if (log.isDebugEnabled())
-            log.debug("Waiting for another cache to start rebalancing [cacheName=" + cctx.name() +
-                ", waitCache=" + name + ']');
-
-        RebalanceFuture wFut = (RebalanceFuture)cctx.kernalContext().cache().internalCache(name)
-            .preloader().rebalanceFuture();
-
-        if (!topologyChanged(fut) && wFut.updateSeq == fut.updateSeq) {
-            if (!wFut.get()) {
-                U.log(log, "Skipping waiting of " + name + " cache [top=" + fut.topologyVersion() +
-                    "] (cache rebalanced with missed partitions)");
-
-                return false;
-            }
-
-            return true;
-        }
-        else {
-            U.log(log, "Skipping waiting of " + name + " cache [top=" + fut.topologyVersion() +
-                "] (topology already changed)");
-
-            return false;
-        }
-    }
-
-    /**
      * @param assigns Assignments.
      * @param force {@code True} if dummy reassign.
-     * @param caches Rebalancing of these caches will be finished before this started.
      * @param cnt Counter.
-     * @return Rebalancing closure.
+     * @param next Runnable responsible for cache rebalancing start.
+     * @return Rebalancing runnable.
      */
-    Callable<Boolean> addAssignments(final GridDhtPreloaderAssignments assigns, boolean force,
-        final Collection<String> caches, int cnt) {
+    Runnable addAssignments(final GridDhtPreloaderAssignments assigns,
+        boolean force,
+        int cnt,
+        final Runnable next) {
         if (log.isDebugEnabled())
             log.debug("Adding partition assignments: " + assigns);
 
@@ -310,20 +280,31 @@ public class GridDhtPartitionDemander {
 
             rebalanceFut = fut;
 
-            if (assigns.isEmpty()) {
-                fut.doneIfEmpty(assigns.cancelled());
-
-                return null;
-            }
-
-            return new Callable<Boolean>() {
-                @Override public Boolean call() throws Exception {
-                    for (String c : caches) {
-                        if (!waitForCacheRebalancing(c, fut))
-                            return false;
+            if (next != null)
+                rebalanceFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
+                    @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+                        next.run();
                     }
+                });
 
-                    return requestPartitions(fut, assigns);
+            return new Runnable() {
+                @Override public void run() {
+                    try {
+                        requestPartitions(fut, assigns);
+                    }
+                    catch (IgniteCheckedException e) {
+                        log.error("Failed to send initial demand request to node.", e);
+
+                        fut.cancel();
+                    }
+                    catch (Throwable th) {
+                        log.error("Runtime error caught during initial demand request sending.", th);
+
+                        fut.cancel();
+
+                        if (th instanceof Error)
+                            throw th;
+                    }
                 }
             };
         }
@@ -361,14 +342,23 @@ public class GridDhtPartitionDemander {
      * @throws IgniteCheckedException If failed.
      * @return Partitions were requested.
      */
-    private boolean requestPartitions(
+    private void requestPartitions(
         RebalanceFuture fut,
         GridDhtPreloaderAssignments assigns
     ) throws IgniteCheckedException {
-        for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e : assigns.entrySet()) {
-            if (topologyChanged(fut))
-                return false;
+        if (assigns.isEmpty()) {
+            fut.doneIfEmpty(assigns.cancelled());
 
+            return;
+        }
+
+        if (topologyChanged(fut)) {
+            fut.cancel();
+
+            return;
+        }
+
+        for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e : assigns.entrySet()) {
             final ClusterNode node = e.getKey();
 
             GridDhtPartitionDemandMessage d = e.getValue();
@@ -446,8 +436,6 @@ public class GridDhtPartitionDemander {
                 worker.run(node, d);
             }
         }
-
-        return true;
     }
 
     /**
