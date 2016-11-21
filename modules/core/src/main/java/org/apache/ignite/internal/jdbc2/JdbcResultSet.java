@@ -170,7 +170,7 @@ public class JdbcResultSet implements ResultSet {
                 }
             }
 
-            assert uuid instanceof UUID;
+            assert uuid == null || uuid instanceof UUID;
 
             JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), null, loc, null,
                 fetchSize, (UUID) uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
