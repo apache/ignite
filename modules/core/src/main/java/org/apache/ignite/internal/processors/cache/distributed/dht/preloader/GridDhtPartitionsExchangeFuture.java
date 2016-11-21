@@ -1498,7 +1498,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         else if (req.globalStateChange() && req.state() == CacheState.ACTIVE) {
                             if (cctx.database().persistenceEnabled()) {
                                 for (GridCacheContext cacheCtx : cctx.cacheContexts())
-                                    assignPartitionStates(cacheCtx.topology());
+                                    if (!cacheCtx.isLocal())
+                                        assignPartitionStates(cacheCtx.topology());
                             }
                         }
                     }

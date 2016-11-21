@@ -291,7 +291,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         // We won't deploy service unless non-client node is configured.
-        for (int i = 0; i < gridCount(); i++) {
+        /*for (int i = 0; i < gridCount(); i++) {
             Boolean clientMode = grid(i).configuration().isClientMode();
 
             if (clientMode)
@@ -300,7 +300,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             grid(0).services(grid(0).cluster()).deployNodeSingleton(SERVICE_NAME1, new DummyServiceImpl());
 
             break;
-        }
+        }*/
 
         for (int i = 0; i < gridCount(); i++)
             info("Grid " + i + ": " + grid(i).localNode().id());
@@ -5556,8 +5556,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     private void doTransformResourceInjection(Ignite ignite, IgniteCache<String, Integer> cache) throws Exception {
         final Collection<ResourceType> required = Arrays.asList(ResourceType.IGNITE_INSTANCE,
             ResourceType.CACHE_NAME,
-            ResourceType.LOGGER,
-            ResourceType.SERVICE);
+            ResourceType.LOGGER);
 
         final CacheEventListener lsnr = new CacheEventListener();
 

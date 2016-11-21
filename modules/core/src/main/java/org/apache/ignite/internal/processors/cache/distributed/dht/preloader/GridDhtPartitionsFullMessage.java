@@ -87,6 +87,9 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * @return Local partitions.
      */
     public Map<Integer, GridDhtPartitionFullMap> partitions() {
+        if (parts == null)
+            parts = new HashMap<>();
+
         return parts;
     }
 

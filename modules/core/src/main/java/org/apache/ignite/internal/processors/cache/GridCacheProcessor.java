@@ -771,7 +771,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             checkConsistency();
 
             if (globalState == ACTIVE){
-                sharedCtx.database().beforeActivate();
+                if (!ctx.clientNode())
+                    sharedCtx.database().beforeActivate();
 
                 sharedCtx.wal().onKernalStart(false);
 
