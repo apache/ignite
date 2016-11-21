@@ -180,8 +180,11 @@ public final class IgfsImpl implements IgfsEx {
         data = igfsCtx.data();
         secondaryFs = cfg.getSecondaryFileSystem();
 
-        if (secondaryFs instanceof IgfsKernalContextAware)
-            ((IgfsKernalContextAware)secondaryFs).setKernalContext(igfsCtx.kernalContext());
+        if (secondaryFs != null) {
+            igfsCtx.kernalContext().resource().injectGeneric(secondaryFs);
+
+            igfsCtx.kernalContext().resource().injectFilesystem(secondaryFs, this);
+        }
 
         if (secondaryFs instanceof LifecycleAware)
             ((LifecycleAware)secondaryFs).start();
@@ -1271,6 +1274,21 @@ public final class IgfsImpl implements IgfsEx {
                     log.debug("Get affinity for file block [path=" + path + ", start=" + start + ", len=" + len + ']');
 
                 IgfsMode mode = resolveMode(path);
+
+                if (mode == PROXY) {
+                    if (secondaryFs instanceof IgfsSecondaryFileSystemV2)
+                        return ((IgfsSecondaryFileSystemV2)secondaryFs).affinity(path, start, len, maxLen);
+                    else {
+                        IgfsFile info = info(path);
+
+                        if (info == null)
+                            throw new IgfsPathNotFoundException("File not found: " + path);
+
+                        return Collections.<IgfsBlockLocation>singleton(
+                                new IgfsBlockLocationImpl(0, info.length(),
+                                    Collections.singleton(igfsCtx.localNode())));
+                    }
+                }
 
                 // Check memory first.
                 IgfsEntryInfo info = meta.infoForPath(path);

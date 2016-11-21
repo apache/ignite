@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.delegate;
 
+import java.util.Arrays;
+import java.util.Comparator;
+import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.ParentNotDirectoryException;
@@ -28,6 +31,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
+import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsDirectoryNotEmptyException;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
@@ -42,6 +46,7 @@ import org.apache.ignite.internal.processors.hadoop.delegate.HadoopFileSystemFac
 import org.apache.ignite.internal.processors.hadoop.delegate.HadoopIgfsSecondaryFileSystemDelegate;
 import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsProperties;
 import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsSecondaryFileSystemPositionedReadable;
+import org.apache.ignite.internal.processors.igfs.IgfsBlockLocationImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsEntryInfo;
 import org.apache.ignite.internal.processors.igfs.IgfsFileImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
@@ -371,6 +376,103 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
     }
 
     /** {@inheritDoc} */
+    @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len,
+        long maxLen) throws IgniteException {
+        try {
+            BlockLocation[] hadoopBlocks = fileSystemForUser().getFileBlockLocations(convert(path), start, len);
+
+            IgfsBlockLocation[] blksRaw = new IgfsBlockLocation[hadoopBlocks.length];
+
+            for (int i = 0; i < hadoopBlocks.length; ++i)
+                blksRaw[i] = convertBlockLocation(hadoopBlocks[i]);
+
+            // Because there is not guarantee that hadoop returns sorted array of block
+            Arrays.sort(blksRaw, new Comparator<IgfsBlockLocation>() {
+                @Override public int compare(IgfsBlockLocation o1, IgfsBlockLocation o2) {
+                    return Long.compare(o1.start(), o2.start());
+                }
+            });
+
+            return resliceBlocks(blksRaw, start, len, maxLen);
+        }
+        catch (IOException e) {
+            throw handleSecondaryFsError(e, "Failed affinity for path: " + path);
+        }
+    }
+
+    /**
+     * @param blks Blocks array.
+     * @param start Position in the file to start affinity resolution from.
+     * @param len Size of data in the file to resolve affinity for.
+     * @param maxLen Maximum length of a single returned block location length.
+     * @return Blocks collection sliced by maxLen
+     */
+    static Collection<IgfsBlockLocation> resliceBlocks(IgfsBlockLocation[] blks, long start, long len,
+        long maxLen) {
+        assert blks[0].start() == start : "Check bounds:"
+            + "[firstBlock.start()=" + blks[0].start() + ", start=" + start + ']';
+
+        assert blks[blks.length - 1].start() + blks[blks.length - 1].length() == start + len
+            : "Check bounds: "
+            + "lastBlock.start()=" + blks[blks.length - 1].start() + ", lastBlock.length=" +
+            blks[blks.length - 1].length() + ", start=" + start + ", len=" + len + ']';
+
+        Collection<IgfsBlockLocation> blocks = new ArrayList<>((int)(len / maxLen));
+
+        Collection<String> lastHosts = null;
+
+        long lastBlockIdx = -1;
+
+        long end = start + len;
+
+        IgfsBlockLocationImpl lastBlock = null;
+
+        int blockIdx = 0;
+
+        for (long offset = start; offset < end; ) {
+            IgfsBlockLocation blk = blks[blockIdx];
+
+            // Each step is min of maxLen and end of block.
+            long lenStep = Math.min(
+                maxLen - (lastBlock != null ? lastBlock.length() : 0),
+                blk.start() + blk.length() - offset);
+
+            if (blockIdx != lastBlockIdx) {
+                Collection<String> hosts = blk.hosts();
+
+                if (!hosts.equals(lastHosts) && lastHosts!= null && lastBlock != null) {
+                    blocks.add(lastBlock);
+
+                    lastBlock = null;
+                }
+
+                lastHosts = hosts;
+
+                lastBlockIdx = blockIdx;
+            }
+
+            if(lastBlock == null)
+                lastBlock = new IgfsBlockLocationImpl(offset, lenStep, blk);
+            else
+                lastBlock.increaseLength(lenStep);
+
+            if (lastBlock.length() == maxLen || lastBlock.start() + lastBlock.length() == end) {
+                blocks.add(lastBlock);
+
+                lastBlock = null;
+            }
+
+            offset += lenStep;
+
+            if (offset == blk.start() + blk.length())
+                ++blockIdx;
+        }
+
+        return blocks;
+
+    }
+
+    /** {@inheritDoc} */
     public void start() {
         factory.start();
     }
@@ -393,6 +495,25 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
     }
 
     /**
+     * Convert IGFS affinity block location into Hadoop affinity block location.
+     *
+     * @param block IGFS affinity block location.
+     * @return Hadoop affinity block location.
+     */
+    private IgfsBlockLocation convertBlockLocation(BlockLocation block) {
+        try {
+            String[] names = block.getNames();
+            String[] hosts = block.getHosts();
+
+            return new IgfsBlockLocationImpl(
+                block.getOffset(), block.getLength(),
+                Arrays.asList(names), Arrays.asList(hosts));
+        } catch (IOException e) {
+            throw handleSecondaryFsError(e, "Failed convert block location: " + block);
+        }
+    }
+
+    /**
      * Heuristically checks if exception was caused by invalid HDFS version and returns appropriate exception.
      *
      * @param e Exception to check.
@@ -406,6 +527,7 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
     /**
      * Cast IO exception to IGFS exception.
      *
+     * @param msg Error message.
      * @param e IO exception.
      * @return IGFS exception.
      */

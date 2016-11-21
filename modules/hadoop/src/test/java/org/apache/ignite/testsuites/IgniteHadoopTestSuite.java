@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.hadoop.impl.client.HadoopClientProt
 import org.apache.ignite.internal.processors.hadoop.impl.client.HadoopClientProtocolMultipleServersSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.client.HadoopClientProtocolSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopTxConfigCacheTest;
+import org.apache.ignite.internal.processors.hadoop.impl.delegate.HadoopIgfsSecondaryFileSystemDelegateImplSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.KerberosHadoopFileSystemFactorySelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.util.BasicUserNameMapperSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.util.ChainedUserNameMapperSelfTest;
@@ -202,6 +203,8 @@ public class IgniteHadoopTestSuite extends TestSuite {
         suite.addTest(new TestSuite(ldr.loadClass(HadoopSecondaryFileSystemConfigurationTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopTxConfigCacheTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopIgfsSecondaryFileSystemDelegateImplSelfTest.class.getName())));
 
         return suite;
     }
