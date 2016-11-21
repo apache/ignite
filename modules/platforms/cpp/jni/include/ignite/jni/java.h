@@ -112,7 +112,7 @@ namespace ignite
             typedef bool(JNICALL *LoggerIsLevelEnabledHandler)(void* target, int level);
             
             typedef long long(JNICALL *InLongOutLongHandler)(void* target, int type, long val);
-            typedef long long(JNICALL *InObjectStreamOutStreamHandler)(void* target, int type, long inMemPtr, long outMemPtr, void* arg);
+            typedef long long(JNICALL *InObjectStreamOutStreamHandler)(void* target, int type, long long inMemPtr, long long outMemPtr, void* arg);
 
             /**
              * JNI handlers holder.
