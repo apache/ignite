@@ -292,6 +292,11 @@ public class GridDhtPartitionDemander {
                     try {
                         requestPartitions(fut, assigns);
                     }
+                    catch (ClusterTopologyCheckedException e){
+                        log.warning("Failed to send initial demand request to node.", e);
+
+                        fut.cancel();
+                    }
                     catch (IgniteCheckedException e) {
                         log.error("Failed to send initial demand request to node.", e);
 
