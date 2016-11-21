@@ -487,44 +487,32 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         return invokeArgs;
     }
 
-    /**
-     * @return Flag indicating whether this is fast-map udpate.
-     */
+    /** {@inheritDoc} */
     @Override public boolean fastMap() {
         return fastMap;
     }
 
-    /**
-     * @return Topology locked flag.
-     */
+    /** {@inheritDoc} */
     @Override public boolean topologyLocked() {
         return topLocked;
     }
 
-    /**
-     * @return {@code True} if request sent from client node.
-     */
+    /** {@inheritDoc} */
     @Override public boolean clientRequest() {
         return clientReq;
     }
 
-    /**
-     * @return Return value flag.
-     */
+    /** {@inheritDoc} */
     @Override public boolean returnValue() {
         return retval;
     }
 
-    /**
-     * @return Skip write-through to a persistent storage.
-     */
+    /** {@inheritDoc} */
     @Override public boolean skipStore() {
         return skipStore;
     }
 
-    /**
-     * @return Keep binary flag.
-     */
+    /** {@inheritDoc} */
     @Override public boolean keepBinary() {
         return keepBinary;
     }
