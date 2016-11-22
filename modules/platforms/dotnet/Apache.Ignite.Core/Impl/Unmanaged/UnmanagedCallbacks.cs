@@ -313,6 +313,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private long InLongOutLong(void* target, int type, long val)
         {
+            // TODO: Wrap all in a SafeCall? What to do with gateway?
+            // TODO: Each component registers itself for a callback with a "allowUninit" flag?
             var op = (UnmanagedCallbackOp) type;
 
             switch (op)
