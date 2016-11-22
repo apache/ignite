@@ -107,9 +107,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Operation: prepare .Net. */
         private const int OpPrepareDotNet = 1;
 
-        private delegate void CacheStoreDestroyCallbackDelegate(void* target, long objPtr);
-        private delegate long CacheStoreSessionCreateCallbackDelegate(void* target, long storePtr);
-
         private delegate long CacheEntryFilterCreateCallbackDelegate(void* target, long memPtr);
         private delegate int CacheEntryFilterApplyCallbackDelegate(void* target, long objPtr, long memPtr);
         private delegate void CacheEntryFilterDestroyCallbackDelegate(void* target, long objPtr);
@@ -214,10 +211,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             var cbs = new UnmanagedCallbackHandlers
             {
                 target = IntPtr.Zero.ToPointer(), // Target is not used in .Net as we rely on dynamic FP creation.
-
-                cacheStoreDestroy = CreateFunctionPointer((CacheStoreDestroyCallbackDelegate) CacheStoreDestroy),
-
-                cacheStoreSessionCreate = CreateFunctionPointer((CacheStoreSessionCreateCallbackDelegate) CacheStoreSessionCreate),
 
                 cacheEntryFilterCreate = CreateFunctionPointer((CacheEntryFilterCreateCallbackDelegate)CacheEntryFilterCreate),
                 cacheEntryFilterApply = CreateFunctionPointer((CacheEntryFilterApplyCallbackDelegate)CacheEntryFilterApply),
@@ -330,6 +323,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 case UnmanagedCallbackOp.CacheStoreInvoke:
                     return CacheStoreInvoke(val);
 
+                case UnmanagedCallbackOp.CacheStoreDestroy:
+                    CacheStoreDestroy(val);
+                    return 0;
+
+                case UnmanagedCallbackOp.CacheStoreSessionCreate:
+                    return CacheStoreSessionCreate();
+
                 default:
                     throw new InvalidOperationException("Invalid callback code: " + type);
             }
@@ -402,12 +402,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private void CacheStoreDestroy(void* target, long objPtr)
+        private void CacheStoreDestroy(long objPtr)
         {
             SafeCall(() => _ignite.HandleRegistry.Release(objPtr));
         }
 
-        private long CacheStoreSessionCreate(void* target, long storePtr)
+        private long CacheStoreSessionCreate()
         {
             return SafeCall(() => _ignite.HandleRegistry.Allocate(new CacheStoreSession()));
         }

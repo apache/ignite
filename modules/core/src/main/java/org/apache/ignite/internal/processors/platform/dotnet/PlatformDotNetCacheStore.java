@@ -396,7 +396,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
         if (sesPtr == null) {
             // Session is not deployed yet, do that.
-            sesPtr = platformCtx.gateway().cacheStoreSessionCreate(ptr);
+            sesPtr = platformCtx.gateway().cacheStoreSessionCreate();
 
             ses.properties().put(KEY_SES, sesPtr);
         }

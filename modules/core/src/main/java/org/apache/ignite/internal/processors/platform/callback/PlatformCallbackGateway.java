@@ -91,7 +91,7 @@ public class PlatformCallbackGateway {
             return;  // no need to destroy stores on grid stop
 
         try {
-            PlatformCallbackUtils.cacheStoreDestroy(envPtr, objPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.CacheStoreDestroy, objPtr);
         }
         finally {
             leave();
@@ -101,14 +101,13 @@ public class PlatformCallbackGateway {
     /**
      * Creates cache store session.
      *
-     * @param storePtr Store instance pointer.
      * @return Session instance pointer.
      */
-    public long cacheStoreSessionCreate(long storePtr) {
+    public long cacheStoreSessionCreate() {
         enter();
 
         try {
-            return PlatformCallbackUtils.cacheStoreSessionCreate(envPtr, storePtr);
+            return PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.CacheStoreSessionCreate, 0);
         }
         finally {
             leave();
