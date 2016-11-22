@@ -442,7 +442,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.dataStreamerTopologyUpdate(envPtr, ptr, topVer, topSize);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.DataStreamerTopologyUpdate, ptr, topVer, topSize, null);
         }
         finally {
             leave();
@@ -452,16 +453,15 @@ public class PlatformCallbackGateway {
     /**
      * Invoke stream receiver.
      *
-     * @param ptr Receiver native pointer.
      * @param cache Cache object.
      * @param memPtr Stream pointer.
-     * @param keepBinary Binary flag.
      */
-    public void dataStreamerStreamReceiverInvoke(long ptr, Object cache, long memPtr, boolean keepBinary) {
+    public void dataStreamerStreamReceiverInvoke(Object cache, long memPtr) {
         enter();
 
         try {
-            PlatformCallbackUtils.dataStreamerStreamReceiverInvoke(envPtr, ptr, cache, memPtr, keepBinary);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.DataStreamerStreamReceiverInvoke, memPtr, 0, 0, cache);
         }
         finally {
             leave();

@@ -76,6 +76,9 @@ public class PlatformStreamReceiverImpl extends PlatformAbstractPredicate implem
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
+            out.writeLong(ptr);
+            out.writeBoolean(keepBinary);
+
             BinaryRawWriterEx writer = ctx.writer(out);
 
             writer.writeObject(pred);
@@ -89,8 +92,7 @@ public class PlatformStreamReceiverImpl extends PlatformAbstractPredicate implem
 
             out.synchronize();
 
-            ctx.gateway().dataStreamerStreamReceiverInvoke(ptr, new PlatformCache(ctx, cache, keepBinary),
-                mem.pointer(), keepBinary);
+            ctx.gateway().dataStreamerStreamReceiverInvoke(new PlatformCache(ctx, cache, keepBinary), mem.pointer());
         }
     }
 
