@@ -896,13 +896,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor(new DataStructuresProcessor(ctx));
             startProcessor(createComponent(PlatformProcessor.class, ctx));
 
-            // Start plugins.
-            for (PluginProvider provider : ctx.plugins().allProviders()) {
-                ctx.add(new GridPluginComponent(provider));
-
-                provider.start(ctx.plugins().pluginContextForProvider(provider));
-            }
-
             fillNodeAttributes(clusterProc.updateNotifierEnabled());
 
             gw.writeLock();
@@ -941,6 +934,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 if (!skipDaemon(comp))
                     comp.onKernalStart();
+            }
+
+            // Start plugins.
+            for (PluginProvider provider : ctx.plugins().allProviders()) {
+                ctx.add(new GridPluginComponent(provider));
+
+                provider.start(ctx.plugins().pluginContextForProvider(provider));
             }
 
             // Register MBeans.
