@@ -588,10 +588,11 @@ public class PlatformCallbackUtils {
      * @param type Operation code.
      * @param val1 First value.
      * @param val2 Second value.
+     * @param val3 Third value.
      * @param arg Object argument.
      * @return Value.
      */
-    static native long inLongLongObjectOutLong(long envPtr, int type, long val1, long val2, Object arg);
+    static native long inLongLongLongObjectOutLong(long envPtr, int type, long val1, long val2, long val3, Object arg);
 
     /**
      * Private constructor.

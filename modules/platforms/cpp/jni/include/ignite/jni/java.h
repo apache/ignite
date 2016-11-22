@@ -112,7 +112,7 @@ namespace ignite
             typedef bool(JNICALL *LoggerIsLevelEnabledHandler)(void* target, int level);
             
             typedef long long(JNICALL *InLongOutLongHandler)(void* target, int type, long long val);
-            typedef long long(JNICALL *InObjectStreamOutStreamHandler)(void* target, int type, long long inMemPtr, long long outMemPtr, void* arg);
+            typedef long long(JNICALL *InLongLongLongObjectOutLongHandler)(void* target, int type, long long val1, long long val2, long long val3, void* arg);
 
             /**
              * JNI handlers holder.
@@ -202,7 +202,7 @@ namespace ignite
                 LoggerIsLevelEnabledHandler loggerIsLevelEnabled;
 
                 InLongOutLongHandler inLongOutLong;
-                InObjectStreamOutStreamHandler inObjectStreamOutStream;
+                InLongLongLongObjectOutLongHandler inLongLongLongObjectOutLong;
             };
 
             /**
@@ -575,7 +575,7 @@ namespace ignite
             JNIEXPORT jboolean JNICALL JniLoggerIsLevelEnabled(JNIEnv *env, jclass cls, jlong envPtr, jint level);
 
             JNIEXPORT jlong JNICALL JniInLongOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint type, jlong val);
-            JNIEXPORT jlong JNICALL JniInLongLongObjectOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint type, jlong inMemPtr, jlong outMemPtr, jobject arg);
+            JNIEXPORT jlong JNICALL JniInLongLongLongObjectOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint type, jlong val1, jlong val2, jlong val3, jobject arg);
         }
     }
 }

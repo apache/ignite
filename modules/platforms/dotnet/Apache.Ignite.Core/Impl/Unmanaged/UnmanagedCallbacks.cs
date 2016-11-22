@@ -161,18 +161,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private delegate void ConsoleWriteDelegate(sbyte* chars, int charsLen, bool isErr);
 
-        // TODO: A set of common callback methods, similar to OutIn* methods
-        // Analyze which of them are we going to use most.. not necessary the same set is required
-        // However, one uber-method should probably be present
-        // * We return objects from Java via handle registry. Can't do this via streams, need a separate param.
-        // * We can't return an object from Callback, so the result is always "long"
-
-
         // Smallest delegate:
         private delegate long InLongOutLongDelegate(void* target, int type, long val);
 
         // Biggest method:
-        private delegate long InLongLongObjectOutLongDelegate(void* target, int type, long inMemPtr, long outMemPtr, void* arg);
+        private delegate long InLongLongLongObjectOutLongDelegate(void* target, int type, long val1, long val2, long val3, void* arg);
 
         /// <summary>
         /// Constructor.
@@ -237,7 +230,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 loggerIsLevelEnabled = CreateFunctionPointer((LoggerIsLevelEnabledDelegate)LoggerIsLevelEnabled),
 
                 inLongOutLong = CreateFunctionPointer((InLongOutLongDelegate)InLongOutLong),
-                inLongLongObjectOutLong = CreateFunctionPointer((InLongLongObjectOutLongDelegate)InLongLongObjectOutLong)
+                inLongLongObjectOutLong = CreateFunctionPointer((InLongLongLongObjectOutLongDelegate)InLongLongLongObjectOutLong)
             };
 
             _cbsPtr = Marshal.AllocHGlobal(UU.HandlersSize());
@@ -337,7 +330,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
-        private long InLongLongObjectOutLong(void* target, int type, long val1, long val2, void* arg)
+        private long InLongLongLongObjectOutLong(void* target, int type, long val1, long val2, long val3, void* arg)
         {
             var op = (UnmanagedCallbackOp)type;
 
