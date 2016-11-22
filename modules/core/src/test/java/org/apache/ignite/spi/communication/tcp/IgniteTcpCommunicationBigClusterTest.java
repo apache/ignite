@@ -6,6 +6,8 @@ import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -108,8 +110,10 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
         final ExecutorService execSvc = Executors.newCachedThreadPool();
         for (int i = 0; i < IGNITE_NODES_NUMBER; ++i) {
             final String name = "testBigClusterNode-" + i;
-            execSvc.submit(() -> {
-                startNode(name);
+            execSvc.submit(new IgniteRunnable() {
+                @Override public void run() {
+                    startNode(name);
+                }
             });
         }
         startLatch.await();
@@ -146,8 +150,10 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
             int count = 0;
             for (; ; ) {
                 Thread.sleep(BROADCAST_PERIOD);
-                Collection<String> results = ignite.compute().broadcast(() -> {
-                    return CONTROL_ANSWER;
+                Collection<String> results = ignite.compute().broadcast(new IgniteCallable<String>() {
+                    @Override public String call() throws Exception {
+                        return CONTROL_ANSWER;
+                    }
                 });
                 for (String result : results)
                     if (!CONTROL_ANSWER.equals(result))
