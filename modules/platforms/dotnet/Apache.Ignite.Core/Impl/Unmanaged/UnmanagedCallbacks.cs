@@ -106,9 +106,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Operation: prepare .Net. */
         private const int OpPrepareDotNet = 1;
 
-        private delegate void DataStreamerTopologyUpdateCallbackDelegate(void* target, long ldrPtr, long topVer, int topSize);
-        private delegate void DataStreamerStreamReceiverInvokeCallbackDelegate(void* target, long ptr, void* cache, long memPtr, byte keepPortable);
-
         private delegate void FutureByteResultCallbackDelegate(void* target, long futPtr, int res);
         private delegate void FutureBoolResultCallbackDelegate(void* target, long futPtr, int res);
         private delegate void FutureShortResultCallbackDelegate(void* target, long futPtr, int res);
@@ -189,11 +186,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             var cbs = new UnmanagedCallbackHandlers
             {
                 target = IntPtr.Zero.ToPointer(), // Target is not used in .Net as we rely on dynamic FP creation.
-
-                dataStreamerTopologyUpdate =
-                    CreateFunctionPointer((DataStreamerTopologyUpdateCallbackDelegate) DataStreamerTopologyUpdate),
-                dataStreamerStreamReceiverInvoke =
-                    CreateFunctionPointer((DataStreamerStreamReceiverInvokeCallbackDelegate) DataStreamerStreamReceiverInvoke),
 
                 futureByteResult = CreateFunctionPointer((FutureByteResultCallbackDelegate) FutureByteResult),
                 futureBoolResult = CreateFunctionPointer((FutureBoolResultCallbackDelegate) FutureBoolResult),
@@ -366,6 +358,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 case UnmanagedCallbackOp.ComputeJobExecuteLocal:
                     ComputeJobExecuteLocal(val1, val2);
+                    return 0;
+
+                case UnmanagedCallbackOp.DataStreamerTopologyUpdate:
+                    DataStreamerTopologyUpdate(val1, val2);
+                    return 0;
+
+                case UnmanagedCallbackOp.DataStreamerStreamReceiverInvoke:
+                    DataStreamerStreamReceiverInvoke(arg, val1);
                     return 0;
 
                 default:
@@ -722,7 +722,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region IMPLEMENTATION: DATA STREAMER
 
-        private void DataStreamerTopologyUpdate(void* target, long ldrPtr, long topVer, int topSize)
+        private void DataStreamerTopologyUpdate(long ldrPtr, long memPtr)
         {
             SafeCall(() =>
             {
@@ -734,20 +734,31 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 var ldr = ldrRef.Target as IDataStreamer;
 
                 if (ldr != null)
-                    ldr.TopologyChange(topVer, topSize);
+                {
+                    using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                    {
+                        var topVer = stream.ReadLong();
+                        var topSize = stream.ReadInt();
+
+                        ldr.TopologyChange(topVer, topSize);
+                    }
+                }
                 else
                     _handleRegistry.Release(ldrPtr, true);
             });
         }
 
         [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
-        private void DataStreamerStreamReceiverInvoke(void* target, long rcvPtr, void* cache, long memPtr,
-            byte keepBinary)
+        private void DataStreamerStreamReceiverInvoke(void* cache, long memPtr)
         {
             SafeCall(() =>
             {
                 using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
+                    var rcvPtr = stream.ReadLong();
+
+                    var keepBinary = stream.ReadBool();
+
                     var reader = _ignite.Marshaller.StartUnmarshal(stream, BinaryMode.ForceBinary);
 
                     var binaryReceiver = reader.ReadObject<BinaryObject>();
@@ -756,8 +767,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                                    binaryReceiver.Deserialize<StreamReceiverHolder>();
 
                     if (receiver != null)
-                        receiver.Receive(_ignite, new UnmanagedNonReleaseableTarget(_ctx, cache), stream,
-                            keepBinary != 0);
+                        receiver.Receive(_ignite, new UnmanagedNonReleaseableTarget(_ctx, cache), stream, keepBinary);
                 }
             });
         }
