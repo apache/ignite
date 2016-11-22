@@ -1255,4 +1255,63 @@ namespace ignite
         return statement->GetDiagnosticRecords().GetReturnCode();
     }
 
+    SQLRETURN SQLError(SQLHENV      env,
+                       SQLHDBC      conn,
+                       SQLHSTMT     stmt,
+                       SQLCHAR*     state,
+                       SQLINTEGER*  error,
+                       SQLCHAR*     msgBuf,
+                       SQLSMALLINT  msgBufLen,
+                       SQLSMALLINT* msgResLen)
+    {
+        using namespace ignite::utility;
+        using namespace ignite::odbc;
+        using namespace ignite::odbc::diagnostic;
+        using namespace ignite::odbc::type_traits;
+
+        using ignite::odbc::app::ApplicationDataBuffer;
+
+        LOG_MSG("SQLError called\n");
+
+        SQLHANDLE handle = 0;
+
+        if (env != 0)
+            handle = static_cast<SQLHANDLE>(env);
+        else if (conn != 0)
+            handle = static_cast<SQLHANDLE>(conn);
+        else if (stmt != 0)
+            handle = static_cast<SQLHANDLE>(stmt);
+        else
+            return SQL_INVALID_HANDLE;
+
+        Diagnosable *diag = reinterpret_cast<Diagnosable*>(handle);
+
+        DiagnosticRecordStorage& records = diag->GetDiagnosticRecords();
+
+        int32_t recNum = records.GetLastNonRetrieved();
+
+        if (recNum < 1 || recNum > records.GetStatusRecordsNumber())
+            return SQL_NO_DATA;
+
+        DiagnosticRecord& record = records.GetStatusRecord(recNum);
+
+        record.MarkRetrieved();
+
+        if (state)
+            CopyStringToBuffer(record.GetSqlState(), reinterpret_cast<char*>(state), 6);
+
+        if (error)
+            *error = 0;
+
+        SqlLen outResLen;
+        ApplicationDataBuffer outBuffer(IGNITE_ODBC_C_TYPE_CHAR, msgBuf, msgBufLen, &outResLen);
+
+        outBuffer.PutString(record.GetMessageText());
+
+        if (msgResLen)
+            *msgResLen = static_cast<SQLSMALLINT>(outResLen);
+
+        return SQL_SUCCESS;
+    }
+
 } // namespace ignite;
