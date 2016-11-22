@@ -180,7 +180,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate long InLongOutLongDelegate(void* target, int type, long val);
 
         // Biggest method:
-        private delegate long InObjectStreamOutStreamDelegate(void* target, int type, long inMemPtr, long outMemPtr, void* arg);
+        private delegate long InLongLongObjectOutLongDelegate(void* target, int type, long inMemPtr, long outMemPtr, void* arg);
 
         /// <summary>
         /// Constructor.
@@ -258,7 +258,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 loggerIsLevelEnabled = CreateFunctionPointer((LoggerIsLevelEnabledDelegate)LoggerIsLevelEnabled),
 
                 inLongOutLong = CreateFunctionPointer((InLongOutLongDelegate)InLongOutLong),
-                inObjectStreamOutStream = CreateFunctionPointer((InObjectStreamOutStreamDelegate)InObjectStreamOutStream)
+                inLongLongObjectOutLong = CreateFunctionPointer((InLongLongObjectOutLongDelegate)InLongLongObjectOutLong)
             };
 
             _cbsPtr = Marshal.AllocHGlobal(UU.HandlersSize());
@@ -344,7 +344,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
-        private long InObjectStreamOutStream(void* target, int type, long inMemPtr, long outMemPtr, void* arg)
+        private long InLongLongObjectOutLong(void* target, int type, long inMemPtr, long outMemPtr, void* arg)
         {
             // TODO: Rename arguments to val1 val2
 

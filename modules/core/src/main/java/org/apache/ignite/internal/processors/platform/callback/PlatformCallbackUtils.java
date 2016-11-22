@@ -586,12 +586,12 @@ public class PlatformCallbackUtils {
      *
      * @param envPtr Environment pointer.
      * @param type Operation code.
-     * @param outMemPtr Out memory stream.
-     * @param inMemPtr In memory stream.
+     * @param val1 First value.
+     * @param val2 Second value.
      * @param arg Object argument.
      * @return Value.
      */
-    static native long inObjectStreamOutStream(long envPtr, int type, long outMemPtr, long inMemPtr, Object arg);
+    static native long inLongLongObjectOutLong(long envPtr, int type, long val1, long val2, Object arg);
 
     /**
      * Private constructor.

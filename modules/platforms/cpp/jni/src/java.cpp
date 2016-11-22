@@ -317,7 +317,7 @@ namespace ignite
             JniMethod M_PLATFORM_CALLBACK_UTILS_CONSOLE_WRITE = JniMethod("consoleWrite", "(Ljava/lang/String;Z)V", true);
 
             JniMethod M_PLATFORM_CALLBACK_UTILS_IN_LONG_OUT_LONG = JniMethod("inLongOutLong", "(JIJ)J", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_IN_OBJECT_STREAM_OUT_STREAM = JniMethod("inObjectStreamOutStream", "(JIJJLjava/lang/Object;)J", true);
+            JniMethod M_PLATFORM_CALLBACK_UTILS_IN_LONG_LONG_OBJECT_OUT_LONG = JniMethod("inLongLongObjectOutLong", "(JIJJLjava/lang/Object;)J", true);
 
             const char* C_PLATFORM_UTILS = "org/apache/ignite/internal/processors/platform/utils/PlatformUtils";
             JniMethod M_PLATFORM_UTILS_REALLOC = JniMethod("reallocate", "(JI)V", true);
@@ -711,7 +711,7 @@ namespace ignite
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_LOGGER_IS_LEVEL_ENABLED, reinterpret_cast<void*>(JniLoggerIsLevelEnabled));
 
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_IN_LONG_OUT_LONG, reinterpret_cast<void*>(JniInLongOutLong));
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_IN_OBJECT_STREAM_OUT_STREAM, reinterpret_cast<void*>(JniInObjectStreamOutStream));
+                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_IN_LONG_LONG_OBJECT_OUT_LONG, reinterpret_cast<void*>(JniInLongLongObjectOutLong));
 
                     jint res = env->RegisterNatives(FindClass(env, C_PLATFORM_CALLBACK_UTILS), methods, idx);
 
@@ -1945,9 +1945,9 @@ namespace ignite
                 IGNITE_SAFE_FUNC(env, envPtr, InLongOutLongHandler, inLongOutLong, type, val);
             }
 
-            JNIEXPORT jlong JNICALL JniInObjectStreamOutStream(JNIEnv *env, jclass cls, jlong envPtr, jint type, jlong inMemPtr, jlong outMemPtr, jobject arg) {
+            JNIEXPORT jlong JNICALL JniInLongLongObjectOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint type, jlong val1, jlong val2, jobject arg) {
                 void* argRef = arg ? env->NewGlobalRef(arg) : 0;
-                IGNITE_SAFE_FUNC(env, envPtr, InObjectStreamOutStreamHandler, inObjectStreamOutStream, type, inMemPtr, outMemPtr, argRef);
+                IGNITE_SAFE_FUNC(env, envPtr, InObjectStreamOutStreamHandler, inObjectStreamOutStream, type, val1, val2, argRef);
             }
         }
     }
