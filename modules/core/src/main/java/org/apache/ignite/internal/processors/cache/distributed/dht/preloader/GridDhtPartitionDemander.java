@@ -280,21 +280,18 @@ public class GridDhtPartitionDemander {
 
             rebalanceFut = fut;
 
-            if (next != null)
-                rebalanceFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
-                    @Override public void apply(IgniteInternalFuture<Boolean> fut) {
-                        next.run();
-                    }
-                });
-
-            if (assigns.isEmpty()) {
-                U.log(log, "Rebalancing is not required.");
-
+            if (assigns.isEmpty())
                 ((GridFutureAdapter)cctx.preloader().syncFuture()).onDone();
-            }
 
             return new Runnable() {
                 @Override public void run() {
+                    if (next != null)
+                        rebalanceFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
+                            @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+                                next.run();
+                            }
+                        });
+
                     if (assigns.isEmpty()) {
                         rebalanceFut.onDone(true); // Starts next cache preloading (according to order).
 
@@ -856,8 +853,7 @@ public class GridDhtPartitionDemander {
                 if (isDone())
                     return true;
 
-                U.log(log, "Cancelled rebalancing from all nodes [cache=" + cctx.name()
-                    + ", topology=" + topologyVersion() + ']');
+                U.log(log, "Cancelled rebalancing from all nodes [topology=" + topologyVersion() + ']');
 
                 if (!cctx.kernalContext().isStopping()) {
                     for (UUID nodeId : remaining.keySet())
@@ -888,7 +884,7 @@ public class GridDhtPartitionDemander {
 
                 remaining.remove(nodeId);
 
-                onDone(false); // Finishing rebalance future a non completed.
+                onDone(false); // Finishing rebalance future as non completed.
 
                 checkIsDone(); // But will finish syncFuture only when other nodes are preloaded or rebalancing cancelled.
             }
