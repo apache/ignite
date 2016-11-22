@@ -17,17 +17,19 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
- *
+ * Geo-indexing test for binary mode.
  */
-public class GridH2IndexingGeoBinarySelfTest extends GridH2IndexingGeoSelfTest {
+public class GridBinaryH2IndexingGeoSelfTest extends GridH2IndexingGeoSelfTest {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-    @Override protected void beforeTestsStarted() throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
+        cfg.setMarshaller(new BinaryMarshaller());
 
-        super.beforeTestsStarted();
+        return cfg;
     }
 }
