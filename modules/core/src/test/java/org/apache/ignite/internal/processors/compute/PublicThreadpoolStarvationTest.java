@@ -93,18 +93,6 @@ public class PublicThreadpoolStarvationTest extends GridCacheAbstractSelfTest {
         super.afterTestsStopped();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        awaitPartitionMapExchange();
-
-        super.afterTest();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-    }
-
     /**
      * @throws Exception If failed.
      */
