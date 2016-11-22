@@ -325,8 +325,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     return 0;
 
                 case UnmanagedCallbackOp.ComputeJobCreate:
-                    ComputeJobCreate(val);
-                    return 0;
+                    return ComputeJobCreate(val);
 
                 case UnmanagedCallbackOp.ComputeJobExecute:
                     ComputeJobExecute(val);
