@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
-    using System.IO;
     using System.Runtime.InteropServices;
     using System.Threading;
     using Apache.Ignite.Core.Cache.Affinity;
@@ -419,7 +418,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     }
                     catch (Exception e)
                     {
-                        stream.Seek(0, SeekOrigin.Begin);
+                        stream.Reset();
 
                         _ignite.Marshaller.StartMarshal(stream).WriteObject(e);
 
@@ -470,7 +469,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 {
                     var result = ReadAndRunCacheEntryProcessor(stream, _ignite);
 
-                    stream.Seek(0, SeekOrigin.Begin);
+                    stream.Reset();
 
                     result.Write(stream, _ignite.Marshaller);
 
@@ -612,6 +611,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     var job = Job(stream.ReadLong());
 
                     var cancel = stream.ReadBool();
+
+                    stream.Reset();
 
                     job.ExecuteRemote(stream, cancel);
                 }

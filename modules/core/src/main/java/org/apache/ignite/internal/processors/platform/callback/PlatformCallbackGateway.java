@@ -237,7 +237,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.computeTaskReduce(envPtr, taskPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ComputeTaskReduce, taskPtr);
         }
         finally {
             leave();
@@ -254,7 +254,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.computeTaskComplete(envPtr, taskPtr, memPtr);
+            PlatformCallbackUtils.inObjectStreamOutStream(envPtr,
+                PlatformCallbackOp.ComputeTaskComplete, taskPtr, memPtr, null);
         }
         finally {
             leave();
@@ -272,7 +273,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return PlatformCallbackUtils.computeJobSerialize(envPtr, jobPtr, memPtr);
+            return (int)PlatformCallbackUtils.inObjectStreamOutStream(envPtr,
+                PlatformCallbackOp.ComputeJobSerialize, jobPtr, memPtr, null);
         }
         finally {
             leave();
@@ -289,7 +291,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return PlatformCallbackUtils.computeJobCreate(envPtr, memPtr);
+            return PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ComputeJobCreate, memPtr);
         }
         finally {
             leave();
@@ -301,13 +303,29 @@ public class PlatformCallbackGateway {
      *
      * @param jobPtr Job pointer.
      * @param cancel Cancel flag.
-     * @param memPtr Memory pointer to write result to for remote job execution or {@code 0} for local job execution.
      */
-    public void computeJobExecute(long jobPtr, int cancel, long memPtr) {
+    public void computeJobExecuteLocal(long jobPtr, long cancel) {
         enter();
 
         try {
-            PlatformCallbackUtils.computeJobExecute(envPtr, jobPtr, cancel, memPtr);
+            PlatformCallbackUtils.inObjectStreamOutStream(envPtr,
+                PlatformCallbackOp.ComputeJobExecuteLocal, jobPtr, cancel, null);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Execute native job on a node other than where it was created.
+     *
+     * @param memPtr Memory pointer.
+     */
+    public void computeJobExecute(long memPtr) {
+        enter();
+
+        try {
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ComputeJobExecute, memPtr);
         }
         finally {
             leave();
@@ -323,7 +341,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.computeJobCancel(envPtr, jobPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ComputeJobCancel, jobPtr);
         }
         finally {
             leave();
@@ -339,7 +357,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.computeJobDestroy(envPtr, ptr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ComputeJobDestroy, ptr);
         }
         finally {
             leave();
@@ -801,7 +819,7 @@ public class PlatformCallbackGateway {
      * Initializes native service.
      *
      * @param memPtr Pointer.
-     * @throws org.apache.ignite.IgniteCheckedException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public long serviceInit(long memPtr) throws IgniteCheckedException {
         enter();
@@ -819,7 +837,7 @@ public class PlatformCallbackGateway {
      *
      * @param svcPtr Pointer to the service in the native platform.
      * @param memPtr Stream pointer.
-     * @throws org.apache.ignite.IgniteCheckedException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public void serviceExecute(long svcPtr, long memPtr) throws IgniteCheckedException {
         enter();
@@ -837,7 +855,7 @@ public class PlatformCallbackGateway {
      *
      * @param svcPtr Pointer to the service in the native platform.
      * @param memPtr Stream pointer.
-     * @throws org.apache.ignite.IgniteCheckedException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public void serviceCancel(long svcPtr, long memPtr) throws IgniteCheckedException {
         enter();
@@ -856,7 +874,7 @@ public class PlatformCallbackGateway {
      * @param svcPtr Pointer to the service in the native platform.
      * @param outMemPtr Output memory pointer.
      * @param inMemPtr Input memory pointer.
-     * @throws org.apache.ignite.IgniteCheckedException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public void serviceInvokeMethod(long svcPtr, long outMemPtr, long inMemPtr) throws IgniteCheckedException {
         enter();
@@ -1109,7 +1127,7 @@ public class PlatformCallbackGateway {
     /**
      * Enter gateway.
      */
-    protected boolean tryEnter() {
+    private boolean tryEnter() {
         return lock.enterBusy();
     }
 

@@ -209,4 +209,7 @@ class PlatformCallbackOp {
 
     /** */
     public static final int ComputeTaskLocalJobResult = 63;
+
+    /** */
+    public static final int ComputeJobExecuteLocal = 64;
 }
