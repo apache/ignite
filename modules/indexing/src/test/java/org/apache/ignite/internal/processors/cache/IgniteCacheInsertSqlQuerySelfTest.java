@@ -71,7 +71,7 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
         IgniteCache p = ignite(0).cache("S2P").withKeepBinary();
 
         p.query(new SqlFieldsQuery("insert into String (_key, _val) values ('s', ?), " +
-            "('a', ?)").setArgs("Sergi", "Alex"));
+            "('a', ?)").setArgs("Sergi", "Alex").setLocal(true));
 
         assertEquals("Sergi", p.get("s"));
         assertEquals("Alex", p.get("a"));

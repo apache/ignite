@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,6 +38,7 @@ import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryArrayIdentityResolver;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -50,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
@@ -69,6 +69,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.command.Prepared;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.table.Column;
@@ -116,12 +117,13 @@ public class DmlStatementsProcessor {
      * @param stmt JDBC statement.
      * @param fieldsQry Original query.
      * @param loc Query locality flag.
+     * @param filters Space name and key filter.
      * @param cancel Cancel.
      * @return Update result (modified items count and failed keys).
      * @throws IgniteCheckedException if failed.
      */
     private long updateSqlFields(String spaceName, PreparedStatement stmt, SqlFieldsQuery fieldsQry,
-        boolean loc, GridQueryCancel cancel) throws IgniteCheckedException {
+        boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel) throws IgniteCheckedException {
         Object[] errKeys = null;
 
         long items = 0;
@@ -129,8 +131,8 @@ public class DmlStatementsProcessor {
         UpdatePlan plan = getPlanForStatement(spaceName, stmt, null);
 
         for (int i = 0; i < DFLT_DML_RERUN_ATTEMPTS; i++) {
-            UpdateResult r = executeUpdateStatement(plan.tbl.rowDescriptor().context(), stmt, fieldsQry, loc, cancel,
-                errKeys);
+            UpdateResult r = executeUpdateStatement(plan.tbl.rowDescriptor().context(), stmt, fieldsQry, loc, filters,
+                cancel, errKeys);
 
             if (F.isEmpty(r.errKeys))
                 return r.cnt + items;
@@ -155,7 +157,7 @@ public class DmlStatementsProcessor {
     @SuppressWarnings("unchecked")
     QueryCursorImpl<List<?>> updateSqlFieldsTwoStep(String spaceName, PreparedStatement stmt,
         SqlFieldsQuery fieldsQry, GridQueryCancel cancel) throws IgniteCheckedException {
-        long res = updateSqlFields(spaceName, stmt, fieldsQry, false, cancel);
+        long res = updateSqlFields(spaceName, stmt, fieldsQry, false, null, cancel);
 
         return cursorForUpdateResult(res);
     }
@@ -164,14 +166,15 @@ public class DmlStatementsProcessor {
      * Execute DML statement on local cache.
      * @param spaceName Space name.
      * @param stmt Prepared statement.
+     * @param filters Space name and key filter.
      * @param cancel Query cancel.
      * @return Update result wrapped into {@link GridQueryFieldsResult}
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
     GridQueryFieldsResult updateLocalSqlFields(String spaceName, PreparedStatement stmt,
-        SqlFieldsQuery fieldsQry, GridQueryCancel cancel) throws IgniteCheckedException {
-        long res = updateSqlFields(spaceName, stmt, fieldsQry, true, cancel);
+        SqlFieldsQuery fieldsQry, IndexingQueryFilter filters, GridQueryCancel cancel) throws IgniteCheckedException {
+        long res = updateSqlFields(spaceName, stmt, fieldsQry, true, filters, cancel);
 
         return new GridQueryFieldsResultAdapter(UPDATE_RESULT_META,
             new IgniteSingletonIterator(Collections.singletonList(res)));
@@ -181,13 +184,15 @@ public class DmlStatementsProcessor {
      * Actually perform SQL DML operation locally.
      * @param cctx Cache context.
      * @param prepStmt Prepared statement for DML query.
+     * @param filters Space name and key filter.
      * @param failedKeys Keys to restrict UPDATE and DELETE operations with. Null or empty array means no restriction.
      * @return Pair [number of successfully processed items; keys that have failed to be processed]
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("ConstantConditions")
-    private UpdateResult executeUpdateStatement(GridCacheContext cctx, PreparedStatement prepStmt,
-        SqlFieldsQuery fieldsQry, boolean loc, GridQueryCancel cancel, Object[] failedKeys) throws IgniteCheckedException {
+    private UpdateResult executeUpdateStatement(final GridCacheContext cctx, PreparedStatement prepStmt,
+        SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel, Object[] failedKeys)
+        throws IgniteCheckedException {
         Integer errKeysPos = null;
 
         if (!F.isEmpty(failedKeys))
@@ -221,23 +226,21 @@ public class DmlStatementsProcessor {
             cur = (QueryCursorImpl<List<?>>) indexing.queryTwoStep(cctx, newFieldsQry, cancel);
         }
         else {
-            Connection conn = indexing.connectionForSpace(cctx.name());
+            final GridQueryFieldsResult res = indexing.queryLocalSqlFields(cctx.name(), plan.selectQry, F.asList(params),
+                filters, fieldsQry.isEnforceJoinOrder(), fieldsQry.getTimeout(), cancel);
 
-            ResultSet rs = indexing.executeSqlQueryWithTimer(cctx.name(), conn, plan.selectQry, F.asList(params),
-                true, fieldsQry.getTimeout(), cancel);
-
-            final Iterator<List<?>> rsIter = new IgniteH2Indexing.FieldsIterator(rs);
-
-            Iterable<List<?>> it = new Iterable<List<?>>() {
-                /**
-                 * {@inheritDoc}
-                 */
+            cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
-                    return rsIter;
+                    try {
+                        return new GridQueryCacheObjectsIterator(res.iterator(), cctx, cctx.keepBinary());
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
                 }
-            };
+            }, cancel);
 
-            cur = new QueryCursorImpl<>(it);
+            cur.fieldsMeta(res.metaData());
         }
 
         int pageSize = loc ? 0 : fieldsQry.getPageSize();

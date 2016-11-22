@@ -108,7 +108,7 @@ public final class UpdatePlan {
 
     /** */
     public static UpdatePlan forDelete(GridH2Table tbl, String selectQry) {
-        return new UpdatePlan(UpdateMode.DELETE, tbl, null, null, null, -1, -1, selectQry, true, 0, null);
+        return new UpdatePlan(UpdateMode.DELETE, tbl, null, null, null, -1, -1, selectQry, false, 0, null);
     }
 
     /** */

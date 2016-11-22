@@ -796,13 +796,26 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         initLocalQueryContext(conn, enforceJoinOrder, filters);
 
+        Prepared p = null;
+
         try {
             final PreparedStatement stmt = preparedStatementWithParams(conn, qry, params, true);
 
-            Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement) stmt);
+            p = GridSqlQueryParser.prepared((JdbcPreparedStatement) stmt);
 
-            if (!p.isQuery())
-                return dmlProc.updateLocalSqlFields(spaceName, stmt, new SqlFieldsQuery(qry), cancel);
+            if (!p.isQuery()) {
+                GridH2QueryContext.clearThreadLocal();
+
+                SqlFieldsQuery fldsQry = new SqlFieldsQuery(qry);
+
+                if (params != null)
+                    fldsQry.setArgs(params.toArray());
+
+                fldsQry.setEnforceJoinOrder(enforceJoinOrder);
+                fldsQry.setTimeout(timeout, TimeUnit.MILLISECONDS);
+
+                return dmlProc.updateLocalSqlFields(spaceName, stmt, fldsQry, filters, cancel);
+            }
 
             List<GridQueryFieldMetadata> meta;
 
@@ -822,7 +835,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             };
         }
         finally {
-            GridH2QueryContext.clearThreadLocal();
+            if (p == null || p.isQuery())
+                GridH2QueryContext.clearThreadLocal();
         }
     }
 
@@ -897,16 +911,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         catch (SQLException e) {
             throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
-        }
-
-        switch (commandType(stmt)) {
-            case CommandInterface.SELECT:
-            case CommandInterface.CALL:
-            case CommandInterface.EXPLAIN:
-            case CommandInterface.ANALYZE:
-                break;
-            default:
-                throw new IgniteCheckedException("Failed to execute non-query SQL statement: " + sql);
         }
 
         bindParameters(stmt, params);

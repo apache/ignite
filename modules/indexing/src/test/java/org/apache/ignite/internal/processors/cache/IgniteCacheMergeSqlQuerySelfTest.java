@@ -47,7 +47,7 @@ public class IgniteCacheMergeSqlQuerySelfTest extends IgniteCacheAbstractInsertS
         IgniteCache p = ignite(0).cache("S2P").withKeepBinary();
 
         p.query(new SqlFieldsQuery("merge into String (_key, _val) values ('s', ?), " +
-            "('a', ?)").setArgs("Sergi", "Alex"));
+            "('a', ?)").setArgs("Sergi", "Alex").setLocal(true));
 
         assertEquals("Sergi", p.get("s"));
         assertEquals("Alex", p.get("a"));
