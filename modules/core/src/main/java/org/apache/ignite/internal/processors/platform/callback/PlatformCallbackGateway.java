@@ -203,7 +203,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return (int)PlatformCallbackUtils.inObjectStreamOutStream(envPtr,
+            return (int)PlatformCallbackUtils.inLongLongObjectOutLong(envPtr,
                 PlatformCallbackOp.ComputeTaskLocalJobResult, taskPtr, jobPtr, null);
         }
         finally {
@@ -254,7 +254,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.inObjectStreamOutStream(envPtr,
+            PlatformCallbackUtils.inLongLongObjectOutLong(envPtr,
                 PlatformCallbackOp.ComputeTaskComplete, taskPtr, memPtr, null);
         }
         finally {
@@ -273,7 +273,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return (int)PlatformCallbackUtils.inObjectStreamOutStream(envPtr,
+            return (int)PlatformCallbackUtils.inLongLongObjectOutLong(envPtr,
                 PlatformCallbackOp.ComputeJobSerialize, jobPtr, memPtr, null);
         }
         finally {
@@ -308,7 +308,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.inObjectStreamOutStream(envPtr,
+            PlatformCallbackUtils.inLongLongObjectOutLong(envPtr,
                 PlatformCallbackOp.ComputeJobExecuteLocal, jobPtr, cancel, null);
         }
         finally {
@@ -1028,7 +1028,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return PlatformCallbackUtils.inObjectStreamOutStream(envPtr, PlatformCallbackOp.AffinityFunctionInit,
+            return PlatformCallbackUtils.inLongLongObjectOutLong(envPtr, PlatformCallbackOp.AffinityFunctionInit,
                 memPtr, 0, baseFunc);
         }
         finally {
