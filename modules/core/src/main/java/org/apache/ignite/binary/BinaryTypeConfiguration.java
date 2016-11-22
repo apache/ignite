@@ -21,6 +21,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 
 /**
  * Defines configuration properties for a specific binary type. Providing per-type
@@ -44,6 +45,9 @@ public class BinaryTypeConfiguration {
 
     /** Enum flag. */
     private boolean isEnum;
+
+    /** Force to use {@link OptimizedMarshaller}. */
+    private boolean useOptmMarsh;
 
     /**
      * Constructor.
@@ -161,6 +165,25 @@ public class BinaryTypeConfiguration {
      */
     public void setEnum(boolean isEnum) {
         this.isEnum = isEnum;
+    }
+
+    /**
+     * Gets whether use {@link OptimizedMarshaller}.
+     *
+     * @return {@code True} if use {@link OptimizedMarshaller}.
+     */
+    public boolean isUseOptimizedMarshaller() {
+        return useOptmMarsh;
+    }
+
+    /**
+     * Sets {@link OptimizedMarshaller} for this type.
+     *
+     * @param useOptmMarsh If {@code true} than for serialization will be used {@link OptimizedMarshaller} otherwise
+     *      default marshaller.
+     */
+    public void setUseOptimizedMarshaller(boolean useOptmMarsh) {
+        this.useOptmMarsh = useOptmMarsh;
     }
 
     /** {@inheritDoc} */

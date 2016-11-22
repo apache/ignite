@@ -2157,6 +2157,32 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testBinaryUseOptimizedMarshaller() throws Exception {
+        BinaryTypeConfiguration btypeCfg = new BinaryTypeConfiguration(TestClass0.class.getName());
+
+        btypeCfg.setUseOptimizedMarshaller(true);
+
+        BinaryMarshaller marsh = binaryMarshaller(Collections.singletonList(
+            btypeCfg
+        ));
+
+        TestClass0 obj = new TestClass0();
+
+        obj.intVal = 42;
+        obj.strVal = "42";
+
+        byte[] bytes = marsh.marshal(obj);
+
+        TestClass0 obj0 = marsh.unmarshal(bytes, null);
+
+        assertNotNull(obj0);
+        assertEquals(obj.intVal, obj0.intVal);
+        assertEquals(obj.strVal, obj0.strVal);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testBinaryCopyIntArray() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())

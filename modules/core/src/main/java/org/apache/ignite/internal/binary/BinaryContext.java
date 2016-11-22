@@ -456,16 +456,17 @@ public class BinaryContext {
 
                     for (String clsName0 : classesInPackage(pkgName))
                         descs.add(clsName0, mapper, serializer, affFields.get(clsName0),
-                            typeCfg.isEnum(), true);
+                            typeCfg.isEnum(), true, typeCfg.isUseOptimizedMarshaller());
                 }
                 else
                     descs.add(clsName, mapper, serializer, affFields.get(clsName),
-                        typeCfg.isEnum(), false);
+                        typeCfg.isEnum(), false, typeCfg.isUseOptimizedMarshaller());
             }
         }
 
         for (TypeDescriptor desc : descs.descriptors())
-            registerUserType(desc.clsName, desc.mapper, desc.serializer, desc.affKeyFieldName, desc.isEnum);
+            registerUserType(desc.clsName, desc.mapper, desc.serializer, desc.affKeyFieldName, desc.isEnum,
+                desc.useOptmMarsh);
 
         BinaryInternalMapper globalMapper = resolveMapper(globalNameMapper, globalIdMapper);
 
@@ -1088,6 +1089,7 @@ public class BinaryContext {
      * @param serializer Serializer.
      * @param affKeyFieldName Affinity key field name.
      * @param isEnum If enum.
+     * @param useOptmMarsh Force to use optimize marshller.
      * @throws BinaryObjectException In case of error.
      */
     @SuppressWarnings("ErrorNotRethrown")
@@ -1095,7 +1097,8 @@ public class BinaryContext {
         BinaryInternalMapper mapper,
         @Nullable BinarySerializer serializer,
         @Nullable String affKeyFieldName,
-        boolean isEnum)
+        boolean isEnum,
+        boolean useOptmMarsh)
         throws BinaryObjectException {
         assert mapper != null;
 
@@ -1129,7 +1132,7 @@ public class BinaryContext {
         Map<String, Integer> fieldsMeta = null;
 
         if (cls != null) {
-            if (serializer == null) {
+            if (serializer == null && !useOptmMarsh) {
                 // At this point we must decide whether to rely on Java serialization mechanics or not.
                 // If no serializer is provided, we examine the class and if it doesn't contain non-trivial
                 // serialization logic we are safe to fallback to reflective binary serialization.
@@ -1145,7 +1148,7 @@ public class BinaryContext {
                 typeName,
                 affKeyFieldName,
                 mapper,
-                serializer,
+                useOptmMarsh ? null : serializer, // force to use optimized marshaller
                 true,
                 true
             );
@@ -1325,14 +1328,16 @@ public class BinaryContext {
             BinarySerializer serializer,
             String affKeyFieldName,
             boolean isEnum,
-            boolean canOverride)
+            boolean canOverride,
+            boolean useOptmMarsh)
             throws BinaryObjectException {
             TypeDescriptor desc = new TypeDescriptor(clsName,
                 mapper,
                 serializer,
                 affKeyFieldName,
                 isEnum,
-                canOverride);
+                canOverride,
+                useOptmMarsh);
 
             TypeDescriptor oldDesc = descs.get(clsName);
 
@@ -1374,6 +1379,9 @@ public class BinaryContext {
         /** Whether this descriptor can be override. */
         private boolean canOverride;
 
+        /** Force to using optimized marshaller. */
+        private boolean useOptmMarsh;
+
         /**
          * Constructor.
          *
@@ -1383,15 +1391,22 @@ public class BinaryContext {
          * @param affKeyFieldName Affinity key field name.
          * @param isEnum Enum type.
          * @param canOverride Whether this descriptor can be override.
+         * @param useOptmMarsh Using optimised marshaller.
          */
-        private TypeDescriptor(String clsName, BinaryInternalMapper mapper,
-            BinarySerializer serializer, String affKeyFieldName, boolean isEnum, boolean canOverride) {
+        private TypeDescriptor(String clsName,
+            BinaryInternalMapper mapper,
+            BinarySerializer serializer,
+            String affKeyFieldName,
+            boolean isEnum,
+            boolean canOverride,
+            boolean useOptmMarsh) {
             this.clsName = clsName;
             this.mapper = mapper;
             this.serializer = serializer;
             this.affKeyFieldName = affKeyFieldName;
             this.isEnum = isEnum;
             this.canOverride = canOverride;
+            this.useOptmMarsh = useOptmMarsh;
         }
 
         /**
