@@ -2594,19 +2594,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 if (ctx.config().isClientMode()) {
                     AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
 
-                    ClusterNode crd = ctx.discovery().serverNodes(topVer).get(0);
+                    List<ClusterNode> nodes = ctx.discovery().serverNodes(topVer);
+
+                    ClusterNode crd = nodes.get(0);
+
+                    assert crd != null;
 
                     IgniteCompute c = ((ClusterGroupAdapter)ctx.cluster().get().forNode(crd))
                         .compute().withAsync();
 
-                    c.run(new IgniteRunnable() {
-                        @IgniteInstanceResource
-                        private Ignite ignite;
-
-                        @Override public void run() {
-                            ignite.active(true);
-                        }
-                    });
+                    c.run(new ClientActivationRequestCompute());
 
                     c.future().listen(new CI1<IgniteFuture>() {
                         @Override public void apply(IgniteFuture fut) {
@@ -4352,6 +4349,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(GridActivateFuture.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class ClientActivationRequestCompute implements IgniteRunnable{
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Ignite. */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            ignite.active(true);
         }
     }
 }
