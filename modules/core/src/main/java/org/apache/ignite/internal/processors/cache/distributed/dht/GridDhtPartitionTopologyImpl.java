@@ -41,6 +41,7 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignment;
+import org.apache.ignite.internal.processors.cache.CacheState;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
@@ -489,7 +490,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         DiscoveryEvent discoEvt = exchFut.discoveryEvent();
 
         treatAllPartitionAsLocal = exchFut.activateCluster()
-            || (cctx.kernalContext().cache().globalState() == org.apache.ignite.internal.processors.cache.CacheState.ACTIVE
+            || (cctx.kernalContext().cache().globalState() == CacheState.ACTIVE
             && discoEvt.type() == EventType.EVT_NODE_JOINED
             && discoEvt.eventNode().isLocal()
             && !cctx.kernalContext().clientNode()
@@ -497,6 +498,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
         // Wait for rent outside of checkpoint lock.
         waitForRent();
+
+        cctx.shared().database().waitForCheckpoint("exchange");
 
         ClusterNode loc = cctx.localNode();
 
