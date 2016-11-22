@@ -42,6 +42,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -77,6 +78,8 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
+
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setCacheMode(PARTITIONED);
@@ -95,7 +98,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
         else
             cfg.setCacheConfiguration(ccfg);
 
-        if (!configured)
+        if (!configured) {
             ccfg.setNodeFilter(new P1<ClusterNode>() {
                 @Override public boolean apply(ClusterNode node) {
                     String name = node.attribute(ATTR_GRID_NAME).toString();
@@ -103,6 +106,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
                     return !getTestGridName(0).equals(name);
                 }
             });
+        }
 
         return cfg;
     }
