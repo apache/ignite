@@ -107,8 +107,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Operation: prepare .Net. */
         private const int OpPrepareDotNet = 1;
 
-        private delegate void CacheInvokeCallbackDelegate(void* target, long inMemPtr, long outMemPtr);
-
         private delegate void ComputeTaskMapCallbackDelegate(void* target, long taskPtr, long inMemPtr, long outMemPtr);
         private delegate int ComputeTaskJobResultCallbackDelegate(void* target, long taskPtr, long jobPtr, long memPtr);
         private delegate void ComputeTaskReduceCallbackDelegate(void* target, long taskPtr);
@@ -207,8 +205,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             var cbs = new UnmanagedCallbackHandlers
             {
                 target = IntPtr.Zero.ToPointer(), // Target is not used in .Net as we rely on dynamic FP creation.
-
-                cacheInvoke = CreateFunctionPointer((CacheInvokeCallbackDelegate) CacheInvoke),
 
                 computeTaskMap = CreateFunctionPointer((ComputeTaskMapCallbackDelegate) ComputeTaskMap),
                 computeTaskJobResult =
@@ -334,6 +330,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     CacheEntryFilterDestroy(val);
                     return 0;
 
+                case UnmanagedCallbackOp.CacheInvoke:
+                    CacheInvoke(val);
+                    return 0;
+
                 default:
                     throw new InvalidOperationException("Invalid callback code: " + type);
             }
@@ -439,20 +439,19 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             SafeCall(() => _ignite.HandleRegistry.Release(objPtr));
         }
 
-        private void CacheInvoke(void* target, long inMemPtr, long outMemPtr)
+        private void CacheInvoke(long memPtr)
         {
             SafeCall(() =>
             {
-                using (PlatformMemoryStream inStream = IgniteManager.Memory.Get(inMemPtr).GetStream())
+                using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
-                    var result = ReadAndRunCacheEntryProcessor(inStream, _ignite);
+                    var result = ReadAndRunCacheEntryProcessor(stream, _ignite);
 
-                    using (PlatformMemoryStream outStream = IgniteManager.Memory.Get(outMemPtr).GetStream())
-                    {
-                        result.Write(outStream, _ignite.Marshaller);
+                    stream.Seek(0, SeekOrigin.Begin);
 
-                        outStream.SynchronizeOutput();
-                    }
+                    result.Write(stream, _ignite.Marshaller);
+
+                    stream.SynchronizeOutput();
                 }
             });
         }

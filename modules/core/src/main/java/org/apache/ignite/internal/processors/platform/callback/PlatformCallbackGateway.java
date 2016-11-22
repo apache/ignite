@@ -163,14 +163,13 @@ public class PlatformCallbackGateway {
     /**
      * Invoke cache entry processor.
      *
-     * @param outMemPtr Output memory pointer.
-     * @param inMemPtr Input memory pointer.
+     * @param memPtr Memory pointer.
      */
-    public void cacheInvoke(long outMemPtr, long inMemPtr) {
+    public void cacheInvoke(long memPtr) {
         enter();
 
         try {
-            PlatformCallbackUtils.cacheInvoke(envPtr, outMemPtr, inMemPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.CacheInvoke, memPtr);
         }
         finally {
             leave();
