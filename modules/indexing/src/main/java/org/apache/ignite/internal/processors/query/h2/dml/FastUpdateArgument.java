@@ -22,6 +22,6 @@ import org.apache.ignite.internal.util.lang.GridPlainClosure;
 /**
  * Operand for fast UPDATE or DELETE (single item operation that does not involve any SELECT).
  */
-public interface FastUpdateOperand extends GridPlainClosure<Object[], Object> {
+public interface FastUpdateArgument extends GridPlainClosure<Object[], Object> {
     // No-op.
 }

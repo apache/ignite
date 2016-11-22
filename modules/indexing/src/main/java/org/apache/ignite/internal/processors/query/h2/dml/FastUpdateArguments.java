@@ -22,19 +22,19 @@ import org.apache.ignite.IgniteCheckedException;
 /**
  * Arguments for fast, query-less UPDATE or DELETE - key and, optionally, value and new value.
  */
-public final class FastUpdateArgs {
+public final class FastUpdateArguments {
     /** Operand to compute key. */
-    public final FastUpdateOperand key;
+    public final FastUpdateArgument key;
 
     /** Operand to compute value. */
-    public final FastUpdateOperand val;
+    public final FastUpdateArgument val;
 
     /** Operand to compute new value. */
-    public final FastUpdateOperand newVal;
+    public final FastUpdateArgument newVal;
 
     /** */
-    public FastUpdateArgs(FastUpdateOperand key, FastUpdateOperand val, FastUpdateOperand newVal) {
-        assert key != null && key != NULL_OPERAND;
+    public FastUpdateArguments(FastUpdateArgument key, FastUpdateArgument val, FastUpdateArgument newVal) {
+        assert key != null && key != NULL_ARGUMENT;
         assert val != null;
         assert newVal != null;
 
@@ -44,7 +44,7 @@ public final class FastUpdateArgs {
     }
 
     /** Operand that always evaluates as {@code null}. */
-    public final static FastUpdateOperand NULL_OPERAND = new FastUpdateOperand() {
+    public final static FastUpdateArgument NULL_ARGUMENT = new FastUpdateArgument() {
         /** {@inheritDoc} */
         @Override public Object apply(Object[] arg) throws IgniteCheckedException {
             return null;

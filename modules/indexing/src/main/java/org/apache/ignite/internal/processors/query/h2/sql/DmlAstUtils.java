@@ -25,7 +25,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArgs;
+import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArguments;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -47,7 +47,7 @@ import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueTimestampUtc;
 import org.jetbrains.annotations.Nullable;
 
-import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateOperand;
+import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArgument;
 
 /**
  * AST utils for DML
@@ -170,7 +170,7 @@ public final class DmlAstUtils {
      * @return {@code null} if given statement directly updates {@code _val} column with a literal or param value
      * and filters by single non expression key (and, optionally,  by single non expression value).
      */
-    public static FastUpdateArgs getFastUpdateArgs(GridSqlUpdate update) {
+    public static FastUpdateArguments getFastUpdateArgs(GridSqlUpdate update) {
         IgnitePair<GridSqlElement> filter = findKeyValueEqualityCondition(update.where());
 
         if (filter == null)
@@ -185,7 +185,7 @@ public final class DmlAstUtils {
         if (!(set instanceof GridSqlConst || set instanceof GridSqlParameter))
             return null;
 
-        return new FastUpdateArgs(operandForElement(filter.getKey()), operandForElement(filter.getValue()),
+        return new FastUpdateArguments(operandForElement(filter.getKey()), operandForElement(filter.getValue()),
             operandForElement(set));
     }
 
@@ -195,30 +195,30 @@ public final class DmlAstUtils {
      * @param el element.
      * @return Operand.
      */
-    private static FastUpdateOperand operandForElement(GridSqlElement el) {
+    private static FastUpdateArgument operandForElement(GridSqlElement el) {
         assert el == null ^ (el instanceof GridSqlConst || el instanceof GridSqlParameter);
 
         if (el == null)
-            return FastUpdateArgs.NULL_OPERAND;
+            return FastUpdateArguments.NULL_ARGUMENT;
 
         if (el instanceof GridSqlConst)
-            return new ValueOperand(((GridSqlConst)el).value().getObject());
+            return new ValueArgument(((GridSqlConst)el).value().getObject());
         else
-            return new ParamOperand(((GridSqlParameter)el).index());
+            return new ParamArgument(((GridSqlParameter)el).index());
     }
 
     /**
      * @param del DELETE statement.
      * @return {@code true} if given statement filters by single non expression key.
      */
-    public static FastUpdateArgs getFastDeleteArgs(GridSqlDelete del) {
+    public static FastUpdateArguments getFastDeleteArgs(GridSqlDelete del) {
         IgnitePair<GridSqlElement> filter = findKeyValueEqualityCondition(del.where());
 
         if (filter == null)
             return null;
 
-        return new FastUpdateArgs(operandForElement(filter.getKey()), operandForElement(filter.getValue()),
-            FastUpdateArgs.NULL_OPERAND);
+        return new FastUpdateArguments(operandForElement(filter.getKey()), operandForElement(filter.getValue()),
+            FastUpdateArguments.NULL_ARGUMENT);
     }
 
     /**
@@ -562,12 +562,12 @@ public final class DmlAstUtils {
     }
 
     /** Simple constant value based operand. */
-    private final static class ValueOperand implements FastUpdateOperand {
+    private final static class ValueArgument implements FastUpdateArgument {
         /** Value to return. */
         private final Object val;
 
         /** */
-        private ValueOperand(Object val) {
+        private ValueArgument(Object val) {
             this.val = val;
         }
 
@@ -578,12 +578,12 @@ public final class DmlAstUtils {
     }
 
     /** Simple constant value based operand. */
-    private final static class ParamOperand implements FastUpdateOperand {
+    private final static class ParamArgument implements FastUpdateArgument {
         /** Value to return. */
         private final int paramIdx;
 
         /** */
-        private ParamOperand(int paramIdx) {
+        private ParamArgument(int paramIdx) {
             assert paramIdx >= 0;
 
             this.paramIdx = paramIdx;

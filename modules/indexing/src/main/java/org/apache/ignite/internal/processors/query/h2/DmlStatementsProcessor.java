@@ -56,7 +56,7 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArgs;
+import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArguments;
 import org.apache.ignite.internal.processors.query.h2.dml.KeyValueSupplier;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
@@ -209,7 +209,7 @@ public class DmlStatementsProcessor {
 
         // Do a two-step query only if locality flag is not set AND if plan's SELECT corresponds to an actual
         // subquery and not some dummy stuff like "select 1, 2, 3;"
-        if (!loc && plan.isRealSubqry) {
+        if (!loc && !plan.isLocSubqry) {
             SqlFieldsQuery newFieldsQry = new SqlFieldsQuery(plan.selectQry, fieldsQry.isCollocated())
                 .setArgs(params)
                 .setDistributedJoins(fieldsQry.isDistributedJoins())
@@ -309,7 +309,7 @@ public class DmlStatementsProcessor {
     private static long doSingleUpdate(UpdatePlan plan, Object[] params) throws IgniteCheckedException {
         GridCacheContext cctx = plan.tbl.rowDescriptor().context();
 
-        FastUpdateArgs singleUpdate = plan.fastUpdateArgs;
+        FastUpdateArguments singleUpdate = plan.fastUpdateArgs;
 
         assert singleUpdate != null;
 
@@ -702,7 +702,7 @@ public class DmlStatementsProcessor {
                     cctx.operationContextPerCall(newOpCtx);
             }
 
-            Map<Object, EntryProcessor<Object, Object, Boolean>> rows = !plan.isRealSubqry ?
+            Map<Object, EntryProcessor<Object, Object, Boolean>> rows = plan.isLocSubqry ?
                 new LinkedHashMap<Object, EntryProcessor<Object, Object, Boolean>>(plan.rowsNum) :
                 new LinkedHashMap<Object, EntryProcessor<Object, Object, Boolean>>();
 

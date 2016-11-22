@@ -99,7 +99,7 @@ public final class UpdatePlanBuilder {
 
         GridSqlColumn[] cols;
 
-        boolean isSubqry;
+        boolean isTableSubqry;
 
         int rowsNum;
 
@@ -116,8 +116,8 @@ public final class UpdatePlanBuilder {
 
             cols = ins.columns();
             sel = DmlAstUtils.selectForInsertOrMerge(cols, ins.rows(), ins.query(), desc);
-            isSubqry = (ins.query() != null);
-            rowsNum = isSubqry ? 0 : ins.rows().size();
+            isTableSubqry = (ins.query() != null);
+            rowsNum = isTableSubqry ? 0 : ins.rows().size();
         }
         else if (stmt instanceof GridSqlMerge) {
             GridSqlMerge merge = (GridSqlMerge) stmt;
@@ -137,14 +137,14 @@ public final class UpdatePlanBuilder {
 
             cols = merge.columns();
             sel = DmlAstUtils.selectForInsertOrMerge(cols, merge.rows(), merge.query(), desc);
-            isSubqry = (merge.query() != null);
-            rowsNum = isSubqry ? 0 : merge.rows().size();
+            isTableSubqry = (merge.query() != null);
+            rowsNum = isTableSubqry ? 0 : merge.rows().size();
         }
         else throw new IgniteSQLException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
                 IgniteQueryErrorCode.UNEXPECTED_OPERATION);
 
         // Let's set the flag only for subqueries that have their FROM specified.
-        isSubqry = (isSubqry && (sel instanceof GridSqlUnion ||
+        isTableSubqry = (isTableSubqry && (sel instanceof GridSqlUnion ||
             (sel instanceof GridSqlSelect && ((GridSqlSelect) sel).from() != null)));
 
         int keyColIdx = -1;
@@ -189,10 +189,10 @@ public final class UpdatePlanBuilder {
 
         if (stmt instanceof GridSqlMerge)
             return UpdatePlan.forMerge(tbl.dataTable(), colNames, keySupplier, valSupplier, keyColIdx, valColIdx,
-                sel.getSQL(), isSubqry, rowsNum);
+                sel.getSQL(), !isTableSubqry, rowsNum);
         else
             return UpdatePlan.forInsert(tbl.dataTable(), colNames, keySupplier, valSupplier, keyColIdx, valColIdx,
-                sel.getSQL(), isSubqry, rowsNum);
+                sel.getSQL(), !isTableSubqry, rowsNum);
     }
 
     /**
@@ -206,7 +206,7 @@ public final class UpdatePlanBuilder {
     private static UpdatePlan planForUpdate(GridSqlStatement stmt, @Nullable Integer errKeysPos) throws IgniteCheckedException {
         GridSqlElement target;
 
-        FastUpdateArgs fastUpdate;
+        FastUpdateArguments fastUpdate;
 
         UpdateMode mode;
 
