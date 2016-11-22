@@ -30,10 +30,12 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheE
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -100,11 +102,11 @@ class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture 
         GridCacheVersion writeVer,
         CacheWriteSynchronizationMode syncMode,
         @NotNull AffinityTopologyVersion topVer,
-        boolean forceTransformBackups
+        long ttl,
+        long conflictExpireTime,
+        @Nullable GridCacheVersion conflictVer
     ) {
-        if (canUseSingleRequest(node)) {
-            assert !forceTransformBackups;
-
+        if (canUseSingleRequest(node, ttl, conflictExpireTime, conflictVer)) {
             return new GridDhtAtomicSingleUpdateRequest(
                 cctx.cacheId(),
                 node.id(),
@@ -126,10 +128,10 @@ class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture 
                 writeVer,
                 syncMode,
                 topVer,
-                forceTransformBackups,
+                false,
                 updateReq.subjectId(),
                 updateReq.taskNameHash(),
-                forceTransformBackups ? updateReq.invokeArguments() : null,
+                null,
                 cctx.deploymentEnabled(),
                 updateReq.keepBinary(),
                 updateReq.skipStore());
@@ -166,13 +168,19 @@ class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture 
 
     /**
      * @param node Target node
-     * @return {@code true} if target node supports {@link GridNearAtomicSingleUpdateRequest}
+     * @param ttl TTL.
+     * @param conflictExpireTime Conflict expire time.
+     * @param conflictVer Conflict version.
+     * @return {@code True} if it is possible to use {@link GridDhtAtomicSingleUpdateRequest}.
      */
-    private boolean canUseSingleRequest(ClusterNode node) {
+    private boolean canUseSingleRequest(ClusterNode node,
+        long ttl,
+        long conflictExpireTime,
+        @Nullable GridCacheVersion conflictVer) {
         return node.version().compareToIgnoreTimestamp(SINGLE_UPDATE_REQUEST) >= 0 &&
-            cctx.expiry() == null &&
-            updateReq.expiry() == null &&
-            !updateReq.hasConflictData();
+            (ttl == CU.TTL_NOT_CHANGED) &&
+            (conflictExpireTime == CU.EXPIRE_TIME_CALCULATE) &&
+            conflictVer == null;
     }
 
     /** {@inheritDoc} */

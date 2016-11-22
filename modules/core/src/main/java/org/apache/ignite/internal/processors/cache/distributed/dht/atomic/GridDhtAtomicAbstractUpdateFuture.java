@@ -86,9 +86,6 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
     /** Update response. */
     final GridNearAtomicUpdateResponse updateRes;
 
-    /** Force transform backup flag. */
-    private boolean forceTransformBackups;
-
     /** Mappings. */
     @GridToStringInclude
     protected Map<UUID, GridDhtAtomicAbstractUpdateRequest> mappings;
@@ -198,7 +195,9 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
                         writeVer,
                         syncMode,
                         topVer,
-                        forceTransformBackups);
+                        ttl,
+                        conflictExpireTime,
+                        conflictVer);
 
                     mappings.put(nodeId, updateReq);
                 }
@@ -265,7 +264,9 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
                     writeVer,
                     syncMode,
                     topVer,
-                    forceTransformBackups);
+                    ttl,
+                    expireTime,
+                    null);
 
                 mappings.put(nodeId, updateReq);
             }
@@ -404,7 +405,9 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
      * @param writeVer Update version.
      * @param syncMode Write synchronization mode.
      * @param topVer Topology version.
-     * @param forceTransformBackups Force transform backups flag.
+     * @param ttl TTL.
+     * @param conflictExpireTime Conflict expire time.
+     * @param conflictVer Conflict version.
      * @return Request.
      */
     protected abstract GridDhtAtomicAbstractUpdateRequest createRequest(
@@ -413,7 +416,9 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
         GridCacheVersion writeVer,
         CacheWriteSynchronizationMode syncMode,
         @NotNull AffinityTopologyVersion topVer,
-        boolean forceTransformBackups
+        long ttl,
+        long conflictExpireTime,
+        @Nullable GridCacheVersion conflictVer
     );
 
     /**
