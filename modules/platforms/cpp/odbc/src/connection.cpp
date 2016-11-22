@@ -19,6 +19,8 @@
 
 #include <sstream>
 
+#include <ignite/common/fixed_size_array.h>
+
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/statement.h"
 #include "ignite/odbc/connection.h"
@@ -175,29 +177,35 @@ namespace ignite
 
         void Connection::Send(const int8_t* data, size_t len)
         {
+            struct timespec t0, t1;
+
+            clock_gettime(CLOCK_MONOTONIC, &t0);
             if (!connected)
                 IGNITE_ERROR_1(IgniteError::IGNITE_ERR_ILLEGAL_STATE, "Connection is not established");
 
-            OdbcProtocolHeader hdr;
+            common::FixedSizeArray<int8_t> msg(len + sizeof(OdbcProtocolHeader));
 
-            hdr.len = static_cast<int32_t>(len);
+            OdbcProtocolHeader *hdr = reinterpret_cast<OdbcProtocolHeader*>(msg.GetData());
 
-            size_t sent = SendAll(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr));
+            hdr->len = static_cast<int32_t>(len);
 
-            if (sent != sizeof(hdr))
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not send message header");
+            memcpy(msg.GetData() + sizeof(OdbcProtocolHeader), data, len);
 
-            sent = SendAll(data, len);
+            clock_gettime(CLOCK_MONOTONIC, &t1);
+            long long nsecs = t1.tv_nsec - t0.tv_nsec + (t1.tv_sec - t0.tv_sec) * 1000000000;
+            std::clog << "Copy took: " << nsecs << " ns" << std::endl;
 
-            if (sent != len)
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not send message body");
+            size_t sent = SendAll(msg.GetData(), msg.GetSize());
+
+            if (sent != len + sizeof(OdbcProtocolHeader))
+                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not send message");
         }
 
         size_t Connection::SendAll(const int8_t* data, size_t len)
         {
             int sent = 0;
 
-            while (sent != len)
+            while (sent != static_cast<int64_t>(len))
             {
                 int res = socket.Send(data + sent, len - sent);
 
@@ -221,7 +229,7 @@ namespace ignite
 
             OdbcProtocolHeader hdr;
 
-            size_t received = ReceiveAll(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr));
+            int64_t received = ReceiveAll(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr));
 
             if (received != sizeof(hdr))
                 IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not receive message header");
