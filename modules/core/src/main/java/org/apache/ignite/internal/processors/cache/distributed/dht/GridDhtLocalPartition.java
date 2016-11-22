@@ -896,7 +896,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             }
         }
 
-        if (cctx.allowFastEviction()) {
+        if (!cctx.allowFastEviction()) {
             try {
                 GridIterator<CacheDataRow> it0 = cctx.offheap().iterator(id);
 
