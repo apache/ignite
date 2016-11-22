@@ -106,11 +106,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Operation: prepare .Net. */
         private const int OpPrepareDotNet = 1;
 
-        private delegate void ContinuousQueryListenerApplyCallbackDelegate(void* target, long lsnrPtr, long memPtr);
-        private delegate long ContinuousQueryFilterCreateCallbackDelegate(void* target, long memPtr);
-        private delegate int ContinuousQueryFilterApplyCallbackDelegate(void* target, long filterPtr, long memPtr);
-        private delegate void ContinuousQueryFilterReleaseCallbackDelegate(void* target, long filterPtr);
-
         private delegate void DataStreamerTopologyUpdateCallbackDelegate(void* target, long ldrPtr, long topVer, int topSize);
         private delegate void DataStreamerStreamReceiverInvokeCallbackDelegate(void* target, long ptr, void* cache, long memPtr, byte keepPortable);
 
@@ -195,14 +190,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 target = IntPtr.Zero.ToPointer(), // Target is not used in .Net as we rely on dynamic FP creation.
 
-                continuousQueryListenerApply =
-                    CreateFunctionPointer((ContinuousQueryListenerApplyCallbackDelegate) ContinuousQueryListenerApply),
-                continuousQueryFilterCreate =
-                    CreateFunctionPointer((ContinuousQueryFilterCreateCallbackDelegate) ContinuousQueryFilterCreate),
-                continuousQueryFilterApply =
-                    CreateFunctionPointer((ContinuousQueryFilterApplyCallbackDelegate) ContinuousQueryFilterApply),
-                continuousQueryFilterRelease =
-                    CreateFunctionPointer((ContinuousQueryFilterReleaseCallbackDelegate) ContinuousQueryFilterRelease),
                 dataStreamerTopologyUpdate =
                     CreateFunctionPointer((DataStreamerTopologyUpdateCallbackDelegate) DataStreamerTopologyUpdate),
                 dataStreamerStreamReceiverInvoke =
@@ -337,6 +324,20 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 case UnmanagedCallbackOp.ComputeJobDestroy:
                     ComputeJobDestroy(val);
+                    return 0;
+
+                case UnmanagedCallbackOp.ContinuousQueryListenerApply:
+                    ContinuousQueryListenerApply(val);
+                    return 0;
+
+                case UnmanagedCallbackOp.ContinuousQueryFilterCreate:
+                    return ContinuousQueryFilterCreate(val);
+
+                case UnmanagedCallbackOp.ContinuousQueryFilterApply:
+                    return ContinuousQueryFilterApply(val);
+
+                case UnmanagedCallbackOp.ContinuousQueryFilterRelease:
+                    ContinuousQueryFilterRelease(val);
                     return 0;
 
                 default:
@@ -656,21 +657,21 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region  IMPLEMENTATION: CONTINUOUS QUERY
 
-        private void ContinuousQueryListenerApply(void* target, long lsnrPtr, long memPtr)
+        private void ContinuousQueryListenerApply(long memPtr)
         {
             SafeCall(() =>
             {
-                var hnd = _handleRegistry.Get<IContinuousQueryHandleImpl>(lsnrPtr);
-
                 using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
+                    var hnd = _handleRegistry.Get<IContinuousQueryHandleImpl>(stream.ReadLong());
+
                     hnd.Apply(stream);
                 }
             });
         }
 
         [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
-        private long ContinuousQueryFilterCreate(void* target, long memPtr)
+        private long ContinuousQueryFilterCreate(long memPtr)
         {
             return SafeCall(() =>
             {
@@ -694,20 +695,20 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private int ContinuousQueryFilterApply(void* target, long filterPtr, long memPtr)
+        private int ContinuousQueryFilterApply(long memPtr)
         {
             return SafeCall(() =>
             {
-                var holder = _handleRegistry.Get<IContinuousQueryFilter>(filterPtr);
-
                 using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
+                    var holder = _handleRegistry.Get<IContinuousQueryFilter>(stream.ReadLong());
+
                     return holder.Evaluate(stream) ? 1 : 0;
                 }
             });
         }
 
-        private void ContinuousQueryFilterRelease(void* target, long filterPtr)
+        private void ContinuousQueryFilterRelease(long filterPtr)
         {
             SafeCall(() =>
             {
