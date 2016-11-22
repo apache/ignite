@@ -15,28 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.internal.processors.query.h2;
 
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.query.h2.GridH2IndexingGeoBinarySelfTest;
-import org.apache.ignite.internal.processors.query.h2.GridH2IndexingGeoSelfTest;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
- * Geospatial indexing tests.
+ *
  */
-public class GeoSpatialIndexingTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("H2 Geospatial Indexing Test Suite");
+public class GridH2IndexingGeoBinarySelfTest extends GridH2IndexingGeoSelfTest {
 
-        // Geo.
-        suite.addTestSuite(GridH2IndexingGeoSelfTest.class);
+    @Override protected void beforeTestsStarted() throws Exception {
+        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
 
-        suite.addTestSuite(GridH2IndexingGeoBinarySelfTest.class);
-
-        return suite;
+        super.beforeTestsStarted();
     }
 }

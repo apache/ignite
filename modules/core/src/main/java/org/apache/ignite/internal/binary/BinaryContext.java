@@ -357,6 +357,9 @@ public class BinaryContext {
             if (BinaryUtils.wrapTrees() && (cls == TreeMap.class || cls == TreeSet.class))
                 return false;
 
+            if(cls.getName().startsWith("com.vividsolutions.jts"))
+                return true;
+
             return marshCtx.isSystemType(cls.getName()) || serializerForClass(cls) == null;
         }
         else
