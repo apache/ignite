@@ -60,12 +60,14 @@ public class PlatformCacheEntryFilterImpl extends PlatformAbstractPredicate impl
 
             BinaryRawWriterEx writer = ctx.writer(out);
 
+            writer.writeLong(ptr);
+
             writer.writeObject(k);
             writer.writeObject(v);
 
             out.synchronize();
 
-            return ctx.gateway().cacheEntryFilterApply(ptr, mem.pointer()) != 0;
+            return ctx.gateway().cacheEntryFilterApply(mem.pointer()) != 0;
         }
     }
 

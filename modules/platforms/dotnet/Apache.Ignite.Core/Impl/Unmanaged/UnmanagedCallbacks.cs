@@ -107,10 +107,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Operation: prepare .Net. */
         private const int OpPrepareDotNet = 1;
 
-        private delegate long CacheEntryFilterCreateCallbackDelegate(void* target, long memPtr);
-        private delegate int CacheEntryFilterApplyCallbackDelegate(void* target, long objPtr, long memPtr);
-        private delegate void CacheEntryFilterDestroyCallbackDelegate(void* target, long objPtr);
-
         private delegate void CacheInvokeCallbackDelegate(void* target, long inMemPtr, long outMemPtr);
 
         private delegate void ComputeTaskMapCallbackDelegate(void* target, long taskPtr, long inMemPtr, long outMemPtr);
@@ -211,10 +207,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             var cbs = new UnmanagedCallbackHandlers
             {
                 target = IntPtr.Zero.ToPointer(), // Target is not used in .Net as we rely on dynamic FP creation.
-
-                cacheEntryFilterCreate = CreateFunctionPointer((CacheEntryFilterCreateCallbackDelegate)CacheEntryFilterCreate),
-                cacheEntryFilterApply = CreateFunctionPointer((CacheEntryFilterApplyCallbackDelegate)CacheEntryFilterApply),
-                cacheEntryFilterDestroy = CreateFunctionPointer((CacheEntryFilterDestroyCallbackDelegate)CacheEntryFilterDestroy),
 
                 cacheInvoke = CreateFunctionPointer((CacheInvokeCallbackDelegate) CacheInvoke),
 
@@ -332,6 +324,16 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 case UnmanagedCallbackOp.CacheStoreSessionCreate:
                     return CacheStoreSessionCreate();
 
+                case UnmanagedCallbackOp.CacheEntryFilterCreate:
+                    return CacheEntryFilterCreate(val);
+
+                case UnmanagedCallbackOp.CacheEntryFilterApply:
+                    return CacheEntryFilterApply(val);
+
+                case UnmanagedCallbackOp.CacheEntryFilterDestroy:
+                    CacheEntryFilterDestroy(val);
+                    return 0;
+
                 default:
                     throw new InvalidOperationException("Invalid callback code: " + type);
             }
@@ -414,25 +416,25 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return SafeCall(() => _ignite.HandleRegistry.Allocate(new CacheStoreSession()));
         }
 
-        private long CacheEntryFilterCreate(void* target, long memPtr)
+        private long CacheEntryFilterCreate(long memPtr)
         {
             return SafeCall(() => _handleRegistry.Allocate(CacheEntryFilterHolder.CreateInstance(memPtr, _ignite)));
         }
 
-        private int CacheEntryFilterApply(void* target, long objPtr, long memPtr)
+        private int CacheEntryFilterApply(long memPtr)
         {
             return SafeCall(() =>
             {
-                var t = _ignite.HandleRegistry.Get<CacheEntryFilterHolder>(objPtr);
-
                 using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
+                    var t = _ignite.HandleRegistry.Get<CacheEntryFilterHolder>(stream.ReadLong());
+
                     return t.Invoke(stream);
                 }
             });
         }
 
-        private void CacheEntryFilterDestroy(void* target, long objPtr)
+        private void CacheEntryFilterDestroy(long objPtr)
         {
             SafeCall(() => _ignite.HandleRegistry.Release(objPtr));
         }

@@ -124,7 +124,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return PlatformCallbackUtils.cacheEntryFilterCreate(envPtr, memPtr);
+            return PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.CacheEntryFilterCreate, memPtr);
         }
         finally {
             leave();
@@ -132,15 +132,14 @@ public class PlatformCallbackGateway {
     }
 
     /**
-     * @param ptr Pointer.
      * @param memPtr Memory pointer.
      * @return Result.
      */
-    public int cacheEntryFilterApply(long ptr, long memPtr) {
+    public int cacheEntryFilterApply(long memPtr) {
         enter();
 
         try {
-            return PlatformCallbackUtils.cacheEntryFilterApply(envPtr, ptr, memPtr);
+            return (int)PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.CacheEntryFilterApply, memPtr);
         }
         finally {
             leave();
@@ -154,7 +153,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.cacheEntryFilterDestroy(envPtr, ptr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.CacheEntryFilterDestroy, ptr);
         }
         finally {
             leave();
