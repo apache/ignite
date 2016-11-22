@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
@@ -41,6 +40,7 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.hadoop.mapreduce.IgniteHadoopClientProtocolProvider;
@@ -94,6 +94,19 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
         super.afterTest();
     }
 
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void clearConnectionMap() throws IgniteCheckedException {
+        ConcurrentHashMap<String, IgniteInternalFuture<GridClient>> cliMap =
+            GridTestUtils.getFieldValue(IgniteHadoopClientProtocolProvider.class, "cliMap");
+
+        for(IgniteInternalFuture<GridClient> fut : cliMap.values())
+            fut.get().close();
+
+        cliMap.clear();
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -138,7 +151,7 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
      * @param conf Hadoop configuration.
      * @throws Exception If failed.
      */
-    public void checkJobSubmit(Configuration conf) throws Exception {
+    private void checkJobSubmit(Configuration conf) throws Exception {
         final Job job = Job.getInstance(conf);
 
         job.setJobName(JOB_NAME);
@@ -168,22 +181,15 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
      */
     @SuppressWarnings("ConstantConditions")
     public void testMultipleAddresses() throws Exception {
-        try {
-            restPort = REST_PORT;
+        restPort = REST_PORT;
 
-            startGrids(gridCount());
+        startGrids(gridCount());
 
-            beforeJob();
+        beforeJob();
 
-            U.sleep(5000);
+        U.sleep(5000);
 
-            checkJobSubmit(configMultipleAddrs(gridCount()));
-        }
-        finally {
-            FileSystem fs = FileSystem.get(configMultipleAddrs(gridCount()));
-
-            fs.close();
-        }
+        checkJobSubmit(configMultipleAddrs(gridCount()));
     }
 
     /**
@@ -191,25 +197,18 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
      */
     @SuppressWarnings({"ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
     public void testSingleAddress() throws Exception {
-        try {
-            // Don't use REST_PORT to test connection fails if the only this port is configured
-            restPort = REST_PORT + 1;
+        // Don't use REST_PORT to test connection fails if the only this port is configured
+        restPort = REST_PORT + 1;
 
-            startGrids(gridCount());
+        startGrids(gridCount());
 
-            GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        checkJobSubmit(configSingleAddress());
-                        return null;
-                    }
-                },
-                GridServerUnreachableException.class, "Failed to connect to any of the servers in list");
-        }
-        finally {
-            FileSystem fs = FileSystem.get(configSingleAddress());
-
-            fs.close();
-        }
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    checkJobSubmit(configSingleAddress());
+                    return null;
+                }
+            },
+            GridServerUnreachableException.class, "Failed to connect to any of the servers in list");
     }
 
     /**
@@ -217,28 +216,21 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
      */
     @SuppressWarnings("ConstantConditions")
     public void testMixedAddrs() throws Exception {
-        try {
-            restPort = REST_PORT;
+        restPort = REST_PORT;
 
-            startGrids(gridCount());
+        startGrids(gridCount());
 
-            beforeJob();
+        beforeJob();
 
-            stopGrid(1);
+        stopGrid(1);
 
-            U.sleep(5000);
+        U.sleep(5000);
 
-            checkJobSubmit(configMixed());
+        checkJobSubmit(configMixed());
 
-            startGrid(1);
+        startGrid(1);
 
-            awaitPartitionMapExchange();
-        }
-        finally {
-            FileSystem fs = FileSystem.get(configMixed());
-
-            fs.close();
-        }
+        awaitPartitionMapExchange();
     }
 
     /**
@@ -258,19 +250,19 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     }
 
     /**
-     * @param serversCnt Count ov servers.
+     * @param srvsCnt Count ov servers.
      * @return Configuration.
      */
-    private Configuration configMultipleAddrs(int serversCnt) {
+    private Configuration configMultipleAddrs(int srvsCnt) {
         Configuration conf = HadoopUtils.safeCreateConfiguration();
 
         setupFileSystems(conf);
 
         conf.set(MRConfig.FRAMEWORK_NAME, IgniteHadoopClientProtocolProvider.FRAMEWORK_NAME);
 
-        Collection<String> addrs = new ArrayList<>(serversCnt);
+        Collection<String> addrs = new ArrayList<>(srvsCnt);
 
-        for (int i = 0; i < serversCnt; ++i)
+        for (int i = 0; i < srvsCnt; ++i)
             addrs.add("127.0.0.1:" + Integer.toString(REST_PORT + i));
 
         conf.set(MRConfig.MASTER_ADDRESS, F.concat(addrs, ","));
@@ -329,18 +321,18 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
      */
     public static class OutFormat extends OutputFormat {
         /** {@inheritDoc} */
-        @Override public RecordWriter getRecordWriter(TaskAttemptContext context) throws IOException,
+        @Override public RecordWriter getRecordWriter(TaskAttemptContext ctx) throws IOException,
             InterruptedException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void checkOutputSpecs(JobContext context) throws IOException, InterruptedException {
+        @Override public void checkOutputSpecs(JobContext ctx) throws IOException, InterruptedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public OutputCommitter getOutputCommitter(TaskAttemptContext context) throws IOException,
+        @Override public OutputCommitter getOutputCommitter(TaskAttemptContext ctx) throws IOException,
             InterruptedException {
             return null;
         }
