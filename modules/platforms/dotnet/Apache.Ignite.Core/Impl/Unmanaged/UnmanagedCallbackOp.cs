@@ -86,5 +86,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         AffinityFunctionRemoveNode = 61,
         AffinityFunctionDestroy = 62,
         ComputeTaskLocalJobResult = 63,
+        ComputeJobExecuteLocal = 64
     }
 }

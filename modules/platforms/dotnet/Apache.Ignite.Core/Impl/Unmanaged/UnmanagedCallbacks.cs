@@ -321,6 +321,26 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 case UnmanagedCallbackOp.ComputeTaskJobResult:
                     return ComputeTaskJobResult(val);
 
+                case UnmanagedCallbackOp.ComputeTaskReduce:
+                    ComputeTaskReduce(val);
+                    return 0;
+
+                case UnmanagedCallbackOp.ComputeJobCreate:
+                    ComputeJobCreate(val);
+                    return 0;
+
+                case UnmanagedCallbackOp.ComputeJobExecute:
+                    ComputeJobExecute(val);
+                    return 0;
+
+                case UnmanagedCallbackOp.ComputeJobCancel:
+                    ComputeJobCancel(val);
+                    return 0;
+
+                case UnmanagedCallbackOp.ComputeJobDestroy:
+                    ComputeJobDestroy(val);
+                    return 0;
+
                 default:
                     throw new InvalidOperationException("Invalid callback code: " + type);
             }
@@ -339,6 +359,17 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 case UnmanagedCallbackOp.ComputeTaskLocalJobResult:
                     return ComputeTaskLocalJobResult(inMemPtr, outMemPtr);
+
+                case UnmanagedCallbackOp.ComputeTaskComplete:
+                    ComputeTaskComplete(inMemPtr, outMemPtr);
+                    return 0;
+
+                case UnmanagedCallbackOp.ComputeJobSerialize:
+                    return ComputeJobSerialize(inMemPtr, outMemPtr);
+
+                case UnmanagedCallbackOp.ComputeJobExecuteLocal:
+                    ComputeJobExecuteLocal(inMemPtr, outMemPtr);
+                    return 0;
 
                 default:
                     throw new InvalidOperationException("Invalid callback code: " + type);
@@ -510,7 +541,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private void ComputeTaskReduce(void* target, long taskPtr)
+        private void ComputeTaskReduce(long taskPtr)
         {
             SafeCall(() =>
             {
@@ -520,7 +551,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private void ComputeTaskComplete(void* target, long taskPtr, long memPtr)
+        private void ComputeTaskComplete(long taskPtr, long memPtr)
         {
             SafeCall(() =>
             {
@@ -538,7 +569,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private int ComputeJobSerialize(void* target, long jobPtr, long memPtr)
+        private int ComputeJobSerialize(long jobPtr, long memPtr)
         {
             return SafeCall(() =>
             {
@@ -549,7 +580,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private long ComputeJobCreate(void* target, long memPtr)
+        private long ComputeJobCreate(long memPtr)
         {
             return SafeCall(() =>
             {
@@ -562,25 +593,32 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private void ComputeJobExecute(void* target, long jobPtr, int cancel, long memPtr)
+        private void ComputeJobExecuteLocal(long jobPtr, long cancel)
         {
             SafeCall(() =>
             {
                 var job = Job(jobPtr);
 
-                if (memPtr == 0)
-                    job.ExecuteLocal(cancel == 1);
-                else
+                job.ExecuteLocal(cancel == 1);
+            });
+        }
+
+        private void ComputeJobExecute(long memPtr)
+        {
+            SafeCall(() =>
+            {
+                using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
-                    using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                    {
-                        job.ExecuteRemote(stream, cancel == 1);
-                    }
+                    var job = Job(stream.ReadLong());
+
+                    var cancel = stream.ReadBool();
+
+                    job.ExecuteRemote(stream, cancel);
                 }
             });
         }
 
-        private void ComputeJobCancel(void* target, long jobPtr)
+        private void ComputeJobCancel(long jobPtr)
         {
             SafeCall(() =>
             {
@@ -588,7 +626,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private void ComputeJobDestroy(void* target, long jobPtr)
+        private void ComputeJobDestroy(long jobPtr)
         {
             SafeCall(() =>
             {
