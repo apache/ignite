@@ -22,7 +22,8 @@ import java.util.{Collection => JavaCollection, Collections, UUID}
 
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
-import org.apache.ignite.internal.util.typedef._
+import org.apache.ignite.internal.util.lang.{GridFunc => F}
+import org.apache.ignite.internal.util.typedef.X
 import org.apache.ignite.internal.visor.cache._
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 import org.apache.ignite.lang.IgniteBiTuple
@@ -287,7 +288,7 @@ class VisorCacheCommand {
                     if (hasArgFlag("scan", argLst))
                         VisorCacheScanCommand().scan(argLst, node)
                     else {
-                        if (aggrData.nonEmpty && !aggrData.exists(cache => safeEquals(cache.name(), name) && cache.system())) {
+                        if (aggrData.nonEmpty && !aggrData.exists(cache => F.eq(cache.name(), name) && cache.system())) {
                             if (hasArgFlag("clear", argLst))
                                 VisorCacheClearCommand().clear(argLst, node)
                             else if (hasArgFlag("swap", argLst))
@@ -470,7 +471,7 @@ class VisorCacheCommand {
                     println("  Total number of executions: " + ad.execsQuery)
                     println("  Total number of failures:   " + ad.failsQuery)
 
-                    gCfg.foreach(ccfgs => ccfgs.find(ccfg => safeEquals(ccfg.name(), ad.name()))
+                    gCfg.foreach(ccfgs => ccfgs.find(ccfg => F.eq(ccfg.name(), ad.name()))
                         .foreach(ccfg => {
                             nl()
 
