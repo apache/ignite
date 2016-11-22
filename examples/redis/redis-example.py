@@ -16,6 +16,11 @@
 '''
 
 import redis
+'''
+To execute this, you will have redis-py installed. See https://github.com/andymccurdy/redis-py.
+Also, start up an instance of Ignite with cache enabled and listening on port 6379,
+as described at https://dash.readme.io/project/apacheignite/v1.8/docs/redis.
+'''
 
 r = redis.StrictRedis(host='localhost', port=6379, db=0)
 
@@ -45,6 +50,9 @@ r.delete('k1')
 
 # check one entry left.
 print 'Values for "k1" and "k2": %s' % r.mget('k1', 'k2')
+
+# check db size
+print 'Db size: %d' % r.dbsize()
 
 # increment.
 print 'Value for incremented "inc_k" : %s' % r.incr('inc_k')
