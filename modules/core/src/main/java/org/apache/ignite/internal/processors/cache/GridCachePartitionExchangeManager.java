@@ -1574,7 +1574,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     cnt,
                                     r);
 
-                                if (!assigns.isEmpty())
+                                if (assigns!= null && !assigns.isEmpty())
                                     rebList.add(cacheCtx.name());
 
                                 rebFuts.add(cacheCtx.preloader().rebalanceFuture());
