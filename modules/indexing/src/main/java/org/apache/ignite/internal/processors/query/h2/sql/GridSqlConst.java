@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.Collections;
-import org.h2.command.Parser;
 import org.h2.expression.ValueExpression;
 import org.h2.value.Value;
 import org.h2.value.ValueBoolean;
 import org.h2.value.ValueNull;
-import org.h2.value.ValueString;
 
 /**
  * Constant value.

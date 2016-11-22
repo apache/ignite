@@ -790,7 +790,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         try {
             return executeQuery(cctx, new IgniteOutClosureX<QueryCursor<List<?>>>() {
                 @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
-                    return idx.queryTwoStep(cctx, qry);
+                    return idx.queryTwoStep(cctx, qry, null);
                 }
             }, true);
         }

@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.h2.dml;
 
+import java.util.List;
 import org.apache.ignite.internal.util.lang.GridPlainClosure;
 
 /**
- * Operand for fast UPDATE or DELETE (single item operation that does not involve any SELECT).
+ * Method to construct new instances of keys and values on SQL MERGE and INSERT,
+ * as well as to build new values during UPDATE - a function that takes a row selected from DB
+ * and then transforms it into new object.
  */
-public interface FastUpdateOperand extends GridPlainClosure<Object[], Object> {
+public interface KeyValueSupplier extends GridPlainClosure<List<?>, Object> {
     // No-op.
 }

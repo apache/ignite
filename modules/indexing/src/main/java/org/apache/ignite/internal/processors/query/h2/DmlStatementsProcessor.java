@@ -50,21 +50,19 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateOperand;
-import org.apache.ignite.internal.processors.query.h2.dml.Supplier;
+import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArgs;
+import org.apache.ignite.internal.processors.query.h2.dml.KeyValueSupplier;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
-import org.apache.ignite.internal.util.lang.GridTriple;
 import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -150,18 +148,20 @@ public class DmlStatementsProcessor {
      * @param spaceName Space name.
      * @param stmt Prepared statement.
      * @param fieldsQry Initial query.
+     * @param cancel Query cancel.
      * @return Update result wrapped into {@link GridQueryFieldsResult}
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
     QueryCursorImpl<List<?>> updateSqlFieldsTwoStep(String spaceName, PreparedStatement stmt,
-        SqlFieldsQuery fieldsQry) throws IgniteCheckedException {
-        long res = updateSqlFields(spaceName, stmt, fieldsQry, false, null);
+        SqlFieldsQuery fieldsQry, GridQueryCancel cancel) throws IgniteCheckedException {
+        long res = updateSqlFields(spaceName, stmt, fieldsQry, false, cancel);
 
         return cursorForUpdateResult(res);
     }
 
     /**
+     * Execute DML statement on local cache.
      * @param spaceName Space name.
      * @param stmt Prepared statement.
      * @param cancel Query cancel.
@@ -179,7 +179,6 @@ public class DmlStatementsProcessor {
 
     /**
      * Actually perform SQL DML operation locally.
-     *
      * @param cctx Cache context.
      * @param prepStmt Prepared statement for DML query.
      * @param failedKeys Keys to restrict UPDATE and DELETE operations with. Null or empty array means no restriction.
@@ -198,7 +197,7 @@ public class DmlStatementsProcessor {
 
         Object[] params = fieldsQry.getArgs();
 
-        if (plan.singleUpdate != null) {
+        if (plan.fastUpdateArgs != null) {
             assert F.isEmpty(failedKeys) && errKeysPos == null;
 
             return new UpdateResult(doSingleUpdate(plan, params), X.EMPTY_OBJECT_ARRAY);
@@ -210,7 +209,7 @@ public class DmlStatementsProcessor {
 
         // Do a two-step query only if locality flag is not set AND if plan's SELECT corresponds to an actual
         // subquery and not some dummy stuff like "select 1, 2, 3;"
-        if (!loc && plan.isSubqry) {
+        if (!loc && plan.isRealSubqry) {
             SqlFieldsQuery newFieldsQry = new SqlFieldsQuery(plan.selectQry, fieldsQry.isCollocated())
                 .setArgs(params)
                 .setDistributedJoins(fieldsQry.isDistributedJoins())
@@ -219,7 +218,7 @@ public class DmlStatementsProcessor {
                 .setPageSize(fieldsQry.getPageSize())
                 .setTimeout(fieldsQry.getTimeout(), TimeUnit.MILLISECONDS);
 
-            cur = (QueryCursorImpl<List<?>>) indexing.queryTwoStep(cctx, newFieldsQry);
+            cur = (QueryCursorImpl<List<?>>) indexing.queryTwoStep(cctx, newFieldsQry, cancel);
         }
         else {
             Connection conn = indexing.connectionForSpace(cctx.name());
@@ -265,7 +264,6 @@ public class DmlStatementsProcessor {
     /**
      * Generate SELECT statements to retrieve data for modifications from and find fast UPDATE or DELETE args,
      * if available.
-     *
      * @param spaceName Space name.
      * @param prepStmt JDBC statement.
      * @return Update plan.
@@ -303,8 +301,6 @@ public class DmlStatementsProcessor {
 
     /**
      * Perform single cache operation based on given args.
-     *
-     *
      * @param params Query parameters.
      * @return 1 if an item was affected, 0 otherwise.
      * @throws IgniteCheckedException if failed.
@@ -313,15 +309,15 @@ public class DmlStatementsProcessor {
     private static long doSingleUpdate(UpdatePlan plan, Object[] params) throws IgniteCheckedException {
         GridCacheContext cctx = plan.tbl.rowDescriptor().context();
 
-        GridTriple<FastUpdateOperand> singleUpdate = plan.singleUpdate;
+        FastUpdateArgs singleUpdate = plan.fastUpdateArgs;
 
         assert singleUpdate != null;
 
         int res;
 
-        Object key = singleUpdate.get1().apply(params);
-        Object val = singleUpdate.get2().apply(params);
-        Object newVal = singleUpdate.get3().apply(params);
+        Object key = singleUpdate.key.apply(params);
+        Object val = singleUpdate.val.apply(params);
+        Object newVal = singleUpdate.newVal.apply(params);
 
         if (newVal != null) { // Single item UPDATE
             if (val == null) // No _val bound in source query
@@ -343,7 +339,7 @@ public class DmlStatementsProcessor {
      * Perform DELETE operation on top of results of SELECT.
      * @param cctx Cache context.
      * @param cursor SELECT results.
-     * @param pageSize Page size for streaming, anything <= 0 for single batch operations.
+     * @param pageSize Batch size for streaming, anything <= 0 for single page operations.
      * @return Results of DELETE (number of items affected AND keys that failed to be updated).
      */
     @SuppressWarnings({"unchecked", "ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
@@ -387,17 +383,17 @@ public class DmlStatementsProcessor {
                 rows.put(e.get(0), new ModifyingEntryProcessor(e.get(1), RMV));
 
                 if ((pageSize > 0 && rows.size() == pageSize) || (!it.hasNext())) {
-                    BatchProcessingResult batchRes = processBatch(cctx, rows);
+                    PageProcessingResult pageRes = processPage(cctx, rows);
 
-                    res += batchRes.cnt;
+                    res += pageRes.cnt;
 
-                    failedKeys.addAll(F.asList(batchRes.errKeys));
+                    failedKeys.addAll(F.asList(pageRes.errKeys));
 
-                    if (batchRes.ex != null) {
+                    if (pageRes.ex != null) {
                         if (resEx == null)
-                            resEx = batchRes.ex;
+                            resEx = pageRes.ex;
                         else
-                            resEx.setNextException(batchRes.ex);
+                            resEx.setNextException(pageRes.ex);
                     }
 
                     if (it.hasNext())
@@ -431,9 +427,8 @@ public class DmlStatementsProcessor {
 
     /**
      * Perform UPDATE operation on top of results of SELECT.
-     *
      * @param cursor SELECT results.
-     * @param pageSize Batch size for streaming, anything <= 0 for single batch operations.
+     * @param pageSize Batch size for streaming, anything <= 0 for single page operations.
      * @return Pair [cursor corresponding to results of UPDATE (contains number of items affected); keys whose values
      *     had been modified concurrently (arguments for a re-run)].
      */
@@ -534,17 +529,17 @@ public class DmlStatementsProcessor {
                 rows.put(key, new ModifyingEntryProcessor(srcVal, new EntryValueUpdater(newVal)));
 
                 if ((pageSize > 0 && rows.size() == pageSize) || (!it.hasNext())) {
-                    BatchProcessingResult batchRes = processBatch(cctx, rows);
+                    PageProcessingResult pageRes = processPage(cctx, rows);
 
-                    res += batchRes.cnt;
+                    res += pageRes.cnt;
 
-                    failedKeys.addAll(F.asList(batchRes.errKeys));
+                    failedKeys.addAll(F.asList(pageRes.errKeys));
 
-                    if (batchRes.ex != null) {
+                    if (pageRes.ex != null) {
                         if (resEx == null)
-                            resEx = batchRes.ex;
+                            resEx = pageRes.ex;
                         else
-                            resEx.setNextException(batchRes.ex);
+                            resEx.setNextException(pageRes.ex);
                     }
 
                     if (it.hasNext())
@@ -584,7 +579,7 @@ public class DmlStatementsProcessor {
      * @return pair [array of duplicated/concurrently modified keys, SQL exception for erroneous keys] (exception is
      * null if all keys are duplicates/concurrently modified ones).
      */
-    private static BatchProcessingErrorResult splitErrors(Map<Object, EntryProcessorResult<Boolean>> res) {
+    private static PageProcessingErrorResult splitErrors(Map<Object, EntryProcessorResult<Boolean>> res) {
         Set<Object> errKeys = new LinkedHashSet<>(res.keySet());
 
         SQLException currSqlEx = null;
@@ -617,12 +612,13 @@ public class DmlStatementsProcessor {
             }
         }
 
-        return new BatchProcessingErrorResult(errKeys.toArray(), firstSqlEx, errors);
+        return new PageProcessingErrorResult(errKeys.toArray(), firstSqlEx, errors);
     }
 
     /**
+     * Execute MERGE statement plan.
      * @param cursor Cursor to take inserted data from.
-     * @param pageSize Batch size to stream data from {@code cursor}, anything <= 0 for single batch operations.
+     * @param pageSize Batch size to stream data from {@code cursor}, anything <= 0 for single page operations.
      * @return Number of items affected.
      * @throws IgniteCheckedException if failed.
      */
@@ -632,21 +628,10 @@ public class DmlStatementsProcessor {
 
         GridCacheContext cctx = desc.context();
 
-        Iterable<List<?>> src;
-
-        boolean singleRow = false;
-
-        if (plan.isSubqry)
-            src = cursor;
-        else {
-            singleRow = plan.rowsNum == 1;
-            src = rowsCursorToRows(cursor);
-        }
-
         // If we have just one item to put, just do so
-        if (singleRow) {
-            IgniteBiTuple t = rowToKeyValue(cctx, desc.type(), plan.keySupplier, plan.valSupplier, plan.keyColIdx,
-                plan.valColIdx, plan.colNames, src.iterator().next().toArray());
+        if (plan.rowsNum == 1) {
+            IgniteBiTuple t = rowToKeyValue(cctx, cursor.iterator().next().toArray(), plan.colNames, plan.keySupplier,
+                plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc.type());
 
             cctx.cache().put(t.getKey(), t.getValue());
             return 1;
@@ -655,11 +640,12 @@ public class DmlStatementsProcessor {
             int resCnt = 0;
             Map<Object, Object> rows = new LinkedHashMap<>();
 
-            for (Iterator<List<?>> it = src.iterator(); it.hasNext();) {
+            for (Iterator<List<?>> it = cursor.iterator(); it.hasNext();) {
                 List<?> row = it.next();
 
-                IgniteBiTuple t = rowToKeyValue(cctx, desc.type(), plan.keySupplier, plan.valSupplier, plan.keyColIdx,
-                    plan.valColIdx, plan.colNames, row.toArray());
+                IgniteBiTuple t = rowToKeyValue(cctx, row.toArray(), plan.colNames, plan.keySupplier, plan.valSupplier,
+                    plan.keyColIdx, plan.valColIdx, desc.type());
+
                 rows.put(t.getKey(), t.getValue());
 
                 if ((pageSize > 0 && rows.size() == pageSize) || !it.hasNext()) {
@@ -676,8 +662,9 @@ public class DmlStatementsProcessor {
     }
 
     /**
+     * Execute INSERT statement plan.
      * @param cursor Cursor to take inserted data from.
-     * @param pageSize Batch size for streaming, anything <= 0 for single batch operations.
+     * @param pageSize Batch size for streaming, anything <= 0 for single page operations.
      * @return Number of items affected.
      * @throws IgniteCheckedException if failed, particularly in case of duplicate keys.
      */
@@ -687,21 +674,10 @@ public class DmlStatementsProcessor {
 
         GridCacheContext cctx = desc.context();
 
-        Iterable<List<?>> src;
-
-        boolean singleRow = false;
-
-        if (plan.isSubqry)
-            src = cursor;
-        else {
-            singleRow = plan.rowsNum == 1;
-            src = rowsCursorToRows(cursor);
-        }
-
         // If we have just one item to put, just do so
-        if (singleRow) {
-            IgniteBiTuple t = rowToKeyValue(cctx, desc.type(), plan.keySupplier, plan.valSupplier, plan.keyColIdx,
-                plan.valColIdx, plan.colNames, src.iterator().next().toArray());
+        if (plan.rowsNum == 1) {
+            IgniteBiTuple t = rowToKeyValue(cctx, cursor.iterator().next().toArray(), plan.colNames, plan.keySupplier,
+                plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc.type());
 
             if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
                 return 1;
@@ -726,7 +702,7 @@ public class DmlStatementsProcessor {
                     cctx.operationContextPerCall(newOpCtx);
             }
 
-            Map<Object, EntryProcessor<Object, Object, Boolean>> rows = !plan.isSubqry ?
+            Map<Object, EntryProcessor<Object, Object, Boolean>> rows = !plan.isRealSubqry ?
                 new LinkedHashMap<Object, EntryProcessor<Object, Object, Boolean>>(plan.rowsNum) :
                 new LinkedHashMap<Object, EntryProcessor<Object, Object, Boolean>>();
 
@@ -738,28 +714,28 @@ public class DmlStatementsProcessor {
             SQLException resEx = null;
 
             try {
-                Iterator<List<?>> it = src.iterator();
+                Iterator<List<?>> it = cursor.iterator();
 
                 while (it.hasNext()) {
                     List<?> row = it.next();
 
-                    final IgniteBiTuple t = rowToKeyValue(cctx, desc.type(), plan.keySupplier, plan.valSupplier,
-                        plan.keyColIdx, plan.valColIdx, plan.colNames, row.toArray());
+                    final IgniteBiTuple t = rowToKeyValue(cctx, row.toArray(), plan.colNames, plan.keySupplier,
+                        plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc.type());
 
                     rows.put(t.getKey(), new InsertEntryProcessor(t.getValue()));
 
                     if (!it.hasNext() || (pageSize > 0 && rows.size() == pageSize)) {
-                        BatchProcessingResult batchRes = processBatch(cctx, rows);
+                        PageProcessingResult pageRes = processPage(cctx, rows);
 
-                        resCnt += batchRes.cnt;
+                        resCnt += pageRes.cnt;
 
-                        duplicateKeys.addAll(F.asList(batchRes.errKeys));
+                        duplicateKeys.addAll(F.asList(pageRes.errKeys));
 
-                        if (batchRes.ex != null) {
+                        if (pageRes.ex != null) {
                             if (resEx == null)
-                                resEx = batchRes.ex;
+                                resEx = pageRes.ex;
                             else
-                                resEx.setNextException(batchRes.ex);
+                                resEx.setNextException(pageRes.ex);
                         }
 
                         rows.clear();
@@ -790,6 +766,7 @@ public class DmlStatementsProcessor {
     }
 
     /**
+     * Execute given entry processors and collect errors, if any.
      * @param cctx Cache context.
      * @param rows Rows to process.
      * @return Triple [number of rows actually changed; keys that failed to update (duplicates or concurrently
@@ -797,63 +774,38 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    private static BatchProcessingResult processBatch(GridCacheContext cctx,
+    private static PageProcessingResult processPage(GridCacheContext cctx,
         Map<Object, EntryProcessor<Object, Object, Boolean>> rows) throws IgniteCheckedException {
-
         Map<Object, EntryProcessorResult<Boolean>> res = cctx.cache().invokeAll(rows);
 
         if (F.isEmpty(res))
-            return new BatchProcessingResult(rows.size(), null, null);
+            return new PageProcessingResult(rows.size(), null, null);
 
-        BatchProcessingErrorResult splitRes = splitErrors(res);
+        PageProcessingErrorResult splitRes = splitErrors(res);
 
         int keysCnt = splitRes.errKeys.length;
 
-        return new BatchProcessingResult(rows.size() - keysCnt - splitRes.cnt, splitRes.errKeys, splitRes.ex);
+        return new PageProcessingResult(rows.size() - keysCnt - splitRes.cnt, splitRes.errKeys, splitRes.ex);
     }
 
     /**
-     * @param cursor single "row" cursor that has arrays as columns, each array represents new inserted row.
-     * @return List of lists, each representing new inserted row.
-     */
-    private static List<List<?>> rowsCursorToRows(QueryCursorEx<List<?>> cursor) {
-        List<List<?>> newRowsRow = cursor.getAll();
-
-        // We expect all new rows to be selected as single row with "columns" each of which is an array
-        assert newRowsRow.size() == 1;
-
-        List<?> newRowsList = newRowsRow.get(0);
-
-        List<List<?>> newRows = new ArrayList<>(newRowsList.size());
-
-        for (Object o : newRowsList) {
-            assert o instanceof Object[];
-
-            newRows.add(F.asList((Object[]) o));
-        }
-
-        return newRows;
-    }
-
-    /**
-     * Convert array of Objects into key-value pair to be inserted to cache.
+     * Convert row presented as an array of Objects into key-value pair to be inserted to cache.
      *
      * @param cctx Cache context.
-     * @param desc Table descriptor.
+     * @param row Row to process.
+     * @param cols Query cols.
      * @param keySupplier Key instantiation method.
      * @param valSupplier Key instantiation method.
      * @param keyColIdx Key column index, or {@code -1} if no key column is mentioned in {@code cols}.
      * @param valColIdx Value column index, or {@code -1} if no value column is mentioned in {@code cols}.
-     * @param cols Query cols.
-     * @param row Row to process.
+     * @param desc Table descriptor.
      * @return Key-value pair.
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions", "ResultOfMethodCallIgnored"})
-    private IgniteBiTuple<?, ?> rowToKeyValue(GridCacheContext cctx, GridQueryTypeDescriptor desc, Supplier keySupplier,
-        Supplier valSupplier, int keyColIdx, int valColIdx, String[] cols, Object[] row)
-        throws IgniteCheckedException {
-
+    private IgniteBiTuple<?, ?> rowToKeyValue(GridCacheContext cctx, Object[] row, String[] cols,
+        KeyValueSupplier keySupplier, KeyValueSupplier valSupplier, int keyColIdx, int valColIdx,
+        GridQueryTypeDescriptor desc) throws IgniteCheckedException {
         Object key = keySupplier.apply(F.asList(row));
         Object val = valSupplier.apply(F.asList(row));
 
@@ -1021,8 +973,8 @@ public class DmlStatementsProcessor {
         }
     }
 
-    /** Result of processing an individual batch with {@link IgniteCache#invokeAll} including error details, if any. */
-    private final static class BatchProcessingResult {
+    /** Result of processing an individual page with {@link IgniteCache#invokeAll} including error details, if any. */
+    private final static class PageProcessingResult {
         /** Number of successfully processed items. */
         final long cnt;
 
@@ -1035,7 +987,7 @@ public class DmlStatementsProcessor {
 
         /** */
         @SuppressWarnings("ConstantConditions")
-        private BatchProcessingResult(long cnt, Object[] errKeys, SQLException ex) {
+        private PageProcessingResult(long cnt, Object[] errKeys, SQLException ex) {
             this.cnt = cnt;
             this.errKeys = U.firstNotNull(errKeys, X.EMPTY_OBJECT_ARRAY);
             this.ex = ex;
@@ -1046,7 +998,7 @@ public class DmlStatementsProcessor {
      * logic of {@link EntryProcessor}s (most likely INSERT duplicates, or UPDATE/DELETE keys whose values
      * had been modified concurrently), counting and collecting entry processor exceptions.
      */
-    private final static class BatchProcessingErrorResult {
+    private final static class PageProcessingErrorResult {
         /** Keys that failed to be processed by {@link EntryProcessor} (not due to an exception). */
         @NotNull
         final Object[] errKeys;
@@ -1059,7 +1011,7 @@ public class DmlStatementsProcessor {
 
         /** */
         @SuppressWarnings("ConstantConditions")
-        private BatchProcessingErrorResult(@NotNull Object[] errKeys, SQLException ex, int exCnt) {
+        private PageProcessingErrorResult(@NotNull Object[] errKeys, SQLException ex, int exCnt) {
             errKeys = U.firstNotNull(errKeys, X.EMPTY_OBJECT_ARRAY);
             // When exceptions count must be zero, exceptions chain must be not null, and vice versa.
             assert exCnt == 0 ^ ex != null;
@@ -1069,5 +1021,4 @@ public class DmlStatementsProcessor {
             this.ex = ex;
         }
     }
-
 }

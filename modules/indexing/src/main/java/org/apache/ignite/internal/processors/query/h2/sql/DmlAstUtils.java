@@ -25,9 +25,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArgs;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.util.lang.GridTriple;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -65,24 +66,47 @@ public final class DmlAstUtils {
      * @param cols Columns to insert values into.
      * @param rows Rows to create pseudo-SELECT upon.
      * @param subQry Subquery to use rather than rows.
+     * @param desc Row descriptor.
      * @return Subquery or pseudo-SELECT to evaluate inserted expressions.
      */
     public static GridSqlQuery selectForInsertOrMerge(GridSqlColumn[] cols, List<GridSqlElement[]> rows,
-        GridSqlQuery subQry) {
+        GridSqlQuery subQry, GridH2RowDescriptor desc) {
         if (!F.isEmpty(rows)) {
-            assert cols != null;
+            assert !F.isEmpty(cols);
 
             GridSqlSelect sel = new GridSqlSelect();
+
+            GridSqlFunction from = new GridSqlFunction(GridSqlFunctionType.TABLE);
+
+            sel.from(from);
+
+            GridSqlArray[] args = new GridSqlArray[cols.length];
+
+            for (int i = 0; i < cols.length; i++) {
+                GridSqlArray arr = new GridSqlArray(rows.size());
+
+                String colName = IgniteH2Indexing.escapeName(cols[i].columnName(), desc.quoteAllIdentifiers());
+
+                GridSqlAlias alias = new GridSqlAlias(colName, arr);
+
+                alias.resultType(cols[i].resultType());
+
+                from.addChild(alias);
+
+                args[i] = arr;
+
+                GridSqlColumn newCol = new GridSqlColumn(null, from, colName, "TABLE." + colName);
+
+                newCol.resultType(cols[i].resultType());
+
+                sel.addColumn(newCol, true);
+            }
 
             for (GridSqlElement[] row : rows) {
                 assert cols.length == row.length;
 
-                List<GridSqlElement> rowEls = new ArrayList<>(row.length);
-
                 for (int i = 0; i < row.length; i++)
-                    rowEls.add(elementOrDefault(row[i], cols[i]));
-
-                sel.addColumn(new GridSqlArray(rowEls), true);
+                    args[i].addChild(row[i]);
             }
 
             return sel;
@@ -146,8 +170,8 @@ public final class DmlAstUtils {
      * @return {@code null} if given statement directly updates {@code _val} column with a literal or param value
      * and filters by single non expression key (and, optionally,  by single non expression value).
      */
-    public static GridTriple<FastUpdateOperand>getSingleItemFilter(GridSqlUpdate update) {
-        IgnitePair<GridSqlElement> filter = findKeyValueEqulaityCondition(update.where());
+    public static FastUpdateArgs getFastUpdateArgs(GridSqlUpdate update) {
+        IgnitePair<GridSqlElement> filter = findKeyValueEqualityCondition(update.where());
 
         if (filter == null)
             return null;
@@ -161,7 +185,7 @@ public final class DmlAstUtils {
         if (!(set instanceof GridSqlConst || set instanceof GridSqlParameter))
             return null;
 
-        return new GridTriple<>(operandForElement(filter.getKey()), operandForElement(filter.getValue()),
+        return new FastUpdateArgs(operandForElement(filter.getKey()), operandForElement(filter.getValue()),
             operandForElement(set));
     }
 
@@ -175,7 +199,7 @@ public final class DmlAstUtils {
         assert el == null ^ (el instanceof GridSqlConst || el instanceof GridSqlParameter);
 
         if (el == null)
-            return NULL_OPERAND;
+            return FastUpdateArgs.NULL_OPERAND;
 
         if (el instanceof GridSqlConst)
             return new ValueOperand(((GridSqlConst)el).value().getObject());
@@ -187,13 +211,14 @@ public final class DmlAstUtils {
      * @param del DELETE statement.
      * @return {@code true} if given statement filters by single non expression key.
      */
-    public static GridTriple<FastUpdateOperand> getSingleItemFilter(GridSqlDelete del) {
-        IgnitePair<GridSqlElement> filter = findKeyValueEqulaityCondition(del.where());
+    public static FastUpdateArgs getFastDeleteArgs(GridSqlDelete del) {
+        IgnitePair<GridSqlElement> filter = findKeyValueEqualityCondition(del.where());
 
         if (filter == null)
             return null;
 
-        return new GridTriple<>(operandForElement(filter.getKey()), operandForElement(filter.getValue()), NULL_OPERAND);
+        return new FastUpdateArgs(operandForElement(filter.getKey()), operandForElement(filter.getValue()),
+            FastUpdateArgs.NULL_OPERAND);
     }
 
     /**
@@ -201,7 +226,7 @@ public final class DmlAstUtils {
      * @return Whether given element corresponds to {@code WHERE _key = ?}, and key is a literal expressed
      * in query or a query param.
      */
-    private static IgnitePair<GridSqlElement> findKeyValueEqulaityCondition(GridSqlElement where) {
+    private static IgnitePair<GridSqlElement> findKeyValueEqualityCondition(GridSqlElement where) {
         if (where == null || !(where instanceof GridSqlOperation))
             return null;
 
@@ -535,14 +560,6 @@ public final class DmlAstUtils {
             }
         });
     }
-
-    /** Operand that always evaluates as {@code null}. */
-    private final static FastUpdateOperand NULL_OPERAND = new FastUpdateOperand() {
-        /** {@inheritDoc} */
-        @Override public Object apply(Object[] arg) throws IgniteCheckedException {
-            return null;
-        }
-    };
 
     /** Simple constant value based operand. */
     private final static class ValueOperand implements FastUpdateOperand {

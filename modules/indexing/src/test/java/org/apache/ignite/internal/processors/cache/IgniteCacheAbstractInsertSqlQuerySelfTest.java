@@ -135,7 +135,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
         ignite(0).createCache(cacheConfig("S2P", true, false, String.class, Person.class, String.class, String.class));
         ignite(0).createCache(cacheConfig("I2P", true, false, Integer.class, Person.class));
         ignite(0).createCache(cacheConfig("K2P", true, false, Key.class, Person.class));
-        ignite(0).createCache(cacheConfig("K22P", true, true, Key2.class, Person.class));
+        ignite(0).createCache(cacheConfig("K22P", true, true, Key2.class, Person2.class));
         ignite(0).createCache(cacheConfig("I2I", true, false, Integer.class, Integer.class));
     }
 
@@ -214,7 +214,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
         {
             CacheConfiguration k22pCcfg = cacheConfig("K22P", true, true);
 
-            QueryEntity k22p = new QueryEntity(Key2.class.getName(), "Person");
+            QueryEntity k22p = new QueryEntity(Key2.class.getName(), "Person2");
 
             k22p.setKeyFields(Collections.singleton("Id"));
 
@@ -223,6 +223,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             flds.put("Id", Integer.class.getName());
             flds.put("id", Integer.class.getName());
             flds.put("name", String.class.getName());
+            flds.put("_Val", Integer.class.getName());
 
             k22p.setFields(flds);
 
@@ -331,6 +332,27 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             BinaryObjectBuilder o = grid(0).binary().builder("Person");
             o.setField("id", id);
             o.setField("name", name);
+
+            return o.build();
+        }
+    }
+
+    /**
+     *
+     */
+    Object createPerson2(int id, String name, int valFld) {
+        if (!isBinaryMarshaller()) {
+            Person2 p = new Person2(id);
+            p.name = name;
+            p._Val = valFld;
+
+            return p;
+        }
+        else {
+            BinaryObjectBuilder o = grid(0).binary().builder("Person2");
+            o.setField("id", id);
+            o.setField("name", name);
+            o.setField("_Val", valFld);
 
             return o.build();
         }
@@ -513,7 +535,6 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
             if (id != person.id) return false;
             return name != null ? name.equals(person.name) : person.name == null;
-
         }
 
         /** {@inheritDoc} */
@@ -522,5 +543,25 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             result = 31 * result + (name != null ? name.hashCode() : 0);
             return result;
         }
+    }
+
+    /**
+     *
+     */
+    protected static class Person2 extends Person {
+        /** */
+        @SuppressWarnings("unused")
+        private Person2() {
+            // No-op.
+        }
+
+        /** */
+        public Person2(int id) {
+            super(id);
+        }
+
+        /** */
+        @QuerySqlField
+        public int _Val;
     }
 }

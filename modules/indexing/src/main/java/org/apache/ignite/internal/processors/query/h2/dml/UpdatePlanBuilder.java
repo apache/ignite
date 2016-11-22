@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.DmlStatementsProcessor;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.DmlAstUtils;
@@ -47,9 +48,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUnion;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUpdate;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.lang.GridTriple;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.h2.api.ErrorCode;
 import org.h2.command.Prepared;
 import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
@@ -104,27 +103,40 @@ public final class UpdatePlanBuilder {
 
         int rowsNum;
 
+        GridSqlTable tbl;
+
+        GridH2RowDescriptor desc;
+
         if (stmt instanceof GridSqlInsert) {
             GridSqlInsert ins = (GridSqlInsert) stmt;
             target = ins.into();
+
+            tbl = gridTableForElement(target);
+            desc = tbl.dataTable().rowDescriptor();
+
             cols = ins.columns();
-            sel = DmlAstUtils.selectForInsertOrMerge(cols, ins.rows(), ins.query());
+            sel = DmlAstUtils.selectForInsertOrMerge(cols, ins.rows(), ins.query(), desc);
             isSubqry = (ins.query() != null);
             rowsNum = isSubqry ? 0 : ins.rows().size();
         }
         else if (stmt instanceof GridSqlMerge) {
             GridSqlMerge merge = (GridSqlMerge) stmt;
 
+            target = merge.into();
+
+            tbl = gridTableForElement(target);
+            desc = tbl.dataTable().rowDescriptor();
+
             // This check also protects us from attempts to update key or its fields directly -
             // when no key except cache key can be used, it will serve only for uniqueness checks,
             // not for updates, and hence will allow putting new pairs only.
+            // We don't quote _key and _val column names on CREATE TABLE, so they are always uppercase here.
             GridSqlColumn[] keys = merge.keys();
-            if (keys.length != 1 || !keys[0].columnName().equalsIgnoreCase(KEY_FIELD_NAME))
+            if (keys.length != 1 || IgniteH2Indexing.KEY_FIELD_NAME.equals(keys[0].columnName()))
                 throw new CacheException("SQL MERGE does not support arbitrary keys");
 
-            target = merge.into();
             cols = merge.columns();
-            sel = DmlAstUtils.selectForInsertOrMerge(cols, merge.rows(), merge.query());
+            sel = DmlAstUtils.selectForInsertOrMerge(cols, merge.rows(), merge.query(), desc);
             isSubqry = (merge.query() != null);
             rowsNum = isSubqry ? 0 : merge.rows().size();
         }
@@ -141,10 +153,6 @@ public final class UpdatePlanBuilder {
         boolean hasKeyProps = false;
         boolean hasValProps = false;
 
-        GridSqlTable tbl = gridTableForElement(target);
-
-        GridH2RowDescriptor desc = tbl.dataTable().rowDescriptor();
-
         if (desc == null)
             throw new IgniteSQLException("Row descriptor undefined for table '" + tbl.dataTable().getName() + "'",
                 IgniteQueryErrorCode.NULL_TABLE_DESCRIPTOR);
@@ -156,12 +164,12 @@ public final class UpdatePlanBuilder {
         for (int i = 0; i < cols.length; i++) {
             colNames[i] = cols[i].columnName();
 
-            if (cols[i].columnName().equalsIgnoreCase(KEY_FIELD_NAME)) {
+            if (isKeyColumn(cols[i].columnName(), desc)) {
                 keyColIdx = i;
                 continue;
             }
 
-            if (cols[i].columnName().equalsIgnoreCase(VAL_FIELD_NAME)) {
+            if (isValColumn(cols[i].columnName(), desc)) {
                 valColIdx = i;
                 continue;
             }
@@ -176,8 +184,8 @@ public final class UpdatePlanBuilder {
                 hasValProps = true;
         }
 
-        Supplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true);
-        Supplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false);
+        KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true);
+        KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false);
 
         if (stmt instanceof GridSqlMerge)
             return UpdatePlan.forMerge(tbl.dataTable(), colNames, keySupplier, valSupplier, keyColIdx, valColIdx,
@@ -198,9 +206,9 @@ public final class UpdatePlanBuilder {
     private static UpdatePlan planForUpdate(GridSqlStatement stmt, @Nullable Integer errKeysPos) throws IgniteCheckedException {
         GridSqlElement target;
 
-        GridTriple<FastUpdateOperand> singleUpdate;
+        FastUpdateArgs fastUpdate;
 
-        UpdatePlan.UpdateMode mode;
+        UpdateMode mode;
 
         if (stmt instanceof GridSqlUpdate) {
             // Let's verify that user is not trying to mess with key's columns directly
@@ -208,14 +216,14 @@ public final class UpdatePlanBuilder {
 
             GridSqlUpdate update = (GridSqlUpdate) stmt;
             target = update.target();
-            singleUpdate = DmlAstUtils.getSingleItemFilter(update);
-            mode = UpdatePlan.UpdateMode.UPDATE;
+            fastUpdate = DmlAstUtils.getFastUpdateArgs(update);
+            mode = UpdateMode.UPDATE;
         }
         else if (stmt instanceof GridSqlDelete) {
             GridSqlDelete del = (GridSqlDelete) stmt;
             target = del.from();
-            singleUpdate = DmlAstUtils.getSingleItemFilter(del);
-            mode = UpdatePlan.UpdateMode.DELETE;
+            fastUpdate = DmlAstUtils.getFastDeleteArgs(del);
+            mode = UpdateMode.DELETE;
         }
         else
             throw new IgniteSQLException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
@@ -231,8 +239,8 @@ public final class UpdatePlanBuilder {
             throw new IgniteSQLException("Row descriptor undefined for table '" + gridTbl.getName() + "'",
                 IgniteQueryErrorCode.NULL_TABLE_DESCRIPTOR);
 
-        if (singleUpdate != null)
-            return UpdatePlan.forFastUpdate(mode, gridTbl, singleUpdate);
+        if (fastUpdate != null)
+            return UpdatePlan.forFastUpdate(mode, gridTbl, fastUpdate);
         else {
             GridSqlSelect sel;
 
@@ -248,7 +256,7 @@ public final class UpdatePlanBuilder {
                 for (int i = 0; i < updatedCols.size(); i++) {
                     colNames[i] = updatedCols.get(i).columnName();
 
-                    if (VAL_FIELD_NAME.equalsIgnoreCase(colNames[i]))
+                    if (isValColumn(colNames[i], desc))
                         valColIdx = i;
                 }
 
@@ -275,7 +283,7 @@ public final class UpdatePlanBuilder {
                 // whole new object as a result anyway, so we don't need to copy previous property values explicitly.
                 // Otherwise we always want it to instantiate new object whose properties we will later
                 // set to current values.
-                Supplier newValSupplier = createSupplier(desc.context(), desc.type(), newValColIdx, hasProps, false);
+                KeyValueSupplier newValSupplier = createSupplier(desc.context(), desc.type(), newValColIdx, hasProps, false);
 
                 sel = DmlAstUtils.selectForUpdate((GridSqlUpdate) stmt, errKeysPos);
 
@@ -302,8 +310,8 @@ public final class UpdatePlanBuilder {
      * @throws IgniteCheckedException
      */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
-    private static Supplier createSupplier(final GridCacheContext<?, ?> cctx, GridQueryTypeDescriptor desc,
-        final int colIdx, boolean hasProps, final boolean key) throws IgniteCheckedException {
+    private static KeyValueSupplier createSupplier(final GridCacheContext<?, ?> cctx, GridQueryTypeDescriptor desc,
+                                                   final int colIdx, boolean hasProps, final boolean key) throws IgniteCheckedException {
         final String typeName = key ? desc.keyTypeName() : desc.valueTypeName();
 
         //Try to find class for the key locally.
@@ -315,7 +323,7 @@ public final class UpdatePlanBuilder {
         // If we don't need to construct anything from scratch, just return value from array.
         if (isSqlType || !hasProps || !cctx.binaryMarshaller()) {
             if (colIdx != -1)
-                return new Supplier() {
+                return new KeyValueSupplier() {
                     /** {@inheritDoc} */
                     @Override public Object apply(List<?> arg) throws IgniteCheckedException {
                         return arg.get(colIdx);
@@ -329,7 +337,7 @@ public final class UpdatePlanBuilder {
         if (cctx.binaryMarshaller()) {
             if (colIdx != -1) {
                 // If we have key or value explicitly present in query, create new builder upon them...
-                return new Supplier() {
+                return new KeyValueSupplier() {
                     /** {@inheritDoc} */
                     @Override public Object apply(List<?> arg) throws IgniteCheckedException {
                         BinaryObject bin = cctx.grid().binary().toBinary(arg.get(colIdx));
@@ -340,7 +348,7 @@ public final class UpdatePlanBuilder {
             }
             else {
                 // ...and if we don't, just create a new builder.
-                return new Supplier() {
+                return new KeyValueSupplier() {
                     /** {@inheritDoc} */
                     @Override public Object apply(List<?> arg) throws IgniteCheckedException {
                         return cctx.grid().binary().builder(typeName);
@@ -363,7 +371,7 @@ public final class UpdatePlanBuilder {
                 final Constructor<?> ctor0 = ctor;
 
                 // Use default ctor, if it's present...
-                return new Supplier() {
+                return new KeyValueSupplier() {
                     /** {@inheritDoc} */
                     @Override public Object apply(List<?> arg) throws IgniteCheckedException {
                         try {
@@ -378,7 +386,7 @@ public final class UpdatePlanBuilder {
             }
             else {
                 // ...or allocate new instance with unsafe, if it's not
-                return new Supplier() {
+                return new KeyValueSupplier() {
                     /** {@inheritDoc} */
                     @Override public Object apply(List<?> arg) throws IgniteCheckedException {
                         try {
@@ -406,7 +414,7 @@ public final class UpdatePlanBuilder {
         DmlAstUtils.collectAllGridTablesInTarget(target, tbls);
 
         if (tbls.size() != 1)
-            throw new IgniteSQLException("Failed to determine target table", ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1);
+            throw new IgniteSQLException("Failed to determine target table", IgniteQueryErrorCode.TABLE_NOT_FOUND);
 
         return tbls.iterator().next();
     }
@@ -429,7 +437,7 @@ public final class UpdatePlanBuilder {
         DmlAstUtils.collectAllGridTablesInTarget(updTarget, tbls);
 
         if (tbls.size() != 1)
-            throw new IgniteSQLException("Failed to determine target table for UPDATE", ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1);
+            throw new IgniteSQLException("Failed to determine target table for UPDATE", IgniteQueryErrorCode.TABLE_NOT_FOUND);
 
         GridSqlTable tbl = tbls.iterator().next();
 
@@ -462,5 +470,33 @@ public final class UpdatePlanBuilder {
                 return true;
 
         return false;
+    }
+
+    /**
+     * Check that given column corresponds to the key with respect to case sensitivity, if needed (should be considered
+     * when the schema escapes all identifiers on table creation).
+     * @param colName Column name.
+     * @param desc Row descriptor.
+     * @return {@code true} if column name corresponds to _key with respect to case sensitivity depending on schema.
+     */
+    private static boolean isKeyColumn(String colName, GridH2RowDescriptor desc) {
+        if (desc.quoteAllIdentifiers())
+            return KEY_FIELD_NAME.equals(colName);
+        else
+            return KEY_FIELD_NAME.equalsIgnoreCase(colName);
+    }
+
+    /**
+     * Check that given column corresponds to the key with respect to case sensitivity, if needed (should be considered
+     * when the schema escapes all identifiers on table creation).
+     * @param colName Column name.
+     * @param desc Row descriptor.
+     * @return {@code true} if column name corresponds to _key with respect to case sensitivity depending on schema.
+     */
+    private static boolean isValColumn(String colName, GridH2RowDescriptor desc) {
+        if (desc.quoteAllIdentifiers())
+            return VAL_FIELD_NAME.equals(colName);
+        else
+            return VAL_FIELD_NAME.equalsIgnoreCase(colName);
     }
 }

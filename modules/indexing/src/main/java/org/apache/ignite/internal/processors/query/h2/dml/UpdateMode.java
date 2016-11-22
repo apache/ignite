@@ -17,12 +17,20 @@
 
 package org.apache.ignite.internal.processors.query.h2.dml;
 
-import java.util.List;
-import org.apache.ignite.internal.util.lang.GridPlainClosure;
-
 /**
- * Method to construct new instances of keys and values on SQL MERGE and INSERT.
+ * DML statement execution plan type - MERGE/INSERT from rows or subquery,
+ * or UPDATE/DELETE from subquery or literals/params based.
  */
-public interface Supplier extends GridPlainClosure<List<?>, Object> {
-    // No-op.
+public enum UpdateMode {
+    /** */
+    MERGE,
+
+    /** */
+    INSERT,
+
+    /** */
+    UPDATE,
+
+    /** */
+    DELETE,
 }

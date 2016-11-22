@@ -63,10 +63,12 @@ public interface GridQueryIndexing {
      *
      * @param cctx Cache context.
      * @param qry Query.
+     * @param cancel Query cancel.
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
-    public QueryCursor<List<?>> queryTwoStep(GridCacheContext<?,?> cctx, SqlFieldsQuery qry) throws IgniteCheckedException;
+    public QueryCursor<List<?>> queryTwoStep(GridCacheContext<?, ?> cctx, SqlFieldsQuery qry, GridQueryCancel cancel)
+        throws IgniteCheckedException;
 
     /**
      * Parses SQL query into two step query and executes it.

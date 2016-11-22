@@ -427,12 +427,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public PreparedStatement prepareNativeStatement(String schema, String sql) throws SQLException {
-        JdbcPreparedStatement stmt = (JdbcPreparedStatement) prepareStatement(connectionForSpace(schema), sql, false);
-
-        Prepared p = GridSqlQueryParser.prepared(stmt);
-        p.prepare(); // To enforce types resolution.
-
-        return stmt;
+        return prepareStatement(connectionForSpace(schema), sql, false);
     }
 
     /**
@@ -1152,7 +1147,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if(qry.getTimeout() > 0)
             fqry.setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
 
-        final QueryCursor<List<?>> res = queryTwoStep(cctx, fqry);
+        final QueryCursor<List<?>> res = queryTwoStep(cctx, fqry, null);
 
         final Iterable<Cache.Entry<K, V>> converted = new Iterable<Cache.Entry<K, V>>() {
             @Override public Iterator<Cache.Entry<K, V>> iterator() {
@@ -1193,7 +1188,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public QueryCursor<List<?>> queryTwoStep(GridCacheContext<?,?> cctx, SqlFieldsQuery qry) {
+    @Override public QueryCursor<List<?>> queryTwoStep(GridCacheContext<?, ?> cctx, SqlFieldsQuery qry,
+        GridQueryCancel cancel) {
         final String space = cctx.name();
         final String sqlQry = qry.getSql();
 
@@ -1261,14 +1257,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 throw new IgniteSQLException("Given statement type does not match that declared by JDBC driver",
                     IgniteQueryErrorCode.STMT_TYPE_MISMATCH);
 
-            if (!prepared.isQuery())
+            if (!prepared.isQuery()) {
                 try {
-                    return dmlProc.updateSqlFieldsTwoStep(cctx.namexx(), stmt, qry);
+                    return dmlProc.updateSqlFieldsTwoStep(cctx.namexx(), stmt, qry, cancel);
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteSQLException("Failed to execute DML statement [qry=" + sqlQry + ", params=" +
                         Arrays.deepToString(qry.getArgs()) + "]", e);
                 }
+            }
 
             try {
                 bindParameters(stmt, F.asList(qry.getArgs()));
@@ -1331,7 +1328,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         twoStepQry.pageSize(qry.getPageSize());
 
-        GridQueryCancel cancel = new GridQueryCancel();
+        if (cancel == null)
+            cancel = new GridQueryCancel();
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
             runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder, qry.getTimeout(), cancel), cancel);
@@ -1481,7 +1479,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param escapeAll Escape flag.
      * @return Escaped name.
      */
-    private static String escapeName(String name, boolean escapeAll) {
+    public static String escapeName(String name, boolean escapeAll) {
         if (name == null) // It is possible only for a cache name.
             return ESC_STR;
 
@@ -3095,6 +3093,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         /** {@inheritDoc} */
         @Override public boolean snapshotableIndex() {
             return snapshotableIdx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean quoteAllIdentifiers() {
+            return schema.escapeAll();
         }
     }
 

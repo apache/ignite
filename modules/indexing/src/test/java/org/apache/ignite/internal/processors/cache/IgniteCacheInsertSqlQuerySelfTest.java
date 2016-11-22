@@ -119,12 +119,12 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     public void testFieldsCaseSensitivity() {
         IgniteCache<Key2, Person> p = ignite(0).cache("K22P").withKeepBinary();
 
-        p.query(new SqlFieldsQuery("insert into \"Person\" (\"Id\", \"id\", \"name\") values (1, ?, ?), " +
-            "(2, 3, 'Alex')").setArgs(4, "Sergi"));
+        p.query(new SqlFieldsQuery("insert into \"Person2\" (\"Id\", \"id\", \"name\", \"_Val\") values (1, ?, ?, 5), " +
+            "(2, 3, 'Alex', 6)").setArgs(4, "Sergi"));
 
-        assertEquals(createPerson(4, "Sergi"), p.get(new Key2(1)));
+        assertEquals(createPerson2(4, "Sergi", 5), p.get(new Key2(1)));
 
-        assertEquals(createPerson(3, "Alex"), p.get(new Key2(2)));
+        assertEquals(createPerson2(3, "Alex", 6), p.get(new Key2(2)));
     }
 
     /**

@@ -163,4 +163,9 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
      * @return {@code True} if index should support snapshots.
      */
     public boolean snapshotableIndex();
+
+    /**
+     * @return Escape all identifiers.
+     */
+    public boolean quoteAllIdentifiers();
 }

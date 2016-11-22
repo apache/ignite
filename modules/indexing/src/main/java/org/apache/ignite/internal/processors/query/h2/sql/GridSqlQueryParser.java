@@ -450,8 +450,13 @@ public class GridSqlQueryParser {
         Column[] srcCols = MERGE_COLUMNS.get(merge);
 
         GridSqlColumn[] cols = new GridSqlColumn[srcCols.length];
-        for (int i = 0; i < srcCols.length; i++)
+
+        for (int i = 0; i < srcCols.length; i++) {
             cols[i] = new GridSqlColumn(srcCols[i], tbl, srcCols[i].getName(), srcCols[i].getSQL());
+
+            cols[i].resultType(fromColumn(srcCols[i]));
+        }
+
         res.columns(cols);
 
         Column[] srcKeys = MERGE_KEYS.get(merge);
@@ -504,8 +509,13 @@ public class GridSqlQueryParser {
 
         Column[] srcCols = INSERT_COLUMNS.get(insert);
         GridSqlColumn[] cols = new GridSqlColumn[srcCols.length];
-        for (int i = 0; i < srcCols.length; i++)
+
+        for (int i = 0; i < srcCols.length; i++) {
             cols[i] = new GridSqlColumn(srcCols[i], tbl, srcCols[i].getName(), srcCols[i].getSQL());
+
+            cols[i].resultType(fromColumn(srcCols[i]));
+        }
+
         res.columns(cols);
 
         List<Expression[]> srcRows = INSERT_ROWS.get(insert);
@@ -572,7 +582,7 @@ public class GridSqlQueryParser {
 
         for (Column c : srcCols) {
             GridSqlColumn col = new GridSqlColumn(c, tbl, c.getName(), c.getSQL());
-            col.resultType(GridSqlType.fromColumn(c));
+            col.resultType(fromColumn(c));
             cols.add(col);
             set.put(col.columnName(), parseExpression(srcSet.get(c), true));
         }
