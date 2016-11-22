@@ -373,7 +373,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ComputeJobDestroy, memPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ContinuousQueryListenerApply, memPtr);
         }
         finally {
             leave();
