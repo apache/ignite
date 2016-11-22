@@ -344,29 +344,27 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
-        private long InLongLongObjectOutLong(void* target, int type, long inMemPtr, long outMemPtr, void* arg)
+        private long InLongLongObjectOutLong(void* target, int type, long val1, long val2, void* arg)
         {
-            // TODO: Rename arguments to val1 val2
-
             var op = (UnmanagedCallbackOp)type;
 
             switch (op)
             {
                 case UnmanagedCallbackOp.AffinityFunctionInit:
-                    return AffinityFunctionInit(target, inMemPtr, arg);
+                    return AffinityFunctionInit(target, val1, arg);
 
                 case UnmanagedCallbackOp.ComputeTaskLocalJobResult:
-                    return ComputeTaskLocalJobResult(inMemPtr, outMemPtr);
+                    return ComputeTaskLocalJobResult(val1, val2);
 
                 case UnmanagedCallbackOp.ComputeTaskComplete:
-                    ComputeTaskComplete(inMemPtr, outMemPtr);
+                    ComputeTaskComplete(val1, val2);
                     return 0;
 
                 case UnmanagedCallbackOp.ComputeJobSerialize:
-                    return ComputeJobSerialize(inMemPtr, outMemPtr);
+                    return ComputeJobSerialize(val1, val2);
 
                 case UnmanagedCallbackOp.ComputeJobExecuteLocal:
-                    ComputeJobExecuteLocal(inMemPtr, outMemPtr);
+                    ComputeJobExecuteLocal(val1, val2);
                     return 0;
 
                 default:
