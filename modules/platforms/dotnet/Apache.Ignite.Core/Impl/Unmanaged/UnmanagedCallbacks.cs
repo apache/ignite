@@ -354,7 +354,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     return 0;
 
                 case UnmanagedCallbackOp.DataStreamerTopologyUpdate:
-                    DataStreamerTopologyUpdate(val1, val2);
+                    DataStreamerTopologyUpdate(val1, val2, (int) val3);
                     return 0;
 
                 case UnmanagedCallbackOp.DataStreamerStreamReceiverInvoke:
@@ -715,7 +715,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region IMPLEMENTATION: DATA STREAMER
 
-        private void DataStreamerTopologyUpdate(long ldrPtr, long memPtr)
+        private void DataStreamerTopologyUpdate(long ldrPtr, long topVer, int topSize)
         {
             SafeCall(() =>
             {
@@ -727,15 +727,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 var ldr = ldrRef.Target as IDataStreamer;
 
                 if (ldr != null)
-                {
-                    using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                    {
-                        var topVer = stream.ReadLong();
-                        var topSize = stream.ReadInt();
-
-                        ldr.TopologyChange(topVer, topSize);
-                    }
-                }
+                    ldr.TopologyChange(topVer, topSize);
                 else
                     _handleRegistry.Release(ldrPtr, true);
             });
