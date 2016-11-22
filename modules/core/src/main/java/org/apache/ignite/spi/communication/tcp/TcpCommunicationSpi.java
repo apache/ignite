@@ -47,7 +47,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.Ignite;
@@ -240,11 +239,6 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META
 @IgniteSpiConsistencyChecked(optional = false)
 public class TcpCommunicationSpi extends IgniteSpiAdapter
     implements CommunicationSpi<Message>, TcpCommunicationSpiMBean {
-
-    /** */
-    public static final AtomicInteger STARTED_COUNT = new AtomicInteger();
-    /** */
-    public static final AtomicInteger ACTIVE_COUNT = new AtomicInteger();
 
     /** IPC error message. */
     public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
@@ -521,7 +515,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             GridTcpNioCommunicationClient client =
                                     connected(recoveryDesc, ses, rmtNode, msg0.received(), true, !hasShmemClient);
 
-                            // here the RecoveryLastReceivedMessage is in the session queue
                             fut.onDone(client);
                         }
                         finally {
@@ -2782,7 +2775,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                                 i += read;
                             }
 
-                            // will got here rcvCnt = 0 if read timeout have been occurred and the channel was closed
                             rcvCnt = buf.getLong(1);
                         }
 
