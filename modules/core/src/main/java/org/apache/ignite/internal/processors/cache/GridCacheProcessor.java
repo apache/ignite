@@ -1879,8 +1879,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         }
                     }
                 }
-
-                completeStartFuture(req);
             }
         }
     }
