@@ -107,16 +107,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Operation: prepare .Net. */
         private const int OpPrepareDotNet = 1;
 
-        private delegate void ComputeTaskMapCallbackDelegate(void* target, long taskPtr, long inMemPtr, long outMemPtr);
-        private delegate int ComputeTaskJobResultCallbackDelegate(void* target, long taskPtr, long jobPtr, long memPtr);
-        private delegate void ComputeTaskReduceCallbackDelegate(void* target, long taskPtr);
-        private delegate void ComputeTaskCompleteCallbackDelegate(void* target, long taskPtr, long memPtr);
-        private delegate int ComputeJobSerializeCallbackDelegate(void* target, long jobPtr, long memPtr);
-        private delegate long ComputeJobCreateCallbackDelegate(void* target, long memPtr);
-        private delegate void ComputeJobExecuteCallbackDelegate(void* target, long jobPtr, int cancel, long memPtr);
-        private delegate void ComputeJobCancelCallbackDelegate(void* target, long jobPtr);
-        private delegate void ComputeJobDestroyCallbackDelegate(void* target, long jobPtr);
-
         private delegate void ContinuousQueryListenerApplyCallbackDelegate(void* target, long lsnrPtr, long memPtr);
         private delegate long ContinuousQueryFilterCreateCallbackDelegate(void* target, long memPtr);
         private delegate int ContinuousQueryFilterApplyCallbackDelegate(void* target, long filterPtr, long memPtr);
@@ -206,16 +196,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 target = IntPtr.Zero.ToPointer(), // Target is not used in .Net as we rely on dynamic FP creation.
 
-                computeTaskMap = CreateFunctionPointer((ComputeTaskMapCallbackDelegate) ComputeTaskMap),
-                computeTaskJobResult =
-                    CreateFunctionPointer((ComputeTaskJobResultCallbackDelegate) ComputeTaskJobResult),
-                computeTaskReduce = CreateFunctionPointer((ComputeTaskReduceCallbackDelegate) ComputeTaskReduce),
-                computeTaskComplete = CreateFunctionPointer((ComputeTaskCompleteCallbackDelegate) ComputeTaskComplete),
-                computeJobSerialize = CreateFunctionPointer((ComputeJobSerializeCallbackDelegate) ComputeJobSerialize),
-                computeJobCreate = CreateFunctionPointer((ComputeJobCreateCallbackDelegate) ComputeJobCreate),
-                computeJobExecute = CreateFunctionPointer((ComputeJobExecuteCallbackDelegate) ComputeJobExecute),
-                computeJobCancel = CreateFunctionPointer((ComputeJobCancelCallbackDelegate) ComputeJobCancel),
-                computeJobDestroy = CreateFunctionPointer((ComputeJobDestroyCallbackDelegate) ComputeJobDestroy),
                 continuousQueryListenerApply =
                     CreateFunctionPointer((ContinuousQueryListenerApplyCallbackDelegate) ContinuousQueryListenerApply),
                 continuousQueryFilterCreate =
@@ -332,6 +312,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 case UnmanagedCallbackOp.CacheInvoke:
                     CacheInvoke(val);
+                    return 0;
+
+                case UnmanagedCallbackOp.ComputeTaskMap:
+                    ComputeTaskMap(val);
                     return 0;
 
                 default:
@@ -482,16 +466,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region IMPLEMENTATION: COMPUTE
 
-        private void ComputeTaskMap(void* target, long taskPtr, long inMemPtr, long outMemPtr)
+        private void ComputeTaskMap(long memPtr)
         {
             SafeCall(() =>
             {
-                using (PlatformMemoryStream inStream = IgniteManager.Memory.Get(inMemPtr).GetStream())
+                using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
-                    using (PlatformMemoryStream outStream = IgniteManager.Memory.Get(outMemPtr).GetStream())
-                    {
-                        Task(taskPtr).Map(inStream, outStream);
-                    }
+                    Task(stream.ReadLong()).Map(stream);
                 }
             });
         }

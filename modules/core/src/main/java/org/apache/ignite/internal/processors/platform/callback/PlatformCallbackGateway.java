@@ -179,15 +179,13 @@ public class PlatformCallbackGateway {
     /**
      * Perform native task map. Do not throw exceptions, serializing them to the output stream instead.
      *
-     * @param taskPtr Task pointer.
-     * @param outMemPtr Output memory pointer (exists if topology changed, otherwise {@code 0}).
-     * @param inMemPtr Input memory pointer.
+     * @param memPtr Memory pointer.
      */
-    public void computeTaskMap(long taskPtr, long outMemPtr, long inMemPtr) {
+    public void computeTaskMap(long memPtr) {
         enter();
 
         try {
-            PlatformCallbackUtils.computeTaskMap(envPtr, taskPtr, outMemPtr, inMemPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ComputeTaskMap, memPtr);
         }
         finally {
             leave();
