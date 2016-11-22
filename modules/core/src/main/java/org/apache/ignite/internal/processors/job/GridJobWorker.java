@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.job;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -790,9 +791,13 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                     }
                     else {
                         try {
-                            byte[] resBytes  = null;
+                            byte[] resBytes = null;
+                            byte[] exBytes = null;
+                            byte[] attrBytes = null;
 
                             boolean loc = ctx.localNodeId().equals(sndNode.id()) && !ctx.config().isMarshalLocalJobs();
+
+                            Map<Object, Object> attrs = jobCtx.getAttributes();
 
                             // Try serialize response, and if exception - return to client.
                             if (!loc) {
@@ -808,7 +813,39 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                                         ex = U.convertException(e);
 
                                     U.error(log, "Failed to serialize job response [nodeId=" + taskNode.id() +
-                                        ", ses=" + ses + ", jobId=" + ses.getJobId() + ", job=" + job + ']', e);
+                                        ", ses=" + ses + ", jobId=" + ses.getJobId() + ", job=" + job +
+                                        ", resCls=" + (res == null ? null : res.getClass()) + ']', e);
+                                }
+
+                                try {
+                                    attrBytes = U.marshal(marsh, attrs);
+                                }
+                                catch (IgniteCheckedException e) {
+                                    attrBytes = U.marshal(marsh, Collections.emptyMap());
+
+                                    if (ex != null)
+                                        ex.addSuppressed(e);
+                                    else
+                                        ex = U.convertException(e);
+
+                                    U.error(log, "Failed to serialize job attributes [nodeId=" + taskNode.id() +
+                                        ", ses=" + ses + ", jobId=" + ses.getJobId() + ", job=" + job +
+                                        ", attrs=" + attrs + ']', e);
+                                }
+
+                                try {
+                                    exBytes = U.marshal(marsh, ex);
+                                }
+                                catch (IgniteCheckedException e) {
+                                    String msg = "Failed to serialize job exception [nodeId=" + taskNode.id() +
+                                        ", ses=" + ses + ", jobId=" + ses.getJobId() + ", job=" + job +
+                                        ", msg=\"" + e.getMessage() + "\"]";
+
+                                    ex = new IgniteException(msg);
+
+                                    U.error(log, msg, e);
+
+                                    exBytes = U.marshal(marsh, ex);
                                 }
                             }
 
@@ -826,18 +863,15 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                             else if (!internal && ctx.event().isRecordable(EVT_JOB_FINISHED))
                                 evts = addEvent(evts, EVT_JOB_FINISHED, /*no message for success. */null);
 
-
-                            Map<Object, Object> attrs = jobCtx.getAttributes();
-
                             GridJobExecuteResponse jobRes = new GridJobExecuteResponse(
                                 ctx.localNodeId(),
                                 ses.getId(),
                                 ses.getJobId(),
-                                loc ? null : U.marshal(marsh, ex),
+                                exBytes,
                                 loc ? ex : null,
                                 resBytes,
                                 loc ? res : null,
-                                loc ? null : U.marshal(marsh, attrs),
+                                attrBytes,
                                 loc ? attrs : null,
                                 isCancelled(),
                                 retry ? ctx.cache().context().exchange().readyAffinityVersion() : null);
