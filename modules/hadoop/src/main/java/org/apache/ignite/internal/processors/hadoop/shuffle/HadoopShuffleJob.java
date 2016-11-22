@@ -211,13 +211,16 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     /**
      * @param maps Maps.
      * @param idx Index.
+     * @param mapper If map is requested by mapper.
      * @return Map.
      */
-    private HadoopMultimap getOrCreateMap(AtomicReferenceArray<HadoopMultimap> maps, int idx) {
+    private HadoopMultimap getOrCreateMap(AtomicReferenceArray<HadoopMultimap> maps, int idx, boolean mapper) {
         HadoopMultimap map = maps.get(idx);
 
         if (map == null) { // Create new map.
-            map = get(job.info(), SHUFFLE_REDUCER_NO_SORTING, false) ?
+            boolean hash = mapper || get(job.info(), SHUFFLE_REDUCER_NO_SORTING, false);
+
+            map = hash ?
                 new HadoopConcurrentHashMultimap(job.info(), mem, get(job.info(), PARTITION_HASHMAP_SIZE, 8 * 1024)):
                 new HadoopSkipList(job.info(), mem);
 
@@ -245,7 +248,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         perfCntr.onShuffleMessage(msg.reducer(), U.currentTimeMillis());
 
-        HadoopMultimap map = getOrCreateMap(maps, msg.reducer());
+        HadoopMultimap map = getOrCreateMap(maps, msg.reducer(), false);
 
         // Add data from message to the map.
         try (HadoopMultimap.Adder adder = map.startAdding(taskCtx)) {
@@ -612,7 +615,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
             HadoopTaskOutput out = adders[part];
 
             if (out == null)
-                adders[part] = out = getOrCreateMap(maps, part).startAdding(taskCtx);
+                adders[part] = out = getOrCreateMap(maps, part, true).startAdding(taskCtx);
 
             out.write(key, val);
         }
