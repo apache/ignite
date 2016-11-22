@@ -83,7 +83,7 @@ public class PublicThreadpoolStarvationTest extends GridCacheAbstractSelfTest {
 
         fillCaches();
 
-        info("Caches are filled");
+        info("Caches are filled.");
     }
 
     /** {@inheritDoc} */
