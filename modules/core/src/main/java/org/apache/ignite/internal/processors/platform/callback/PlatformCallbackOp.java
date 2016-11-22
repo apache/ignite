@@ -206,4 +206,7 @@ class PlatformCallbackOp {
 
     /** */
     public static final int AffinityFunctionDestroy = 62;
+
+    /** */
+    public static final int ComputeTaskLocalJobResult = 63;
 }

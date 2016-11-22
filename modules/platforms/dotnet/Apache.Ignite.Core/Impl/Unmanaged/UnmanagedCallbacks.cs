@@ -318,6 +318,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     ComputeTaskMap(val);
                     return 0;
 
+                case UnmanagedCallbackOp.ComputeTaskJobResult:
+                    return ComputeTaskJobResult(val);
+
                 default:
                     throw new InvalidOperationException("Invalid callback code: " + type);
             }
@@ -325,12 +328,17 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private long InObjectStreamOutStream(void* target, int type, long inMemPtr, long outMemPtr, void* arg)
         {
+            // TODO: Rename arguments to val1 val2
+
             var op = (UnmanagedCallbackOp)type;
 
             switch (op)
             {
                 case UnmanagedCallbackOp.AffinityFunctionInit:
                     return AffinityFunctionInit(target, inMemPtr, arg);
+
+                case UnmanagedCallbackOp.ComputeTaskLocalJobResult:
+                    return ComputeTaskLocalJobResult(inMemPtr, outMemPtr);
 
                 default:
                     throw new InvalidOperationException("Invalid callback code: " + type);
@@ -477,20 +485,27 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private int ComputeTaskJobResult(void* target, long taskPtr, long jobPtr, long memPtr)
+        private int ComputeTaskLocalJobResult(long taskPtr, long jobPtr)
         {
             return SafeCall(() =>
             {
                 var task = Task(taskPtr);
 
-                if (memPtr == 0)
-                {
-                    return task.JobResultLocal(Job(jobPtr));
-                }
+                return task.JobResultLocal(Job(jobPtr));
+            });
+        }
 
+        private int ComputeTaskJobResult(long memPtr)
+        {
+            return SafeCall(() =>
+            {
                 using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
-                    return task.JobResultRemote(Job(jobPtr), stream);
+                    var task = Task(stream.ReadLong());
+
+                    var job = Job(stream.ReadLong());
+
+                    return task.JobResultRemote(job, stream);
                 }
             });
         }

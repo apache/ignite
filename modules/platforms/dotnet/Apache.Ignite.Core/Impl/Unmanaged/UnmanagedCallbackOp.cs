@@ -84,6 +84,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         AffinityFunctionPartition = 59,
         AffinityFunctionAssignPartitions = 60,
         AffinityFunctionRemoveNode = 61,
-        AffinityFunctionDestroy = 62
+        AffinityFunctionDestroy = 62,
+        ComputeTaskLocalJobResult = 63,
     }
 }

@@ -197,14 +197,31 @@ public class PlatformCallbackGateway {
      *
      * @param taskPtr Task pointer.
      * @param jobPtr Job pointer.
-     * @param memPtr Memory pointer (always zero for local job execution).
      * @return Job result enum ordinal.
      */
-    public int computeTaskJobResult(long taskPtr, long jobPtr, long memPtr) {
+    public int computeTaskLocalJobResult(long taskPtr, long jobPtr) {
         enter();
 
         try {
-            return PlatformCallbackUtils.computeTaskJobResult(envPtr, taskPtr, jobPtr, memPtr);
+            return (int)PlatformCallbackUtils.inObjectStreamOutStream(envPtr,
+                PlatformCallbackOp.ComputeTaskLocalJobResult, taskPtr, jobPtr, null);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Perform native task job result notification.
+     *
+     * @param memPtr Memory pointer.
+     * @return Job result enum ordinal.
+     */
+    public int computeTaskJobResult(long memPtr) {
+        enter();
+
+        try {
+            return (int)PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ComputeTaskJobResult, memPtr);
         }
         finally {
             leave();
