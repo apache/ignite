@@ -177,9 +177,6 @@ namespace ignite
 
         void Connection::Send(const int8_t* data, size_t len)
         {
-            struct timespec t0, t1;
-
-            clock_gettime(CLOCK_MONOTONIC, &t0);
             if (!connected)
                 IGNITE_ERROR_1(IgniteError::IGNITE_ERR_ILLEGAL_STATE, "Connection is not established");
 
@@ -190,10 +187,6 @@ namespace ignite
             hdr->len = static_cast<int32_t>(len);
 
             memcpy(msg.GetData() + sizeof(OdbcProtocolHeader), data, len);
-
-            clock_gettime(CLOCK_MONOTONIC, &t1);
-            long long nsecs = t1.tv_nsec - t0.tv_nsec + (t1.tv_sec - t0.tv_sec) * 1000000000;
-            std::clog << "Copy took: " << nsecs << " ns" << std::endl;
 
             size_t sent = SendAll(msg.GetData(), msg.GetSize());
 
