@@ -4128,7 +4128,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         rmCrd.subject().permissions())) {
                                         // Node has not pass authentication.
                                         LT.warn(log,
-                                            null,
                                             "Failed to authenticate local node " +
                                                 "(local authentication result is different from rest of topology) " +
                                                 "[nodeId=" + node.id() + ", addrs=" + U.addressesAsString(node) + ']',
