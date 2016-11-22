@@ -317,7 +317,7 @@ namespace ignite
             JniMethod M_PLATFORM_CALLBACK_UTILS_CONSOLE_WRITE = JniMethod("consoleWrite", "(Ljava/lang/String;Z)V", true);
 
             JniMethod M_PLATFORM_CALLBACK_UTILS_IN_LONG_OUT_LONG = JniMethod("inLongOutLong", "(JIJ)J", true);
-            JniMethod M_PLATFORM_CALLBACK_UTILS_IN_LONG_LONG_LONG_OBJECT_OUT_LONG = JniMethod("inLongLongObjectOutLong", "(JIJJJLjava/lang/Object;)J", true);
+            JniMethod M_PLATFORM_CALLBACK_UTILS_IN_LONG_LONG_LONG_OBJECT_OUT_LONG = JniMethod("inLongLongLongObjectOutLong", "(JIJJJLjava/lang/Object;)J", true);
 
             const char* C_PLATFORM_UTILS = "org/apache/ignite/internal/processors/platform/utils/PlatformUtils";
             JniMethod M_PLATFORM_UTILS_REALLOC = JniMethod("reallocate", "(JI)V", true);
