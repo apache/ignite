@@ -42,6 +42,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 /**
  *
@@ -522,7 +523,10 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         Object val = val0 == null ? new BinaryValueWithType(BinaryUtils.typeByClass(Object.class), null) : val0;
 
         if (assignedVals == null)
-            assignedVals = new LinkedHashMap<>();
+            if (BinaryUtils.FIELDS_SORTED_ORDER)
+                assignedVals = new TreeMap<>();
+            else
+                assignedVals = new LinkedHashMap<>();
 
         Object oldVal = assignedVals.put(name, val);
 
