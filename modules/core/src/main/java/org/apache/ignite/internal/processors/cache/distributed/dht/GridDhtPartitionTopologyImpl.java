@@ -499,8 +499,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         // Wait for rent outside of checkpoint lock.
         waitForRent();
 
-        cctx.shared().database().waitForCheckpoint("exchange");
-
         ClusterNode loc = cctx.localNode();
 
         cctx.shared().database().checkpointReadLock();
