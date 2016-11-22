@@ -5,7 +5,8 @@ stand-alone node binary. To build examples you need to build and install core Ap
 Ignite library then refer to $IGNITE_HOME/platforms/cpp/example/README.txt for
 further instructions.
 
-For details on ODBC driver installation and usage please refer to odbc/README.txt.
+For details on ODBC driver installation and usage please refer to
+$IGNITE_HOME/platforms/cpp/odbc/README.txt.
 
 Building on Linux With Autotools
 ----------------------------------
