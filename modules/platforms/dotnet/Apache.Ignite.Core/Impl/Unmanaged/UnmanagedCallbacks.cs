@@ -388,7 +388,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     {
                         var store = _handleRegistry.Get<CacheStore>(stream.ReadLong(), true);
 
-                        // TODO: Next read returns incorrect result. Java overwrites ID?
                         return store.Invoke(stream, _ignite);
                     }
                     catch (Exception e)
