@@ -101,6 +101,35 @@ void TestFunction(AnyReference<LivenessMarker> ptr)
     AnyReference<LivenessMarker> copy2(ptr);
 }
 
+struct C1
+{
+    int c1;
+};
+
+struct C2
+{
+    int c2;
+};
+
+struct C3 : C1, C2
+{
+    int c3;
+};
+
+void TestFunction1(AnyReference<C1> c1, int expected)
+{
+    BOOST_CHECK_EQUAL(c1.Get().c1, expected);
+}
+
+void TestFunction2(AnyReference<C2> c2, int expected)
+{
+    BOOST_CHECK_EQUAL(c2.Get().c2, expected);
+}
+
+void TestFunction3(AnyReference<C3> c3, int expected)
+{
+    BOOST_CHECK_EQUAL(c3.Get().c3, expected);
+}
 
 BOOST_AUTO_TEST_SUITE(AnyReferenceTestSuite)
 
@@ -300,6 +329,19 @@ BOOST_AUTO_TEST_CASE(NonOwningPointerTest2)
     }
 
     BOOST_CHECK_EQUAL(instances, 0);
+}
+
+BOOST_AUTO_TEST_CASE(CastTest)
+{
+    C3 testVal;
+
+    testVal.c1 = 1;
+    testVal.c2 = 2;
+    testVal.c3 = 3;
+
+    TestFunction1(PassReference(testVal), 1);
+    TestFunction2(PassReference(testVal), 2);
+    TestFunction3(PassReference(testVal), 3);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

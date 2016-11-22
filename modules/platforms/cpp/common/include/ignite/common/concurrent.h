@@ -136,12 +136,13 @@ namespace ignite
                  * Constructor.
                  *
                  * @param ptr Raw pointer.
+                 * @param deleter Delete function.
                  */
-                explicit SharedPointer(T* ptr)
+                SharedPointer(T* ptr, void(*deleter)(T*) = SharedPointerDefaultDeleter<T>)
                 {
                     if (ptr)
                     {
-                        impl = new SharedPointerImpl(ptr, reinterpret_cast<SharedPointerImpl::DeleterType>(&SharedPointerDefaultDeleter<T>));
+                        impl = new SharedPointerImpl(ptr, reinterpret_cast<SharedPointerImpl::DeleterType>(deleter));
                         ImplEnableShared(ptr, impl);
                     }
                     else
@@ -154,8 +155,11 @@ namespace ignite
                  * @param ptr Raw pointer.
                  * @param deleter Delete function.
                  */
-                SharedPointer(T* ptr, void(*deleter)(T*))
+                template<typename T2>
+                SharedPointer(T2* ptr, void(*deleter)(T2*) = SharedPointerDefaultDeleter<T2>)
                 {
+                    static_cast<T*>(ptr);
+
                     if (ptr)
                     {
                         impl = new SharedPointerImpl(ptr, reinterpret_cast<SharedPointerImpl::DeleterType>(deleter));

@@ -33,7 +33,6 @@ namespace ignite
         /**
          * Smart pointer interface.
          */
-        template<typename T>
         class AnyReferenceImplBase
         {
         public:
@@ -46,31 +45,18 @@ namespace ignite
             }
 
             /**
-             * Dereference the pointer.
+             * Get the pointer.
              *
-             * If the pointer is null then this operation results in undefined
-             * behaviour.
-             *
-             * @return Constant reference to underlying value.
+             * @return Constant pointer to underlying value.
              */
-            virtual const T& Get() const = 0;
+            virtual const void* Get() const = 0;
 
             /**
-             * Dereference the pointer.
+             * Get the pointer.
              *
-             * If the pointer is null then this operation results in undefined
-             * behaviour.
-             *
-             * @return Reference to underlying value.
+             * @return Pointer to underlying value.
              */
-            virtual T& Get() = 0;
-
-            /**
-             * Check if the pointer is null.
-             *
-             * @return True if the value is null.
-             */
-            virtual bool IsNull() const = 0;
+            virtual void* Get() = 0;
         };
 
         /**
@@ -81,11 +67,9 @@ namespace ignite
          * pointer implementations and provides unified interface for them.
          */
         template<typename P>
-        class AnyReferenceSmartPointer : public AnyReferenceImplBase<typename P::element_type>
+        class AnyReferenceSmartPointer : public AnyReferenceImplBase
         {
         public:
-            typedef typename P::element_type ElementType;
-
             /**
              * Destructor.
              */
@@ -103,40 +87,14 @@ namespace ignite
                 // No-op.
             }
 
-            /**
-             * Dereference the pointer.
-             *
-             * If the pointer is null then this operation results in undefined
-             * behaviour.
-             *
-             * @return Constant reference to underlying value.
-             */
-            const ElementType& Get() const
+            const void* Get() const
             {
-                return *ptr;
+                return reinterpret_cast<const void*>(&(*ptr));
             }
 
-            /**
-             * Dereference the pointer.
-             *
-             * If the pointer is null then this operation results in undefined
-             * behaviour.
-             *
-             * @return Reference to underlying value.
-             */
-            ElementType& Get()
+            void* Get()
             {
-                return *ptr;
-            }
-
-            /**
-             * Check if the pointer is null.
-             *
-             * @return True if the value is null.
-             */
-            bool IsNull() const
-            {
-                return 0 == ptr.get();
+                return reinterpret_cast<void*>(&(*ptr));
             }
 
             /**
@@ -160,11 +118,9 @@ namespace ignite
          * Any reference implementation for the raw pointer.
          */
         template<typename T>
-        class AnyReferenceOwningRawPointer : public AnyReferenceImplBase<T>
+        class AnyReferenceOwningRawPointer : public AnyReferenceImplBase
         {
         public:
-            typedef T ElementType;
-
             /**
              * Destructor.
              */
@@ -193,40 +149,14 @@ namespace ignite
                 // No-op.
             }
 
-            /**
-             * Dereference the pointer.
-             *
-             * If the pointer is null then this operation results in undefined
-             * behaviour.
-             *
-             * @return Constant reference to underlying value.
-             */
-            const ElementType& Get() const
+            const void* Get() const
             {
-                return *ptr;
+                return reinterpret_cast<const void*>(ptr);
             }
 
-            /**
-             * Dereference the pointer.
-             *
-             * If the pointer is null then this operation results in undefined
-             * behaviour.
-             *
-             * @return Reference to underlying value.
-             */
-            ElementType& Get()
+            void* Get()
             {
-                return *ptr;
-            }
-
-            /**
-             * Check if the pointer is null.
-             *
-             * @return True if the value is null.
-             */
-            bool IsNull() const
-            {
-                return 0 == ptr;
+                return reinterpret_cast<void*>(ptr);
             }
 
         private:
@@ -238,11 +168,9 @@ namespace ignite
          * Any reference implementation for the raw pointer.
          */
         template<typename T>
-        class AnyReferenceNonOwningRawPointer : public AnyReferenceImplBase<T>
+        class AnyReferenceNonOwningRawPointer : public AnyReferenceImplBase
         {
         public:
-            typedef T ElementType;
-
             /**
              * Destructor.
              */
@@ -271,46 +199,21 @@ namespace ignite
                 // No-op.
             }
 
-            /**
-             * Dereference the pointer.
-             *
-             * If the pointer is null then this operation results in undefined
-             * behaviour.
-             *
-             * @return Constant reference to underlying value.
-             */
-            const ElementType& Get() const
+            const void* Get() const
             {
-                return *ptr;
+                return reinterpret_cast<const void*>(ptr);
             }
 
-            /**
-             * Dereference the pointer.
-             *
-             * If the pointer is null then this operation results in undefined
-             * behaviour.
-             *
-             * @return Reference to underlying value.
-             */
-            ElementType& Get()
+            void* Get()
             {
-                return *ptr;
-            }
-
-            /**
-             * Check if the pointer is null.
-             *
-             * @return True if the value is null.
-             */
-            bool IsNull() const
-            {
-                return 0 == ptr;
+                return reinterpret_cast<void*>(ptr);
             }
 
         private:
             /** Underlying pointer. */
             T* ptr;
         };
+
     }
 
     /**
@@ -322,12 +225,15 @@ namespace ignite
     template<typename T>
     class AnyReference
     {
+        template<typename>
+        friend class AnyReference;
     public:
         /**
          * Default constructor.
          */
         AnyReference() :
-            ptr()
+            ptr(),
+            offset(0)
         {
             // No-op.
         }
@@ -336,9 +242,11 @@ namespace ignite
          * Constructor.
          *
          * @param ptr Smart pointer implementation.
+         * @param offset Pointer offset.
          */
-        explicit AnyReference(common::AnyReferenceImplBase<T>* ptr) :
-            ptr(ptr)
+        explicit AnyReference(common::AnyReferenceImplBase* ptr, ptrdiff_t offset = 0) :
+            ptr(ptr),
+            offset(offset)
         {
             // No-op.
         }
@@ -349,7 +257,8 @@ namespace ignite
          * @param other Another instance.
          */
         AnyReference(const AnyReference& other) :
-            ptr(other.ptr)
+            ptr(other.ptr),
+            offset(other.offset)
         {
             // No-op.
         }
@@ -361,9 +270,14 @@ namespace ignite
          */
         template<typename T2>
         AnyReference(const AnyReference<T2>& other) :
-            ptr(other.GetPointer())
+            ptr(other.ptr),
+            offset(other.offset)
         {
-            // No-op.
+            T2* p0 = reinterpret_cast<T2*>(80000);
+            T* p1 = static_cast<T*>(p0);
+
+            ptrdiff_t diff = reinterpret_cast<ptrdiff_t>(p1) - reinterpret_cast<ptrdiff_t>(p0);
+            offset += diff;
         }
 
         /**
@@ -372,6 +286,25 @@ namespace ignite
         AnyReference& operator=(const AnyReference& other)
         {
             ptr = other.ptr;
+            offset = other.offset;
+
+            return *this;
+        }
+        
+        /**
+         * Assignment operator.
+         */
+        template<typename T2>
+        AnyReference& operator=(const AnyReference<T2>& other)
+        {
+            ptr = other.ptr;
+            offset = other.offset;
+
+            T2* p0 = reinterpret_cast<T2*>(80000);
+            T* p1 = static_cast<T*>(p0);
+
+            ptrdiff_t diff = reinterpret_cast<ptrdiff_t>(p1) - reinterpret_cast<ptrdiff_t>(p0);
+            offset += diff;
 
             return *this;
         }
@@ -394,7 +327,7 @@ namespace ignite
          */
         const T& Get() const
         {
-            return ptr.Get()->Get();
+            return *reinterpret_cast<const T*>(reinterpret_cast<ptrdiff_t>(ptr.Get()->Get()) + offset);
         }
 
         /**
@@ -407,7 +340,7 @@ namespace ignite
          */
         T& Get()
         {
-            return ptr.Get()->Get();
+            return *reinterpret_cast<T*>(reinterpret_cast<ptrdiff_t>(ptr.Get()->Get()) + offset);
         }
 
         /**
@@ -417,24 +350,17 @@ namespace ignite
          */
         bool IsNull() const
         {
-            common::AnyReferenceImplBase<T>* raw = ptr.Get();
+            const common::AnyReferenceImplBase* raw = ptr.Get();
 
-            return !raw || raw->IsNull();
-        }
-
-        /**
-         * Get internal pointer.
-         *
-         * @return Internal pointer.
-         */
-        const common::concurrent::SharedPointer<common::AnyReferenceImplBase<T>>& GetPointer() const
-        {
-            return ptr;
+            return !raw || !raw->Get();
         }
 
     private:
         /** Implementation. */
-        common::concurrent::SharedPointer<common::AnyReferenceImplBase<T>> ptr;
+        common::concurrent::SharedPointer<common::AnyReferenceImplBase> ptr;
+
+        /** Address offset. */
+        ptrdiff_t offset;
     };
 
     /**

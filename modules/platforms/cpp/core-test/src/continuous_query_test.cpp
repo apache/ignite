@@ -310,7 +310,7 @@ BOOST_AUTO_TEST_CASE(TestBasic)
 {
     Listener<int, TestEntry> lsnr;
 
-    ContinuousQuery<int, TestEntry> qry(PassReference< CacheEntryEventListener<int, TestEntry> >(lsnr));
+    ContinuousQuery<int, TestEntry> qry(PassReference(lsnr));
 
     ContinuousQueryHandle<int, TestEntry> handle = cache.QueryContinuous(qry);
 
@@ -321,7 +321,7 @@ BOOST_AUTO_TEST_CASE(TestInitialQueryScan)
 {
     Listener<int, TestEntry> lsnr;
 
-    ContinuousQuery<int, TestEntry> qry(PassReference< CacheEntryEventListener<int, TestEntry> >(lsnr));
+    ContinuousQuery<int, TestEntry> qry(PassReference(lsnr));
 
     cache.Put(11, TestEntry(111));
     cache.Put(22, TestEntry(222));
@@ -352,7 +352,7 @@ BOOST_AUTO_TEST_CASE(TestInitialQuerySql)
 {
     Listener<int, TestEntry> lsnr;
 
-    ContinuousQuery<int, TestEntry> qry(PassReference< CacheEntryEventListener<int, TestEntry> >(lsnr));
+    ContinuousQuery<int, TestEntry> qry(PassReference(lsnr));
 
     cache.Put(11, TestEntry(111));
     cache.Put(22, TestEntry(222));
@@ -381,7 +381,7 @@ BOOST_AUTO_TEST_CASE(TestInitialQueryText)
 {
     Listener<int, TestEntry> lsnr;
 
-    ContinuousQuery<int, TestEntry> qry(PassReference< CacheEntryEventListener<int, TestEntry> >(lsnr));
+    ContinuousQuery<int, TestEntry> qry(PassReference(lsnr));
 
     cache.Put(11, TestEntry(111));
     cache.Put(22, TestEntry(222));
@@ -408,7 +408,7 @@ BOOST_AUTO_TEST_CASE(TestBasicNoExcept)
 {
     Listener<int, TestEntry> lsnr;
 
-    ContinuousQuery<int, TestEntry> qry(PassReference< CacheEntryEventListener<int, TestEntry> >(lsnr));
+    ContinuousQuery<int, TestEntry> qry(PassReference(lsnr));
 
     IgniteError err;
 
@@ -423,7 +423,7 @@ BOOST_AUTO_TEST_CASE(TestInitialQueryScanNoExcept)
 {
     Listener<int, TestEntry> lsnr;
 
-    ContinuousQuery<int, TestEntry> qry(PassReference< CacheEntryEventListener<int, TestEntry> >(lsnr));
+    ContinuousQuery<int, TestEntry> qry(PassReference(lsnr));
 
     cache.Put(11, TestEntry(111));
     cache.Put(22, TestEntry(222));
@@ -458,7 +458,7 @@ BOOST_AUTO_TEST_CASE(TestInitialQuerySqlNoExcept)
 {
     Listener<int, TestEntry> lsnr;
 
-    ContinuousQuery<int, TestEntry> qry(PassReference< CacheEntryEventListener<int, TestEntry> >(lsnr));
+    ContinuousQuery<int, TestEntry> qry(PassReference(lsnr));
 
     cache.Put(11, TestEntry(111));
     cache.Put(22, TestEntry(222));
@@ -491,7 +491,7 @@ BOOST_AUTO_TEST_CASE(TestInitialQueryTextNoExcept)
 {
     Listener<int, TestEntry> lsnr;
 
-    ContinuousQuery<int, TestEntry> qry(PassReference< CacheEntryEventListener<int, TestEntry> >(lsnr));
+    ContinuousQuery<int, TestEntry> qry(PassReference(lsnr));
 
     cache.Put(11, TestEntry(111));
     cache.Put(22, TestEntry(222));
@@ -525,7 +525,7 @@ BOOST_AUTO_TEST_CASE(TestExpiredQuery)
 
     {
         // Query scope.
-        ContinuousQuery<int, TestEntry> qry(PassReference< CacheEntryEventListener<int, TestEntry> >(lsnr));
+        ContinuousQuery<int, TestEntry> qry(PassReference(lsnr));
 
         handle = cache.QueryContinuous(qry);
     }
@@ -539,7 +539,7 @@ BOOST_AUTO_TEST_CASE(TestSetGetLocal)
 {
     Listener<int, TestEntry> lsnr;
 
-    ContinuousQuery<int, TestEntry> qry(PassReference< CacheEntryEventListener<int, TestEntry> >(lsnr));
+    ContinuousQuery<int, TestEntry> qry(PassReference(lsnr));
 
     BOOST_CHECK(!qry.GetLocal());
 
@@ -559,7 +559,7 @@ BOOST_AUTO_TEST_CASE(TestGetSetBufferSize)
     typedef ContinuousQuery<int, TestEntry> QueryType;
     Listener<int, TestEntry> lsnr;
 
-    ContinuousQuery<int, TestEntry> qry(PassReference< CacheEntryEventListener<int, TestEntry> >(lsnr));
+    ContinuousQuery<int, TestEntry> qry(PassReference(lsnr));
 
     BOOST_CHECK_EQUAL(qry.GetBufferSize(), QueryType::DEFAULT_BUFFER_SIZE);
 
@@ -579,7 +579,7 @@ BOOST_AUTO_TEST_CASE(TestGetSetTimeInterval)
     typedef ContinuousQuery<int, TestEntry> QueryType;
     Listener<int, TestEntry> lsnr;
 
-    ContinuousQuery<int, TestEntry> qry(PassReference< CacheEntryEventListener<int, TestEntry> >(lsnr));
+    ContinuousQuery<int, TestEntry> qry(PassReference(lsnr));
 
     qry.SetBufferSize(10);
 
