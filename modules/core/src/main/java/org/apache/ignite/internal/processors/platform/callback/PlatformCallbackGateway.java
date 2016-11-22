@@ -367,14 +367,13 @@ public class PlatformCallbackGateway {
     /**
      * Invoke local callback.
      *
-     * @param cbPtr Callback pointer.
      * @param memPtr Memory pointer.
      */
-    public void continuousQueryListenerApply(long cbPtr, long memPtr) {
+    public void continuousQueryListenerApply(long memPtr) {
         enter();
 
         try {
-            PlatformCallbackUtils.continuousQueryListenerApply(envPtr, cbPtr, memPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ComputeJobDestroy, memPtr);
         }
         finally {
             leave();
@@ -391,7 +390,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return PlatformCallbackUtils.continuousQueryFilterCreate(envPtr, memPtr);
+            return PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ContinuousQueryFilterCreate, memPtr);
         }
         finally {
             leave();
@@ -401,15 +400,14 @@ public class PlatformCallbackGateway {
     /**
      * Invoke remote filter.
      *
-     * @param filterPtr Filter pointer.
      * @param memPtr Memory pointer.
      * @return Result.
      */
-    public int continuousQueryFilterApply(long filterPtr, long memPtr) {
+    public long continuousQueryFilterApply(long memPtr) {
         enter();
 
         try {
-            return PlatformCallbackUtils.continuousQueryFilterApply(envPtr, filterPtr, memPtr);
+            return PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ContinuousQueryFilterApply, memPtr);
         }
         finally {
             leave();
@@ -425,7 +423,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.continuousQueryFilterRelease(envPtr, filterPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr,
+                PlatformCallbackOp.ContinuousQueryFilterRelease, filterPtr);
         }
         finally {
             leave();
