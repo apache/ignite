@@ -203,8 +203,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return (int)PlatformCallbackUtils.inLongLongObjectOutLong(envPtr,
-                PlatformCallbackOp.ComputeTaskLocalJobResult, taskPtr, jobPtr, null);
+            return (int)PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.ComputeTaskLocalJobResult, taskPtr, jobPtr, 0, null);
         }
         finally {
             leave();
@@ -254,8 +254,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.inLongLongObjectOutLong(envPtr,
-                PlatformCallbackOp.ComputeTaskComplete, taskPtr, memPtr, null);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.ComputeTaskComplete, taskPtr, memPtr, 0, null);
         }
         finally {
             leave();
@@ -273,8 +273,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return (int)PlatformCallbackUtils.inLongLongObjectOutLong(envPtr,
-                PlatformCallbackOp.ComputeJobSerialize, jobPtr, memPtr, null);
+            return (int)PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.ComputeJobSerialize, jobPtr, memPtr, 0, null);
         }
         finally {
             leave();
@@ -308,8 +308,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.inLongLongObjectOutLong(envPtr,
-                PlatformCallbackOp.ComputeJobExecuteLocal, jobPtr, cancel, null);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.ComputeJobExecuteLocal, jobPtr, cancel, 0, null);
         }
         finally {
             leave();
@@ -1027,8 +1027,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return PlatformCallbackUtils.inLongLongObjectOutLong(envPtr, PlatformCallbackOp.AffinityFunctionInit,
-                memPtr, 0, baseFunc);
+            return PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr, PlatformCallbackOp.AffinityFunctionInit,
+                memPtr, 0, 0, baseFunc);
         }
         finally {
             leave();
