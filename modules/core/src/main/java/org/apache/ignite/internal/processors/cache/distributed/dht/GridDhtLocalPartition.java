@@ -238,6 +238,9 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return {@code True} if partition is empty.
      */
     public boolean isEmpty() {
+        if (cctx.allowFastEviction())
+            return map.size() == 0;
+
         return size() == 0 && map.size() == 0;
     }
 
@@ -642,7 +645,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
         int ord = (int)(reservations >> 32);
 
-        if (map.size() == 0 &&
+        if (isEmpty() &&
             ord == RENTING.ordinal() && (reservations & 0xFFFF) == 0 && !groupReserved() &&
             casState(reservations, EVICTED)) {
             if (log.isDebugEnabled())
@@ -760,7 +763,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                 // Attempt to evict partition entries from cache.
                 clearAll();
 
-                if (map.size() == 0 && casState(reservations, EVICTED)) {
+                if (isEmpty() && casState(reservations, EVICTED)) {
                     if (log.isDebugEnabled())
                         log.debug("Evicted partition: " + this);
                     // finishDestroy() will be initiated by clearEvicting().
@@ -890,6 +893,52 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             }
             finally {
                 cctx.shared().database().checkpointReadUnlock();
+            }
+        }
+
+        if (cctx.allowFastEviction()) {
+            try {
+                GridIterator<CacheDataRow> it0 = cctx.offheap().iterator(id);
+
+                while (it0.hasNext()) {
+                    cctx.shared().database().checkpointReadLock();
+
+                    try {
+                        CacheDataRow row = it0.next();
+
+                        GridDhtCacheEntry cached = (GridDhtCacheEntry)cctx.cache().entryEx(row.key());
+
+                        if (cached.clearInternal(clearVer, extras)) {
+                            if (rec) {
+                                cctx.events().addEvent(cached.partition(),
+                                    cached.key(),
+                                    cctx.localNodeId(),
+                                    (IgniteUuid)null,
+                                    null,
+                                    EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
+                                    null,
+                                    false,
+                                    cached.rawGet(),
+                                    cached.hasValue(),
+                                    null,
+                                    null,
+                                    null,
+                                    false);
+                            }
+                        }
+                    }
+                    catch (GridDhtInvalidPartitionException e) {
+                        assert isEmpty() && state() == EVICTED : "Invalid error [e=" + e + ", part=" + this + ']';
+
+                        break; // Partition is already concurrently cleared and evicted.
+                    }
+                    finally {
+                        cctx.shared().database().checkpointReadUnlock();
+                    }
+                }
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to get iterator for evicted partition: " + id, e);
             }
         }
     }

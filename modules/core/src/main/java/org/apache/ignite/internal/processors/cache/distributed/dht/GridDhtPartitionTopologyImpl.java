@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
@@ -749,7 +750,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
         GridDhtPartitionState state = loc != null ? loc.state() : null;
 
-        if (loc != null && state != EVICTED && state != RENTING)
+        if (loc != null && state != EVICTED && (state != RENTING && cctx.allowFastEviction()))
             return loc;
 
         if (!create)
@@ -774,7 +775,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         "(often may be caused by inconsistent 'key.hashCode()' implementation) " +
                         "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
             }
-            else if (loc != null && state == RENTING) {
+            else if (loc != null && state == RENTING && cctx.allowFastEviction()) {
                 throw new GridDhtInvalidPartitionException(p, "Adding entry to partition that is concurrently evicted.");
             }
 
