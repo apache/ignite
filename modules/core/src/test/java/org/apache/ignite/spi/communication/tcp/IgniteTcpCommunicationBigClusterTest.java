@@ -51,7 +51,7 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
     private static final Logger LOGGER = Logger.getLogger(IgniteTcpCommunicationBigClusterTest.class.getName());
 
     /** */
-    private static final Level LOG_LEVEL = Level.SEVERE;
+    private static final Level LOG_LEVEL = Level.FINE;
 
     /** */
     private CountDownLatch startLatch;
@@ -80,35 +80,21 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
     /** */
     private static void println(String str) {
         LOGGER.log(LOG_LEVEL, str);
-        logCounters();
     }
 
     /** */
     private static void println(String str, Throwable ex) {
         LOGGER.log(LOG_LEVEL, str, ex);
-        logCounters();
     }
 
     /** */
     private static void printf(String format, Object... args) {
         LOGGER.log(LOG_LEVEL, MessageFormat.format(format, args));
-        logCounters();
     }
 
     /** */
     private static void printf(String format, Throwable ex, Object... args) {
         LOGGER.log(LOG_LEVEL, MessageFormat.format(format, args), ex);
-        logCounters();
-    }
-
-    /** */
-    private static void logCounters() {
-        /*LOGGER.log(LOG_LEVEL, MessageFormat.format(
-            "joinTopology: started = {0}, active = {1}; getSpiContext: started = {2}, active = {3}",
-            TcpDiscoverySpi.JOIN_TOPOLOGY_STARTED_COUNT.get(),
-            TcpDiscoverySpi.JOIN_TOPOLOGY_ACTIVE_COUNT.get(),
-            TcpCommunicationSpi.STARTED_COUNT.get(),
-            TcpCommunicationSpi.ACTIVE_COUNT.get()));*/
     }
 
     /** */
