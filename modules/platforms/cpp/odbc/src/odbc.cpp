@@ -600,7 +600,9 @@ namespace ignite
         if (!statement)
             return SQL_INVALID_HANDLE;
 
-        return statement->DataAvailable() ? SQL_SUCCESS : SQL_NO_DATA;
+        statement->NextResults();
+
+        return statement->GetDiagnosticRecords().GetReturnCode();
     }
 
     SQLRETURN SQLBindParameter(SQLHSTMT     stmt,
