@@ -23,6 +23,8 @@
 
 #include <ignite/odbc/system/odbc_constants.h>
 
+#include <ignite/odbc/system/odbc_constants.h>
+
 namespace ignite
 {
     namespace odbc
