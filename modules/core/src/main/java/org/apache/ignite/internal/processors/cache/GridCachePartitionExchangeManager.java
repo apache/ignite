@@ -1579,7 +1579,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                                 rebFuts.add(cacheCtx.preloader().rebalanceFuture());
 
-                                r = cur;
+                                if (cur != null)
+                                    r = cur;
                             }
                         }
 
