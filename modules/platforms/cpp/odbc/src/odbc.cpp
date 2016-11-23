@@ -1255,6 +1255,27 @@ namespace ignite
         return statement->GetDiagnosticRecords().GetReturnCode();
     }
 
+    SQLRETURN SQLDescribeParam(SQLHSTMT     stmt,
+                               SQLUSMALLINT paramNum,
+                               SQLSMALLINT* dataType,
+                               SQLULEN*     paramSize,
+                               SQLSMALLINT* decimalDigits,
+                               SQLSMALLINT* nullable)
+    {
+        using namespace ignite::odbc;
+
+        LOG_MSG("SQLDescribeParam called\n");
+
+        Statement *statement = reinterpret_cast<Statement*>(stmt);
+
+        if (!statement)
+            return SQL_INVALID_HANDLE;
+
+        statement->DescribeParam(paramNum, dataType, paramSize, decimalDigits, nullable);
+
+        return statement->GetDiagnosticRecords().GetReturnCode();
+    }
+
     SQLRETURN SQLError(SQLHENV      env,
                        SQLHDBC      conn,
                        SQLHSTMT     stmt,

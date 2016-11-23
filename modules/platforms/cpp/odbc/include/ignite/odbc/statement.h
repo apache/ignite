@@ -362,6 +362,18 @@ namespace ignite
              */
             void PutData(void* data, SqlLen len);
 
+            /**
+             * Get type info of the parameter of the prepared statement.
+             *
+             * @param paramNum - Parameter index.
+             * @param dataType - Data type.
+             * @param paramSize - Size of the parameter.
+             * @param decimalDigits - Decimal digits.
+             * @param nullable - Nullability flag.
+             */
+            void DescribeParam(int16_t paramNum, int16_t* dataType,
+                size_t* paramSize, int16_t* decimalDigits, int16_t* nullable);
+
         private:
             IGNITE_NO_COPY_ASSIGNMENT(Statement);
 
@@ -557,6 +569,7 @@ namespace ignite
              * Select next parameter data for which is required.
              *
              * @param paramPtr Pointer to param id stored here.
+             * @return Operation result.
              */
             SqlResult InternalSelectParam(void** paramPtr);
 
@@ -565,8 +578,27 @@ namespace ignite
              *
              * @param data Data.
              * @param len Data length.
+             * @return Operation result.
              */
             SqlResult InternalPutData(void* data, SqlLen len);
+
+            /**
+             * Get type info of the parameter of the prepared statement.
+             *
+             * @param paramNum - Parameter index.
+             * @param dataType - Data type.
+             * @param paramSize - Size of the parameter.
+             * @param decimalDigits - Decimal digits.
+             * @param nullable - Nullability flag.
+             * @return Operation result.
+             */
+            SqlResult InternalDescribeParam(int16_t paramNum, int16_t* dataType,
+                size_t* paramSize, int16_t* decimalDigits, int16_t* nullable);
+
+            /**
+             * Make request to data source to update parameters metadata.
+             */
+            SqlResult UpdateParamsMeta();
 
             /**
              * Constructor.
@@ -584,6 +616,9 @@ namespace ignite
 
             /** Parameter bindings. */
             app::ParameterBindingMap paramBindings;
+
+            /** Parameter meta. */
+            std::vector<int8_t> paramTypes;
 
             /** Underlying query. */
             std::auto_ptr<query::Query> currentQuery;
