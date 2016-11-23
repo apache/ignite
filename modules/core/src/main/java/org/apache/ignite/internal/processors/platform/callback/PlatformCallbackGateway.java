@@ -675,8 +675,9 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return PlatformCallbackUtils.messagingFilterCreate(envPtr, memPtr);
-        }
+            return PlatformCallbackUtils.inLongOutLong(envPtr,
+                PlatformCallbackOp.MessagingFilterCreate, memPtr);
+       }
         finally {
             leave();
         }
@@ -691,7 +692,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return PlatformCallbackUtils.messagingFilterApply(envPtr, ptr, memPtr);
+            return (int)PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.MessagingFilterApply, ptr, memPtr, 0, null);
         }
         finally {
             leave();
@@ -704,7 +706,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.messagingFilterDestroy(envPtr, ptr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.MessagingFilterCreate, ptr);
         }
         finally {
             leave();
