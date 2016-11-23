@@ -960,7 +960,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.onClientDisconnected(envPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.OnClientDisconnected, 0);
         }
         finally {
             leave();
@@ -976,7 +976,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.onClientReconnected(envPtr, clusterRestarted);
+            PlatformCallbackUtils.inLongOutLong(envPtr,
+                PlatformCallbackOp.OnClientReconnected, clusterRestarted ? 1 : 0);
         }
         finally {
             leave();

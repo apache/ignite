@@ -108,9 +108,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private delegate void ErrorCallbackDelegate(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars, int errMsgCharsLen, sbyte* stackTraceChars, int stackTraceCharsLen, void* errData, int errDataLen);
 
-        private delegate void OnClientDisconnectedDelegate(void* target);
-        private delegate void OnClientReconnectedDelegate(void* target, bool clusterRestarted);
-
         private delegate void LoggerLogDelegate(void* target, int level, sbyte* messageChars, int messageCharsLen, sbyte* categoryChars, int categoryCharsLen, sbyte* errorInfoChars, int errorInfoCharsLen, long memPtr);
         private delegate bool LoggerIsLevelEnabledDelegate(void* target, int level);
 
@@ -142,9 +139,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 target = IntPtr.Zero.ToPointer(), // Target is not used in .Net as we rely on dynamic FP creation.
 
                 error = CreateFunctionPointer((ErrorCallbackDelegate)Error),
-
-                onClientDisconnected = CreateFunctionPointer((OnClientDisconnectedDelegate)OnClientDisconnected),
-                ocClientReconnected = CreateFunctionPointer((OnClientReconnectedDelegate)OnClientReconnected),
 
                 affinityFunctionInit = CreateFunctionPointer((AffinityFunctionInitDelegate)AffinityFunctionInit),
                 affinityFunctionPartition = CreateFunctionPointer((AffinityFunctionPartitionDelegate)AffinityFunctionPartition),
@@ -290,6 +284,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 case UnmanagedCallbackOp.OnStop:
                     OnStop();
+                    return 0;
+
+                case UnmanagedCallbackOp.OnClientDisconnected:
+                    OnClientDisconnected();
+                    return 0;
+
+                case UnmanagedCallbackOp.OnClientReconnected:
+                    OnClientReconnected(val != 0);
                     return 0;
 
                 default:
@@ -1237,7 +1239,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
-        private void OnClientDisconnected(void* target)
+        private void OnClientDisconnected()
         {
             SafeCall(() =>
             {
@@ -1245,7 +1247,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private void OnClientReconnected(void* target, bool clusterRestarted)
+        private void OnClientReconnected(bool clusterRestarted)
         {
             SafeCall(() =>
             {
