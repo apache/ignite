@@ -850,15 +850,14 @@ public class PlatformCallbackGateway {
     /**
      * Executes native service.
      *
-     * @param svcPtr Pointer to the service in the native platform.
      * @param memPtr Stream pointer.
      * @throws IgniteCheckedException In case of error.
      */
-    public void serviceExecute(long svcPtr, long memPtr) throws IgniteCheckedException {
+    public void serviceExecute(long memPtr) throws IgniteCheckedException {
         enter();
 
         try {
-            PlatformCallbackUtils.serviceExecute(envPtr, svcPtr, memPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ServiceExecute, memPtr);
         }
         finally {
             leave();
@@ -868,15 +867,14 @@ public class PlatformCallbackGateway {
     /**
      * Cancels native service.
      *
-     * @param svcPtr Pointer to the service in the native platform.
      * @param memPtr Stream pointer.
      * @throws IgniteCheckedException In case of error.
      */
-    public void serviceCancel(long svcPtr, long memPtr) throws IgniteCheckedException {
+    public void serviceCancel(long memPtr) throws IgniteCheckedException {
         enter();
 
         try {
-            PlatformCallbackUtils.serviceCancel(envPtr, svcPtr, memPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ServiceCancel, memPtr);
         }
         finally {
             leave();
@@ -886,16 +884,14 @@ public class PlatformCallbackGateway {
     /**
      * Invokes service method.
      *
-     * @param svcPtr Pointer to the service in the native platform.
-     * @param outMemPtr Output memory pointer.
-     * @param inMemPtr Input memory pointer.
+     * @param memPtr Memory pointer.
      * @throws IgniteCheckedException In case of error.
      */
-    public void serviceInvokeMethod(long svcPtr, long outMemPtr, long inMemPtr) throws IgniteCheckedException {
+    public void serviceInvokeMethod(long memPtr) throws IgniteCheckedException {
         enter();
 
         try {
-            PlatformCallbackUtils.serviceInvokeMethod(envPtr, svcPtr, outMemPtr, inMemPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ServiceInvokeMethod, memPtr);
         }
         finally {
             leave();
