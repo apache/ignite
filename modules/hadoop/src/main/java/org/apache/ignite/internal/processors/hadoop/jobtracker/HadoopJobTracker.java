@@ -1018,6 +1018,8 @@ public class HadoopJobTracker extends HadoopComponent {
             if (state == null)
                 state = initState(jobId);
 
+            int mapperIdx = 0;
+
             for (HadoopInputSplit split : mappers) {
                 if (state.addMapper(split)) {
                     if (log.isDebugEnabled())
@@ -1025,6 +1027,8 @@ public class HadoopJobTracker extends HadoopComponent {
                             ", split=" + split + ']');
 
                     HadoopTaskInfo taskInfo = new HadoopTaskInfo(MAP, jobId, meta.taskNumber(split), 0, split);
+
+                    taskInfo.mapperIndex(mapperIdx++);
 
                     if (tasks == null)
                         tasks = new ArrayList<>();
