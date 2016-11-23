@@ -336,39 +336,27 @@ namespace ignite
 
         void Statement::PrepareSqlQuery(const std::string& query)
         {
-            return PrepareSqlQuery(query.data(), query.size());
+            IGNITE_ODBC_API_CALL(InternalPrepareSqlQuery(query));
         }
 
-        void Statement::PrepareSqlQuery(const char* query, size_t len)
-        {
-            IGNITE_ODBC_API_CALL(InternalPrepareSqlQuery(query, len));
-        }
-
-        SqlResult Statement::InternalPrepareSqlQuery(const char* query, size_t len)
+        SqlResult Statement::InternalPrepareSqlQuery(const std::string& query)
         {
             if (currentQuery.get())
                 currentQuery->Close();
 
-            std::string sql(query, len);
-
-            currentQuery.reset(new query::DataQuery(*this, connection, sql, paramBindings));
+            currentQuery.reset(new query::DataQuery(*this, connection, query, paramBindings));
 
             return SQL_RESULT_SUCCESS;
         }
 
         void Statement::ExecuteSqlQuery(const std::string& query)
         {
-            ExecuteSqlQuery(query.data(), query.size());
+            IGNITE_ODBC_API_CALL(InternalExecuteSqlQuery(query));
         }
 
-        void Statement::ExecuteSqlQuery(const char* query, size_t len)
+        SqlResult Statement::InternalExecuteSqlQuery(const std::string& query)
         {
-            IGNITE_ODBC_API_CALL(InternalExecuteSqlQuery(query, len));
-        }
-
-        SqlResult Statement::InternalExecuteSqlQuery(const char* query, size_t len)
-        {
-            SqlResult result = InternalPrepareSqlQuery(query, len);
+            SqlResult result = InternalPrepareSqlQuery(query);
 
             if (result != SQL_RESULT_SUCCESS)
                 return result;
@@ -546,11 +534,7 @@ namespace ignite
         SqlResult Statement::InternalClose()
         {
             if (!currentQuery.get())
-            {
-                AddStatusRecord(SQL_STATE_24000_INVALID_CURSOR_STATE, "Cursor is not in the open state.");
-
-                return SQL_RESULT_ERROR;
-            }
+                return SQL_RESULT_SUCCESS;
 
             SqlResult result = currentQuery->Close();
 
@@ -602,6 +586,21 @@ namespace ignite
         bool Statement::DataAvailable() const
         {
             return currentQuery.get() && currentQuery->DataAvailable();
+        }
+
+        void Statement::NextResults()
+        {
+            IGNITE_ODBC_API_CALL(InternalNextResults());
+        }
+
+        SqlResult Statement::InternalNextResults()
+        {
+            if (!currentQuery.get())
+                return SQL_RESULT_NO_DATA;
+
+            SqlResult result = currentQuery->Close();
+
+            return result == SQL_RESULT_SUCCESS ? SQL_RESULT_NO_DATA : result;
         }
 
         void Statement::GetColumnAttribute(uint16_t colIdx, uint16_t attrId,

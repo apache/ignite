@@ -184,7 +184,7 @@ public class OdbcRequestHandler {
             qry.setDistributedJoins(distributedJoins);
             qry.setEnforceJoinOrder(enforceJoinOrder);
 
-            IgniteCache<Object, Object> cache = ctx.grid().cache(req.cacheName());
+            IgniteCache<Object, Object> cache = ctx.grid().cache(req.cacheName()).withKeepBinary();
 
             if (cache == null)
                 return new OdbcResponse(OdbcResponse.STATUS_FAILED,

@@ -168,41 +168,19 @@ namespace ignite
             /**
              * Prepare SQL query.
              *
-             * @note Only SELECT queries are supported currently.
              * @param query SQL query.
              */
             void PrepareSqlQuery(const std::string& query);
-
-            /**
-             * Prepare SQL query.
-             *
-             * @note Only SELECT queries are supported currently.
-             * @param query SQL query.
-             * @param len Query length.
-             */
-            void PrepareSqlQuery(const char* query, size_t len);
             
             /**
              * Execute SQL query.
              *
-             * @note Only SELECT queries are supported currently.
              * @param query SQL query.
              */
             void ExecuteSqlQuery(const std::string& query);
 
             /**
              * Execute SQL query.
-             *
-             * @note Only SELECT queries are supported currently.
-             * @param query SQL query.
-             * @param len Query length.
-             */
-            void ExecuteSqlQuery(const char* query, size_t len);
-
-            /**
-             * Execute SQL query.
-             *
-             * @note Only SELECT queries are supported currently.
              */
             void ExecuteSqlQuery();
 
@@ -298,6 +276,13 @@ namespace ignite
              * @return True if data is available.
              */
             bool DataAvailable() const;
+
+            /**
+             * Next results.
+             *
+             * Move to next result set or affected rows number.
+             */
+            void NextResults();
 
             /**
              * Get column attribute.
@@ -417,27 +402,22 @@ namespace ignite
             /**
              * Prepare SQL query.
              *
-             * @note Only SELECT queries are supported currently.
              * @param query SQL query.
-             * @param len Query length.
              * @return Operation result.
              */
-            SqlResult InternalPrepareSqlQuery(const char* query, size_t len);
+            SqlResult InternalPrepareSqlQuery(const std::string& query);
             
             /**
              * Execute SQL query.
              *
-             * @note Only SELECT queries are supported currently.
              * @param query SQL query.
-             * @param len Query length.
              * @return Operation result.
              */
-            SqlResult InternalExecuteSqlQuery(const char* query, size_t len);
+            SqlResult InternalExecuteSqlQuery(const std::string& query);
 
             /**
              * Execute SQL query.
              *
-             * @note Only SELECT queries are supported currently.
              * @return Operation result.
              */
             SqlResult InternalExecuteSqlQuery();
@@ -528,8 +508,18 @@ namespace ignite
              * Get type info.
              *
              * @param sqlType SQL type for which to return info or SQL_ALL_TYPES.
+             * @return Operation result.
              */
             SqlResult InternalExecuteGetTypeInfoQuery(int16_t sqlType);
+
+            /**
+             * Next results.
+             *
+             * Move to next result set or affected rows number.
+             *
+             * @return Operation result.
+             */
+            SqlResult InternalNextResults();
 
             /**
              * Get column attribute.
