@@ -79,6 +79,7 @@ import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdateTimesProces
 import org.apache.ignite.internal.processors.platform.PlatformJavaObjectFactoryProxy;
 import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionData;
 import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionLockResult;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -361,7 +362,8 @@ public class BinaryContext {
             if (BinaryUtils.wrapTrees() && (cls == TreeMap.class || cls == TreeSet.class))
                 return false;
 
-            return marshCtx.isSystemType(cls.getName()) || serializerForClass(cls) == null;
+            return marshCtx.isSystemType(cls.getName()) || serializerForClass(cls) == null ||
+                GridQueryProcessor.isGeometryClass(cls);
         }
         else
             return desc.useOptimizedMarshaller();
@@ -500,7 +502,7 @@ public class BinaryContext {
     }
 
     /**
-     * @return Intenal mpper used as default.
+     * @return Internal mapper used as default.
      */
     public static BinaryInternalMapper defaultMapper() {
         return DFLT_MAPPER;
@@ -784,12 +786,9 @@ public class BinaryContext {
             registered
         );
 
-        if (!deserialize) {
-            Collection<BinarySchema> schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
-
+        if (!deserialize)
             metaHnd.addMeta(typeId,
-                new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, schemas, desc.isEnum()).wrap(this));
-        }
+                new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, null, desc.isEnum()).wrap(this));
 
         descByCls.put(cls, desc);
 
@@ -1129,7 +1128,6 @@ public class BinaryContext {
         cls2Mappers.put(clsName, mapper);
 
         Map<String, Integer> fieldsMeta = null;
-        Collection<BinarySchema> schemas = null;
 
         if (cls != null) {
             if (serializer == null) {
@@ -1154,7 +1152,6 @@ public class BinaryContext {
             );
 
             fieldsMeta = desc.fieldsMeta();
-            schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
 
             descByCls.put(cls, desc);
 
@@ -1163,7 +1160,7 @@ public class BinaryContext {
             predefinedTypes.put(id, desc);
         }
 
-        metaHnd.addMeta(id, new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, schemas, isEnum).wrap(this));
+        metaHnd.addMeta(id, new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, null, isEnum).wrap(this));
     }
 
     /**

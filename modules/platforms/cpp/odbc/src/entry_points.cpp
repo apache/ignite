@@ -412,6 +412,19 @@ SQLRETURN SQL_API SQLPutData(SQLHSTMT     stmt,
     return ignite::SQLPutData(stmt, data, strLengthOrIndicator);
 }
 
+SQLRETURN SQL_API SQLError(SQLHENV      env,
+                           SQLHDBC      conn,
+                           SQLHSTMT     stmt,
+                           SQLCHAR*     state,
+                           SQLINTEGER*  error,
+                           SQLCHAR*     msgBuf,
+                           SQLSMALLINT  msgBufLen,
+                           SQLSMALLINT* msgResLen)
+{
+    return ignite::SQLError(env, conn, stmt, state,
+        error, msgBuf, msgBufLen, msgResLen);
+}
+
 //
 // ==== Not implemented ====
 //
@@ -432,19 +445,6 @@ SQLRETURN SQL_API SQLColAttributes(SQLHSTMT     stmt,
 {
     LOG_MSG("SQLColAttributes called\n");
     return SQL_SUCCESS;
-}
-
-SQLRETURN SQL_API SQLError(SQLHENV      env,
-                           SQLHDBC      conn,
-                           SQLHSTMT     stmt,
-                           SQLCHAR*     state,
-                           SQLINTEGER*  error,
-                           SQLCHAR*     msgBuf,
-                           SQLSMALLINT  msgBufLen,
-                           SQLSMALLINT* msgResLen)
-{
-    LOG_MSG("SQLError called\n");
-    return SQL_ERROR;
 }
 
 SQLRETURN SQL_API SQLGetCursorName(SQLHSTMT     stmt,

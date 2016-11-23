@@ -147,6 +147,29 @@ public class JdbcResultSet implements ResultSet {
 
             boolean loc = nodeId == null;
 
+            if (conn.isDmlSupported()) {
+                // Connections from new clients send queries with new tasks, so we have to continue in the same manner
+                JdbcQueryTaskV2 qryTask = new JdbcQueryTaskV2(loc ? ignite : null, conn.cacheName(), null, true, loc, null,
+                    fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+
+                try {
+                    JdbcQueryTaskV2.QueryResult res =
+                        loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
+
+                    finished = res.isFinished();
+
+                    it = res.getRows().iterator();
+
+                    return next();
+                }
+                catch (IgniteSQLException e) {
+                    throw e.toJdbcException();
+                }
+                catch (Exception e) {
+                    throw new SQLException("Failed to query Ignite.", e);
+                }
+            }
+
             JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), null, loc, null,
                 fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
 
@@ -1488,11 +1511,16 @@ public class JdbcResultSet implements ResultSet {
         ensureHasCurrentRow();
 
         try {
-            T val = cls == String.class ? (T)String.valueOf(curr.get(colIdx - 1)) : (T)curr.get(colIdx - 1);
+            Object val = curr.get(colIdx - 1);
 
             wasNull = val == null;
 
-            return val;
+            if (val == null)
+                return null;
+            else if (cls == String.class)
+                return (T)String.valueOf(val);
+            else
+                return (T)val;
         }
         catch (IndexOutOfBoundsException ignored) {
             throw new SQLException("Invalid column index: " + colIdx);

@@ -194,36 +194,50 @@ public abstract class GridMergeIndex extends BaseIndex {
     public final void addPage(GridResultPage page) {
         int pageRowsCnt = page.rowsInPage();
 
-        if (pageRowsCnt != 0)
-            addPage0(page);
-
         Counter cnt = remainingRows.get(page.source());
+
+        // RemainingRowsCount should be updated before page adding to avoid race
+        // in GridMergeIndexUnsorted cursor iterator
+        int remainingRowsCount;
 
         int allRows = page.response().allRows();
 
         if (allRows != -1) { // Only the first page contains allRows count and is allowed to init counter.
-            assert !cnt.initialized : "Counter is already initialized.";
+            assert cnt.state == State.UNINITIALIZED : "Counter is already initialized.";
 
-            cnt.addAndGet(allRows);
+            remainingRowsCount = cnt.addAndGet(allRows - pageRowsCnt);
+
             expRowsCnt.addAndGet(allRows);
+
+            // Add page before setting initialized flag to avoid race condition with adding last page
+            if (pageRowsCnt > 0)
+                addPage0(page);
 
             // We need this separate flag to handle case when the first source contains only one page
             // and it will signal that all remaining counters are zero and fetch is finished.
-            cnt.initialized = true;
+            cnt.state = State.INITIALIZED;
+        }
+        else {
+            remainingRowsCount = cnt.addAndGet(-pageRowsCnt);
+
+            if (pageRowsCnt > 0)
+                addPage0(page);
         }
 
-        if (cnt.addAndGet(-pageRowsCnt) == 0) { // Result can be negative in case of race between messages, it is ok.
-            boolean last = true;
+        if (remainingRowsCount == 0) { // Result can be negative in case of race between messages, it is ok.
+            if (cnt.state == State.UNINITIALIZED)
+                return;
+
+            // Guarantee that finished state possible only if counter is zero and all pages was added
+            cnt.state = State.FINISHED;
 
             for (Counter c : remainingRows.values()) { // Check all the sources.
-                if (c.get() != 0 || !c.initialized) {
-                    last = false;
-
-                    break;
-                }
+                if (c.state != State.FINISHED)
+                    return;
             }
 
-            if (last && lastSubmitted.compareAndSet(false, true)) {
+            if (lastSubmitted.compareAndSet(false, true)) {
+                // Add page-marker that last page was added
                 addPage0(new GridResultPage(null, page.source(), null) {
                     @Override public boolean isLast() {
                         return true;
@@ -401,11 +415,16 @@ public abstract class GridMergeIndex extends BaseIndex {
         }
     }
 
+    /** */
+    enum State {
+        UNINITIALIZED, INITIALIZED, FINISHED
+    }
+
     /**
      * Counter with initialization flag.
      */
     private static class Counter extends AtomicInteger {
         /** */
-        volatile boolean initialized;
+        volatile State state = State.UNINITIALIZED;
     }
 }

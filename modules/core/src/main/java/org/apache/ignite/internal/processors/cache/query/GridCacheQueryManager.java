@@ -26,6 +26,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -46,6 +47,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -80,6 +82,7 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexType;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.GridBoundedPriorityQueue;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridEmptyIterator;
@@ -134,8 +137,37 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
  */
 @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
 public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapter<K, V> {
+    /** Maximum number of query detail metrics to evict at once. */
+    private static final int QRY_DETAIL_METRICS_EVICTION_LIMIT = 10_000;
+
+    /** Comparator for priority queue with query detail metrics with priority to new metrics. */
+    private static final Comparator<GridCacheQueryDetailMetricsAdapter> QRY_DETAIL_METRICS_PRIORITY_NEW_CMP =
+        new Comparator<GridCacheQueryDetailMetricsAdapter>() {
+            @Override public int compare(GridCacheQueryDetailMetricsAdapter m1, GridCacheQueryDetailMetricsAdapter m2) {
+                return Long.compare(m1.lastStartTime(), m2.lastStartTime());
+            }
+        };
+
+    /** Comparator for priority queue with query detail metrics with priority to old metrics. */
+    private static final Comparator<GridCacheQueryDetailMetricsAdapter> QRY_DETAIL_METRICS_PRIORITY_OLD_CMP =
+        new Comparator<GridCacheQueryDetailMetricsAdapter>() {
+            @Override public int compare(GridCacheQueryDetailMetricsAdapter m1, GridCacheQueryDetailMetricsAdapter m2) {
+                return Long.compare(m2.lastStartTime(), m1.lastStartTime());
+            }
+        };
+
+    /** Function to merge query detail metrics. */
+    private static final ConcurrentHashMap8.BiFun QRY_DETAIL_METRICS_MERGE_FX =
+        new ConcurrentHashMap8.BiFun<GridCacheQueryDetailMetricsAdapter,
+            GridCacheQueryDetailMetricsAdapter, GridCacheQueryDetailMetricsAdapter>() {
+            @Override public GridCacheQueryDetailMetricsAdapter apply(GridCacheQueryDetailMetricsAdapter oldVal,
+                GridCacheQueryDetailMetricsAdapter newVal) {
+                return oldVal.aggregate(newVal);
+            }
+        };
+
     /** */
-    protected GridQueryProcessor qryProc;
+    private GridQueryProcessor qryProc;
 
     /** */
     private String space;
@@ -147,8 +179,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private volatile GridCacheQueryMetricsAdapter metrics = new GridCacheQueryMetricsAdapter();
 
     /** */
-    private final ConcurrentMap<UUID, RequestFutureMap> qryIters =
-        new ConcurrentHashMap8<>();
+    private int detailMetricsSz;
+
+    /** */
+    private ConcurrentHashMap8<GridCacheQueryDetailMetricsKey, GridCacheQueryDetailMetricsAdapter> detailMetrics;
+
+    /** */
+    private final ConcurrentMap<UUID, RequestFutureMap> qryIters = new ConcurrentHashMap8<>();
 
     /** */
     private final ConcurrentMap<UUID, Map<Long, GridFutureAdapter<FieldsResult>>> fieldsQryRes =
@@ -171,10 +208,18 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
+        CacheConfiguration ccfg = cctx.config();
+
         qryProc = cctx.kernalContext().query();
         space = cctx.name();
-        maxIterCnt = cctx.config().getMaxQueryIteratorsCount();
 
+        maxIterCnt = ccfg.getMaxQueryIteratorsCount();
+
+        detailMetricsSz = ccfg.getQueryDetailMetricsSize();
+
+        if (detailMetricsSz > 0)
+            detailMetrics = new ConcurrentHashMap8<>(detailMetricsSz);
+        
         lsnr = new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
                 UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
@@ -213,7 +258,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         cctx.events().addListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
-        enabled = GridQueryProcessor.isEnabled(cctx.config());
+        enabled = GridQueryProcessor.isEnabled(ccfg);
 
         qryTopVer = cctx.startTopologyVersion();
 
@@ -1691,6 +1736,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         long startTime = U.currentTimeMillis();
 
+        final String namex = cctx.namex();
+
         try {
             assert qry.type() == SCAN;
 
@@ -1699,7 +1746,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             final String taskName = cctx.kernalContext().task().resolveTaskName(qry.taskHash());
             final IgniteBiPredicate filter = qry.scanFilter();
-            final String namex = cctx.namex();
             final ClusterNode locNode = cctx.localNode();
             final UUID subjId = qry.subjectId();
 
@@ -1721,11 +1767,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             final GridCloseableIterator<IgniteBiTuple<K, V>> iter = scanIterator(qry, true);
 
-            if (updStatisticsIfNeeded) {
+            if (updStatisticsIfNeeded)
                 needUpdStatistics = false;
-
-                cctx.queries().onCompleted(U.currentTimeMillis() - startTime, false);
-            }
 
             final boolean readEvt = cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
@@ -1789,7 +1832,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
         catch (Exception e) {
             if (needUpdStatistics)
-                cctx.queries().onCompleted(U.currentTimeMillis() - startTime, true);
+                cctx.queries().collectMetrics(GridCacheQueryType.SCAN, namex, startTime,
+                    U.currentTimeMillis() - startTime, true);
 
             throw e;
         }
@@ -2071,6 +2115,52 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
+     * Gets cache queries detailed metrics.
+     * Detail metrics could be enabled by setting non-zero value via {@link CacheConfiguration#setQueryDetailMetricsSize(int)}
+     *
+     * @return Cache queries metrics aggregated by query type and query text.
+     */
+    public Collection<GridCacheQueryDetailMetricsAdapter> detailMetrics() {
+        if (detailMetricsSz > 0) {
+            // Return no more than latest detailMetricsSz items.
+            if (detailMetrics.size() > detailMetricsSz) {
+                GridBoundedPriorityQueue<GridCacheQueryDetailMetricsAdapter> latestMetrics =
+                    new GridBoundedPriorityQueue<>(detailMetricsSz, QRY_DETAIL_METRICS_PRIORITY_NEW_CMP);
+
+                latestMetrics.addAll(detailMetrics.values());
+
+                return latestMetrics;
+            }
+
+            return new ArrayList<>(detailMetrics.values());
+        }
+
+        return Collections.emptyList();
+    }
+
+    /**
+     * Evict detail metrics.
+     */
+    public void evictDetailMetrics() {
+        if (detailMetricsSz > 0) {
+            int sz = detailMetrics.size();
+
+            if (sz > detailMetricsSz) {
+                // Limit number of metrics to evict in order make eviction time predictable.
+                int evictCnt = Math.min(QRY_DETAIL_METRICS_EVICTION_LIMIT, sz - detailMetricsSz);
+
+                Queue<GridCacheQueryDetailMetricsAdapter> metricsToEvict =
+                    new GridBoundedPriorityQueue<>(evictCnt, QRY_DETAIL_METRICS_PRIORITY_OLD_CMP);
+
+                metricsToEvict.addAll(detailMetrics.values());
+
+                for (GridCacheQueryDetailMetricsAdapter m : metricsToEvict)
+                    detailMetrics.remove(m.key());
+            }
+        }
+    }
+
+    /**
      * Resets metrics.
      */
     public void resetMetrics() {
@@ -2078,18 +2168,43 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     * @param fail {@code true} if execution failed.
+     * Resets detail metrics.
      */
-    public void onExecuted(boolean fail) {
-        metrics.onQueryExecute(fail);
+    public void resetDetailMetrics() {
+        if (detailMetrics != null)
+            detailMetrics.clear();
     }
 
     /**
+     * @param qryType Query type.
+     * @param qry Query description.
+     * @param startTime Query start size.
      * @param duration Execution duration.
-     * @param fail {@code true} if execution failed.
+     * @param failed {@code True} if query execution failed.
      */
-    public void onCompleted(long duration, boolean fail) {
-        metrics.onQueryCompleted(duration, fail);
+    public void collectMetrics(GridCacheQueryType qryType, String qry, long startTime, long duration, boolean failed) {
+        metrics.update(duration, failed);
+
+        if (detailMetricsSz > 0) {
+            // Do not collect metrics for EXPLAIN queries.
+            if (qryType == SQL_FIELDS && !F.isEmpty(qry)) {
+                int off = 0;
+                int len = qry.length();
+
+                while (off < len && Character.isWhitespace(qry.charAt(off)))
+                    off++;
+
+                if (qry.regionMatches(true, off, "EXPLAIN", 0, 7))
+                    return;
+            }
+
+            GridCacheQueryDetailMetricsAdapter m = new GridCacheQueryDetailMetricsAdapter(qryType, qry,
+                cctx.name(), startTime, duration, failed);
+
+            GridCacheQueryDetailMetricsKey key = m.key();
+
+            detailMetrics.merge(key, m, QRY_DETAIL_METRICS_MERGE_FX);
+        }
     }
 
     /**

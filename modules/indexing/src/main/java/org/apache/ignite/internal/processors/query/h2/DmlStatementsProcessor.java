@@ -276,7 +276,7 @@ public class DmlStatementsProcessor {
         @Nullable Integer errKeysPos) throws IgniteCheckedException {
         Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement) prepStmt);
 
-        spaceName = GridCacheUtils.namexx(spaceName);
+        spaceName = F.isEmpty(spaceName) ? "default" : spaceName;
 
         ConcurrentMap<String, UpdatePlan> spacePlans = planCache.get(spaceName);
 
