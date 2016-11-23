@@ -74,8 +74,8 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     /** */
     private final boolean needPartitioner;
 
-    /** Collection of task contexts for each reduce task. */
-    private final Map<Integer, HadoopTaskContext> reducersCtx = new HashMap<>();
+    /** Task contexts for each reduce task. */
+    private final HadoopTaskContext[] reducersCtx;
 
     /** Reducers addresses. */
     private T[] reduceAddrs;
@@ -124,11 +124,13 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         this.mem = mem;
         this.log = log.getLogger(HadoopShuffleJob.class);
 
+        reducersCtx = new HadoopTaskContext[totalReducerCnt];
+
         if (!F.isEmpty(locReducers)) {
             for (int rdc : locReducers) {
                 HadoopTaskInfo taskInfo = new HadoopTaskInfo(HadoopTaskType.REDUCE, job.id(), rdc, 0, null);
 
-                reducersCtx.put(rdc, job.getTaskContext(taskInfo));
+                reducersCtx[rdc] = job.getTaskContext(taskInfo);
             }
         }
 
@@ -223,7 +225,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         assert msg.buffer() != null;
         assert msg.offset() > 0;
 
-        HadoopTaskContext taskCtx = reducersCtx.get(msg.reducer());
+        HadoopTaskContext taskCtx = reducersCtx[msg.reducer()];
 
         HadoopPerformanceCounter perfCntr = HadoopPerformanceCounter.getCounter(taskCtx.counters(), null);
 
