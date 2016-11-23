@@ -55,6 +55,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.PARTITION_HASHMAP_SIZE;
+import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_MSG_SIZE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_REDUCER_NO_SORTING;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.get;
 
@@ -63,7 +64,7 @@ import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.get
  */
 public class HadoopShuffleJob<T> implements AutoCloseable {
     /** */
-    private static final int MSG_BUF_SIZE = 128 * 1024;
+    private static final int DFLT_SHUFFLE_MSG_SIZE = 128 * 1024;
 
     /** */
     private final HadoopJob job;
@@ -108,8 +109,8 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     /** */
     private final IgniteLogger log;
 
-    /** Buffer size. */
-    private final int bufSize;
+    /** Message size. */
+    private final int msgSize;
 
     /**
      * @param locReduceAddr Local reducer address.
@@ -122,25 +123,10 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      */
     public HadoopShuffleJob(T locReduceAddr, IgniteLogger log, HadoopJob job, GridUnsafeMemory mem,
         int totalReducerCnt, int[] locReducers) throws IgniteCheckedException {
-        this(locReduceAddr, log, job, mem, totalReducerCnt, locReducers, MSG_BUF_SIZE);
-    }
-
-    /**
-     * @param locReduceAddr Local reducer address.
-     * @param log Logger.
-     * @param job Job.
-     * @param mem Memory.
-     * @param totalReducerCnt Amount of reducers in the Job.
-     * @param locReducers Reducers will work on current node.
-     * @throws IgniteCheckedException If error.
-     */
-    public HadoopShuffleJob(T locReduceAddr, IgniteLogger log, HadoopJob job, GridUnsafeMemory mem,
-        int totalReducerCnt, int[] locReducers, int bufSize) throws IgniteCheckedException {
         this.locReduceAddr = locReduceAddr;
         this.job = job;
         this.mem = mem;
         this.log = log.getLogger(HadoopShuffleJob.class);
-        this.bufSize = bufSize;
 
         if (!F.isEmpty(locReducers)) {
             for (int rdc : locReducers) {
@@ -154,6 +140,8 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         maps = new AtomicReferenceArray<>(totalReducerCnt);
         msgs = new HadoopShuffleMessage[totalReducerCnt];
+
+        msgSize = get(job.info(), SHUFFLE_MSG_SIZE, DFLT_SHUFFLE_MSG_SIZE);
     }
 
     /**
@@ -329,7 +317,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                 continue; // Skip empty map and local node.
 
             if (msgs[i] == null)
-                msgs[i] = new HadoopShuffleMessage(job.id(), i, bufSize);
+                msgs[i] = new HadoopShuffleMessage(job.id(), i, msgSize);
 
             final int idx = i;
 
@@ -434,7 +422,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         });
 
         msgs[idx] = newBufMinSize == 0 ? null : new HadoopShuffleMessage(job.id(), idx,
-            Math.max(bufSize, newBufMinSize));
+            Math.max(msgSize, newBufMinSize));
     }
 
     /** {@inheritDoc} */
