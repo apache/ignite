@@ -106,18 +106,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Operation: prepare .Net. */
         private const int OpPrepareDotNet = 1;
 
-        private delegate void FutureByteResultCallbackDelegate(void* target, long futPtr, int res);
-        private delegate void FutureBoolResultCallbackDelegate(void* target, long futPtr, int res);
-        private delegate void FutureShortResultCallbackDelegate(void* target, long futPtr, int res);
-        private delegate void FutureCharResultCallbackDelegate(void* target, long futPtr, int res);
-        private delegate void FutureIntResultCallbackDelegate(void* target, long futPtr, int res);
-        private delegate void FutureFloatResultCallbackDelegate(void* target, long futPtr, float res);
-        private delegate void FutureLongResultCallbackDelegate(void* target, long futPtr, long res);
-        private delegate void FutureDoubleResultCallbackDelegate(void* target, long futPtr, double res);
-        private delegate void FutureObjectResultCallbackDelegate(void* target, long futPtr, long memPtr);
-        private delegate void FutureNullResultCallbackDelegate(void* target, long futPtr);
-        private delegate void FutureErrorCallbackDelegate(void* target, long futPtr, long memPtr);
-
         private delegate void LifecycleOnEventCallbackDelegate(void* target, long ptr, int evt);
 
         private delegate void MemoryReallocateCallbackDelegate(void* target, long memPtr, int cap);
@@ -180,17 +168,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 target = IntPtr.Zero.ToPointer(), // Target is not used in .Net as we rely on dynamic FP creation.
 
-                futureByteResult = CreateFunctionPointer((FutureByteResultCallbackDelegate) FutureByteResult),
-                futureBoolResult = CreateFunctionPointer((FutureBoolResultCallbackDelegate) FutureBoolResult),
-                futureShortResult = CreateFunctionPointer((FutureShortResultCallbackDelegate) FutureShortResult),
-                futureCharResult = CreateFunctionPointer((FutureCharResultCallbackDelegate) FutureCharResult),
-                futureIntResult = CreateFunctionPointer((FutureIntResultCallbackDelegate) FutureIntResult),
-                futureFloatResult = CreateFunctionPointer((FutureFloatResultCallbackDelegate) FutureFloatResult),
-                futureLongResult = CreateFunctionPointer((FutureLongResultCallbackDelegate) FutureLongResult),
-                futureDoubleResult = CreateFunctionPointer((FutureDoubleResultCallbackDelegate) FutureDoubleResult),
-                futureObjectResult = CreateFunctionPointer((FutureObjectResultCallbackDelegate) FutureObjectResult),
-                futureNullResult = CreateFunctionPointer((FutureNullResultCallbackDelegate) FutureNullResult),
-                futureError = CreateFunctionPointer((FutureErrorCallbackDelegate) FutureError),
                 lifecycleOnEvent = CreateFunctionPointer((LifecycleOnEventCallbackDelegate) LifecycleOnEvent),
                 memoryReallocate = CreateFunctionPointer((MemoryReallocateCallbackDelegate) MemoryReallocate),
                 nodeInfo = CreateFunctionPointer((NodeInfoCallbackDelegate) NodeInfo),
@@ -359,6 +336,26 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 case UnmanagedCallbackOp.DataStreamerStreamReceiverInvoke:
                     DataStreamerStreamReceiverInvoke(arg, val1);
+                    return 0;
+
+                case UnmanagedCallbackOp.FutureByteResult:
+                    FutureByteResult(val1, val2);
+                    return 0;
+
+                case UnmanagedCallbackOp.FutureBoolResult:
+                    FutureBoolResult(val1, val2);
+                    return 0;
+
+                case UnmanagedCallbackOp.FutureShortResult:
+                    FutureShortResult(val1, val2);
+                    return 0;
+
+                case UnmanagedCallbackOp.FutureCharResult:
+                    FutureCharResult(val1, val2);
+                    return 0;
+
+                case UnmanagedCallbackOp.FutureIntResult:
+                    FutureIntResult(val1, val2);
                     return 0;
 
                 default:
@@ -761,7 +758,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region IMPLEMENTATION: FUTURES
 
-        private void FutureByteResult(void* target, long futPtr, int res)
+        private void FutureByteResult(long futPtr, long res)
         {
             SafeCall(() =>
             {
@@ -769,7 +766,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private void FutureBoolResult(void* target, long futPtr, int res)
+        private void FutureBoolResult(long futPtr, long res)
         {
             SafeCall(() =>
             {
@@ -777,7 +774,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private void FutureShortResult(void* target, long futPtr, int res)
+        private void FutureShortResult(long futPtr, long res)
         {
             SafeCall(() =>
             {
@@ -785,7 +782,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private void FutureCharResult(void* target, long futPtr, int res)
+        private void FutureCharResult(long futPtr, long res)
         {
             SafeCall(() =>
             {
@@ -793,15 +790,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private void FutureIntResult(void* target, long futPtr, int res)
+        private void FutureIntResult(long futPtr, long res)
         {
             SafeCall(() =>
             {
-                ProcessFuture<int>(futPtr, fut => { fut.OnResult(res); });
+                ProcessFuture<int>(futPtr, fut => { fut.OnResult((int) res); });
             });
         }
 
-        private void FutureFloatResult(void* target, long futPtr, float res)
+        private void FutureFloatResult(long futPtr, float res)
         {
             SafeCall(() =>
             {
@@ -809,7 +806,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private void FutureLongResult(void* target, long futPtr, long res)
+        private void FutureLongResult(long futPtr, long res)
         {
             SafeCall(() =>
             {
@@ -817,7 +814,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private void FutureDoubleResult(void* target, long futPtr, double res)
+        private void FutureDoubleResult(long futPtr, double res)
         {
             SafeCall(() =>
             {
@@ -825,7 +822,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private void FutureObjectResult(void* target, long futPtr, long memPtr)
+        private void FutureObjectResult(long futPtr, long memPtr)
         {
             SafeCall(() =>
             {
@@ -839,7 +836,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private void FutureNullResult(void* target, long futPtr)
+        private void FutureNullResult(long futPtr)
         {
             SafeCall(() =>
             {
@@ -847,7 +844,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private void FutureError(void* target, long futPtr, long memPtr)
+        private void FutureError(long futPtr, long memPtr)
         {
             SafeCall(() =>
             {
