@@ -706,7 +706,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.MessagingFilterCreate, ptr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.MessagingFilterDestroy, ptr);
         }
         finally {
             leave();
