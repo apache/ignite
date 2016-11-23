@@ -108,6 +108,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     /** */
     private final IgniteLogger log;
 
+    /** Local mappers count. */
+    private final int locMappersCnt;
+
     /**
      * @param locReduceAddr Local reducer address.
      * @param log Logger.
@@ -118,10 +121,11 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @throws IgniteCheckedException If error.
      */
     public HadoopShuffleJob(T locReduceAddr, IgniteLogger log, HadoopJob job, GridUnsafeMemory mem,
-        int totalReducerCnt, int[] locReducers) throws IgniteCheckedException {
+        int totalReducerCnt, int[] locReducers, int locMappersCnt) throws IgniteCheckedException {
         this.locReduceAddr = locReduceAddr;
         this.job = job;
         this.mem = mem;
+        this.locMappersCnt = locMappersCnt;
         this.log = log.getLogger(HadoopShuffleJob.class);
 
         if (!F.isEmpty(locReducers)) {
