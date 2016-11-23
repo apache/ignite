@@ -106,8 +106,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Operation: prepare .Net. */
         private const int OpPrepareDotNet = 1;
 
-        private delegate int ClusterNodeFilterApplyCallbackDelegate(void* target, long memPtr);
-
         private delegate void OnStartCallbackDelegate(void* target, void* proc, long memPtr);
         private delegate void OnStopCallbackDelegate(void* target);
 
@@ -148,8 +146,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             var cbs = new UnmanagedCallbackHandlers
             {
                 target = IntPtr.Zero.ToPointer(), // Target is not used in .Net as we rely on dynamic FP creation.
-
-                clusterNodeFilterApply = CreateFunctionPointer((ClusterNodeFilterApplyCallbackDelegate)ClusterNodeFilterApply),
 
                 onStart = CreateFunctionPointer((OnStartCallbackDelegate)OnStart),
                 onStop = CreateFunctionPointer((OnStopCallbackDelegate)OnStop),
@@ -299,6 +295,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 case UnmanagedCallbackOp.ServiceInvokeMethod:
                     ServiceInvokeMethod(val);
                     return 0;
+
+                case UnmanagedCallbackOp.ClusterNodeFilterApply:
+                    return ClusterNodeFilterApply(val);
 
                 default:
                     throw new InvalidOperationException("Invalid callback code: " + type);
@@ -1145,7 +1144,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private int ClusterNodeFilterApply(void* target, long memPtr)
+        private int ClusterNodeFilterApply(long memPtr)
         {
             return SafeCall(() =>
             {
