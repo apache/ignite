@@ -189,7 +189,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         int concLvl = dbCfg.getConcurrencyLevel();
 
-        if (concLvl < 2)
+        if (concLvl < 1)
             concLvl = Runtime.getRuntime().availableProcessors();
 
         long fragmentSize = dbCfg.getPageCacheSize() / concLvl;
