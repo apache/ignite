@@ -106,10 +106,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Operation: prepare .Net. */
         private const int OpPrepareDotNet = 1;
 
-        private delegate long EventFilterCreateCallbackDelegate(void* target, long memPtr);
-        private delegate int EventFilterApplyCallbackDelegate(void* target, long ptr, long memPtr);
-        private delegate void EventFilterDestroyCallbackDelegate(void* target, long ptr);
-
         private delegate long ServiceInitCallbackDelegate(void* target, long memPtr);
         private delegate void ServiceExecuteCallbackDelegate(void* target, long svcPtr, long memPtr);
         private delegate void ServiceCancelCallbackDelegate(void* target, long svcPtr, long memPtr);
@@ -157,10 +153,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             var cbs = new UnmanagedCallbackHandlers
             {
                 target = IntPtr.Zero.ToPointer(), // Target is not used in .Net as we rely on dynamic FP creation.
-
-                eventFilterCreate = CreateFunctionPointer((EventFilterCreateCallbackDelegate)EventFilterCreate),
-                eventFilterApply = CreateFunctionPointer((EventFilterApplyCallbackDelegate)EventFilterApply),
-                eventFilterDestroy = CreateFunctionPointer((EventFilterDestroyCallbackDelegate)EventFilterDestroy),
 
                 serviceInit = CreateFunctionPointer((ServiceInitCallbackDelegate)ServiceInit),
                 serviceExecute = CreateFunctionPointer((ServiceExecuteCallbackDelegate)ServiceExecute),
@@ -296,6 +288,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     MessagingFilterDestroy(val);
                     return 0;
 
+                case UnmanagedCallbackOp.EventFilterCreate:
+                    return EventFilterCreate(val);
+
+                case UnmanagedCallbackOp.EventFilterDestroy:
+                    EventFilterDestroy(val);
+                    return 0;
+
                 default:
                     throw new InvalidOperationException("Invalid callback code: " + type);
             }
@@ -386,6 +385,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 case UnmanagedCallbackOp.MessagingFilterApply:
                     return MessagingFilterApply(val1, val2);
+
+                case UnmanagedCallbackOp.EventFilterApply:
+                    return EventFilterApply(val1, val2);
 
                 default:
                     throw new InvalidOperationException("Invalid callback code: " + type);
@@ -1013,12 +1015,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region IMPLEMENTATION: EVENTS
 
-        private long EventFilterCreate(void* target, long memPtr)
+        private long EventFilterCreate(long memPtr)
         {
             return SafeCall(() => _handleRegistry.Allocate(RemoteListenEventFilter.CreateInstance(memPtr, _ignite)));
         }
 
-        private int EventFilterApply(void* target, long ptr, long memPtr)
+        private int EventFilterApply(long ptr, long memPtr)
         {
             return SafeCall(() =>
             {
@@ -1034,7 +1036,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private void EventFilterDestroy(void* target, long ptr)
+        private void EventFilterDestroy(long ptr)
         {
             SafeCall(() =>
             {
