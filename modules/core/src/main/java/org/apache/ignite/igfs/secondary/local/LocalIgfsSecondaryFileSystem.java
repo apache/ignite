@@ -255,7 +255,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         try {
             FileInputStream in = new FileInputStream(fileForPath(path));
 
-            return new LocalIgfsSecondaryFileSystemPositionedReadable(in, bufSize);
+            return new LocalIgfsSecondaryFileSystemPositionedReadable(in);
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to open file for read: " + path);
