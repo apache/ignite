@@ -106,11 +106,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Operation: prepare .Net. */
         private const int OpPrepareDotNet = 1;
 
-        private delegate long ServiceInitCallbackDelegate(void* target, long memPtr);
-        private delegate void ServiceExecuteCallbackDelegate(void* target, long svcPtr, long memPtr);
-        private delegate void ServiceCancelCallbackDelegate(void* target, long svcPtr, long memPtr);
-        private delegate void ServiceInvokeMethodCallbackDelegate(void* target, long svcPtr, long inMemPtr, long outMemPtr);
-
         private delegate int ClusterNodeFilterApplyCallbackDelegate(void* target, long memPtr);
 
         private delegate void OnStartCallbackDelegate(void* target, void* proc, long memPtr);
@@ -153,11 +148,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             var cbs = new UnmanagedCallbackHandlers
             {
                 target = IntPtr.Zero.ToPointer(), // Target is not used in .Net as we rely on dynamic FP creation.
-
-                serviceInit = CreateFunctionPointer((ServiceInitCallbackDelegate)ServiceInit),
-                serviceExecute = CreateFunctionPointer((ServiceExecuteCallbackDelegate)ServiceExecute),
-                serviceCancel = CreateFunctionPointer((ServiceCancelCallbackDelegate)ServiceCancel),
-                serviceInvokeMethod = CreateFunctionPointer((ServiceInvokeMethodCallbackDelegate)ServiceInvokeMethod),
 
                 clusterNodeFilterApply = CreateFunctionPointer((ClusterNodeFilterApplyCallbackDelegate)ClusterNodeFilterApply),
 
@@ -1048,7 +1038,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region IMPLEMENTATION: SERVICES
 
-        private long ServiceInit(void* target, long memPtr)
+        private long ServiceInit(long memPtr)
         {
             return SafeCall(() =>
             {
@@ -1068,72 +1058,74 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private void ServiceExecute(void* target, long svcPtr, long memPtr)
+        private void ServiceExecute(long memPtr)
         {
             SafeCall(() =>
             {
-                var svc = _handleRegistry.Get<IService>(svcPtr);
-
-                // Ignite does not guarantee that Cancel is called after Execute exits
-                // So missing handle is a valid situation
-                if (svc == null)
-                    return;
-
                 using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
+                    var svc = _handleRegistry.Get<IService>(stream.ReadLong());
+
+                    // Ignite does not guarantee that Cancel is called after Execute exits
+                    // So missing handle is a valid situation
+                    if (svc == null)
+                        return;
+
                     var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
                     bool srvKeepBinary = reader.ReadBoolean();
 
-                    svc.Execute(new ServiceContext(
-                        _ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
+                    svc.Execute(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
                 }
             });
         }
 
-        private void ServiceCancel(void* target, long svcPtr, long memPtr)
+        private void ServiceCancel(long memPtr)
         {
             SafeCall(() =>
             {
-                var svc = _handleRegistry.Get<IService>(svcPtr, true);
-
-                try
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
-                    using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                    long svcPtr = stream.ReadLong();
+
+                    try
                     {
+                        var svc = _handleRegistry.Get<IService>(svcPtr, true);
+
                         var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
                         bool srvKeepBinary = reader.ReadBoolean();
 
                         svc.Cancel(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
                     }
-                }
-                finally
-                {
-                    _ignite.HandleRegistry.Release(svcPtr);
+                    finally
+                    {
+                        _ignite.HandleRegistry.Release(svcPtr);
+                    }
                 }
             });
         }
 
-        private void ServiceInvokeMethod(void* target, long svcPtr, long inMemPtr, long outMemPtr)
+        private void ServiceInvokeMethod(long memPtr)
         {
             SafeCall(() =>
             {
-                using (var inStream = IgniteManager.Memory.Get(inMemPtr).GetStream())
-                using (var outStream = IgniteManager.Memory.Get(outMemPtr).GetStream())
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
-                    var svc = _handleRegistry.Get<IService>(svcPtr, true);
+                    var svc = _handleRegistry.Get<IService>(stream.ReadLong(), true);
 
                     string mthdName;
                     object[] mthdArgs;
 
-                    ServiceProxySerializer.ReadProxyMethod(inStream, _ignite.Marshaller, out mthdName, out mthdArgs);
+                    ServiceProxySerializer.ReadProxyMethod(stream, _ignite.Marshaller, out mthdName, out mthdArgs);
 
                     var result = ServiceProxyInvoker.InvokeServiceMethod(svc, mthdName, mthdArgs);
 
-                    ServiceProxySerializer.WriteInvocationResult(outStream, _ignite.Marshaller, result.Key, result.Value);
+                    stream.Reset();
 
-                    outStream.SynchronizeOutput();
+                    ServiceProxySerializer.WriteInvocationResult(stream, _ignite.Marshaller, result.Key, result.Value);
+
+                    stream.SynchronizeOutput();
                 }
             });
         }
