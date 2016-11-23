@@ -821,14 +821,14 @@ namespace ignite
         }
 
         void Statement::DescribeParam(int16_t paramNum, int16_t* dataType,
-            size_t* paramSize, int16_t* decimalDigits, int16_t* nullable)
+            SqlUlen* paramSize, int16_t* decimalDigits, int16_t* nullable)
         {
             IGNITE_ODBC_API_CALL(InternalDescribeParam(paramNum,
                 dataType, paramSize, decimalDigits, nullable));
         }
 
         SqlResult Statement::InternalDescribeParam(int16_t paramNum, int16_t* dataType,
-            size_t* paramSize, int16_t* decimalDigits, int16_t* nullable)
+            SqlUlen* paramSize, int16_t* decimalDigits, int16_t* nullable)
         {
             query::Query *qry = currentQuery.get();
             if (!qry)
