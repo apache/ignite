@@ -213,6 +213,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             // TODO: Wrap all in a SafeCall? What to do with gateway?
             // TODO: Each component registers itself for a callback with a "allowUninit" flag?
+            // TODO: Replace switch with array. Each entry is a delegate + allowUninit flag.
             var op = (UnmanagedCallbackOp) type;
 
             switch (op)
