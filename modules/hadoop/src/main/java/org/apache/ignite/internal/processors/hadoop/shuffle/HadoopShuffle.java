@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.hadoop.shuffle;
 
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.hadoop.HadoopComponent;
 import org.apache.ignite.internal.processors.hadoop.HadoopContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
@@ -33,11 +32,18 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskOutput;
 import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Shuffle.
@@ -52,6 +58,12 @@ public class HadoopShuffle extends HadoopComponent {
     /** {@inheritDoc} */
     @Override public void start(HadoopContext ctx) throws IgniteCheckedException {
         super.start(ctx);
+
+        ctx.kernalContext().io().addMessageListener(GridTopic.TOPIC_HADOOP2, new GridMessageListener() {
+            @Override public void onMessage(UUID nodeId, Object msg) {
+                onMessageReceived(nodeId, (HadoopMessage)msg);
+            }
+        });
 
         ctx.kernalContext().io().addUserMessageListener(GridTopic.TOPIC_HADOOP,
             new IgniteBiPredicate<UUID, Object>() {
@@ -89,8 +101,10 @@ public class HadoopShuffle extends HadoopComponent {
     private HadoopShuffleJob<UUID> newJob(HadoopJobId jobId) throws IgniteCheckedException {
         HadoopMapReducePlan plan = ctx.jobTracker().plan(jobId);
 
+        int bufSize = ((TcpCommunicationSpi)ctx.kernalContext().config().getCommunicationSpi()).getSocketSendBuffer();
+
         HadoopShuffleJob<UUID> job = new HadoopShuffleJob<>(ctx.localNodeId(), log,
-            ctx.jobTracker().job(jobId, null), mem, plan.reducers(), plan.reducers(ctx.localNodeId()));
+            ctx.jobTracker().job(jobId, null), mem, plan.reducers(), plan.reducers(ctx.localNodeId()), bufSize);
 
         UUID[] rdcAddrs = new UUID[plan.reducers()];
 
@@ -114,10 +128,24 @@ public class HadoopShuffle extends HadoopComponent {
      * @param msg Message to send.
      * @throws IgniteCheckedException If send failed.
      */
-    private void send0(UUID nodeId, Object msg) throws IgniteCheckedException {
+    private void send0(final UUID nodeId, final Object msg) throws IgniteCheckedException {
         ClusterNode node = ctx.kernalContext().discovery().node(nodeId);
 
-        ctx.kernalContext().io().sendUserMessage(F.asList(node), msg, GridTopic.TOPIC_HADOOP, false, 0);
+        if (msg instanceof Message) {
+            if (msg instanceof HadoopShuffleMessage && F.eq(nodeId, ctx.localNodeId())) {
+                ctx.kernalContext().closure().callLocalSafe(new GridPlainCallable<Void>() {
+                    @Override public Void call() throws Exception {
+                        onMessageReceived(nodeId, (HadoopMessage)msg);
+
+                        return null;
+                    }
+                }, false);
+            }
+            else
+                ctx.kernalContext().io().send(node, GridTopic.TOPIC_HADOOP2, (Message) msg, GridIoPolicy.PUBLIC_POOL);
+        }
+        else
+            ctx.kernalContext().io().sendUserMessage(F.asList(node), msg, GridTopic.TOPIC_HADOOP, false, 0);
     }
 
     /**
