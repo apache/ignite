@@ -209,7 +209,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
             Debug.Assert(stream != null);
             Debug.Assert(marsh != null);
 
-            IBinaryRawReader reader = marsh.StartUnmarshal(stream);
+            var reader = marsh.StartUnmarshal(stream);
 
             var partCnt = reader.ReadInt();
 

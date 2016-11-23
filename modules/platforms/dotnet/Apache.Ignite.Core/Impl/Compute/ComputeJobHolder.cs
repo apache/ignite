@@ -47,15 +47,13 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// Default ctor for marshalling.
         /// </summary>
         /// <param name="reader"></param>
-        public ComputeJobHolder(IBinaryReader reader)
+        public ComputeJobHolder(BinaryReader reader)
         {
             Debug.Assert(reader != null);
 
-            var reader0 = (BinaryReader) reader.GetRawReader();
+            _ignite = reader.Marshaller.Ignite;
 
-            _ignite = reader0.Marshaller.Ignite;
-
-            _job = reader0.ReadObject<IComputeJob>();
+            _job = reader.ReadObject<IComputeJob>();
         }
 
         /// <summary>

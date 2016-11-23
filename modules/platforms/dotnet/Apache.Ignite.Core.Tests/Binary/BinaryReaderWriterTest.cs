@@ -18,9 +18,13 @@
 namespace Apache.Ignite.Core.Tests.Binary
 {
     using System;
+    using System.IO;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using NUnit.Framework;
+    using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
+    using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
     /// Tests the <see cref="Impl.Binary.BinaryReader"/> and <see cref="Impl.Binary.BinaryWriter"/> classes.
@@ -36,6 +40,31 @@ namespace Apache.Ignite.Core.Tests.Binary
             var marsh = new Marshaller(new BinaryConfiguration(typeof(ReadWriteAll)));
 
             marsh.Unmarshal<ReadWriteAll>(marsh.Marshal(new ReadWriteAll()));
+        }
+
+        /// <summary>
+        /// Tests the custom stream position.
+        /// </summary>
+        [Test]
+        public void TestCustomPosition()
+        {
+            var stream = new BinaryHeapStream(16);
+
+            stream.WriteLong(54);
+
+            var marsh = new Marshaller(new BinaryConfiguration());
+
+            var writer = new BinaryWriter(marsh, stream);
+
+            writer.WriteChar('x');
+
+            stream.Seek(0, SeekOrigin.Begin);
+
+            Assert.AreEqual(54, stream.ReadLong());
+
+            var reader = new BinaryReader(marsh, stream, BinaryMode.Deserialize, null);
+
+            Assert.AreEqual('x', reader.ReadChar());
         }
 
         private class ReadWriteAll : IBinarizable

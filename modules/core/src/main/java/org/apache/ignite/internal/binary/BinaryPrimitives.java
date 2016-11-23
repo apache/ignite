@@ -120,6 +120,18 @@ public abstract class BinaryPrimitives {
     }
 
     /**
+     * @param ptr Pointer.
+     * @param off Offset.
+     * @param val Value.
+     */
+    public static void writeShort(long ptr, int off, short val) {
+        if (BIG_ENDIAN)
+            GridUnsafe.putShortLE(ptr + off, val);
+        else
+            GridUnsafe.putShort(ptr + off, val);
+    }
+
+    /**
      * @param arr Array.
      * @param off Offset.
      * @return Value.
@@ -225,6 +237,18 @@ public abstract class BinaryPrimitives {
             GridUnsafe.putIntLE(arr, pos, val);
         else
             GridUnsafe.putInt(arr, pos, val);
+    }
+
+    /**
+     * @param ptr Pointer.
+     * @param off Offset.
+     * @param val Value.
+     */
+    public static void writeInt(long ptr, int off, int val) {
+        if (BIG_ENDIAN)
+            GridUnsafe.putIntLE(ptr + off, val);
+        else
+            GridUnsafe.putInt(ptr + off, val);
     }
 
     /**
