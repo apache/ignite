@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -146,6 +147,29 @@ public class JdbcResultSet implements ResultSet {
 
             boolean loc = nodeId == null;
 
+            if (conn.isDmlSupported()) {
+                // Connections from new clients send queries with new tasks, so we have to continue in the same manner
+                JdbcQueryTaskV2 qryTask = new JdbcQueryTaskV2(loc ? ignite : null, conn.cacheName(), null, true, loc, null,
+                    fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+
+                try {
+                    JdbcQueryTaskV2.QueryResult res =
+                        loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
+
+                    finished = res.isFinished();
+
+                    it = res.getRows().iterator();
+
+                    return next();
+                }
+                catch (IgniteSQLException e) {
+                    throw e.toJdbcException();
+                }
+                catch (Exception e) {
+                    throw new SQLException("Failed to query Ignite.", e);
+                }
+            }
+
             JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), null, loc, null,
                 fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
 
@@ -158,6 +182,9 @@ public class JdbcResultSet implements ResultSet {
                 it = res.getRows().iterator();
 
                 return next();
+            }
+            catch (IgniteSQLException e) {
+                throw e.toJdbcException();
             }
             catch (Exception e) {
                 throw new SQLException("Failed to query Ignite.", e);

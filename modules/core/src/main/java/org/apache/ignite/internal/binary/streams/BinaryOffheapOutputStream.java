@@ -89,9 +89,7 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
         return ptr;
     }
 
-    /**
-     * @return Capacity.
-     */
+    /** {@inheritDoc} */
     public int capacity() {
         return cap;
     }

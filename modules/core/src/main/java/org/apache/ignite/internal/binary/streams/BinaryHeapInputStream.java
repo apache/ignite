@@ -92,6 +92,11 @@ public final class BinaryHeapInputStream extends BinaryAbstractInputStream {
     }
 
     /** {@inheritDoc} */
+    @Override public int capacity() {
+        return data.length;
+    }
+
+    /** {@inheritDoc} */
     @Override public byte[] array() {
         return data;
     }
