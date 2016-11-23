@@ -18,44 +18,23 @@
 package org.apache.ignite.internal.processors.odbc;
 
 /**
- * ODBC command request.
+ * ODBC query get params meta result.
  */
-public class OdbcRequest {
-    /** Handshake request. */
-    public static final int HANDSHAKE = 1;
-
-    /** Execute sql query. */
-    public static final int EXECUTE_SQL_QUERY = 2;
-
-    /** Fetch query results. */
-    public static final int FETCH_SQL_QUERY = 3;
-
-    /** Close query. */
-    public static final int CLOSE_SQL_QUERY = 4;
-
-    /** Get columns meta query. */
-    public static final int GET_COLUMNS_META = 5;
-
-    /** Get columns meta query. */
-    public static final int GET_TABLES_META = 6;
-
-    /** Get parameters meta. */
-    public static final int GET_PARAMS_META = 7;
-
-    /** Command. */
-    private final int cmd;
+public class OdbcQueryGetParamsMetaResult {
+    /** List of parameter type IDs. */
+    private final byte[] typeIds;
 
     /**
-     * @param cmd Command type.
+     * @param typeIds List of parameter type IDs.
      */
-    public OdbcRequest(int cmd) {
-        this.cmd = cmd;
+    public OdbcQueryGetParamsMetaResult(byte[] typeIds) {
+        this.typeIds = typeIds;
     }
 
     /**
-     * @return Command.
+     * @return List of parameter type IDs.
      */
-    public int command() {
-        return cmd;
+    public byte[] typeIds() {
+        return typeIds;
     }
 }

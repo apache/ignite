@@ -136,6 +136,20 @@ namespace ignite
 
             return res;
         }
+
+        void ReadByteArray(impl::binary::BinaryReaderImpl& reader, std::vector<int8_t>& res)
+        {
+            int32_t len = reader.ReadInt8Array(0, 0);
+
+            if (len > 0)
+            {
+                res.resize(len);
+
+                reader.ReadInt8Array(&res[0], static_cast<int32_t>(res.size()));
+            }
+            else
+                res.clear();
+        }
     }
 }
 

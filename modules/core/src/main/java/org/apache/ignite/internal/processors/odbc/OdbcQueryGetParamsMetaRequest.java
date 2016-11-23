@@ -17,45 +17,44 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
- * ODBC command request.
+ * ODBC query get params meta request.
  */
-public class OdbcRequest {
-    /** Handshake request. */
-    public static final int HANDSHAKE = 1;
+public class OdbcQueryGetParamsMetaRequest extends OdbcRequest {
+    /** Cache. */
+    private final String cacheName;
 
-    /** Execute sql query. */
-    public static final int EXECUTE_SQL_QUERY = 2;
-
-    /** Fetch query results. */
-    public static final int FETCH_SQL_QUERY = 3;
-
-    /** Close query. */
-    public static final int CLOSE_SQL_QUERY = 4;
-
-    /** Get columns meta query. */
-    public static final int GET_COLUMNS_META = 5;
-
-    /** Get columns meta query. */
-    public static final int GET_TABLES_META = 6;
-
-    /** Get parameters meta. */
-    public static final int GET_PARAMS_META = 7;
-
-    /** Command. */
-    private final int cmd;
+    /** Query. */
+    private final String query;
 
     /**
-     * @param cmd Command type.
+     * @param query SQL Query.
      */
-    public OdbcRequest(int cmd) {
-        this.cmd = cmd;
+    public OdbcQueryGetParamsMetaRequest(String cacheName, String query) {
+        super(GET_PARAMS_META);
+
+        this.cacheName = cacheName;
+        this.query = query;
     }
 
     /**
-     * @return Command.
+     * @return SQL Query.
      */
-    public int command() {
-        return cmd;
+    public String query() {
+        return query;
+    }
+
+    /**
+     * @return Cache name.
+     */
+    public String cacheName() {
+        return cacheName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(OdbcQueryGetParamsMetaRequest.class, this);
     }
 }

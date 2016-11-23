@@ -416,6 +416,12 @@ int main()
         // Populate cache.
         Initialize();
 
+        std::cout << std::endl;
+        std::cout << ">>> Ready" << std::endl;
+        std::cout << std::endl;
+
+        std::cin.get();
+
         // Example for SCAN-based query based on a predicate.
         DoScanQuery();
 
