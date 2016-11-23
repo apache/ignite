@@ -27,6 +27,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     {
         internal void* target;
 
+        internal void* error;
+
         internal void* loggerLog;
         internal void* loggerIsLevelEnabled;
 
