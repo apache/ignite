@@ -74,7 +74,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     private final boolean needPartitioner;
 
     /** Task contexts for each reduce task. */
-    private final HadoopTaskContext[] reducersCtx;
+    private final HadoopTaskContext[] locReducersCtx;
 
     /** Reducers addresses. */
     private T[] reduceAddrs;
@@ -130,19 +130,18 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         this.mem = mem;
         this.log = log.getLogger(HadoopShuffleJob.class);
 
-        reducersCtx = new HadoopTaskContext[totalReducerCnt];
+        locReducersCtx = new HadoopTaskContext[totalReducerCnt];
 
         if (!F.isEmpty(locReducers)) {
             for (int rdc : locReducers) {
                 HadoopTaskInfo taskInfo = new HadoopTaskInfo(HadoopTaskType.REDUCE, job.id(), rdc, 0, null);
 
-                reducersCtx[rdc] = job.getTaskContext(taskInfo);
+                locReducersCtx[rdc] = job.getTaskContext(taskInfo);
             }
         }
 
         needPartitioner = totalReducerCnt > 1;
 
-//        maps = new AtomicReferenceArray<>(totalReducerCnt);
         locMaps = new AtomicReferenceArray<>(totalReducerCnt);
         rmtMaps = new AtomicReferenceArray<>(totalReducerCnt);
 
@@ -234,7 +233,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         assert msg.buffer() != null;
         assert msg.offset() > 0;
 
-        HadoopTaskContext taskCtx = reducersCtx[msg.reducer()];
+        HadoopTaskContext taskCtx = locReducersCtx[msg.reducer()];
 
         HadoopPerformanceCounter perfCntr = HadoopPerformanceCounter.getCounter(taskCtx.counters(), null);
 
@@ -447,8 +446,6 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         close(locMaps);
         close(rmtMaps);
-
-//        close(maps);
     }
 
     /**
@@ -610,7 +607,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
             HadoopTaskOutput out = adders[part];
 
             if (out == null) {
-                boolean loc = reducersCtx[part] != null;
+                boolean loc = locReducersCtx[part] != null;
 
                 adders[part] = out = getOrCreateMap(loc ? locMaps : rmtMaps, part).startAdding(taskCtx);
             }
