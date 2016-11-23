@@ -146,7 +146,11 @@ namespace ignite
                 SqlResult result = MakeRequestClose();
 
                 if (result == SQL_RESULT_SUCCESS)
+                {
                     cursor.reset();
+
+                    resultMeta.clear();
+                }
 
                 return result;
             }

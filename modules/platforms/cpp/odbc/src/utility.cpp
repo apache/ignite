@@ -131,7 +131,7 @@ namespace ignite
 
             if (sqlStrLen == SQL_NTS)
                 res.assign(sqlStrC);
-            else
+            else if (sqlStrLen > 0)
                 res.assign(sqlStrC, sqlStrLen);
 
             return res;
