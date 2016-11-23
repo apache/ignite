@@ -113,10 +113,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private delegate void ConsoleWriteDelegate(sbyte* chars, int charsLen, bool isErr);
 
-        // Smallest delegate:
         private delegate long InLongOutLongDelegate(void* target, int type, long val);
-
-        // Biggest method:
         private delegate long InLongLongLongObjectOutLongDelegate(void* target, int type, long val1, long val2, long val3, void* arg);
 
         /// <summary>
@@ -156,7 +153,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             get { return _handleRegistry; }
         }
 
-        #region IMPLEMENTATION: STREAMS
+        #region IMPLEMENTATION: GENERAL PURPOSE
 
         private long InLongOutLong(void* target, int type, long val)
         {
