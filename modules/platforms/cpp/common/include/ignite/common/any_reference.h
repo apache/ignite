@@ -23,6 +23,8 @@
 #ifndef _IGNITE_COMMON_SMART_POINTER
 #define _IGNITE_COMMON_SMART_POINTER
 
+#include <cstddef>
+
 #include <ignite/common/common.h>
 #include <ignite/common/concurrent.h>
 
