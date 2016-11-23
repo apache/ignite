@@ -88,7 +88,14 @@ public enum HadoopJobProperty {
      * <p>
      * Defaults to 128Kb.
      */
-    SHUFFLE_MSG_SIZE("ignite.shuffle.message.size");
+    SHUFFLE_MSG_SIZE("ignite.shuffle.message.size"),
+
+    /**
+     * Whether to stripe mapper output for remote reducers.
+     * <p>
+     * Defaults to {@code false}.
+     */
+    SHUFFLE_STRIPE_MAPPER_OUTPUT("ignite.shuffle.stripe.mapper.output");
 
     /** Property name. */
     private final String propName;
