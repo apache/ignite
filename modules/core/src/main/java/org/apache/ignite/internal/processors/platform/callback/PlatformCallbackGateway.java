@@ -907,7 +907,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return PlatformCallbackUtils.clusterNodeFilterApply(envPtr, memPtr);
+            return (int)PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.ClusterNodeFilterApply, memPtr);
         }
         finally {
             leave();
