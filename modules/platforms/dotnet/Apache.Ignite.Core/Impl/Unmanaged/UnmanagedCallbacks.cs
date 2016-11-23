@@ -108,9 +108,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private delegate void ErrorCallbackDelegate(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars, int errMsgCharsLen, sbyte* stackTraceChars, int stackTraceCharsLen, void* errData, int errDataLen);
 
-        private delegate long ExtensionCallbackInLongOutLongDelegate(void* target, int typ, long arg1);
-        private delegate long ExtensionCallbackInLongLongOutLongDelegate(void* target, int typ, long arg1, long arg2);
-
         private delegate void OnClientDisconnectedDelegate(void* target);
         private delegate void OnClientReconnectedDelegate(void* target, bool clusterRestarted);
 
@@ -145,9 +142,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 target = IntPtr.Zero.ToPointer(), // Target is not used in .Net as we rely on dynamic FP creation.
 
                 error = CreateFunctionPointer((ErrorCallbackDelegate)Error),
-
-                extensionCbInLongOutLong = CreateFunctionPointer((ExtensionCallbackInLongOutLongDelegate)ExtensionCallbackInLongOutLong),
-                extensionCbInLongLongOutLong = CreateFunctionPointer((ExtensionCallbackInLongLongOutLongDelegate)ExtensionCallbackInLongLongOutLong),
 
                 onClientDisconnected = CreateFunctionPointer((OnClientDisconnectedDelegate)OnClientDisconnected),
                 ocClientReconnected = CreateFunctionPointer((OnClientReconnectedDelegate)OnClientReconnected),
@@ -395,6 +389,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 case UnmanagedCallbackOp.OnStart:
                     OnStart(arg, val1);
                     return 0;
+
+                case UnmanagedCallbackOp.ExtensionInLongOutLong:
+                    return ExtensionCallbackInLongOutLong((int) val1, val2);
+
+                case UnmanagedCallbackOp.ExtensionInLongLongOutLong:
+                    return ExtensionCallbackInLongLongOutLong((int) val1, val2, val3);
 
                 default:
                     throw new InvalidOperationException("Invalid callback code: " + type);
@@ -992,12 +992,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region IMPLEMENTATION: EXTENSIONS
 
-        private long ExtensionCallbackInLongOutLong(void* target, int op, long arg1)
+        private long ExtensionCallbackInLongOutLong(int op, long arg1)
         {
             throw new InvalidOperationException("Unsupported operation type: " + op);
         }
 
-        private long ExtensionCallbackInLongLongOutLong(void* target, int op, long arg1, long arg2)
+        private long ExtensionCallbackInLongLongOutLong(int op, long arg1, long arg2)
         {
             return SafeCall(() =>
             {
