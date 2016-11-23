@@ -41,6 +41,7 @@ import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -156,7 +157,7 @@ public class BinaryClassDescriptor {
         initialSerializer = serializer;
 
         // If serializer is not defined at this point, then we have to use OptimizedMarshaller.
-        useOptMarshaller = serializer == null;
+        useOptMarshaller = serializer == null || GridQueryProcessor.isGeometryClass(cls);
 
         // Reset reflective serializer so that we rely on existing reflection-based serialization.
         if (serializer instanceof BinaryReflectiveSerializer)
@@ -189,7 +190,8 @@ public class BinaryClassDescriptor {
                 mode = serializer != null ? BinaryWriteMode.BINARY : BinaryUtils.mode(cls);
         }
 
-        if (useOptMarshaller && userType && !U.isIgnite(cls) && !U.isJdk(cls)) {
+        if (useOptMarshaller && userType && !U.isIgnite(cls) && !U.isJdk(cls) &&
+            !GridQueryProcessor.isGeometryClass(cls)) {
             U.warn(ctx.log(), "Class \"" + cls.getName() + "\" cannot be serialized using " +
                 BinaryMarshaller.class.getSimpleName() + " because it either implements Externalizable interface " +
                 "or have writeObject/readObject methods. " + OptimizedMarshaller.class.getSimpleName() + " will be " +
