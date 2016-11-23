@@ -81,7 +81,14 @@ public enum HadoopJobProperty {
      * <p>
      * By default is {@code false}.
      */
-    SHUFFLE_REDUCER_NO_SORTING("ignite.shuffle.reducer.no.sorting");
+    SHUFFLE_REDUCER_NO_SORTING("ignite.shuffle.reducer.no.sorting"),
+
+    /**
+     * Defines approximate size in bytes of shuffle message which will be passed over wire from mapper to reducer.
+     * <p>
+     * Defaults to 128Kb.
+     */
+    SHUFFLE_MSG_SIZE("ignite.shuffle.message.size");
 
     /** Property name. */
     private final String propName;
