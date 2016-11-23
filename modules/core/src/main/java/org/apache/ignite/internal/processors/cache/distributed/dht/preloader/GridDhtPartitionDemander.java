@@ -280,20 +280,23 @@ public class GridDhtPartitionDemander {
 
             rebalanceFut = fut;
 
-            if (assigns.isEmpty())
+            if (assigns.isEmpty()) {
                 ((GridFutureAdapter)cctx.preloader().syncFuture()).onDone();
+
+                rebalanceFut.sendRebalanceFinishedEvent();
+            }
 
             return new Runnable() {
                 @Override public void run() {
                     if (next != null)
                         rebalanceFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
                             @Override public void apply(IgniteInternalFuture<Boolean> fut) {
-                                next.run();
+                                next.run(); // Starts next cache preloading (according to the order).
                             }
                         });
 
                     if (assigns.isEmpty()) {
-                        rebalanceFut.onDone(true); // Starts next cache preloading (according to order).
+                        rebalanceFut.onDone(true);
 
                         return;
                     }
@@ -1007,8 +1010,7 @@ public class GridDhtPartitionDemander {
          */
         private void checkIsDone(boolean cancelled, boolean wasEmpty) {
             if (remaining.isEmpty()) {
-                if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_STOPPED) && (!cctx.isReplicated() || sndStoppedEvnt))
-                    preloadEvent(EVT_CACHE_REBALANCE_STOPPED, exchFut.discoveryEvent());
+                sendRebalanceFinishedEvent();
 
                 if (log.isDebugEnabled())
                     log.debug("Completed rebalance future: " + this);
@@ -1038,6 +1040,14 @@ public class GridDhtPartitionDemander {
 
                 onDone(!cancelled);
             }
+        }
+
+        /**
+         *
+         */
+        private void sendRebalanceFinishedEvent(){
+            if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_STOPPED) && (!cctx.isReplicated() || sndStoppedEvnt))
+                preloadEvent(EVT_CACHE_REBALANCE_STOPPED, exchFut.discoveryEvent());;
         }
 
         /** {@inheritDoc} */
