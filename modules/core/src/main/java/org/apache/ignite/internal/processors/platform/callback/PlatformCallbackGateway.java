@@ -787,7 +787,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.onStart(envPtr, proc, memPtr);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr, PlatformCallbackOp.OnStart, memPtr, 0, 0, proc);
         }
         finally {
             leave();
@@ -1025,7 +1025,7 @@ public class PlatformCallbackGateway {
     public void onStop() {
         block();
 
-        PlatformCallbackUtils.onStop(envPtr);
+        PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.OnStop, 0);
     }
 
     /**

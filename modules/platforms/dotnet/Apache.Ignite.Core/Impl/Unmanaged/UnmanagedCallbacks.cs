@@ -106,9 +106,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Operation: prepare .Net. */
         private const int OpPrepareDotNet = 1;
 
-        private delegate void OnStartCallbackDelegate(void* target, void* proc, long memPtr);
-        private delegate void OnStopCallbackDelegate(void* target);
-
         private delegate void ErrorCallbackDelegate(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars, int errMsgCharsLen, sbyte* stackTraceChars, int stackTraceCharsLen, void* errData, int errDataLen);
 
         private delegate long ExtensionCallbackInLongOutLongDelegate(void* target, int typ, long arg1);
@@ -147,8 +144,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 target = IntPtr.Zero.ToPointer(), // Target is not used in .Net as we rely on dynamic FP creation.
 
-                onStart = CreateFunctionPointer((OnStartCallbackDelegate)OnStart),
-                onStop = CreateFunctionPointer((OnStopCallbackDelegate)OnStop),
                 error = CreateFunctionPointer((ErrorCallbackDelegate)Error),
 
                 extensionCbInLongOutLong = CreateFunctionPointer((ExtensionCallbackInLongOutLongDelegate)ExtensionCallbackInLongOutLong),
@@ -299,6 +294,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 case UnmanagedCallbackOp.ClusterNodeFilterApply:
                     return ClusterNodeFilterApply(val);
 
+                case UnmanagedCallbackOp.OnStop:
+                    OnStop();
+                    return 0;
+
                 default:
                     throw new InvalidOperationException("Invalid callback code: " + type);
             }
@@ -392,6 +391,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 case UnmanagedCallbackOp.EventFilterApply:
                     return EventFilterApply(val1, val2);
+
+                case UnmanagedCallbackOp.OnStart:
+                    OnStart(arg, val1);
+                    return 0;
 
                 default:
                     throw new InvalidOperationException("Invalid callback code: " + type);
@@ -1176,7 +1179,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }, true);
         }
 
-        private void OnStart(void* target, void* proc, long memPtr)
+        private void OnStart(void* proc, long memPtr)
         {
             SafeCall(() =>
             {
@@ -1189,7 +1192,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }, true);
         }
 
-        private void OnStop(void* target)
+        private void OnStop()
         {
             Marshal.FreeHGlobal(_cbsPtr);
 
