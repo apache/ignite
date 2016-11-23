@@ -111,12 +111,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void LoggerLogDelegate(void* target, int level, sbyte* messageChars, int messageCharsLen, sbyte* categoryChars, int categoryCharsLen, sbyte* errorInfoChars, int errorInfoCharsLen, long memPtr);
         private delegate bool LoggerIsLevelEnabledDelegate(void* target, int level);
 
-        private delegate long AffinityFunctionInitDelegate(void* target, long memPtr, void* baseFunc);
-        private delegate int AffinityFunctionPartitionDelegate(void* target, long ptr, long memPtr);
-        private delegate void AffinityFunctionAssignPartitionsDelegate(void* target, long ptr, long inMemPtr, long outMemPtr);
-        private delegate void AffinityFunctionRemoveNodeDelegate(void* target, long ptr, long memPtr);
-        private delegate void AffinityFunctionDestroyDelegate(void* target, long ptr);
-
         private delegate void ConsoleWriteDelegate(sbyte* chars, int charsLen, bool isErr);
 
         // Smallest delegate:
@@ -139,12 +133,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 target = IntPtr.Zero.ToPointer(), // Target is not used in .Net as we rely on dynamic FP creation.
 
                 error = CreateFunctionPointer((ErrorCallbackDelegate)Error),
-
-                affinityFunctionInit = CreateFunctionPointer((AffinityFunctionInitDelegate)AffinityFunctionInit),
-                affinityFunctionPartition = CreateFunctionPointer((AffinityFunctionPartitionDelegate)AffinityFunctionPartition),
-                affinityFunctionAssignPartitions = CreateFunctionPointer((AffinityFunctionAssignPartitionsDelegate)AffinityFunctionAssignPartitions),
-                affinityFunctionRemoveNode = CreateFunctionPointer((AffinityFunctionRemoveNodeDelegate)AffinityFunctionRemoveNode),
-                affinityFunctionDestroy = CreateFunctionPointer((AffinityFunctionDestroyDelegate)AffinityFunctionDestroy),
 
                 loggerLog = CreateFunctionPointer((LoggerLogDelegate)LoggerLog),
                 loggerIsLevelEnabled = CreateFunctionPointer((LoggerIsLevelEnabledDelegate)LoggerIsLevelEnabled),
@@ -294,6 +282,21 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     OnClientReconnected(val != 0);
                     return 0;
 
+                case UnmanagedCallbackOp.AffinityFunctionPartition:
+                    return AffinityFunctionPartition(val);
+
+                case UnmanagedCallbackOp.AffinityFunctionAssignPartitions:
+                    AffinityFunctionAssignPartitions(val);
+                    return 0;
+
+                case UnmanagedCallbackOp.AffinityFunctionRemoveNode:
+                    AffinityFunctionRemoveNode(val);
+                    return 0;
+
+                case UnmanagedCallbackOp.AffinityFunctionDestroy:
+                    AffinityFunctionDestroy(val);
+                    return 0;
+
                 default:
                     throw new InvalidOperationException("Invalid callback code: " + type);
             }
@@ -306,7 +309,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             switch (op)
             {
                 case UnmanagedCallbackOp.AffinityFunctionInit:
-                    return AffinityFunctionInit(target, val1, arg);
+                    return AffinityFunctionInit(val1, arg);
 
                 case UnmanagedCallbackOp.ComputeTaskLocalJobResult:
                     return ComputeTaskLocalJobResult(val1, val2);
@@ -393,7 +396,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     return 0;
 
                 case UnmanagedCallbackOp.ExtensionInLongOutLong:
-                    return ExtensionCallbackInLongOutLong((int) val1, val2);
+                    return ExtensionCallbackInLongOutLong((int) val1);
 
                 case UnmanagedCallbackOp.ExtensionInLongLongOutLong:
                     return ExtensionCallbackInLongLongOutLong((int) val1, val2, val3);
@@ -994,7 +997,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region IMPLEMENTATION: EXTENSIONS
 
-        private long ExtensionCallbackInLongOutLong(int op, long arg1)
+        private long ExtensionCallbackInLongOutLong(int op)
         {
             throw new InvalidOperationException("Unsupported operation type: " + op);
         }
@@ -1311,7 +1314,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region AffinityFunction
 
-        private long AffinityFunctionInit(void* target, long memPtr, void* baseFunc)
+        private long AffinityFunctionInit(long memPtr, void* baseFunc)
         {
             return SafeCall(() =>
             {
@@ -1334,12 +1337,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private int AffinityFunctionPartition(void* target, long ptr, long memPtr)
+        private int AffinityFunctionPartition(long memPtr)
         {
             return SafeCall(() =>
             {
                 using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
+                    var ptr = stream.ReadLong();
+
                     var key = _ignite.Marshaller.Unmarshal<object>(stream);
 
                     return _handleRegistry.Get<IAffinityFunction>(ptr, true).GetPartition(key);
@@ -1347,33 +1352,34 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private void AffinityFunctionAssignPartitions(void* target, long ptr, long inMemPtr, long outMemPtr)
+        private void AffinityFunctionAssignPartitions(long memPtr)
         {
             SafeCall(() =>
             {
-                using (var inStream = IgniteManager.Memory.Get(inMemPtr).GetStream())
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
-                    var ctx = new AffinityFunctionContext(_ignite.Marshaller.StartUnmarshal(inStream));
+                    var ptr = stream.ReadLong();
+                    var ctx = new AffinityFunctionContext(_ignite.Marshaller.StartUnmarshal(stream));
                     var func = _handleRegistry.Get<IAffinityFunction>(ptr, true);
                     var parts = func.AssignPartitions(ctx);
 
                     if (parts == null)
                         throw new IgniteException(func.GetType() + ".AssignPartitions() returned invalid result: null");
 
-                    using (var outStream = IgniteManager.Memory.Get(outMemPtr).GetStream())
-                    {
-                        AffinityFunctionSerializer.WritePartitions(parts, outStream, _ignite.Marshaller);
-                    }
+                    stream.Reset();
+
+                    AffinityFunctionSerializer.WritePartitions(parts, stream, _ignite.Marshaller);
                 }
             });
         }
 
-        private void AffinityFunctionRemoveNode(void* target, long ptr, long memPtr)
+        private void AffinityFunctionRemoveNode(long memPtr)
         {
             SafeCall(() =>
             {
                 using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
+                    var ptr = stream.ReadLong();
                     var nodeId = _ignite.Marshaller.Unmarshal<Guid>(stream);
 
                     _handleRegistry.Get<IAffinityFunction>(ptr, true).RemoveNode(nodeId);
@@ -1381,7 +1387,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private void AffinityFunctionDestroy(void* target, long ptr)
+        private void AffinityFunctionDestroy(long ptr)
         {
             SafeCall(() =>
             {
