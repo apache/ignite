@@ -767,7 +767,7 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.nodeInfo(envPtr, memPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.NodeInfo, memPtr);
         }
         finally {
             leave();
@@ -801,7 +801,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.lifecycleEvent(envPtr, ptr, evt);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.LifecycleOnEvent, ptr, evt, 0, null);
         }
         finally {
             leave();
@@ -818,7 +819,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.memoryReallocate(envPtr, memPtr, cap);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.MemoryReallocate, memPtr, cap, 0, null);
         }
         finally {
             leave();
