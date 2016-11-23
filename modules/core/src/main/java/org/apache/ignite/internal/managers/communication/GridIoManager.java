@@ -802,13 +802,14 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
         }
 
-        try {
-            Executor exec = pools.poolForPolicy(plc);
+        if (ctx.config().isUseStripedPool() && msg.partition() != -1) {
+            ctx.getStripedExecutorService().execute(c);
 
-            if (exec instanceof StripedExecutor)
-                ((StripedExecutor)exec).execute(msg.partition(), c);
-            else
-                exec.execute(c);
+            return;
+        }
+
+        try {
+            pools.poolForPolicy(plc).execute(c);
         }
         catch (RejectedExecutionException e) {
             U.error(log, "Failed to process regular message due to execution rejection. Increase the upper bound " +

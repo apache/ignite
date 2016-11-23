@@ -36,7 +36,6 @@ import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -1456,10 +1455,13 @@ public class IgnitionEx {
         private volatile IgniteKernal grid;
 
         /** Executor service. */
-        private ExecutorService execSvc;
+        private ThreadPoolExecutor execSvc;
 
         /** System executor service. */
-        private ExecutorService sysExecSvc;
+        private ThreadPoolExecutor sysExecSvc;
+
+        /** */
+        private StripedExecutor stripedExecSvc;
 
         /** Management executor service. */
         private ThreadPoolExecutor mgmtExecSvc;
@@ -1642,41 +1644,28 @@ public class IgnitionEx {
                 ensureMultiInstanceSupport(myCfg.getSwapSpaceSpi());
             }
 
-            {
-                if (cfg.isUseStripedPool())
-                    execSvc = new StripedExecutor(cfg.getPublicThreadPoolSize(), cfg.getGridName(), "pub", log);
-                else {
-                    IgniteThreadPoolExecutor pool = new IgniteThreadPoolExecutor(
-                        "pub",
-                        cfg.getGridName(),
-                        cfg.getPublicThreadPoolSize(),
-                        cfg.getPublicThreadPoolSize(),
-                        DFLT_THREAD_KEEP_ALIVE_TIME,
-                        new LinkedBlockingQueue<Runnable>());
+            execSvc = new IgniteThreadPoolExecutor(
+                "pub",
+                cfg.getGridName(),
+                cfg.getPublicThreadPoolSize(),
+                cfg.getPublicThreadPoolSize(),
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>());
 
-                    pool.allowCoreThreadTimeOut(true);
+            execSvc.allowCoreThreadTimeOut(true);
 
-                    execSvc = pool;
-                }
-            }
+            sysExecSvc = new IgniteThreadPoolExecutor(
+                "sys",
+                cfg.getGridName(),
+                cfg.getSystemThreadPoolSize(),
+                cfg.getSystemThreadPoolSize(),
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>());
 
-            {
-                if (cfg.isUseStripedPool())
-                    sysExecSvc = new StripedExecutor(cfg.getSystemThreadPoolSize(), cfg.getGridName(), "sys", log);
-                else {
-                    IgniteThreadPoolExecutor pool = new IgniteThreadPoolExecutor(
-                        "sys",
-                        cfg.getGridName(),
-                        cfg.getSystemThreadPoolSize(),
-                        cfg.getSystemThreadPoolSize(),
-                        DFLT_THREAD_KEEP_ALIVE_TIME,
-                        new LinkedBlockingQueue<Runnable>());
+            sysExecSvc.allowCoreThreadTimeOut(true);
 
-                    pool.allowCoreThreadTimeOut(true);
-
-                    sysExecSvc = pool;
-                }
-            }
+            if (cfg.isUseStripedPool())
+                stripedExecSvc = new StripedExecutor(cfg.getPublicThreadPoolSize(), cfg.getGridName(), "pub", log);
 
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
@@ -1790,13 +1779,26 @@ public class IgnitionEx {
                 // Init here to make grid available to lifecycle listeners.
                 grid = grid0;
 
-                grid0.start(myCfg, utilityCacheExecSvc, marshCacheExecSvc, execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc,
-                    igfsExecSvc, restExecSvc, affExecSvc, idxExecSvc, callbackExecSvc,
+                grid0.start(
+                    myCfg,
+                    utilityCacheExecSvc,
+                    marshCacheExecSvc,
+                    execSvc,
+                    sysExecSvc,
+                    stripedExecSvc,
+                    p2pExecSvc,
+                    mgmtExecSvc,
+                    igfsExecSvc,
+                    restExecSvc,
+                    affExecSvc,
+                    idxExecSvc,
+                    callbackExecSvc,
                     new CA() {
                         @Override public void apply() {
                             startLatch.countDown();
                         }
-                    });
+                    }
+                );
 
                 state = STARTED;
 
@@ -2400,6 +2402,10 @@ public class IgnitionEx {
             U.shutdownNow(getClass(), sysExecSvc, log);
 
             sysExecSvc = null;
+
+            U.shutdownNow(getClass(), stripedExecSvc, log);
+
+            stripedExecSvc = null;
 
             U.shutdownNow(getClass(), mgmtExecSvc, log);
 

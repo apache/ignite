@@ -231,7 +231,7 @@ public class IgniteConfiguration {
     /** Logger. */
     private IgniteLogger log;
 
-    /** Use striped pool for public and system pools. */
+    /** Use striped pool for internal requests processing when possible (e.g. cache requests). */
     private boolean useStripedPool = true;
 
     /** Public pool size. */
