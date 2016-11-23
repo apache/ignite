@@ -77,12 +77,26 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
     }
 
     /**
-     * Get field by offset.
+     * Get offset of data begin.
      *
-     * @param fieldOffset Field offset.
      * @return Field value.
      */
-    @Nullable protected abstract <F> F fieldByOrder(int fieldOffset);
+    @Nullable protected abstract int dataStartOffset();
+
+    /**
+     * Get offset of the footer begin.
+     *
+     * @return Field value.
+     */
+    @Nullable protected abstract int footerStartOffset();
+
+    /**
+     * Get field by offset.
+     *
+     * @param order Field order.
+     * @return Field value.
+     */
+    @Nullable protected abstract <F> F fieldByOrder(int order);
 
     /**
      * @param ctx Reader context.
@@ -126,20 +140,29 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
         if (!(other instanceof BinaryObjectExImpl))
             return false;
 
-        BinaryObjectExImpl otherPo = (BinaryObjectExImpl)other;
+        BinaryObjectExImpl other0 = (BinaryObjectExImpl)other;
 
-        if (length() != otherPo.length() || typeId() != otherPo.typeId())
+        if (typeId() != other0.typeId())
+            return false;
+
+        int start = dataStartOffset();
+        int end = footerStartOffset();
+
+        int otherStart = other0.dataStartOffset();
+        int otherEnd = other0.footerStartOffset();
+
+        int len = end - start;
+
+        if (len != otherEnd - otherStart)
             return false;
 
         if (hasArray()) {
-            if (otherPo.hasArray()) {
-                int len = length();
-                int end = start() + len;
+            byte[] arr = array();
 
-                byte[] arr = array();
-                byte[] otherArr = otherPo.array();
+            if (other0.hasArray()) {
+                byte[] otherArr = other0.array();
 
-                for (int i = start(), j = otherPo.start(); i < end; i++, j++) {
+                for (int i = start, j = otherStart; i < end; i++, j++) {
                     if (arr[i] != otherArr[j])
                         return false;
                 }
@@ -147,22 +170,20 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
                 return true;
             }
             else {
-                assert otherPo.offheapAddress() > 0;
+                assert other0.offheapAddress() > 0;
 
-                return GridUnsafeMemory.compare(otherPo.offheapAddress() + otherPo.start(), array());
+                return GridUnsafeMemory.compare(other0.offheapAddress() + otherStart, arr, start, len);
             }
         }
         else {
             assert offheapAddress() > 0;
 
-            if (otherPo.hasArray())
-                return GridUnsafeMemory.compare(offheapAddress() + start(), otherPo.array());
+            if (other0.hasArray())
+                return GridUnsafeMemory.compare(offheapAddress() + start, other0.array(), otherStart, len);
             else {
-                assert otherPo.offheapAddress() > 0;
+                assert other0.offheapAddress() > 0;
 
-                return GridUnsafeMemory.compare(offheapAddress() + start(),
-                    otherPo.offheapAddress() + otherPo.start(),
-                    length());
+                return GridUnsafeMemory.compare(offheapAddress() + start, other0.offheapAddress() + otherStart, len);
             }
         }
     }

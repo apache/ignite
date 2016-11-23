@@ -888,6 +888,15 @@
                                             <substitution expression="\1${new.client.version}\2" />
                                             <fileset dir="${basedir}/">
                                                 <include name="**/configure.ac" />
+                                                <include name="**/configure.acrel" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(Version=.+)\d+\.\d+\.\d+\.\d+(.+)" />
+                                            <substitution expression="\1${new.client.version}\2" />
+                                            <fileset dir="${basedir}/">
+                                                <include name="**/*.wxs" />
                                             </fileset>
                                         </replaceregexp>
 

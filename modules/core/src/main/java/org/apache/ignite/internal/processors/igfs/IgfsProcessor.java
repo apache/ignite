@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
@@ -295,6 +296,9 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     private void validateLocalIgfsConfigurations(FileSystemConfiguration[] cfgs) throws IgniteCheckedException {
         Collection<String> cfgNames = new HashSet<>();
 
+        Collection<String> dataCacheNames = new HashSet<>();
+        Collection<String> metaCacheNames = new HashSet<>();
+
         for (FileSystemConfiguration cfg : cfgs) {
             String name = cfg.getName();
 
@@ -326,6 +330,14 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
             if (F.eq(cfg.getDataCacheName(), cfg.getMetaCacheName()))
                 throw new IgniteCheckedException("Cannot use same cache as both data and meta cache: " + cfg.getName());
+
+            if (dataCacheNames.contains(cfg.getDataCacheName()))
+                throw new IgniteCheckedException("Data cache names should be different for different IGFS instances: "
+                    + cfg.getName());
+
+            if (metaCacheNames.contains(cfg.getMetaCacheName()))
+                throw new IgniteCheckedException("Meta cache names should be different for different IGFS instances: "
+                    + cfg.getName());
 
             if (!(dataCacheCfg.getAffinityMapper() instanceof IgfsGroupDataBlocksKeyMapper))
                 throw new IgniteCheckedException("Invalid IGFS data cache configuration (key affinity mapper class should be " +
@@ -359,6 +371,9 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                 assertParameter(cfg.getSecondaryFileSystem() != null,
                     "secondaryFileSystem cannot be null when mode is not " + IgfsMode.PRIMARY);
             }
+
+            dataCacheNames.add(cfg.getDataCacheName());
+            metaCacheNames.add(cfg.getMetaCacheName());
 
             cfgNames.add(name);
         }

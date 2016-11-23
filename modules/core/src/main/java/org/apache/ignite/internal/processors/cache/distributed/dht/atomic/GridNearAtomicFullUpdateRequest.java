@@ -34,8 +34,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -43,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteExternaliza
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -59,12 +58,9 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
 /**
  * Lite DHT cache update request sent from near node to primary node.
  */
-public class GridNearAtomicUpdateRequest extends GridCacheMessage implements GridCacheDeployable {
+public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdateRequest {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Message index. */
-    public static final int CACHE_MSG_IDX = nextIndexId();
 
     /** Target node ID. */
     @GridDirectTransient
@@ -73,23 +69,48 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     /** Future version. */
     private GridCacheVersion futVer;
 
-    /** Fast map flag. */
-    private boolean fastMap;
-
     /** Update version. Set to non-null if fastMap is {@code true}. */
     private GridCacheVersion updateVer;
 
     /** Topology version. */
     private AffinityTopologyVersion topVer;
 
-    /** Topology locked flag. Set if atomic update is performed inside TX or explicit lock. */
-    private boolean topLocked;
-
     /** Write synchronization mode. */
     private CacheWriteSynchronizationMode syncMode;
 
     /** Update operation. */
     private GridCacheOperation op;
+
+    /** Subject ID. */
+    protected UUID subjId;
+
+    /** Task name hash. */
+    protected int taskNameHash;
+
+    /** */
+    @GridDirectTransient
+    private GridNearAtomicUpdateResponse res;
+
+    /** Fast map flag. */
+    protected boolean fastMap;
+
+    /** Topology locked flag. Set if atomic update is performed inside TX or explicit lock. */
+    protected boolean topLocked;
+
+    /** Flag indicating whether request contains primary keys. */
+    protected boolean hasPrimary;
+
+    /** Skip write-through to a persistent storage. */
+    protected boolean skipStore;
+
+    /** */
+    protected boolean clientReq;
+
+    /** Keep binary flag. */
+    protected boolean keepBinary;
+
+    /** Return value flag. */
+    protected boolean retval;
 
     /** Keys to update. */
     @GridToStringInclude
@@ -112,13 +133,6 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     @GridDirectCollection(byte[].class)
     private List<byte[]> entryProcessorsBytes;
 
-    /** Optional arguments for entry processor. */
-    @GridDirectTransient
-    private Object[] invokeArgs;
-
-    /** Entry processor arguments bytes. */
-    private byte[][] invokeArgsBytes;
-
     /** Conflict versions. */
     @GridDirectCollection(GridCacheVersion.class)
     private List<GridCacheVersion> conflictVers;
@@ -129,8 +143,12 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     /** Conflict expire times. */
     private GridLongList conflictExpireTimes;
 
-    /** Return value flag. */
-    private boolean retval;
+    /** Optional arguments for entry processor. */
+    @GridDirectTransient
+    private Object[] invokeArgs;
+
+    /** Entry processor arguments bytes. */
+    private byte[][] invokeArgsBytes;
 
     /** Expiry policy. */
     @GridDirectTransient
@@ -142,28 +160,6 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     /** Filter. */
     private CacheEntryPredicate[] filter;
 
-    /** Flag indicating whether request contains primary keys. */
-    private boolean hasPrimary;
-
-    /** Subject ID. */
-    private UUID subjId;
-
-    /** Task name hash. */
-    private int taskNameHash;
-
-    /** Skip write-through to a persistent storage. */
-    private boolean skipStore;
-
-    /** */
-    private boolean clientReq;
-
-    /** Keep binary flag. */
-    private boolean keepBinary;
-
-    /** */
-    @GridDirectTransient
-    private GridNearAtomicUpdateResponse res;
-
     /** Maximum possible size of inner collections. */
     @GridDirectTransient
     private int initSize;
@@ -171,7 +167,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     /**
      * Empty constructor required by {@link Externalizable}.
      */
-    public GridNearAtomicUpdateRequest() {
+    public GridNearAtomicFullUpdateRequest() {
         // No-op.
     }
 
@@ -199,7 +195,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
      * @param addDepInfo Deployment info flag.
      * @param maxEntryCnt Maximum entries count.
      */
-    public GridNearAtomicUpdateRequest(
+    GridNearAtomicFullUpdateRequest(
         int cacheId,
         UUID nodeId,
         GridCacheVersion futVer,
@@ -260,127 +256,79 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         return CACHE_MSG_IDX;
     }
 
-    /**
-     * @return Mapped node ID.
-     */
-    public UUID nodeId() {
+    /** {@inheritDoc} */
+    @Override public UUID nodeId() {
         return nodeId;
     }
 
-    /**
-     * @param nodeId Node ID.
-     */
-    public void nodeId(UUID nodeId) {
+    /** {@inheritDoc} */
+    @Override public void nodeId(UUID nodeId) {
         this.nodeId = nodeId;
     }
 
-    /**
-     * @return Subject ID.
-     */
-    public UUID subjectId() {
+    /** {@inheritDoc} */
+    @Override public UUID subjectId() {
         return subjId;
     }
 
-    /**
-     * @return Task name hash.
-     */
-    public int taskNameHash() {
+    /** {@inheritDoc} */
+    @Override public int taskNameHash() {
         return taskNameHash;
     }
 
-    /**
-     * @return Future version.
-     */
-    public GridCacheVersion futureVersion() {
+    /** {@inheritDoc} */
+    @Override public GridCacheVersion futureVersion() {
         return futVer;
     }
 
-    /**
-     * @return Flag indicating whether this is fast-map udpate.
-     */
-    public boolean fastMap() {
-        return fastMap;
-    }
-
-    /**
-     * @return Update version for fast-map request.
-     */
-    public GridCacheVersion updateVersion() {
+    /** {@inheritDoc} */
+    @Override public GridCacheVersion updateVersion() {
         return updateVer;
     }
 
-    /**
-     * @return Topology version.
-     */
+    /** {@inheritDoc} */
     @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
-    /**
-     * @return Topology locked flag.
-     */
-    public boolean topologyLocked() {
-        return topLocked;
-    }
-
-    /**
-     * @return {@code True} if request sent from client node.
-     */
-    public boolean clientRequest() {
-        return clientReq;
-    }
-
-    /**
-     * @return Cache write synchronization mode.
-     */
-    public CacheWriteSynchronizationMode writeSynchronizationMode() {
+    /** {@inheritDoc} */
+    @Override public CacheWriteSynchronizationMode writeSynchronizationMode() {
         return syncMode;
     }
 
-    /**
-     * @return Expiry policy.
-     */
-    public ExpiryPolicy expiry() {
-        return expiryPlc;
+    /** {@inheritDoc} */
+    @Override public GridCacheOperation operation() {
+        return op;
     }
 
-    /**
-     * @return Return value flag.
-     */
-    public boolean returnValue() {
-        return retval;
+    /** {@inheritDoc} */
+    @Override public boolean onResponse(GridNearAtomicUpdateResponse res) {
+        if (this.res == null) {
+            this.res = res;
+
+            return true;
+        }
+
+        return false;
     }
 
-    /**
-     * @return Filter.
-     */
-    @Nullable public CacheEntryPredicate[] filter() {
-        return filter;
+    /** {@inheritDoc} */
+    @Override @Nullable public GridNearAtomicUpdateResponse response() {
+        return res;
     }
 
-    /**
-     * @return Skip write-through to a persistent storage.
-     */
-    public boolean skipStore() {
-        return skipStore;
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return addDepInfo;
     }
 
-    /**
-     * @return Keep binary flag.
-     */
-    public boolean keepBinary() {
-        return keepBinary;
+    /** {@inheritDoc} */
+    @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+        return ctx.atomicMessageLogger();
     }
 
-    /**
-     * @param key Key to add.
-     * @param val Optional update value.
-     * @param conflictTtl Conflict TTL (optional).
-     * @param conflictExpireTime Conflict expire time (optional).
-     * @param conflictVer Conflict version (optional).
-     * @param primary If given key is primary on this mapping.
-     */
-    public void addUpdateEntry(KeyCacheObject key,
+    /** {@inheritDoc} */
+    @Override public void addUpdateEntry(KeyCacheObject key,
         @Nullable Object val,
         long conflictTtl,
         long conflictExpireTime,
@@ -453,79 +401,57 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         }
     }
 
-    /**
-     * @return Keys for this update request.
-     */
-    public List<KeyCacheObject> keys() {
+    /** {@inheritDoc} */
+    @Override public List<KeyCacheObject> keys() {
         return keys;
     }
 
-    /**
-     * @return Values for this update request.
-     */
-    public List<?> values() {
+    /** {@inheritDoc} */
+    @Override public int size() {
+        return keys != null ? keys.size() : 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public KeyCacheObject key(int idx) {
+        return keys.get(idx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<?> values() {
         return op == TRANSFORM ? entryProcessors : vals;
     }
 
-    /**
-     * @return Update operation.
-     */
-    public GridCacheOperation operation() {
-        return op;
-    }
-
-    /**
-     * @return Optional arguments for entry processor.
-     */
-    @Nullable public Object[] invokeArguments() {
-        return invokeArgs;
-    }
-
-    /**
-     * @param idx Key index.
-     * @return Value.
-     */
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    public CacheObject value(int idx) {
+    @Override public CacheObject value(int idx) {
         assert op == UPDATE : op;
 
         return vals.get(idx);
     }
 
-    /**
-     * @param idx Key index.
-     * @return Entry processor.
-     */
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    public EntryProcessor<Object, Object, Object> entryProcessor(int idx) {
+    @Override public EntryProcessor<Object, Object, Object> entryProcessor(int idx) {
         assert op == TRANSFORM : op;
 
         return entryProcessors.get(idx);
     }
 
-    /**
-     * @param idx Index to get.
-     * @return Write value - either value, or transform closure.
-     */
-    public CacheObject writeValue(int idx) {
+    /** {@inheritDoc} */
+    @Override public CacheObject writeValue(int idx) {
         if (vals != null)
             return vals.get(idx);
 
         return null;
     }
 
-    /**
-     * @return Conflict versions.
-     */
-    @Nullable public List<GridCacheVersion> conflictVersions() {
+    /** {@inheritDoc} */
+    @Override @Nullable public List<GridCacheVersion> conflictVersions() {
         return conflictVers;
     }
 
-    /**
-     * @param idx Index.
-     * @return Conflict version.
-     */
-    @Nullable public GridCacheVersion conflictVersion(int idx) {
+    /** {@inheritDoc} */
+    @Override @Nullable public GridCacheVersion conflictVersion(int idx) {
         if (conflictVers != null) {
             assert idx >= 0 && idx < conflictVers.size();
 
@@ -535,11 +461,8 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         return null;
     }
 
-    /**
-     * @param idx Index.
-     * @return Conflict TTL.
-     */
-    public long conflictTtl(int idx) {
+    /** {@inheritDoc} */
+    @Override public long conflictTtl(int idx) {
         if (conflictTtls != null) {
             assert idx >= 0 && idx < conflictTtls.size();
 
@@ -549,11 +472,8 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         return CU.TTL_NOT_CHANGED;
     }
 
-    /**
-     * @param idx Index.
-     * @return Conflict expire time.
-     */
-    public long conflictExpireTime(int idx) {
+    /** {@inheritDoc} */
+    @Override public long conflictExpireTime(int idx) {
         if (conflictExpireTimes != null) {
             assert idx >= 0 && idx < conflictExpireTimes.size();
 
@@ -563,40 +483,64 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         return CU.EXPIRE_TIME_CALCULATE;
     }
 
-    /**
-     * @return Flag indicating whether this request contains primary keys.
-     */
-    public boolean hasPrimary() {
+    /** {@inheritDoc} */
+    @Override @Nullable public Object[] invokeArguments() {
+        return invokeArgs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean fastMap() {
+        return fastMap;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean topologyLocked() {
+        return topLocked;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean clientRequest() {
+        return clientReq;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean returnValue() {
+        return retval;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean skipStore() {
+        return skipStore;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean keepBinary() {
+        return keepBinary;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasPrimary() {
         return hasPrimary;
     }
 
-    /**
-     * @param res Response.
-     * @return {@code True} if current response was {@code null}.
-     */
-    public boolean onResponse(GridNearAtomicUpdateResponse res) {
-        if (this.res == null) {
-            this.res = res;
-
-            return true;
-        }
-
-        return false;
+    /** {@inheritDoc} */
+    @Override @Nullable public CacheEntryPredicate[] filter() {
+        return filter;
     }
 
-    /**
-     * @return Response.
-     */
-    @Nullable public GridNearAtomicUpdateResponse response() {
-        return res;
+    /** {@inheritDoc} */
+    @Override public ExpiryPolicy expiry() {
+        return expiryPlc;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+        if (expiryPlc != null && expiryPlcBytes == null)
+            expiryPlcBytes = CU.marshal(cctx, new IgniteExternalizableExpiryPolicy(expiryPlc));
 
         prepareMarshalCacheObjects(keys, cctx);
 
@@ -614,9 +558,6 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
             if (!hasFilter)
                 filter = null;
         }
-
-        if (expiryPlc != null && expiryPlcBytes == null)
-            expiryPlcBytes = CU.marshal(cctx, new IgniteExternalizableExpiryPolicy(expiryPlc));
 
         if (op == TRANSFORM) {
             // force addition of deployment info for entry processors if P2P is enabled globally.
@@ -639,7 +580,17 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
+        if (expiryPlcBytes != null && expiryPlc == null)
+            expiryPlc = U.unmarshal(ctx, expiryPlcBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+
         finishUnmarshalCacheObjects(keys, cctx, ldr);
+
+        if (filter != null) {
+            for (CacheEntryPredicate p : filter) {
+                if (p != null)
+                    p.finishUnmarshal(cctx, ldr);
+            }
+        }
 
         if (op == TRANSFORM) {
             if (entryProcessors == null)
@@ -651,32 +602,12 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         else
             finishUnmarshalCacheObjects(vals, cctx, ldr);
 
-        if (filter != null) {
-            for (CacheEntryPredicate p : filter) {
-                if (p != null)
-                    p.finishUnmarshal(cctx, ldr);
-            }
-        }
-
-        if (expiryPlcBytes != null && expiryPlc == null)
-            expiryPlc = U.unmarshal(ctx, expiryPlcBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-
         if (partIds != null && !partIds.isEmpty()) {
             assert partIds.size() == keys.size();
 
             for (int i = 0; i < keys.size(); i++)
                 keys.get(i).partition(partIds.get(i));
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean addDeploymentInfo() {
-        return addDepInfo;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
-        return ctx.atomicMessageLogger();
     }
 
     /** {@inheritDoc} */
@@ -779,64 +710,65 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 writer.incrementState();
 
             case 17:
-                if (!writer.writeBoolean("retval", retval))
+                if (!writer.writeCollection("partIds", partIds, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
 
             case 18:
-                if (!writer.writeBoolean("skipStore", skipStore))
+                if (!writer.writeBoolean("retval", retval))
                     return false;
 
                 writer.incrementState();
 
             case 19:
-                if (!writer.writeUuid("subjId", subjId))
+                if (!writer.writeBoolean("skipStore", skipStore))
                     return false;
 
                 writer.incrementState();
 
             case 20:
-                if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
+                if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
             case 21:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
+                if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeBoolean("topLocked", topLocked))
+                if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeBoolean("topLocked", topLocked))
                     return false;
 
                 writer.incrementState();
 
             case 24:
-                if (!writer.writeMessage("updateVer", updateVer))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
             case 25:
-                if (!writer.writeCollection("vals", vals, MessageCollectionItemType.MSG))
+                if (!writer.writeMessage("updateVer", updateVer))
                     return false;
 
                 writer.incrementState();
 
             case 26:
-                if (!writer.writeCollection("partIds", partIds, MessageCollectionItemType.INT))
+                if (!writer.writeCollection("vals", vals, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;
@@ -970,7 +902,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 reader.incrementState();
 
             case 17:
-                retval = reader.readBoolean("retval");
+                partIds = reader.readCollection("partIds", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -978,7 +910,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 reader.incrementState();
 
             case 18:
-                skipStore = reader.readBoolean("skipStore");
+                retval = reader.readBoolean("retval");
 
                 if (!reader.isLastRead())
                     return false;
@@ -986,7 +918,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 reader.incrementState();
 
             case 19:
-                subjId = reader.readUuid("subjId");
+                skipStore = reader.readBoolean("skipStore");
 
                 if (!reader.isLastRead())
                     return false;
@@ -994,6 +926,14 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 reader.incrementState();
 
             case 20:
+                subjId = reader.readUuid("subjId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 21:
                 byte syncModeOrd;
 
                 syncModeOrd = reader.readByte("syncMode");
@@ -1005,7 +945,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
                 reader.incrementState();
 
-            case 21:
+            case 22:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -1013,7 +953,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
                 reader.incrementState();
 
-            case 22:
+            case 23:
                 topLocked = reader.readBoolean("topLocked");
 
                 if (!reader.isLastRead())
@@ -1021,7 +961,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
                 reader.incrementState();
 
-            case 23:
+            case 24:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
@@ -1029,7 +969,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
                 reader.incrementState();
 
-            case 24:
+            case 25:
                 updateVer = reader.readMessage("updateVer");
 
                 if (!reader.isLastRead())
@@ -1037,16 +977,8 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
                 reader.incrementState();
 
-            case 25:
-                vals = reader.readCollection("vals", MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
             case 26:
-                partIds = reader.readCollection("partIds", MessageCollectionItemType.INT);
+                vals = reader.readCollection("vals", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -1055,15 +987,11 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
         }
 
-        return reader.afterMessageRead(GridNearAtomicUpdateRequest.class);
+        return reader.afterMessageRead(GridNearAtomicFullUpdateRequest.class);
     }
 
-    /**
-     * Cleanup values.
-     *
-     * @param clearKeys If {@code true} clears keys.
-     */
-    public void cleanup(boolean clearKeys) {
+    /** {@inheritDoc} */
+    @Override public void cleanup(boolean clearKeys) {
         vals = null;
         entryProcessors = null;
         entryProcessorsBytes = null;
@@ -1086,7 +1014,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNearAtomicUpdateRequest.class, this, "filter", Arrays.toString(filter),
+        return S.toString(GridNearAtomicFullUpdateRequest.class, this, "filter", Arrays.toString(filter),
             "parent", super.toString());
     }
 }
