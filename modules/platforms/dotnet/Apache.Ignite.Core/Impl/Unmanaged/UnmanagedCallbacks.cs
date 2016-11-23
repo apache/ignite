@@ -399,7 +399,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     return ExtensionCallbackInLongLongOutLong((int) val1, val2, val3);
 
                 default:
-                    throw new InvalidOperationException("Invalid callback code: " + type);
+                    throw new InvalidOperationException("Invalid callback code: " + op);
             }
         }
 
