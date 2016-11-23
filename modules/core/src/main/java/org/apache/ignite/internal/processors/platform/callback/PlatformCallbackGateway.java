@@ -474,11 +474,12 @@ public class PlatformCallbackGateway {
      * @param futPtr Future pointer.
      * @param res Result.
      */
-    public void futureByteResult(long futPtr, int res) {
+    public void futureByteResult(long futPtr, long res) {
         enter();
 
         try {
-            PlatformCallbackUtils.futureByteResult(envPtr, futPtr, res);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.FutureByteResult, futPtr, res, 0, null);
         }
         finally {
             leave();
@@ -491,11 +492,12 @@ public class PlatformCallbackGateway {
      * @param futPtr Future pointer.
      * @param res Result.
      */
-    public void futureBoolResult(long futPtr, int res) {
+    public void futureBoolResult(long futPtr, long res) {
         enter();
 
         try {
-            PlatformCallbackUtils.futureBoolResult(envPtr, futPtr, res);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.FutureBoolResult, futPtr, res, 0, null);
         }
         finally {
             leave();
@@ -508,11 +510,12 @@ public class PlatformCallbackGateway {
      * @param futPtr Future pointer.
      * @param res Result.
      */
-    public void futureShortResult(long futPtr, int res) {
+    public void futureShortResult(long futPtr, long res) {
         enter();
 
         try {
-            PlatformCallbackUtils.futureShortResult(envPtr, futPtr, res);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.FutureShortResult, futPtr, res, 0, null);
         }
         finally {
             leave();
@@ -525,11 +528,12 @@ public class PlatformCallbackGateway {
      * @param futPtr Future pointer.
      * @param res Result.
      */
-    public void futureCharResult(long futPtr, int res) {
+    public void futureCharResult(long futPtr, long res) {
         enter();
 
         try {
-            PlatformCallbackUtils.futureCharResult(envPtr, futPtr, res);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.FutureCharResult, futPtr, res, 0, null);
         }
         finally {
             leave();
@@ -542,11 +546,12 @@ public class PlatformCallbackGateway {
      * @param futPtr Future pointer.
      * @param res Result.
      */
-    public void futureIntResult(long futPtr, int res) {
+    public void futureIntResult(long futPtr, long res) {
         enter();
 
         try {
-            PlatformCallbackUtils.futureIntResult(envPtr, futPtr, res);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.FutureIntResult, futPtr, res, 0, null);
         }
         finally {
             leave();
@@ -559,11 +564,12 @@ public class PlatformCallbackGateway {
      * @param futPtr Future pointer.
      * @param res Result.
      */
-    public void futureFloatResult(long futPtr, float res) {
+    public void futureFloatResult(long futPtr, long res) {
         enter();
 
         try {
-            PlatformCallbackUtils.futureFloatResult(envPtr, futPtr, res);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.FutureFloatResult, futPtr, res, 0, null);
         }
         finally {
             leave();
@@ -580,7 +586,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.futureLongResult(envPtr, futPtr, res);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.FutureLongResult, futPtr, res, 0, null);
         }
         finally {
             leave();
@@ -593,11 +600,12 @@ public class PlatformCallbackGateway {
      * @param futPtr Future pointer.
      * @param res Result.
      */
-    public void futureDoubleResult(long futPtr, double res) {
+    public void futureDoubleResult(long futPtr, long res) {
         enter();
 
         try {
-            PlatformCallbackUtils.futureDoubleResult(envPtr, futPtr, res);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.FutureDoubleResult, futPtr, res, 0, null);
         }
         finally {
             leave();
@@ -614,7 +622,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.futureObjectResult(envPtr, futPtr, memPtr);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.FutureObjectResult, futPtr, memPtr, 0, null);
         }
         finally {
             leave();
@@ -630,7 +639,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.futureNullResult(envPtr, futPtr);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.FutureNullResult, futPtr, 0, 0, null);
         }
         finally {
             leave();
@@ -647,7 +657,8 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            PlatformCallbackUtils.futureError(envPtr, futPtr, memPtr);
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                PlatformCallbackOp.FutureError, futPtr, memPtr, 0, null);
         }
         finally {
             leave();
