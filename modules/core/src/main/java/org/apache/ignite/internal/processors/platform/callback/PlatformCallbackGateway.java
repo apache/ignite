@@ -1053,15 +1053,15 @@ public class PlatformCallbackGateway {
     /**
      * Gets the partition from affinity function.
      *
-     * @param ptr Affinity function pointer.
-     * @param memPtr Pointer to a stream with key object.
+     * @param memPtr Pointer to a stream with data.
      * @return Partition number for a given key.
      */
-    public int affinityFunctionPartition(long ptr, long memPtr) {
+    public int affinityFunctionPartition(long memPtr) {
         enter();
 
         try {
-            return PlatformCallbackUtils.affinityFunctionPartition(envPtr, ptr, memPtr);
+            return (int)PlatformCallbackUtils.inLongOutLong(envPtr,
+                PlatformCallbackOp.AffinityFunctionPartition, memPtr);
         }
         finally {
             leave();
@@ -1071,15 +1071,13 @@ public class PlatformCallbackGateway {
     /**
      * Assigns the affinity partitions.
      *
-     * @param ptr Affinity function pointer.
-     * @param outMemPtr Pointer to a stream with affinity context.
-     * @param inMemPtr Pointer to a stream with result.
+     * @param memPtr Pointer to a stream.
      */
-    public void affinityFunctionAssignPartitions(long ptr, long outMemPtr, long inMemPtr){
+    public void affinityFunctionAssignPartitions(long memPtr){
         enter();
 
         try {
-            PlatformCallbackUtils.affinityFunctionAssignPartitions(envPtr, ptr, outMemPtr, inMemPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.AffinityFunctionAssignPartitions, memPtr);
         }
         finally {
             leave();
@@ -1089,14 +1087,13 @@ public class PlatformCallbackGateway {
     /**
      * Removes the node from affinity function.
      *
-     * @param ptr Affinity function pointer.
-     * @param memPtr Pointer to a stream with node id.
+     * @param memPtr Pointer to a stream.
      */
-    public void affinityFunctionRemoveNode(long ptr, long memPtr) {
+    public void affinityFunctionRemoveNode(long memPtr) {
         enter();
 
         try {
-            PlatformCallbackUtils.affinityFunctionRemoveNode(envPtr, ptr, memPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.AffinityFunctionRemoveNode, memPtr);
         }
         finally {
             leave();
@@ -1113,7 +1110,7 @@ public class PlatformCallbackGateway {
             return;  // skip: destroy is not necessary during shutdown.
 
         try {
-            PlatformCallbackUtils.affinityFunctionDestroy(envPtr, ptr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.AffinityFunctionDestroy, ptr);
         }
         finally {
             leave();
