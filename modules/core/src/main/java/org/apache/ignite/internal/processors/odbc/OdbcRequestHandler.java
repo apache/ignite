@@ -192,9 +192,7 @@ public class OdbcRequestHandler {
 
             QueryCursor qryCur = cache.query(qry);
 
-            Iterator iter = qryCur.iterator();
-
-            qryCursors.put(qryId, new IgniteBiTuple<>(qryCur, iter));
+            qryCursors.put(qryId, new IgniteBiTuple<QueryCursor, Iterator>(qryCur, null));
 
             List<?> fieldsMeta = ((QueryCursorImpl) qryCur).fieldsMeta();
 
@@ -220,10 +218,14 @@ public class OdbcRequestHandler {
      */
     private OdbcResponse closeQuery(long reqId, OdbcQueryCloseRequest req) {
         try {
-            QueryCursor cur = qryCursors.get(req.queryId()).get1();
+            IgniteBiTuple<QueryCursor, Iterator> tuple = qryCursors.get(req.queryId());
 
-            if (cur == null)
+            if (tuple == null)
                 return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Failed to find query with ID: " + req.queryId());
+
+            QueryCursor cur = tuple.get1();
+
+            assert(cur != null);
 
             cur.close();
 
@@ -251,17 +253,27 @@ public class OdbcRequestHandler {
      */
     private OdbcResponse fetchQuery(long reqId, OdbcQueryFetchRequest req) {
         try {
-            Iterator cur = qryCursors.get(req.queryId()).get2();
+            IgniteBiTuple<QueryCursor, Iterator> tuple = qryCursors.get(req.queryId());
 
-            if (cur == null)
+            if (tuple == null)
                 return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Failed to find query with ID: " + req.queryId());
+
+            Iterator iter = tuple.get2();
+
+            if (iter == null) {
+                QueryCursor cur = tuple.get1();
+
+                iter = cur.iterator();
+
+                tuple.put(cur, iter);
+            }
 
             List<Object> items = new ArrayList<>();
 
-            for (int i = 0; i < req.pageSize() && cur.hasNext(); ++i)
-                items.add(cur.next());
+            for (int i = 0; i < req.pageSize() && iter.hasNext(); ++i)
+                items.add(iter.next());
 
-            OdbcQueryFetchResult res = new OdbcQueryFetchResult(req.queryId(), items, !cur.hasNext());
+            OdbcQueryFetchResult res = new OdbcQueryFetchResult(req.queryId(), items, !iter.hasNext());
 
             return new OdbcResponse(res);
         }
