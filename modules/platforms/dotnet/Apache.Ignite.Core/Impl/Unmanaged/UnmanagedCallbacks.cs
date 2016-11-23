@@ -106,10 +106,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Operation: prepare .Net. */
         private const int OpPrepareDotNet = 1;
 
-        private delegate void LifecycleOnEventCallbackDelegate(void* target, long ptr, int evt);
-
-        private delegate void MemoryReallocateCallbackDelegate(void* target, long memPtr, int cap);
-
         private delegate long MessagingFilterCreateCallbackDelegate(void* target, long memPtr);
         private delegate int MessagingFilterApplyCallbackDelegate(void* target, long ptr, long memPtr);
         private delegate void MessagingFilterDestroyCallbackDelegate(void* target, long ptr);
@@ -124,8 +120,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void ServiceInvokeMethodCallbackDelegate(void* target, long svcPtr, long inMemPtr, long outMemPtr);
 
         private delegate int ClusterNodeFilterApplyCallbackDelegate(void* target, long memPtr);
-
-        private delegate void NodeInfoCallbackDelegate(void* target, long memPtr);
 
         private delegate void OnStartCallbackDelegate(void* target, void* proc, long memPtr);
         private delegate void OnStopCallbackDelegate(void* target);
@@ -167,10 +161,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             var cbs = new UnmanagedCallbackHandlers
             {
                 target = IntPtr.Zero.ToPointer(), // Target is not used in .Net as we rely on dynamic FP creation.
-
-                lifecycleOnEvent = CreateFunctionPointer((LifecycleOnEventCallbackDelegate) LifecycleOnEvent),
-                memoryReallocate = CreateFunctionPointer((MemoryReallocateCallbackDelegate) MemoryReallocate),
-                nodeInfo = CreateFunctionPointer((NodeInfoCallbackDelegate) NodeInfo),
 
                 messagingFilterCreate = CreateFunctionPointer((MessagingFilterCreateCallbackDelegate)MessagingFilterCreate),
                 messagingFilterApply = CreateFunctionPointer((MessagingFilterApplyCallbackDelegate)MessagingFilterApply),
@@ -302,6 +292,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     ContinuousQueryFilterRelease(val);
                     return 0;
 
+                case UnmanagedCallbackOp.NodeInfo:
+                    NodeInfo(val);
+                    return 0;
+
                 default:
                     throw new InvalidOperationException("Invalid callback code: " + type);
             }
@@ -380,6 +374,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 case UnmanagedCallbackOp.FutureError:
                     FutureError(val1, val2);
+                    return 0;
+
+                case UnmanagedCallbackOp.LifecycleOnEvent:
+                    LifecycleOnEvent(val1, val2);
+                    return 0;
+
+                case UnmanagedCallbackOp.MemoryReallocate:
+                    MemoryReallocate(val1, (int) val2);
                     return 0;
 
                 default:
@@ -926,7 +928,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region IMPLEMENTATION: LIFECYCLE
 
-        private void LifecycleOnEvent(void* target, long ptr, int evt)
+        private void LifecycleOnEvent(long ptr, long evt)
         {
             SafeCall(() =>
             {
@@ -1150,12 +1152,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region IMPLEMENTATION: MISCELLANEOUS
 
-        private void NodeInfo(void* target, long memPtr)
+        private void NodeInfo(long memPtr)
         {
             SafeCall(() => _ignite.UpdateNodeInfo(memPtr));
         }
 
-        private void MemoryReallocate(void* target, long memPtr, int cap)
+        private void MemoryReallocate(long memPtr, int cap)
         {
             SafeCall(() =>
             {
