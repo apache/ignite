@@ -63,13 +63,7 @@ namespace ignite
                 reader.ReadString(&str[0], static_cast<int32_t>(str.size()));
             }
             else
-            {
                 str.clear();
-
-                char dummy;
-
-                reader.ReadString(&dummy, sizeof(dummy));
-            }
         }
 
         void WriteString(ignite::impl::binary::BinaryWriterImpl& writer, const std::string & str)
