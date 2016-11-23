@@ -296,6 +296,9 @@ public class GridDhtPartitionDemander {
                         });
 
                     if (assigns.isEmpty()) {
+                        if (log.isDebugEnabled())
+                            log.debug("Rebalancing skipped due to empty assignments.");
+
                         rebalanceFut.onDone(true);
 
                         return;
