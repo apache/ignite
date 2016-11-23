@@ -947,10 +947,16 @@ public class BinaryUtils {
             }
 
             // Check and merge fields.
-            boolean changed = false;
+            Map<String, Integer> mergedFields;
 
-            Map<String, Integer> mergedFields = new HashMap<>(oldMeta.fieldsMap());
+            if (FIELDS_SORTED_ORDER)
+                mergedFields = new TreeMap<>(oldMeta.fieldsMap());
+            else
+                mergedFields = new LinkedHashMap<>(oldMeta.fieldsMap());
+
             Map<String, Integer> newFields = newMeta.fieldsMap();
+
+            boolean changed = false;
 
             for (Map.Entry<String, Integer> newField : newFields.entrySet()) {
                 Integer oldFieldType = mergedFields.put(newField.getKey(), newField.getValue());
