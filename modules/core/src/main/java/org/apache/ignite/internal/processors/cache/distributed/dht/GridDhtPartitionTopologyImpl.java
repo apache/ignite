@@ -751,7 +751,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
         GridDhtPartitionState state = loc != null ? loc.state() : null;
 
-        if (loc != null && state != EVICTED && (state != RENTING && cctx.allowFastEviction()))
+        if (loc != null && state != EVICTED && (state != RENTING || !cctx.allowFastEviction()))
             return loc;
 
         if (!create)
