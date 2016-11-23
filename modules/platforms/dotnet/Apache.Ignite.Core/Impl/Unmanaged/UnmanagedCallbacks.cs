@@ -285,6 +285,21 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     EventFilterDestroy(val);
                     return 0;
 
+                case UnmanagedCallbackOp.ServiceInit:
+                    return ServiceInit(val);
+
+                case UnmanagedCallbackOp.ServiceExecute:
+                    ServiceExecute(val);
+                    return 0;
+
+                case UnmanagedCallbackOp.ServiceCancel:
+                    ServiceCancel(val);
+                    return 0;
+
+                case UnmanagedCallbackOp.ServiceInvokeMethod:
+                    ServiceInvokeMethod(val);
+                    return 0;
+
                 default:
                     throw new InvalidOperationException("Invalid callback code: " + type);
             }
