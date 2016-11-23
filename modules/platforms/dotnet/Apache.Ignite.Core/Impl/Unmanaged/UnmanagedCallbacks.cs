@@ -106,10 +106,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Operation: prepare .Net. */
         private const int OpPrepareDotNet = 1;
 
-        private delegate long MessagingFilterCreateCallbackDelegate(void* target, long memPtr);
-        private delegate int MessagingFilterApplyCallbackDelegate(void* target, long ptr, long memPtr);
-        private delegate void MessagingFilterDestroyCallbackDelegate(void* target, long ptr);
-
         private delegate long EventFilterCreateCallbackDelegate(void* target, long memPtr);
         private delegate int EventFilterApplyCallbackDelegate(void* target, long ptr, long memPtr);
         private delegate void EventFilterDestroyCallbackDelegate(void* target, long ptr);
@@ -161,10 +157,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             var cbs = new UnmanagedCallbackHandlers
             {
                 target = IntPtr.Zero.ToPointer(), // Target is not used in .Net as we rely on dynamic FP creation.
-
-                messagingFilterCreate = CreateFunctionPointer((MessagingFilterCreateCallbackDelegate)MessagingFilterCreate),
-                messagingFilterApply = CreateFunctionPointer((MessagingFilterApplyCallbackDelegate)MessagingFilterApply),
-                messagingFilterDestroy = CreateFunctionPointer((MessagingFilterDestroyCallbackDelegate)MessagingFilterDestroy),
 
                 eventFilterCreate = CreateFunctionPointer((EventFilterCreateCallbackDelegate)EventFilterCreate),
                 eventFilterApply = CreateFunctionPointer((EventFilterApplyCallbackDelegate)EventFilterApply),
@@ -296,6 +288,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     NodeInfo(val);
                     return 0;
 
+                case UnmanagedCallbackOp.MessagingFilterCreate:
+                    return MessagingFilterCreate(val);
+
+                case UnmanagedCallbackOp.MessagingFilterDestroy:
+                    MessagingFilterDestroy(val);
+                    return 0;
+
                 default:
                     throw new InvalidOperationException("Invalid callback code: " + type);
             }
@@ -383,6 +382,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 case UnmanagedCallbackOp.MemoryReallocate:
                     MemoryReallocate(val1, (int) val2);
                     return 0;
+
+                case UnmanagedCallbackOp.MessagingFilterApply:
+                    return MessagingFilterApply(val1, val2);
 
                 default:
                     throw new InvalidOperationException("Invalid callback code: " + type);
@@ -942,7 +944,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region IMPLEMENTATION: MESSAGING
 
-        private long MessagingFilterCreate(void* target, long memPtr)
+        private long MessagingFilterCreate(long memPtr)
         {
             return SafeCall(() =>
             {
@@ -952,7 +954,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private int MessagingFilterApply(void* target, long ptr, long memPtr)
+        private int MessagingFilterApply(long ptr, long memPtr)
         {
             return SafeCall(() =>
             {
@@ -968,7 +970,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private void MessagingFilterDestroy(void* target, long ptr)
+        private void MessagingFilterDestroy(long ptr)
         {
             SafeCall(() =>
             {
