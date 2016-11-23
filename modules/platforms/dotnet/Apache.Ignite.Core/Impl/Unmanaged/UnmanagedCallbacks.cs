@@ -358,6 +358,30 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     FutureIntResult(val1, val2);
                     return 0;
 
+                case UnmanagedCallbackOp.FutureFloatResult:
+                    FutureFloatResult(val1, val2);
+                    return 0;
+
+                case UnmanagedCallbackOp.FutureLongResult:
+                    FutureLongResult(val1, val2);
+                    return 0;
+
+                case UnmanagedCallbackOp.FutureDoubleResult:
+                    FutureDoubleResult(val1, val2);
+                    return 0;
+
+                case UnmanagedCallbackOp.FutureObjectResult:
+                    FutureObjectResult(val1, val2);
+                    return 0;
+
+                case UnmanagedCallbackOp.FutureNullResult:
+                    FutureNullResult(val1);
+                    return 0;
+
+                case UnmanagedCallbackOp.FutureError:
+                    FutureError(val1, val2);
+                    return 0;
+
                 default:
                     throw new InvalidOperationException("Invalid callback code: " + type);
             }
@@ -798,11 +822,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private void FutureFloatResult(long futPtr, float res)
+        private void FutureFloatResult(long futPtr, long res)
         {
             SafeCall(() =>
             {
-                ProcessFuture<float>(futPtr, fut => { fut.OnResult(res); });
+                ProcessFuture<float>(futPtr, fut => { fut.OnResult(BinaryUtils.IntToFloatBits((int) res)); });
             });
         }
 
@@ -814,11 +838,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private void FutureDoubleResult(long futPtr, double res)
+        private void FutureDoubleResult(long futPtr, long res)
         {
             SafeCall(() =>
             {
-                ProcessFuture<double>(futPtr, fut => { fut.OnResult(res); });
+                ProcessFuture<double>(futPtr, fut => { fut.OnResult(BinaryUtils.LongToDoubleBits(res)); });
             });
         }
 
