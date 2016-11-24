@@ -44,7 +44,6 @@ import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -1425,7 +1424,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             aliases = Collections.emptyMap();
 
         for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
-            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases, null, d);
+            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases, null);
 
             d.addProperty(prop, false);
 
@@ -1437,7 +1436,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet()) {
-            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases, null, d);
+            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases, null);
 
             d.addProperty(prop, false);
 
@@ -1449,7 +1448,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (String txtIdx : meta.getTextFields()) {
-            BinaryProperty prop = buildBinaryProperty(txtIdx, String.class, aliases, null, d);
+            BinaryProperty prop = buildBinaryProperty(txtIdx, String.class, aliases, null);
 
             d.addProperty(prop, false);
 
@@ -1468,7 +1467,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
                     BinaryProperty prop = buildBinaryProperty(idxField.getKey(), idxField.getValue().get1(), aliases,
-                        null, d);
+                        null);
 
                     d.addProperty(prop, false);
 
@@ -1482,7 +1481,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (Map.Entry<String, Class<?>> entry : meta.getQueryFields().entrySet()) {
-            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases, null, d);
+            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases, null);
 
             if (!d.props.containsKey(prop.name()))
                 d.addProperty(prop, false);
@@ -1509,7 +1508,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             Boolean isKeyField = (hasKeyFields ? keyFields.contains(entry.getKey()) : null);
 
             BinaryProperty prop = buildBinaryProperty(entry.getKey(), U.classForName(entry.getValue(), Object.class, true),
-                aliases, isKeyField, d);
+                aliases, isKeyField);
 
             d.addProperty(prop, false);
         }
@@ -1609,12 +1608,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *      nested fields.
      * @param resType Result type.
      * @param aliases Aliases.
-     * @param isKeyField
-     *@param d Type descriptor.  @return Binary property.
+     * @param isKeyField Key ownership flag, as defined in {@link QueryEntity#keyFields}: {@code true} if field belongs
+     *      to key, {@code false} if it belongs to value, {@code null} if QueryEntity#keyFields is null.
+     * @return Binary property.
      */
     private BinaryProperty buildBinaryProperty(String pathStr, Class<?> resType, Map<String, String> aliases,
-        @Nullable Boolean isKeyField, TypeDescriptor d) throws IgniteCheckedException {
-
+        @Nullable Boolean isKeyField) throws IgniteCheckedException {
         String[] path = pathStr.split("\\.");
 
         BinaryProperty res = null;
@@ -2190,7 +2189,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             if (isKeyProp0 == 0)
                 throw new IllegalStateException("Ownership flag not set for binary property. Have you set 'keyFields'" +
-                    " property of QueryEntity in configuration XML?");
+                    " property of QueryEntity in programmatic or XML configuration?");
 
             return isKeyProp0 == 1;
         }
