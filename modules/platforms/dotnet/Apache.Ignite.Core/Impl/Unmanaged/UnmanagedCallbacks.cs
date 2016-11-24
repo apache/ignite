@@ -162,11 +162,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         }
 
         /// <summary> Handlers array. </summary>
-        private readonly InLongOutLongHandler[] _inLongOutLongHandlers = new InLongOutLongHandler[61];
+        private readonly InLongOutLongHandler[] _inLongOutLongHandlers = new InLongOutLongHandler[62];
 
         /// <summary> Handlers array. </summary>
         private readonly InLongLongLongObjectOutLongHandler[] _inLongLongLongObjectOutLongHandlers 
-            = new InLongLongLongObjectOutLongHandler[61];
+            = new InLongLongLongObjectOutLongHandler[62];
 
         /// <summary>
         /// Constructor.
