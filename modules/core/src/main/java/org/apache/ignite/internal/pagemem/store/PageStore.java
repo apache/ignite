@@ -72,7 +72,7 @@ public interface PageStore {
      * @param pageBuf Page buffer to write.
      * @throws IgniteCheckedException If page writing failed (IO error occurred).
      */
-    public void write(long pageId, ByteBuffer pageBuf) throws IgniteCheckedException;
+    public void write(long pageId, ByteBuffer pageBuf, int tag) throws IgniteCheckedException;
 
     /**
      * Gets page offset within the store file.
