@@ -33,6 +33,13 @@ namespace ignite
             {
                 namespace continuous
                 {
+                    enum Command
+                    {
+                        GET_INITIAL_QUERY = 0,
+
+                        CLOSE = 1
+                    };
+
                     ContinuousQueryHandleImpl::ContinuousQueryHandleImpl(SP_IgniteEnvironment env, jobject javaRef) :
                         env(env),
                         javaRef(javaRef),
@@ -43,7 +50,7 @@ namespace ignite
 
                     ContinuousQueryHandleImpl::~ContinuousQueryHandleImpl()
                     {
-                        env.Get()->Context()->ContinuousQueryClose(javaRef);
+                        env.Get()->Context()->TargetInLongOutLong(javaRef, CLOSE, 0);
 
                         JniContext::Release(javaRef);
                     }
@@ -60,7 +67,7 @@ namespace ignite
 
                         JniErrorInfo jniErr;
 
-                        jobject res = env.Get()->Context()->ContinuousQueryGetInitialQueryCursor(javaRef, &jniErr);
+                        jobject res = env.Get()->Context()->TargetOutObject(javaRef, GET_INITIAL_QUERY, &jniErr);
 
                         IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
 

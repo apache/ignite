@@ -455,7 +455,7 @@ namespace ignite
             }
 
             bool JniJavaMembers::WriteErrorInfo(JNIEnv* env, char** errClsName, int* errClsNameLen, char** errMsg,
-				int* errMsgLen, char** stackTrace, int* stackTraceLen) {
+                    int* errMsgLen, char** stackTrace, int* stackTraceLen) {
                 if (env && env->ExceptionCheck()) {
                     if (m_Class_getName && m_Throwable_getMessage) {
                         jthrowable err = env->ExceptionOccurred();
@@ -531,11 +531,11 @@ namespace ignite
                 m_PlatformProcessor_atomicLong = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_ATOMIC_LONG);
                 m_PlatformProcessor_atomicSequence = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_ATOMIC_SEQUENCE);
                 m_PlatformProcessor_atomicReference = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_ATOMIC_REFERENCE);
-				m_PlatformProcessor_getIgniteConfiguration = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_GET_IGNITE_CONFIGURATION);
-				m_PlatformProcessor_getCacheNames = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_GET_CACHE_NAMES);
-				m_PlatformProcessor_loggerIsLevelEnabled = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_LOGGER_IS_LEVEL_ENABLED);
-				m_PlatformProcessor_loggerLog = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_LOGGER_LOG);
-				m_PlatformProcessor_binaryProcessor = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_BINARY_PROCESSOR);
+                    m_PlatformProcessor_getIgniteConfiguration = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_GET_IGNITE_CONFIGURATION);
+                    m_PlatformProcessor_getCacheNames = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_GET_CACHE_NAMES);
+                    m_PlatformProcessor_loggerIsLevelEnabled = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_LOGGER_IS_LEVEL_ENABLED);
+                    m_PlatformProcessor_loggerLog = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_LOGGER_LOG);
+                    m_PlatformProcessor_binaryProcessor = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_BINARY_PROCESSOR);
 
                 c_PlatformTarget = FindClass(env, C_PLATFORM_TARGET);
                 m_PlatformTarget_inLongOutLong = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_IN_LONG_OUT_LONG);
@@ -619,7 +619,7 @@ namespace ignite
 
             void RegisterNatives(JNIEnv* env) {
                 {
-					JNINativeMethod methods[62];
+                        JNINativeMethod methods[62];
 
                     int idx = 0;
 
@@ -819,7 +819,7 @@ namespace ignite
 
                     // Read error info if possible.
                     javaMembers.WriteErrorInfo(env, &errClsNameChars, &errClsNameLen, &errMsgChars, &errMsgLen,
-						&stackTraceChars, &stackTraceLen);
+                                &stackTraceChars, &stackTraceLen);
 
                     if (errClsNameChars) {
                         errClsName = errClsNameChars;
@@ -1447,754 +1447,6 @@ namespace ignite
                 return LocalToGlobal(env, res);
             }
 
-            jobject JniContext::CacheIterator(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformCache_iterator);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, res);
-            }
-
-            jobject JniContext::CacheLocalIterator(jobject obj, int peekModes) {
-                JNIEnv*env = Attach();
-
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformCache_localIterator, peekModes);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, res);
-            }
-
-            void JniContext::CacheEnterLock(jobject obj, long long id) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformCache_enterLock, id);
-
-                ExceptionCheck(env);
-            }
-
-            void JniContext::CacheExitLock(jobject obj, long long id) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformCache_exitLock, id);
-
-                ExceptionCheck(env);
-            }
-
-            bool JniContext::CacheTryEnterLock(jobject obj, long long id, long long timeout) {
-                JNIEnv* env = Attach();
-
-                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformCache_tryEnterLock, id, timeout);
-
-                ExceptionCheck(env);
-
-                return res != 0;
-            }
-
-            void JniContext::CacheCloseLock(jobject obj, long long id) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformCache_closeLock, id);
-
-                ExceptionCheck(env);
-            }
-
-            void JniContext::CacheRebalance(jobject obj, long long futId) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformCache_rebalance, futId);
-
-                ExceptionCheck(env);
-            }
-
-            int JniContext::CacheSize(jobject obj, int peekModes, bool loc, JniErrorInfo* err) {
-                JNIEnv* env = Attach();
-
-                jint res = env->CallIntMethod(obj, jvm->GetMembers().m_PlatformCache_size, peekModes, loc);
-
-                ExceptionCheck(env, err);
-
-                return res;
-            }
-
-            void JniContext::CacheStoreCallbackInvoke(jobject obj, long long memPtr) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformCacheStoreCallback_invoke, memPtr);
-
-                ExceptionCheck(env);
-            }
-
-            void JniContext::ComputeWithNoFailover(jobject obj) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformCompute_withNoFailover);
-
-                ExceptionCheck(env);
-            }
-
-            void JniContext::ComputeWithTimeout(jobject obj, long long timeout) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformCompute_withTimeout, timeout);
-
-                ExceptionCheck(env);
-            }
-
-            void* JniContext::ComputeExecuteNative(jobject obj, long long taskPtr, long long topVer) {
-                JNIEnv* env = Attach();
-
-                jobject res = env->CallObjectMethod(obj,
-                    jvm->GetMembers().m_PlatformCompute_executeNative, taskPtr, topVer);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, res);
-            }
-
-            void JniContext::ContinuousQueryClose(jobject obj) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformContinuousQuery_close);
-
-                ExceptionCheck(env);
-            }
-
-            jobject JniContext::ContinuousQueryGetInitialQueryCursor(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jobject res = env->CallObjectMethod(obj,
-                    jvm->GetMembers().m_PlatformContinuousQuery_getInitialQueryCursor);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env,  res);
-            }
-
-            void JniContext::DataStreamerListenTopology(jobject obj, long long ptr) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformDataStreamer_listenTopology, ptr);
-
-                ExceptionCheck(env);
-            }
-
-            bool JniContext::DataStreamerAllowOverwriteGet(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformDataStreamer_getAllowOverwrite);
-
-                ExceptionCheck(env);
-
-                return res != 0;
-            }
-
-            void JniContext::DataStreamerAllowOverwriteSet(jobject obj, bool val) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformDataStreamer_setAllowOverwrite, val);
-
-                ExceptionCheck(env);
-            }
-
-            bool JniContext::DataStreamerSkipStoreGet(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformDataStreamer_getSkipStore);
-
-                ExceptionCheck(env);
-
-                return res != 0;
-            }
-
-            void JniContext::DataStreamerSkipStoreSet(jobject obj, bool val) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformDataStreamer_setSkipStore, val);
-
-                ExceptionCheck(env);
-            }
-
-            int JniContext::DataStreamerPerNodeBufferSizeGet(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jint res = env->CallIntMethod(obj, jvm->GetMembers().m_PlatformDataStreamer_getPerNodeBufSize);
-
-                ExceptionCheck(env);
-
-                return res;
-            }
-
-            void JniContext::DataStreamerPerNodeBufferSizeSet(jobject obj, int val) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformDataStreamer_setPerNodeBufSize, val);
-
-                ExceptionCheck(env);
-            }
-
-            int JniContext::DataStreamerPerNodeParallelOperationsGet(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jint res = env->CallIntMethod(obj, jvm->GetMembers().m_PlatformDataStreamer_getPerNodeParallelOps);
-
-                ExceptionCheck(env);
-
-                return res;
-            }
-
-            void JniContext::DataStreamerPerNodeParallelOperationsSet(jobject obj, int val) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformDataStreamer_setPerNodeParallelOps, val);
-
-                ExceptionCheck(env);
-            }
-
-            jobject JniContext::MessagingWithAsync(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jobject msg = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformMessaging_withAsync);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, msg);
-            }
-
-            jobject JniContext::ProjectionForOthers(jobject obj, jobject prj) {
-                JNIEnv* env = Attach();
-
-                jobject newPrj = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformClusterGroup_forOthers, prj);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, newPrj);
-            }
-
-            jobject JniContext::ProjectionForRemotes(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jobject newPrj = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformClusterGroup_forRemotes);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, newPrj);
-            }
-
-            jobject JniContext::ProjectionForDaemons(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jobject newPrj = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformClusterGroup_forDaemons);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, newPrj);
-            }
-
-            jobject JniContext::ProjectionForRandom(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jobject newPrj = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformClusterGroup_forRandom);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, newPrj);
-            }
-
-            jobject JniContext::ProjectionForOldest(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jobject newPrj = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformClusterGroup_forOldest);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, newPrj);
-            }
-
-            jobject JniContext::ProjectionForYoungest(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jobject newPrj = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformClusterGroup_forYoungest);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, newPrj);
-            }
-
-            jobject JniContext::ProjectionForServers(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jobject newPrj = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformClusterGroup_forServers);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, newPrj);
-            }
-
-            void JniContext::ProjectionResetMetrics(jobject obj) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformClusterGroup_resetMetrics);
-
-                ExceptionCheck(env);
-            }
-
-            jobject JniContext::ProjectionOutOpRet(jobject obj, int type, long long memPtr) {
-                JNIEnv* env = Attach();
-
-                jobject res = env->CallObjectMethod(
-                    obj, jvm->GetMembers().m_PlatformTarget_inStreamOutObject, type, memPtr);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, res);
-            }
-
-
-            void JniContext::QueryCursorIterator(jobject obj, JniErrorInfo* errInfo) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformAbstractQryCursor_iter);
-
-                ExceptionCheck(env, errInfo);
-            }
-
-            bool JniContext::QueryCursorIteratorHasNext(jobject obj, JniErrorInfo* errInfo)
-            {
-                JNIEnv* env = Attach();
-
-                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformAbstractQryCursor_iterHasNext);
-
-                ExceptionCheck(env, errInfo);
-
-                return res != 0;
-            }
-
-            void JniContext::QueryCursorClose(jobject obj, JniErrorInfo* errInfo) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformAbstractQryCursor_close);
-
-                ExceptionCheck(env, errInfo);
-            }
-
-            long long JniContext::TransactionsStart(jobject obj, int concurrency,
-                int isolation, long long timeout, int txSize, JniErrorInfo* errInfo) {
-                JNIEnv* env = Attach();
-
-                long long id = env->CallLongMethod(obj,
-                    jvm->GetMembers().m_PlatformTransactions_txStart,
-                    concurrency, isolation, timeout, txSize);
-
-                ExceptionCheck(env, errInfo);
-
-                return id;
-            }
-
-            int JniContext::TransactionsCommit(jobject obj, long long id, JniErrorInfo* errInfo) {
-                JNIEnv* env = Attach();
-
-                int res = env->CallIntMethod(obj, jvm->GetMembers().m_PlatformTransactions_txCommit, id);
-
-                ExceptionCheck(env, errInfo);
-
-                return res;
-            }
-
-            void JniContext::TransactionsCommitAsync(jobject obj, long long id, long long futId) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformTransactions_txCommitAsync, id, futId);
-
-                ExceptionCheck(env);
-            }
-
-            int JniContext::TransactionsRollback(jobject obj, long long id, JniErrorInfo* errInfo) {
-                JNIEnv* env = Attach();
-
-                int res = env->CallIntMethod(obj, jvm->GetMembers().m_PlatformTransactions_txRollback, id);
-
-                ExceptionCheck(env, errInfo);
-
-                return res;
-            }
-
-            void JniContext::TransactionsRollbackAsync(jobject obj, long long id, long long futId) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformTransactions_txRollbackAsync, id, futId);
-
-                ExceptionCheck(env);
-            }
-
-            int JniContext::TransactionsClose(jobject obj, long long id, JniErrorInfo* errInfo) {
-                JNIEnv* env = Attach();
-
-                jint state = env->CallIntMethod(obj, jvm->GetMembers().m_PlatformTransactions_txClose, id);
-
-                ExceptionCheck(env, errInfo);
-
-                return state;
-            }
-
-            int JniContext::TransactionsState(jobject obj, long long id, JniErrorInfo* errInfo) {
-                JNIEnv* env = Attach();
-
-                jint state = env->CallIntMethod(obj, jvm->GetMembers().m_PlatformTransactions_txState, id);
-
-                ExceptionCheck(env, errInfo);
-
-                return state;
-            }
-
-            bool JniContext::TransactionsSetRollbackOnly(jobject obj, long long id, JniErrorInfo* errInfo) {
-                JNIEnv* env = Attach();
-
-                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformTransactions_txSetRollbackOnly, id);
-
-                ExceptionCheck(env, errInfo);
-
-                return res != 0;
-            }
-
-            void JniContext::TransactionsResetMetrics(jobject obj) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformTransactions_resetMetrics);
-
-                ExceptionCheck(env);
-            }
-
-            jobject JniContext::EventsWithAsync(jobject obj) {
-                JNIEnv * env = Attach();
-
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformEvents_withAsync);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, res);
-            }
-
-            bool JniContext::EventsStopLocalListen(jobject obj, long long hnd) {
-                JNIEnv * env = Attach();
-
-                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformEvents_stopLocalListen, hnd);
-
-                ExceptionCheck(env);
-
-                return res != 0;
-            }
-
-            void JniContext::EventsLocalListen(jobject obj, long long hnd, int type) {
-                JNIEnv * env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformEvents_localListen, hnd, type);
-
-                ExceptionCheck(env);
-            }
-
-            bool JniContext::EventsIsEnabled(jobject obj, int type) {
-                JNIEnv * env = Attach();
-
-                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformEvents_isEnabled, type);
-
-                ExceptionCheck(env);
-
-                return res != 0;
-            }
-
-			jobject JniContext::ServicesWithAsync(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformServices_withAsync);
-
-				ExceptionCheck(env);
-
-				return LocalToGlobal(env, res);
-            }
-
-            jobject JniContext::ServicesWithServerKeepPortable(jobject obj) {
-                JNIEnv* env = Attach();
-
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformServices_withServerKeepPortable);
-
-                ExceptionCheck(env);
-
-                return LocalToGlobal(env, res);
-            }
-
-			void JniContext::ServicesCancel(jobject obj, char* name) {
-                JNIEnv* env = Attach();
-
-				jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformServices_cancel, name0);
-
-				if (name0)
-					env->DeleteLocalRef(name0);
-
-				ExceptionCheck(env);
-            }
-
-			void JniContext::ServicesCancelAll(jobject obj) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformServices_cancelAll);
-
-				ExceptionCheck(env);
-            }
-
-			void* JniContext::ServicesGetServiceProxy(jobject obj, char* name, bool sticky) {
-				JNIEnv* env = Attach();
-
-				jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
-
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformServices_serviceProxy, name0, sticky);
-
-				if (name0)
-					env->DeleteLocalRef(name0);
-
-				ExceptionCheck(env);
-
-				return LocalToGlobal(env, res);;
-			}
-
-            long long JniContext::AtomicLongGet(jobject obj)
-            {
-                JNIEnv* env = Attach();
-
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_get);
-
-                ExceptionCheck(env);
-
-                return res;
-            }
-
-            long long JniContext::AtomicLongIncrementAndGet(jobject obj)
-            {
-                JNIEnv* env = Attach();
-
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_incrementAndGet);
-
-                ExceptionCheck(env);
-
-                return res;
-            }
-
-            long long JniContext::AtomicLongGetAndIncrement(jobject obj)
-            {
-                JNIEnv* env = Attach();
-
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_getAndIncrement);
-
-                ExceptionCheck(env);
-
-                return res;
-            }
-
-            long long JniContext::AtomicLongAddAndGet(jobject obj, long long value)
-            {
-                JNIEnv* env = Attach();
-
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_addAndGet, value);
-
-                ExceptionCheck(env);
-
-                return res;
-            }
-
-            long long JniContext::AtomicLongGetAndAdd(jobject obj, long long value)
-            {
-                JNIEnv* env = Attach();
-
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_getAndAdd, value);
-
-                ExceptionCheck(env);
-
-                return res;
-            }
-
-            long long JniContext::AtomicLongDecrementAndGet(jobject obj)
-            {
-                JNIEnv* env = Attach();
-
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_decrementAndGet);
-
-                ExceptionCheck(env);
-
-                return res;
-            }
-
-            long long JniContext::AtomicLongGetAndDecrement(jobject obj)
-            {
-                JNIEnv* env = Attach();
-
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_getAndDecrement);
-
-                ExceptionCheck(env);
-
-                return res;
-            }
-
-            long long JniContext::AtomicLongGetAndSet(jobject obj, long long value)
-            {
-                JNIEnv* env = Attach();
-
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_getAndSet, value);
-
-                ExceptionCheck(env);
-
-                return res;
-            }
-
-            long long JniContext::AtomicLongCompareAndSetAndGet(jobject obj, long long expVal, long long newVal)
-            {
-                JNIEnv* env = Attach();
-
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_compareAndSetAndGet, expVal, newVal);
-
-                ExceptionCheck(env);
-
-                return res;
-            }
-
-            bool JniContext::AtomicLongIsClosed(jobject obj)
-            {
-                JNIEnv* env = Attach();
-
-                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_isClosed);
-
-                ExceptionCheck(env);
-
-                return res != 0;;
-            }
-
-            void JniContext::AtomicLongClose(jobject obj)
-            {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_close);
-
-                ExceptionCheck(env);
-            }
-
-            long long JniContext::AtomicSequenceGet(jobject obj)
-            {
-                JNIEnv* env = Attach();
-
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_get);
-
-                ExceptionCheck(env);
-
-                return res;
-            }
-
-            long long JniContext::AtomicSequenceIncrementAndGet(jobject obj)
-            {
-                JNIEnv* env = Attach();
-
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_incrementAndGet);
-
-                ExceptionCheck(env);
-
-                return res;
-            }
-
-            long long JniContext::AtomicSequenceGetAndIncrement(jobject obj)
-            {
-                JNIEnv* env = Attach();
-
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_getAndIncrement);
-
-                ExceptionCheck(env);
-
-                return res;
-            }
-
-            long long JniContext::AtomicSequenceAddAndGet(jobject obj, long long l)
-            {
-                JNIEnv* env = Attach();
-
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_addAndGet, l);
-
-                ExceptionCheck(env);
-
-                return res;
-            }
-
-            long long JniContext::AtomicSequenceGetAndAdd(jobject obj, long long l)
-            {
-                JNIEnv* env = Attach();
-
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_getAndAdd, l);
-
-                ExceptionCheck(env);
-
-                return res;
-            }
-
-            int JniContext::AtomicSequenceGetBatchSize(jobject obj)
-            {
-                JNIEnv* env = Attach();
-
-                int res = env->CallIntMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_getBatchSize);
-
-                ExceptionCheck(env);
-
-                return res;
-            }
-
-            void JniContext::AtomicSequenceSetBatchSize(jobject obj, int size)
-            {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_setBatchSize, size);
-
-                ExceptionCheck(env);
-            }
-
-            bool JniContext::AtomicSequenceIsClosed(jobject obj)
-            {
-                JNIEnv* env = Attach();
-
-                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_isClosed);
-
-                ExceptionCheck(env);
-
-                return res != 0;
-            }
-
-            void JniContext::AtomicSequenceClose(jobject obj)
-            {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_close);
-
-                ExceptionCheck(env);
-            }
-
-            bool JniContext::AtomicReferenceIsClosed(jobject obj)
-            {
-                JNIEnv* env = Attach();
-
-                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformAtomicReference_isClosed);
-
-                ExceptionCheck(env);
-
-                return res != 0;
-            }
-
-            void JniContext::AtomicReferenceClose(jobject obj)
-            {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformAtomicReference_close);
-
-                ExceptionCheck(env);
-            }
-
             bool JniContext::ListenableCancel(jobject obj)
             {
                 JNIEnv* env = Attach();
@@ -2217,7 +1469,7 @@ namespace ignite
                 return res != 0;;
             }
 
-			jobject JniContext::Acquire(jobject obj)
+                jobject JniContext::Acquire(jobject obj)
             {
                 if (obj) {
 
@@ -2362,7 +1614,7 @@ namespace ignite
 
                         if (hnds.error)
                             hnds.error(hnds.target, IGNITE_JNI_ERR_GENERIC, clsName0.c_str(), clsNameLen, msg0.c_str(),
-								msgLen, trace0.c_str(), traceLen, errBytesNative, errBytesLen);
+                                        msgLen, trace0.c_str(), traceLen, errBytesNative, errBytesLen);
 
                         env->ReleaseByteArrayElements(errData, errBytesNative, JNI_ABORT);
                     }
@@ -2370,7 +1622,7 @@ namespace ignite
                     {
                         if (hnds.error)
                             hnds.error(hnds.target, IGNITE_JNI_ERR_GENERIC, clsName0.c_str(), clsNameLen, msg0.c_str(),
-								msgLen, trace0.c_str(), traceLen, NULL, 0);
+                                        msgLen, trace0.c_str(), traceLen, NULL, 0);
                     }
 
                     env->DeleteLocalRef(err);
@@ -2574,20 +1826,20 @@ namespace ignite
                 IGNITE_SAFE_FUNC(env, envPtr, ServiceInitHandler, serviceInit, memPtr);
             }
 
-			JNIEXPORT void JNICALL JniServiceExecute(JNIEnv *env, jclass cls, jlong envPtr, jlong svcPtr, jlong memPtr) {
+                JNIEXPORT void JNICALL JniServiceExecute(JNIEnv *env, jclass cls, jlong envPtr, jlong svcPtr, jlong memPtr) {
                 IGNITE_SAFE_PROC(env, envPtr, ServiceExecuteHandler, serviceExecute, svcPtr, memPtr);
             }
 
-			JNIEXPORT void JNICALL JniServiceCancel(JNIEnv *env, jclass cls, jlong envPtr, jlong svcPtr, jlong memPtr) {
+                JNIEXPORT void JNICALL JniServiceCancel(JNIEnv *env, jclass cls, jlong envPtr, jlong svcPtr, jlong memPtr) {
                 IGNITE_SAFE_PROC(env, envPtr, ServiceCancelHandler, serviceCancel, svcPtr, memPtr);
             }
 
-			JNIEXPORT void JNICALL JniServiceInvokeMethod(JNIEnv *env, jclass cls, jlong envPtr, jlong svcPtr, jlong inMemPtr, jlong outMemPtr) {
+                JNIEXPORT void JNICALL JniServiceInvokeMethod(JNIEnv *env, jclass cls, jlong envPtr, jlong svcPtr, jlong inMemPtr, jlong outMemPtr) {
                 IGNITE_SAFE_PROC(env, envPtr, ServiceInvokeMethodHandler, serviceInvokeMethod, svcPtr, inMemPtr, outMemPtr);
             }
 
-			JNIEXPORT jint JNICALL JniClusterNodeFilterApply(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr) {
-				IGNITE_SAFE_FUNC(env, envPtr, ClusterNodeFilterApplyHandler, clusterNodeFilterApply, memPtr);
+                JNIEXPORT jint JNICALL JniClusterNodeFilterApply(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr) {
+                    IGNITE_SAFE_FUNC(env, envPtr, ClusterNodeFilterApplyHandler, clusterNodeFilterApply, memPtr);
             }
 
             JNIEXPORT jlong JNICALL JniNodeInfo(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr) {

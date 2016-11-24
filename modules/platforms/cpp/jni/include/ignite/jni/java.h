@@ -210,8 +210,8 @@ namespace ignite
                 jmethodID m_Throwable_getMessage;
                 jmethodID m_Throwable_printStackTrace;
 
-				jclass c_PlatformUtils;
-				jmethodID m_PlatformUtils_getFullStackTrace;
+                jclass c_PlatformUtils;
+                jmethodID m_PlatformUtils_getFullStackTrace;
 
                 /**
                  * Constructor.
@@ -227,7 +227,7 @@ namespace ignite
                  * Write error information.
                  */
                 bool WriteErrorInfo(JNIEnv* env, char** errClsName, int* errClsNameLen, char** errMsg, int* errMsgLen,
-					char** stackTrace, int* stackTraceLen);
+                	char** stackTrace, int* stackTraceLen);
             };
 
             /**
@@ -446,10 +446,10 @@ namespace ignite
                 jobject ProcessorAtomicLong(jobject obj, char* name, long long initVal, bool create);
                 jobject ProcessorAtomicSequence(jobject obj, char* name, long long initVal, bool create);
                 jobject ProcessorAtomicReference(jobject obj, char* name, long long memPtr, bool create);
-				void ProcessorGetIgniteConfiguration(jobject obj, long long memPtr);
-				void ProcessorGetCacheNames(jobject obj, long long memPtr);
-				bool ProcessorLoggerIsLevelEnabled(jobject obj, int level);
-				void ProcessorLoggerLog(jobject obj, int level, char* message, char* category, char* errorInfo);
+                void ProcessorGetIgniteConfiguration(jobject obj, long long memPtr);
+                void ProcessorGetCacheNames(jobject obj, long long memPtr);
+                bool ProcessorLoggerIsLevelEnabled(jobject obj, int level);
+                void ProcessorLoggerLog(jobject obj, int level, char* message, char* category, char* errorInfo);
                 jobject ProcessorBinaryProcessor(jobject obj);
 
                 long long TargetInLongOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
@@ -464,87 +464,6 @@ namespace ignite
 
                 jobject CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
-
-                void CacheStoreCallbackInvoke(jobject obj, long long memPtr);
-
-                void ComputeWithNoFailover(jobject obj);
-                void ComputeWithTimeout(jobject obj, long long timeout);
-                void* ComputeExecuteNative(jobject obj, long long taskPtr, long long topVer);
-
-                void ContinuousQueryClose(jobject obj);
-                jobject ContinuousQueryGetInitialQueryCursor(jobject obj);
-
-                void DataStreamerListenTopology(jobject obj, long long ptr);
-                bool DataStreamerAllowOverwriteGet(jobject obj);
-                void DataStreamerAllowOverwriteSet(jobject obj, bool val);
-                bool DataStreamerSkipStoreGet(jobject obj);
-                void DataStreamerSkipStoreSet(jobject obj, bool val);
-                int DataStreamerPerNodeBufferSizeGet(jobject obj);
-                void DataStreamerPerNodeBufferSizeSet(jobject obj, int val);
-                int DataStreamerPerNodeParallelOperationsGet(jobject obj);
-                void DataStreamerPerNodeParallelOperationsSet(jobject obj, int val);
-
-                jobject MessagingWithAsync(jobject obj);
-
-                jobject ProjectionForOthers(jobject obj, jobject prj);
-                jobject ProjectionForRemotes(jobject obj);
-                jobject ProjectionForDaemons(jobject obj);
-                jobject ProjectionForRandom(jobject obj);
-                jobject ProjectionForOldest(jobject obj);
-                jobject ProjectionForYoungest(jobject obj);
-                jobject ProjectionForServers(jobject obj);
-                void ProjectionResetMetrics(jobject obj);
-                jobject ProjectionOutOpRet(jobject obj, int type, long long memPtr);
-
-                void QueryCursorIterator(jobject obj, JniErrorInfo* errInfo = NULL);
-                bool QueryCursorIteratorHasNext(jobject obj, JniErrorInfo* errInfo = NULL);
-                void QueryCursorClose(jobject obj, JniErrorInfo* errInfo = NULL);
-
-                long long TransactionsStart(jobject obj, int concurrency, int isolation, long long timeout, int txSize, JniErrorInfo* errInfo = NULL);
-                int TransactionsCommit(jobject obj, long long id, JniErrorInfo* errInfo = NULL);
-                void TransactionsCommitAsync(jobject obj, long long id, long long futId);
-                int TransactionsRollback(jobject obj, long long id, JniErrorInfo* errInfo = NULL);
-                void TransactionsRollbackAsync(jobject obj, long long id, long long futId);
-                int TransactionsClose(jobject obj, long long id, JniErrorInfo* errInfo = NULL);
-                int TransactionsState(jobject obj, long long id, JniErrorInfo* errInfo = NULL);
-                bool TransactionsSetRollbackOnly(jobject obj, long long id, JniErrorInfo* errInfo = NULL);
-                void TransactionsResetMetrics(jobject obj);
-
-                jobject EventsWithAsync(jobject obj);
-                bool EventsStopLocalListen(jobject obj, long long hnd);
-                void EventsLocalListen(jobject obj, long long hnd, int type);
-                bool EventsIsEnabled(jobject obj, int type);
-                
-                jobject ServicesWithAsync(jobject obj);
-                jobject ServicesWithServerKeepPortable(jobject obj);
-                void ServicesCancel(jobject obj, char* name);
-                void ServicesCancelAll(jobject obj);
-                void* ServicesGetServiceProxy(jobject obj, char* name, bool sticky);
-
-                long long AtomicLongGet(jobject obj);
-                long long AtomicLongIncrementAndGet(jobject obj);
-                long long AtomicLongGetAndIncrement(jobject obj);
-                long long AtomicLongAddAndGet(jobject obj, long long value);
-                long long AtomicLongGetAndAdd(jobject obj, long long value);
-                long long AtomicLongDecrementAndGet(jobject obj);
-                long long AtomicLongGetAndDecrement(jobject obj);
-                long long AtomicLongGetAndSet(jobject obj, long long value);
-                long long AtomicLongCompareAndSetAndGet(jobject obj, long long expVal, long long newVal);
-                bool AtomicLongIsClosed(jobject obj);
-                void AtomicLongClose(jobject obj);
-
-                long long AtomicSequenceGet(jobject obj);
-                long long AtomicSequenceIncrementAndGet(jobject obj);
-                long long AtomicSequenceGetAndIncrement(jobject obj);
-                long long AtomicSequenceAddAndGet(jobject obj, long long l);
-                long long AtomicSequenceGetAndAdd(jobject obj, long long l);
-                int AtomicSequenceGetBatchSize(jobject obj);
-                void AtomicSequenceSetBatchSize(jobject obj, int size);
-                bool AtomicSequenceIsClosed(jobject obj);
-                void AtomicSequenceClose(jobject obj);
-
-                bool AtomicReferenceIsClosed(jobject obj);
-                void AtomicReferenceClose(jobject obj);
 
                 bool ListenableCancel(jobject obj);
                 bool ListenableIsCancelled(jobject obj);
