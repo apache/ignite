@@ -1826,7 +1826,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                     continue;
 
                 Long cntr0 = res.get(part.id());
-                Long cntr1 = part.updateCounter();
+                Long cntr1 = part.initialUpdateCounter();
 
                 if (cntr0 == null || cntr1 > cntr0)
                     res.put(part.id(), cntr1);

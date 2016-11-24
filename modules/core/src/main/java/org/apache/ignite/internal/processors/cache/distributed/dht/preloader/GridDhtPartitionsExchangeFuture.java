@@ -1551,8 +1551,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 }
             }
 
-            if (discoEvt.type() == EVT_NODE_JOINED)
-                assignPartitionsStates();
+            if (discoEvt.type() == EVT_NODE_JOINED) {
+                if (cctx.cache().globalState() == CacheState.ACTIVE)
+                    assignPartitionsStates();
+            }
             else if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
                 assert discoEvt instanceof DiscoveryCustomEvent;
 
