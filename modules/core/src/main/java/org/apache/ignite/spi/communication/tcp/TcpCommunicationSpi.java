@@ -24,6 +24,7 @@ import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SelectableChannel;
@@ -238,6 +239,7 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META
 @IgniteSpiConsistencyChecked(optional = false)
 public class TcpCommunicationSpi extends IgniteSpiAdapter
     implements CommunicationSpi<Message>, TcpCommunicationSpiMBean {
+
     /** IPC error message. */
     public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
         "(switching to TCP, may be slower).";
@@ -325,6 +327,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     public static final byte HANDSHAKE_MSG_TYPE = -3;
 
     /** */
+    public static final byte INIT_TIMEOUT_MSG_TYPE = -4;
+
+    /** */
     private ConnectGateway connectGate;
 
     /** Server listener. */
@@ -347,7 +352,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     if (log.isDebugEnabled())
                         log.debug("Sending local node ID to newly accepted session: " + ses);
 
-                    ses.send(nodeIdMessage());
+                    if (ctxInitLatch.getCount() > 0 && getConnectTimeout() > 1) {
+                        try {
+                            U.await(ctxInitLatch, getConnectTimeout() / 2, TimeUnit.MILLISECONDS);
+                        }
+                        catch (IgniteInterruptedCheckedException e) {
+                            log.warning("Thread interrupted while waiting for SPI context initialization.", e);
+                        }
+                    }
+
+                    ses.send(ctxInitLatch.getCount() > 0 ? InitTimeoutMessage.getInstance() : nodeIdMessage());
                 }
             }
 
@@ -1633,12 +1647,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 };
 
                 GridNioMessageReaderFactory readerFactory = new GridNioMessageReaderFactory() {
+                    private IgniteSpiContext context;
                     private MessageFormatter formatter;
 
                     @Override public MessageReader reader(GridNioSession ses, MessageFactory msgFactory)
                         throws IgniteCheckedException {
-                        if (formatter == null)
-                            formatter = getSpiContext().messageFormatter();
+                        final IgniteSpiContext ctx = TcpCommunicationSpi.super.getSpiContext();
+                        if (formatter == null || context != ctx) {
+                            context = ctx;
+                            formatter = context.messageFormatter();
+                        }
 
                         assert formatter != null;
 
@@ -1649,11 +1667,15 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 };
 
                 GridNioMessageWriterFactory writerFactory = new GridNioMessageWriterFactory() {
+                    private IgniteSpiContext context;
                     private MessageFormatter formatter;
 
                     @Override public MessageWriter writer(GridNioSession ses) throws IgniteCheckedException {
-                        if (formatter == null)
-                            formatter = getSpiContext().messageFormatter();
+                        final IgniteSpiContext ctx = TcpCommunicationSpi.super.getSpiContext();
+                        if (formatter == null || context != ctx) {
+                            context = ctx;
+                            formatter = context.messageFormatter();
+                        }
 
                         assert formatter != null;
 
@@ -2627,6 +2649,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                             if (read == -1)
                                 throw new IgniteCheckedException("Failed to read remote node ID (connection closed).");
+                            if (i == 0 && read > 0) {
+                                byte msgType = buf.array()[0];
+                                if (msgType == INIT_TIMEOUT_MSG_TYPE)
+                                    return rcvCnt = -1;
+                                else if (msgType != NODE_ID_MSG_TYPE)
+                                    throw new IgniteCheckedException("Unexpected message type [expected=" + NODE_ID_MSG_TYPE + ", rcvd=" + msgType);
+                            }
 
                             i += read;
                         }
@@ -3694,6 +3723,62 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(NodeIdMessage.class, this);
+        }
+    }
+
+    /**
+     * Context initialization timeout message
+     */
+    @SuppressWarnings("PublicInnerClass")
+    public static class InitTimeoutMessage implements Message {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        public static InitTimeoutMessage getInstance() {
+            return SingletonHandler.INSTANCE;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onAckReceived() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+            try {
+                buf.put(INIT_TIMEOUT_MSG_TYPE);
+                return true;
+            }
+            catch (BufferOverflowException ex) {
+                return false;
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte directType() {
+            return INIT_TIMEOUT_MSG_TYPE;
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte fieldsCount() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(InitTimeoutMessage.class, this);
+        }
+
+        private static final class SingletonHandler {
+
+            private static final InitTimeoutMessage INSTANCE = new InitTimeoutMessage();
         }
     }
 
