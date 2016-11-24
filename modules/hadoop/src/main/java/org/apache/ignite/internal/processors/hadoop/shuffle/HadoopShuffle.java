@@ -32,14 +32,12 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskOutput;
 import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -59,7 +57,7 @@ public class HadoopShuffle extends HadoopComponent {
     @Override public void start(HadoopContext ctx) throws IgniteCheckedException {
         super.start(ctx);
 
-        ctx.kernalContext().io().addMessageListener(GridTopic.TOPIC_HADOOP2, new GridMessageListener() {
+        ctx.kernalContext().io().addMessageListener(GridTopic.TOPIC_HADOOP_MSG, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg) {
                 onMessageReceived(nodeId, (HadoopMessage)msg);
             }
@@ -126,22 +124,11 @@ public class HadoopShuffle extends HadoopComponent {
      * @param msg Message to send.
      * @throws IgniteCheckedException If send failed.
      */
-    private void send0(final UUID nodeId, final Object msg) throws IgniteCheckedException {
+    private void send0(UUID nodeId, Object msg) throws IgniteCheckedException {
         ClusterNode node = ctx.kernalContext().discovery().node(nodeId);
 
-        if (msg instanceof Message) {
-            if (msg instanceof HadoopShuffleMessage && F.eq(nodeId, ctx.localNodeId())) {
-                ctx.kernalContext().closure().callLocalSafe(new GridPlainCallable<Void>() {
-                    @Override public Void call() throws Exception {
-                        onMessageReceived(nodeId, (HadoopMessage)msg);
-
-                        return null;
-                    }
-                }, false);
-            }
-            else
-                ctx.kernalContext().io().send(node, GridTopic.TOPIC_HADOOP2, (Message) msg, GridIoPolicy.PUBLIC_POOL);
-        }
+        if (msg instanceof Message)
+            ctx.kernalContext().io().send(node, GridTopic.TOPIC_HADOOP_MSG, (Message)msg, GridIoPolicy.PUBLIC_POOL);
         else
             ctx.kernalContext().io().sendUserMessage(F.asList(node), msg, GridTopic.TOPIC_HADOOP, false, 0);
     }

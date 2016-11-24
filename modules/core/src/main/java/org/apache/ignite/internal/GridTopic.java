@@ -91,7 +91,7 @@ public enum GridTopic {
     TOPIC_HADOOP,
 
     /** */
-    TOPIC_HADOOP2,
+    TOPIC_HADOOP_MSG,
 
     /** */
     TOPIC_QUERY,
