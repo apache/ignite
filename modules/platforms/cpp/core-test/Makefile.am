@@ -52,7 +52,7 @@ ignite_tests_LDFLAGS = \
     -static-libtool-libs
 
 ignite_tests_SOURCES = \
-    src/any_reference_test.cpp \
+    src/reference_test.cpp \
     src/bits_test.cpp \
     src/cache_test.cpp \
     src/cache_query_test.cpp \

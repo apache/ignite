@@ -54,7 +54,7 @@
     <ClCompile Include="..\..\src\interop_memory_test.cpp" />
     <ClCompile Include="..\..\src\interop_test.cpp" />
     <ClCompile Include="..\..\src\bits_test.cpp" />
-    <ClCompile Include="..\..\src\any_reference_test.cpp" />
+    <ClCompile Include="..\..\src\reference_test.cpp" />
     <ClCompile Include="..\..\src\teamcity_boost.cpp" />
     <ClCompile Include="..\..\src\teamcity_messages.cpp" />
     <ClCompile Include="..\..\src\transactions_test.cpp" />

@@ -25,7 +25,7 @@
 #include <boost/smart_ptr.hpp>
 #include <boost/interprocess/smart_ptr/unique_ptr.hpp>
 
-#include "ignite/reference.h"
+#include <ignite/reference.h>
 
 using namespace ignite;
 using namespace boost::unit_test;
@@ -268,7 +268,7 @@ BOOST_AUTO_TEST_CASE(PassingToFunction)
     TestFunction(PassSmartPointer(boostShared));
 }
 
-BOOST_AUTO_TEST_CASE(OwningPointerTest)
+BOOST_AUTO_TEST_CASE(CopyTest)
 {
     int instances = 0;
 
@@ -284,6 +284,27 @@ BOOST_AUTO_TEST_CASE(OwningPointerTest)
         }
 
         BOOST_CHECK_EQUAL(instances, 1);
+    }
+
+    BOOST_CHECK_EQUAL(instances, 0);
+}
+
+BOOST_AUTO_TEST_CASE(OwningPointerTest)
+{
+    int instances = 0;
+
+    {
+        InstanceCounter *counter = new InstanceCounter(instances);
+
+        BOOST_CHECK_EQUAL(instances, 1);
+
+        {
+            Reference<InstanceCounter> owned = PassOwnership(counter);
+
+            BOOST_CHECK_EQUAL(instances, 1);
+        }
+
+        BOOST_CHECK_EQUAL(instances, 0);
     }
 
     BOOST_CHECK_EQUAL(instances, 0);
@@ -342,6 +363,10 @@ BOOST_AUTO_TEST_CASE(CastTest)
     TestFunction1(PassReference(testVal), 1);
     TestFunction2(PassReference(testVal), 2);
     TestFunction3(PassReference(testVal), 3);
+
+    TestFunction1(PassCopy(testVal), 1);
+    TestFunction2(PassCopy(testVal), 2);
+    TestFunction3(PassCopy(testVal), 3);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
