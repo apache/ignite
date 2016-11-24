@@ -1176,11 +1176,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             deferred = cctx.deferredDelete() && !detached() && !isInternal();
 
-            if (intercept) {
+            if (intercept)
                 entry0.updateCounter(updateCntr0);
-
-                cctx.config().getInterceptor().onAfterRemove(entry0);
-            }
 
             if (!deferred) {
                 // If entry is still removed.
