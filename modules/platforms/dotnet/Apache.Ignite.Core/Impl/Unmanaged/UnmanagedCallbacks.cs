@@ -218,6 +218,63 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             AddHandler(UnmanagedCallbackOp.CacheStoreInvoke, CacheStoreInvoke);
             AddHandler(UnmanagedCallbackOp.CacheStoreDestroy, CacheStoreDestroy);
             AddHandler(UnmanagedCallbackOp.CacheStoreSessionCreate, CacheStoreSessionCreate);
+            AddHandler(UnmanagedCallbackOp.CacheEntryFilterCreate, CacheEntryFilterCreate);
+            AddHandler(UnmanagedCallbackOp.CacheEntryFilterApply, CacheEntryFilterApply);
+            AddHandler(UnmanagedCallbackOp.CacheEntryFilterDestroy, CacheEntryFilterDestroy);
+            AddHandler(UnmanagedCallbackOp.CacheInvoke, CacheInvoke);
+            AddHandler(UnmanagedCallbackOp.ComputeTaskMap, ComputeTaskMap);
+            AddHandler(UnmanagedCallbackOp.ComputeTaskJobResult, ComputeTaskJobResult);
+            AddHandler(UnmanagedCallbackOp.ComputeTaskReduce, ComputeTaskReduce);
+            AddHandler(UnmanagedCallbackOp.ComputeTaskComplete, ComputeTaskComplete);
+            AddHandler(UnmanagedCallbackOp.ComputeJobSerialize, ComputeJobSerialize);
+            AddHandler(UnmanagedCallbackOp.ComputeJobCreate, ComputeJobCreate);
+            AddHandler(UnmanagedCallbackOp.ComputeJobExecute, ComputeJobExecute);
+            AddHandler(UnmanagedCallbackOp.ComputeJobCancel, ComputeJobCancel);
+            AddHandler(UnmanagedCallbackOp.ComputeJobDestroy, ComputeJobDestroy);
+            AddHandler(UnmanagedCallbackOp.ContinuousQueryListenerApply, ContinuousQueryListenerApply);
+            AddHandler(UnmanagedCallbackOp.ContinuousQueryFilterCreate, ContinuousQueryFilterCreate);
+            AddHandler(UnmanagedCallbackOp.ContinuousQueryFilterApply, ContinuousQueryFilterApply);
+            AddHandler(UnmanagedCallbackOp.ContinuousQueryFilterRelease, ContinuousQueryFilterRelease);
+            AddHandler(UnmanagedCallbackOp.DataStreamerTopologyUpdate, DataStreamerTopologyUpdate);
+            AddHandler(UnmanagedCallbackOp.DataStreamerStreamReceiverInvoke, DataStreamerStreamReceiverInvoke);
+            AddHandler(UnmanagedCallbackOp.FutureByteResult, FutureByteResult);
+            AddHandler(UnmanagedCallbackOp.FutureBoolResult, FutureBoolResult);
+            AddHandler(UnmanagedCallbackOp.FutureShortResult, FutureShortResult);
+            AddHandler(UnmanagedCallbackOp.FutureCharResult, FutureCharResult);
+            AddHandler(UnmanagedCallbackOp.FutureIntResult, FutureIntResult);
+            AddHandler(UnmanagedCallbackOp.FutureFloatResult, FutureFloatResult);
+            AddHandler(UnmanagedCallbackOp.FutureLongResult, FutureLongResult);
+            AddHandler(UnmanagedCallbackOp.FutureDoubleResult, FutureDoubleResult);
+            AddHandler(UnmanagedCallbackOp.FutureObjectResult, FutureObjectResult);
+            AddHandler(UnmanagedCallbackOp.FutureNullResult, FutureNullResult);
+            AddHandler(UnmanagedCallbackOp.FutureError, FutureError);
+            AddHandler(UnmanagedCallbackOp.LifecycleOnEvent, LifecycleOnEvent);
+            AddHandler(UnmanagedCallbackOp.MemoryReallocate, MemoryReallocate);
+            AddHandler(UnmanagedCallbackOp.MessagingFilterCreate, MessagingFilterCreate);
+            AddHandler(UnmanagedCallbackOp.MessagingFilterApply, MessagingFilterApply);
+            AddHandler(UnmanagedCallbackOp.MessagingFilterDestroy, MessagingFilterDestroy);
+            AddHandler(UnmanagedCallbackOp.EventFilterCreate, EventFilterCreate);
+            AddHandler(UnmanagedCallbackOp.EventFilterApply, EventFilterApply);
+            AddHandler(UnmanagedCallbackOp.EventFilterDestroy, EventFilterDestroy);
+            AddHandler(UnmanagedCallbackOp.ServiceInit, ServiceInit);
+            AddHandler(UnmanagedCallbackOp.ServiceExecute, ServiceExecute);
+            AddHandler(UnmanagedCallbackOp.ServiceCancel, ServiceCancel);
+            AddHandler(UnmanagedCallbackOp.ServiceInvokeMethod, ServiceInvokeMethod);
+            AddHandler(UnmanagedCallbackOp.ClusterNodeFilterApply, ClusterNodeFilterApply);
+            AddHandler(UnmanagedCallbackOp.NodeInfo, NodeInfo);
+            AddHandler(UnmanagedCallbackOp.OnStart, OnStart);
+            AddHandler(UnmanagedCallbackOp.OnStop, OnStop);
+            AddHandler(UnmanagedCallbackOp.ExtensionInLongOutLong, ExtensionInLongOutLong);
+            AddHandler(UnmanagedCallbackOp.ExtensionInLongLongOutLong, ExtensionInLongLongOutLong);
+            AddHandler(UnmanagedCallbackOp.OnClientDisconnected, OnClientDisconnected);
+            AddHandler(UnmanagedCallbackOp.OnClientReconnected, OnClientReconnected);
+            AddHandler(UnmanagedCallbackOp.AffinityFunctionInit, AffinityFunctionInit);
+            AddHandler(UnmanagedCallbackOp.AffinityFunctionPartition, AffinityFunctionPartition);
+            AddHandler(UnmanagedCallbackOp.AffinityFunctionAssignPartitions, AffinityFunctionAssignPartitions);
+            AddHandler(UnmanagedCallbackOp.AffinityFunctionRemoveNode, AffinityFunctionRemoveNode);
+            AddHandler(UnmanagedCallbackOp.AffinityFunctionDestroy, AffinityFunctionDestroy);
+            AddHandler(UnmanagedCallbackOp.ComputeTaskLocalJobResult, ComputeTaskLocalJobResult);
+            AddHandler(UnmanagedCallbackOp.ComputeJobExecuteLocal, ComputeJobExecuteLocal);
         }
 
         /// <summary>
@@ -609,50 +666,38 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region IMPLEMENTATION: COMPUTE
 
-        private void ComputeTaskMap(long memPtr)
+        private long ComputeTaskMap(long memPtr)
         {
-            SafeCall(() =>
+            using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    Task(stream.ReadLong()).Map(stream);
-                }
-            });
+                Task(stream.ReadLong()).Map(stream);
+
+                return 0;
+            }
         }
 
-        private int ComputeTaskLocalJobResult(long taskPtr, long jobPtr)
+        private long ComputeTaskLocalJobResult(long taskPtr, long jobPtr)
         {
-            return SafeCall(() =>
-            {
-                var task = Task(taskPtr);
-
-                return task.JobResultLocal(Job(jobPtr));
-            });
+            return Task(taskPtr).JobResultLocal(Job(jobPtr));
         }
 
-        private int ComputeTaskJobResult(long memPtr)
+        private long ComputeTaskJobResult(long memPtr)
         {
-            return SafeCall(() =>
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    var task = Task(stream.ReadLong());
+                var task = Task(stream.ReadLong());
 
-                    var job = Job(stream.ReadLong());
+                var job = Job(stream.ReadLong());
 
-                    return task.JobResultRemote(job, stream);
-                }
-            });
+                return task.JobResultRemote(job, stream);
+            }
         }
 
-        private void ComputeTaskReduce(long taskPtr)
+        private long ComputeTaskReduce(long taskPtr)
         {
-            SafeCall(() =>
-            {
-                var task = _handleRegistry.Get<IComputeTaskHolder>(taskPtr, true);
+            _handleRegistry.Get<IComputeTaskHolder>(taskPtr, true).Reduce();
 
-                task.Reduce();
-            });
+            return 0;
         }
 
         private void ComputeTaskComplete(long taskPtr, long memPtr)
