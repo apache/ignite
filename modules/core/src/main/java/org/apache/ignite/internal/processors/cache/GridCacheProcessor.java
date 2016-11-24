@@ -2600,12 +2600,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     assert crd != null;
 
-                    IgniteCompute c = ((ClusterGroupAdapter)ctx.cluster().get().forNode(crd))
+                    IgniteCompute comp = ((ClusterGroupAdapter)ctx.cluster().get().forNode(crd))
                         .compute().withAsync();
 
-                    c.run(new ClientActivationRequestCompute());
+                    comp.run(new ClientActivationRequestCompute());
 
-                    c.future().listen(new CI1<IgniteFuture>() {
+                    comp.future().listen(new CI1<IgniteFuture>() {
                         @Override public void apply(IgniteFuture fut) {
                             try {
                                 fut.get();
