@@ -214,7 +214,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// </summary>
         private void InitHandlers()
         {
-            AddHandler(UnmanagedCallbackOp.CacheStoreCreate, CacheStoreCreate);
+            AddHandler(UnmanagedCallbackOp.CacheStoreCreate, CacheStoreCreate, true);
+            AddHandler(UnmanagedCallbackOp.CacheStoreInvoke, CacheStoreInvoke);
+            AddHandler(UnmanagedCallbackOp.CacheStoreDestroy, CacheStoreDestroy);
+            AddHandler(UnmanagedCallbackOp.CacheStoreSessionCreate, CacheStoreSessionCreate);
         }
 
         /// <summary>
@@ -225,6 +228,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             _inLongOutLongHandlers[(int)op] = new InLongOutLongHandler(func, allowUninitialized);
         }
 
+        /// <summary>
+        /// Adds the handler.
+        /// </summary>
+        private void AddHandler(UnmanagedCallbackOp op, InLongLongLongObjectOutLongFunc func, bool allowUninitialized = false)
+        {
+            _inLongLongLongObjectOutLongHandlers[(int)op] 
+                = new InLongLongLongObjectOutLongHandler(func, allowUninitialized);
+        }
 
         #endregion
 
@@ -232,26 +243,21 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private long InLongOutLong(void* target, int type, long val)
         {
-            // TODO: Wrap all in a SafeCall? What to do with gateway?
-            // TODO: Each component registers itself for a callback with a "allowUninit" flag?
-            // TODO: Replace switch with array. Each entry is a delegate + allowUninit flag.
+            if (type < 0 || type > _inLongOutLongHandlers.Length)
+                throw new InvalidOperationException("Invalid callback code: " + type);
+
+            var hnd = _inLongOutLongHandlers[type];
+
+            if (hnd.Handler != null)
+            {
+                // TODO: Unwrap SafeCall
+                return SafeCall(() => hnd.Handler(val), hnd.AllowUninitialized);
+            }
+
             var op = (UnmanagedCallbackOp) type;
 
             switch (op)
             {
-                case UnmanagedCallbackOp.CacheStoreCreate:
-                    return CacheStoreCreate(val);
-
-                case UnmanagedCallbackOp.CacheStoreInvoke:
-                    return CacheStoreInvoke(val);
-
-                case UnmanagedCallbackOp.CacheStoreDestroy:
-                    CacheStoreDestroy(val);
-                    return 0;
-
-                case UnmanagedCallbackOp.CacheStoreSessionCreate:
-                    return CacheStoreSessionCreate();
-
                 case UnmanagedCallbackOp.CacheEntryFilterCreate:
                     return CacheEntryFilterCreate(val);
 
@@ -484,101 +490,95 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private long CacheStoreCreate(long memPtr)
         {
-            return SafeCall(() =>
+            var cacheStore = CacheStore.CreateInstance(memPtr, _handleRegistry);
+
+            if (_ignite != null)
+                cacheStore.Init(_ignite);
+            else
             {
-                var cacheStore = CacheStore.CreateInstance(memPtr, _handleRegistry);
-
-                if (_ignite != null)
-                    cacheStore.Init(_ignite);
-                else
+                lock (_initActions)
                 {
-                    lock (_initActions)
-                    {
-                        if (_ignite != null)
-                            cacheStore.Init(_ignite);
-                        else
-                            _initActions.Add(cacheStore.Init);
-                    }
+                    if (_ignite != null)
+                        cacheStore.Init(_ignite);
+                    else
+                        _initActions.Add(cacheStore.Init);
                 }
+            }
 
-                return cacheStore.Handle;
-            }, true);
+            return cacheStore.Handle;
         }
 
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
-        private int CacheStoreInvoke(long memPtr)
+        private long CacheStoreInvoke(long memPtr)
         {
-            return SafeCall(() =>
+            using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                try
                 {
-                    try
-                    {
-                        var store = _handleRegistry.Get<CacheStore>(stream.ReadLong(), true);
+                    var store = _handleRegistry.Get<CacheStore>(stream.ReadLong(), true);
 
-                        return store.Invoke(stream, _ignite);
-                    }
-                    catch (Exception e)
-                    {
-                        stream.Reset();
-
-                        _ignite.Marshaller.StartMarshal(stream).WriteObject(e);
-
-                        return -1;
-                    }
+                    return store.Invoke(stream, _ignite);
                 }
-            });
+                catch (Exception e)
+                {
+                    stream.Reset();
+
+                    _ignite.Marshaller.StartMarshal(stream).WriteObject(e);
+
+                    return -1;
+                }
+            }
         }
 
-        private void CacheStoreDestroy(long objPtr)
+        private long CacheStoreDestroy(long objPtr)
         {
-            SafeCall(() => _ignite.HandleRegistry.Release(objPtr));
+            _ignite.HandleRegistry.Release(objPtr);
+
+            return 0;
         }
 
-        private long CacheStoreSessionCreate()
+        private long CacheStoreSessionCreate(long val)
         {
-            return SafeCall(() => _ignite.HandleRegistry.Allocate(new CacheStoreSession()));
+            return _ignite.HandleRegistry.Allocate(new CacheStoreSession());
         }
 
         private long CacheEntryFilterCreate(long memPtr)
         {
-            return SafeCall(() => _handleRegistry.Allocate(CacheEntryFilterHolder.CreateInstance(memPtr, _ignite)));
+            return _handleRegistry.Allocate(CacheEntryFilterHolder.CreateInstance(memPtr, _ignite));
         }
 
-        private int CacheEntryFilterApply(long memPtr)
+        private long CacheEntryFilterApply(long memPtr)
         {
-            return SafeCall(() =>
+            using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    var t = _ignite.HandleRegistry.Get<CacheEntryFilterHolder>(stream.ReadLong());
+                var t = _ignite.HandleRegistry.Get<CacheEntryFilterHolder>(stream.ReadLong());
 
-                    return t.Invoke(stream);
-                }
-            });
+                return t.Invoke(stream);
+            }
         }
 
-        private void CacheEntryFilterDestroy(long objPtr)
+        private long CacheEntryFilterDestroy(long objPtr)
         {
-            SafeCall(() => _ignite.HandleRegistry.Release(objPtr));
+            _ignite.HandleRegistry.Release(objPtr);
+
+            return 0;
         }
 
-        private void CacheInvoke(long memPtr)
+        private long CacheInvoke(long memPtr)
         {
-            SafeCall(() =>
+            using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    var result = ReadAndRunCacheEntryProcessor(stream, _ignite);
+                var result = ReadAndRunCacheEntryProcessor(stream, _ignite);
 
-                    stream.Reset();
+                stream.Reset();
 
-                    result.Write(stream, _ignite.Marshaller);
+                result.Write(stream, _ignite.Marshaller);
 
-                    stream.SynchronizeOutput();
-                }
-            });
+                stream.SynchronizeOutput();
+            }
+
+            return 0;
         }
 
         /// <summary>
