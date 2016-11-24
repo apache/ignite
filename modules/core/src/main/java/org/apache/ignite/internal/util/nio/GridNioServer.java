@@ -51,6 +51,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -66,6 +67,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.UrgentMessage;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import sun.nio.ch.DirectBuffer;
@@ -2320,8 +2322,14 @@ public class GridNioServer<T> {
 
                     return null;
                 }
-                else
-                    return send(ses, (Message)msg);
+                else {
+                    Message msg0 = (Message)msg;
+
+                    boolean urgent =
+                        msg0 instanceof GridIoMessage && ((GridIoMessage)msg0).message() instanceof UrgentMessage;
+
+                    return urgent ? sendSystem(ses, msg0) : send(ses, msg0);
+                }
             }
             else
                 return send(ses, (ByteBuffer)msg);

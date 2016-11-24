@@ -29,11 +29,12 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.UrgentMessage;
 
 /**
  * Acknowledgement message.
  */
-public class HadoopShuffleAck implements HadoopMessage, Message {
+public class HadoopShuffleAck implements HadoopMessage, Message, UrgentMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
