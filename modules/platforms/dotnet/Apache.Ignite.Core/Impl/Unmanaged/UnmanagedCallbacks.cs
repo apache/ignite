@@ -304,12 +304,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             try
             {
                 if (type < 0 || type > _inLongOutLongHandlers.Length)
-                    throw new InvalidOperationException("Invalid InLongOutLong callback code: " + type);
+                    throw GetInvalidOpError("InLongOutLong", type);
 
                 var hnd = _inLongOutLongHandlers[type];
 
                 if (hnd.Handler == null)
-                    throw new InvalidOperationException("Invalid InLongOutLong callback code: " + type);
+                    throw GetInvalidOpError("InLongOutLong", type);
 
                 if (!hnd.AllowUninitialized)
                     _initEvent.Wait();
@@ -332,12 +332,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             try
             {
                 if (type < 0 || type > _inLongLongLongObjectOutLongHandlers.Length)
-                    throw new InvalidOperationException("Invalid InLongLongLongObjectOutLong callback code: " + type);
+                    throw GetInvalidOpError("InLongLongLongObjectOutLong", type);
 
                 var hnd = _inLongLongLongObjectOutLongHandlers[type];
 
                 if (hnd.Handler == null)
-                    throw new InvalidOperationException("Invalid InLongLongLongObjectOutLong callback code: " + type);
+                    throw GetInvalidOpError("InLongLongLongObjectOutLong", type);
 
                 if (!hnd.AllowUninitialized)
                     _initEvent.Wait();
@@ -352,6 +352,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 return 0;
             }
+        }
+
+        /// <summary>
+        /// Throws the invalid op error.
+        /// </summary>
+        private static Exception GetInvalidOpError(string method, int type)
+        {
+            return new InvalidOperationException(
+                string.Format("Invalid {0} callback code: {1}", method, (UnmanagedCallbackOp) type));
         }
 
         #endregion
