@@ -17,13 +17,6 @@
 
 package org.apache.ignite.internal.processors.hadoop.shuffle;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -54,6 +47,12 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 
+import java.util.Iterator;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReferenceArray;
+
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.PARTITION_HASHMAP_SIZE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_MSG_SIZE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_REDUCER_NO_SORTING;
@@ -75,11 +74,14 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     /** */
     private final boolean needPartitioner;
 
-    /** Collection of task contexts for each reduce task. */
-    private final Map<Integer, HadoopTaskContext> reducersCtx = new HashMap<>();
+    /** Task contexts for each reduce task. */
+    private final HadoopTaskContext[] locReducersCtx;
 
     /** Reducers addresses. */
     private T[] reduceAddrs;
+
+    /** Total reducer count. */
+    private final int totalReducerCnt;
 
     /** Local reducers address. */
     private final T locReduceAddr;
@@ -87,8 +89,11 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     /** */
     private final HadoopShuffleMessage[] msgs;
 
-    /** */
-    private final AtomicReferenceArray<HadoopMultimap> maps;
+    /** Maps for local reducers. */
+    private final AtomicReferenceArray<HadoopMultimap> locMaps;
+
+    /** Maps for remote reducers. */
+    private final AtomicReferenceArray<HadoopMultimap> rmtMaps;
 
     /** */
     private volatile IgniteInClosure2X<T, HadoopShuffleMessage> io;
@@ -124,21 +129,26 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     public HadoopShuffleJob(T locReduceAddr, IgniteLogger log, HadoopJob job, GridUnsafeMemory mem,
         int totalReducerCnt, int[] locReducers) throws IgniteCheckedException {
         this.locReduceAddr = locReduceAddr;
+        this.totalReducerCnt = totalReducerCnt;
         this.job = job;
         this.mem = mem;
         this.log = log.getLogger(HadoopShuffleJob.class);
+
+        locReducersCtx = new HadoopTaskContext[totalReducerCnt];
 
         if (!F.isEmpty(locReducers)) {
             for (int rdc : locReducers) {
                 HadoopTaskInfo taskInfo = new HadoopTaskInfo(HadoopTaskType.REDUCE, job.id(), rdc, 0, null);
 
-                reducersCtx.put(rdc, job.getTaskContext(taskInfo));
+                locReducersCtx[rdc] = job.getTaskContext(taskInfo);
             }
         }
 
         needPartitioner = totalReducerCnt > 1;
 
-        maps = new AtomicReferenceArray<>(totalReducerCnt);
+        locMaps = new AtomicReferenceArray<>(totalReducerCnt);
+        rmtMaps = new AtomicReferenceArray<>(totalReducerCnt);
+
         msgs = new HadoopShuffleMessage[totalReducerCnt];
 
         msgSize = get(job.info(), SHUFFLE_MSG_SIZE, DFLT_SHUFFLE_MSG_SIZE);
@@ -227,13 +237,13 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         assert msg.buffer() != null;
         assert msg.offset() > 0;
 
-        HadoopTaskContext taskCtx = reducersCtx.get(msg.reducer());
+        HadoopTaskContext taskCtx = locReducersCtx[msg.reducer()];
 
         HadoopPerformanceCounter perfCntr = HadoopPerformanceCounter.getCounter(taskCtx.counters(), null);
 
         perfCntr.onShuffleMessage(msg.reducer(), U.currentTimeMillis());
 
-        HadoopMultimap map = getOrCreateMap(maps, msg.reducer());
+        HadoopMultimap map = getOrCreateMap(locMaps, msg.reducer());
 
         // Add data from message to the map.
         try (HadoopMultimap.Adder adder = map.startAdding(taskCtx)) {
@@ -310,10 +320,10 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * Sends map updates to remote reducers.
      */
     private void collectUpdatesAndSend(boolean flush) throws IgniteCheckedException {
-        for (int i = 0; i < maps.length(); i++) {
-            HadoopMultimap map = maps.get(i);
+        for (int i = 0; i < rmtMaps.length(); i++) {
+            HadoopMultimap map = rmtMaps.get(i);
 
-            if (map == null || locReduceAddr.equals(reduceAddrs[i]))
+            if (map == null)
                 continue; // Skip empty map and local node.
 
             if (msgs[i] == null)
@@ -438,7 +448,8 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
             }
         }
 
-        close(maps);
+        close(locMaps);
+        close(rmtMaps);
     }
 
     /**
@@ -463,7 +474,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         flushed = true;
 
-        if (maps.length() == 0)
+        if (totalReducerCnt == 0)
             return new GridFinishedFuture<>();
 
         U.await(ioInitLatch);
@@ -534,7 +545,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
             case REDUCE:
                 int reducer = taskCtx.taskInfo().taskNumber();
 
-                HadoopMultimap m = maps.get(reducer);
+                HadoopMultimap m = locMaps.get(reducer);
 
                 if (m != null)
                     return m.input(taskCtx);
@@ -567,7 +578,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      */
     private class PartitionedOutput implements HadoopTaskOutput {
         /** */
-        private final HadoopTaskOutput[] adders = new HadoopTaskOutput[maps.length()];
+        private final HadoopTaskOutput[] adders = new HadoopTaskOutput[totalReducerCnt];
 
         /** */
         private HadoopPartitioner partitioner;
@@ -599,8 +610,11 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
             HadoopTaskOutput out = adders[part];
 
-            if (out == null)
-                adders[part] = out = getOrCreateMap(maps, part).startAdding(taskCtx);
+            if (out == null) {
+                boolean loc = locReducersCtx[part] != null;
+
+                adders[part] = out = getOrCreateMap(loc ? locMaps : rmtMaps, part).startAdding(taskCtx);
+            }
 
             out.write(key, val);
         }
