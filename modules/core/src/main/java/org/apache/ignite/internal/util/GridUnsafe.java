@@ -51,6 +51,10 @@ public abstract class GridUnsafe {
     /** Unaligned flag. */
     private static final boolean UNALIGNED = unaligned();
 
+    /** Per-byte copy threshold. */
+    private static final long PER_BYTE_THRESHOLD =
+        IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD, Long.MAX_VALUE);
+
     /** Big endian. */
     public static final boolean BIG_ENDIAN = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
 
@@ -1034,7 +1038,12 @@ public abstract class GridUnsafe {
      * @param len Length.
      */
     public static void copyOffheapOffheap(long srcAddr, long dstAddr, long len) {
-        UNSAFE.copyMemory(srcAddr, dstAddr, len);
+        if (len <= PER_BYTE_THRESHOLD) {
+            for (int i = 0; i < len; i++)
+                UNSAFE.putByte(dstAddr + i, UNSAFE.getByte(srcAddr + i));
+        }
+        else
+            UNSAFE.copyMemory(srcAddr, dstAddr, len);
     }
 
     /**
@@ -1046,7 +1055,12 @@ public abstract class GridUnsafe {
      * @param len Length.
      */
     public static void copyOffheapHeap(long srcAddr, Object dstBase, long dstOff, long len) {
-        UNSAFE.copyMemory(null, srcAddr, dstBase, dstOff, len);
+        if (len <= PER_BYTE_THRESHOLD) {
+            for (int i = 0; i < len; i++)
+                UNSAFE.putByte(dstBase, dstOff + i, UNSAFE.getByte(srcAddr + i));
+        }
+        else
+            UNSAFE.copyMemory(null, srcAddr, dstBase, dstOff, len);
     }
 
     /**
@@ -1058,7 +1072,12 @@ public abstract class GridUnsafe {
      * @param len Length.
      */
     public static void copyHeapOffheap(Object srcBase, long srcOff, long dstAddr, long len) {
-        UNSAFE.copyMemory(srcBase, srcOff, null, dstAddr, len);
+        if (len <= PER_BYTE_THRESHOLD) {
+            for (int i = 0; i < len; i++)
+                UNSAFE.putByte(dstAddr + i, UNSAFE.getByte(srcBase, srcOff + i));
+        }
+        else
+            UNSAFE.copyMemory(srcBase, srcOff, null, dstAddr, len);
     }
 
     /**
@@ -1071,7 +1090,12 @@ public abstract class GridUnsafe {
      * @param len Length.
      */
     public static void copyMemory(Object srcBase, long srcOff, Object dstBase, long dstOff, long len) {
-        UNSAFE.copyMemory(srcBase, srcOff, dstBase, dstOff, len);
+        if (len <= PER_BYTE_THRESHOLD && srcBase != null && dstBase != null) {
+            for (int i = 0; i < len; i++)
+                UNSAFE.putByte(dstBase, dstOff + i, UNSAFE.getByte(srcBase, srcOff + i));
+        }
+        else
+            UNSAFE.copyMemory(srcBase, srcOff, dstBase, dstOff, len);
     }
 
     /**
@@ -1233,7 +1257,7 @@ public abstract class GridUnsafe {
         boolean res = arch.equals("i386") || arch.equals("x86") || arch.equals("amd64") || arch.equals("x86_64");
 
         if (!res)
-            res = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_UNALIGNED_MEMORY_ACCESS, false);
+            res = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_MEMORY_UNALIGNED_ACCESS, false);
 
         return res;
     }
