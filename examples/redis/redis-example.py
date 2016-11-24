@@ -17,12 +17,13 @@
 
 import redis
 '''
-To execute this, you will have redis-py installed. See https://github.com/andymccurdy/redis-py.
-Also, start up an instance of Ignite with cache enabled and listening on port 6379,
-as described at https://dash.readme.io/project/apacheignite/v1.8/docs/redis.
+To execute this, you will have redis-py installed and Ignite running.
+See https://github.com/andymccurdy/redis-py for the details on redis-py.
+
+See https://dash.readme.io/project/apacheignite/v1.8/docs/redis on Redis integration.
 '''
 
-r = redis.StrictRedis(host='localhost', port=6379, db=0)
+r = redis.StrictRedis(host='localhost', port=11211, db=0)
 
 # set entry.
 r.set('k1', 1)

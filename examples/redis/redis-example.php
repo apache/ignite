@@ -19,11 +19,10 @@
  */
 
 /**
- * To execute this script, you need to have Predis extension installed.
- * See https://github.com/nrk/predis for details.
+ * To execute this script, you need to have Predis extension installed and Ignite running.
+ * See https://github.com/nrk/predis for Predis details.
  *
- * Also, start up an instance of Ignite with cache enabled and listening on port 6379,
- * as described at https://dash.readme.io/project/apacheignite/v1.8/docs/redis.
+ * See https://dash.readme.io/project/apacheignite/v1.8/docs/redis on Redis integration.
  */
 
 // Load the library.
@@ -32,7 +31,9 @@ Predis\Autoloader::register();
 
 // Connect.
 try {
-    $redis = new Predis\Client();
+    $redis = new Predis\Client(array(
+        "host" => "localhost",
+        "port" => 11211));
 
     echo ">>> Successfully connected to Redis. \n";
 
@@ -75,7 +76,7 @@ try {
     echo ">>> Incremented: " . $redis->incrby("inc_k", 5) . "\n";
 }
 catch (Exception $e) {
-    echo "Couldn't connected to Redis";
+    echo ">>> Couldn't connected to Redis.";
     echo $e->getMessage();
 }
 ?>
