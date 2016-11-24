@@ -47,6 +47,14 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
     public void onPartitionCounterUpdated(int part, long cntr);
 
     /**
+     * Initial counter will be updated on state restore only
+     *
+     * @param part Partition
+     * @param cntr New initial counter
+     */
+    public void onPartitionInitialCounterUpdated(int part, long cntr);
+
+    /**
      * Partition counter provider. May be overridden by plugin-provided subclasses.
      *
      * @param part Partition ID.
@@ -319,5 +327,10 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
          * @return Row store.
          */
         public RowStore rowStore();
+
+        /**
+         * @param cntr Counter.
+         */
+        void updateInitialCounter(long cntr);
     }
 }
