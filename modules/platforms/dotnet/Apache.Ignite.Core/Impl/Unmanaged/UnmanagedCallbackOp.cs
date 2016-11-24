@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     /// </summary>
     internal enum UnmanagedCallbackOp
     {
-        None = 0,
         CacheStoreCreate = 1,
         CacheStoreInvoke = 2,
         CacheStoreDestroy = 3,
@@ -73,7 +72,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         NodeInfo = 48,
         OnStart = 49,
         OnStop = 50,
-        ExtensionInLongOutLong = 51,
         ExtensionInLongLongOutLong = 52,
         OnClientDisconnected = 53,
         OnClientReconnected = 54,
