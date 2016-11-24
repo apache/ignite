@@ -25,7 +25,7 @@
 
 #include <stdint.h>
 
-#include <ignite/common/any_reference.h>
+#include <ignite/reference.h>
 
 #include <ignite/cache/event/cache_entry_event_listener.h>
 #include <ignite/binary/binary_raw_reader.h>
@@ -255,7 +255,7 @@ namespace ignite
                          * @param lsnr Event listener. Invoked on the node where
                          *     continuous query execution has been started.
                          */
-                        ContinuousQueryImpl(AnyReference<ignite::cache::event::CacheEntryEventListener<K, V>>& lsnr) :
+                        ContinuousQueryImpl(Reference<ignite::cache::event::CacheEntryEventListener<K, V>>& lsnr) :
                             ContinuousQueryImplBase(false),
                             lsnr(lsnr)
                         {
@@ -269,7 +269,7 @@ namespace ignite
                          *     continuous query execution has been started.
                          * @param loc Whether query should be executed locally.
                          */
-                        ContinuousQueryImpl(AnyReference<ignite::cache::event::CacheEntryEventListener<K, V>>& lsnr, bool loc) :
+                        ContinuousQueryImpl(Reference<ignite::cache::event::CacheEntryEventListener<K, V>>& lsnr, bool loc) :
                             ContinuousQueryImplBase(loc),
                             lsnr(lsnr)
                         {
@@ -283,7 +283,7 @@ namespace ignite
                          *     node where continuous query execution has been
                          *     started.
                          */
-                        void SetListener(AnyReference<ignite::cache::event::CacheEntryEventListener<K, V>>& val)
+                        void SetListener(Reference<ignite::cache::event::CacheEntryEventListener<K, V>>& val)
                         {
                             lsnr = val;
                         }
@@ -330,7 +330,7 @@ namespace ignite
 
                     private:
                         /** Cache entry event listener. */
-                        AnyReference<ignite::cache::event::CacheEntryEventListener<K, V>> lsnr;
+                        Reference<ignite::cache::event::CacheEntryEventListener<K, V>> lsnr;
                     };
                 }
             }

@@ -82,7 +82,7 @@ namespace ignite
                      * @param lsnr Event listener. Invoked on the node where
                      *     continuous query execution has been started.
                      */
-                    ContinuousQuery(AnyReference<event::CacheEntryEventListener<K, V>> lsnr) :
+                    ContinuousQuery(Reference<event::CacheEntryEventListener<K, V>> lsnr) :
                         impl(new impl::cache::query::continuous::ContinuousQueryImpl<K, V>(lsnr))
                     {
                         // No-op.
@@ -95,7 +95,7 @@ namespace ignite
                      *     continuous query execution has been started.
                      * @param loc Whether query should be executed locally.
                      */
-                    ContinuousQuery(AnyReference<event::CacheEntryEventListener<K, V>> lsnr, bool loc) :
+                    ContinuousQuery(Reference<event::CacheEntryEventListener<K, V>> lsnr, bool loc) :
                         impl(new impl::cache::query::continuous::ContinuousQueryImpl<K, V>(lsnr, loc))
                     {
                         // No-op.
