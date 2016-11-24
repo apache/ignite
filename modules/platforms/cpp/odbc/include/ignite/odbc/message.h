@@ -461,16 +461,9 @@ namespace ignite
                 status = reader.ReadInt8();
 
                 if (status == RESPONSE_STATUS_SUCCESS)
-                {
                     ReadOnSuccess(reader);
-                }
                 else
-                {
-                    int32_t errorLen = reader.ReadString(0, 0);
-                    error.resize(errorLen);
-
-                    reader.ReadString(&error[0], static_cast<int32_t>(error.size()));
-                }
+                    utility::ReadString(reader, error);;
             }
             
             /**
