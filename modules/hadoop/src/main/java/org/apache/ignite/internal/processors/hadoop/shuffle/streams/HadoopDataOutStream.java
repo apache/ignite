@@ -67,7 +67,7 @@ public class HadoopDataOutStream extends OutputStream implements DataOutput {
 
     /** {@inheritDoc} */
     @Override public void write(byte[] b, int off, int len) {
-        GridUnsafe.copyMemory(b, off, len, move(len));
+        GridUnsafe.copyHeapOffheap(b, GridUnsafe.BYTE_ARR_OFF + off, move(len), len);
     }
 
     /** {@inheritDoc} */

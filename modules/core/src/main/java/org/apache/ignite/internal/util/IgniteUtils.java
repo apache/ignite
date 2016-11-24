@@ -9256,7 +9256,7 @@ public abstract class IgniteUtils {
     public static byte[] copyMemory(long ptr, int size) {
         byte[] res = new byte[size];
 
-        GridUnsafe.copyMemory(null, ptr, res, GridUnsafe.BYTE_ARR_OFF, size);
+        GridUnsafe.copyOffheapHeap(ptr, res, GridUnsafe.BYTE_ARR_OFF, size);
 
         return res;
     }
