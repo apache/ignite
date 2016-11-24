@@ -33,7 +33,7 @@ public class OdbcConfiguration {
     public static final int DFLT_TCP_PORT_TO = 10810;
 
     /** Default socket send and receive buffer size. */
-    public static final int DFLT_SOCK_BUF_SIZE = 8192;
+    public static final int DFLT_SOCK_BUF_SIZE = 0;
 
     /** Default max number of open cursors per connection. */
     public static final int DFLT_MAX_OPEN_CURSORS = 128;
