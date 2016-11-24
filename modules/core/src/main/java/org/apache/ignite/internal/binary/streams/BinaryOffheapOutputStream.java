@@ -103,7 +103,7 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
 
     /** {@inheritDoc} */
     @Override protected void copyAndShift(Object src, long offset, int len) {
-        GridUnsafe.copyMemory(src, offset, null, ptr + pos, len);
+        GridUnsafe.copyHeapOffheap(src, offset, ptr + pos, len);
 
         shift(len);
     }
