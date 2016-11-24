@@ -28,8 +28,8 @@ SOURCE_DIR=$WORK_DIR/src
 BUILD_DIR=$WORK_DIR/build
 
 DOCKER_BUILD_CONTAINER=web-console-frontend-builder
-DOCKER_BUILD_IMAGE_NAME=ignite/$DOCKER_BUILD_CONTAINER
-DOCKER_IMAGE_NAME=ignite/web-console-frontend
+DOCKER_BUILD_IMAGE_NAME=apacheignite/$DOCKER_BUILD_CONTAINER
+DOCKER_IMAGE_NAME=apacheignite/web-console-frontend
 
 echo "Receiving version..."
 VERSION=`cd $IGNITE_HOME && mvn org.apache.maven.plugins:maven-help-plugin:evaluate -Dexpression=project.version| grep -Ev '(^\[|Download\w+:)'`
