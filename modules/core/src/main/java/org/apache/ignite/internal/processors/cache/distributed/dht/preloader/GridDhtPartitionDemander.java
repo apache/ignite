@@ -322,16 +322,11 @@ public class GridDhtPartitionDemander {
 
                         requestPartitions(rebalanceFut, assigns);
                     }
-                    catch (ClusterTopologyCheckedException e) {
-                        log.warning("Failed to send initial demand request to node.", e);
-
-                        rebalanceFut.cancel();
-                    }
                     catch (IgniteCheckedException e) {
                         ClusterTopologyCheckedException cause = e.getCause(ClusterTopologyCheckedException.class);
 
                         if (cause != null)
-                            log.warning("Failed to send initial demand request to node.", e);
+                            log.warning("Failed to send initial demand request to node." + e.getMessage());
                         else
                             log.error("Failed to send initial demand request to node.", e);
 
