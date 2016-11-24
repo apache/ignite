@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
 import org.apache.ignite.internal.util.typedef.F;
@@ -130,9 +131,34 @@ public class DmlStatementsProcessor {
 
         UpdatePlan plan = getPlanForStatement(spaceName, stmt, null);
 
+        GridCacheContext<?, ?> cctx = plan.tbl.rowDescriptor().context();
+
         for (int i = 0; i < DFLT_DML_RERUN_ATTEMPTS; i++) {
-            UpdateResult r = executeUpdateStatement(plan.tbl.rowDescriptor().context(), stmt, fieldsQry, loc, filters,
-                cancel, errKeys);
+            CacheOperationContext opCtx = cctx.operationContextPerCall();
+
+            // Force keepBinary for operation context to avoid binary deserialization inside entry processor
+            if (cctx.binaryMarshaller()) {
+                CacheOperationContext newOpCtx = null;
+
+                if (opCtx == null)
+                    // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
+                    newOpCtx = new CacheOperationContext(false, null, true, null, false, null);
+                else if (!opCtx.isKeepBinary())
+                    newOpCtx = opCtx.keepBinary();
+
+                if (newOpCtx != null)
+                    cctx.operationContextPerCall(newOpCtx);
+            }
+
+            UpdateResult r;
+
+            try {
+                r = executeUpdateStatement(cctx, stmt, fieldsQry, loc, filters,
+                    cancel, errKeys);
+            }
+            finally {
+                cctx.operationContextPerCall(opCtx);
+            }
 
             if (F.isEmpty(r.errKeys))
                 return r.cnt + items;
@@ -195,12 +221,16 @@ public class DmlStatementsProcessor {
         throws IgniteCheckedException {
         Integer errKeysPos = null;
 
-        if (!F.isEmpty(failedKeys))
-            errKeysPos = F.isEmpty(fieldsQry.getArgs()) ? 1 : fieldsQry.getArgs().length + 1;
+        Object[] params = fieldsQry.getArgs();
+
+        if (!F.isEmpty(failedKeys)) {
+            int paramsCnt = F.isEmpty(params) ? 0 : params.length;
+            params = Arrays.copyOf(U.firstNotNull(params, X.EMPTY_OBJECT_ARRAY), paramsCnt + 1);
+            params[paramsCnt] = failedKeys;
+            errKeysPos = paramsCnt; // Last position
+        }
 
         UpdatePlan plan = getPlanForStatement(cctx.name(), prepStmt, errKeysPos);
-
-        Object[] params = fieldsQry.getArgs();
 
         if (plan.fastUpdateArgs != null) {
             assert F.isEmpty(failedKeys) && errKeysPos == null;
@@ -351,78 +381,58 @@ public class DmlStatementsProcessor {
         // With DELETE, we have only two columns - key and value.
         long res = 0;
 
-        CacheOperationContext opCtx = cctx.operationContextPerCall();
-
-        // Force keepBinary for operation context to avoid binary deserialization inside entry processor
-        if (cctx.binaryMarshaller()) {
-            CacheOperationContext newOpCtx = null;
-
-            if (opCtx == null)
-                // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
-                newOpCtx = new CacheOperationContext(false, null, true, null, false, null);
-            else if (!opCtx.isKeepBinary())
-                newOpCtx = opCtx.keepBinary();
-
-            if (newOpCtx != null)
-                cctx.operationContextPerCall(newOpCtx);
-        }
-
         // Keys that failed to DELETE due to concurrent updates.
         List<Object> failedKeys = new ArrayList<>();
 
         SQLException resEx = null;
 
-        try {
-            Iterator<List<?>> it = cursor.iterator();
-            Map<Object, EntryProcessor<Object, Object, Boolean>> rows = new LinkedHashMap<>();
 
-            while (it.hasNext()) {
-                List<?> e = it.next();
-                if (e.size() != 2) {
-                    U.warn(indexing.getLogger(), "Invalid row size on DELETE - expected 2, got " + e.size());
-                    continue;
-                }
+        Iterator<List<?>> it = cursor.iterator();
+        Map<Object, EntryProcessor<Object, Object, Boolean>> rows = new LinkedHashMap<>();
 
-                rows.put(e.get(0), new ModifyingEntryProcessor(e.get(1), RMV));
-
-                if ((pageSize > 0 && rows.size() == pageSize) || (!it.hasNext())) {
-                    PageProcessingResult pageRes = processPage(cctx, rows);
-
-                    res += pageRes.cnt;
-
-                    failedKeys.addAll(F.asList(pageRes.errKeys));
-
-                    if (pageRes.ex != null) {
-                        if (resEx == null)
-                            resEx = pageRes.ex;
-                        else
-                            resEx.setNextException(pageRes.ex);
-                    }
-
-                    if (it.hasNext())
-                        rows.clear(); // No need to clear after the last batch.
-                }
+        while (it.hasNext()) {
+            List<?> e = it.next();
+            if (e.size() != 2) {
+                U.warn(indexing.getLogger(), "Invalid row size on DELETE - expected 2, got " + e.size());
+                continue;
             }
 
-            if (resEx != null) {
-                if (!F.isEmpty(failedKeys)) {
-                    // Don't go for a re-run if processing of some keys yielded exceptions and report keys that
-                    // had been modified concurrently right away.
-                    String msg = "Failed to DELETE some keys because they had been modified concurrently " +
-                        "[keys=" + failedKeys + ']';
+            rows.put(e.get(0), new ModifyingEntryProcessor(e.get(1), RMV));
 
-                    SQLException conEx = createJdbcSqlException(msg, IgniteQueryErrorCode.CONCURRENT_UPDATE);
+            if ((pageSize > 0 && rows.size() == pageSize) || (!it.hasNext())) {
+                PageProcessingResult pageRes = processPage(cctx, rows);
 
-                    conEx.setNextException(resEx);
+                res += pageRes.cnt;
 
-                    resEx = conEx;
+                failedKeys.addAll(F.asList(pageRes.errKeys));
+
+                if (pageRes.ex != null) {
+                    if (resEx == null)
+                        resEx = pageRes.ex;
+                    else
+                        resEx.setNextException(pageRes.ex);
                 }
 
-                throw new IgniteSQLException(resEx);
+                if (it.hasNext())
+                    rows.clear(); // No need to clear after the last batch.
             }
         }
-        finally {
-            cctx.operationContextPerCall(opCtx);
+
+        if (resEx != null) {
+            if (!F.isEmpty(failedKeys)) {
+                // Don't go for a re-run if processing of some keys yielded exceptions and report keys that
+                // had been modified concurrently right away.
+                String msg = "Failed to DELETE some keys because they had been modified concurrently " +
+                    "[keys=" + failedKeys + ']';
+
+                SQLException conEx = createJdbcSqlException(msg, IgniteQueryErrorCode.CONCURRENT_UPDATE);
+
+                conEx.setNextException(resEx);
+
+                resEx = conEx;
+            }
+
+            throw new IgniteSQLException(resEx);
         }
 
         return new UpdateResult(res, failedKeys.toArray());
@@ -689,22 +699,6 @@ public class DmlStatementsProcessor {
                     IgniteQueryErrorCode.DUPLICATE_KEY);
         }
         else {
-            CacheOperationContext opCtx = cctx.operationContextPerCall();
-
-            // Force keepBinary for operation context to avoid binary deserialization inside entry processor
-            if (cctx.binaryMarshaller()) {
-                CacheOperationContext newOpCtx = null;
-
-                if (opCtx == null)
-                    // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
-                    newOpCtx = new CacheOperationContext(false, null, true, null, false, null);
-                else if (!opCtx.isKeepBinary())
-                    newOpCtx = opCtx.keepBinary();
-
-                if (newOpCtx != null)
-                    cctx.operationContextPerCall(newOpCtx);
-            }
-
             Map<Object, EntryProcessor<Object, Object, Boolean>> rows = plan.isLocSubqry ?
                 new LinkedHashMap<Object, EntryProcessor<Object, Object, Boolean>>(plan.rowsNum) :
                 new LinkedHashMap<Object, EntryProcessor<Object, Object, Boolean>>();
@@ -716,55 +710,50 @@ public class DmlStatementsProcessor {
 
             SQLException resEx = null;
 
-            try {
-                Iterator<List<?>> it = cursor.iterator();
+            Iterator<List<?>> it = cursor.iterator();
 
-                while (it.hasNext()) {
-                    List<?> row = it.next();
+            while (it.hasNext()) {
+                List<?> row = it.next();
 
-                    final IgniteBiTuple t = rowToKeyValue(cctx, row.toArray(), plan.colNames, plan.keySupplier,
-                        plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc.type());
+                final IgniteBiTuple t = rowToKeyValue(cctx, row.toArray(), plan.colNames, plan.keySupplier,
+                    plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc.type());
 
-                    rows.put(t.getKey(), new InsertEntryProcessor(t.getValue()));
+                rows.put(t.getKey(), new InsertEntryProcessor(t.getValue()));
 
-                    if (!it.hasNext() || (pageSize > 0 && rows.size() == pageSize)) {
-                        PageProcessingResult pageRes = processPage(cctx, rows);
+                if (!it.hasNext() || (pageSize > 0 && rows.size() == pageSize)) {
+                    PageProcessingResult pageRes = processPage(cctx, rows);
 
-                        resCnt += pageRes.cnt;
+                    resCnt += pageRes.cnt;
 
-                        duplicateKeys.addAll(F.asList(pageRes.errKeys));
+                    duplicateKeys.addAll(F.asList(pageRes.errKeys));
 
-                        if (pageRes.ex != null) {
-                            if (resEx == null)
-                                resEx = pageRes.ex;
-                            else
-                                resEx.setNextException(pageRes.ex);
-                        }
-
-                        rows.clear();
+                    if (pageRes.ex != null) {
+                        if (resEx == null)
+                            resEx = pageRes.ex;
+                        else
+                            resEx.setNextException(pageRes.ex);
                     }
+
+                    rows.clear();
                 }
-
-                if (!F.isEmpty(duplicateKeys)) {
-                    String msg = "Failed to INSERT some keys because they are already in cache " +
-                        "[keys=" + duplicateKeys + ']';
-
-                    SQLException dupEx = new SQLException(msg, null, IgniteQueryErrorCode.DUPLICATE_KEY);
-
-                    if (resEx == null)
-                        resEx = dupEx;
-                    else
-                        resEx.setNextException(dupEx);
-                }
-
-                if (resEx != null)
-                    throw new IgniteSQLException(resEx);
-
-                return resCnt;
             }
-            finally {
-                cctx.operationContextPerCall(opCtx);
+
+            if (!F.isEmpty(duplicateKeys)) {
+                String msg = "Failed to INSERT some keys because they are already in cache " +
+                    "[keys=" + duplicateKeys + ']';
+
+                SQLException dupEx = new SQLException(msg, null, IgniteQueryErrorCode.DUPLICATE_KEY);
+
+                if (resEx == null)
+                    resEx = dupEx;
+                else
+                    resEx.setNextException(dupEx);
             }
+
+            if (resEx != null)
+                throw new IgniteSQLException(resEx);
+
+            return resCnt;
         }
     }
 
