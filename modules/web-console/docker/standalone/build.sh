@@ -27,7 +27,7 @@ WORK_DIR=`cd "$(dirname "$0")"; pwd`
 BUILD_DIR="$WORK_DIR/build"
 
 IGNITE_WEB_CONSOLE_DIR="$IGNITE_HOME/modules/web-console"
-DOCKER_IMAGE_NAME="ignite/web-console-standalone"
+DOCKER_IMAGE_NAME="apacheignite/web-console-standalone"
 
 echo "Receiving version..."
 VERSION=`cd $IGNITE_HOME && mvn org.apache.maven.plugins:maven-help-plugin:evaluate -Dexpression=project.version| grep -Ev '(^\[|Download\w+:)'`
