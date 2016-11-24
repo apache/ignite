@@ -26,15 +26,19 @@ import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisRestCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridRedisGenericException;
+import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridRedisTypeException;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
 import org.apache.ignite.internal.processors.rest.request.DataStructuresRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.ATOMIC_DECREMENT;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.ATOMIC_INCREMENT;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REMOVE;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.DECR;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.DECRBY;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.INCR;
@@ -71,7 +75,45 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
 
         DataStructuresRequest restReq = new DataStructuresRequest();
 
-        restReq.initial(0L);
+        GridRestCacheRequest getReq = new GridRestCacheRequest();
+
+        getReq.clientId(msg.clientId());
+        getReq.key(msg.key());
+        getReq.command(CACHE_GET);
+
+        GridRestResponse getResp = hnd.handle(getReq);
+
+        if (getResp.getResponse() == null)
+            restReq.initial(0L);
+        else {
+            if (getResp.getResponse() instanceof String) {
+                try {
+                    long init = Long.parseLong((String)getResp.getResponse());
+                    if (init <= Long.MAX_VALUE)
+                        restReq.initial(init);
+                }
+                catch (Exception e) {
+                    U.error(log, "An initial value must be numeric and in range", e);
+
+                    throw new GridRedisGenericException("An initial value must be numeric and in range");
+                }
+            }
+            else
+                throw new GridRedisTypeException("Operation against a key holding the wrong kind of value");
+
+            // remove from cache.
+            GridRestCacheRequest rmReq = new GridRestCacheRequest();
+
+            rmReq.clientId(msg.clientId());
+            rmReq.key(msg.key());
+            rmReq.command(CACHE_REMOVE);
+
+            Object rmResp = hnd.handle(rmReq).getResponse();
+
+            if (rmResp == null && !(boolean)rmResp)
+                throw new GridRedisGenericException("Cannot incr/decr on the non-atomiclong key!");
+        }
+
         restReq.clientId(msg.clientId());
         restReq.key(msg.key());
         restReq.delta(1L);

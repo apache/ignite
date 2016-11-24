@@ -263,11 +263,48 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
             Assert.assertEquals(1, (long)jedis.incr("newKeyIncr"));
             Assert.assertEquals(-1, (long)jedis.decr("newKeyDecr"));
 
-            Assert.assertEquals(2, (long)jedis.incr("newKeyIncr"));
-            Assert.assertEquals(2, grid(0).atomicLong("newKeyIncr", 0, true).get());
+            Assert.assertEquals("1", jedis.get("newKeyIncr"));
+            Assert.assertEquals("-1", jedis.get("newKeyDecr"));
 
-            Assert.assertEquals(-2, (long)jedis.decr("newKeyDecr"));
-            Assert.assertEquals(-2, grid(0).atomicLong("newKeyDecr", 0, true).get());
+            Assert.assertEquals(1, (long)jedis.incr("incrKey1"));
+
+            jedis.set("incrKey1", "10");
+
+            Assert.assertEquals(11L, (long)jedis.incr("incrKey1"));
+
+            jedis.set("decrKey1", "10");
+
+            Assert.assertEquals(9L, (long)jedis.decr("decrKey1"));
+
+            jedis.set("nonInt", "abc");
+
+            try {
+                jedis.incr("nonInt");
+
+                assert false : "Exception has to be thrown!";
+            }
+            catch (JedisDataException e) {
+                assertTrue(e.getMessage().startsWith("ERR"));
+            }
+
+            try {
+                jedis.decr("nonInt");
+
+                assert false : "Exception has to be thrown!";
+            }
+            catch (JedisDataException e) {
+                assertTrue(e.getMessage().startsWith("ERR"));
+            }
+
+            jedis.set("outOfRange", "234293482390480948029348230948");
+            try {
+                jedis.incr("outOfRange");
+
+                assert false : "Exception has to be thrown!";
+            }
+            catch (JedisDataException e) {
+                assertTrue(e.getMessage().startsWith("ERR"));
+            }
         }
     }
 
@@ -276,14 +313,14 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
      */
     public void testIncrDecrBy() throws Exception {
         try (Jedis jedis = pool.getResource()) {
-            Assert.assertEquals(2, (long)jedis.incrBy("newKeyIncr1", 2));
-            Assert.assertEquals(-2, (long)jedis.decrBy("newKeyDecr1", 2));
+            Assert.assertEquals(2, (long)jedis.incrBy("newKeyIncr", 2));
+            Assert.assertEquals(-2, (long)jedis.decrBy("newKeyDecr", 2));
 
-            Assert.assertEquals(4, (long)jedis.incrBy("newKeyIncr1", 2));
-            Assert.assertEquals(4, grid(0).atomicLong("newKeyIncr1", 0, true).get());
+            jedis.set("incrDecrKey", "1");
 
-            Assert.assertEquals(-4, (long)jedis.decrBy("newKeyDecr1", 2));
-            Assert.assertEquals(-4, grid(0).atomicLong("newKeyDecr1", 0, true).get());
+            Assert.assertEquals(11L, (long)jedis.incrBy("incrDecrKey", 10));
+
+            Assert.assertEquals(9L, (long)jedis.decrBy("incrDecrKey", 2));
         }
     }
 
