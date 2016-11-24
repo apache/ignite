@@ -45,7 +45,7 @@ public class QueryEntity implements Serializable {
     private LinkedHashMap<String, String> fields = new LinkedHashMap<>();
 
     /** Set of field names that belong to the key. */
-    private Set<String> keyFields = new HashSet<>();
+    private Set<String> keyFields;
 
     /** Aliases. */
     private Map<String, String> aliases = new HashMap<>();
