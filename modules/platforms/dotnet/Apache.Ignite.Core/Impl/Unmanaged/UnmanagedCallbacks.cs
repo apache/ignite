@@ -116,6 +116,58 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate long InLongOutLongDelegate(void* target, int type, long val);
         private delegate long InLongLongLongObjectOutLongDelegate(void* target, int type, long val1, long val2, long val3, void* arg);
 
+        private delegate long InLongOutLongFunc(long val);
+        private delegate long InLongLongLongObjectOutLongFunc(long val1, long val2, long val3, void* arg);
+
+        /// <summary>
+        /// InLongOutLong handler struct.
+        /// </summary>
+        private struct InLongOutLongHandler
+        {
+            /// <summary> The handler func. </summary>
+            public readonly InLongOutLongFunc Handler;
+
+            /// <summary> Allow uninitialized flag. </summary>
+            public readonly bool AllowUninitialized;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="InLongOutLongHandler"/> struct.
+            /// </summary>
+            public InLongOutLongHandler(InLongOutLongFunc handler, bool allowUninitialized)
+            {
+                Handler = handler;
+                AllowUninitialized = allowUninitialized;
+            }
+        }
+
+        /// <summary>
+        /// InLongLongLongObjectOutLong handler struct.
+        /// </summary>
+        private struct InLongLongLongObjectOutLongHandler
+        {
+            /// <summary> The handler func. </summary>
+            public readonly InLongLongLongObjectOutLongFunc Handler;
+            
+            /// <summary> Allow uninitialized flag. </summary>
+            public readonly bool AllowUninitialized;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="InLongLongLongObjectOutLongHandler"/> struct.
+            /// </summary>
+            public InLongLongLongObjectOutLongHandler(InLongLongLongObjectOutLongFunc handler, bool allowUninitialized)
+            {
+                Handler = handler;
+                AllowUninitialized = allowUninitialized;
+            }
+        }
+
+        /// <summary> Handlers array. </summary>
+        private readonly InLongOutLongHandler[] _inLongOutLongHandlers = new InLongOutLongHandler[61];
+
+        /// <summary> Handlers array. </summary>
+        private readonly InLongLongLongObjectOutLongHandler[] _inLongLongLongObjectOutLongHandlers 
+            = new InLongLongLongObjectOutLongHandler[61];
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -143,6 +195,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             Marshal.StructureToPtr(cbs, _cbsPtr, false);
 
             _thisHnd = GCHandle.Alloc(this);
+
+            InitHandlers();
         }
 
         /// <summary>
@@ -152,6 +206,27 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             get { return _handleRegistry; }
         }
+
+        #region HANDLERS
+
+        /// <summary>
+        /// Initializes the handlers.
+        /// </summary>
+        private void InitHandlers()
+        {
+            AddHandler(UnmanagedCallbackOp.CacheStoreCreate, CacheStoreCreate);
+        }
+
+        /// <summary>
+        /// Adds the handler.
+        /// </summary>
+        private void AddHandler(UnmanagedCallbackOp op, InLongOutLongFunc func, bool allowUninitialized = false)
+        {
+            _inLongOutLongHandlers[(int)op] = new InLongOutLongHandler(func, allowUninitialized);
+        }
+
+
+        #endregion
 
         #region IMPLEMENTATION: GENERAL PURPOSE
 
