@@ -43,9 +43,6 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
     /** Constant: ERROR. */
     protected static final int ERROR = -1;
 
-    /** */
-    private static final int OP_META = -1;
-
     /** Context. */
     protected final PlatformContext platformCtx;
 
@@ -78,13 +75,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
         try (PlatformMemory mem = platformCtx.memory().get(memPtr)) {
             BinaryRawReaderEx reader = platformCtx.reader(mem);
 
-            if (type == OP_META) {
-                platformCtx.processMetadata(reader);
-
-                return TRUE;
-            }
-            else
-                return processInStreamOutLong(type, reader, mem);
+            return processInStreamOutLong(type, reader, mem);
         }
         catch (Exception e) {
             throw convertException(e);
@@ -97,16 +88,6 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
             BinaryRawReaderEx reader = mem != null ? platformCtx.reader(mem) : null;
 
             return processInStreamOutObject(type, reader);
-        }
-        catch (Exception e) {
-            throw convertException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public long outLong(int type) throws Exception {
-        try {
-            return processOutLong(type);
         }
         catch (Exception e) {
             throw convertException(e);
@@ -150,26 +131,6 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
                 BinaryRawWriterEx writer = platformCtx.writer(out);
 
                 processInStreamOutStream(type, reader, writer);
-
-                out.synchronize();
-            }
-        }
-        catch (Exception e) {
-            throw convertException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void inObjectStreamOutStream(int type, Object arg, long inMemPtr, long outMemPtr) throws Exception {
-        try (PlatformMemory inMem = platformCtx.memory().get(inMemPtr)) {
-            BinaryRawReaderEx reader = platformCtx.reader(inMem);
-
-            try (PlatformMemory outMem = platformCtx.memory().get(outMemPtr)) {
-                PlatformOutputStream out = outMem.output();
-
-                BinaryRawWriterEx writer = platformCtx.writer(out);
-
-                processInObjectStreamOutStream(type, arg, reader, writer);
 
                 out.synchronize();
             }
@@ -344,32 +305,8 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @param writer Binary writer.
      * @throws IgniteCheckedException In case of exception.
      */
-    protected void processInObjectStreamOutStream(int type, @Nullable Object arg, BinaryRawReaderEx reader,
-        BinaryRawWriterEx writer) throws IgniteCheckedException {
-        throwUnsupported(type);
-    }
-
-    /**
-     * Process IN-OUT operation.
-     *
-     * @param type Type.
-     * @param arg Argument.
-     * @param reader Binary reader.
-     * @param writer Binary writer.
-     * @throws IgniteCheckedException In case of exception.
-     */
     protected Object processInObjectStreamOutObjectStream(int type, @Nullable Object arg, BinaryRawReaderEx reader,
         BinaryRawWriterEx writer) throws IgniteCheckedException {
-        return throwUnsupported(type);
-    }
-
-    /**
-     * Process OUT operation.
-     *
-     * @param type Type.
-     * @throws IgniteCheckedException In case of exception.
-     */
-    protected long processOutLong(int type) throws IgniteCheckedException {
         return throwUnsupported(type);
     }
 

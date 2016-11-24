@@ -229,10 +229,10 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private MiniFuture miniFuture(IgniteUuid miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (futs) {
+        synchronized (sync) {
             // Avoid iterator creation.
-            for (int i = 0; i < futs.size(); i++) {
-                IgniteInternalFuture<GridNearTxPrepareResponse> fut = futs.get(i);
+            for (int i = 0; i < futuresCount(); i++) {
+                IgniteInternalFuture<GridNearTxPrepareResponse> fut = future(i);
 
                 if (!isMini(fut))
                     continue;

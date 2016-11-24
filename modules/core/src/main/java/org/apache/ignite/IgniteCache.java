@@ -43,6 +43,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.QueryDetailMetrics;
 import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SpiQuery;
@@ -326,6 +327,24 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public QueryMetrics queryMetrics();
 
     /**
+     * Reset query metrics.
+     */
+    public void resetQueryMetrics();
+
+    /**
+     * Gets query detail metrics.
+     * Query detail metrics could be enabled via {@link CacheConfiguration#setQueryDetailMetricsSize(int)} method.
+     *
+     * @return Metrics.
+     */
+    public Collection<? extends QueryDetailMetrics> queryDetailMetrics();
+
+    /**
+     * Reset query detail metrics.
+     */
+    public void resetQueryDetailMetrics();
+
+    /**
      * Attempts to evict all entries associated with keys. Note,
      * that entry will be evicted only if it's not used (not
      * participating in any locks or transactions).
@@ -335,7 +354,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public void localEvict(Collection<? extends K> keys);
 
     /**
-     * Peeks at in-memory cached value using default optinal peek mode.
+     * Peeks at in-memory cached value using default optional peek mode.
      * <p>
      * This method will not load value from any persistent store or from a remote node.
      * <h2 class="header">Transactions</h2>

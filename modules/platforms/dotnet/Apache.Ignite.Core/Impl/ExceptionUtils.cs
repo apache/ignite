@@ -97,6 +97,7 @@ namespace Apache.Ignite.Core.Impl
             Exs["org.apache.ignite.transactions.TransactionTimeoutException"] = (i, m, e) => new TransactionTimeoutException(m, e);
             Exs["org.apache.ignite.transactions.TransactionRollbackException"] = (i, m, e) => new TransactionRollbackException(m, e);
             Exs["org.apache.ignite.transactions.TransactionHeuristicException"] = (i, m, e) => new TransactionHeuristicException(m, e);
+            Exs["org.apache.ignite.transactions.TransactionDeadlockException"] = (i, m, e) => new TransactionDeadlockException(m, e);
 
             // Security exceptions.
             Exs["org.apache.ignite.IgniteAuthenticationException"] = (i, m, e) => new SecurityException(m, e);
@@ -205,6 +206,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="msg">Message.</param>
         /// <param name="stackTrace">Stack trace.</param>
         /// <returns>Exception.</returns>
+        [ExcludeFromCodeCoverage]  // Covered by a test in a separate process.
         public static Exception GetJvmInitializeException(string clsName, string msg, string stackTrace)
         {
             if (clsName != null)

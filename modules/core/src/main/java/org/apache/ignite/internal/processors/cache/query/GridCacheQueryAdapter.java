@@ -434,16 +434,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
             throw new IgniteCheckedException("Indexing is disabled for cache: " + cctx.cache().name());
     }
 
-    /**
-     * @param res Query result.
-     * @param err Error or {@code null} if query executed successfully.
-     * @param startTime Start time.
-     * @param duration Duration.
-     */
-    public void onCompleted(Object res, Throwable err, long startTime, long duration) {
-        GridQueryProcessor.onCompleted(cctx, res, err, startTime, duration, log);
-    }
-
     /** {@inheritDoc} */
     @Override public CacheQueryFuture<T> execute(@Nullable Object... args) {
         return execute0(null, args);

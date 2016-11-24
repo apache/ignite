@@ -53,6 +53,11 @@ public class TcpDiscoveryClientAckResponse extends TcpDiscoveryAbstractMessage {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean traceLogLevel() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean highPriority() {
         return true;
     }

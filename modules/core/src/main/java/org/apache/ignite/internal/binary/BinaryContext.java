@@ -506,7 +506,7 @@ public class BinaryContext {
     }
 
     /**
-     * @return Intenal mpper used as default.
+     * @return Internal mapper used as default.
      */
     public static BinaryInternalMapper defaultMapper() {
         return DFLT_MAPPER;
@@ -790,12 +790,9 @@ public class BinaryContext {
             registered
         );
 
-        if (!deserialize) {
-            Collection<BinarySchema> schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
-
+        if (!deserialize)
             metaHnd.addMeta(typeId,
-                new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, schemas, desc.isEnum()).wrap(this));
-        }
+                new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, null, desc.isEnum()).wrap(this));
 
         descByCls.put(cls, desc);
 
@@ -1128,7 +1125,6 @@ public class BinaryContext {
         cls2Mappers.put(clsName, mapper);
 
         Map<String, Integer> fieldsMeta = null;
-        Collection<BinarySchema> schemas = null;
 
         if (cls != null) {
             if (serializer == null) {
@@ -1153,7 +1149,6 @@ public class BinaryContext {
             );
 
             fieldsMeta = desc.fieldsMeta();
-            schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
 
             descByCls.put(cls, desc);
 
@@ -1162,7 +1157,7 @@ public class BinaryContext {
             predefinedTypes.put(id, desc);
         }
 
-        metaHnd.addMeta(id, new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, schemas, isEnum).wrap(this));
+        metaHnd.addMeta(id, new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, null, isEnum).wrap(this));
     }
 
     /**

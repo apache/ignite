@@ -44,9 +44,6 @@ Ideal for web farms: share cached data between servers effortlessly.
             
 More info: https://apacheignite-net.readme.io/
         </description>
-        <summary>
-            Apache Ignite ASP.NET Integration
-        </summary>
         <releaseNotes></releaseNotes>
         <copyright>Copyright 2016</copyright>
         <tags>OutputCacheProvider Apache Ignite In-Memory Distributed Computing SQL NoSQL Grid Map Reduce Cache</tags>

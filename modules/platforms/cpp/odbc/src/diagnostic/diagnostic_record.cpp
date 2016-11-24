@@ -89,7 +89,8 @@ namespace ignite
                 connectionName(),
                 serverName(),
                 rowNum(0),
-                columnNum(0)
+                columnNum(0),
+                retrieved(false)
             {
                 // No-op.
             }
@@ -102,7 +103,8 @@ namespace ignite
                 connectionName(connectionName),
                 serverName(serverName),
                 rowNum(rowNum),
-                columnNum(columnNum)
+                columnNum(columnNum),
+                retrieved(false)
             {
                 // No-op.
             }
@@ -259,6 +261,16 @@ namespace ignite
             int32_t DiagnosticRecord::GetColumnNumber() const
             {
                 return columnNum;
+            }
+
+            bool DiagnosticRecord::IsRetrieved() const
+            {
+                return retrieved;
+            }
+
+            void DiagnosticRecord::MarkRetrieved()
+            {
+                retrieved = true;
             }
         }
     }

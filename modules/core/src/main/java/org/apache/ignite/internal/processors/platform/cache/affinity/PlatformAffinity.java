@@ -292,10 +292,10 @@ public class PlatformAffinity extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public long outLong(int type) throws Exception {
+    @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         if (type == OP_PARTITIONS)
             return aff.partitions();
 
-        return super.outLong(type);
+        return super.processInLongOutLong(type, val);
     }
 }

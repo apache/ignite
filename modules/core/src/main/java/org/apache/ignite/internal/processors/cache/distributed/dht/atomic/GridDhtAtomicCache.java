@@ -136,7 +136,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** Update reply closure. */
     @GridToStringExclude
-    private CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> updateReplyClos;
+    private CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse> updateReplyClos;
 
     /** Pending */
     private GridDeferredAckMessageSender deferredUpdateMessageSender;
@@ -200,9 +200,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override protected void init() {
         super.init();
 
-        updateReplyClos = new CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse>() {
+        updateReplyClos = new CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse>() {
             @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-            @Override public void apply(GridNearAtomicUpdateRequest req, GridNearAtomicUpdateResponse res) {
+            @Override public void apply(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
                 if (ctx.config().getAtomicWriteOrderMode() == CLOCK) {
                     assert req.writeSynchronizationMode() != FULL_ASYNC : req;
 
@@ -323,11 +323,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         ctx.io().addHandler(
             ctx.cacheId(),
-            GridNearAtomicUpdateRequest.class,
-            new CI2<UUID, GridNearAtomicUpdateRequest>() {
+            GridNearAtomicAbstractUpdateRequest.class,
+            new CI2<UUID, GridNearAtomicAbstractUpdateRequest>() {
                 @Override public void apply(
                     UUID nodeId,
-                    GridNearAtomicUpdateRequest req
+                    GridNearAtomicAbstractUpdateRequest req
                 ) {
                     processNearAtomicUpdateRequest(
                         nodeId,
@@ -335,8 +335,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
 
                 @Override public String toString() {
-                    return "GridNearAtomicUpdateRequest handler " +
-                        "[msgIdx=" + GridNearAtomicUpdateRequest.CACHE_MSG_IDX + ']';
+                    return "GridNearAtomicAbstractUpdateRequest handler " +
+                        "[msgIdx=" + GridNearAtomicAbstractUpdateRequest.CACHE_MSG_IDX + ']';
                 }
             });
 
@@ -360,11 +360,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         ctx.io().addHandler(
             ctx.cacheId(),
-            GridDhtAtomicUpdateRequest.class,
-            new CI2<UUID, GridDhtAtomicUpdateRequest>() {
+            GridDhtAtomicAbstractUpdateRequest.class,
+            new CI2<UUID, GridDhtAtomicAbstractUpdateRequest>() {
                 @Override public void apply(
                     UUID nodeId,
-                    GridDhtAtomicUpdateRequest req
+                    GridDhtAtomicAbstractUpdateRequest req
                 ) {
                     processDhtAtomicUpdateRequest(
                         nodeId,
@@ -1252,7 +1252,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         CacheEntryPredicate[] filters = CU.filterArray(filter);
 
-        if (conflictPutVal == null && conflictRmvVer == null && !isFastMap(filters, op)) {
+        if (conflictPutVal == null &&
+            conflictRmvVer == null &&
+            !isFastMap(filters, op)) {
             return new GridNearAtomicSingleUpdateFuture(
                 ctx,
                 this,
@@ -1603,10 +1605,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     public void updateAllAsyncInternal(
         final UUID nodeId,
-        final GridNearAtomicUpdateRequest req,
-        final CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb
+        final GridNearAtomicAbstractUpdateRequest req,
+        final CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse> completionCb
     ) {
-        IgniteInternalFuture<Object> forceFut = preldr.request(req.keys(), req.topologyVersion());
+        IgniteInternalFuture<Object> forceFut = preldr.request(req, req.topologyVersion());
 
         if (forceFut == null || forceFut.isDone()) {
             try {
@@ -1652,8 +1654,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param e Error.
      */
     private void onForceKeysError(final UUID nodeId,
-        final GridNearAtomicUpdateRequest req,
-        final CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
+        final GridNearAtomicAbstractUpdateRequest req,
+        final CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
         IgniteCheckedException e
     ) {
         GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(),
@@ -1673,19 +1675,17 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param req Update request.
      * @param completionCb Completion callback.
      */
-    public void updateAllAsyncInternal0(
+    private void updateAllAsyncInternal0(
         UUID nodeId,
-        GridNearAtomicUpdateRequest req,
-        CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb
+        GridNearAtomicAbstractUpdateRequest req,
+        CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse> completionCb
     ) {
         GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(), nodeId, req.futureVersion(),
             ctx.deploymentEnabled());
 
-        List<KeyCacheObject> keys = req.keys();
+        assert !req.returnValue() || (req.operation() == TRANSFORM || req.size() == 1);
 
-        assert !req.returnValue() || (req.operation() == TRANSFORM || keys.size() == 1);
-
-        GridDhtAtomicUpdateFuture dhtFut = null;
+        GridDhtAtomicAbstractUpdateFuture dhtFut = null;
 
         boolean remap = false;
 
@@ -1696,7 +1696,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         try {
             // If batch store update is enabled, we need to lock all entries.
             // First, need to acquire locks on cache entries, then check filter.
-            List<GridDhtCacheEntry> locked = lockEntries(keys, req.topologyVersion());
+            List<GridDhtCacheEntry> locked = lockEntries(req, req.topologyVersion());
 
             Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted = null;
 
@@ -1707,7 +1707,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 try {
                     if (top.stopping()) {
-                        res.addFailedKeys(keys, new IgniteCheckedException("Failed to perform cache operation " +
+                        res.addFailedKeys(req.keys(), new IgniteCheckedException("Failed to perform cache operation " +
                             "(cache is stopped): " + name()));
 
                         completionCb.apply(req, res);
@@ -1757,7 +1757,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         GridCacheReturn retVal = null;
 
-                        if (keys.size() > 1 &&                    // Several keys ...
+                        if (req.size() > 1 &&                    // Several keys ...
                             writeThrough() && !req.skipStore() && // and store is enabled ...
                             !ctx.store().isLocal() &&             // and this is not local store ...
                                                                   // (conflict resolver should be used for local store)
@@ -1853,7 +1853,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             // an attempt to use cleaned resources.
             U.error(log, "Unexpected exception during cache update", e);
 
-            res.addFailedKeys(keys, e);
+            res.addFailedKeys(req.keys(), e);
 
             completionCb.apply(req, res);
 
@@ -1866,7 +1866,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (remap) {
             assert dhtFut == null;
 
-            res.remapKeys(keys);
+            res.remapKeys(req.keys());
 
             completionCb.apply(req, res);
         }
@@ -1904,12 +1904,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     private UpdateBatchResult updateWithBatch(
         final ClusterNode node,
         final boolean hasNear,
-        final GridNearAtomicUpdateRequest req,
+        final GridNearAtomicAbstractUpdateRequest req,
         final GridNearAtomicUpdateResponse res,
         final List<GridDhtCacheEntry> locked,
         final GridCacheVersion ver,
-        @Nullable GridDhtAtomicUpdateFuture dhtFut,
-        final CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
+        @Nullable GridDhtAtomicAbstractUpdateFuture dhtFut,
+        final CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
         final boolean replicate,
         final String taskName,
         @Nullable final IgniteCacheExpiryPolicy expiry,
@@ -1929,7 +1929,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         }
 
-        int size = req.keys().size();
+        int size = req.size();
 
         Map<KeyCacheObject, CacheObject> putMap = null;
 
@@ -2327,12 +2327,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     private UpdateSingleResult updateSingle(
         ClusterNode node,
         boolean hasNear,
-        GridNearAtomicUpdateRequest req,
+        GridNearAtomicAbstractUpdateRequest req,
         GridNearAtomicUpdateResponse res,
         List<GridDhtCacheEntry> locked,
         GridCacheVersion ver,
-        @Nullable GridDhtAtomicUpdateFuture dhtFut,
-        CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
+        @Nullable GridDhtAtomicAbstractUpdateFuture dhtFut,
+        CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
         boolean replicate,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiry,
@@ -2340,8 +2340,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     ) throws GridCacheEntryRemovedException {
         GridCacheReturn retVal = null;
         Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted = null;
-
-        List<KeyCacheObject> keys = req.keys();
 
         AffinityTopologyVersion topVer = req.topologyVersion();
 
@@ -2352,8 +2350,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean intercept = ctx.config().getInterceptor() != null;
 
         // Avoid iterator creation.
-        for (int i = 0; i < keys.size(); i++) {
-            KeyCacheObject k = keys.get(i);
+        for (int i = 0; i < req.size(); i++) {
+            KeyCacheObject k = req.key(i);
 
             GridCacheOperation op = req.operation();
 
@@ -2371,7 +2369,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 assert !(newConflictVer instanceof GridCacheVersionEx) : newConflictVer;
 
-                boolean primary = !req.fastMap() || ctx.affinity().primary(ctx.localNode(), entry.key(),
+                boolean primary = !req.fastMap() || ctx.affinity().primary(ctx.localNode(), entry.partition(),
                     req.topologyVersion());
 
                 Object writeVal = op == TRANSFORM ? req.entryProcessor(i) : req.writeValue(i);
@@ -2489,7 +2487,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 if (updRes.removeVersion() != null) {
                     if (deleted == null)
-                        deleted = new ArrayList<>(keys.size());
+                        deleted = new ArrayList<>(req.size());
 
                     deleted.add(F.t(entry, updRes.removeVersion()));
                 }
@@ -2554,7 +2552,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @return Deleted entries.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    @Nullable private GridDhtAtomicUpdateFuture updatePartialBatch(
+    @Nullable private GridDhtAtomicAbstractUpdateFuture updatePartialBatch(
         final boolean hasNear,
         final int firstEntryIdx,
         final List<GridDhtCacheEntry> entries,
@@ -2564,9 +2562,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable final Map<KeyCacheObject, CacheObject> putMap,
         @Nullable final Collection<KeyCacheObject> rmvKeys,
         @Nullable final Map<KeyCacheObject, EntryProcessor<Object, Object, Object>> entryProcessorMap,
-        @Nullable GridDhtAtomicUpdateFuture dhtFut,
-        final CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
-        final GridNearAtomicUpdateRequest req,
+        @Nullable GridDhtAtomicAbstractUpdateFuture dhtFut,
+        final CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
+        final GridNearAtomicAbstractUpdateRequest req,
         final GridNearAtomicUpdateResponse res,
         final boolean replicate,
         final UpdateBatchResult batchRes,
@@ -2803,17 +2801,17 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /**
      * Acquires java-level locks on cache entries. Returns collection of locked entries.
      *
-     * @param keys Keys to lock.
+     * @param req Request with keys to lock.
      * @param topVer Topology version to lock on.
      * @return Collection of locked entries.
      * @throws GridDhtInvalidPartitionException If entry does not belong to local node. If exception is thrown,
      *      locks are released.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private List<GridDhtCacheEntry> lockEntries(List<KeyCacheObject> keys, AffinityTopologyVersion topVer)
+    private List<GridDhtCacheEntry> lockEntries(GridNearAtomicAbstractUpdateRequest req, AffinityTopologyVersion topVer)
         throws GridDhtInvalidPartitionException {
-        if (keys.size() == 1) {
-            KeyCacheObject key = keys.get(0);
+        if (req.size() == 1) {
+            KeyCacheObject key = req.key(0);
 
             while (true) {
                 try {
@@ -2836,12 +2834,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         }
         else {
-            List<GridDhtCacheEntry> locked = new ArrayList<>(keys.size());
+            List<GridDhtCacheEntry> locked = new ArrayList<>(req.size());
 
             while (true) {
-                for (KeyCacheObject key : keys) {
+                for (int i = 0; i < req.size(); i++) {
                     try {
-                        GridDhtCacheEntry entry = entryExx(key, topVer);
+                        GridDhtCacheEntry entry = entryExx(req.key(i), topVer);
 
                         locked.add(entry);
                     }
@@ -2946,7 +2944,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      *      will return false.
      * @return {@code True} if filter evaluation succeeded.
      */
-    private boolean checkFilter(GridCacheEntryEx entry, GridNearAtomicUpdateRequest req,
+    private boolean checkFilter(GridCacheEntryEx entry, GridNearAtomicAbstractUpdateRequest req,
         GridNearAtomicUpdateResponse res) {
         try {
             return ctx.isAllLocked(entry, req.filter());
@@ -2961,7 +2959,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /**
      * @param req Request to remap.
      */
-    private void remapToNewPrimary(GridNearAtomicUpdateRequest req) {
+    private void remapToNewPrimary(GridNearAtomicAbstractUpdateRequest req) {
         assert req.writeSynchronizationMode() == FULL_ASYNC : req;
 
         if (log.isDebugEnabled())
@@ -3038,11 +3036,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param force If {@code true} then creates future without optimizations checks.
      * @return Backup update future or {@code null} if there are no backups.
      */
-    @Nullable private GridDhtAtomicUpdateFuture createDhtFuture(
+    @Nullable private GridDhtAtomicAbstractUpdateFuture createDhtFuture(
         GridCacheVersion writeVer,
-        GridNearAtomicUpdateRequest updateReq,
+        GridNearAtomicAbstractUpdateRequest updateReq,
         GridNearAtomicUpdateResponse updateRes,
-        CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
+        CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
         boolean force
     ) {
         if (!force) {
@@ -3066,14 +3064,17 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         }
 
-        return new GridDhtAtomicUpdateFuture(ctx, completionCb, writeVer, updateReq, updateRes);
+        if (updateReq.size() == 1)
+            return new GridDhtAtomicSingleUpdateFuture(ctx, completionCb, writeVer, updateReq, updateRes);
+        else
+            return new GridDhtAtomicUpdateFuture(ctx, completionCb, writeVer, updateReq, updateRes);
     }
 
     /**
      * @param nodeId Sender node ID.
      * @param req Near atomic update request.
      */
-    private void processNearAtomicUpdateRequest(UUID nodeId, GridNearAtomicUpdateRequest req) {
+    private void processNearAtomicUpdateRequest(UUID nodeId, GridNearAtomicAbstractUpdateRequest req) {
         if (msgLog.isDebugEnabled()) {
             msgLog.debug("Received near atomic update request [futId=" + req.futureVersion() +
                 ", writeVer=" + req.updateVersion() +
@@ -3099,12 +3100,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         GridNearAtomicAbstractUpdateFuture fut =
             (GridNearAtomicAbstractUpdateFuture)ctx.mvcc().atomicFuture(res.futureVersion());
 
-        if (fut != null) {
-            if (fut instanceof GridNearAtomicSingleUpdateFuture)
-                ((GridNearAtomicSingleUpdateFuture)fut).onResult(nodeId, res, false);
-            else
-                ((GridNearAtomicUpdateFuture)fut).onResult(nodeId, res, false);
-        }
+        if (fut != null)
+            fut.onResult(nodeId, res, false);
+
         else
             U.warn(msgLog, "Failed to find near update future for update response (will ignore) " +
                 "[futId" + res.futureVersion() + ", node=" + nodeId + ", res=" + res + ']');
@@ -3114,7 +3112,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param nodeId Sender node ID.
      * @param req Dht atomic update request.
      */
-    private void processDhtAtomicUpdateRequest(UUID nodeId, GridDhtAtomicUpdateRequest req) {
+    private void processDhtAtomicUpdateRequest(UUID nodeId, GridDhtAtomicAbstractUpdateRequest req) {
         if (msgLog.isDebugEnabled()) {
             msgLog.debug("Received DHT atomic update request [futId=" + req.futureVersion() +
                 ", writeVer=" + req.writeVersion() + ", node=" + nodeId + ']');
@@ -3258,7 +3256,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     @SuppressWarnings("unchecked")
     private void processDhtAtomicUpdateResponse(UUID nodeId, GridDhtAtomicUpdateResponse res) {
-        GridDhtAtomicUpdateFuture updateFut = (GridDhtAtomicUpdateFuture)ctx.mvcc().atomicFuture(res.futureVersion());
+        GridDhtAtomicAbstractUpdateFuture updateFut = (GridDhtAtomicAbstractUpdateFuture)ctx.mvcc().atomicFuture(res.futureVersion());
 
         if (updateFut != null) {
             if (msgLog.isDebugEnabled()) {
@@ -3281,7 +3279,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @SuppressWarnings("unchecked")
     private void processDhtAtomicDeferredUpdateResponse(UUID nodeId, GridDhtAtomicDeferredUpdateResponse res) {
         for (GridCacheVersion ver : res.futureVersions()) {
-            GridDhtAtomicUpdateFuture updateFut = (GridDhtAtomicUpdateFuture)ctx.mvcc().atomicFuture(ver);
+            GridDhtAtomicAbstractUpdateFuture updateFut = (GridDhtAtomicAbstractUpdateFuture)ctx.mvcc().atomicFuture(ver);
 
             if (updateFut != null) {
                 if (msgLog.isDebugEnabled()) {
@@ -3337,7 +3335,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         private final Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted;
 
         /** */
-        private final GridDhtAtomicUpdateFuture dhtFut;
+        private final GridDhtAtomicAbstractUpdateFuture dhtFut;
 
         /**
          * @param retVal Return value.
@@ -3346,7 +3344,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
          */
         private UpdateSingleResult(GridCacheReturn retVal,
             Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted,
-            GridDhtAtomicUpdateFuture dhtFut) {
+            GridDhtAtomicAbstractUpdateFuture dhtFut) {
             this.retVal = retVal;
             this.deleted = deleted;
             this.dhtFut = dhtFut;
@@ -3369,7 +3367,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         /**
          * @return DHT future.
          */
-        public GridDhtAtomicUpdateFuture dhtFuture() {
+        public GridDhtAtomicAbstractUpdateFuture dhtFuture() {
             return dhtFut;
         }
     }
@@ -3382,7 +3380,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         private Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted;
 
         /** */
-        private GridDhtAtomicUpdateFuture dhtFut;
+        private GridDhtAtomicAbstractUpdateFuture dhtFut;
 
         /** */
         private boolean readersOnly;
@@ -3416,7 +3414,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         /**
          * @return DHT future.
          */
-        public GridDhtAtomicUpdateFuture dhtFuture() {
+        public GridDhtAtomicAbstractUpdateFuture dhtFuture() {
             return dhtFut;
         }
 
@@ -3437,7 +3435,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         /**
          * @param dhtFut DHT future.
          */
-        private void dhtFuture(@Nullable GridDhtAtomicUpdateFuture dhtFut) {
+        private void dhtFuture(@Nullable GridDhtAtomicAbstractUpdateFuture dhtFut) {
             this.dhtFut = dhtFut;
         }
 

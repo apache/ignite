@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.platform.cluster;
 
 import java.util.Collection;
 import java.util.UUID;
+
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.cluster.ClusterMetrics;
@@ -28,6 +30,7 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
@@ -37,9 +40,6 @@ import org.jetbrains.annotations.Nullable;
  */
 @SuppressWarnings({"UnusedDeclaration"})
 public class PlatformClusterGroup extends PlatformAbstractTarget {
-    /** */
-    private static final int OP_ALL_METADATA = 1;
-
     /** */
     private static final int OP_FOR_ATTRIBUTE = 2;
 
@@ -59,9 +59,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     private static final int OP_FOR_NODE_IDS = 7;
 
     /** */
-    private static final int OP_METADATA = 8;
-
-    /** */
     private static final int OP_METRICS = 9;
 
     /** */
@@ -78,9 +75,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
     /** */
     private static final int OP_TOPOLOGY = 14;
-
-    /** */
-    private static final int OP_SCHEMA = 15;
 
     /** */
     private static final int OP_FOR_OTHERS = 16;
@@ -106,6 +100,9 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     /** */
     private static final int OP_FOR_SERVERS = 23;
 
+    /** */
+    private static final int OP_CACHE_METRICS = 24;
+
     /** Projection. */
     private final ClusterGroupEx prj;
 
@@ -127,11 +124,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
         switch (type) {
             case OP_METRICS:
                 platformCtx.writeClusterMetrics(writer, prj.metrics());
-
-                break;
-
-            case OP_ALL_METADATA:
-                platformCtx.writeAllMetadata(writer);
 
                 break;
 
@@ -201,14 +193,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 break;
             }
 
-            case OP_METADATA: {
-                int typeId = reader.readInt();
-
-                platformCtx.writeMetadata(writer, typeId);
-
-                break;
-            }
-
             case OP_TOPOLOGY: {
                 long topVer = reader.readLong();
 
@@ -217,11 +201,12 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 break;
             }
 
-            case OP_SCHEMA: {
-                int typeId = reader.readInt();
-                int schemaId = reader.readInt();
+            case OP_CACHE_METRICS: {
+                String cacheName = reader.readString();
 
-                platformCtx.writeSchema(writer, typeId, schemaId);
+                IgniteCache cache = platformCtx.kernalContext().grid().cache(cacheName);
+
+                PlatformCache.writeCacheMetrics(writer, cache.metrics(prj));
 
                 break;
             }
@@ -329,7 +314,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processOutLong(int type) throws IgniteCheckedException {
+    @Override protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         switch (type) {
             case OP_RESET_METRICS: {
                 assert prj instanceof IgniteCluster; // Can only be invoked on top-level cluster group.
@@ -340,7 +325,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
             }
         }
 
-        return super.processOutLong(type);
+        return super.processInLongOutLong(type, val);
     }
 
     /**

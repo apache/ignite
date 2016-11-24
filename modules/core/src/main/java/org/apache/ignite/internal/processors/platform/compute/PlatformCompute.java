@@ -136,14 +136,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
                 return TRUE;
             }
-        }
 
-        return super.processInLongOutLong(type, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected long processOutLong(int type) throws IgniteCheckedException {
-        switch (type) {
             case OP_WITH_NO_FAILOVER: {
                 compute.withNoFailover();
                 computeForPlatform.withNoFailover();
@@ -152,7 +145,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
             }
         }
 
-        return super.processOutLong(type);
+        return super.processInLongOutLong(type, val);
     }
 
     /**

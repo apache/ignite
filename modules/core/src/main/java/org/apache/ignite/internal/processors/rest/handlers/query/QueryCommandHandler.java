@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -217,22 +218,31 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
         assert SUPPORTED_COMMANDS.contains(req.command());
         assert req instanceof RestQueryRequest : "Invalid type of query request.";
 
+        if (req.command() != CLOSE_SQL_QUERY) {
+            Integer pageSize = ((RestQueryRequest) req).pageSize();
+
+            if (pageSize == null)
+                return new GridFinishedFuture<>(
+                        new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("pageSize"))
+                );
+        }
+
         switch (req.command()) {
             case EXECUTE_SQL_QUERY:
             case EXECUTE_SQL_FIELDS_QUERY:
             case EXECUTE_SCAN_QUERY: {
                 return ctx.closure().callLocalSafe(
-                    new ExecuteQueryCallable(ctx, (RestQueryRequest)req, qryCurs), false);
+                        new ExecuteQueryCallable(ctx, (RestQueryRequest) req, qryCurs), false);
             }
 
             case FETCH_SQL_QUERY: {
                 return ctx.closure().callLocalSafe(
-                    new FetchQueryCallable((RestQueryRequest)req, qryCurs), false);
+                        new FetchQueryCallable((RestQueryRequest) req, qryCurs), false);
             }
 
             case CLOSE_SQL_QUERY: {
                 return ctx.closure().callLocalSafe(
-                    new CloseQueryCallable((RestQueryRequest)req, qryCurs), false);
+                        new CloseQueryCallable((RestQueryRequest) req, qryCurs), false);
             }
         }
 
