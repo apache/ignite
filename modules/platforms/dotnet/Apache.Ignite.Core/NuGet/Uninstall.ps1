@@ -24,8 +24,7 @@ $project.Properties.Item("PostBuildEvent").Value = $currentPostBuildCmd.Replace(
 $project.Save()
 
 # Remove bin\Libs folders with jars
-$project.ConfigurationManager | % 
-{ 
+$project.ConfigurationManager | % { 
     $projPath = $project.Properties.Item("FullPath").Value
     $binDir = ($_.Properties | Where Name -match OutputPath).Value
 

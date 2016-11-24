@@ -28,8 +28,7 @@ if (!$currentPostBuildCmd.Contains($IgnitePostBuildCmd)) {
 $project.Save()
 
 # Remove bin\Libs folders with old jars
-$project.ConfigurationManager | % 
-{ 
+$project.ConfigurationManager | % { 
     $projPath = $project.Properties.Item("FullPath").Value
     $binDir = ($_.Properties | Where Name -match OutputPath).Value
 
