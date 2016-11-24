@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.version;
 
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,9 +26,11 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridCachePlainVersionedEntry<K, V> implements GridCacheVersionedEntryEx<K, V> {
     /** Key. */
+    @GridToStringInclude
     protected K key;
 
     /** Value. */
+    @GridToStringInclude
     protected V val;
 
     /** TTL. */

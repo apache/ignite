@@ -38,6 +38,7 @@ module.exports.factory = (_, fs, path, JSZip, settings, agentMgr, errors) => {
     class AgentsService {
         /**
          * Get agent archive with user agent configuration.
+         *
          * @returns {*} - readable stream for further piping. (http://stuk.github.io/jszip/documentation/api_jszip/generate_node_stream.html)
          */
         static getArchive(host, token) {
@@ -62,7 +63,7 @@ module.exports.factory = (_, fs, path, JSZip, settings, agentMgr, errors) => {
                             const prop = [];
 
                             prop.push('tokens=' + token);
-                            prop.push('server-uri=' + (settings.agent.SSLOptions ? 'https' : 'http') + '://' + host + ':' + settings.agent.port);
+                            prop.push(`server-uri=${host}`);
                             prop.push('#Uncomment following options if needed:');
                             prop.push('#node-uri=http://localhost:8080');
                             prop.push('#driver-folder=./jdbc-drivers');

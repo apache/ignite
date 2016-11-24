@@ -34,14 +34,16 @@ module.exports = {
 module.exports.factory = (_, mongo, spaceService, errors) => {
     /**
      * Convert remove status operation to own presentation.
+     *
      * @param {RemoveResult} result - The results of remove operation.
      */
     const convertRemoveStatus = ({result}) => ({rowsAffected: result.n});
 
     /**
-     * Update existing cache
-     * @param {Object} cache - The cache for updating
-     * @returns {Promise.<mongo.ObjectId>} that resolves cache id
+     * Update existing cache.
+     *
+     * @param {Object} cache - The cache for updating.
+     * @returns {Promise.<mongo.ObjectId>} that resolves cache id.
      */
     const update = (cache) => {
         const cacheId = cache._id;
@@ -60,6 +62,7 @@ module.exports.factory = (_, mongo, spaceService, errors) => {
 
     /**
      * Create new cache.
+     *
      * @param {Object} cache - The cache for creation.
      * @returns {Promise.<mongo.ObjectId>} that resolves cache id.
      */
@@ -78,11 +81,13 @@ module.exports.factory = (_, mongo, spaceService, errors) => {
 
     /**
      * Remove all caches by space ids.
+     *
      * @param {Number[]} spaceIds - The space ids for cache deletion.
      * @returns {Promise.<RemoveResult>} - that resolves results of remove operation.
      */
     const removeAllBySpaces = (spaceIds) => {
         return mongo.Cluster.update({space: {$in: spaceIds}}, {caches: []}, {multi: true}).exec()
+            .then(() => mongo.Cluster.update({space: {$in: spaceIds}}, {$pull: {checkpointSpi: {kind: 'Cache'}}}, {multi: true}).exec())
             .then(() => mongo.DomainModel.update({space: {$in: spaceIds}}, {caches: []}, {multi: true}).exec())
             .then(() => mongo.Cache.remove({space: {$in: spaceIds}}).exec());
     };
@@ -93,6 +98,7 @@ module.exports.factory = (_, mongo, spaceService, errors) => {
     class CachesService {
         /**
          * Create or update cache.
+         *
          * @param {Object} cache - The cache.
          * @returns {Promise.<mongo.ObjectId>} that resolves cache id of merge operation.
          */
@@ -105,6 +111,7 @@ module.exports.factory = (_, mongo, spaceService, errors) => {
 
         /**
          * Get caches by spaces.
+         *
          * @param {mongo.ObjectId|String} spaceIds - The spaces ids that own caches.
          * @returns {Promise.<mongo.Cache[]>} - contains requested caches.
          */
@@ -114,6 +121,7 @@ module.exports.factory = (_, mongo, spaceService, errors) => {
 
         /**
          * Remove cache.
+         *
          * @param {mongo.ObjectId|String} cacheId - The cache id for remove.
          * @returns {Promise.<{rowsAffected}>} - The number of affected rows.
          */
@@ -122,6 +130,7 @@ module.exports.factory = (_, mongo, spaceService, errors) => {
                 return Promise.reject(new errors.IllegalArgumentException('Cache id can not be undefined or null'));
 
             return mongo.Cluster.update({caches: {$in: [cacheId]}}, {$pull: {caches: cacheId}}, {multi: true}).exec()
+                .then(() => mongo.Cluster.update({}, {$pull: {checkpointSpi: {kind: 'Cache', Cache: {cache: cacheId}}}}, {multi: true}).exec())
                 .then(() => mongo.DomainModel.update({caches: {$in: [cacheId]}}, {$pull: {caches: cacheId}}, {multi: true}).exec())
                 .then(() => mongo.Cache.remove({_id: cacheId}).exec())
                 .then(convertRemoveStatus);
@@ -129,6 +138,7 @@ module.exports.factory = (_, mongo, spaceService, errors) => {
 
         /**
          * Remove all caches by user.
+         *
          * @param {mongo.ObjectId|String} userId - The user id that own caches.
          * @param {Boolean} demo - The flag indicates that need lookup in demo space.
          * @returns {Promise.<{rowsAffected}>} - The number of affected rows.

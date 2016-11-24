@@ -10,13 +10,6 @@
     "mongodb": {
         "url": "mongodb://localhost/console"
     },
-    "agentServer": {
-        "port": 3001,
-        "ssl": false,
-        "key": "serve/keys/test.key",
-        "cert": "serve/keys/test.crt",
-        "keyPassphrase": "password"
-    },
     "mail": {
         "service": "",
         "sign": "Kind regards,<br>Apache Ignite Team",

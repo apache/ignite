@@ -27,10 +27,11 @@ module.exports = {
                 if (req.headers.origin)
                     return req.headers.origin;
 
-                if (req.headers['x-forwarded-server'])
-                    return `${req.headers['x-forwarded-proto'] || 'http'}://${req.headers['x-forwarded-server']}`;
+                const proto = req.headers['x-forwarded-proto'] || req.protocol;
 
-                return `${req.protocol}://${req.get('host')}`;
+                const host = req.headers['x-forwarded-host'] || req.get('host');
+
+                return `${proto}://${host}`;
             };
 
             next();

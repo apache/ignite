@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-include ../../../../../../../app/helpers/jade/mixins.jade
+include /app/helpers/jade/mixins.jade
 
 -var form = 'general'
 -var discoveryKind = 'ZooKeeper'
@@ -71,6 +71,8 @@ div
                 div(ng-show='#{modelRetryPolicyKind} === "Custom"')
                     include ./zookeeper/retrypolicy/custom.jade
     .details-row
+        -var model = 'backupItem.discovery.ZooKeeper'
+
         +text('Base path:', model + '.basePath', '"basePath"', 'false', '/services', 'Base path for service registration')
     .details-row
         +text('Service name:', model + '.serviceName', '"serviceName"', 'false', 'ignite',

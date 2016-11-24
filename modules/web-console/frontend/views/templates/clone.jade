@@ -14,14 +14,16 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-include ../../app/helpers/jade/mixins.jade
+include /app/helpers/jade/mixins.jade
 
 .modal(tabindex='-1' role='dialog')
     .modal-dialog
         .modal-content
             .modal-header
                 button.close(ng-click='$hide()') &times;
-                h4.modal-title Clone
+                h4.modal-title 
+                    i.fa.fa-clone
+                    | Clone
             form.form-horizontal.modal-body.row(name='ui.inputForm' novalidate)
                 div
                     .col-sm-2

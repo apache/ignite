@@ -33,9 +33,9 @@ export default ['igniteFormRevert', ['$tooltip', 'IgniteLegacyTable', ($tooltip,
 
                 if (field) {
                     field.$viewValue = value;
-                    field.$setViewValue(value);
+                    field.$setViewValue && field.$setViewValue(value);
                     field.$setPristine();
-                    field.$render();
+                    field.$render && field.$render();
                 }
             });
 

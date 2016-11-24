@@ -63,14 +63,6 @@ namespace ignite
                 const char* GetName() const;
 
                 /**
-                 * Perform IsEmpty.
-                 *
-                 * @param err Error.
-                 * @return Result.
-                 */
-                bool IsEmpty(IgniteError* err);
-
-                /**
                  * Perform ContainsKey.
                  *
                  * @param inOp Input.
@@ -277,22 +269,13 @@ namespace ignite
                 void RemoveAll(IgniteError* err);
 
                 /**
-                 * Perform Size.
-                 *
-                 * @param peekModes Peek modes.
-                 * @param err Error.
-                 * @return Result.
-                 */
-                int32_t Size(const int32_t peekModes, IgniteError* err);
-
-                /**
-                 * Perform LocalSize.
-                 * 
-                 * @param peekModes Peek modes.
-                 * @param err Error.
-                 * @return Result.
-                 */
-                int32_t LocalSize(const int32_t peekModes, IgniteError* err);
+                * Perform Size.
+                *
+                * @param peekModes Peek modes.
+                * @param local Local flag.
+                * @param err Error.
+                */
+                int32_t Size(int32_t peekModes, bool local, IgniteError* err);
 
                 /**
                  * Invoke query.
@@ -381,16 +364,6 @@ namespace ignite
 
                 /** Name. */
                 char* name; 
-
-                /**
-                 * Internal cache size routine.
-                 *
-                 * @param peekModes Peek modes.
-                 * @param loc Local flag.
-                 * @param err Error.
-                 * @return Size.
-                 */
-                int SizeInternal(const int32_t peekModes, const bool loc, IgniteError* err);
 
                 /**
                  * Internal query execution routine.

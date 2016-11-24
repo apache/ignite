@@ -20,6 +20,7 @@
 #include "ignite/impl/ignite_environment.h"
 #include "ignite/cache/query/continuous/continuous_query.h"
 #include "ignite/binary/binary.h"
+#include "ignite/impl/binary/binary_type_updater_impl.h"
 
 using namespace ignite::common::concurrent;
 using namespace ignite::jni::java;
@@ -36,14 +37,14 @@ namespace ignite
          * OnStart callback.
          *
          * @param target Target environment.
-         * @param proc Processor instance (not used for now).
+         * @param proc Processor instance.
          * @param memPtr Memory pointer.
          */
         void IGNITE_CALL OnStart(void* target, void* proc, long long memPtr)
         {
             SharedPointer<IgniteEnvironment>* ptr = static_cast<SharedPointer<IgniteEnvironment>*>(target);
 
-            ptr->Get()->OnStartCallback(memPtr);
+            ptr->Get()->OnStartCallback(memPtr, reinterpret_cast<jobject>(proc));
         }
 
         /**
@@ -113,8 +114,8 @@ namespace ignite
             // No-op.
         }
 
-        IgniteEnvironment::IgniteEnvironment() : ctx(SharedPointer<JniContext>()), latch(new SingleLatch), name(NULL),
-            metaMgr(new BinaryTypeManager())
+        IgniteEnvironment::IgniteEnvironment() : ctx(SharedPointer<JniContext>()), latch(new SingleLatch), name(0),
+            proc(), metaMgr(new BinaryTypeManager()), metaUpdater(0)
         {
             // No-op.
         }
@@ -122,11 +123,9 @@ namespace ignite
         IgniteEnvironment::~IgniteEnvironment()
         {
             delete latch;
-
-            if (name)
-                delete name;
-
+            delete name;
             delete metaMgr;
+            delete metaUpdater;
         }
 
         JniHandlers IgniteEnvironment::GetJniHandlers(SharedPointer<IgniteEnvironment>* target)
@@ -143,16 +142,23 @@ namespace ignite
             hnds.contQryLsnrApply = ContinuousQueryListenerApply;
             hnds.contQryFilterRelease = ContinuousQueryFilterRelease;
 
-            hnds.error = NULL;
+            hnds.error = 0;
 
             return hnds;
         }
 
-        void IgniteEnvironment::Initialize(SharedPointer<JniContext> ctx)
+        void IgniteEnvironment::SetContext(SharedPointer<JniContext> ctx)
         {
             this->ctx = ctx;
+        }
 
+        void IgniteEnvironment::Initialize()
+        {
             latch->CountDown();
+
+            jobject binaryProc = Context()->ProcessorBinaryProcessor(proc.Get());
+
+            metaUpdater = new BinaryTypeUpdaterImpl(*this, binaryProc);
         }
 
         const char* IgniteEnvironment::InstanceName() const
@@ -204,14 +210,27 @@ namespace ignite
             return metaMgr;
         }
 
-        void IgniteEnvironment::OnStartCallback(long long memPtr)
+        BinaryTypeUpdater* IgniteEnvironment::GetTypeUpdater()
         {
+            return metaUpdater;
+        }
+
+        void IgniteEnvironment::ProcessorReleaseStart()
+        {
+            if (proc.Get())
+                ctx.Get()->ProcessorReleaseStart(proc.Get());
+        }
+
+        void IgniteEnvironment::OnStartCallback(long long memPtr, jobject proc)
+        {
+            this->proc = jni::JavaGlobalRef(*ctx.Get(), proc);
+
             InteropExternalMemory mem(reinterpret_cast<int8_t*>(memPtr));
             InteropInputStream stream(&mem);
 
             BinaryReaderImpl reader(&stream);
 
-            int32_t nameLen = reader.ReadString(NULL, 0);
+            int32_t nameLen = reader.ReadString(0, 0);
 
             if (nameLen >= 0)
             {
@@ -219,7 +238,7 @@ namespace ignite
                 reader.ReadString(name, nameLen + 1);
             }
             else
-                name = NULL;
+                name = 0;
         }
     }
 }

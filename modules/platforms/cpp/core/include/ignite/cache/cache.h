@@ -117,7 +117,7 @@ namespace ignite
              */
             bool IsEmpty(IgniteError& err)
             {
-                return impl.Get()->IsEmpty(&err);
+                return Size(err) == 0;
             }
 
             /**
@@ -1056,7 +1056,6 @@ namespace ignite
              *
              * This method should only be used on the valid instance.
              *
-             * @param err Error.
              */
             void RemoveAll()
             {
@@ -1111,7 +1110,7 @@ namespace ignite
              *
              * This method should only be used on the valid instance.
              *
-             * @param Peek modes.
+             * @param peekModes Peek modes.
              * @return Cache size on this node.
              */
             int32_t LocalSize(int32_t peekModes)
@@ -1130,13 +1129,13 @@ namespace ignite
              *
              * This method should only be used on the valid instance.
              *
-             * @param Peek modes.
+             * @param peekModes Peek modes.
              * @param err Error.
              * @return Cache size on this node.
              */
             int32_t LocalSize(int32_t peekModes, IgniteError& err)
             {
-                return impl.Get()->LocalSize(peekModes, &err);
+                return impl.Get()->Size(peekModes, true, &err);
             }
 
             /**
@@ -1172,7 +1171,7 @@ namespace ignite
              *
              * This method should only be used on the valid instance.
              *
-             * @param Peek modes.
+             * @param peekModes Peek modes.
              * @return Cache size across all nodes.
              */
             int32_t Size(int32_t peekModes)
@@ -1192,13 +1191,13 @@ namespace ignite
              *
              * This method should only be used on the valid instance.
              *
-             * @param Peek modes.
+             * @param peekModes Peek modes.
              * @param err Error.
              * @return Cache size across all nodes.
              */
             int32_t Size(int32_t peekModes, IgniteError& err)
             {
-                return impl.Get()->Size(peekModes, &err);
+                return impl.Get()->Size(peekModes, false, &err);
             }
 
             /**

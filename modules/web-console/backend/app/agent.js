@@ -225,20 +225,32 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo)
          * @param {String} nid Node id.
          * @param {String} cacheName Cache name.
          * @param {String} query Query.
+         * @param {Boolean} nonCollocatedJoins Flag whether to execute non collocated joins.
          * @param {Boolean} local Flag whether to execute query locally.
          * @param {int} pageSize Page size.
          * @returns {Promise}
          */
-        fieldsQuery(demo, nid, cacheName, query, local, pageSize) {
+        fieldsQuery(demo, nid, cacheName, query, nonCollocatedJoins, local, pageSize) {
             const cmd = new Command(demo, 'exe')
                 .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
                 .addParam('p1', nid)
-                .addParam('p2', 'org.apache.ignite.internal.visor.query.VisorQueryTask')
-                .addParam('p3', 'org.apache.ignite.internal.visor.query.VisorQueryArg')
-                .addParam('p4', cacheName)
-                .addParam('p5', query)
-                .addParam('p6', local)
-                .addParam('p7', pageSize);
+                .addParam('p2', 'org.apache.ignite.internal.visor.query.VisorQueryTask');
+
+            if (nonCollocatedJoins) {
+                cmd.addParam('p3', 'org.apache.ignite.internal.visor.query.VisorQueryArgV2')
+                    .addParam('p4', cacheName)
+                    .addParam('p5', query)
+                    .addParam('p6', true)
+                    .addParam('p7', local)
+                    .addParam('p8', pageSize);
+            }
+            else {
+                cmd.addParam('p3', 'org.apache.ignite.internal.visor.query.VisorQueryArg')
+                    .addParam('p4', cacheName)
+                    .addParam('p5', query)
+                    .addParam('p6', local)
+                    .addParam('p7', pageSize);
+            }
 
             return this.executeRest(cmd);
         }
@@ -279,6 +291,23 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo)
                 .addParam('p4', 'java.util.UUID')
                 .addParam('p5', 'java.util.Set')
                 .addParam('p6', `${nid}=${queryId}`);
+
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {Array.<String>} nids Node ids.
+         * @param {Number} since Metrics since.
+         * @returns {Promise}
+         */
+        queryDetailMetrics(demo, nids, since) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', nids)
+                .addParam('p2', 'org.apache.ignite.internal.visor.cache.VisorCacheQueryDetailMetricsCollectorTask')
+                .addParam('p3', 'java.lang.Long')
+                .addParam('p4', since);
 
             return this.executeRest(cmd);
         }
@@ -622,6 +651,19 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo)
                 });
         }
 
+        attachLegacy(srv) {
+            /**
+             * @type {socketIo.Server}
+             */
+            const io = socketio(srv);
+
+            io.on('connection', (socket) => {
+                socket.on('agent:auth', (data, cb) => {
+                    return cb('You are using an older version of the agent. Please reload agent archive');
+                });
+            });
+        }
+
         /**
          * @param {http.Server|https.Server} srv Server instance that we want to attach agent handler.
          */
@@ -634,7 +676,7 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo)
             /**
              * @type {socketIo.Server}
              */
-            this._socket = socketio(this._server);
+            this._socket = socketio(this._server, {path: '/agents'});
 
             this._socket.on('connection', (socket) => {
                 socket.on('agent:auth', (data, cb) => {

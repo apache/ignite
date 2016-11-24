@@ -42,6 +42,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 /**
  *
@@ -129,6 +130,8 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      * @param start Start.
      */
     BinaryObjectBuilderImpl(BinaryBuilderReader reader, int start) {
+        assert reader != null;
+
         this.reader = reader;
         this.start = start;
         this.flags = reader.readShortPositioned(start + GridBinaryMarshaller.FLAGS_POS);
@@ -192,6 +195,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      * @param writer Writer.
      * @param serializer Serializer.
      */
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     void serializeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer serializer) {
         try {
             writer.preWrite(registeredType ? null : clsNameToWrite);
@@ -356,6 +360,9 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
                 schemaReg.addSchema(curSchema.schemaId(), curSchema);
             }
+
+            // Update hash code after schema is written.
+            writer.postWriteHashCode(registeredType ? null : clsNameToWrite);
         }
         finally {
             writer.popSchema();
@@ -522,7 +529,10 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         Object val = val0 == null ? new BinaryValueWithType(BinaryUtils.typeByClass(Object.class), null) : val0;
 
         if (assignedVals == null)
-            assignedVals = new LinkedHashMap<>();
+            if (BinaryUtils.FIELDS_SORTED_ORDER)
+                assignedVals = new TreeMap<>();
+            else
+                assignedVals = new LinkedHashMap<>();
 
         Object oldVal = assignedVals.put(name, val);
 

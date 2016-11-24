@@ -81,6 +81,9 @@ connector.class=org.apache.ignite.stream.kafka.connect.IgniteSinkConnector
 tasks.max=2
 topics=testTopic1,testTopic2
 
+# converter (optional)
+singleTupleExtractorCls=my.company.MyTupleExtractor
+
 # cache
 cacheName=cache1
 cacheAllowOverwrite=true
@@ -90,6 +93,7 @@ where 'cacheName' is the name of the cache you specify in '/some-path/ignite.xml
 will be pulled and stored. 'cacheAllowOverwrite' is set to true if you want to enable overwriting existing values in cache.
 You can also set 'cachePerNodeDataSize' and 'cachePerNodeParOps' to adjust per-node buffer and the maximum number
 of parallel stream operations for a single node.
+If you need to create an Ignite key from a Kafka value, implement StreamSingleTupleExtractor and specify it as 'singleTupleExtractorCls'.
 
 See example-ignite.xml in tests for a simple cache configuration file example.
 

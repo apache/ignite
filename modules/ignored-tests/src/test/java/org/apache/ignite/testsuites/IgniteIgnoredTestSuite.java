@@ -37,8 +37,21 @@ public class IgniteIgnoredTestSuite extends TestSuite {
         /* --- AWS --- */
         suite.addTest(IgniteS3TestSuite.suite());
 
+        /* --- CLIENTS --- */
+        suite.addTest(org.apache.ignite.internal.client.suite.IgniteClientTestSuite.suite());
+
         /* --- CLOUDS --- */
         suite.addTest(IgniteCloudTestSuite.suite());
+
+        /* --- JTA --- */
+        suite.addTest(IgniteJtaTestSuite.suite());
+
+        /* --- QUERIES --- */
+        suite.addTest(IgniteCacheQuerySelfTestSuite.suite());
+        suite.addTest(IgniteCacheQuerySelfTestSuite2.suite());
+
+        /* --- SPRING --- */
+        suite.addTest(IgniteSpringTestSuite.suite());
 
         /* --- WEB SESSIONS --- */
         suite.addTest(IgniteWebSessionSelfTestSuite.suite());

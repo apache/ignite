@@ -138,7 +138,7 @@ namespace ignite
                  * @param ptr Raw pointer.
                  * @param deleter Delete function.
                  */
-                SharedPointer(T* ptr, void(*deleter)(T*) = SharedPointerDefaultDeleter<T>)
+                SharedPointer(T* ptr, void(*deleter)(T*) = (void(*)(T*))SharedPointerDefaultDeleter<T>)
                 {
                     if (ptr)
                     {
