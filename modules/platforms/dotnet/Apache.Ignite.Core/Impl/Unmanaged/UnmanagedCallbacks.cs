@@ -287,7 +287,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// <summary>
         /// Adds the handler.
         /// </summary>
-        private void AddHandler(UnmanagedCallbackOp op, InLongLongLongObjectOutLongFunc func, bool allowUninitialized = false)
+        private void AddHandler(UnmanagedCallbackOp op, InLongLongLongObjectOutLongFunc func, 
+            bool allowUninitialized = false)
         {
             _inLongLongLongObjectOutLongHandlers[(int)op] 
                 = new InLongLongLongObjectOutLongHandler(func, allowUninitialized);
@@ -486,7 +487,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
-        private long ComputeTaskLocalJobResult(long taskPtr, long jobPtr)
+        private long ComputeTaskLocalJobResult(long taskPtr, long jobPtr, long unused, void* arg)
         {
             return Task(taskPtr).JobResultLocal(Job(jobPtr));
         }
@@ -545,7 +546,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
-        private long ComputeJobExecuteLocal(long jobPtr, long cancel)
+        private long ComputeJobExecuteLocal(long jobPtr, long cancel, long unused, void* arg)
         {
             Job(jobPtr).ExecuteLocal(cancel == 1);
 
@@ -681,7 +682,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         }
 
         [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
-        private void DataStreamerStreamReceiverInvoke(void* cache, long memPtr)
+        private long DataStreamerStreamReceiverInvoke(long memPtr, long unused, long unused1, void* cache)
         {
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
@@ -698,6 +699,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 if (receiver != null)
                     receiver.Receive(_ignite, new UnmanagedNonReleaseableTarget(_ctx, cache), stream, keepBinary);
+
+                return 0;
             }
         }
 
@@ -761,7 +764,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return ProcessFuture(futPtr, fut => { fut.OnNullResult(); });
         }
 
-        private long FutureError(long futPtr, long memPtr)
+        private long FutureError(long futPtr, long memPtr, long unused, void* arg)
         {
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
@@ -1090,7 +1093,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
-        private long OnClientDisconnected()
+        private long OnClientDisconnected(long unused)
         {
             _ignite.OnClientDisconnected();
 
