@@ -32,13 +32,6 @@
 #   define IGNITE_FRIEND_EXPORT
 #endif
 
-#if __cplusplus >= 201103L
-// Means User uses C++11
-#   define IGNITE_FORWARD(x) x&&
-#else
-#   define IGNITE_FORWARD(x) x&
-#endif
-
 namespace ignite
 {
     namespace common

@@ -138,7 +138,7 @@ namespace ignite
                  * @param ptr Raw pointer.
                  * @param deleter Delete function.
                  */
-                SharedPointer(T* ptr, void(*deleter)(T*) = (void(*)(T*))SharedPointerDefaultDeleter<T>)
+                SharedPointer(T* ptr, void(*deleter)(T*) = &SharedPointerDefaultDeleter<T>)
                 {
                     if (ptr)
                     {
@@ -156,7 +156,7 @@ namespace ignite
                  * @param deleter Delete function.
                  */
                 template<typename T2>
-                SharedPointer(T2* ptr, void(*deleter)(T2*) = SharedPointerDefaultDeleter<T2>)
+                SharedPointer(T2* ptr, void(*deleter)(T2*) = &SharedPointerDefaultDeleter<T2>)
                 {
                     static_cast<T*>(ptr);
 
