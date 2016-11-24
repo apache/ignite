@@ -88,9 +88,7 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
         else {
             if (getResp.getResponse() instanceof String) {
                 try {
-                    long init = Long.parseLong((String)getResp.getResponse());
-                    if (init <= Long.MAX_VALUE)
-                        restReq.initial(init);
+                    restReq.initial(Long.parseLong((String)getResp.getResponse()));
                 }
                 catch (Exception e) {
                     U.error(log, "An initial value must be numeric and in range", e);
@@ -110,7 +108,7 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
 
             Object rmResp = hnd.handle(rmReq).getResponse();
 
-            if (rmResp == null && !(boolean)rmResp)
+            if (rmResp == null || !(boolean)rmResp)
                 throw new GridRedisGenericException("Cannot incr/decr on the non-atomiclong key!");
         }
 
@@ -124,6 +122,7 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
             }
             catch (NumberFormatException e) {
                 U.error(log, "Wrong increment delta", e);
+
                 throw new GridRedisGenericException("An increment value must be numeric and in range");
             }
         }
