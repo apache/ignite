@@ -17,62 +17,54 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.GridNodeOrderComparator;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
 
 /**
- * Future that fetches affinity assignment from remote cache nodes.
+ *
  */
-public class GridDhtAssignmentFetchFuture extends GridDhtAssignmentAbstractFetchFuture<GridDhtAffinityAssignmentResponse> {
+public class GridDhtAssignmentMultiFetchFuture extends GridDhtAssignmentAbstractFetchFuture<GridDhtAffinityMultiAssignmentResponse> {
+
+    /** */
+    public static final int NO_CACHE = 0;
+
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private final List<Integer> cacheIds;
+
     /**
      * @param ctx Context.
-     * @param cacheName Cache name.
      * @param topVer Topology version.
      */
-    public GridDhtAssignmentFetchFuture(
+    public GridDhtAssignmentMultiFetchFuture(
         GridCacheSharedContext ctx,
-        String cacheName,
-        AffinityTopologyVersion topVer
+        AffinityTopologyVersion topVer,
+        List<Integer> cacheIds
     ) {
-        super(ctx, topVer, CU.cacheId(cacheName));
+        super(ctx, topVer, NO_CACHE);
+        this.cacheIds = cacheIds;
 
-        Collection<ClusterNode> availableNodes = ctx.discovery().cacheAffinityNodes(cacheName, topVer);
-
-        LinkedList<ClusterNode> tmp = new LinkedList<>();
-
-        for (ClusterNode node : availableNodes) {
-            if (!node.isLocal() && ctx.discovery().alive(node))
-                tmp.add(node);
-        }
-
-        Collections.sort(tmp, GridNodeOrderComparator.INSTANCE);
-
-        this.availableNodes = tmp;
-
+        availableNodes = new LinkedList<>(ctx.discovery().serverNodes(topVer));
     }
 
     /**
      * @param nodeId Node ID.
      * @param res Response.
      */
-    @Override public void onResponse(UUID nodeId, GridDhtAffinityAssignmentResponse res) {
+    @Override public void onResponse(UUID nodeId, GridDhtAffinityMultiAssignmentResponse res) {
+
         if (!res.topologyVersion().equals(key.get2())) {
             if (log.isDebugEnabled())
                 log.debug("Received affinity assignment for wrong topology version (will ignore) " +
@@ -81,7 +73,7 @@ public class GridDhtAssignmentFetchFuture extends GridDhtAssignmentAbstractFetch
             return;
         }
 
-        GridDhtAffinityAssignmentResponse res0 = null;
+        GridDhtAffinityMultiAssignmentResponse res0 = null;
 
         synchronized (this) {
             if (pendingNode != null && pendingNode.id().equals(nodeId))
@@ -98,54 +90,63 @@ public class GridDhtAssignmentFetchFuture extends GridDhtAssignmentAbstractFetch
     @Override protected void requestFromNextNode() {
         boolean complete;
 
-        // Avoid 'protected field is accessed in synchronized context' warning.
         IgniteLogger log0 = log;
 
         synchronized (this) {
+
             while (!availableNodes.isEmpty()) {
                 ClusterNode node = availableNodes.poll();
 
+                if (node.isLocal()) {
+                    if (log0.isDebugEnabled())
+                        log0.debug("Now I am coordinator");
+                    pendingNode = null;
+                    break;
+                }
+
+                if (!canUseMultiRequest(node)) {
+                    if (log0.isDebugEnabled())
+                        log0.debug("Node is too old, fallback");
+                    pendingNode = null;
+                    break;
+                }
+
                 try {
                     if (log0.isDebugEnabled())
-                        log0.debug("Sending affinity fetch request to remote node [locNodeId=" + ctx.localNodeId() +
+                        log0.debug("Sending affinity fetch request to coordinator node [locNodeId=" + ctx.localNodeId() +
                             ", node=" + node + ']');
 
-                    ctx.io().send(node, new GridDhtAffinityAssignmentRequest(key.get1(), key.get2()),
+                    ctx.io().send(node, new GridDhtAffinityMultiAssignmentRequest(key.get2(), cacheIds),
                         AFFINITY_POOL);
-
-                    // Close window for listener notification.
-                    if (ctx.discovery().node(node.id()) == null) {
-                        U.warn(log0, "Failed to request affinity assignment from remote node (node left grid, will " +
-                            "continue to another node): " + node);
-
-                        continue;
-                    }
 
                     pendingNode = node;
 
                     break;
                 }
                 catch (ClusterTopologyCheckedException ignored) {
-                    U.warn(log0, "Failed to request affinity assignment from remote node (node left grid, will " +
-                        "continue to another node): " + node);
+                    U.warn(log0, "Failed to request affinity assignment from coordinator node (node left grid, will " +
+                        "try again): " + node);
                 }
                 catch (IgniteCheckedException e) {
-                    U.error(log0, "Failed to request affinity assignment from remote node (will " +
-                        "continue to another node): " + node, e);
+                    U.error(log0, "Failed to request affinity assignment from coordinator node" + node, e);
+                    break;
                 }
             }
 
             complete = pendingNode == null;
         }
 
-        // No more nodes left, complete future with null outside of synchronization.
-        // Affinity should be calculated from scratch.
+        // Failed getting affinity from coordinator
         if (complete)
-            onDone((GridDhtAffinityAssignmentResponse)null);
+            onDone((GridDhtAffinityMultiAssignmentResponse)null);
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridDhtAssignmentFetchFuture.class, this);
+    /**
+     * @param node Node.
+     * @return {@code True} if node supports multi request.
+     */
+    private boolean canUseMultiRequest(ClusterNode node) {
+        return true;
     }
+
 }

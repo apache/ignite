@@ -18,64 +18,54 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.nio.ByteBuffer;
+import java.util.List;
+import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Affinity assignment request.
+ *
  */
-public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
+public class GridDhtAffinityMultiAssignmentRequest extends GridDhtAffinityAssignmentRequest {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Topology version being queried. */
-    protected AffinityTopologyVersion topVer;
+    /** Cache ids. */
+    @GridDirectCollection(int.class)
+    private List<Integer> cacheIds;
 
     /**
-     * Empty constructor.
+     * Empty constructor;
      */
-    public GridDhtAffinityAssignmentRequest() {
+    public GridDhtAffinityMultiAssignmentRequest() {
         // No-op.
     }
 
     /**
-     * @param cacheId Cache ID.
-     * @param topVer Topology version.
+     * @param cacheIds List of cache ids.
      */
-    public GridDhtAffinityAssignmentRequest(int cacheId, @NotNull AffinityTopologyVersion topVer) {
-        this.cacheId = cacheId;
+    public GridDhtAffinityMultiAssignmentRequest(@NotNull AffinityTopologyVersion topVer, List<Integer> cacheIds) {
         this.topVer = topVer;
+        this.cacheIds = cacheIds;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean addDeploymentInfo() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean partitionExchangeMessage() {
-        return true;
-    }
-
-    /**
-     * @return Requested topology version.
-     */
-    @Override public AffinityTopologyVersion topologyVersion() {
-        return topVer;
+    /** Cache ids. */
+    public List<Integer> cacheIds() {
+        return cacheIds;
     }
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 28;
+        return -37;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 4;
+        return 5;
     }
 
     /** {@inheritDoc} */
@@ -93,8 +83,8 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
         }
 
         switch (writer.state()) {
-            case 3:
-                if (!writer.writeMessage("topVer", topVer))
+            case 4:
+                if (!writer.writeCollection("cacheIds", cacheIds, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
@@ -115,8 +105,8 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
             return false;
 
         switch (reader.state()) {
-            case 3:
-                topVer = reader.readMessage("topVer");
+            case 4:
+                cacheIds = reader.readCollection("cacheIds", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -125,11 +115,11 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
 
         }
 
-        return reader.afterMessageRead(GridDhtAffinityAssignmentRequest.class);
+        return reader.afterMessageRead(GridDhtAffinityMultiAssignmentRequest.class);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtAffinityAssignmentRequest.class, this, super.toString());
+        return S.toString(GridDhtAffinityMultiAssignmentRequest.class, this, super.toString());
     }
 }

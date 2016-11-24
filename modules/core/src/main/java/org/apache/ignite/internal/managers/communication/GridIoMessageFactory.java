@@ -58,6 +58,8 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTx
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityMultiAssignmentRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityMultiAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
@@ -753,6 +755,16 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 124:
                 msg = new GridMessageCollection<>();
+
+                break;
+
+            case -37:
+                msg = new GridDhtAffinityMultiAssignmentRequest();
+
+                break;
+
+            case -38:
+                msg = new GridDhtAffinityMultiAssignmentResponse();
 
                 break;
 

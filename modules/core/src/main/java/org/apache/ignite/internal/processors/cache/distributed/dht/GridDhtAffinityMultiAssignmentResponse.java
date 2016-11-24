@@ -23,75 +23,67 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
-import org.jetbrains.annotations.NotNull;
 
-/**
- * Affinity assignment response.
- */
-public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
+public class GridDhtAffinityMultiAssignmentResponse extends GridCacheMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Topology version. */
     protected AffinityTopologyVersion topVer;
 
+    /** */
+    @GridDirectCollection(int.class)
+    private List<Integer> cacheIds;
+
     /** Affinity assignment. */
     @GridDirectTransient
-    @GridToStringInclude
-    private List<List<ClusterNode>> affAssignment;
-
-    /** Affinity assignment bytes. */
-    private byte[] affAssignmentBytes;
+    private List<List<List<ClusterNode>>> affAssignments;
 
     /** */
     @GridDirectTransient
-    private List<List<UUID>> affAssignmentIds;
+    private List<List<List<UUID>>> affAssignmentIds;
 
     /** */
-    private byte[] affAssignmentIdsBytes;
+    @GridDirectCollection(byte[].class)
+    private List<byte[]> affAssignmentIdsBytes;
 
     /** */
     @GridDirectTransient
-    private List<List<UUID>> idealAffAssignment;
+    private List<List<List<UUID>>> idealAffAssignment;
 
     /** Affinity assignment bytes. */
-    private byte[] idealAffAssignmentBytes;
+    @GridDirectCollection(byte[].class)
+    private List<byte[]> idealAffAssignmentBytes;
 
     /**
      * Empty constructor.
      */
-    public GridDhtAffinityAssignmentResponse() {
+    public GridDhtAffinityMultiAssignmentResponse() {
         // No-op.
     }
 
     /**
-     * @param cacheId Cache ID.
      * @param topVer Topology version.
-     * @param affAssignment Affinity assignment.
-     * @param sndNodeIds If {@code true} sends only node IDs instead of nodes.
      */
-    public GridDhtAffinityAssignmentResponse(int cacheId,
-        @NotNull AffinityTopologyVersion topVer,
-        List<List<ClusterNode>> affAssignment,
-        boolean sndNodeIds) {
-        this.cacheId = cacheId;
+    public GridDhtAffinityMultiAssignmentResponse(
+        AffinityTopologyVersion topVer) {
         this.topVer = topVer;
+        this.cacheId = 0;
 
-        if (!sndNodeIds)
-            this.affAssignment = affAssignment;
-        else
-            affAssignmentIds = ids(affAssignment);
+        cacheIds = new ArrayList<>();
+        affAssignmentIds = new ArrayList<>();
+        idealAffAssignment = new ArrayList<>();
     }
 
     /** {@inheritDoc} */
@@ -106,25 +98,64 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
         return topVer;
     }
 
-    /**
-     * @param disco Discovery manager.
-     * @return Affinity assignment.
-     */
-    public List<List<ClusterNode>> affinityAssignment(GridDiscoveryManager disco) {
-        if (affAssignment != null)
-            return affAssignment;
-
-        if (affAssignmentIds != null)
-            affAssignment = nodes(disco, affAssignmentIds);
-
-        return affAssignment;
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return false;
     }
 
     /**
+     * @return Size of the message.
+     */
+    public int size() {
+        return affAssignmentIds != null ? affAssignmentIds.size() : 0;
+    }
+
+    /**
+     * @param idx index.
+     * @param disco Discovery manager.
+     * @return Affinity assignment.
+     */
+    public List<List<ClusterNode>> affinityAssignment(int idx, GridDiscoveryManager disco) {
+        assert affAssignmentIds != null;
+
+        if (affAssignments == null) {
+            affAssignments = new ArrayList<>();
+            for (List<List<UUID>> affAssignmentId : affAssignmentIds) {
+                List<List<ClusterNode>> aff = nodes(disco, affAssignmentId);
+                affAssignments.add(aff);
+
+            }
+        }
+
+        return affAssignments.get(idx);
+    }
+
+    /**
+     * @param idx index.
+     * @param disco Discovery manager.
      * @return Ideal affinity assignment.
      */
-    public List<List<ClusterNode>> idealAffinityAssignment(GridDiscoveryManager disco) {
-        return nodes(disco, idealAffAssignment);
+    public List<List<ClusterNode>> idealAffinityAssignment(int idx, GridDiscoveryManager disco) {
+        return nodes(disco, idealAffAssignment.get(idx));
+    }
+
+    /**
+     * @param idx index.
+     * @return Cache ID.
+     */
+    public int getCacheId(int idx) {
+        return cacheIds.get(idx);
+    }
+
+    /**
+     * @param cacheId Cache ID.
+     * @param assignment Affinity assignment.
+     * @param idealAssignment Affinity ideal assignment.
+     */
+    public void addResult(int cacheId, List<List<ClusterNode>> assignment, List<List<ClusterNode>> idealAssignment) {
+        cacheIds.add(cacheId);
+        affAssignmentIds.add(ids(assignment));
+        idealAffAssignment.add(ids(idealAssignment));
     }
 
     /**
@@ -158,13 +189,6 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
     }
 
     /**
-     * @param idealAffAssignment Ideal affinity assignment.
-     */
-    public void idealAffinityAssignment(List<List<ClusterNode>> idealAffAssignment) {
-        this.idealAffAssignment = ids(idealAffAssignment);
-    }
-
-    /**
      * @param assignments Assignment.
      */
     private List<List<UUID>> ids(List<List<ClusterNode>> assignments) {
@@ -188,89 +212,53 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
-        return 29;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 7;
-    }
-
-    /**
-     * @param ctx Context.
-     */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        assert affAssignment != null ^ affAssignmentIds != null;
+        if (affAssignmentIds != null && affAssignmentIdsBytes == null) {
+            affAssignmentIdsBytes = new ArrayList<>(size());
+            for (List<List<UUID>> assignmentId : affAssignmentIds) {
+                affAssignmentIdsBytes.add(U.marshal(ctx, assignmentId));
+            }
+        }
 
-        if (affAssignment != null && affAssignmentBytes == null)
-            affAssignmentBytes = U.marshal(ctx, affAssignment);
-
-        if (affAssignmentIds != null && affAssignmentIdsBytes == null)
-            affAssignmentIdsBytes = U.marshal(ctx, affAssignmentIds);
-
-        if (idealAffAssignment != null && idealAffAssignmentBytes == null)
-            idealAffAssignmentBytes = U.marshal(ctx, idealAffAssignment);
+        if (idealAffAssignment != null && idealAffAssignmentBytes == null) {
+            idealAffAssignmentBytes = new ArrayList<>(size());
+            for (List<List<UUID>> assignmentId : idealAffAssignment) {
+                idealAffAssignmentBytes.add(U.marshal(ctx, assignmentId));
+            }
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        assert affAssignmentBytes != null ^ affAssignmentIdsBytes != null;
-
         ldr = U.resolveClassLoader(ldr, ctx.gridConfig());
 
-        if (affAssignmentBytes != null && affAssignment == null)
-            affAssignment = unmarshalNodes(affAssignmentBytes, ctx, ldr);
-
-        if (affAssignmentIdsBytes != null && affAssignmentIds == null)
-            affAssignmentIds = U.unmarshal(ctx, affAssignmentIdsBytes, ldr);
-
-        if (idealAffAssignmentBytes != null && idealAffAssignment == null)
-            idealAffAssignment = U.unmarshal(ctx, idealAffAssignmentBytes, ldr);
-    }
-
-    /**
-     * @param bytes Assignment bytes.
-     * @param ctx Context.
-     * @param ldr Class loader.
-     * @return Assignment.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
-    private List<List<ClusterNode>> unmarshalNodes(byte[] bytes,
-        GridCacheSharedContext ctx,
-        ClassLoader ldr)
-        throws IgniteCheckedException
-    {
-        List<List<ClusterNode>> affAssignment = U.unmarshal(ctx, bytes,
-            U.resolveClassLoader(ldr, ctx.gridConfig()));
-
-        // TODO IGNITE-2110: setting 'local' for nodes not needed when IGNITE-2110 is implemented.
-        int assignments = affAssignment.size();
-
-        for (int n = 0; n < assignments; n++) {
-            List<ClusterNode> nodes = affAssignment.get(n);
-
-            int size = nodes.size();
-
-            for (int i = 0; i < size; i++) {
-                ClusterNode node = nodes.get(i);
-
-                if (node instanceof TcpDiscoveryNode)
-                    ((TcpDiscoveryNode)node).local(node.id().equals(ctx.localNodeId()));
+        if (affAssignmentIdsBytes != null && affAssignmentIds == null) {
+            affAssignmentIds = new ArrayList<>(affAssignmentIdsBytes.size());
+            for (byte[] bytes : affAssignmentIdsBytes) {
+                affAssignmentIds.add((List<List<UUID>>)U.unmarshal(ctx, bytes, ldr));
             }
         }
 
-        return affAssignment;
+        if (idealAffAssignmentBytes != null && idealAffAssignment == null) {
+            idealAffAssignment = new ArrayList<>(idealAffAssignmentBytes.size());
+            for (byte[] bytes : idealAffAssignmentBytes) {
+                idealAffAssignment.add((List<List<UUID>>)U.unmarshal(ctx, bytes, ldr));
+            }
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public boolean addDeploymentInfo() {
-        return false;
+    @Override public byte directType() {
+        return -38;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 7;
     }
 
     /** {@inheritDoc} */
@@ -289,19 +277,19 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeByteArray("affAssignmentBytes", affAssignmentBytes))
+                if (!writer.writeCollection("affAssignmentIdsBytes", affAssignmentIdsBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeByteArray("affAssignmentIdsBytes", affAssignmentIdsBytes))
+                if (!writer.writeCollection("cacheIds", cacheIds, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeByteArray("idealAffAssignmentBytes", idealAffAssignmentBytes))
+                if (!writer.writeCollection("idealAffAssignmentBytes", idealAffAssignmentBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -329,7 +317,7 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
 
         switch (reader.state()) {
             case 3:
-                affAssignmentBytes = reader.readByteArray("affAssignmentBytes");
+                affAssignmentIdsBytes = reader.readCollection("affAssignmentIdsBytes", MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -337,7 +325,7 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
                 reader.incrementState();
 
             case 4:
-                affAssignmentIdsBytes = reader.readByteArray("affAssignmentIdsBytes");
+                cacheIds = reader.readCollection("cacheIds", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -345,7 +333,7 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
                 reader.incrementState();
 
             case 5:
-                idealAffAssignmentBytes = reader.readByteArray("idealAffAssignmentBytes");
+                idealAffAssignmentBytes = reader.readCollection("idealAffAssignmentBytes", MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -362,11 +350,11 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
 
         }
 
-        return reader.afterMessageRead(GridDhtAffinityAssignmentResponse.class);
+        return reader.afterMessageRead(GridDhtAffinityMultiAssignmentResponse.class);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtAffinityAssignmentResponse.class, this);
+        return S.toString(GridDhtAffinityMultiAssignmentResponse.class, this);
     }
 }
