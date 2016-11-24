@@ -772,7 +772,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (globalState == ACTIVE){
                 if (!ctx.clientNode())
-                    sharedCtx.database().beforeActivate();
+                    sharedCtx.database().lock();
 
                 sharedCtx.wal().onKernalStart(false);
 
@@ -1108,7 +1108,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache global state.
      */
     public CacheState globalState() {
-        if (activateInProgress)
+        if (activateInProgress || cacheReadyFut != null && !cacheReadyFut.isDone())
             return INACTIVE;
 
         return globalState;
@@ -2591,7 +2591,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             try {
                 //if call on client node, then send compute to server node for activate
-                if (ctx.config().isClientMode()) {
+                if (ctx.clientNode()) {
                     AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
 
                     List<ClusterNode> nodes = ctx.discovery().serverNodes(topVer);
@@ -2602,6 +2602,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     IgniteCompute comp = ((ClusterGroupAdapter)ctx.cluster().get().forNode(crd))
                         .compute().withAsync();
+
+                    if (log.isDebugEnabled())
+                        log.debug("Send activation request from client node [id=" +
+                            ctx.localNodeId() + " topVer=" + topVer + " ]");
 
                     comp.run(new ClientActivationRequestCompute());
 
@@ -2653,7 +2657,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 }
                             }
 
-                            //todo really need?
                             for (CacheConfiguration cfg : ctx.config().getCacheConfiguration()) {
                                 if (!savedCacheNames.contains(cfg.getName()))
                                     cfgs.add(cfg);
@@ -2666,6 +2669,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         for (CacheConfiguration cfg : cfgs)
                             reqs.add(createRequest(cfg, internalCaches));
 
+                        if (log.isDebugEnabled())
+                            log.debug("Send activation request from server node [id=" +
+                                ctx.localNodeId() + " topVer=" + ctx.discovery().topologyVersionEx() +
+                                " reqs=" + reqs + " ]");
+
                         //create futures and send requests
                         initiateCacheChanges(reqs, true);
                     }finally {
@@ -2674,6 +2682,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
             }
             catch (IgniteCheckedException e) {
+                U.log(log, e);
+
                 actFut.onDone(e);
             }
 
@@ -4277,6 +4287,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         /**
+         *
          */
         public void setRemaining(AffinityTopologyVersion topVer) {
             Collection<ClusterNode> nodes = ctx.discovery().nodes(topVer);
@@ -4292,7 +4303,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         /**
-         * @param msg Message.
+         * @param msg Activation message response.
          */
         public void onResponse(GridActivationMessageResponse msg) {
             assert msg != null;
