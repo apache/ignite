@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         /** Keep references to created delegates. */
         // ReSharper disable once CollectionNeverQueried.Local
-        private readonly List<Delegate> _delegates = new List<Delegate>(6);
+        private readonly List<Delegate> _delegates = new List<Delegate>(5);
 
         /** Handlers array. */
         private readonly InLongOutLongHandler[] _inLongOutLongHandlers = new InLongOutLongHandler[62];
