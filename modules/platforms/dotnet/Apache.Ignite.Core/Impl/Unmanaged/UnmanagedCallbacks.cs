@@ -298,248 +298,59 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region IMPLEMENTATION: GENERAL PURPOSE
 
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private long InLongOutLong(void* target, int type, long val)
         {
-            if (type < 0 || type > _inLongOutLongHandlers.Length)
-                throw new InvalidOperationException("Invalid callback code: " + type);
-
-            var hnd = _inLongOutLongHandlers[type];
-
-            if (hnd.Handler != null)
+            try
             {
-                // TODO: Unwrap SafeCall
-                return SafeCall(() => hnd.Handler(val), hnd.AllowUninitialized);
+                if (type < 0 || type > _inLongOutLongHandlers.Length)
+                    throw new InvalidOperationException("Invalid InLongOutLong callback code: " + type);
+
+                var hnd = _inLongOutLongHandlers[type];
+
+                if (hnd.Handler == null)
+                    throw new InvalidOperationException("Invalid InLongOutLong callback code: " + type);
+
+                if (!hnd.AllowUninitialized)
+                    _initEvent.Wait();
+
+                return hnd.Handler(val);
             }
-
-            var op = (UnmanagedCallbackOp) type;
-
-            switch (op)
+            catch (Exception e)
             {
-                case UnmanagedCallbackOp.CacheEntryFilterCreate:
-                    return CacheEntryFilterCreate(val);
+                _log.Error(e, "Failure in Java callback");
 
-                case UnmanagedCallbackOp.CacheEntryFilterApply:
-                    return CacheEntryFilterApply(val);
+                UU.ThrowToJava(_ctx.NativeContext, e);
 
-                case UnmanagedCallbackOp.CacheEntryFilterDestroy:
-                    CacheEntryFilterDestroy(val);
-                    return 0;
-
-                case UnmanagedCallbackOp.CacheInvoke:
-                    CacheInvoke(val);
-                    return 0;
-
-                case UnmanagedCallbackOp.ComputeTaskMap:
-                    ComputeTaskMap(val);
-                    return 0;
-
-                case UnmanagedCallbackOp.ComputeTaskJobResult:
-                    return ComputeTaskJobResult(val);
-
-                case UnmanagedCallbackOp.ComputeTaskReduce:
-                    ComputeTaskReduce(val);
-                    return 0;
-
-                case UnmanagedCallbackOp.ComputeJobCreate:
-                    return ComputeJobCreate(val);
-
-                case UnmanagedCallbackOp.ComputeJobExecute:
-                    ComputeJobExecute(val);
-                    return 0;
-
-                case UnmanagedCallbackOp.ComputeJobCancel:
-                    ComputeJobCancel(val);
-                    return 0;
-
-                case UnmanagedCallbackOp.ComputeJobDestroy:
-                    ComputeJobDestroy(val);
-                    return 0;
-
-                case UnmanagedCallbackOp.ContinuousQueryListenerApply:
-                    ContinuousQueryListenerApply(val);
-                    return 0;
-
-                case UnmanagedCallbackOp.ContinuousQueryFilterCreate:
-                    return ContinuousQueryFilterCreate(val);
-
-                case UnmanagedCallbackOp.ContinuousQueryFilterApply:
-                    return ContinuousQueryFilterApply(val);
-
-                case UnmanagedCallbackOp.ContinuousQueryFilterRelease:
-                    ContinuousQueryFilterRelease(val);
-                    return 0;
-
-                case UnmanagedCallbackOp.NodeInfo:
-                    NodeInfo(val);
-                    return 0;
-
-                case UnmanagedCallbackOp.MessagingFilterCreate:
-                    return MessagingFilterCreate(val);
-
-                case UnmanagedCallbackOp.MessagingFilterDestroy:
-                    MessagingFilterDestroy(val);
-                    return 0;
-
-                case UnmanagedCallbackOp.EventFilterCreate:
-                    return EventFilterCreate(val);
-
-                case UnmanagedCallbackOp.EventFilterDestroy:
-                    EventFilterDestroy(val);
-                    return 0;
-
-                case UnmanagedCallbackOp.ServiceInit:
-                    return ServiceInit(val);
-
-                case UnmanagedCallbackOp.ServiceExecute:
-                    ServiceExecute(val);
-                    return 0;
-
-                case UnmanagedCallbackOp.ServiceCancel:
-                    ServiceCancel(val);
-                    return 0;
-
-                case UnmanagedCallbackOp.ServiceInvokeMethod:
-                    ServiceInvokeMethod(val);
-                    return 0;
-
-                case UnmanagedCallbackOp.ClusterNodeFilterApply:
-                    return ClusterNodeFilterApply(val);
-
-                case UnmanagedCallbackOp.OnStop:
-                    OnStop();
-                    return 0;
-
-                case UnmanagedCallbackOp.OnClientDisconnected:
-                    OnClientDisconnected();
-                    return 0;
-
-                case UnmanagedCallbackOp.OnClientReconnected:
-                    OnClientReconnected(val != 0);
-                    return 0;
-
-                case UnmanagedCallbackOp.AffinityFunctionPartition:
-                    return AffinityFunctionPartition(val);
-
-                case UnmanagedCallbackOp.AffinityFunctionAssignPartitions:
-                    AffinityFunctionAssignPartitions(val);
-                    return 0;
-
-                case UnmanagedCallbackOp.AffinityFunctionRemoveNode:
-                    AffinityFunctionRemoveNode(val);
-                    return 0;
-
-                case UnmanagedCallbackOp.AffinityFunctionDestroy:
-                    AffinityFunctionDestroy(val);
-                    return 0;
-
-                default:
-                    // TODO: Throw to Java!
-                    throw new InvalidOperationException("Invalid callback code: " + type);
+                return 0;
             }
         }
 
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private long InLongLongLongObjectOutLong(void* target, int type, long val1, long val2, long val3, void* arg)
         {
-            var op = (UnmanagedCallbackOp)type;
-
-            switch (op)
+            try
             {
-                case UnmanagedCallbackOp.AffinityFunctionInit:
-                    return AffinityFunctionInit(val1, arg);
+                if (type < 0 || type > _inLongLongLongObjectOutLongHandlers.Length)
+                    throw new InvalidOperationException("Invalid InLongLongLongObjectOutLong callback code: " + type);
 
-                case UnmanagedCallbackOp.ComputeTaskLocalJobResult:
-                    return ComputeTaskLocalJobResult(val1, val2);
+                var hnd = _inLongLongLongObjectOutLongHandlers[type];
 
-                case UnmanagedCallbackOp.ComputeTaskComplete:
-                    ComputeTaskComplete(val1, val2);
-                    return 0;
+                if (hnd.Handler == null)
+                    throw new InvalidOperationException("Invalid InLongLongLongObjectOutLong callback code: " + type);
 
-                case UnmanagedCallbackOp.ComputeJobSerialize:
-                    return ComputeJobSerialize(val1, val2);
+                if (!hnd.AllowUninitialized)
+                    _initEvent.Wait();
 
-                case UnmanagedCallbackOp.ComputeJobExecuteLocal:
-                    ComputeJobExecuteLocal(val1, val2);
-                    return 0;
+                return hnd.Handler(val1, val2, val3, arg);
+            }
+            catch (Exception e)
+            {
+                _log.Error(e, "Failure in Java callback");
 
-                case UnmanagedCallbackOp.DataStreamerTopologyUpdate:
-                    DataStreamerTopologyUpdate(val1, val2, (int) val3);
-                    return 0;
+                UU.ThrowToJava(_ctx.NativeContext, e);
 
-                case UnmanagedCallbackOp.DataStreamerStreamReceiverInvoke:
-                    DataStreamerStreamReceiverInvoke(arg, val1);
-                    return 0;
-
-                case UnmanagedCallbackOp.FutureByteResult:
-                    FutureByteResult(val1, val2);
-                    return 0;
-
-                case UnmanagedCallbackOp.FutureBoolResult:
-                    FutureBoolResult(val1, val2);
-                    return 0;
-
-                case UnmanagedCallbackOp.FutureShortResult:
-                    FutureShortResult(val1, val2);
-                    return 0;
-
-                case UnmanagedCallbackOp.FutureCharResult:
-                    FutureCharResult(val1, val2);
-                    return 0;
-
-                case UnmanagedCallbackOp.FutureIntResult:
-                    FutureIntResult(val1, val2);
-                    return 0;
-
-                case UnmanagedCallbackOp.FutureFloatResult:
-                    FutureFloatResult(val1, val2);
-                    return 0;
-
-                case UnmanagedCallbackOp.FutureLongResult:
-                    FutureLongResult(val1, val2);
-                    return 0;
-
-                case UnmanagedCallbackOp.FutureDoubleResult:
-                    FutureDoubleResult(val1, val2);
-                    return 0;
-
-                case UnmanagedCallbackOp.FutureObjectResult:
-                    FutureObjectResult(val1, val2);
-                    return 0;
-
-                case UnmanagedCallbackOp.FutureNullResult:
-                    FutureNullResult(val1);
-                    return 0;
-
-                case UnmanagedCallbackOp.FutureError:
-                    FutureError(val1, val2);
-                    return 0;
-
-                case UnmanagedCallbackOp.LifecycleOnEvent:
-                    LifecycleOnEvent(val1, val2);
-                    return 0;
-
-                case UnmanagedCallbackOp.MemoryReallocate:
-                    MemoryReallocate(val1, (int) val2);
-                    return 0;
-
-                case UnmanagedCallbackOp.MessagingFilterApply:
-                    return MessagingFilterApply(val1, val2);
-
-                case UnmanagedCallbackOp.EventFilterApply:
-                    return EventFilterApply(val1, val2);
-
-                case UnmanagedCallbackOp.OnStart:
-                    OnStart(arg, val1);
-                    return 0;
-
-                case UnmanagedCallbackOp.ExtensionInLongOutLong:
-                    return ExtensionCallbackInLongOutLong((int) val1);
-
-                case UnmanagedCallbackOp.ExtensionInLongLongOutLong:
-                    return ExtensionCallbackInLongLongOutLong((int) val1, val2, val3);
-
-                default:
-                    // TODO: Throw to Java!
-                    throw new InvalidOperationException("Invalid callback code: " + op);
+                return 0;
             }
         }
 
@@ -700,89 +511,76 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return 0;
         }
 
-        private void ComputeTaskComplete(long taskPtr, long memPtr)
+        private long ComputeTaskComplete(long taskPtr, long memPtr, long unused, void* arg)
         {
-            SafeCall(() =>
-            {
-                var task = _handleRegistry.Get<IComputeTaskHolder>(taskPtr, true);
+            var task = _handleRegistry.Get<IComputeTaskHolder>(taskPtr, true);
 
-                if (memPtr == 0)
-                    task.Complete(taskPtr);
-                else
-                {
-                    using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                    {
-                        task.CompleteWithError(taskPtr, stream);
-                    }
-                }
-            });
-        }
-
-        private int ComputeJobSerialize(long jobPtr, long memPtr)
-        {
-            return SafeCall(() =>
+            if (memPtr == 0)
+                task.Complete(taskPtr);
+            else
             {
                 using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
-                    return Job(jobPtr).Serialize(stream) ? 1 : 0;
+                    task.CompleteWithError(taskPtr, stream);
                 }
-            });
+            }
+
+            return 0;
+        }
+
+        private long ComputeJobSerialize(long jobPtr, long memPtr, long unused, void* arg)
+        {
+            using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
+            {
+                return Job(jobPtr).Serialize(stream) ? 1 : 0;
+            }
         }
 
         private long ComputeJobCreate(long memPtr)
         {
-            return SafeCall(() =>
+            using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    ComputeJobHolder job = ComputeJobHolder.CreateJob(_ignite, stream);
+                ComputeJobHolder job = ComputeJobHolder.CreateJob(_ignite, stream);
 
-                    return _handleRegistry.Allocate(job);
-                }
-            });
+                return _handleRegistry.Allocate(job);
+            }
         }
 
-        private void ComputeJobExecuteLocal(long jobPtr, long cancel)
+        private long ComputeJobExecuteLocal(long jobPtr, long cancel)
         {
-            SafeCall(() =>
-            {
-                var job = Job(jobPtr);
+            Job(jobPtr).ExecuteLocal(cancel == 1);
 
-                job.ExecuteLocal(cancel == 1);
-            });
+            return 0;
         }
 
-        private void ComputeJobExecute(long memPtr)
+        private long ComputeJobExecute(long memPtr)
         {
-            SafeCall(() =>
+            using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    var job = Job(stream.ReadLong());
+                var job = Job(stream.ReadLong());
 
-                    var cancel = stream.ReadBool();
+                var cancel = stream.ReadBool();
 
-                    stream.Reset();
+                stream.Reset();
 
-                    job.ExecuteRemote(stream, cancel);
-                }
-            });
+                job.ExecuteRemote(stream, cancel);
+            }
+
+            return 0;
         }
 
-        private void ComputeJobCancel(long jobPtr)
+        private long ComputeJobCancel(long jobPtr)
         {
-            SafeCall(() =>
-            {
-                Job(jobPtr).Cancel();
-            });
+            Job(jobPtr).Cancel();
+
+            return 0;
         }
 
-        private void ComputeJobDestroy(long jobPtr)
+        private long ComputeJobDestroy(long jobPtr)
         {
-            SafeCall(() =>
-            {
-                _handleRegistry.Release(jobPtr);
-            });
+            _handleRegistry.Release(jobPtr);
+
+            return 0;
         }
 
         /// <summary>
@@ -809,65 +607,57 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region  IMPLEMENTATION: CONTINUOUS QUERY
 
-        private void ContinuousQueryListenerApply(long memPtr)
+        private long ContinuousQueryListenerApply(long memPtr)
         {
-            SafeCall(() =>
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    var hnd = _handleRegistry.Get<IContinuousQueryHandleImpl>(stream.ReadLong());
+                var hnd = _handleRegistry.Get<IContinuousQueryHandleImpl>(stream.ReadLong());
 
-                    hnd.Apply(stream);
-                }
-            });
+                hnd.Apply(stream);
+
+                return 0;
+            }
         }
 
         [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
         private long ContinuousQueryFilterCreate(long memPtr)
         {
-            return SafeCall(() =>
+            // 1. Unmarshal filter holder.
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                // 1. Unmarshal filter holder.
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    var reader = _ignite.Marshaller.StartUnmarshal(stream);
+                var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
-                    var filterHolder = reader.ReadObject<ContinuousQueryFilterHolder>();
+                var filterHolder = reader.ReadObject<ContinuousQueryFilterHolder>();
 
-                    // 2. Create real filter from it's holder.
-                    var filter = (IContinuousQueryFilter)DelegateTypeDescriptor.GetContinuousQueryFilterCtor(
-                        filterHolder.Filter.GetType())(filterHolder.Filter, filterHolder.KeepBinary);
+                // 2. Create real filter from it's holder.
+                var filter = (IContinuousQueryFilter) DelegateTypeDescriptor.GetContinuousQueryFilterCtor(
+                    filterHolder.Filter.GetType())(filterHolder.Filter, filterHolder.KeepBinary);
 
-                    // 3. Inject grid.
-                    filter.Inject(_ignite);
+                // 3. Inject grid.
+                filter.Inject(_ignite);
 
-                    // 4. Allocate GC handle.
-                    return filter.Allocate();
-                }
-            });
+                // 4. Allocate GC handle.
+                return filter.Allocate();
+            }
         }
 
-        private int ContinuousQueryFilterApply(long memPtr)
+        private long ContinuousQueryFilterApply(long memPtr)
         {
-            return SafeCall(() =>
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    var holder = _handleRegistry.Get<IContinuousQueryFilter>(stream.ReadLong());
+                var holder = _handleRegistry.Get<IContinuousQueryFilter>(stream.ReadLong());
 
-                    return holder.Evaluate(stream) ? 1 : 0;
-                }
-            });
+                return holder.Evaluate(stream) ? 1 : 0;
+            }
         }
 
-        private void ContinuousQueryFilterRelease(long filterPtr)
+        private long ContinuousQueryFilterRelease(long filterPtr)
         {
-            SafeCall(() =>
-            {
-                var holder = _handleRegistry.Get<IContinuousQueryFilter>(filterPtr);
+            var holder = _handleRegistry.Get<IContinuousQueryFilter>(filterPtr);
 
-                holder.Release();
-            });
+            holder.Release();
+
+            return 0;
         }
 
         #endregion
@@ -1512,48 +1302,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 _handleRegistry.Release(ptr);
             });
-        }
-
-        #endregion
-
-        #region HELPERS
-
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        private void SafeCall(Action func, bool allowUnitialized = false)
-        {
-            if (!allowUnitialized)
-                _initEvent.Wait();
-
-            try
-            {
-                func();
-            }
-            catch (Exception e)
-            {
-                _log.Error(e, "Failure in Java callback");
-
-                UU.ThrowToJava(_ctx.NativeContext, e);
-            }
-        }
-
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        private T SafeCall<T>(Func<T> func, bool allowUnitialized = false)
-        {
-            if (!allowUnitialized)
-                _initEvent.Wait();
-
-            try
-            {
-                return func();
-            }
-            catch (Exception e)
-            {
-                _log.Error(e, "Failure in Java callback");
-
-                UU.ThrowToJava(_ctx.NativeContext, e);
-
-                return default(T);
-            }
         }
 
         #endregion
