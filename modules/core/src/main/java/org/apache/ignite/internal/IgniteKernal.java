@@ -179,6 +179,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DAEMON;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_ASCII;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIENT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_STARVATION_CHECK_INTERVAL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
@@ -1632,7 +1633,16 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private boolean isRestEnabled() {
         assert cfg != null;
 
-        return cfg.getConnectorConfiguration() != null;
+        return cfg.getConnectorConfiguration() != null &&
+            // By default rest processor doesn't start on client nodes.
+            (!isClientNode() || (isClientNode() && IgniteSystemProperties.getBoolean(IGNITE_REST_START_ON_CLIENT)));
+    }
+
+    /**
+     * @return {@code True} if node client or daemon otherwise {@code false}.
+     */
+    private boolean isClientNode() {
+        return cfg.isClientMode() || cfg.isDaemon();
     }
 
     /**

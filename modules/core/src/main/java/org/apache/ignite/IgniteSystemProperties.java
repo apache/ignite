@@ -110,6 +110,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_REST_MAX_TASK_RESULTS = "IGNITE_REST_MAX_TASK_RESULTS";
 
     /**
+     * This property allows to override default behavior that rest processor
+     * doesn't start on client node. If set {@code true} than rest processor will be started on client node.
+     */
+    public static final String IGNITE_REST_START_ON_CLIENT = "IGNITE_REST_START_ON_CLIENT";
+
+    /**
      * This property defines the maximum number of attempts to remap near get to the same
      * primary node. Remapping may be needed when topology is changed concurrently with
      * get operation.
