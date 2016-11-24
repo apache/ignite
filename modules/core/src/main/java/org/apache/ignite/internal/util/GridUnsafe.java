@@ -53,7 +53,7 @@ public abstract class GridUnsafe {
 
     /** Per-byte copy threshold. */
     private static final long PER_BYTE_THRESHOLD =
-        IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD, Long.MAX_VALUE);
+        IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD, 0L);
 
     /** Big endian. */
     public static final boolean BIG_ENDIAN = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
