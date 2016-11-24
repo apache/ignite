@@ -249,7 +249,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             AddHandler(UnmanagedCallbackOp.FutureNullResult, FutureNullResult);
             AddHandler(UnmanagedCallbackOp.FutureError, FutureError);
             AddHandler(UnmanagedCallbackOp.LifecycleOnEvent, LifecycleOnEvent);
-            AddHandler(UnmanagedCallbackOp.MemoryReallocate, MemoryReallocate);
+            AddHandler(UnmanagedCallbackOp.MemoryReallocate, MemoryReallocate, true);
             AddHandler(UnmanagedCallbackOp.MessagingFilterCreate, MessagingFilterCreate);
             AddHandler(UnmanagedCallbackOp.MessagingFilterApply, MessagingFilterApply);
             AddHandler(UnmanagedCallbackOp.MessagingFilterDestroy, MessagingFilterDestroy);
@@ -262,10 +262,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             AddHandler(UnmanagedCallbackOp.ServiceInvokeMethod, ServiceInvokeMethod);
             AddHandler(UnmanagedCallbackOp.ClusterNodeFilterApply, ClusterNodeFilterApply);
             AddHandler(UnmanagedCallbackOp.NodeInfo, NodeInfo);
-            AddHandler(UnmanagedCallbackOp.OnStart, OnStart);
-            AddHandler(UnmanagedCallbackOp.OnStop, OnStop);
-            AddHandler(UnmanagedCallbackOp.ExtensionInLongOutLong, ExtensionInLongOutLong);
-            AddHandler(UnmanagedCallbackOp.ExtensionInLongLongOutLong, ExtensionInLongLongOutLong);
+            AddHandler(UnmanagedCallbackOp.OnStart, OnStart, true);
+            AddHandler(UnmanagedCallbackOp.OnStop, OnStop, true);
+            AddHandler(UnmanagedCallbackOp.ExtensionInLongLongOutLong, ExtensionCallbackInLongLongOutLong, true);
             AddHandler(UnmanagedCallbackOp.OnClientDisconnected, OnClientDisconnected);
             AddHandler(UnmanagedCallbackOp.OnClientReconnected, OnClientReconnected);
             AddHandler(UnmanagedCallbackOp.AffinityFunctionInit, AffinityFunctionInit);
@@ -872,30 +871,22 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region IMPLEMENTATION: EXTENSIONS
 
-        private long ExtensionCallbackInLongOutLong(int op)
+        private long ExtensionCallbackInLongLongOutLong(long op, long arg1, long arg2, void* arg)
         {
-            throw new InvalidOperationException("Unsupported operation type: " + op);
-        }
-
-        private long ExtensionCallbackInLongLongOutLong(int op, long arg1, long arg2)
-        {
-            return SafeCall(() =>
+            switch (op)
             {
-                switch (op)
-                {
-                    case OpPrepareDotNet:
-                        using (var inStream = IgniteManager.Memory.Get(arg1).GetStream())
-                        using (var outStream = IgniteManager.Memory.Get(arg2).GetStream())
-                        {
-                            Ignition.OnPrepare(inStream, outStream, _handleRegistry, _log);
+                case OpPrepareDotNet:
+                    using (var inStream = IgniteManager.Memory.Get(arg1).GetStream())
+                    using (var outStream = IgniteManager.Memory.Get(arg2).GetStream())
+                    {
+                        Ignition.OnPrepare(inStream, outStream, _handleRegistry, _log);
 
-                            return 0;
-                        }
+                        return 0;
+                    }
 
-                    default:
-                        throw new InvalidOperationException("Unsupported operation type: " + op);
-                }
-            }, op == OpPrepareDotNet);
+                default:
+                    throw new InvalidOperationException("Unsupported operation type: " + op);
+            }
         }
 
         #endregion
@@ -904,31 +895,27 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private long EventFilterCreate(long memPtr)
         {
-            return SafeCall(() => _handleRegistry.Allocate(RemoteListenEventFilter.CreateInstance(memPtr, _ignite)));
+            return _handleRegistry.Allocate(RemoteListenEventFilter.CreateInstance(memPtr, _ignite));
         }
 
-        private int EventFilterApply(long ptr, long memPtr)
+        private long EventFilterApply(long ptr, long memPtr, long unused, void* arg)
         {
-            return SafeCall(() =>
+            var holder = _ignite.HandleRegistry.Get<IInteropCallback>(ptr, false);
+
+            if (holder == null)
+                return 0;
+
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                var holder = _ignite.HandleRegistry.Get<IInteropCallback>(ptr, false);
-
-                if (holder == null)
-                    return 0;
-
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    return holder.Invoke(stream);
-                }
-            });
+                return holder.Invoke(stream);
+            }
         }
 
-        private void EventFilterDestroy(long ptr)
+        private long EventFilterDestroy(long ptr)
         {
-            SafeCall(() =>
-            {
-                _ignite.HandleRegistry.Release(ptr);
-            });
+            _ignite.HandleRegistry.Release(ptr);
+
+            return 0;
         }
 
         #endregion
@@ -998,76 +985,72 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
-        private void ServiceInvokeMethod(long memPtr)
+        private long ServiceInvokeMethod(long memPtr)
         {
-            SafeCall(() =>
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    var svc = _handleRegistry.Get<IService>(stream.ReadLong(), true);
+                var svc = _handleRegistry.Get<IService>(stream.ReadLong(), true);
 
-                    string mthdName;
-                    object[] mthdArgs;
+                string mthdName;
+                object[] mthdArgs;
 
-                    ServiceProxySerializer.ReadProxyMethod(stream, _ignite.Marshaller, out mthdName, out mthdArgs);
+                ServiceProxySerializer.ReadProxyMethod(stream, _ignite.Marshaller, out mthdName, out mthdArgs);
 
-                    var result = ServiceProxyInvoker.InvokeServiceMethod(svc, mthdName, mthdArgs);
+                var result = ServiceProxyInvoker.InvokeServiceMethod(svc, mthdName, mthdArgs);
 
-                    stream.Reset();
+                stream.Reset();
 
-                    ServiceProxySerializer.WriteInvocationResult(stream, _ignite.Marshaller, result.Key, result.Value);
+                ServiceProxySerializer.WriteInvocationResult(stream, _ignite.Marshaller, result.Key, result.Value);
 
-                    stream.SynchronizeOutput();
-                }
-            });
+                stream.SynchronizeOutput();
+
+                return 0;
+            }
         }
 
-        private int ClusterNodeFilterApply(long memPtr)
+        private long ClusterNodeFilterApply(long memPtr)
         {
-            return SafeCall(() =>
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    var reader = _ignite.Marshaller.StartUnmarshal(stream);
+                var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
-                    var filter = reader.ReadObject<IClusterNodeFilter>();
+                var filter = reader.ReadObject<IClusterNodeFilter>();
 
-                    return filter.Invoke(_ignite.GetNode(reader.ReadGuid())) ? 1 : 0;
-                }
-            });
+                return filter.Invoke(_ignite.GetNode(reader.ReadGuid())) ? 1 : 0;
+            }
         }
 
         #endregion
 
         #region IMPLEMENTATION: MISCELLANEOUS
 
-        private void NodeInfo(long memPtr)
+        private long NodeInfo(long memPtr)
         {
-            SafeCall(() => _ignite.UpdateNodeInfo(memPtr));
+            _ignite.UpdateNodeInfo(memPtr);
+
+            return 0;
         }
 
-        private void MemoryReallocate(long memPtr, int cap)
+        private long MemoryReallocate(long memPtr, long cap, long unused, void* arg)
         {
-            SafeCall(() =>
+            IgniteManager.Memory.Get(memPtr).Reallocate((int)cap);
+
+            return 0;
+        }
+
+        private long OnStart(long memPtr, long unused, long unused1, void* proc)
+        {
+            var proc0 = UU.Acquire(_ctx, proc);
+
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                IgniteManager.Memory.Get(memPtr).Reallocate(cap);
-            }, true);
+                Ignition.OnStart(proc0, stream);
+            }
+
+            return 0;
         }
 
-        private void OnStart(void* proc, long memPtr)
-        {
-            SafeCall(() =>
-            {
-                var proc0 = UnmanagedUtils.Acquire(_ctx, proc);
-
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    Ignition.OnStart(proc0, stream);
-                }
-            }, true);
-        }
-
-        private void OnStop()
+        private long OnStop(long unused)
         {
             Marshal.FreeHGlobal(_cbsPtr);
 
@@ -1082,6 +1065,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
             if (ignite != null)
                 ignite.AfterNodeStop();
+
+            return 0;
         }
 
         private void Error(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars,
