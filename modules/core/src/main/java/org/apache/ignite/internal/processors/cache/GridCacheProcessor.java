@@ -2870,7 +2870,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                                 sendActivationResponse(req.requestId(), req.initiatingNodeId(), null);
                             }
-                            catch (IgniteCheckedException e) {
+                            catch (Exception e) {
                                 sendActivationResponse(req.requestId(), req.initiatingNodeId(), e);
                             }
                         }
@@ -4113,7 +4113,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         boolean failed = false;
 
-        final boolean isServerNode = !ctx.config().isClientMode();
+        final boolean isServerNode = !ctx.clientNode();
 
         glStLock.lock();
 
@@ -4144,7 +4144,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             ctx.service().onUtilityCacheStarted();
         }
-        catch (IgniteCheckedException e) {
+        catch (Exception e) {
             U.error(log, e);
 
             failed = true;
@@ -4181,7 +4181,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         cacheReadyFut.onDone();
 
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (Exception e) {
                         U.error(log, e);
 
                         //send fail to node which invoke activate
