@@ -118,6 +118,8 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
         e.addQueryField("firstName", String.class.getName(), null);
         e.addQueryField("lastName", String.class.getName(), null);
 
+        e.setKeyFields(Collections.<String>emptySet());
+
         ccfg.setQueryEntities(Collections.singletonList(e));
 
         return cfg;
