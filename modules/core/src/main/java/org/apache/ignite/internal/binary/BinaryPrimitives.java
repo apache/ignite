@@ -60,7 +60,7 @@ public abstract class BinaryPrimitives {
     public static byte[] readByteArray(byte[] arr, int off, int len) {
         byte[] arr0 = new byte[len];
 
-        GridUnsafe.copyMemory(arr, GridUnsafe.BYTE_ARR_OFF + off, arr0, GridUnsafe.BYTE_ARR_OFF, len);
+        System.arraycopy(arr, off, arr0, 0, len);
 
         return arr0;
     }

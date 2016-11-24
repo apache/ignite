@@ -265,9 +265,6 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
  */
 @SuppressWarnings({"UnusedReturnValue", "UnnecessaryFullyQualifiedName", "RedundantStringConstructorCall"})
 public abstract class IgniteUtils {
-    /** {@code True} if {@code unsafe} should be used for array copy. */
-    private static final boolean UNSAFE_BYTE_ARR_CP = unsafeByteArrayCopyAvailable();
-
     /** Sun-specific JDK constructor factory for objects that don't have empty constructor. */
     private static final Method CTOR_FACTORY;
 
@@ -8482,28 +8479,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * As long as array copying uses JVM-private API, which is not guaranteed
-     * to be available on all JVM, this method should be called to ensure
-     * logic could work properly.
-     *
-     * @return {@code True} if unsafe copying can work on the current JVM or
-     *      {@code false} if it can't.
-     */
-    @SuppressWarnings("TypeParameterExtendsFinalClass")
-    private static boolean unsafeByteArrayCopyAvailable() {
-        try {
-            Class<? extends Unsafe> unsafeCls = Unsafe.class;
-
-            unsafeCls.getMethod("copyMemory", Object.class, long.class, Object.class, long.class, long.class);
-
-            return true;
-        }
-        catch (Exception ignored) {
-            return false;
-        }
-    }
-
-    /**
      * @param src Buffer to copy from (length included).
      * @param off Offset in source buffer.
      * @param resBuf Result buffer.
@@ -8514,10 +8489,7 @@ public abstract class IgniteUtils {
     public static int arrayCopy(byte[] src, int off, byte[] resBuf, int resOff, int len) {
         assert resBuf.length >= resOff + len;
 
-        if (UNSAFE_BYTE_ARR_CP)
-            GridUnsafe.copyMemory(src, GridUnsafe.BYTE_ARR_OFF + off, resBuf, GridUnsafe.BYTE_ARR_OFF + resOff, len);
-        else
-            System.arraycopy(src, off, resBuf, resOff, len);
+        System.arraycopy(src, off, resBuf, resOff, len);
 
         return resOff + len;
     }
