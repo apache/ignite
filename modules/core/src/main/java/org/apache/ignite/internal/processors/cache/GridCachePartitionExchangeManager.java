@@ -30,7 +30,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
@@ -1387,8 +1386,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             int cnt = 0;
 
-            Set<IgniteInternalFuture<Boolean>> rebFuts = null;
-
             while (!isCancelled()) {
                 GridDhtPartitionsExchangeFuture exchFut = null;
 
@@ -1557,11 +1554,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             orderMap.get(order).add(cacheId);
                         }
 
-                        rebFuts = new HashSet<>();
-
                         Runnable r = null;
 
                         List<String> rebList = new LinkedList<>();
+
+                        boolean assignsCancelled = false;
 
                         for (Integer order : orderMap.descendingKeySet()) {
                             for (Integer cacheId : orderMap.get(order)) {
@@ -1569,47 +1566,48 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                                 GridDhtPreloaderAssignments assigns = assignsMap.get(cacheId);
 
+                                if (assigns != null)
+                                    assignsCancelled |= assigns.cancelled();
+
                                 Runnable cur = cacheCtx.preloader().addAssignments(assigns,
                                     forcePreload,
                                     cnt,
                                     r);
 
-                                if (assigns!= null && !assigns.isEmpty())
-                                    rebList.add(cacheCtx.name());
+                                if (cur != null) {
+                                    rebList.add(U.maskName(cacheCtx.name()));
 
-                                rebFuts.add(cacheCtx.preloader().rebalanceFuture());
-
-                                if (cur != null)
                                     r = cur;
+                                }
                             }
                         }
 
-                        boolean rebNeed = !rebList.isEmpty();
-
-                        if (rebNeed) {
+                        if (assignsCancelled) { // Pending exchange.
+                            U.log(log, "Skipping rebalancing (obsolete exchange ID) " +
+                                "[top=" + exchFut.topologyVersion() + ", evt=" + exchFut.discoveryEvent().name() +
+                                ", node=" + exchFut.discoveryEvent().eventNode().id() + ']');
+                        }
+                        else if (r != null) {
                             Collections.reverse(rebList);
 
                             U.log(log, "Rebalancing scheduled [order=" + rebList + "]");
+
+                            if (futQ.isEmpty()) {
+                                U.log(log, "Rebalancing started " +
+                                    "[top=" + exchFut.topologyVersion() + ", evt=" + exchFut.discoveryEvent().name() +
+                                    ", node=" + exchFut.discoveryEvent().eventNode().id() + ']');
+
+                                r.run(); // Starts rebalancing routine.
+                            }
+                            else
+                                U.log(log, "Skipping rebalancing (obsolete exchange ID) " +
+                                    "[top=" + exchFut.topologyVersion() + ", evt=" + exchFut.discoveryEvent().name() +
+                                    ", node=" + exchFut.discoveryEvent().eventNode().id() + ']');
                         }
                         else
                             U.log(log, "Skipping rebalancing (nothing scheduled) " +
                                 "[top=" + exchFut.topologyVersion() + ", evt=" + exchFut.discoveryEvent().name() +
                                 ", node=" + exchFut.discoveryEvent().eventNode().id() + ']');
-
-                        if (futQ.isEmpty()) {
-                            if (rebNeed)
-                                U.log(log, "Rebalancing started " +
-                                    "[top=" + exchFut.topologyVersion() + ", evt=" + exchFut.discoveryEvent().name() +
-                                    ", node=" + exchFut.discoveryEvent().eventNode().id() + ']');
-
-                            r.run();
-                        }
-                        else {
-                            if (rebNeed)
-                                U.log(log, "Skipping rebalancing (obsolete exchange ID) " +
-                                    "[top=" + exchFut.topologyVersion() + ", evt=" + exchFut.discoveryEvent().name() +
-                                    ", node=" + exchFut.discoveryEvent().eventNode().id() + ']');
-                        }
                     }
                 }
                 catch (IgniteInterruptedCheckedException e) {

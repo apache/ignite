@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -119,6 +120,11 @@ public class GridDhtPartitionDemander {
 
     /** Cached rebalance topics. */
     private final Map<Integer, Object> rebalanceTopics;
+
+    /** Stopped event sent.
+     * Make sense for replicated cache only.
+     */
+    private final AtomicBoolean stoppedEvtSent = new AtomicBoolean();
 
     /**
      * @param cctx Cctx.
@@ -266,7 +272,7 @@ public class GridDhtPartitionDemander {
         if (delay == 0 || force) {
             final RebalanceFuture oldFut = rebalanceFut;
 
-            final RebalanceFuture fut = new RebalanceFuture(assigns, cctx, log, oldFut.isInitial(), cnt);
+            final RebalanceFuture fut = new RebalanceFuture(assigns, cctx, log, stoppedEvtSent, cnt);
 
             if (!oldFut.isInitial())
                 oldFut.cancel();
@@ -280,31 +286,40 @@ public class GridDhtPartitionDemander {
 
             rebalanceFut = fut;
 
-            if (assigns.isEmpty()) {
+            if (assigns.cancelled()) { // Pending exchange.
+                if (log.isDebugEnabled())
+                    log.debug("Rebalancing skipped due to cancelled assignments.");
+
+                rebalanceFut.onDone(false);
+
+                rebalanceFut.sendRebalanceFinishedEvent();
+
+                return null;
+            }
+
+            if (assigns.isEmpty()) { // Nothing to rebalance.
+                if (log.isDebugEnabled())
+                    log.debug("Rebalancing skipped due to empty assignments.");
+
+                rebalanceFut.onDone(true);
+
                 ((GridFutureAdapter)cctx.preloader().syncFuture()).onDone();
 
                 rebalanceFut.sendRebalanceFinishedEvent();
+
+                return null;
             }
 
             return new Runnable() {
                 @Override public void run() {
-                    if (next != null)
-                        rebalanceFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
-                            @Override public void apply(IgniteInternalFuture<Boolean> fut) {
-                                next.run(); // Starts next cache preloading (according to the order).
-                            }
-                        });
-
-                    if (assigns.isEmpty()) {
-                        if (log.isDebugEnabled())
-                            log.debug("Rebalancing skipped due to empty assignments.");
-
-                        rebalanceFut.onDone(true);
-
-                        return;
-                    }
-
                     try {
+                        if (next != null)
+                            rebalanceFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
+                                @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+                                    next.run(); // Starts next cache rebalancing (according to the order).
+                                }
+                            });
+
                         requestPartitions(rebalanceFut, assigns);
                     }
                     catch (ClusterTopologyCheckedException e) {
@@ -756,8 +771,10 @@ public class GridDhtPartitionDemander {
         /** */
         private static final long serialVersionUID = 1L;
 
-        /** Should EVT_CACHE_REBALANCE_STOPPED event be sent of not. */
-        private final boolean sndStoppedEvnt;
+        /**
+         * Should EVT_CACHE_REBALANCE_STOPPED event be sent of not.
+         */
+        private final AtomicBoolean stoppedEvtSent;
 
         /** */
         private final GridCacheContext<?, ?> cctx;
@@ -785,13 +802,13 @@ public class GridDhtPartitionDemander {
          * @param assigns Assigns.
          * @param cctx Context.
          * @param log Logger.
-         * @param sentStopEvnt Stop event flag.
+         * @param stoppedEvtSent Stop event flag.
          * @param updateSeq Update sequence.
          */
         RebalanceFuture(GridDhtPreloaderAssignments assigns,
             GridCacheContext<?, ?> cctx,
             IgniteLogger log,
-            boolean sentStopEvnt,
+            AtomicBoolean stoppedEvtSent,
             long updateSeq) {
             assert assigns != null;
 
@@ -799,7 +816,7 @@ public class GridDhtPartitionDemander {
             this.topVer = assigns.topologyVersion();
             this.cctx = cctx;
             this.log = log;
-            this.sndStoppedEvnt = sentStopEvnt;
+            this.stoppedEvtSent = stoppedEvtSent;
             this.updateSeq = updateSeq;
         }
 
@@ -811,7 +828,7 @@ public class GridDhtPartitionDemander {
             this.topVer = null;
             this.cctx = null;
             this.log = null;
-            this.sndStoppedEvnt = false;
+            this.stoppedEvtSent = null;
             this.updateSeq = -1;
         }
 
@@ -868,7 +885,7 @@ public class GridDhtPartitionDemander {
 
                 remaining.clear();
 
-                checkIsDone(true /* cancelled */, false);
+                checkIsDone(true /* cancelled */);
             }
 
             return true;
@@ -1004,22 +1021,20 @@ public class GridDhtPartitionDemander {
          *
          */
         private void checkIsDone() {
-            checkIsDone(false, false);
+            checkIsDone(false);
         }
 
         /**
          * @param cancelled Is cancelled.
-         * @param wasEmpty {@code True} if future was created without assignments.
          */
-        private void checkIsDone(boolean cancelled, boolean wasEmpty) {
+        private void checkIsDone(boolean cancelled) {
             if (remaining.isEmpty()) {
                 sendRebalanceFinishedEvent();
 
                 if (log.isDebugEnabled())
                     log.debug("Completed rebalance future: " + this);
 
-                if (!wasEmpty)
-                    cctx.shared().exchange().scheduleResendPartitions();
+                cctx.shared().exchange().scheduleResendPartitions();
 
                 Collection<Integer> m = new HashSet<>();
 
@@ -1048,9 +1063,13 @@ public class GridDhtPartitionDemander {
         /**
          *
          */
-        private void sendRebalanceFinishedEvent(){
-            if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_STOPPED) && (!cctx.isReplicated() || sndStoppedEvnt))
-                preloadEvent(EVT_CACHE_REBALANCE_STOPPED, exchFut.discoveryEvent());;
+        private void sendRebalanceFinishedEvent() {
+            if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_STOPPED) &&
+                (!cctx.isReplicated() || !stoppedEvtSent.get())) {
+                preloadEvent(EVT_CACHE_REBALANCE_STOPPED, exchFut.discoveryEvent());
+
+                stoppedEvtSent.set(true);
+            }
         }
 
         /** {@inheritDoc} */
