@@ -664,156 +664,119 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region IMPLEMENTATION: DATA STREAMER
 
-        private void DataStreamerTopologyUpdate(long ldrPtr, long topVer, int topSize)
+        private long DataStreamerTopologyUpdate(long ldrPtr, long topVer, long topSize, void* unused)
         {
-            SafeCall(() =>
-            {
-                var ldrRef = _handleRegistry.Get<WeakReference>(ldrPtr);
+            var ldrRef = _handleRegistry.Get<WeakReference>(ldrPtr);
 
-                if (ldrRef == null)
-                    return;
+            if (ldrRef == null)
+                return 0;
 
-                var ldr = ldrRef.Target as IDataStreamer;
+            var ldr = ldrRef.Target as IDataStreamer;
 
-                if (ldr != null)
-                    ldr.TopologyChange(topVer, topSize);
-                else
-                    _handleRegistry.Release(ldrPtr, true);
-            });
+            if (ldr != null)
+                ldr.TopologyChange(topVer, (int) topSize);
+            else
+                _handleRegistry.Release(ldrPtr, true);
+
+            return 0;
         }
 
         [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         private void DataStreamerStreamReceiverInvoke(void* cache, long memPtr)
         {
-            SafeCall(() =>
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    var rcvPtr = stream.ReadLong();
+                var rcvPtr = stream.ReadLong();
 
-                    var keepBinary = stream.ReadBool();
+                var keepBinary = stream.ReadBool();
 
-                    var reader = _ignite.Marshaller.StartUnmarshal(stream, BinaryMode.ForceBinary);
+                var reader = _ignite.Marshaller.StartUnmarshal(stream, BinaryMode.ForceBinary);
 
-                    var binaryReceiver = reader.ReadObject<BinaryObject>();
+                var binaryReceiver = reader.ReadObject<BinaryObject>();
 
-                    var receiver = _handleRegistry.Get<StreamReceiverHolder>(rcvPtr) ??
-                                   binaryReceiver.Deserialize<StreamReceiverHolder>();
+                var receiver = _handleRegistry.Get<StreamReceiverHolder>(rcvPtr) ??
+                               binaryReceiver.Deserialize<StreamReceiverHolder>();
 
-                    if (receiver != null)
-                        receiver.Receive(_ignite, new UnmanagedNonReleaseableTarget(_ctx, cache), stream, keepBinary);
-                }
-            });
+                if (receiver != null)
+                    receiver.Receive(_ignite, new UnmanagedNonReleaseableTarget(_ctx, cache), stream, keepBinary);
+            }
         }
 
         #endregion
 
         #region IMPLEMENTATION: FUTURES
 
-        private void FutureByteResult(long futPtr, long res)
+        private long FutureByteResult(long futPtr, long res, long unused, void* arg)
         {
-            SafeCall(() =>
-            {
-                ProcessFuture<byte>(futPtr, fut => { fut.OnResult((byte)res); });
-            });
+            return ProcessFuture<byte>(futPtr, fut => { fut.OnResult((byte) res); });
         }
 
-        private void FutureBoolResult(long futPtr, long res)
+        private long FutureBoolResult(long futPtr, long res, long unused, void* arg)
         {
-            SafeCall(() =>
-            {
-                ProcessFuture<bool>(futPtr, fut => { fut.OnResult(res == 1); });
-            });
+            return ProcessFuture<bool>(futPtr, fut => { fut.OnResult(res == 1); });
         }
 
-        private void FutureShortResult(long futPtr, long res)
+        private long FutureShortResult(long futPtr, long res, long unused, void* arg)
         {
-            SafeCall(() =>
-            {
-                ProcessFuture<short>(futPtr, fut => { fut.OnResult((short)res); });
-            });
+            return ProcessFuture<short>(futPtr, fut => { fut.OnResult((short)res); });
         }
 
-        private void FutureCharResult(long futPtr, long res)
+        private long FutureCharResult(long futPtr, long res, long unused, void* arg)
         {
-            SafeCall(() =>
-            {
-                ProcessFuture<char>(futPtr, fut => { fut.OnResult((char)res); });
-            });
+            return ProcessFuture<char>(futPtr, fut => { fut.OnResult((char)res); });
         }
 
-        private void FutureIntResult(long futPtr, long res)
+        private long FutureIntResult(long futPtr, long res, long unused, void* arg)
         {
-            SafeCall(() =>
-            {
-                ProcessFuture<int>(futPtr, fut => { fut.OnResult((int) res); });
-            });
+            return ProcessFuture<int>(futPtr, fut => { fut.OnResult((int) res); });
         }
 
-        private void FutureFloatResult(long futPtr, long res)
+        private long FutureFloatResult(long futPtr, long res, long unused, void* arg)
         {
-            SafeCall(() =>
-            {
-                ProcessFuture<float>(futPtr, fut => { fut.OnResult(BinaryUtils.IntToFloatBits((int) res)); });
-            });
+            return ProcessFuture<float>(futPtr, fut => { fut.OnResult(BinaryUtils.IntToFloatBits((int) res)); });
         }
 
-        private void FutureLongResult(long futPtr, long res)
+        private long FutureLongResult(long futPtr, long res, long unused, void* arg)
         {
-            SafeCall(() =>
-            {
-                ProcessFuture<long>(futPtr, fut => { fut.OnResult(res); });
-            });
+            return ProcessFuture<long>(futPtr, fut => { fut.OnResult(res); });
         }
 
-        private void FutureDoubleResult(long futPtr, long res)
+        private long FutureDoubleResult(long futPtr, long res, long unused, void* arg)
         {
-            SafeCall(() =>
-            {
-                ProcessFuture<double>(futPtr, fut => { fut.OnResult(BinaryUtils.LongToDoubleBits(res)); });
-            });
+            return ProcessFuture<double>(futPtr, fut => { fut.OnResult(BinaryUtils.LongToDoubleBits(res)); });
         }
 
-        private void FutureObjectResult(long futPtr, long memPtr)
+        private long FutureObjectResult(long futPtr, long memPtr, long unused, void* arg)
         {
-            SafeCall(() =>
-            {
-                ProcessFuture(futPtr, fut =>
-                {
-                    using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                    {
-                        fut.OnResult(stream);
-                    }
-                });
-            });
-        }
-
-        private void FutureNullResult(long futPtr)
-        {
-            SafeCall(() =>
-            {
-                ProcessFuture(futPtr, fut => { fut.OnNullResult(); });
-            });
-        }
-
-        private void FutureError(long futPtr, long memPtr)
-        {
-            SafeCall(() =>
+            return ProcessFuture(futPtr, fut =>
             {
                 using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
-                    var reader = _ignite.Marshaller.StartUnmarshal(stream);
-
-                    string errCls = reader.ReadString();
-                    string errMsg = reader.ReadString();
-                    string stackTrace = reader.ReadString();
-                    Exception inner = reader.ReadBoolean() ? reader.ReadObject<Exception>() : null;
-
-                    Exception err = ExceptionUtils.GetException(_ignite, errCls, errMsg, stackTrace, reader, inner);
-
-                    ProcessFuture(futPtr, fut => { fut.OnError(err); });
+                    fut.OnResult(stream);
                 }
             });
+        }
+
+        private long FutureNullResult(long futPtr)
+        {
+            return ProcessFuture(futPtr, fut => { fut.OnNullResult(); });
+        }
+
+        private long FutureError(long futPtr, long memPtr)
+        {
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+            {
+                var reader = _ignite.Marshaller.StartUnmarshal(stream);
+
+                string errCls = reader.ReadString();
+                string errMsg = reader.ReadString();
+                string stackTrace = reader.ReadString();
+                Exception inner = reader.ReadBoolean() ? reader.ReadObject<Exception>() : null;
+
+                Exception err = ExceptionUtils.GetException(_ignite, errCls, errMsg, stackTrace, reader, inner);
+
+                return ProcessFuture(futPtr, fut => { fut.OnError(err); });
+            }
         }
 
         /// <summary>
@@ -821,11 +784,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// </summary>
         /// <param name="futPtr">Future pointer.</param>
         /// <param name="action">Action.</param>
-        private void ProcessFuture(long futPtr, Action<IFutureInternal> action)
+        private long ProcessFuture(long futPtr, Action<IFutureInternal> action)
         {
             try
             {
                 action(_handleRegistry.Get<IFutureInternal>(futPtr, true));
+
+                return 0;
             }
             finally
             {
@@ -838,11 +803,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// </summary>
         /// <param name="futPtr">Future pointer.</param>
         /// <param name="action">Action.</param>
-        private void ProcessFuture<T>(long futPtr, Action<Future<T>> action)
+        private long ProcessFuture<T>(long futPtr, Action<Future<T>> action)
         {
             try
             {
                 action(_handleRegistry.Get<Future<T>>(futPtr, true));
+
+                return 0;
             }
             finally
             {
@@ -854,14 +821,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region IMPLEMENTATION: LIFECYCLE
 
-        private void LifecycleOnEvent(long ptr, long evt)
+        private long LifecycleOnEvent(long ptr, long evt, long unused, void* arg)
         {
-            SafeCall(() =>
-            {
-                var bean = _handleRegistry.Get<LifecycleBeanHolder>(ptr);
+            var bean = _handleRegistry.Get<LifecycleBeanHolder>(ptr);
 
-                bean.OnLifecycleEvent((LifecycleEventType)evt);
-            }, true);
+            bean.OnLifecycleEvent((LifecycleEventType) evt);
+
+            return 0;
         }
 
         #endregion
@@ -971,70 +937,65 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private long ServiceInit(long memPtr)
         {
-            return SafeCall(() =>
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                var reader = _ignite.Marshaller.StartUnmarshal(stream);
+
+                bool srvKeepBinary = reader.ReadBoolean();
+                var svc = reader.ReadObject<IService>();
+
+                ResourceProcessor.Inject(svc, _ignite);
+
+                svc.Init(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
+
+                return _handleRegistry.Allocate(svc);
+            }
+        }
+
+        private long ServiceExecute(long memPtr)
+        {
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+            {
+                var svc = _handleRegistry.Get<IService>(stream.ReadLong());
+
+                // Ignite does not guarantee that Cancel is called after Execute exits
+                // So missing handle is a valid situation
+                if (svc == null)
+                    return 0;
+
+                var reader = _ignite.Marshaller.StartUnmarshal(stream);
+
+                bool srvKeepBinary = reader.ReadBoolean();
+
+                svc.Execute(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
+
+                return 0;
+            }
+        }
+
+        private long ServiceCancel(long memPtr)
+        {
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+            {
+                long svcPtr = stream.ReadLong();
+
+                try
                 {
+                    var svc = _handleRegistry.Get<IService>(svcPtr, true);
+
                     var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
                     bool srvKeepBinary = reader.ReadBoolean();
-                    var svc = reader.ReadObject<IService>();
 
-                    ResourceProcessor.Inject(svc, _ignite);
+                    svc.Cancel(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
 
-                    svc.Init(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
-
-                    return _handleRegistry.Allocate(svc);
+                    return 0;
                 }
-            });
-        }
-
-        private void ServiceExecute(long memPtr)
-        {
-            SafeCall(() =>
-            {
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                finally
                 {
-                    var svc = _handleRegistry.Get<IService>(stream.ReadLong());
-
-                    // Ignite does not guarantee that Cancel is called after Execute exits
-                    // So missing handle is a valid situation
-                    if (svc == null)
-                        return;
-
-                    var reader = _ignite.Marshaller.StartUnmarshal(stream);
-
-                    bool srvKeepBinary = reader.ReadBoolean();
-
-                    svc.Execute(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
+                    _ignite.HandleRegistry.Release(svcPtr);
                 }
-            });
-        }
-
-        private void ServiceCancel(long memPtr)
-        {
-            SafeCall(() =>
-            {
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    long svcPtr = stream.ReadLong();
-
-                    try
-                    {
-                        var svc = _handleRegistry.Get<IService>(svcPtr, true);
-
-                        var reader = _ignite.Marshaller.StartUnmarshal(stream);
-
-                        bool srvKeepBinary = reader.ReadBoolean();
-
-                        svc.Cancel(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
-                    }
-                    finally
-                    {
-                        _ignite.HandleRegistry.Release(svcPtr);
-                    }
-                }
-            });
+            }
         }
 
         private void ServiceInvokeMethod(long memPtr)
