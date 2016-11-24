@@ -835,36 +835,29 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private long MessagingFilterCreate(long memPtr)
         {
-            return SafeCall(() =>
-            {
-                MessageListenerHolder holder = MessageListenerHolder.CreateRemote(_ignite, memPtr);
+            MessageListenerHolder holder = MessageListenerHolder.CreateRemote(_ignite, memPtr);
 
-                return _ignite.HandleRegistry.AllocateSafe(holder);
-            });
+            return _ignite.HandleRegistry.AllocateSafe(holder);
         }
 
-        private int MessagingFilterApply(long ptr, long memPtr)
+        private long MessagingFilterApply(long ptr, long memPtr, long unused, void* arg)
         {
-            return SafeCall(() =>
+            var holder = _ignite.HandleRegistry.Get<MessageListenerHolder>(ptr, false);
+
+            if (holder == null)
+                return 0;
+
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                var holder = _ignite.HandleRegistry.Get<MessageListenerHolder>(ptr, false);
-
-                if (holder == null)
-                    return 0;
-
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    return holder.Invoke(stream);
-                }
-            });
+                return holder.Invoke(stream);
+            }
         }
 
-        private void MessagingFilterDestroy(long ptr)
+        private long MessagingFilterDestroy(long ptr)
         {
-            SafeCall(() =>
-            {
-                _ignite.HandleRegistry.Release(ptr);
-            });
+            _ignite.HandleRegistry.Release(ptr);
+
+            return 0;
         }
 
         #endregion
@@ -1097,20 +1090,18 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
-        private void OnClientDisconnected()
+        private long OnClientDisconnected()
         {
-            SafeCall(() =>
-            {
-                _ignite.OnClientDisconnected();
-            });
+            _ignite.OnClientDisconnected();
+
+            return 0;
         }
 
-        private void OnClientReconnected(bool clusterRestarted)
+        private long OnClientReconnected(long clusterRestarted)
         {
-            SafeCall(() =>
-            {
-                _ignite.OnClientReconnected(clusterRestarted);
-            });
+            _ignite.OnClientReconnected(clusterRestarted != 0);
+
+            return 0;
         }
 
         private void LoggerLog(void* target, int level, sbyte* messageChars, int messageCharsLen, sbyte* categoryChars,
@@ -1169,89 +1160,122 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region AffinityFunction
 
-        private long AffinityFunctionInit(long memPtr, void* baseFunc)
+        private long AffinityFunctionInit(long memPtr, long unused, long unused1, void* baseFunc)
         {
-            return SafeCall(() =>
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    var reader = _ignite.Marshaller.StartUnmarshal(stream);
+                var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
-                    var func = reader.ReadObjectEx<IAffinityFunction>();
+                var func = reader.ReadObjectEx<IAffinityFunction>();
 
-                    ResourceProcessor.Inject(func, _ignite);
+                ResourceProcessor.Inject(func, _ignite);
 
-                    var affBase = func as AffinityFunctionBase;
+                var affBase = func as AffinityFunctionBase;
 
-                    if (affBase != null)
-                        affBase.SetBaseFunction(new PlatformAffinityFunction(
-                            _ignite.InteropProcessor.ChangeTarget(baseFunc), _ignite.Marshaller));
+                if (affBase != null)
+                    affBase.SetBaseFunction(new PlatformAffinityFunction(
+                        _ignite.InteropProcessor.ChangeTarget(baseFunc), _ignite.Marshaller));
 
-                    return _handleRegistry.Allocate(func);
-                }
-            });
+                return _handleRegistry.Allocate(func);
+            }
         }
 
-        private int AffinityFunctionPartition(long memPtr)
+        private long AffinityFunctionPartition(long memPtr)
         {
-            return SafeCall(() =>
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    var ptr = stream.ReadLong();
+                var ptr = stream.ReadLong();
 
-                    var key = _ignite.Marshaller.Unmarshal<object>(stream);
+                var key = _ignite.Marshaller.Unmarshal<object>(stream);
 
-                    return _handleRegistry.Get<IAffinityFunction>(ptr, true).GetPartition(key);
-                }
-            });
+                return _handleRegistry.Get<IAffinityFunction>(ptr, true).GetPartition(key);
+            }
         }
 
-        private void AffinityFunctionAssignPartitions(long memPtr)
+        private long AffinityFunctionAssignPartitions(long memPtr)
         {
-            SafeCall(() =>
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    var ptr = stream.ReadLong();
-                    var ctx = new AffinityFunctionContext(_ignite.Marshaller.StartUnmarshal(stream));
-                    var func = _handleRegistry.Get<IAffinityFunction>(ptr, true);
-                    var parts = func.AssignPartitions(ctx);
+                var ptr = stream.ReadLong();
+                var ctx = new AffinityFunctionContext(_ignite.Marshaller.StartUnmarshal(stream));
+                var func = _handleRegistry.Get<IAffinityFunction>(ptr, true);
+                var parts = func.AssignPartitions(ctx);
 
-                    if (parts == null)
-                        throw new IgniteException(func.GetType() + ".AssignPartitions() returned invalid result: null");
+                if (parts == null)
+                    throw new IgniteException(func.GetType() + ".AssignPartitions() returned invalid result: null");
 
-                    stream.Reset();
+                stream.Reset();
 
-                    AffinityFunctionSerializer.WritePartitions(parts, stream, _ignite.Marshaller);
-                }
-            });
+                AffinityFunctionSerializer.WritePartitions(parts, stream, _ignite.Marshaller);
+
+                return 0;
+            }
         }
 
-        private void AffinityFunctionRemoveNode(long memPtr)
+        private long AffinityFunctionRemoveNode(long memPtr)
         {
-            SafeCall(() =>
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    var ptr = stream.ReadLong();
-                    var nodeId = _ignite.Marshaller.Unmarshal<Guid>(stream);
+                var ptr = stream.ReadLong();
+                var nodeId = _ignite.Marshaller.Unmarshal<Guid>(stream);
 
-                    _handleRegistry.Get<IAffinityFunction>(ptr, true).RemoveNode(nodeId);
-                }
-            });
+                _handleRegistry.Get<IAffinityFunction>(ptr, true).RemoveNode(nodeId);
+
+                return 0;
+            }
         }
 
-        private void AffinityFunctionDestroy(long ptr)
+        private long AffinityFunctionDestroy(long ptr)
         {
-            SafeCall(() =>
-            {
-                _handleRegistry.Release(ptr);
-            });
+            _handleRegistry.Release(ptr);
+
+            return 0;
         }
 
         #endregion
 
+        #region HELPERS
+
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+        private void SafeCall(Action func, bool allowUnitialized = false)
+        {
+            if (!allowUnitialized)
+                _initEvent.Wait();
+
+            try
+            {
+                func();
+            }
+            catch (Exception e)
+            {
+                _log.Error(e, "Failure in Java callback");
+
+                UU.ThrowToJava(_ctx.NativeContext, e);
+            }
+        }
+
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+        private T SafeCall<T>(Func<T> func, bool allowUnitialized = false)
+        {
+            if (!allowUnitialized)
+                _initEvent.Wait();
+
+            try
+            {
+                return func();
+            }
+            catch (Exception e)
+            {
+                _log.Error(e, "Failure in Java callback");
+
+                UU.ThrowToJava(_ctx.NativeContext, e);
+
+                return default(T);
+            }
+        }
+
+        #endregion
+        
         /// <summary>
         /// Callbacks pointer.
         /// </summary>
