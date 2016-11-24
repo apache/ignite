@@ -395,17 +395,19 @@ export default ['JavaTypes', 'igniteEventGroups', 'IgniteConfigurationGenerator'
                         return `${item}L`;
                     case 'java.io.Serializable':
                     case 'java.lang.String':
-                        return `"${item}"`;
+                        return `"${item.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
                     case 'PATH':
                         return `"${item.replace(/\\/g, '\\\\')}"`;
                     case 'java.lang.Class':
                         return `${JavaTypes.shortClassName(item)}.class`;
                     case 'java.util.UUID':
                         return `UUID.fromString("${item}")`;
-                    case 'PROPERTY_CHAR':
-                        return `props.getProperty("${item}").toCharArray()`;
                     case 'PROPERTY':
                         return `props.getProperty("${item}")`;
+                    case 'PROPERTY_CHAR':
+                        return `props.getProperty("${item}").toCharArray()`;
+                    case 'PROPERTY_INT':
+                        return `Integer.parseInt(props.getProperty("${item}"))`;
                     default:
                         if (this._isBean(clsName)) {
                             if (item.isComplex())
@@ -744,6 +746,7 @@ export default ['JavaTypes', 'igniteEventGroups', 'IgniteConfigurationGenerator'
                         break;
                     case 'PROPERTY':
                     case 'PROPERTY_CHAR':
+                    case 'PROPERTY_INT':
                         imports.push('java.io.InputStream', 'java.util.Properties');
 
                         break;
@@ -1075,7 +1078,7 @@ export default ['JavaTypes', 'igniteEventGroups', 'IgniteConfigurationGenerator'
                 sb.startBlock(`public ${clsName}(${arg(_.head(fields))}${fields.length === 1 ? ') {' : ','}`);
 
                 _.forEach(_.tail(fields), (field, idx) => {
-                    sb.append(`${arg(field)}${idx !== fields.length - 1 ? ',' : ') {'}`);
+                    sb.append(`${arg(field)}${idx !== fields.length - 2 ? ',' : ') {'}`);
                 });
 
                 _.forEach(fields, (field) => sb.append(`this.${field.javaFieldName} = ${field.javaFieldName};`));
@@ -1262,8 +1265,8 @@ export default ['JavaTypes', 'igniteEventGroups', 'IgniteConfigurationGenerator'
                         const valueFields = _.clone(domain.valueFields);
 
                         if (includeKeyFields) {
-                            _.forEach(domain.keyFields, ({fld}) => {
-                                if (!_.find(valueFields, {name: fld.name}))
+                            _.forEach(domain.keyFields, (fld) => {
+                                if (!_.find(valueFields, {javaFieldName: fld.javaFieldName}))
                                     valueFields.push(fld);
                             });
                         }
