@@ -438,9 +438,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
     @Override public void start() throws IgniteCheckedException {
         if (isRestEnabled()) {
             if (notStartOnClient()) {
-                if (log.isInfoEnabled())
-                    log.info("REST protocols have not been started. For start the protocols on a client node add " +
-                        "-DIGNITE_REST_START_ON_CLIENT=true");
+                U.quietAndInfo(log, "REST protocols do not start on client node. " +
+                    "To start the protocols on client node set '-DIGNITE_REST_START_ON_CLIENT=true' system property.");
 
                 return;
             }

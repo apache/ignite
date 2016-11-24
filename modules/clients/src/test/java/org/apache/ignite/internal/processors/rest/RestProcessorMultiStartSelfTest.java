@@ -83,7 +83,7 @@ public class RestProcessorMultiStartSelfTest extends GridCommonAbstractTest {
                 GridRestProcessor rest = grid(i).context().rest();
 
                 assertNotNull(rest);
-                assertFalse(0 == ((Map)GridTestUtils.getFieldValue(rest, "handlers")).size());
+                assertFalse(((Map)GridTestUtils.getFieldValue(rest, "handlers")).isEmpty());
             }
 
             client = true;
@@ -92,9 +92,9 @@ public class RestProcessorMultiStartSelfTest extends GridCommonAbstractTest {
 
             GridRestProcessor rest = grid(GRID_CNT - 1).context().rest();
 
-            // Check that rest processer doesn't start.
+            // Check that rest processor doesn't start.
             assertNotNull(rest);
-            assertEquals(0, ((Map)GridTestUtils.getFieldValue(rest, "handlers")).size());
+            assertTrue(((Map)GridTestUtils.getFieldValue(rest, "handlers")).isEmpty());
         }
         finally {
             stopAllGrids();
