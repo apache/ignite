@@ -77,7 +77,11 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
 
         cfg.setCacheKeyConfiguration(keyCfg);
 
-        bCfg.setTypeConfigurations(Arrays.asList(typeCfg));
+        BinaryTypeConfiguration typeCfgWithOptmMarsh = new BinaryTypeConfiguration();
+
+        typeCfgWithOptmMarsh.setTypeName(TestObject3.class.getName());
+
+        bCfg.setTypeConfigurations(Arrays.asList(typeCfg, typeCfgWithOptmMarsh));
 
         cfg.setBinaryConfiguration(bCfg);
 
@@ -195,6 +199,45 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
          * @param val2 Value 2.
          */
         public TestObject2(int val1, int val2) {
+            this.val1 = val1;
+            this.val2 = val2;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TestObject2 that = (TestObject2)o;
+
+            return val2 == that.val2;
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return val2;
+        }
+    }
+
+    /**
+     *
+     */
+    static class TestObject3 {
+        /** */
+        private int val1;
+
+        /** */
+        private int val2;
+
+        /**
+         * @param val1 Value 1.
+         * @param val2 Value 2.
+         */
+        public TestObject3(int val1, int val2) {
             this.val1 = val1;
             this.val2 = val2;
         }
