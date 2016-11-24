@@ -1027,14 +1027,26 @@ public abstract class GridUnsafe {
     }
 
     /**
-     * Copies memory.
+     * Copy memory between offheap locations.
      *
-     * @param src Source.
-     * @param dst Dst.
+     * @param srcAddr Source address.
+     * @param dstAddr Destination address.
      * @param len Length.
      */
-    public static void copyMemory(long src, long dst, long len) {
-        UNSAFE.copyMemory(src, dst, len);
+    public static void copyOffheapOffheap(long srcAddr, long dstAddr, long len) {
+        UNSAFE.copyMemory(srcAddr, dstAddr, len);
+    }
+
+    /**
+     * Copy memory from offheap to heap.
+     *
+     * @param srcAddr Source address.
+     * @param dstBase Destination base.
+     * @param dstOff Destination offset.
+     * @param len Length.
+     */
+    public static void copyOffheapHeap(long srcAddr, Object dstBase, long dstOff, long len) {
+        UNSAFE.copyMemory(null, srcAddr, dstBase, dstOff, len);
     }
 
     /**

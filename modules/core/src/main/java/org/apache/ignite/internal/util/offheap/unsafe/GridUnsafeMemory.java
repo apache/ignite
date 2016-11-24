@@ -607,7 +607,7 @@ public class GridUnsafeMemory {
      * @return The same array as passed in one.
      */
     public byte[] readBytes(long ptr, byte[] arr) {
-        GridUnsafe.copyMemory(null, ptr, arr, GridUnsafe.BYTE_ARR_OFF, arr.length);
+        GridUnsafe.copyOffheapHeap(ptr, arr, GridUnsafe.BYTE_ARR_OFF, arr.length);
 
         return arr;
     }
@@ -620,7 +620,7 @@ public class GridUnsafeMemory {
      * @return The same array as passed in one.
      */
     public byte[] readBytes(long ptr, byte[] arr, int off, int len) {
-        GridUnsafe.copyMemory(null, ptr, arr, GridUnsafe.BYTE_ARR_OFF + off, len);
+        GridUnsafe.copyOffheapHeap(ptr, arr, GridUnsafe.BYTE_ARR_OFF + off, len);
 
         return arr;
     }
@@ -655,7 +655,7 @@ public class GridUnsafeMemory {
      * @param len Length in bytes.
      */
     public void copyMemory(long srcPtr, long destPtr, long len) {
-        GridUnsafe.copyMemory(srcPtr, destPtr, len);
+        GridUnsafe.copyOffheapOffheap(srcPtr, destPtr, len);
     }
 
     /**
