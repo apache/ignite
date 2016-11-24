@@ -248,7 +248,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             AddHandler(UnmanagedCallbackOp.FutureObjectResult, FutureObjectResult);
             AddHandler(UnmanagedCallbackOp.FutureNullResult, FutureNullResult);
             AddHandler(UnmanagedCallbackOp.FutureError, FutureError);
-            AddHandler(UnmanagedCallbackOp.LifecycleOnEvent, LifecycleOnEvent);
+            AddHandler(UnmanagedCallbackOp.LifecycleOnEvent, LifecycleOnEvent, true);
             AddHandler(UnmanagedCallbackOp.MemoryReallocate, MemoryReallocate, true);
             AddHandler(UnmanagedCallbackOp.MessagingFilterCreate, MessagingFilterCreate);
             AddHandler(UnmanagedCallbackOp.MessagingFilterApply, MessagingFilterApply);
