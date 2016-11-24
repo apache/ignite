@@ -78,6 +78,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         // ReSharper disable once CollectionNeverQueried.Local
         private readonly List<Delegate> _delegates = new List<Delegate>(6);
 
+        /** Handlers array. */
+        private readonly InLongOutLongHandler[] _inLongOutLongHandlers = new InLongOutLongHandler[62];
+
+        /** Handlers array. */
+        private readonly InLongLongLongObjectOutLongHandler[] _inLongLongLongObjectOutLongHandlers
+            = new InLongLongLongObjectOutLongHandler[62];
+
         /** Initialized flag. */
         private readonly ManualResetEventSlim _initEvent = new ManualResetEventSlim(false);
 
@@ -118,55 +125,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private delegate long InLongOutLongFunc(long val);
         private delegate long InLongLongLongObjectOutLongFunc(long val1, long val2, long val3, void* arg);
-
-        /// <summary>
-        /// InLongOutLong handler struct.
-        /// </summary>
-        private struct InLongOutLongHandler
-        {
-            /// <summary> The handler func. </summary>
-            public readonly InLongOutLongFunc Handler;
-
-            /// <summary> Allow uninitialized flag. </summary>
-            public readonly bool AllowUninitialized;
-
-            /// <summary>
-            /// Initializes a new instance of the <see cref="InLongOutLongHandler"/> struct.
-            /// </summary>
-            public InLongOutLongHandler(InLongOutLongFunc handler, bool allowUninitialized)
-            {
-                Handler = handler;
-                AllowUninitialized = allowUninitialized;
-            }
-        }
-
-        /// <summary>
-        /// InLongLongLongObjectOutLong handler struct.
-        /// </summary>
-        private struct InLongLongLongObjectOutLongHandler
-        {
-            /// <summary> The handler func. </summary>
-            public readonly InLongLongLongObjectOutLongFunc Handler;
-            
-            /// <summary> Allow uninitialized flag. </summary>
-            public readonly bool AllowUninitialized;
-
-            /// <summary>
-            /// Initializes a new instance of the <see cref="InLongLongLongObjectOutLongHandler"/> struct.
-            /// </summary>
-            public InLongLongLongObjectOutLongHandler(InLongLongLongObjectOutLongFunc handler, bool allowUninitialized)
-            {
-                Handler = handler;
-                AllowUninitialized = allowUninitialized;
-            }
-        }
-
-        /// <summary> Handlers array. </summary>
-        private readonly InLongOutLongHandler[] _inLongOutLongHandlers = new InLongOutLongHandler[62];
-
-        /// <summary> Handlers array. </summary>
-        private readonly InLongLongLongObjectOutLongHandler[] _inLongLongLongObjectOutLongHandlers 
-            = new InLongLongLongObjectOutLongHandler[62];
 
         /// <summary>
         /// Constructor.
@@ -1369,6 +1327,48 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public static void* ConsoleWriteHandler
         {
             get { return ConsoleWritePtr; }
+        }
+
+        /// <summary>
+        /// InLongOutLong handler struct.
+        /// </summary>
+        private struct InLongOutLongHandler
+        {
+            /// <summary> The handler func. </summary>
+            public readonly InLongOutLongFunc Handler;
+
+            /// <summary> Allow uninitialized flag. </summary>
+            public readonly bool AllowUninitialized;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="InLongOutLongHandler"/> struct.
+            /// </summary>
+            public InLongOutLongHandler(InLongOutLongFunc handler, bool allowUninitialized)
+            {
+                Handler = handler;
+                AllowUninitialized = allowUninitialized;
+            }
+        }
+
+        /// <summary>
+        /// InLongLongLongObjectOutLong handler struct.
+        /// </summary>
+        private struct InLongLongLongObjectOutLongHandler
+        {
+            /// <summary> The handler func. </summary>
+            public readonly InLongLongLongObjectOutLongFunc Handler;
+
+            /// <summary> Allow uninitialized flag. </summary>
+            public readonly bool AllowUninitialized;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="InLongLongLongObjectOutLongHandler"/> struct.
+            /// </summary>
+            public InLongLongLongObjectOutLongHandler(InLongLongLongObjectOutLongFunc handler, bool allowUninitialized)
+            {
+                Handler = handler;
+                AllowUninitialized = allowUninitialized;
+            }
         }
     }
 }
