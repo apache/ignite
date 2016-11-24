@@ -51,7 +51,7 @@ cp -r $IGNITE_WEB_CONSOLE_BACKEND_DIR/. $BUILD_DIR
 cp $IGNITE_HOME/modules/web-console/web-agent/target/ignite-web-agent*.zip $BUILD_DIR/agent_dists/.
 
 echo "Step 4. Build docker image."
-docker build -f=./Dockerfile -t $DOCKER_IMAGE_NAME:$RELEASE_VERSION .
+docker build -f=./Dockerfile -t $DOCKER_IMAGE_NAME:$RELEASE_VERSION -t $DOCKER_IMAGE_NAME:latest .
 
 echo "Step 5. Cleanup."
 rm -Rf $BUILD_DIR

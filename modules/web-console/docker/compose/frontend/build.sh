@@ -50,7 +50,7 @@ docker build -f=./DockerfileBuild -t $DOCKER_BUILD_IMAGE_NAME:latest .
 docker run -it -v $BUILD_DIR:/opt/web-console-frontend/build --name $DOCKER_BUILD_CONTAINER $DOCKER_BUILD_IMAGE_NAME
 
 echo "Step 2. Build NGINX container with SPA and proxy configuration"
-docker build -f=./Dockerfile -t $DOCKER_IMAGE_NAME:$RELEASE_VERSION .
+docker build -f=./Dockerfile -t $DOCKER_IMAGE_NAME:$RELEASE_VERSION -t $DOCKER_IMAGE_NAME:latest .
 
 echo "Step 3. Cleanup"
 docker rm -f $DOCKER_BUILD_CONTAINER
