@@ -149,6 +149,19 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                         .catch((err) => cb(_errorToJson(err)));
                 });
 
+                // Collect cache query metrics and return result to browser.
+                socket.on('node:query:metrics', (nids, since, cb) => {
+                    agentMgr.findAgent(accountId())
+                        .then((agent) => agent.queryDetailMetrics(demo, nids, since))
+                        .then((data) => {
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
                 // Return cache metadata from all nodes in grid.
                 socket.on('node:cache:metadata', (cacheName, cb) => {
                     agentMgr.findAgent(accountId())

@@ -223,6 +223,10 @@ export default [
             return false;
         }
 
+        function escapeFileName(name) {
+            return name.replace(/[\\\/*\"\[\],\.:;|=<>?]/g, '-').replace(/ /g, '_');
+        }
+
         $scope.selectItem = (cluster) => {
             delete ctrl.cluster;
 
@@ -318,8 +322,8 @@ export default [
             const srcPath = 'src/main/java';
             const resourcesPath = 'src/main/resources';
 
-            const serverXml = `${cluster.name}-server.xml`;
-            const clientXml = `${cluster.name}-client.xml`;
+            const serverXml = `${escapeFileName(cluster.name)}-server.xml`;
+            const clientXml = `${escapeFileName(cluster.name)}-client.xml`;
 
             const metaPath = `${resourcesPath}/META-INF`;
 
@@ -329,7 +333,7 @@ export default [
             const cfgPath = `${srcPath}/config`;
 
             zip.file(`${cfgPath}/ServerConfigurationFactory.java`, java.igniteConfiguration(cfg, 'config', 'ServerConfigurationFactory').asString());
-            zip.file(`${cfgPath}/ClientConfigurationFactory.java`, java.igniteConfiguration(cfg, 'config', 'ClientConfigurationFactory', clientNearCaches).asString());
+            zip.file(`${cfgPath}/ClientConfigurationFactory.java`, java.igniteConfiguration(clientCfg, 'config', 'ClientConfigurationFactory', clientNearCaches).asString());
 
             if (java.isDemoConfigured(cluster, $root.IgniteDemoMode)) {
                 zip.file(`${srcPath}/demo/DemoStartup.java`, java.nodeStartup(cluster, 'demo.DemoStartup',
@@ -370,7 +374,7 @@ export default [
             $generatorOptional.optionalContent(zip, cluster);
 
             zip.generateAsync({type: 'blob', compression: 'DEFLATE', mimeType: 'application/octet-stream'})
-                .then((blob) => saver.saveAs(blob, cluster.name + '-project.zip'));
+                .then((blob) => saver.saveAs(blob, escapeFileName(cluster.name) + '-project.zip'));
         };
 
         /**
