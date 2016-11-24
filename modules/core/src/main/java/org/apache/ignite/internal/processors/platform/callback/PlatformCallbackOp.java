@@ -172,44 +172,35 @@ class PlatformCallbackOp {
     public static final int OnStop = 50;
 
     /** */
-    public static final int Error = 51;
+    public static final int ExtensionInLongOutLong = 51;
 
     /** */
-    public static final int ExtensionInLongOutLong = 52;
+    public static final int ExtensionInLongLongOutLong = 52;
 
     /** */
-    public static final int ExtensionInLongLongOutLong = 53;
+    public static final int OnClientDisconnected = 53;
 
     /** */
-    public static final int OnClientDisconnected = 54;
+    public static final int OnClientReconnected = 54;
 
     /** */
-    public static final int OnClientReconnected = 55;
+    public static final int AffinityFunctionInit = 55;
 
     /** */
-    public static final int LoggerLog = 56;
+    public static final int AffinityFunctionPartition = 56;
 
     /** */
-    public static final int LoggerIsLevelEnabled = 57;
+    public static final int AffinityFunctionAssignPartitions = 57;
 
     /** */
-    public static final int AffinityFunctionInit = 58;
+    public static final int AffinityFunctionRemoveNode = 58;
 
     /** */
-    public static final int AffinityFunctionPartition = 59;
+    public static final int AffinityFunctionDestroy = 59;
 
     /** */
-    public static final int AffinityFunctionAssignPartitions = 60;
+    public static final int ComputeTaskLocalJobResult = 60;
 
     /** */
-    public static final int AffinityFunctionRemoveNode = 61;
-
-    /** */
-    public static final int AffinityFunctionDestroy = 62;
-
-    /** */
-    public static final int ComputeTaskLocalJobResult = 63;
-
-    /** */
-    public static final int ComputeJobExecuteLocal = 64;
+    public static final int ComputeJobExecuteLocal = 61;
 }
