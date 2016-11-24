@@ -45,6 +45,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicSingleUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
@@ -470,8 +472,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             return ((GridNearAtomicAbstractUpdateRequest)cacheMsg).futureVersion();
         else if (cacheMsg instanceof GridNearAtomicUpdateResponse)
             return ((GridNearAtomicUpdateResponse) cacheMsg).futureVersion();
-        else if (cacheMsg instanceof GridDhtAtomicUpdateRequest)
-            return ((GridDhtAtomicUpdateRequest)cacheMsg).futureVersion();
+        else if (cacheMsg instanceof GridDhtAtomicAbstractUpdateRequest)
+            return ((GridDhtAtomicAbstractUpdateRequest)cacheMsg).futureVersion();
         else if (cacheMsg instanceof GridDhtAtomicUpdateResponse)
             return ((GridDhtAtomicUpdateResponse) cacheMsg).futureVersion();
 
@@ -486,8 +488,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     @Nullable private GridCacheVersion atomicWriteVersion(GridCacheMessage cacheMsg) {
         if (cacheMsg instanceof GridNearAtomicAbstractUpdateRequest)
             return ((GridNearAtomicAbstractUpdateRequest)cacheMsg).updateVersion();
-        else if (cacheMsg instanceof GridDhtAtomicUpdateRequest)
-            return ((GridDhtAtomicUpdateRequest)cacheMsg).writeVersion();
+        else if (cacheMsg instanceof GridDhtAtomicAbstractUpdateRequest)
+            return ((GridDhtAtomicAbstractUpdateRequest)cacheMsg).writeVersion();
 
         return null;
     }
@@ -785,6 +787,21 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     ctx.deploymentEnabled());
 
                 res.error(req.classError());
+
+                sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
+            }
+
+            break;
+
+            case -36: {
+                GridDhtAtomicSingleUpdateRequest req = (GridDhtAtomicSingleUpdateRequest)msg;
+
+                GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(
+                    ctx.cacheId(),
+                    req.futureVersion(),
+                    ctx.deploymentEnabled());
+
+                res.onError(req.classError());
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
             }

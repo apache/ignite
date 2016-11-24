@@ -23,7 +23,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -33,6 +35,8 @@ import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * DHT atomic cache backup update future.
@@ -115,6 +119,32 @@ class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
     @Override protected void addFailedKeys(GridNearAtomicUpdateResponse updateRes, Throwable err) {
         for (KeyCacheObject key : keys)
             updateRes.addFailedKey(key, err);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridDhtAtomicAbstractUpdateRequest createRequest(ClusterNode node,
+        GridCacheVersion futVer,
+        GridCacheVersion writeVer,
+        CacheWriteSynchronizationMode syncMode,
+        @NotNull AffinityTopologyVersion topVer,
+        long ttl,
+        long conflictExpireTime,
+        @Nullable GridCacheVersion conflictVer
+    ) {
+        return new GridDhtAtomicUpdateRequest(
+            cctx.cacheId(),
+            node.id(),
+            futVer,
+            writeVer,
+            syncMode,
+            topVer,
+            false,
+            updateReq.subjectId(),
+            updateReq.taskNameHash(),
+            null,
+            cctx.deploymentEnabled(),
+            updateReq.keepBinary(),
+            updateReq.skipStore());
     }
 
     /** {@inheritDoc} */

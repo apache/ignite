@@ -226,11 +226,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
         return CU.EXPIRE_TIME_CALCULATE;
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * @param ctx
-     */
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 

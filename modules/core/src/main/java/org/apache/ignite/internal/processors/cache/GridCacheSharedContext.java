@@ -636,6 +636,7 @@ public class GridCacheSharedContext<K, V> {
         f.add(mvcc().finishExplicitLocks(topVer));
         f.add(tm().finishTxs(topVer));
         f.add(mvcc().finishAtomicUpdates(topVer));
+        f.add(mvcc().finishDataStreamerUpdates());
 
         f.markInitialized();
 

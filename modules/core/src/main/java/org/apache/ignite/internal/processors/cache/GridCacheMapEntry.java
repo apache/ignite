@@ -3444,11 +3444,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (val == null) {
                     skipQryNtf = true;
 
-                    if (cctx.deferredDelete() && !isInternal()) {
-                        assert !deletedUnlocked();
-
+                    if (cctx.deferredDelete() && !deletedUnlocked() && !isInternal())
                         deletedUnlocked(true);
-                    }
                 }
                 else if (deletedUnlocked())
                     deletedUnlocked(false);

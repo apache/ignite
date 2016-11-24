@@ -27,6 +27,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicSingleUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicFullUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateRequest;
@@ -141,6 +142,7 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
             commSpi.registerMessage(GridNearAtomicSingleUpdateRequest.class);
             commSpi.registerMessage(GridNearAtomicFullUpdateRequest.class);
             commSpi.registerMessage(GridDhtAtomicUpdateRequest.class);
+            commSpi.registerMessage(GridDhtAtomicSingleUpdateRequest.class);
 
             int putCnt = 15;
 
@@ -171,7 +173,7 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
 
             assertEquals(expNearCnt, commSpi.messageCount(GridNearAtomicFullUpdateRequest.class));
             assertEquals(expNearSingleCnt, commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class));
-            assertEquals(expDhtCnt, commSpi.messageCount(GridDhtAtomicUpdateRequest.class));
+            assertEquals(expDhtCnt, commSpi.messageCount(GridDhtAtomicSingleUpdateRequest.class));
 
             if (writeOrderMode == CLOCK) {
                 for (int i = 1; i < 4; i++) {
@@ -179,7 +181,7 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
 
                     assertEquals(0, commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class));
                     assertEquals(0, commSpi.messageCount(GridNearAtomicFullUpdateRequest.class));
-                    assertEquals(0, commSpi.messageCount(GridDhtAtomicUpdateRequest.class));
+                    assertEquals(0, commSpi.messageCount(GridDhtAtomicSingleUpdateRequest.class));
                 }
             }
             else {

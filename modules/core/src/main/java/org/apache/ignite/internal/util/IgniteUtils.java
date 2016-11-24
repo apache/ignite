@@ -19,6 +19,8 @@ package org.apache.ignite.internal.util;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.Externalizable;
@@ -128,6 +130,8 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 import javax.management.DynamicMBean;
 import javax.management.JMException;
 import javax.management.MBeanServer;
@@ -475,6 +479,9 @@ public abstract class IgniteUtils {
 
     /** */
     private static volatile IgniteBiTuple<Collection<String>, Collection<String>> cachedLocalAddr;
+
+    /** */
+    private static volatile IgniteBiTuple<Collection<String>, Collection<String>> cachedLocalAddrAllHostNames;
 
     /** */
     private static final ConcurrentMap<ClassLoader, ConcurrentMap<String, Class>> classCache =
@@ -1867,41 +1874,61 @@ public abstract class IgniteUtils {
      */
     public static IgniteBiTuple<Collection<String>, Collection<String>> resolveLocalAddresses(InetAddress locAddr)
         throws IOException, IgniteCheckedException {
+        return resolveLocalAddresses(locAddr, false);
+    }
+
+    /**
+     * Returns host names consistent with {@link #resolveLocalHost(String)}. So when it returns
+     * a common address this method returns single host name, and when a wildcard address passed
+     * this method tries to collect addresses of all available interfaces.
+     *
+     * @param locAddr Local address to resolve.
+     * @param allHostNames If {@code true} then include host names for all addresses.
+     * @return Resolved available addresses and host names of given local address.
+     * @throws IOException If failed.
+     * @throws IgniteCheckedException If no network interfaces found.
+     */
+    public static IgniteBiTuple<Collection<String>, Collection<String>> resolveLocalAddresses(InetAddress locAddr,
+        boolean allHostNames) throws IOException, IgniteCheckedException {
         assert locAddr != null;
 
         Collection<String> addrs = new ArrayList<>();
         Collection<String> hostNames = new ArrayList<>();
 
         if (locAddr.isAnyLocalAddress()) {
-            IgniteBiTuple<Collection<String>, Collection<String>> res = cachedLocalAddr;
+            IgniteBiTuple<Collection<String>, Collection<String>> res =
+                allHostNames ? cachedLocalAddrAllHostNames : cachedLocalAddr;
 
             if (res == null) {
-                List<InetAddress> localAddrs = new ArrayList<>();
+                List<InetAddress> locAddrs = new ArrayList<>();
 
                 for (NetworkInterface itf : asIterable(NetworkInterface.getNetworkInterfaces())) {
                     for (InetAddress addr : asIterable(itf.getInetAddresses())) {
                         if (!addr.isLinkLocalAddress())
-                            localAddrs.add(addr);
+                            locAddrs.add(addr);
                     }
                 }
 
-                localAddrs = filterReachable(localAddrs);
+                locAddrs = filterReachable(locAddrs);
 
-                for (InetAddress addr : localAddrs)
-                    addresses(addr, addrs, hostNames);
+                for (InetAddress addr : locAddrs)
+                    addresses(addr, addrs, hostNames, allHostNames);
 
                 if (F.isEmpty(addrs))
                     throw new IgniteCheckedException("No network addresses found (is networking enabled?).");
 
                 res = F.t(addrs, hostNames);
 
-                cachedLocalAddr = res;
+                if (allHostNames)
+                    cachedLocalAddrAllHostNames = res;
+                else
+                    cachedLocalAddr = res;
             }
 
             return res;
         }
 
-        addresses(locAddr, addrs, hostNames);
+        addresses(locAddr, addrs, hostNames, allHostNames);
 
         return F.t(addrs, hostNames);
     }
@@ -1909,16 +1936,20 @@ public abstract class IgniteUtils {
     /**
      * @param addr Address.
      * @param addrs Addresses.
+     * @param allHostNames If {@code true} then include host names for all addresses.
      * @param hostNames Host names.
      */
-    private static void addresses(InetAddress addr, Collection<String> addrs, Collection<String> hostNames) {
+    private static void addresses(InetAddress addr, Collection<String> addrs, Collection<String> hostNames,
+        boolean allHostNames) {
         String hostName = addr.getHostName();
 
         String ipAddr = addr.getHostAddress();
 
         addrs.add(ipAddr);
 
-        if (!F.isEmpty(hostName) && !addr.isLoopbackAddress())
+        if (allHostNames)
+            hostNames.add(hostName);
+        else if (!F.isEmpty(hostName) && !addr.isLoopbackAddress())
             hostNames.add(hostName);
     }
 
@@ -9701,6 +9732,32 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @param marsh Marshaller.
+     * @param zipBytes Zip-compressed bytes.
+     * @param clsLdr Class loader to use.
+     * @return Unmarshalled object.
+     * @throws IgniteCheckedException
+     */
+    public static <T> T unmarshalZip(Marshaller marsh, byte[] zipBytes, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+        assert marsh != null;
+        assert zipBytes != null;
+
+        try {
+            ZipInputStream in = new ZipInputStream(new ByteArrayInputStream(zipBytes));
+
+            in.getNextEntry();
+
+            return marsh.unmarshal(in, clsLdr);
+        }
+        catch (IgniteCheckedException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
      * Unmarshals object from the input stream using given class loader.
      * This method should not close given input stream.
      * <p/>
@@ -9914,5 +9971,39 @@ public abstract class IgniteUtils {
     public static void restoreOldIgniteName(@Nullable String oldName, @Nullable String curName) {
         if (oldName != curName)
             LOC_IGNITE_NAME.set(oldName);
+    }
+
+    /**
+     * @param bytes Byte array to compress.
+     * @return Compressed bytes.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static byte[] zip(@Nullable byte[] bytes) throws IgniteCheckedException {
+        try {
+            if (bytes == null)
+                return null;
+
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+
+            try (ZipOutputStream zos = new ZipOutputStream(bos)) {
+                ZipEntry entry = new ZipEntry("");
+
+                try {
+                    entry.setSize(bytes.length);
+
+                    zos.putNextEntry(entry);
+
+                    zos.write(bytes);
+                }
+                finally {
+                    zos.closeEntry();
+                }
+            }
+
+            return bos.toByteArray();
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
+        }
     }
 }

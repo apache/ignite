@@ -929,8 +929,10 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                         msg.senderNodeId(rmtNodeId);
 
-                        if (log.isDebugEnabled())
-                            log.debug("Message has been received: " + msg);
+                        DebugLogger debugLog = messageLogger(msg);
+
+                        if (debugLog.isDebugEnabled())
+                            debugLog.debug("Message has been received: " + msg);
 
                         spi.stats.onMessageReceived(msg);
 
@@ -1047,7 +1049,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
-            TcpDiscoveryAbstractMessage msg = null;
+            TcpDiscoveryAbstractMessage msg;
 
             while (!Thread.currentThread().isInterrupted()) {
                 Socket sock;
@@ -1061,8 +1063,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         continue;
                     }
 
-                    if (msg == null)
-                        msg = queue.poll();
+                    msg = queue.poll();
 
                     if (msg == null) {
                         mux.wait();
@@ -1119,19 +1120,13 @@ class ClientImpl extends TcpDiscoveryImpl {
                         }
                     }
                 }
-                catch (IOException e) {
+                catch (InterruptedException e) {
                     if (log.isDebugEnabled())
-                        U.error(log, "Failed to send node left message (will stop anyway) " +
-                            "[sock=" + sock + ", msg=" + msg + ']', e);
+                        log.debug("Client socket writer interrupted.");
 
-                    U.closeQuiet(sock);
-
-                    synchronized (mux) {
-                        if (sock == this.sock)
-                            this.sock = null; // Connection has dead.
-                    }
+                    return;
                 }
-                catch (IgniteCheckedException e) {
+                catch (Exception e) {
                     if (spi.getSpiContext().isStopping()) {
                         if (log.isDebugEnabled())
                             log.debug("Failed to send message, node is stopping [msg=" + msg + ", err=" + e + ']');
@@ -1139,7 +1134,12 @@ class ClientImpl extends TcpDiscoveryImpl {
                     else
                         U.error(log, "Failed to send message: " + msg, e);
 
-                    msg = null;
+                    U.closeQuiet(sock);
+
+                    synchronized (mux) {
+                        if (sock == this.sock)
+                            this.sock = null; // Connection has dead.
+                    }
                 }
             }
         }
@@ -2083,6 +2083,8 @@ class ClientImpl extends TcpDiscoveryImpl {
             @Nullable DiscoverySpiCustomMessage data) {
             DiscoverySpiListener lsnr = spi.lsnr;
 
+            DebugLogger log = type == EVT_NODE_METRICS_UPDATED ? traceLog : debugLog;
+
             if (lsnr != null) {
                 if (log.isDebugEnabled())
                     log.debug("Discovery notification [node=" + node + ", type=" + U.gridEventName(type) +
@@ -2098,14 +2100,14 @@ class ClientImpl extends TcpDiscoveryImpl {
         /**
          * @param msg Message.
          */
-        public void addMessage(Object msg) {
+        void addMessage(Object msg) {
             queue.add(msg);
         }
 
         /**
          * @return Queue size.
          */
-        public int queueSize() {
+        int queueSize() {
             return queue.size();
         }
     }
