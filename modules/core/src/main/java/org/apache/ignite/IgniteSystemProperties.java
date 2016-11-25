@@ -485,7 +485,7 @@ public final class IgniteSystemProperties {
      * <p>
      * Defaults to {@code} false, meaning that unaligned access will be performed only on x86 architecture.
      */
-    public static final String IGNITE_UNALIGNED_MEMORY_ACCESS = "IGNITE_UNALIGNED_MEMORY_ACCESS";
+    public static final String IGNITE_MEMORY_UNALIGNED_ACCESS = "IGNITE_MEMORY_UNALIGNED_ACCESS";
 
     /**
      * Enforces singleton.
