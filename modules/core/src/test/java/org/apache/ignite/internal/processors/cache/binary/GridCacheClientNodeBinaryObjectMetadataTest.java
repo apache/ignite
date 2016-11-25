@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.binary;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
@@ -29,9 +31,11 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
@@ -122,15 +126,23 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
                 aff0.mapKeyToPrimaryAndBackups(obj2));
         }
 
-        Collection<BinaryType> meta1 = ignite1.binary().types();
+        Collection<BinaryType> meta1 = ignite0.binary().types();
         Collection<BinaryType> meta2 = ignite1.binary().types();
 
         assertEquals(meta1.size(), meta2.size());
 
+        BinaryType bTypeClass3 = null, bTypeClass3Cln = null;
+
         for (BinaryType m1 : meta1) {
             boolean found = false;
 
-            for (BinaryType m2 : meta1) {
+            if (m1.typeName().contains(TestObject3.class.getName()))
+                bTypeClass3 = m1;
+
+            for (BinaryType m2 : meta2) {
+                if (m2.typeName().contains(TestObject3.class.getName()))
+                    bTypeClass3Cln = m2;
+
                 if (m1.typeName().equals(m2.typeName())) {
                     assertEquals(m1.affinityKeyFieldName(), m2.affinityKeyFieldName());
                     assertEquals(m1.fieldNames(), m2.fieldNames());
@@ -143,6 +155,16 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
 
             assertTrue(found);
         }
+
+        assertNotNull(bTypeClass3);
+        assertNotNull(bTypeClass3Cln);
+        assertNotSame(bTypeClass3, bTypeClass3Cln);
+
+        BinaryMetadata meta = GridTestUtils.getFieldValue(bTypeClass3, "meta");
+        assertTrue(meta.schemas().isEmpty());
+
+        meta = GridTestUtils.getFieldValue(bTypeClass3Cln, "meta");
+        assertTrue(meta.schemas().isEmpty());
     }
 
     /**

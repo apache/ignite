@@ -106,12 +106,20 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
 
             btcfg2.setSerializer(bs);
 
+            BinaryTypeConfiguration btcfg3 = new BinaryTypeConfiguration();
+
+            btcfg3.setTypeName("org.apache.ignite.internal.processors.cache.binary." +
+                "GridCacheBinaryObjectUserClassloaderSelfTest$TestValue3");
+
+            btcfg3.setUseOptimizedMarshaller(true);
+
             BinaryConfiguration bcfg = new BinaryConfiguration();
 
             Set<BinaryTypeConfiguration> set = new HashSet<>();
 
             set.add(btcfg1);
             set.add(btcfg2);
+            set.add(btcfg3);
 
             bcfg.setTypeConfigurations(set);
 
@@ -179,6 +187,8 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
             cache1.put(2, v2);
             cache1.put(3, new TestValue1(123));
             cache1.put(4, new TestValue2(123));
+            cache1.put(5, new TestValue3(321));
+            cache1.put(6, new TestValue3(456));
 
             deserialized = false;
 
@@ -201,6 +211,14 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
             deserialized = false;
 
             cache2.get(4);
+
+            assertFalse(deserialized);
+
+            cache2.get(5);
+
+            assertFalse(deserialized);
+
+            cache2.get(6);
 
             assertFalse(deserialized);
         }
@@ -260,6 +278,33 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(TestValue2.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestValue3 {
+        /** */
+        private int val;
+
+        /**
+         * @param val Value.
+         */
+        public TestValue3(int val) {
+            this.val = val;
+        }
+
+        /**
+         * @return Value.
+         */
+        public int value() {
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(TestValue3.class, this);
         }
     }
 
