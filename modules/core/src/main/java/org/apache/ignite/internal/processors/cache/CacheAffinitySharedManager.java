@@ -54,8 +54,10 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.CI2;
+import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -134,6 +136,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         processMultiRequest(uuid, msg);
                     }
                 });
+
         cctx.io().addHandler(0, GridDhtAffinityMultiAssignmentResponse.class,
             new CI2<UUID, GridDhtAffinityMultiAssignmentResponse>() {
                 @Override public void apply(UUID uuid, GridDhtAffinityMultiAssignmentResponse msg) {
@@ -1160,7 +1163,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         throws IgniteCheckedException {
         final List<IgniteInternalFuture<AffinityTopologyVersion>> futs = new ArrayList<>();
 
-        synchronized (caches) {
             forAllRegisteredCaches(new IgniteInClosureX<DynamicCacheDescriptor>() {
                 @Override public void applyx(DynamicCacheDescriptor desc) throws IgniteCheckedException {
                     CacheHolder cache = caches.get(desc.cacheId());
@@ -1235,7 +1237,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     assert old == null : old;
                 }
             });
-        }
 
         if (!futs.isEmpty()) {
             GridCompoundFuture<AffinityTopologyVersion, ?> affFut = new GridCompoundFuture<>();
@@ -1653,29 +1654,45 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         GridDhtAffinityMultiAssignmentRequest msg) throws IgniteCheckedException {
         assert nodeId != null;
 
-        AffinityTopologyVersion topVer = msg.topologyVersion();
+        final AffinityTopologyVersion topVer = msg.topologyVersion();
 
         ClusterNode node = cctx.node(nodeId);
 
-        GridDhtAffinityMultiAssignmentResponse res = new GridDhtAffinityMultiAssignmentResponse(topVer);
+        final GridDhtAffinityMultiAssignmentResponse res = new GridDhtAffinityMultiAssignmentResponse(topVer);
 
+        List<IgniteInternalFuture<T3<Integer, List<List<ClusterNode>>, List<List<ClusterNode>>>>> futs = new ArrayList<>();
         synchronized (caches) {
             for (Integer cacheId : msg.cacheIds()) {
 
-                CacheHolder cacheHolder = caches.get(cacheId);
+                final CacheHolder cacheHolder = caches.get(cacheId);
 
                 if (cacheHolder != null) {
-                    List<List<ClusterNode>> idealAssignment = null;
-                    GridAffinityAssignment assignment = cacheHolder.affinity().cachedAffinity(topVer);
+                    IgniteInternalFuture<T3<Integer, List<List<ClusterNode>>, List<List<ClusterNode>>>> fut = cacheHolder.affinity().readyFuture(topVer).chain(
+                        new CX1<IgniteInternalFuture<AffinityTopologyVersion>, T3<Integer, List<List<ClusterNode>>, List<List<ClusterNode>>>>() {
+                            @Override public T3<Integer, List<List<ClusterNode>>, List<List<ClusterNode>>> applyx(
+                                IgniteInternalFuture<AffinityTopologyVersion> fut) {
+                                List<List<ClusterNode>> idealAssignment = null;
 
-                    if (cacheHolder.affinity().centralizedAffinityFunction()) {
-                        assert assignment.idealAssignment() != null;
+                                GridAffinityAssignment assignment = cacheHolder.affinity().cachedAffinity(topVer);
 
-                        idealAssignment = assignment.idealAssignment();
-                    }
-                    res.addResult(cacheHolder.cacheId(), assignment.assignment(), idealAssignment);
+                                if (cacheHolder.affinity().centralizedAffinityFunction()) {
+                                    assert assignment.idealAssignment() != null;
+
+                                    idealAssignment = assignment.idealAssignment();
+                                }
+                                return new T3<>(cacheHolder.cacheId(), assignment.assignment(), idealAssignment);
+                            }
+                        });
+                    futs.add(fut);
                 }
             }
+        }
+
+        for (int i = 0; i < futs.size(); i++) {
+            T3<Integer, List<List<ClusterNode>>, List<List<ClusterNode>>> futRes = futs.get(i).get();
+            if (futRes != null)
+                res.addResult(futRes.get1(), futRes.get2(), futRes.get3());
+
         }
 
         cctx.io().send(node, res, AFFINITY_POOL);

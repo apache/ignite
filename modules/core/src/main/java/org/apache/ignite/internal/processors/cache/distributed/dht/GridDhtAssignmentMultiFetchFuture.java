@@ -92,8 +92,6 @@ public class GridDhtAssignmentMultiFetchFuture extends GridDhtAssignmentAbstract
 
         IgniteLogger log0 = log;
 
-        synchronized (this) {
-
             while (!availableNodes.isEmpty()) {
                 ClusterNode node = availableNodes.poll();
 
@@ -134,7 +132,6 @@ public class GridDhtAssignmentMultiFetchFuture extends GridDhtAssignmentAbstract
             }
 
             complete = pendingNode == null;
-        }
 
         // Failed getting affinity from coordinator
         if (complete)
