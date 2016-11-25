@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskOutput;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskType;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopPerformanceCounter;
+import org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopV2MapTask;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopConcurrentHashMultimap;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopMultimap;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopSkipList;
@@ -144,6 +145,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         this.log = log.getLogger(HadoopShuffleJob.class);
 
         stripeMappers = get(job.info(), SHUFFLE_MAPPER_STRIPE_OUTPUT, false);
+        msgSize = get(job.info(), SHUFFLE_MSG_SIZE, DFLT_SHUFFLE_MSG_SIZE);
 
         locReducersCtx = new HadoopTaskContext[totalReducerCnt];
 
@@ -157,12 +159,20 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         needPartitioner = totalReducerCnt > 1;
 
+        // Size of local map is always equal to total reducer number to allow index-based lookup.
         locMaps = new AtomicReferenceArray<>(totalReducerCnt);
-        rmtMaps = new AtomicReferenceArray<>(stripeMappers ? (totalReducerCnt * locMappersCnt) : totalReducerCnt);
 
-        msgs = new HadoopShuffleMessage[totalReducerCnt];
+        // Size of remote map:
+        // - If there are no local mappers, then we will not send anything, so set to 0;
+        // - If output is not striped, then match it to total reducer count, the same way as for local maps.
+        // - If output is striped, then multiply previous value by number of local mappers.
+        int rmtMapsSize = locMappersCnt == 0 ? 0 : totalReducerCnt;
 
-        msgSize = get(job.info(), SHUFFLE_MSG_SIZE, DFLT_SHUFFLE_MSG_SIZE);
+        if (stripeMappers)
+            rmtMapsSize *= locMappersCnt;
+
+        rmtMaps = new AtomicReferenceArray<>(rmtMapsSize);
+        msgs = new HadoopShuffleMessage[rmtMapsSize];
     }
 
     /**
@@ -332,18 +342,17 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      */
     private void collectUpdatesAndSend(boolean flush) throws IgniteCheckedException {
         for (int i = 0; i < rmtMaps.length(); i++) {
-            // TODO: Set reduced index properly.
-            int rdcIdx = stripeMappers ? i % locMappersCnt : i;
+            // Deduce mapper and reducer indexes.
+            final int rmtMapIdx = i;
+            final int rmtRdcIdx = stripeMappers ? rmtMapIdx % locMappersCnt : rmtMapIdx;
 
-            HadoopMultimap map = rmtMaps.get(i);
+            HadoopMultimap map = rmtMaps.get(rmtMapIdx);
 
             if (map == null)
                 continue; // Skip empty map and local node.
 
-            if (msgs[i] == null)
-                msgs[i] = new HadoopShuffleMessage(job.id(), rdcIdx, msgSize);
-
-            final int idx = i;
+            if (msgs[rmtMapIdx] == null)
+                msgs[rmtMapIdx] = new HadoopShuffleMessage(job.id(), rmtRdcIdx, msgSize);
 
             map.visit(false, new HadoopMultimap.Visitor() {
                 /** */
@@ -364,7 +373,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                 }
 
                 private boolean tryAdd(long valPtr, int valSize) {
-                    HadoopShuffleMessage msg = msgs[idx];
+                    HadoopShuffleMessage msg = msgs[rmtMapIdx];
 
                     if (!keyAdded) { // Add key and value.
                         int size = keySize + valSize;
@@ -393,7 +402,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                     if (tryAdd(valPtr, valSize))
                         return;
 
-                    send(idx, keySize + valSize);
+                    send(rmtMapIdx, rmtRdcIdx, keySize + valSize);
 
                     keyAdded = false;
 
@@ -402,19 +411,22 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                 }
             });
 
-            if (flush && msgs[i].offset() != 0)
-                send(i, 0);
+            if (flush && msgs[rmtMapIdx].offset() != 0)
+                send(rmtMapIdx, rmtRdcIdx, 0);
         }
     }
 
     /**
-     * @param idx Index of message.
+     * Send message.
+     *
+     * @param rmtMapIdx Remote map index.
+     * @param rmtRdcIdx Remote reducer index.
      * @param newBufMinSize Min new buffer size.
      */
-    private void send(final int idx, int newBufMinSize) {
+    private void send(int rmtMapIdx, int rmtRdcIdx, int newBufMinSize) {
         final GridFutureAdapter<?> fut = new GridFutureAdapter<>();
 
-        HadoopShuffleMessage msg = msgs[idx];
+        HadoopShuffleMessage msg = msgs[rmtMapIdx];
 
         final long msgId = msg.id();
 
@@ -424,7 +436,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         assert old == null;
 
         try {
-            io.apply(reduceAddrs[idx], msg);
+            io.apply(reduceAddrs[rmtRdcIdx], msg);
         }
         catch (GridClosureException e) {
             fut.onDone(U.unwrap(e));
@@ -445,7 +457,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
             }
         });
 
-        msgs[idx] = newBufMinSize == 0 ? null : new HadoopShuffleMessage(job.id(), idx,
+        msgs[rmtMapIdx] = newBufMinSize == 0 ? null : new HadoopShuffleMessage(job.id(), rmtRdcIdx,
             Math.max(msgSize, newBufMinSize));
     }
 
@@ -588,6 +600,16 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     }
 
     /**
+     * Check if certain partition (reducer) is local.
+     *
+     * @param part Partition.
+     * @return {@code True} if local.
+     */
+    private boolean isLocalPartition(int part) {
+        return locReducersCtx[part] != null;
+    }
+
+    /**
      * Partitioned output.
      */
     private class PartitionedOutput implements HadoopTaskOutput {
@@ -625,25 +647,31 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                     throw new IgniteCheckedException("Invalid partition: " + part);
             }
 
-            boolean loc = locReducersCtx[part] != null;
-
             HadoopTaskOutput out;
 
-            if (loc) {
+            if (isLocalPartition(part)) {
                 out = locAdders[part];
 
                 if (out == null)
                     locAdders[part] = out = getOrCreateMap(locMaps, part).startAdding(taskCtx);
             }
             else {
-                int mapperIdx = HadoopTaskInfo.currentMapperIndex();
+                if (stripeMappers) {
+                    int mapperIdx = HadoopV2MapTask.mapperIndex();
 
-                int idx = locMappersCnt * mapperIdx + part;
+                    int idx = locMappersCnt * mapperIdx + part;
 
-                out = rmtAdders[idx];
+                    out = rmtAdders[idx];
 
-                if (out == null)
-                    rmtAdders[idx] = out = getOrCreateMap(rmtMaps, idx).startAdding(taskCtx);
+                    if (out == null)
+                        rmtAdders[idx] = out = getOrCreateMap(rmtMaps, part).startAdding(taskCtx);
+                }
+                else {
+                    out = rmtAdders[part];
+
+                    if (out == null)
+                        rmtAdders[part] = out = getOrCreateMap(rmtMaps, part).startAdding(taskCtx);
+                }
             }
 
             out.write(key, val);

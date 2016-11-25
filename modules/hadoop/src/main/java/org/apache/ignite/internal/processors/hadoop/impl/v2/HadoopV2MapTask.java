@@ -34,6 +34,18 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
  * Hadoop map task implementation for v2 API.
  */
 public class HadoopV2MapTask extends HadoopV2Task {
+    /** Thread-local mapper index. */
+    private static final ThreadLocal<Integer> MAP_IDX = new ThreadLocal<>();
+
+    /**
+     * @return Current mapper index.
+     */
+    public static int mapperIndex() {
+        Integer res = MAP_IDX.get();
+
+        return res != null ? res : -1;
+    }
+
     /**
      * @param taskInfo Task info.
      */
@@ -48,6 +60,8 @@ public class HadoopV2MapTask extends HadoopV2Task {
         Exception err = null;
 
         JobContextImpl jobCtx = taskCtx.jobContext();
+
+        MAP_IDX.set(taskCtx.taskInfo().mapperIndex());
 
         try {
             InputSplit nativeSplit = hadoopContext().getInputSplit();
@@ -92,6 +106,8 @@ public class HadoopV2MapTask extends HadoopV2Task {
             throw new IgniteCheckedException(e);
         }
         finally {
+            MAP_IDX.remove();
+
             if (err != null)
                 abort(outputFormat);
         }
