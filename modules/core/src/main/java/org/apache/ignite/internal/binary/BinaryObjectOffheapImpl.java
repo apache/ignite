@@ -96,7 +96,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
             int off = start + GridBinaryMarshaller.DFLT_HDR_LEN;
 
-            String clsName = BinaryUtils.doReadClassName(new BinaryOffheapInputStream(off, size));
+            String clsName = BinaryUtils.doReadClassName(new BinaryOffheapInputStream(ptr + off, size));
 
             typeId = ctx.typeId(clsName);
         }
