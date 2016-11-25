@@ -167,7 +167,7 @@ const DFLT_CLUSTER = {
     logger: {
         Log4j: {
             level: {
-                clsName: 'org.apache.logging.log4j.Level'
+                clsName: 'org.apache.log4j.Level'
             }
         },
         Log4j2: {

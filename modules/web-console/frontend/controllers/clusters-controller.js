@@ -594,6 +594,13 @@ export default ['clustersController', [
             }));
         }
 
+        function checkODBC(item) {
+            if (_.get(item, 'odbc.odbcEnabled') && _.get(item, 'marshaller.kind'))
+                return ErrorPopover.show('odbcEnabledInput', 'ODBC can only be used with BinaryMarshaller', $scope.ui, 'odbcConfiguration');
+
+            return true;
+        }
+
         function checkSwapConfiguration(item) {
             const swapKind = item.swapSpaceSpi && item.swapSpaceSpi.kind;
 
@@ -672,6 +679,9 @@ export default ['clustersController', [
                 return false;
 
             if (!checkLoadBalancingConfiguration(item))
+                return false;
+
+            if (!checkODBC(item))
                 return false;
 
             if (!checkSwapConfiguration(item))

@@ -459,8 +459,7 @@ namespace ignite
                     int32_t realLen = stream->ReadInt32();
 
                     if (res && len >= realLen) {
-                        for (int i = 0; i < realLen; i++)
-                            *(res + i) = static_cast<char>(stream->ReadInt8());
+                        stream->ReadInt8Array(reinterpret_cast<int8_t*>(res), realLen);
 
                         if (len > realLen)
                             *(res + realLen) = 0; // Set NULL terminator if possible.

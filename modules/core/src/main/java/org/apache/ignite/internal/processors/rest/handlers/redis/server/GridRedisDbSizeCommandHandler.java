@@ -44,7 +44,12 @@ public class GridRedisDbSizeCommandHandler extends GridRedisRestCommandHandler {
         DBSIZE
     );
 
-    /** {@inheritDoc} */
+    /**
+     * Constructor.
+     *
+     * @param log Logger.
+     * @param hnd Handler.
+     */
     public GridRedisDbSizeCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd) {
         super(log, hnd);
     }

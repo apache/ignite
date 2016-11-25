@@ -46,8 +46,13 @@ public class GridRedisExistsCommandHandler extends GridRedisRestCommandHandler {
         EXISTS
     );
 
-    /** {@inheritDoc} */
-    public GridRedisExistsCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd) {
+    /**
+     * Constructor.
+     *
+     * @param log Logger.
+     * @param hnd Handler.
+     */
+    public GridRedisExistsCommandHandler(IgniteLogger log, GridRestProtocolHandler hnd) {
         super(log, hnd);
     }
 
