@@ -309,6 +309,17 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests invalid command arguments.
+        /// </summary>
+        [Test]
+        public void TestInvalidCmdArgs()
+        {
+            var proc = new IgniteProcess("blabla");
+
+            Assert.IsFalse(proc.Alive);
+        }
+
+        /// <summary>
         /// Get remote node configuration.
         /// </summary>
         /// <returns>Configuration.</returns>
