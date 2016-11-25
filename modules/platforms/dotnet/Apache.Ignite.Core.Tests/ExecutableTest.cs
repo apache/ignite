@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.CodeDom.Compiler;
     using System.Collections.Generic;
+    using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl;
@@ -314,9 +315,15 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestInvalidCmdArgs()
         {
-            var proc = new IgniteProcess("blabla");
+            int exitCode;
+            var reader = new ListDataReader();
 
-            Assert.IsFalse(proc.Alive);
+            var proc = new IgniteProcess(reader, "blabla");
+
+            Assert.IsTrue(proc.Join(300, out exitCode));
+            Assert.AreEqual(-1, exitCode);
+            Assert.AreEqual("OUT: ERROR: Apache.Ignite.Core.Common.IgniteException: Missing argument value: " +
+                            "'blabla'. See 'Apache.Ignite.exe /help'", reader.List.Last());
         }
 
         /// <summary>
@@ -482,7 +489,19 @@ namespace Apache.Ignite.Core.Tests
             /// Maximum JVM memory (Xms).
             /// </summary>
             public int JvmMaxMemoryMb { get; set; }
+        }
 
+        private class ListDataReader : IIgniteProcessOutputReader
+        {
+            public readonly List<string> List = new List<string>();
+
+            public void OnOutput(System.Diagnostics.Process proc, string data, bool err)
+            {
+                lock (List)
+                {
+                    List.Add((err ? "ERR: " : "OUT: ") + data);
+                }
+            }
         }
     }
 }
