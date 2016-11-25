@@ -56,7 +56,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.PARTITION_HASHMAP_SIZE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_MSG_SIZE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_REDUCER_NO_SORTING;
-import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_STRIPE_MAPPER_OUTPUT;
+import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_MAPPER_STRIPE_OUTPUT;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.get;
 
 /**
@@ -144,7 +144,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         this.log = log.getLogger(HadoopShuffleJob.class);
 
         msgSize = get(job.info(), SHUFFLE_MSG_SIZE, DFLT_SHUFFLE_MSG_SIZE);
-        stripeMappers = get(job.info(), SHUFFLE_STRIPE_MAPPER_OUTPUT, false);
+        stripeMappers = get(job.info(), SHUFFLE_MAPPER_STRIPE_OUTPUT, false);
 
         locReducersCtx = new HadoopTaskContext[totalReducerCnt];
 
