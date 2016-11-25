@@ -357,7 +357,7 @@ namespace ignite
              * @param nullable - Nullability flag.
              */
             void DescribeParam(int16_t paramNum, int16_t* dataType,
-                size_t* paramSize, int16_t* decimalDigits, int16_t* nullable);
+                SqlUlen* paramSize, int16_t* decimalDigits, int16_t* nullable);
 
         private:
             IGNITE_NO_COPY_ASSIGNMENT(Statement);
@@ -583,7 +583,7 @@ namespace ignite
              * @return Operation result.
              */
             SqlResult InternalDescribeParam(int16_t paramNum, int16_t* dataType,
-                size_t* paramSize, int16_t* decimalDigits, int16_t* nullable);
+                SqlUlen* paramSize, int16_t* decimalDigits, int16_t* nullable);
 
             /**
              * Make request to data source to update parameters metadata.

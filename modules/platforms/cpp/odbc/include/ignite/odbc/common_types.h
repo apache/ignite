@@ -30,6 +30,7 @@ namespace ignite
     namespace odbc
     {
         typedef SQLLEN SqlLen;
+        typedef SQLULEN SqlUlen;
 
         /**
          * SQL result.

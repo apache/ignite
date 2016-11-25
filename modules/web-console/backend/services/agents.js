@@ -63,7 +63,7 @@ module.exports.factory = (_, fs, path, JSZip, settings, agentMgr, errors) => {
                             const prop = [];
 
                             prop.push('tokens=' + token);
-                            prop.push('server-uri=' + (settings.agent.SSLOptions ? 'https' : 'http') + '://' + host + ':' + settings.agent.port);
+                            prop.push(`server-uri=${host}`);
                             prop.push('#Uncomment following options if needed:');
                             prop.push('#node-uri=http://localhost:8080');
                             prop.push('#driver-folder=./jdbc-drivers');

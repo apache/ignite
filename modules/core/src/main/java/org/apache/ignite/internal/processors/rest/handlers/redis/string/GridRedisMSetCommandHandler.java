@@ -46,8 +46,13 @@ public class GridRedisMSetCommandHandler extends GridRedisRestCommandHandler {
         MSET
     );
 
-    /** {@inheritDoc} */
-    public GridRedisMSetCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd) {
+    /**
+     * Constructor.
+     *
+     * @param log Logger.
+     * @param hnd Handler.
+     */
+    public GridRedisMSetCommandHandler(IgniteLogger log, GridRestProtocolHandler hnd) {
         super(log, hnd);
     }
 

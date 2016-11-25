@@ -134,6 +134,7 @@ public class AgentClusterDemo {
         CacheConfiguration<K, V> ccfg = new CacheConfiguration<>(name);
 
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
+        ccfg.setQueryDetailMetricsSize(10);
         ccfg.setStartSize(100);
         ccfg.setStatisticsEnabled(true);
 

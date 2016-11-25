@@ -1244,8 +1244,10 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
         };
 
         const _closeOldQuery = (paragraph) => {
-            if (paragraph.queryId)
-                return agentMonitor.queryClose(paragraph.resNodeId, paragraph.queryId);
+            const nid = paragraph.resNodeId;
+
+            if (paragraph.queryId && _.find($scope.caches, ({nodes}) => _.includes(nodes, nid)))
+                return agentMonitor.queryClose(nid, paragraph.queryId);
 
             return $q.when();
         };

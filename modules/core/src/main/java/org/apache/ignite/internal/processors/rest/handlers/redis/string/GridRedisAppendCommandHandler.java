@@ -50,8 +50,13 @@ public class GridRedisAppendCommandHandler extends GridRedisRestCommandHandler {
     /** Position of the value. */
     private static final int VAL_POS = 2;
 
-    /** {@inheritDoc} */
-    public GridRedisAppendCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd) {
+    /**
+     * Constructor.
+     *
+     * @param log Logger.
+     * @param hnd Handler.
+     */
+    public GridRedisAppendCommandHandler(IgniteLogger log, GridRestProtocolHandler hnd) {
         super(log, hnd);
     }
 
