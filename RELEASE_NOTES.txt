@@ -1,6 +1,10 @@
 Apache Ignite Release Notes
 ===========================
 
+Apache Ignite In-Memory Data Fabric 1.8
+---------------------------------------
+TBD
+
 Apache Ignite In-Memory Data Fabric 1.7
 ---------------------------------------
 Ignite:
