@@ -323,14 +323,18 @@ namespace Apache.Ignite.Core.Tests
                 int exitCode;
                 Assert.IsTrue(proc.Join(300, out exitCode));
                 Assert.AreEqual(-1, exitCode);
+
                 lock (reader.List)
                 {
-                    Assert.AreEqual(err, reader.List.LastOrDefault(x => x.StartsWith("OUT: ")));
+                    Assert.AreEqual(err, reader.List.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)));
                 }
             };
 
-            checkError("blabla", "OUT: ERROR: Apache.Ignite.Core.Common.IgniteException: Missing argument value: " +
-                             "'blabla'. See 'Apache.Ignite.exe /help'");
+            checkError("blabla", "ERROR: Apache.Ignite.Core.Common.IgniteException: Missing argument value: " +
+                                 "'blabla'. See 'Apache.Ignite.exe /help'");
+
+            checkError("blabla=foo", "ERROR: Apache.Ignite.Core.Common.IgniteException: " +
+                                     "Unknown argument: 'blabla'. See 'Apache.Ignite.exe /help'");
         }
 
         /// <summary>
@@ -430,7 +434,7 @@ namespace Apache.Ignite.Core.Tests
 
             public RemoteConfiguration Invoke()
             {
-                var grid0 = (Ignite) ((IgniteProxy) _grid).Target;
+                var grid0 = ((IgniteProxy) _grid).Target;
 
                 var cfg = grid0.Configuration;
 
@@ -506,7 +510,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 lock (List)
                 {
-                    List.Add((err ? "ERR: " : "OUT: ") + data);
+                    List.Add(data);
                 }
             }
         }
