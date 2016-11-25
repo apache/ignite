@@ -417,7 +417,24 @@ public final class DmlAstUtils {
      * @return New condition.
      */
     private static GridSqlElement injectKeysFilterParam(GridSqlElement where, GridSqlColumn keyCol, int paramIdx) {
-        GridSqlElement e = new GridSqlOperation(GridSqlOperationType.IN, keyCol, new GridSqlParameter(paramIdx));
+        // Yes, we need a subquery for "WHERE _key IN ?" to work with param being an array without dirty query rewriting.
+        GridSqlSelect sel = new GridSqlSelect();
+
+        GridSqlFunction from = new GridSqlFunction(GridSqlFunctionType.TABLE);
+
+        sel.from(from);
+
+        GridSqlColumn col = new GridSqlColumn(null, from, "_IGNITE_ERR_KEYS", "TABLE._IGNITE_ERR_KEYS");
+
+        sel.addColumn(col, true);
+
+        GridSqlAlias alias = new GridSqlAlias("_IGNITE_ERR_KEYS", new GridSqlParameter(paramIdx));
+
+        alias.resultType(keyCol.resultType());
+
+        from.addChild(alias);
+
+        GridSqlElement e = new GridSqlOperation(GridSqlOperationType.IN, keyCol, new GridSqlSubquery(sel));
 
         if (where == null)
             return e;
