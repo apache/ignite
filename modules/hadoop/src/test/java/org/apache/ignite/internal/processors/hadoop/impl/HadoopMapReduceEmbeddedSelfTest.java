@@ -81,6 +81,7 @@ public class HadoopMapReduceEmbeddedSelfTest extends HadoopMapReduceTest {
 
             JobConf jobConf = new JobConf();
 
+            jobConf.set("ignite.shuffle.mapper.stripe.output", "true");
             jobConf.set(CommonConfigurationKeys.IO_SERIALIZATIONS_KEY, CustomSerialization.class.getName());
 
             //To split into about 6-7 items for v2

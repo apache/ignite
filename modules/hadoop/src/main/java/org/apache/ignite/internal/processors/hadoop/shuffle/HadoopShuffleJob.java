@@ -144,7 +144,8 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         this.locMappersCnt = locMappersCnt;
         this.log = log.getLogger(HadoopShuffleJob.class);
 
-        stripeMappers = get(job.info(), SHUFFLE_MAPPER_STRIPE_OUTPUT, false);
+        // No stripes for combiner.
+        stripeMappers = get(job.info(), SHUFFLE_MAPPER_STRIPE_OUTPUT, false) && !job.info().hasCombiner();
         msgSize = get(job.info(), SHUFFLE_MSG_SIZE, DFLT_SHUFFLE_MSG_SIZE);
 
         locReducersCtx = new HadoopTaskContext[totalReducerCnt];
@@ -658,6 +659,8 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
             else {
                 if (stripeMappers) {
                     int mapperIdx = HadoopV2MapTask.mapperIndex();
+
+                    assert mapperIdx >= 0;
 
                     int idx = locMappersCnt * mapperIdx + part;
 

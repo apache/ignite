@@ -189,6 +189,8 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
         // File system coordinates.
         setupFileSystems(jobConf);
 
+        jobConf.set("ignite.shuffle.mapper.stripe.output", "true");
+
         HadoopWordCount1.setTasksClasses(jobConf, !useNewMapper, !useNewCombiner, !useNewReducer);
 
         Job job = Job.getInstance(jobConf);
