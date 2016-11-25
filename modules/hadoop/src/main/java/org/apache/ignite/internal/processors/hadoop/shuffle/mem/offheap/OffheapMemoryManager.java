@@ -1,0 +1,174 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.hadoop.shuffle.mem.offheap;
+
+import java.util.Collection;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import org.apache.ignite.internal.processors.hadoop.shuffle.mem.MemoryManager;
+import org.apache.ignite.internal.processors.hadoop.shuffle.mem.Page;
+import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
+
+/**
+ * Base class for all multimaps.
+ */
+public class OffheapMemoryManager extends MemoryManager {
+    /** */
+    private final GridUnsafeMemory mem;
+
+    /** */
+    private final int pageSize;
+
+    /** */
+    private final Collection<Page> allPages = new ConcurrentLinkedQueue<>();
+
+    /**
+     * @param mem Memory.
+     * @param pageSize Page size.
+     */
+    public OffheapMemoryManager(GridUnsafeMemory mem, int pageSize) {
+        assert mem != null;
+        assert pageSize > 0;
+
+        this.mem = mem;
+        this.pageSize = pageSize;
+    }
+
+    /**
+     * @param page Page.
+     */
+    private void deallocate(OffheapPage page) {
+        assert page != null;
+
+        mem.release(page.ptr(), page.size());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        for (Page page : allPages)
+            deallocate((OffheapPage)page);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int pageSize() {
+        return pageSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long allocate(long size) {
+        long ptr = mem.allocate(size);
+
+        allPages.add(new OffheapPage(ptr, size));
+
+        return ptr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void copyMemory(long srcPtr, long destPtr, long len) {
+        mem.copyMemory(srcPtr, destPtr, len);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Bytes bytes(long ptr, long len) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long readLongVolatile(long ptr) {
+        return mem.readLongVolatile(ptr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeLongVolatile(long ptr, long v) {
+        mem.writeLongVolatile(ptr, v);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean casLong(long ptr, long exp, long v) {
+        return mem.casLong(ptr, exp, v);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long readLong(long ptr) {
+        return mem.readLong(ptr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeLong(long ptr, long v) {
+        mem.writeLong(ptr, v);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int readInt(long ptr) {
+        return mem.readInt(ptr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeInt(long ptr, int v) {
+        mem.writeInt(ptr, v);
+    }
+
+    /** {@inheritDoc} */
+    @Override public float readFloat(long ptr) {
+        return mem.readFloat(ptr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeFloat(long ptr, float v) {
+        mem.writeFloat(ptr, v);
+    }
+
+    /** {@inheritDoc} */
+    @Override public double readDouble(long ptr) {
+        return mem.readDouble(ptr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeDouble(long ptr, double v) {
+        mem.writeDouble(ptr, v);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short readShort(long ptr) {
+        return mem.readShort(ptr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeShort(long ptr, short v) {
+        mem.writeShort(ptr, v);
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte readByte(long ptr) {
+        return mem.readByte(ptr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeByte(long ptr, byte v) {
+        mem.writeByte(ptr, v);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBytes(long ptr, byte[] arr, int off, int len) {
+        mem.writeBytes(ptr, arr, off, len);
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] readBytes(long ptr, byte[] arr, int off, int len) {
+        return mem.readBytes(ptr, arr, off, len);
+    }
+}

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.hadoop.impl.shuffle.streams;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.ignite.internal.processors.hadoop.shuffle.mem.offheap.OffheapMemoryManager;
 import org.apache.ignite.internal.processors.hadoop.shuffle.streams.HadoopDataInStream;
 import org.apache.ignite.internal.processors.hadoop.shuffle.streams.HadoopDataOutStream;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
@@ -29,11 +30,13 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  *
  */
 public class HadoopDataStreamSelfTest extends GridCommonAbstractTest {
-
+    /**
+     * @throws IOException If failed.
+     */
     public void testStreams() throws IOException {
         GridUnsafeMemory mem = new GridUnsafeMemory(0);
 
-        HadoopDataOutStream out = new HadoopDataOutStream(mem);
+        HadoopDataOutStream out = new HadoopDataOutStream(new OffheapMemoryManager(mem, 32 * 1024));
 
         int size = 4 * 1024;
 
@@ -88,7 +91,7 @@ public class HadoopDataStreamSelfTest extends GridCommonAbstractTest {
         out.write(new byte[]{0,1,2,3}, 1, 2);
         out.writeUTF("mom washes rum");
 
-        HadoopDataInStream in = new HadoopDataInStream(mem);
+        HadoopDataInStream in = new HadoopDataInStream(new OffheapMemoryManager(mem, 32 * 1024));
 
         in.buffer().set(ptr, out.buffer().pointer());
 

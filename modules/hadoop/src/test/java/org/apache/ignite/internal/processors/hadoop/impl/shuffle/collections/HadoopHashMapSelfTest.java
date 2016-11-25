@@ -20,10 +20,12 @@ package org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopHashMultimap;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopMultimap;
+import org.apache.ignite.internal.processors.hadoop.shuffle.mem.offheap.OffheapMemoryManager;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.X;
@@ -52,26 +54,28 @@ public class HadoopHashMapSelfTest extends HadoopAbstractMapTest {
 
         HadoopTaskContext taskCtx = new TaskContext();
 
-        final HadoopHashMultimap m = new HadoopHashMultimap(new JobInfo(), mem, mapSize);
+        final HadoopHashMultimap m = new HadoopHashMultimap(new JobInfo(),
+            new OffheapMemoryManager(mem, 32 * 1024), mapSize);
 
         HadoopMultimap.Adder a = m.startAdding(taskCtx);
 
         Multimap<Integer, Integer> mm = ArrayListMultimap.create();
 
-        for (int i = 0, vals = 4 * mapSize + rnd.nextInt(25); i < vals; i++) {
+        for (int i = 0, vals = 400 * mapSize + rnd.nextInt(25); i < vals; i++) {
             int key = rnd.nextInt(mapSize);
             int val = rnd.nextInt();
 
-            a.write(new IntWritable(key), new IntWritable(val));
-            mm.put(key, val);
-
             X.println("k: " + key + " v: " + val);
 
-            a.close();
+            a.write(new IntWritable(key), new IntWritable(val));
+
+            mm.put(key, val);
+
+//            a.close();
 
             check(m, mm, taskCtx);
 
-            a = m.startAdding(taskCtx);
+//            a = m.startAdding(taskCtx);
         }
 
 //        a.add(new IntWritable(10), new IntWritable(2));
@@ -87,7 +91,14 @@ public class HadoopHashMapSelfTest extends HadoopAbstractMapTest {
         assertEquals(0, mem.allocatedSize());
     }
 
-    private void check(HadoopHashMultimap m, Multimap<Integer, Integer> mm, HadoopTaskContext taskCtx) throws Exception {
+    /**
+     * @param m Multimap
+     * @param mm Golden mutimap.
+     * @param taskCtx Task context.
+     * @throws Exception If failed.
+     */
+    private void check(HadoopHashMultimap m, Multimap<Integer, Integer> mm, HadoopTaskContext taskCtx)
+        throws Exception {
         final HadoopTaskInput in = m.input(taskCtx);
 
         Map<Integer, Collection<Integer>> mmm = mm.asMap();
@@ -122,6 +133,10 @@ public class HadoopHashMapSelfTest extends HadoopAbstractMapTest {
         in.close();
     }
 
+    /**
+     * @param col Collection.
+     * @return List.
+     */
     private GridLongList sorted(Collection<Integer> col) {
         GridLongList lst = new GridLongList(col.size());
 

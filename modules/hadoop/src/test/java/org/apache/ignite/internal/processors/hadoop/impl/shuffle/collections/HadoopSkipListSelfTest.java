@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopMultimap;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopSkipList;
+import org.apache.ignite.internal.processors.hadoop.shuffle.mem.offheap.OffheapMemoryManager;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.io.GridDataInput;
@@ -103,7 +104,7 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
 
         HadoopTaskContext taskCtx = new TaskContext();
 
-        HadoopMultimap m = new HadoopSkipList(job, mem);
+        HadoopMultimap m = new HadoopSkipList(job, new OffheapMemoryManager(mem, 32 * 1024));
 
         HadoopMultimap.Adder a = m.startAdding(taskCtx);
 
@@ -237,7 +238,7 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
 
             final HadoopTaskContext taskCtx = new TaskContext();
 
-            final HadoopMultimap m = new HadoopSkipList(job, mem);
+            final HadoopMultimap m = new HadoopSkipList(job, new OffheapMemoryManager(mem, 32 * 1024));
 
             final ConcurrentMap<Integer, Collection<Integer>> mm = new ConcurrentHashMap<>();
 

@@ -20,8 +20,7 @@ package org.apache.ignite.internal.processors.hadoop.shuffle.streams;
 import java.io.DataOutput;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
+import org.apache.ignite.internal.processors.hadoop.shuffle.mem.MemoryManager;
 
 /**
  * Data output stream.
@@ -31,12 +30,12 @@ public class HadoopDataOutStream extends OutputStream implements DataOutput {
     private final HadoopOffheapBuffer buf = new HadoopOffheapBuffer(0, 0);
 
     /** */
-    private final GridUnsafeMemory mem;
+    private final MemoryManager mem;
 
     /**
      * @param mem Memory.
      */
-    public HadoopDataOutStream(GridUnsafeMemory mem) {
+    public HadoopDataOutStream(MemoryManager mem) {
         this.mem = mem;
     }
 
@@ -67,7 +66,7 @@ public class HadoopDataOutStream extends OutputStream implements DataOutput {
 
     /** {@inheritDoc} */
     @Override public void write(byte[] b, int off, int len) {
-        GridUnsafe.copyMemory(b, GridUnsafe.BYTE_ARR_OFF + off, null, move(len), len);
+        mem.writeBytes(move(len), b, off, len);
     }
 
     /** {@inheritDoc} */

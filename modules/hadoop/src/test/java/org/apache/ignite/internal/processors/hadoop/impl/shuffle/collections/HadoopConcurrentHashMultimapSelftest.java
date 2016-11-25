@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopConcurrentHashMultimap;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopMultimap;
+import org.apache.ignite.internal.processors.hadoop.shuffle.mem.offheap.OffheapMemoryManager;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.io.GridDataInput;
@@ -67,7 +68,8 @@ public class HadoopConcurrentHashMultimapSelftest extends HadoopAbstractMapTest 
 
         HadoopTaskContext taskCtx = new TaskContext();
 
-        HadoopConcurrentHashMultimap m = new HadoopConcurrentHashMultimap(job, mem, mapSize);
+        HadoopConcurrentHashMultimap m = new HadoopConcurrentHashMultimap(job,
+            new OffheapMemoryManager(mem, 32 * 1024), mapSize);
 
         HadoopConcurrentHashMultimap.Adder a = m.startAdding(taskCtx);
 
@@ -197,7 +199,8 @@ public class HadoopConcurrentHashMultimapSelftest extends HadoopAbstractMapTest 
 
             final HadoopTaskContext taskCtx = new TaskContext();
 
-            final HadoopConcurrentHashMultimap m = new HadoopConcurrentHashMultimap(job, mem, 16);
+            final HadoopConcurrentHashMultimap m = new HadoopConcurrentHashMultimap(job,
+                new OffheapMemoryManager(mem, 32 * 1024), 16);
 
             final ConcurrentMap<Integer, Collection<Integer>> mm = new ConcurrentHashMap<>();
 

@@ -21,6 +21,7 @@ import java.util.Comparator;
 import java.util.concurrent.Callable;
 import org.apache.commons.collections.comparators.ComparableComparator;
 import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.hadoop.HadoopHelper;

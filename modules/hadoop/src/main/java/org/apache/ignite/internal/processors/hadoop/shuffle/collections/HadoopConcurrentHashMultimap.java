@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
+import org.apache.ignite.internal.processors.hadoop.shuffle.mem.MemoryManager;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
@@ -61,7 +62,7 @@ public class HadoopConcurrentHashMultimap extends HadoopHashMultimapBase {
      * @param mem Memory.
      * @param cap Initial capacity.
      */
-    public HadoopConcurrentHashMultimap(HadoopJobInfo jobInfo, GridUnsafeMemory mem, int cap) {
+    public HadoopConcurrentHashMultimap(HadoopJobInfo jobInfo, MemoryManager mem, int cap) {
         super(jobInfo, mem);
 
         assert U.isPow2(cap);
@@ -99,7 +100,7 @@ public class HadoopConcurrentHashMultimap extends HadoopHashMultimapBase {
         if (state.get() == State.CLOSING)
             throw new IllegalStateException("Closed.");
 
-        return new AdderImpl(ctx);
+        return new AdderImpl(ctx, mem);
     }
 
     /** {@inheritDoc} */
@@ -150,9 +151,9 @@ public class HadoopConcurrentHashMultimap extends HadoopHashMultimapBase {
                     lastVisitedValue(meta, valPtr); // Set it to the first value in chain.
 
                     do {
-                        v.onValue(valPtr + 12, valueSize(valPtr));
+                        v.onValue(valPtr + 12, mem.valueSize(valPtr));
 
-                        valPtr = nextValue(valPtr);
+                        valPtr = mem.nextValue(valPtr);
                     }
                     while (valPtr != lastVisited);
                 }
@@ -372,12 +373,13 @@ public class HadoopConcurrentHashMultimap extends HadoopHashMultimapBase {
 
         /**
          * @param ctx Task context.
+         * @param mem Memory manager.
          * @throws IgniteCheckedException If failed.
          */
-        private AdderImpl(HadoopTaskContext ctx) throws IgniteCheckedException {
-            super(ctx);
+        private AdderImpl(HadoopTaskContext ctx, MemoryManager mem) throws IgniteCheckedException {
+            super(ctx, mem);
 
-            keyReader = new Reader(keySer);
+            keyReader = new Reader(keySer, mem);
 
             rehashIfNeeded(oldTbl);
 
@@ -458,7 +460,7 @@ public class HadoopConcurrentHashMultimap extends HadoopHashMultimapBase {
                 valPtr = write(12, val, valSer);
                 int valSize = writtenSize() - 12;
 
-                valueSize(valPtr, valSize);
+                mem.valueSize(valPtr, valSize);
             }
 
             for (AtomicLongArray old = null;;) {
@@ -493,7 +495,7 @@ public class HadoopConcurrentHashMultimap extends HadoopHashMultimapBase {
                                 do {
                                     nextValPtr = value(metaPtr);
 
-                                    nextValue(valPtr, nextValPtr);
+                                    mem.nextValue(valPtr, nextValPtr);
                                 }
                                 while (!casValue(metaPtr, nextValPtr, valPtr));
                             }
@@ -531,7 +533,7 @@ public class HadoopConcurrentHashMultimap extends HadoopHashMultimapBase {
                     int keySize = writtenSize();
 
                     if (valPtr != 0)
-                        nextValue(valPtr, 0);
+                        mem.nextValue(valPtr, 0);
 
                     newMetaPtr = createMeta(keyHash, keySize, keyPtr, valPtr, metaPtrRoot, 0);
                 }
@@ -583,14 +585,14 @@ public class HadoopConcurrentHashMultimap extends HadoopHashMultimapBase {
 
                 val.copyTo(valPtr + 12);
 
-                valueSize(valPtr, size);
+                mem.valueSize(valPtr, size);
 
                 long nextVal;
 
                 do {
                     nextVal = value(meta);
 
-                    nextValue(valPtr, nextVal);
+                    mem.nextValue(valPtr, nextVal);
                 }
                 while(!casValue(meta, nextVal, valPtr));
             }

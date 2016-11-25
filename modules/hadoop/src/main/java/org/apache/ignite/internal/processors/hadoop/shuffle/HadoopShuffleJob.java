@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobProperty;
 import org.apache.ignite.internal.processors.hadoop.HadoopPartitioner;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
@@ -39,6 +40,8 @@ import org.apache.ignite.internal.processors.hadoop.counter.HadoopPerformanceCou
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopConcurrentHashMultimap;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopMultimap;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopSkipList;
+import org.apache.ignite.internal.processors.hadoop.shuffle.mem.MemoryManager;
+import org.apache.ignite.internal.processors.hadoop.shuffle.mem.offheap.OffheapMemoryManager;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -55,6 +58,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.PARTITION_HASHMAP_SIZE;
+import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_OFFHEAP_PAGE_SIZE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_REDUCER_NO_SORTING;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.get;
 
@@ -70,6 +74,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
     /** */
     private final GridUnsafeMemory mem;
+
+    /** */
+    private final MemoryManager memMgr;
 
     /** */
     private final boolean needPartitioner;
@@ -136,6 +143,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         maps = new AtomicReferenceArray<>(totalReducerCnt);
         msgs = new HadoopShuffleMessage[totalReducerCnt];
+
+        memMgr = new OffheapMemoryManager(mem,
+            HadoopJobProperty.get(job.info(), SHUFFLE_OFFHEAP_PAGE_SIZE, 32 * 1024));
     }
 
     /**
@@ -202,8 +212,8 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         if (map == null) { // Create new map.
             map = get(job.info(), SHUFFLE_REDUCER_NO_SORTING, false) ?
-                new HadoopConcurrentHashMultimap(job.info(), mem, get(job.info(), PARTITION_HASHMAP_SIZE, 8 * 1024)):
-                new HadoopSkipList(job.info(), mem);
+                new HadoopConcurrentHashMultimap(job.info(), memMgr, get(job.info(), PARTITION_HASHMAP_SIZE, 8 * 1024)):
+                new HadoopSkipList(job.info(), memMgr);
 
             if (!maps.compareAndSet(idx, null, map)) {
                 map.close();
@@ -304,6 +314,8 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
     /**
      * Sends map updates to remote reducers.
+     * @param flush Flush flag.
+     * @throws IgniteCheckedException If failed.
      */
     private void collectUpdatesAndSend(boolean flush) throws IgniteCheckedException {
         for (int i = 0; i < maps.length(); i++) {

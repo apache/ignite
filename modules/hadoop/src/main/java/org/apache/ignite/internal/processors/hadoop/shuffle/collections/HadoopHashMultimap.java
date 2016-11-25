@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.hadoop.shuffle.collections;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
+import org.apache.ignite.internal.processors.hadoop.shuffle.mem.MemoryManager;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -39,7 +40,7 @@ public class HadoopHashMultimap extends HadoopHashMultimapBase {
      * @param mem Memory.
      * @param cap Initial capacity.
      */
-    public HadoopHashMultimap(HadoopJobInfo jobInfo, GridUnsafeMemory mem, int cap) {
+    public HadoopHashMultimap(HadoopJobInfo jobInfo, MemoryManager mem, int cap) {
         super(jobInfo, mem);
 
         assert U.isPow2(cap) : cap;
@@ -49,7 +50,7 @@ public class HadoopHashMultimap extends HadoopHashMultimapBase {
 
     /** {@inheritDoc} */
     @Override public Adder startAdding(HadoopTaskContext ctx) throws IgniteCheckedException {
-        return new AdderImpl(ctx);
+        return new AdderImpl(ctx, mem);
     }
 
     /**
@@ -103,12 +104,13 @@ public class HadoopHashMultimap extends HadoopHashMultimapBase {
 
         /**
          * @param ctx Task context.
+         * @param mem Memory manager.
          * @throws IgniteCheckedException If failed.
          */
-        protected AdderImpl(HadoopTaskContext ctx) throws IgniteCheckedException {
-            super(ctx);
+        protected AdderImpl(HadoopTaskContext ctx, MemoryManager mem) throws IgniteCheckedException {
+            super(ctx, mem);
 
-            keyReader = new Reader(keySer);
+            keyReader = new Reader(keySer, mem);
         }
 
         /**
@@ -138,10 +140,12 @@ public class HadoopHashMultimap extends HadoopHashMultimapBase {
             int keyHash = U.hash(key.hashCode());
 
             // Write value.
+            System.out.println(">W val");
             long valPtr = write(12, val, valSer);
+            System.out.println("<W val");
             int valSize = writtenSize() - 12;
 
-            valueSize(valPtr, valSize);
+            mem.valueSize(valPtr, valSize);
 
             // Find position in table.
             int idx = keyHash & (tbl.length - 1);
@@ -151,7 +155,7 @@ public class HadoopHashMultimap extends HadoopHashMultimapBase {
             // Search for our key in collisions.
             while (meta != 0) {
                 if (keyHash(meta) == keyHash && key.equals(keyReader.readKey(meta))) { // Found key.
-                    nextValue(valPtr, value(meta));
+                    mem.nextValue(valPtr, value(meta));
 
                     value(meta, valPtr);
 
@@ -162,10 +166,12 @@ public class HadoopHashMultimap extends HadoopHashMultimapBase {
             }
 
             // Write key.
+            System.out.println(">W key");
             long keyPtr = write(0, key, keySer);
+            System.out.println("<W key");
             int keySize = writtenSize();
 
-            nextValue(valPtr, 0);
+            mem.nextValue(valPtr, 0);
 
             tbl[idx] = createMeta(keyHash, keySize, keyPtr, valPtr, tbl[idx]);
 

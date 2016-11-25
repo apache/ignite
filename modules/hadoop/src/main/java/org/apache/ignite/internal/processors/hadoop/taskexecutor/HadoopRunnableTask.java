@@ -22,6 +22,7 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobProperty;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskCancelledException;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
@@ -31,11 +32,14 @@ import org.apache.ignite.internal.processors.hadoop.counter.HadoopPerformanceCou
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopHashMultimap;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopMultimap;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopSkipList;
+import org.apache.ignite.internal.processors.hadoop.shuffle.mem.MemoryManager;
+import org.apache.ignite.internal.processors.hadoop.shuffle.mem.offheap.OffheapMemoryManager;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.COMBINER_HASHMAP_SIZE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_COMBINER_NO_SORTING;
+import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_OFFHEAP_PAGE_SIZE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.get;
 import static org.apache.ignite.internal.processors.hadoop.HadoopTaskType.COMBINE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopTaskType.MAP;
@@ -46,6 +50,9 @@ import static org.apache.ignite.internal.processors.hadoop.HadoopTaskType.MAP;
 public abstract class HadoopRunnableTask implements Callable<Void> {
     /** */
     private final GridUnsafeMemory mem;
+
+    /** */
+    private final MemoryManager memMgr;
 
     /** */
     private final IgniteLogger log;
@@ -91,6 +98,9 @@ public abstract class HadoopRunnableTask implements Callable<Void> {
         this.job = job;
         this.mem = mem;
         this.info = info;
+
+        memMgr = new OffheapMemoryManager(mem,
+            HadoopJobProperty.get(job.info(), SHUFFLE_OFFHEAP_PAGE_SIZE, 32 * 1024));
     }
 
     /**
@@ -122,7 +132,7 @@ public abstract class HadoopRunnableTask implements Callable<Void> {
 
     /**
      * Implements actual task running.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException In case of an error.
      */
     void call0() throws IgniteCheckedException {
         execStartTs = U.currentTimeMillis();
@@ -273,8 +283,8 @@ public abstract class HadoopRunnableTask implements Callable<Void> {
                     assert combinerInput == null;
 
                     combinerInput = get(job.info(), SHUFFLE_COMBINER_NO_SORTING, false) ?
-                        new HadoopHashMultimap(job.info(), mem, get(job.info(), COMBINER_HASHMAP_SIZE, 8 * 1024)):
-                        new HadoopSkipList(job.info(), mem); // TODO replace with red-black tree
+                        new HadoopHashMultimap(job.info(), memMgr, get(job.info(), COMBINER_HASHMAP_SIZE, 8 * 1024)):
+                        new HadoopSkipList(job.info(), memMgr); // TODO replace with red-black tree
 
                     return combinerInput.startAdding(ctx);
                 }

@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
+import org.apache.ignite.internal.processors.hadoop.shuffle.mem.MemoryManager;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 
 /**
@@ -34,7 +35,7 @@ public abstract class HadoopHashMultimapBase extends HadoopMultimapBase {
      * @param jobInfo Job info.
      * @param mem Memory.
      */
-    protected HadoopHashMultimapBase(HadoopJobInfo jobInfo, GridUnsafeMemory mem) {
+    protected HadoopHashMultimapBase(HadoopJobInfo jobInfo, MemoryManager mem) {
         super(jobInfo, mem);
     }
 
@@ -122,9 +123,10 @@ public abstract class HadoopHashMultimapBase extends HadoopMultimapBase {
     protected class Reader extends ReaderBase {
         /**
          * @param ser Serialization.
+         * @param mem Memory manager.
          */
-        protected Reader(HadoopSerialization ser) {
-            super(ser);
+        protected Reader(HadoopSerialization ser, MemoryManager mem) {
+            super(ser, mem);
         }
 
         /**
@@ -169,8 +171,8 @@ public abstract class HadoopHashMultimapBase extends HadoopMultimapBase {
         public Input(HadoopTaskContext taskCtx) throws IgniteCheckedException {
             cap = capacity();
 
-            keyReader = new Reader(taskCtx.keySerialization());
-            valReader = new Reader(taskCtx.valueSerialization());
+            keyReader = new Reader(taskCtx.keySerialization(), mem);
+            valReader = new Reader(taskCtx.valueSerialization(), mem);
         }
 
         /** {@inheritDoc} */
@@ -199,7 +201,7 @@ public abstract class HadoopHashMultimapBase extends HadoopMultimapBase {
 
         /** {@inheritDoc} */
         @Override public Iterator<?> values() {
-            return new ValueIterator(value(metaPtr), valReader);
+            return new ValueIterator(value(metaPtr), valReader, mem);
         }
 
         /** {@inheritDoc} */

@@ -21,7 +21,7 @@ import java.io.DataInput;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
+import org.apache.ignite.internal.processors.hadoop.shuffle.mem.MemoryManager;
 
 /**
  * Data input stream.
@@ -31,12 +31,12 @@ public class HadoopDataInStream extends InputStream implements DataInput {
     private final HadoopOffheapBuffer buf = new HadoopOffheapBuffer(0, 0);
 
     /** */
-    private final GridUnsafeMemory mem;
+    private final MemoryManager mem;
 
     /**
      * @param mem Memory.
      */
-    public HadoopDataInStream(GridUnsafeMemory mem) {
+    public HadoopDataInStream(MemoryManager mem) {
         assert mem != null;
 
         this.mem = mem;
