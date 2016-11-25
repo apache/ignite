@@ -327,7 +327,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     public static final byte HANDSHAKE_MSG_TYPE = -3;
 
     /** */
-    public static final byte INIT_TIMEOUT_MSG_TYPE = -4;
+    public static final byte INIT_TIMEOUT_MSG_TYPE = -28;
 
     /** */
     private ConnectGateway connectGate;
