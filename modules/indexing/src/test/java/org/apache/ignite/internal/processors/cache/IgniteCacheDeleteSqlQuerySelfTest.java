@@ -78,4 +78,29 @@ public class IgniteCacheDeleteSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
         assertEqualsCollections(Arrays.asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
             leftovers.get(2));
     }
+
+    /**
+     * In binary mode, this test checks that inner forcing of keepBinary works - without it, EntryProcessors
+     * inside DML engine would compare binary and non-binary objects with the same keys and thus fail.
+     */
+    public void testDeleteSimpleWithoutKeepBinary() {
+        IgniteCache p = ignite(0).cache("S2P");
+
+        QueryCursor<List<?>> c = p.query(new SqlFieldsQuery("delete from Person p where length(p._key) = 2 " +
+            "or p.secondName like '%ite'"));
+
+        c.iterator();
+
+        c = p.query(new SqlFieldsQuery("select * from Person order by id"));
+
+        List<List<?>> leftovers = c.getAll();
+
+        assertEquals(2, leftovers.size());
+
+        assertEqualsCollections(Arrays.asList("SecondKey", new Person(2, "Joe", "Black"), 2, "Joe", "Black"),
+            leftovers.get(0));
+
+        assertEqualsCollections(Arrays.asList("f0u4thk3y", new Person(4, "Jane", "Silver"), 4, "Jane", "Silver"),
+            leftovers.get(1));
+    }
 }

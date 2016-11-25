@@ -88,45 +88,41 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonA
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3, true);
 
-        ignite(0).createCache(cacheConfig());
+        ignite(0).createCache(cacheConfig("S2P", true, false).setIndexedTypes(String.class, Person.class));
+        ignite(0).createCache(createBinCacheConfig());
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
-        ignite(0).cache("S2P").put("FirstKey", createPerson(1, "John", "White"));
-        ignite(0).cache("S2P").put("SecondKey", createPerson(2, "Joe", "Black"));
-        ignite(0).cache("S2P").put("k3", createPerson(3, "Sylvia", "Green"));
-        ignite(0).cache("S2P").put("f0u4thk3y", createPerson(4, "Jane", "Silver"));
+        ignite(0).cache("S2P").put("FirstKey", new Person(1, "John", "White"));
+        ignite(0).cache("S2P").put("SecondKey", new Person(2, "Joe", "Black"));
+        ignite(0).cache("S2P").put("k3", new Person(3, "Sylvia", "Green"));
+        ignite(0).cache("S2P").put("f0u4thk3y", new Person(4, "Jane", "Silver"));
+
+        ignite(0).cache("S2P-bin").put("FirstKey", createPerson(1, "John", "White"));
+        ignite(0).cache("S2P-bin").put("SecondKey", createPerson(2, "Joe", "Black"));
+        ignite(0).cache("S2P-bin").put("k3", createPerson(3, "Sylvia", "Green"));
+        ignite(0).cache("S2P-bin").put("f0u4thk3y", createPerson(4, "Jane", "Silver"));
     }
 
     /** */
     Object createPerson(int id, String name, String secondName) {
-        if (!isBinaryMarshaller())
-            return new Person(id, name, secondName);
-        else {
-            BinaryObjectBuilder bldr = ignite(0).binary().builder("Person");
+        BinaryObjectBuilder bldr = ignite(0).binary().builder("Person");
 
-            bldr.setField("id", id);
-            bldr.setField("name", name);
-            bldr.setField("secondName", secondName);
+        bldr.setField("id", id);
+        bldr.setField("name", name);
+        bldr.setField("secondName", secondName);
 
-            return bldr.build();
-        }
-
+        return bldr.build();
     }
 
     /** */
-    protected IgniteCache<?, ?> cache() {
-        return ignite(0).cache("S2P").withKeepBinary();
-    }
-
-    /** */
-    protected CacheConfiguration cacheConfig() {
+    protected IgniteCache cache() {
         if (!isBinaryMarshaller())
-            return cacheConfig("S2P", true, false).setIndexedTypes(String.class, Person.class);
+            return ignite(0).cache("S2P");
         else
-            return createBinCacheConfig();
+            return ignite(0).cache("S2P-bin").withKeepBinary();
     }
 
     /** {@inheritDoc} */
@@ -153,7 +149,7 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonA
      *
      */
     private static CacheConfiguration createBinCacheConfig() {
-        CacheConfiguration ccfg = cacheConfig("S2P", true, false);
+        CacheConfiguration ccfg = cacheConfig("S2P-bin", true, false);
 
         QueryEntity e = new QueryEntity(String.class.getName(), "Person");
 
@@ -177,7 +173,7 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonA
     /**
      *
      */
-    private static class Person implements Serializable {
+    static class Person implements Serializable {
         /** */
         public Person(int id, String name, String secondName) {
             this.id = id;
