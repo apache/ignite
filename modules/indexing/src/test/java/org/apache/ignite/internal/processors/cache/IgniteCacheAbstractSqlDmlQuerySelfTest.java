@@ -153,8 +153,6 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonA
 
         QueryEntity e = new QueryEntity(String.class.getName(), "Person");
 
-        e.setKeyFields(Collections.<String>emptySet());
-
         LinkedHashMap<String, String> flds = new LinkedHashMap<>();
 
         flds.put("id", Integer.class.getName());
