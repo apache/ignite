@@ -40,7 +40,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -130,7 +129,7 @@ public class HadoopShuffle extends HadoopComponent {
      * @param msg Message to send.
      * @throws IgniteCheckedException If send failed.
      */
-    private void send0(final UUID nodeId, final Object msg) throws IgniteCheckedException {
+    private void send0(UUID nodeId, Object msg) throws IgniteCheckedException {
         ClusterNode node = ctx.kernalContext().discovery().node(nodeId);
 
         if (msg instanceof Message)

@@ -160,7 +160,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         locMaps = new AtomicReferenceArray<>(totalReducerCnt);
         rmtMaps = new AtomicReferenceArray<>(stripeMappers ? (totalReducerCnt * locMappersCnt) : totalReducerCnt);
 
-        msgs = new HadoopShuffleMessage[rmtMaps.length()];
+        msgs = new HadoopShuffleMessage[totalReducerCnt];
+
+        msgs = new HadoopShuffleMessage[totalReducerCnt];
     }
 
     /**
@@ -200,8 +202,6 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
                 @Override protected void body() throws InterruptedException {
                     try {
                         while (!isCancelled()) {
-                            Thread.sleep(5);
-
                             collectUpdatesAndSend(false);
                         }
                     }
@@ -323,7 +323,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         /** */
         @Override public void copyTo(long ptr) {
-            GridUnsafe.copyMemory(buf, GridUnsafe.BYTE_ARR_OFF + off, null, ptr, size);
+            GridUnsafe.copyHeapOffheap(buf, GridUnsafe.BYTE_ARR_OFF + off, ptr, size);
         }
     }
 

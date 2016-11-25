@@ -173,7 +173,7 @@ public class HadoopShuffleMessage implements Message, HadoopMessage {
 
         off += 4;
 
-        GridUnsafe.copyMemory(null, ptr, buf, GridUnsafe.BYTE_ARR_OFF + off, size);
+        GridUnsafe.copyOffheapHeap(ptr, buf, GridUnsafe.BYTE_ARR_OFF + off, size);
 
         off += size;
     }
