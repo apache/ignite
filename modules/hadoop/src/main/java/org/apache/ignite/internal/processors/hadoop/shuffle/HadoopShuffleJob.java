@@ -29,7 +29,6 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskOutput;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskType;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopPerformanceCounter;
-import org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopV2MapTask;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopConcurrentHashMultimap;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopMultimap;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopSkipList;
@@ -64,6 +63,28 @@ import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.get
  * Shuffle job.
  */
 public class HadoopShuffleJob<T> implements AutoCloseable {
+    /** Thread-local mapper index. */
+    private static final ThreadLocal<Integer> MAP_IDX = new ThreadLocal<>();
+
+    /**
+     * @return Current mapper index.
+     */
+    public static int mapperIndex() {
+        Integer res = MAP_IDX.get();
+
+        return res != null ? res : -1;
+    }
+
+    /**
+     * @param idx Current mapper index.
+     */
+    public static void mapperIndex(Integer idx) {
+        if (idx == null)
+            MAP_IDX.remove();
+
+        MAP_IDX.set(idx);
+    }
+
     /** */
     private static final int DFLT_SHUFFLE_MSG_SIZE = 128 * 1024;
 
@@ -658,7 +679,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
             }
             else {
                 if (stripeMappers) {
-                    int mapperIdx = HadoopV2MapTask.mapperIndex();
+                    int mapperIdx = mapperIndex();
 
                     assert mapperIdx >= 0;
 

@@ -29,23 +29,12 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
+import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleJob;
 
 /**
  * Hadoop map task implementation for v2 API.
  */
 public class HadoopV2MapTask extends HadoopV2Task {
-    /** Thread-local mapper index. */
-    private static final ThreadLocal<Integer> MAP_IDX = new ThreadLocal<>();
-
-    /**
-     * @return Current mapper index.
-     */
-    public static int mapperIndex() {
-        Integer res = MAP_IDX.get();
-
-        return res != null ? res : -1;
-    }
-
     /**
      * @param taskInfo Task info.
      */
@@ -61,7 +50,7 @@ public class HadoopV2MapTask extends HadoopV2Task {
 
         JobContextImpl jobCtx = taskCtx.jobContext();
 
-        MAP_IDX.set(taskCtx.taskInfo().mapperIndex());
+        HadoopShuffleJob.mapperIndex(taskCtx.taskInfo().mapperIndex());
 
         try {
             InputSplit nativeSplit = hadoopContext().getInputSplit();
@@ -106,7 +95,7 @@ public class HadoopV2MapTask extends HadoopV2Task {
             throw new IgniteCheckedException(e);
         }
         finally {
-            MAP_IDX.remove();
+            HadoopShuffleJob.mapperIndex(null);
 
             if (err != null)
                 abort(outputFormat);
