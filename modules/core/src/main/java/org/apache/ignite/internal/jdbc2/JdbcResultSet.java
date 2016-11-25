@@ -88,10 +88,11 @@ public class JdbcResultSet implements ResultSet {
     /** Fetch size. */
     private int fetchSize;
 
+    /** Which query task to use under the hood - {@link JdbcQueryTaskV2} if {@code true}, {@link JdbcQueryTask} otherwise. */
+    private final boolean useNewQryTask;
+
     /**
-     * Creates new result set with predefined fields.
-     * Result set created with this constructor will
-     * never execute remote tasks.
+     * Creates new result set.
      *
      * @param uuid Query UUID.
      * @param stmt Statement.
@@ -102,6 +103,39 @@ public class JdbcResultSet implements ResultSet {
      */
     JdbcResultSet(@Nullable UUID uuid, JdbcStatement stmt, List<String> tbls, List<String> cols,
         List<String> types, Collection<List<?>> fields, boolean finished) {
+        this(uuid, stmt, tbls, cols, types, fields, finished, false);
+    }
+
+    /**
+     * Creates new result set that will be based on {@link JdbcQueryTaskV2}. This method is intended for use inside
+     *     {@link JdbcStatement} only.
+     *
+     * @param uuid Query UUID.
+     * @param stmt Statement.
+     * @param tbls Table names.
+     * @param cols Column names.
+     * @param types Types.
+     * @param fields Fields.
+     */
+    static JdbcResultSet resultSetForQueryTaskV2(@Nullable UUID uuid, JdbcStatement stmt, List<String> tbls,
+            List<String> cols, List<String> types, Collection<List<?>> fields, boolean finished) {
+        return new JdbcResultSet(uuid, stmt, tbls, cols, types, fields, finished, true);
+    }
+
+    /**
+     * Creates new result set.
+     *
+     * @param uuid Query UUID.
+     * @param stmt Statement.
+     * @param tbls Table names.
+     * @param cols Column names.
+     * @param types Types.
+     * @param fields Fields.
+     * @param useNewQryTask Which query task to use under the hood - {@link JdbcQueryTaskV2} if {@code true},
+     *     {@link JdbcQueryTask} otherwise.
+     */
+    private JdbcResultSet(@Nullable UUID uuid, JdbcStatement stmt, List<String> tbls, List<String> cols,
+        List<String> types, Collection<List<?>> fields, boolean finished, boolean useNewQryTask) {
         assert stmt != null;
         assert tbls != null;
         assert cols != null;
@@ -116,6 +150,8 @@ public class JdbcResultSet implements ResultSet {
         this.finished = finished;
 
         this.it = fields.iterator();
+
+        this.useNewQryTask = useNewQryTask;
     }
 
     /** {@inheritDoc} */
@@ -147,7 +183,7 @@ public class JdbcResultSet implements ResultSet {
 
             boolean loc = nodeId == null;
 
-            if (conn.isDmlSupported()) {
+            if (useNewQryTask) {
                 // Connections from new clients send queries with new tasks, so we have to continue in the same manner
                 JdbcQueryTaskV2 qryTask = new JdbcQueryTaskV2(loc ? ignite : null, conn.cacheName(), null, true, loc, null,
                     fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
@@ -209,8 +245,9 @@ public class JdbcResultSet implements ResultSet {
      * If this result set is associated with locally executed query then query cursor will also closed.
      */
     void closeInternal() throws SQLException  {
-        if (((JdbcConnection)stmt.getConnection()).nodeId() == null && uuid != null)
+        if (((JdbcConnection)stmt.getConnection()).nodeId() == null && uuid != null) {
             JdbcQueryTask.remove(uuid);
+        }
 
         closed = true;
     }

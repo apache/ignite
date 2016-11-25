@@ -346,8 +346,8 @@ public class JdbcStatement implements Statement {
                 loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
 
             if (res.isQuery()) {
-                JdbcResultSet rs = new JdbcResultSet(uuid, this, res.getTbls(), res.getCols(), res.getTypes(),
-                    res.getRows(), res.isFinished());
+                JdbcResultSet rs = JdbcResultSet.resultSetForQueryTaskV2(uuid, this, res.getTbls(), res.getCols(),
+                    res.getTypes(), res.getRows(), res.isFinished());
 
                 rs.setFetchSize(fetchSize);
 
