@@ -1502,10 +1502,22 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             aliases = Collections.emptyMap();
 
         Set<String> keyFields = qryEntity.getKeyFields();
+
+        // We have to distinguish between empty and null keyFields when the key is not of SQL type -
+        // when a key is not of SQL type, absence of a field in nonnull keyFields tell us that this field
+        // is a value field, and null keyFields tells us that current configuration
+        // does not tell us anything about this field's ownership.
         boolean hasKeyFields = (keyFields != null);
 
+        boolean isKeyClsSqlType = isSqlType(d.keyClass());
+
         for (Map.Entry<String, String> entry : qryEntity.getFields().entrySet()) {
-            Boolean isKeyField = (hasKeyFields ? keyFields.contains(entry.getKey()) : null);
+            Boolean isKeyField;
+
+            if (isKeyClsSqlType) // We don't care about keyFields in this case - it might be null, or empty, or anything
+                isKeyField = false;
+            else
+                isKeyField = (hasKeyFields ? keyFields.contains(entry.getKey()) : null);
 
             BinaryProperty prop = buildBinaryProperty(entry.getKey(), U.classForName(entry.getValue(), Object.class, true),
                 aliases, isKeyField);

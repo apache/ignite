@@ -148,8 +148,6 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
             QueryEntity s2p = new QueryEntity(String.class.getName(), "Person");
 
-            s2p.setKeyFields(Collections.<String>emptySet());
-
             LinkedHashMap<String, String> flds = new LinkedHashMap<>();
 
             flds.put("id", Integer.class.getName());
@@ -161,8 +159,6 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
             QueryEntity s2s = new QueryEntity(String.class.getName(), String.class.getName());
 
-            s2s.setKeyFields(Collections.<String>emptySet());
-
             s2pCcfg.setQueryEntities(Arrays.asList(s2p, s2s));
 
             ignite(0).createCache(s2pCcfg);
@@ -172,8 +168,6 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             CacheConfiguration i2pCcfg = cacheConfig("I2P", true, false);
 
             QueryEntity i2p = new QueryEntity(Integer.class.getName(), "Person");
-
-            i2p.setKeyFields(Collections.<String>emptySet());
 
             LinkedHashMap<String, String> flds = new LinkedHashMap<>();
 
@@ -284,8 +278,6 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             CacheConfiguration i2iCcfg = cacheConfig("I2I", true, false);
 
             QueryEntity i2i = new QueryEntity(Integer.class.getName(), Integer.class.getName());
-
-            i2i.setKeyFields(Collections.<String>emptySet());
 
             i2i.setFields(new LinkedHashMap<String, String>());
 
