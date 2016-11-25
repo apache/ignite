@@ -727,7 +727,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
-    public final GridCursor<T> find(L lower, L upper) throws IgniteCheckedException {
+    @Override public final GridCursor<T> find(L lower, L upper) throws IgniteCheckedException {
         checkDestroyed();
 
         try {
@@ -751,34 +751,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
     }
 
-    public GridCursor<T> find(L lower, boolean lowerInclusive,
-                              L upper, boolean upperInclusive) throws IgniteCheckedException {
-        if (lower == null || upper == null)
-            throw new NullPointerException();
-
-        ForwardCursor cursor = new ForwardCursor(lower, upper);
-
-        if (!lowerInclusive)
-            cursor.lowerShift = 1;
-
-        if (!upperInclusive)
-            cursor.upperShift = -1;
-
-        cursor.find();
-
-        return cursor;
-    }
-
-    public GridCursor<T> findAll() throws IgniteCheckedException {
-        return find(null, null);
-    }
-
     /**
      * @param row Lookup row for exact match.
      * @return Found row.
      */
     @SuppressWarnings("unchecked")
-    public final T findOne(L row) throws IgniteCheckedException {
+    @Override public final T findOne(L row) throws IgniteCheckedException {
         checkDestroyed();
 
         try {
@@ -1270,12 +1248,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Removed row.
      * @throws IgniteCheckedException If failed.
      */
-    public final T remove(L row) throws IgniteCheckedException {
+    @Override public final T remove(L row) throws IgniteCheckedException {
         return doRemove(row, false, null);
-    }
-
-    @Override public T removeNode(L key) throws IgniteCheckedException {
-        return doRemove(key, false, null);
     }
 
     /**
@@ -1490,7 +1464,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Size.
      * @throws IgniteCheckedException If failed.
      */
-    public final long size() throws IgniteCheckedException {
+    @Override public final long size() throws IgniteCheckedException {
         checkDestroyed();
 
         long pageId;
@@ -1530,14 +1504,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * {@inheritDoc}
      */
-    public final long treeSize() throws IgniteCheckedException {
-        return size();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public final T put(T row) throws IgniteCheckedException {
+    @Override public final T put(T row) throws IgniteCheckedException {
         return put(row, null);
     }
 
@@ -3476,9 +3443,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** */
         private final L upperBound;
 
-        /** */
-        private int upperShift = 1; // Initially it is -1 to handle multiple equal rows.
-
         /**
          * @param lowerBound Lower bound.
          * @param upperBound Upper bound.
@@ -3550,8 +3514,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             // Compare with the last row on the page.
             int cmp = compare(io, buf, cnt - 1, upperBound);
 
-            if (cmp > 0 || (cmp == 0 && upperShift == -1)) {
-                int idx = findInsertionPoint(io, buf, low, cnt, upperBound, upperShift);
+            if (cmp > 0) {
+                int idx = findInsertionPoint(io, buf, low, cnt, upperBound, 1);
 
                 assert idx < 0;
 

@@ -107,7 +107,7 @@ import java.util.concurrent.ConcurrentNavigableMap;
  */
 @SuppressWarnings("ALL")
 public class SnapTreeMap<K, V> extends AbstractMap<K, V> implements ConcurrentNavigableMap<K, V>, Cloneable,
-    Serializable, IgniteTree<K, V> {
+    Serializable {
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -2347,43 +2347,7 @@ public class SnapTreeMap<K, V> extends AbstractMap<K, V> implements ConcurrentNa
         return new SubMap(this, null, null, false, null, null, false, true);
     }
 
-    //////////////// IgniteTree
-
-    @Override public GridCursor<V> find(K lower, boolean lowerInclusive,
-        K upper, boolean upperInclusive) throws IgniteCheckedException {
-        if (lower == null || upper == null)
-            throw new NullPointerException();
-
-        return new GridCursorIteratorWrapper<>(subMap(lower, lowerInclusive, upper, upperInclusive)
-            .values().iterator());
-    }
-
-    public GridCursor<V> find(K lower, K upper) throws IgniteCheckedException {
-        return find(lower, true, upper, true);
-    }
-
-    public GridCursor<V> findAll() throws IgniteCheckedException {
-        return find(null, null);
-    }
-
-    @Override public V findOne(K key) throws IgniteCheckedException {
-        return get(key);
-    }
-
-    @Override public long treeSize() throws IgniteCheckedException {
-        return size();
-    }
-
-    @Override public V put(V value) throws IgniteCheckedException {
-        return put((K)value, value);
-    }
-
-    @Override public V removeNode(K key) throws IgniteCheckedException {
-        return remove(key);
-    }
-
-    private static class SubMap<K, V> extends AbstractMap<K, V> implements ConcurrentNavigableMap<K, V>, Serializable,
-        IgniteTree<K, V> {
+    private static class SubMap<K, V> extends AbstractMap<K, V> implements ConcurrentNavigableMap<K, V>, Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2904,42 +2868,6 @@ public class SnapTreeMap<K, V> extends AbstractMap<K, V> implements ConcurrentNa
 
             minCmp = minKey == null ? null : m.comparable(minKey);
             maxCmp = maxKey == null ? null : m.comparable(maxKey);
-        }
-
-        /////// IgniteTree
-
-        @Override public V findOne(K key) throws IgniteCheckedException {
-            return get(key);
-        }
-
-        @Override public GridCursor<V> find(K lower, boolean lowerInclusive,
-                                            K upper, boolean upperInclusive) throws IgniteCheckedException {
-
-            if (lower == null || upper == null)
-                throw new NullPointerException();
-
-            return new GridCursorIteratorWrapper<>(subMap(lower, lowerInclusive, upper, upperInclusive)
-                .values().iterator());
-        }
-
-        public GridCursor<V> find(K lower, K upper) throws IgniteCheckedException {
-            return find(lower, true, upper, true);
-        }
-
-        public GridCursor<V> findAll() throws IgniteCheckedException {
-            return find(null, null);
-        }
-
-        @Override public long treeSize() throws IgniteCheckedException {
-            return size();
-        }
-
-        @Override public V put(V value) throws IgniteCheckedException {
-            return put((K)value, value);
-        }
-
-        @Override public V removeNode(K key) throws IgniteCheckedException {
-            return remove(key);
         }
     }
 

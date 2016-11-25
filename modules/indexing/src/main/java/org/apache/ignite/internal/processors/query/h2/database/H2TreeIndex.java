@@ -207,10 +207,8 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Object doTakeSnapshot() {
-        assert false;
-
-        return this;
+    @Nullable @Override protected IgniteTree<SearchRow, GridH2Row> doTakeSnapshot() {
+        return tree;
     }
 
     protected IgniteTree<SearchRow, GridH2Row> treeForRead() {

@@ -184,12 +184,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             map.put(i, i);
         }
 
-        checkCursor(tree.findAll(), map.values().iterator());
+        checkCursor(tree.find(null, null), map.values().iterator());
         checkCursor(tree.find(10L, 70L), map.subMap(10L, true, 70L, true).values().iterator());
-        checkCursor(tree.find(10L, true, 50L, false), map.subMap(10L, true, 50L, false).values().iterator());
-        checkCursor(tree.find(10L, false, 50L, true), map.subMap(10L, false, 50L, true).values().iterator());
-        checkCursor(tree.find(10L, false, 50L, false), map.subMap(10L, false, 50L, false).values().iterator());
-        checkCursor(tree.find(10L, true, 50L, true), map.subMap(10L, true, 50L, true).values().iterator());
     }
 
     /**

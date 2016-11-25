@@ -112,7 +112,7 @@ import org.jsr166.ConcurrentHashMap8;
 @SuppressWarnings("ALL")
 public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends GridOffHeapSmartPointer>
     extends AbstractMap<K, V>
-    implements ConcurrentNavigableMap<K, V>, Cloneable, AutoCloseable, GridReservable, IgniteTree<K, V> {
+    implements ConcurrentNavigableMap<K, V>, Cloneable, AutoCloseable, GridReservable {
     /** This is a special value that indicates that an optimistic read failed. */
     private static final GridOffHeapSmartPointer SpecialRetry = new GridOffHeapSmartPointer() {
         @Override public long pointer() {
@@ -3825,52 +3825,10 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
         return new SubMap(this, null, null, false, null, null, false, true);
     }
 
-    //////////////// IgniteTree
-
-    @Override public V put(V value) throws IgniteCheckedException {
-        return put((K)value, value);
-    }
-
-    @Override public V findOne(K key) throws IgniteCheckedException {
-        return get(key);
-    }
-
-    @Override public GridCursor<V> findAll() throws IgniteCheckedException {
-        return find(null, null);
-    }
-
-    @Override public GridCursor<V> find(K lower, K upper) throws IgniteCheckedException {
-        return find(lower, true, upper, true);
-    }
-
-    @Override public GridCursor<V> find(K lower, boolean lowerInclusive,  K upper, boolean upperInclusive)
-        throws IgniteCheckedException {
-        if (lower == null || upper == null)
-            throw new NullPointerException();
-
-        final Comparable<? super K> fromCmp = comparable(lower);
-
-        if (fromCmp.compareTo(upper) > 0) {
-            throw new IllegalArgumentException();
-        }
-
-        SubMap subMap = new SubMap(this, lower, fromCmp, lowerInclusive, upper, comparable(upper), upperInclusive, false);
-
-        return new GridCursorIteratorWrapper<>(subMap.values().iterator());
-    }
-
-    @Override public V removeNode(K key) throws IgniteCheckedException {
-        return remove(key);
-    }
-
-    @Override public long treeSize() throws IgniteCheckedException {
-        return size();
-    }
-
     /**
      * Submap.
      */
-    private class SubMap extends AbstractMap<K, V> implements ConcurrentNavigableMap<K, V>, IgniteTree<K, V> {
+    private class SubMap extends AbstractMap<K, V> implements ConcurrentNavigableMap<K, V> {
         /** */
         private final GridOffHeapSnapTreeMap<K,V> m;
 
@@ -4475,42 +4433,6 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
         /** {@inheritDoc} */
         @Override public NavigableSet<K> descendingKeySet() {
             return descendingMap().navigableKeySet();
-        }
-
-        /////////// IgniteTree
-
-        @Override public V put(V value) throws IgniteCheckedException {
-            return put((K)value, value);
-        }
-
-        @Override public V findOne(K key) throws IgniteCheckedException {
-            return get(key);
-        }
-
-        @Override public GridCursor<V> findAll() throws IgniteCheckedException {
-            return find(null, null);
-        }
-
-        @Override public GridCursor<V> find(K lower, K upper) throws IgniteCheckedException {
-            return find(lower, true, upper, true);
-        }
-
-        @Override public GridCursor<V> find(K lower, boolean lowerInclusive,  K upper, boolean upperInclusive)
-            throws IgniteCheckedException {
-            if (lower == null || upper == null)
-                throw new NullPointerException();
-
-            SubMap subMap = subMap(lower, lowerInclusive, upper, upperInclusive);
-
-            return new GridCursorIteratorWrapper(subMap.values().iterator());
-        }
-
-        @Override public V removeNode(K key) throws IgniteCheckedException {
-            return remove(key);
-        }
-
-        @Override public long treeSize() throws IgniteCheckedException {
-            return size();
         }
     }
 

@@ -276,7 +276,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      *
      * @return Snapshot or {@code null}.
      */
-    @Nullable protected abstract Object doTakeSnapshot();
+    @Nullable protected abstract IgniteTree doTakeSnapshot();
 
     /**
      * @return Thread local snapshot.
@@ -456,11 +456,9 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
                 if (msg.bounds() != null) {
                     // This is the first request containing all the search rows.
-                    Object snapshot0 = qctx.getSnapshot(idxId);
+                    IgniteTree snapshotTree = qctx.getSnapshot(idxId);
 
                     assert !msg.bounds().isEmpty() : "empty bounds";
-
-                    IgniteTree snapshotTree = (IgniteTree)snapshot0;
 
                     src = new RangeSource(msg.bounds(), snapshotTree, qctx.filter());
                 }

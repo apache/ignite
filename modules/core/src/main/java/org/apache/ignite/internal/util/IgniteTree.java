@@ -45,19 +45,6 @@ public interface IgniteTree<L, T> {
     T findOne(L key) throws IgniteCheckedException;
 
     /**
-     * Returns a cursor from lower to upper bounds.
-     *
-     * @param lower Lower bound or {@code null} if unbounded.
-     * @param lowerInclusive {@code true} if the low bound
-     *        is to be included in the returned view
-     * @param upper Upper bound or {@code null} if unbounded.
-     * @param upperInclusive {@code true} if the upper bound
-     *        is to be included in the returned view
-     * @return Cursor.
-     */
-    GridCursor<T> find(L lower, boolean lowerInclusive,  L upper, boolean upperInclusive) throws IgniteCheckedException;
-
-    /**
      * Returns a cursor from lower to upper bounds inclusive.
      *
      * @param lower Lower bound or {@code null} if unbounded.
@@ -67,24 +54,17 @@ public interface IgniteTree<L, T> {
     GridCursor<T> find(L lower, L upper) throws IgniteCheckedException;
 
     /**
-     * Returns a cursor over all values.
-     * @return Cursor.
-     * @throws IgniteCheckedException
-     */
-    GridCursor<T> findAll() throws IgniteCheckedException;
-
-    /**
      * Removes the mapping for a key from this tree if it is present.
      *
      * @param key key whose mapping is to be removed from the tree
      * @return the previous value associated with key, or null if there was no mapping for key.
      */
-    T removeNode(L key) throws IgniteCheckedException;
+    T remove(L key) throws IgniteCheckedException;
 
     /**
      * Returns the number of elements in this tree.
      *
      * @return the number of elements in this tree
      */
-    long treeSize() throws IgniteCheckedException;
+    long size() throws IgniteCheckedException;
 }

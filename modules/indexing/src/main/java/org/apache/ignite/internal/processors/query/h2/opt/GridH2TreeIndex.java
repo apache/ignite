@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.NavigableMap;
+import java.util.*;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 import org.apache.ignite.*;
@@ -50,7 +48,7 @@ import org.jetbrains.annotations.Nullable;
 @SuppressWarnings("ComparatorNotSerializable")
 public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridSearchRowPointer> {
     /** */
-    private final IgniteTree<GridSearchRowPointer, GridH2Row> tree;
+    private final IgniteNavigableMapTree tree;
 
     /** */
     private final boolean snapshotEnabled;
@@ -78,7 +76,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
             snapshotEnabled = desc == null || desc.snapshotableIndex();
 
             if (snapshotEnabled) {
-                tree = new SnapTreeMap<GridSearchRowPointer, GridH2Row>(this) {
+                tree = new IgniteNavigableMapTree(new SnapTreeMap<GridSearchRowPointer, GridH2Row>(this) {
                     @Override protected void afterNodeUpdate_nl(Node<GridSearchRowPointer, GridH2Row> node, Object val) {
                         if (val != null)
                             node.key = (GridSearchRowPointer)val;
@@ -90,7 +88,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
                         return super.comparable(key);
                     }
-                };
+                });
             }
             else {
                 tree = new IgniteNavigableMapTree(
@@ -114,7 +112,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
             snapshotEnabled = true;
 
-            tree = new GridOffHeapSnapTreeMap<GridSearchRowPointer, GridH2Row>(desc, desc, desc.memory(), desc.guard(), this) {
+            tree = new IgniteNavigableMapTree(new GridOffHeapSnapTreeMap<GridSearchRowPointer, GridH2Row>(desc, desc, desc.memory(), desc.guard(), this) {
                 @Override protected void afterNodeUpdate_nl(long node, GridH2Row val) {
                     final long oldKey = keyPtr(node);
 
@@ -135,19 +133,17 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
                     return super.comparable(key);
                 }
-            };
+            });
         }
 
         initDistributedJoinMessaging(tbl);
     }
 
     /** {@inheritDoc} */
-    @Override protected Object doTakeSnapshot() {
+    @Override protected IgniteTree doTakeSnapshot() {
         assert snapshotEnabled;
 
-        return tree instanceof SnapTreeMap ?
-            ((SnapTreeMap)tree).clone() :
-            ((GridOffHeapSnapTreeMap)tree).clone();
+        return tree.clone();
     }
 
     /** {@inheritDoc} */
@@ -167,9 +163,6 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     @Override public void destroy() {
         assert threadLocalSnapshot() == null;
 
-        if (tree instanceof AutoCloseable)
-            U.closeQuiet((AutoCloseable)tree);
-
         super.destroy();
     }
 
@@ -180,7 +173,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         // Fast path if we don't need to perform any filtering.
         if (f == null || f.forSpace((getTable()).spaceName()) == null)
             try {
-                return treeForRead().treeSize();
+                return treeForRead().size();
             } catch (IgniteCheckedException e) {
                 throw DbException.convert(e);
             }
@@ -338,7 +331,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         try {
             // We take exclusive bounds because it is possible that one search row will be equal to multiple key rows
             // in tree and we must return them all.
-            return tree.find(first, false, last, false);
+            return tree.find(first, last);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -377,7 +370,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     /** {@inheritDoc} */
     @Override public GridH2Row remove(SearchRow row) {
         try {
-            return tree.removeNode(comparable(row, 0));
+            return tree.remove(comparable(row, 0));
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -487,7 +480,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         long i = 0;
 
         try {
-            GridCursor<GridH2Row> cursor = tree.findAll();
+            GridCursor<GridH2Row> cursor = tree.find(null, null);
 
             while(cursor.next()) {
                 GridH2Row row = cursor.get();
@@ -524,33 +517,35 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
             return tree.get(key);
         }
 
-        @Override public GridCursor<GridH2Row> find(GridSearchRowPointer lower, boolean lowerInclusive,
-                                                    GridSearchRowPointer upper, boolean upperInclusive)
+        @Override public GridCursor<GridH2Row> find(GridSearchRowPointer lower, GridSearchRowPointer upper)
             throws IgniteCheckedException {
             if (lower == null || upper == null)
                 throw new NullPointerException();
 
             NavigableMap<GridSearchRowPointer, GridH2Row> subMap =
-                tree.subMap(lower, lowerInclusive, upper, upperInclusive);
+                tree.subMap(lower, false, upper, false);
 
             return new GridCursorIteratorWrapper<GridH2Row>(subMap.values().iterator());
         }
 
-        public GridCursor<GridH2Row> find(GridSearchRowPointer lower, GridSearchRowPointer upper)
-            throws IgniteCheckedException {
-            return find(lower, true, upper, true);
-        }
-
-        public GridCursor<GridH2Row> findAll() throws IgniteCheckedException {
-            return find(null, null);
-        }
-
-        @Override public GridH2Row removeNode(GridSearchRowPointer key) throws IgniteCheckedException {
+        @Override public GridH2Row remove(GridSearchRowPointer key) throws IgniteCheckedException {
             return tree.remove(key);
         }
 
-        @Override public long treeSize() throws IgniteCheckedException {
+        @Override public long size() throws IgniteCheckedException {
             return tree.size();
+        }
+
+        @Override public IgniteNavigableMapTree clone() {
+            AbstractMap copy;
+
+            try {
+                copy = (AbstractMap) super.clone();
+            } catch (final CloneNotSupportedException e) {
+                throw DbException.convert(e);
+            }
+
+            return new IgniteNavigableMapTree((NavigableMap)copy);
         }
     }
 }
