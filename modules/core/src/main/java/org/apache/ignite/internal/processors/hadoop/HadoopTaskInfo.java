@@ -47,7 +47,7 @@ public class HadoopTaskInfo implements Externalizable {
     private HadoopInputSplit inputSplit;
 
     /** Current mapper index. */
-    private transient Integer mapperIdx;
+    private Integer mapperIdx;
 
     /**
      * For {@link Externalizable}.
@@ -81,6 +81,13 @@ public class HadoopTaskInfo implements Externalizable {
         out.writeInt(taskNum);
         out.writeInt(attempt);
         out.writeObject(inputSplit);
+
+        if (mapperIdx != null) {
+            out.writeBoolean(true);
+            out.writeInt(mapperIdx);
+        }
+        else
+            out.writeBoolean(false);
     }
 
     /** {@inheritDoc} */
@@ -90,6 +97,9 @@ public class HadoopTaskInfo implements Externalizable {
         taskNum = in.readInt();
         attempt = in.readInt();
         inputSplit = (HadoopInputSplit)in.readObject();
+
+        if (in.readBoolean())
+            mapperIdx = in.readInt();
     }
 
     /**
