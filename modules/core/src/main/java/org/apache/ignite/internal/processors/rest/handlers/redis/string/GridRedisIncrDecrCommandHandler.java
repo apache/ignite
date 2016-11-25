@@ -57,8 +57,13 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
     /** Delta position in the message. */
     private static final int DELTA_POS = 2;
 
-    /** {@inheritDoc} */
-    public GridRedisIncrDecrCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd) {
+    /**
+     * Constructor.
+     *
+     * @param log Logger.
+     * @param hnd Handler.
+     */
+    public GridRedisIncrDecrCommandHandler(IgniteLogger log, GridRestProtocolHandler hnd) {
         super(log, hnd);
     }
 

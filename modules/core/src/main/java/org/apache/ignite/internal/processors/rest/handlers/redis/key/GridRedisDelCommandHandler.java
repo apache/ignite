@@ -46,8 +46,13 @@ public class GridRedisDelCommandHandler extends GridRedisRestCommandHandler {
         DEL
     );
 
-    /** {@inheritDoc} */
-    public GridRedisDelCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd) {
+    /**
+     * Constructor.
+     *
+     * @param log Logger.
+     * @param hnd Handler.
+     */
+    public GridRedisDelCommandHandler(IgniteLogger log, GridRestProtocolHandler hnd) {
         super(log, hnd);
     }
 
