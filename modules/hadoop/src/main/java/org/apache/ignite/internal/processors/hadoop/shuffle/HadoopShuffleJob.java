@@ -143,7 +143,6 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         this.locMappersCnt = locMappersCnt;
         this.log = log.getLogger(HadoopShuffleJob.class);
 
-        msgSize = get(job.info(), SHUFFLE_MSG_SIZE, DFLT_SHUFFLE_MSG_SIZE);
         stripeMappers = get(job.info(), SHUFFLE_MAPPER_STRIPE_OUTPUT, false);
 
         locReducersCtx = new HadoopTaskContext[totalReducerCnt];
@@ -162,6 +161,8 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         rmtMaps = new AtomicReferenceArray<>(stripeMappers ? (totalReducerCnt * locMappersCnt) : totalReducerCnt);
 
         msgs = new HadoopShuffleMessage[totalReducerCnt];
+
+        msgSize = get(job.info(), SHUFFLE_MSG_SIZE, DFLT_SHUFFLE_MSG_SIZE);
     }
 
     /**
