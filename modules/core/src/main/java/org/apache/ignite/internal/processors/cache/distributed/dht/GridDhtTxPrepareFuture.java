@@ -432,9 +432,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                             if (op == NOOP) {
                                 if (expiry != null) {
-                                    long ttl = txEntry.previousValue() == null ?
-                                            CU.toTtl(expiry.getExpiryForCreation()) :
-                                            CU.toTtl(expiry.getExpiryForAccess());
+                                    long ttl = CU.toTtl(expiry.getExpiryForAccess());
 
                                     txEntry.ttl(ttl);
 

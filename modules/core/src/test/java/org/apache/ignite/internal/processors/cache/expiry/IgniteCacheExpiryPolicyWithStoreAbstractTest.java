@@ -25,6 +25,7 @@ import javax.cache.integration.CompletionListenerFuture;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -141,6 +142,9 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
      * @throws Exception If failed.
      */
     public void testReadThrough() throws Exception {
+        if (atomicityMode() == CacheAtomicityMode.TRANSACTIONAL)
+            fail("https://issues.apache.org/jira/browse/IGNITE-821");
+
         IgniteCache<Integer, Integer> cache = jcache(0);
 
         final Integer key = primaryKeys(cache, 1, 100_000).get(0);
