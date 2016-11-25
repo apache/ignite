@@ -321,7 +321,7 @@ namespace Apache.Ignite.Core.Tests
                 var proc = new IgniteProcess(reader, args);
 
                 int exitCode;
-                Assert.IsTrue(proc.Join(300, out exitCode));
+                Assert.IsTrue(proc.Join(3000, out exitCode));
                 Assert.AreEqual(-1, exitCode);
 
                 lock (reader.List)
@@ -335,6 +335,12 @@ namespace Apache.Ignite.Core.Tests
 
             checkError("blabla=foo", "ERROR: Apache.Ignite.Core.Common.IgniteException: " +
                                      "Unknown argument: 'blabla'. See 'Apache.Ignite.exe /help'");
+
+            checkError("assembly=", "ERROR: Apache.Ignite.Core.Common.IgniteException: Missing argument value: " +
+                                 "'assembly'. See 'Apache.Ignite.exe /help'");
+
+            checkError("assembly=x.dll", "ERROR: Apache.Ignite.Core.Common.IgniteException: " +
+                                         "Failed to load assembly: x.dll");
         }
 
         /// <summary>
