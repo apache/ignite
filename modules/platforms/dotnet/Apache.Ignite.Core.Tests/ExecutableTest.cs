@@ -342,17 +342,20 @@ namespace Apache.Ignite.Core.Tests
             checkError("assembly=x.dll", "ERROR: Apache.Ignite.Core.Common.IgniteException: " +
                                          "Failed to load assembly: x.dll");
 
-            checkError("configFileName=wrong.config", "ERROR: Apache.Ignite.Core.Common.IgniteException: " +
-                                         "Failed to load assembly: x.dll");
+            checkError("configFileName=wrong.config", "ERROR: System.Configuration.ConfigurationErrorsException: " +
+                                                      "Specified config file does not exist: wrong.config");
 
-            checkError("configSectionName=wrongSection", "ERROR: Apache.Ignite.Core.Common.IgniteException: " +
-                                         "Failed to load assembly: x.dll");
+            checkError("configSectionName=wrongSection", "ERROR: System.Configuration.ConfigurationErrorsException: " +
+                                                         "Could not find IgniteConfigurationSection " +
+                                                         "in current application configuration");
 
-            checkError("JvmInitialMemoryMB=A_LOT", "ERROR: Apache.Ignite.Core.Common.IgniteException: " +
-                                         "Failed to load assembly: x.dll");
+            checkError("JvmInitialMemoryMB=A_LOT", "ERROR: System.InvalidOperationException: Failed to configure " +
+                                                   "Ignite: property 'JvmInitialMemoryMB' has value 'A_LOT', " +
+                                                   "which is not an integer.");
 
-            checkError("JvmMaxMemoryMB=ALL_OF_IT", "ERROR: Apache.Ignite.Core.Common.IgniteException: " +
-                                         "Failed to load assembly: x.dll");
+            checkError("JvmMaxMemoryMB=ALL_OF_IT", "ERROR: System.InvalidOperationException: Failed to configure " +
+                                                   "Ignite: property 'JvmMaxMemoryMB' has value 'ALL_OF_IT', " +
+                                                   "which is not an integer.");
         }
 
         /// <summary>
