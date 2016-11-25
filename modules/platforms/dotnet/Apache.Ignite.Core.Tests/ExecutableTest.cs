@@ -315,15 +315,21 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestInvalidCmdArgs()
         {
-            int exitCode;
             var reader = new ListDataReader();
+
+            Action<IgniteProcess, string> checkError = (p, s) =>
+            {
+                int exitCode;
+
+                Assert.IsTrue(p.Join(300, out exitCode));
+                Assert.AreEqual(-1, exitCode);
+                Assert.AreEqual(s, reader.List.Last());
+            };
 
             var proc = new IgniteProcess(reader, "blabla");
 
-            Assert.IsTrue(proc.Join(300, out exitCode));
-            Assert.AreEqual(-1, exitCode);
-            Assert.AreEqual("OUT: ERROR: Apache.Ignite.Core.Common.IgniteException: Missing argument value: " +
-                            "'blabla'. See 'Apache.Ignite.exe /help'", reader.List.Last());
+            checkError(proc, "OUT: ERROR: Apache.Ignite.Core.Common.IgniteException: Missing argument value: " +
+                             "'blabla'. See 'Apache.Ignite.exe /help'");
         }
 
         /// <summary>
