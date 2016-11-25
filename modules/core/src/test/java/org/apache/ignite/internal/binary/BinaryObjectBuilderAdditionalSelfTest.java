@@ -1530,16 +1530,20 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         BinaryObjectBuilder builder = newWrapper("TestType");
 
         final TestObjectExternalizable exp = new TestObjectExternalizable("test");
+        final TestObjectExternalizable[] expArr = new TestObjectExternalizable[]{
+            new TestObjectExternalizable("test1"), new TestObjectExternalizable("test2")};
 
-        BinaryObject extObj = builder.setField("extVal", exp).build();
+        BinaryObject extObj = builder.setField("extVal", exp).setField("extArr", expArr).build();
 
         assertEquals(exp, extObj.field("extVal"));
+        Assert.assertArrayEquals(expArr, extObj.field("extArr"));
 
         builder = extObj.toBuilder();
 
         extObj = builder.setField("intVal", 10).build();
 
         assertEquals(exp, extObj.field("extVal"));
+        Assert.assertArrayEquals(expArr, extObj.field("extArr"));
         assertEquals(Integer.valueOf(10), extObj.field("intVal"));
 
         builder = extObj.toBuilder();
@@ -1547,8 +1551,49 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         extObj = builder.setField("strVal", "some string").build();
 
         assertEquals(exp, extObj.field("extVal"));
+        Assert.assertArrayEquals(expArr, extObj.field("extArr"));
         assertEquals(Integer.valueOf(10), extObj.field("intVal"));
         assertEquals("some string", extObj.field("strVal"));
+    }
+
+    /**
+     * Checks correct serialization/deserialization of enums in builder.
+     *
+     * @throws Exception If failed.
+     */
+    public void testEnum() throws Exception {
+        BinaryObjectBuilder builder = newWrapper("TestType");
+
+        final TestEnum exp = TestEnum.A;
+        final TestEnum[] expArr = {TestEnum.A, TestEnum.B};
+
+        BinaryObject enumObj = builder.setField("testEnum", exp).setField("testEnumArr", expArr).build();
+
+        assertEquals(exp, ((BinaryObject)enumObj.field("testEnum")).deserialize());
+        Assert.assertArrayEquals(expArr, deserializeEnumBinaryArray(enumObj.field("testEnumArr")));
+
+        builder = newWrapper(enumObj.type().typeName());
+
+        enumObj = builder.setField("testEnum", (Object)enumObj.field("testEnum"))
+            .setField("testEnumArr", (Object)enumObj.field("testEnumArr")).build();
+
+        assertEquals(exp, ((BinaryObject)enumObj.field("testEnum")).deserialize());
+        Assert.assertArrayEquals(expArr, deserializeEnumBinaryArray(enumObj.field("testEnumArr")));
+    }
+
+    /**
+     * @param obj BinaryObject array.
+     * @return Deserialized enums.
+     */
+    private TestEnum[] deserializeEnumBinaryArray(Object obj) {
+        Object[] arr = (Object[])obj;
+
+        final TestEnum[] res = new TestEnum[arr.length];
+
+        for (int i = 0; i < arr.length; i++)
+            res[i] = ((BinaryObject)arr[i]).deserialize();
+
+        return res;
     }
 
     /**
@@ -1604,5 +1649,16 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
                 "val='" + val + '\'' +
                 '}';
         }
+    }
+
+    /**
+     *
+     */
+    private enum TestEnum {
+        /** */
+        A,
+
+        /** */
+        B
     }
 }
