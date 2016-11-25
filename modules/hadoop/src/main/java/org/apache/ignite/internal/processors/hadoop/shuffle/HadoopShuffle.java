@@ -103,7 +103,7 @@ public class HadoopShuffle extends HadoopComponent {
 
         Collection<HadoopInputSplit> locMappers = plan.mappers(ctx.localNodeId());
 
-        int locMappersCnt = locMappers != null ? locMappers.size() : 0;
+        int locMappersCnt = F.isEmpty(locMappers) ? 0 : locMappers.size();
 
         HadoopShuffleJob<UUID> job = new HadoopShuffleJob<>(ctx.localNodeId(), log,
             ctx.jobTracker().job(jobId, null), mem, plan.reducers(), plan.reducers(ctx.localNodeId()), locMappersCnt);

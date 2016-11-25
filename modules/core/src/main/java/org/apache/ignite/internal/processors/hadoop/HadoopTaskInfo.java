@@ -46,16 +46,8 @@ public class HadoopTaskInfo implements Externalizable {
     /** */
     private HadoopInputSplit inputSplit;
 
-    /** Mapper index. */
+    /** Current mapper index. */
     private transient int mapperIdx;
-
-    public void mapperIndex(int mapperIdx) {
-        this.mapperIdx = mapperIdx;
-    }
-
-    public int mapperIndex() {
-        return mapperIdx;
-    }
 
     /**
      * For {@link Externalizable}.
@@ -126,6 +118,20 @@ public class HadoopTaskInfo implements Externalizable {
      */
     public int attempt() {
         return attempt;
+    }
+
+    /**
+     * @param mapperIdx Current mapper index.
+     */
+    public void mapperIndex(int mapperIdx) {
+        this.mapperIdx = mapperIdx;
+    }
+
+    /**
+     * @return Current mepper intex.
+     */
+    public int mapperIndex() {
+        return mapperIdx;
     }
 
     /**
