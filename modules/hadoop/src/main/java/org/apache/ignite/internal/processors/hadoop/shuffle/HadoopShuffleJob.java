@@ -131,16 +131,16 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @param mem Memory.
      * @param totalReducerCnt Amount of reducers in the Job.
      * @param locReducers Reducers will work on current node.
-     * @param nodeMappersCnt Amount of mappers running on the given node.
+     * @param locMappersCnt Amount of mappers running on the given node.
      * @throws IgniteCheckedException If error.
      */
     public HadoopShuffleJob(T locReduceAddr, IgniteLogger log, HadoopJob job, GridUnsafeMemory mem,
-        int totalReducerCnt, int[] locReducers, int nodeMappersCnt) throws IgniteCheckedException {
+        int totalReducerCnt, int[] locReducers, int locMappersCnt) throws IgniteCheckedException {
         this.locReduceAddr = locReduceAddr;
         this.totalReducerCnt = totalReducerCnt;
         this.job = job;
         this.mem = mem;
-        this.locMappersCnt = nodeMappersCnt;
+        this.locMappersCnt = locMappersCnt;
         this.log = log.getLogger(HadoopShuffleJob.class);
 
         msgSize = get(job.info(), SHUFFLE_MSG_SIZE, DFLT_SHUFFLE_MSG_SIZE);
@@ -159,7 +159,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         needPartitioner = totalReducerCnt > 1;
 
         locMaps = new AtomicReferenceArray<>(totalReducerCnt);
-        rmtMaps = new AtomicReferenceArray<>(stripeMappers ? (totalReducerCnt * nodeMappersCnt) : totalReducerCnt);
+        rmtMaps = new AtomicReferenceArray<>(stripeMappers ? (totalReducerCnt * locMappersCnt) : totalReducerCnt);
 
         msgs = new HadoopShuffleMessage[totalReducerCnt];
     }
