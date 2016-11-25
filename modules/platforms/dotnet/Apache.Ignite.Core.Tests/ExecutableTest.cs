@@ -341,6 +341,18 @@ namespace Apache.Ignite.Core.Tests
 
             checkError("assembly=x.dll", "ERROR: Apache.Ignite.Core.Common.IgniteException: " +
                                          "Failed to load assembly: x.dll");
+
+            checkError("configFileName=wrong.config", "ERROR: Apache.Ignite.Core.Common.IgniteException: " +
+                                         "Failed to load assembly: x.dll");
+
+            checkError("configSectionName=wrongSection", "ERROR: Apache.Ignite.Core.Common.IgniteException: " +
+                                         "Failed to load assembly: x.dll");
+
+            checkError("JvmInitialMemoryMB=A_LOT", "ERROR: Apache.Ignite.Core.Common.IgniteException: " +
+                                         "Failed to load assembly: x.dll");
+
+            checkError("JvmMaxMemoryMB=ALL_OF_IT", "ERROR: Apache.Ignite.Core.Common.IgniteException: " +
+                                         "Failed to load assembly: x.dll");
         }
 
         /// <summary>
