@@ -802,7 +802,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
         }
 
-        if (ctx.config().isUseStripedPool() && msg.partition() != -1) {
+        if (ctx.config().isUseStripedPool() && msg.partition() != Integer.MIN_VALUE) {
             ctx.getStripedExecutorService().execute(msg.partition(), c);
 
             return;
