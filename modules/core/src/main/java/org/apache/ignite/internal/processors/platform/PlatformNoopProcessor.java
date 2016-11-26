@@ -185,4 +185,9 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     @Override public void loggerLog(int level, String message, String category, String errorInfo) {
         // No-op.
     }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget binaryProcessor() {
+        return null;
+    }
 }

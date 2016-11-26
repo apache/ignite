@@ -27,7 +27,7 @@ import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -358,6 +358,8 @@ public interface GridCacheEntryEx {
      * @param evt Flag to signal event notification.
      * @param metrics Flag to signal metrics update.
      * @param keepBinary Keep binary flag.
+     * @param oldValPresent {@code True} if oldValue present.
+     * @param oldVal Old value.
      * @param topVer Topology version.
      * @param filter Filter.
      * @param drType DR type.
@@ -383,6 +385,8 @@ public interface GridCacheEntryEx {
         boolean evt,
         boolean metrics,
         boolean keepBinary,
+        boolean oldValPresent,
+        @Nullable CacheObject oldVal,
         AffinityTopologyVersion topVer,
         CacheEntryPredicate[] filter,
         GridDrType drType,
@@ -402,6 +406,8 @@ public interface GridCacheEntryEx {
      * @param evt Flag to signal event notification.
      * @param metrics Flag to signal metrics notification.
      * @param keepBinary Keep binary flag.
+     * @param oldValPresent {@code True} if oldValue present.
+     * @param oldVal Old value.
      * @param topVer Topology version.
      * @param filter Filter.
      * @param drType DR type.
@@ -422,6 +428,8 @@ public interface GridCacheEntryEx {
         boolean evt,
         boolean metrics,
         boolean keepBinary,
+        boolean oldValPresent,
+        @Nullable CacheObject oldVal,
         AffinityTopologyVersion topVer,
         CacheEntryPredicate[] filter,
         GridDrType drType,
@@ -496,7 +504,7 @@ public interface GridCacheEntryEx {
         String taskName,
         @Nullable CacheObject prevVal,
         @Nullable Long updateCntr,
-        @Nullable GridDhtAtomicUpdateFuture fut
+        @Nullable GridDhtAtomicAbstractUpdateFuture fut
     ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**

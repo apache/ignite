@@ -41,9 +41,15 @@ public class PlatformFieldsQueryCursor extends PlatformAbstractQueryCursor<List<
     @Override protected void write(BinaryRawWriterEx writer, List vals) {
         assert vals != null;
 
+        int rowSizePos = writer.reserveInt();
+
         writer.writeInt(vals.size());
 
         for (Object val : vals)
             writer.writeObjectDetached(val);
+
+        int rowEndPos = writer.out().position();
+        
+        writer.writeInt(rowSizePos, rowEndPos - rowSizePos);
     }
 }

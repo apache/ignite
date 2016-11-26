@@ -37,10 +37,9 @@ public class PlatformCallbackUtils {
      * @param envPtr Environment pointer.
      * @param objPtr Object pointer.
      * @param memPtr Memory pointer.
-     * @param cb Callback.
      * @return Result.
      */
-    static native int cacheStoreInvoke(long envPtr, long objPtr, long memPtr, Object cb);
+    static native int cacheStoreInvoke(long envPtr, long objPtr, long memPtr);
 
     /**
      * @param envPtr Environment pointer.

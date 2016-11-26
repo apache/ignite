@@ -526,6 +526,32 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
+        /// Test for daemon nodes projection.
+        /// </summary>
+        [Test]
+        public void TestForDaemons()
+        {
+            Assert.AreEqual(0, _grid1.GetCluster().ForDaemons().GetNodes().Count);
+
+            using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+                {
+                    SpringConfigUrl = GetConfigs().Item1,
+                    GridName = "daemonGrid",
+                    IsDaemon = true
+                })
+            )
+            {
+                var prj = _grid1.GetCluster().ForDaemons();
+
+                Assert.AreEqual(1, prj.GetNodes().Count);
+                Assert.AreEqual(ignite.GetCluster().GetLocalNode().Id, prj.GetNode().Id);
+
+                Assert.IsTrue(prj.GetNode().IsDaemon);
+                Assert.IsTrue(ignite.GetCluster().GetLocalNode().IsDaemon);
+            }
+        }
+
+        /// <summary>
         /// Test for host nodes projection.
         /// </summary>
         [Test]

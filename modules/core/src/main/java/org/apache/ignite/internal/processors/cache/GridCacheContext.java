@@ -2046,7 +2046,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         try {
             IgniteBiTuple<String, String> t = stash.get();
 
-            IgniteKernal grid = IgnitionEx.gridx(t.get1());
+            IgniteKernal grid = IgnitionEx.localIgnite();
 
             GridCacheAdapter<K, V> cache = grid.internalCache(t.get2());
 

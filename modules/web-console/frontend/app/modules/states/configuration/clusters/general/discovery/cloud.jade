@@ -1,0 +1,134 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include ../../../../../../../app/helpers/jade/mixins.jade
+
+-var discoveryKind = 'Cloud'
+-var required = 'backupItem.discovery.kind == "' + discoveryKind + '"'
+-var model = 'backupItem.discovery.Cloud'
+-var regions = model + '.regions'
+-var zones = model + '.zones'
+-var formRegions = 'discoveryCloudRegions'
+-var formZones = 'discoveryCloudZones'
+
+div
+    .details-row
+        +text('Credential:', model + '.credential', '"credential"', 'false', 'Input cloud credential',
+            'Credential that is used during authentication on the cloud<br/>\
+            Depending on a cloud platform it can be a password or access key')
+    .details-row
+        +text('Path to credential:', model + '.credentialPath', '"credentialPath"', 'false', 'Input pathto credential',
+            'Path to a credential that is used during authentication on the cloud<br/>\
+            Access key or private key should be stored in a plain or PEM file without a passphrase')
+    .details-row
+        +text('Identity:', model + '.identity', '"' + discoveryKind + 'Identity"', required, 'Input identity',
+            'Identity that is used as a user name during a connection to the cloud<br/>\
+            Depending on a cloud platform it can be an email address, user name, etc')
+    .details-row
+        +text('Provider:', model + '.provider', '"' + discoveryKind + 'Provider"', required, 'Input provider', 'Cloud provider to use')
+    .details-row
+        -var form = formRegions;
+        +ignite-form-group(ng-model=regions ng-form=form)
+            -var uniqueTip = 'Such region already exists!'
+
+            ignite-form-field-label
+                | Regions
+            ignite-form-group-tooltip
+                | List of regions where VMs are located#[br]
+                | If the regions are not set then every region, that a cloud provider has, will be investigated. This could lead to significant performance degradation#[br]
+                | Note, that some cloud providers, like Google Compute Engine, doesn't have a notion of a region. For such providers regions are redundant
+            ignite-form-group-add(ng-click='group.add = [{}]')
+                | Add new region
+
+            .group-content(ng-if='#{regions}.length')
+                -var model = 'field.model';
+                -var name = '"edit" + $index'
+                -var valid = form + '[' + name + '].$valid'
+                -var save = regions + '[$index] = ' + model
+
+                div(ng-repeat='model in #{regions} track by $index')
+                    label.col-xs-12.col-sm-12.col-md-12(ng-init='field = {}')
+                        .indexField
+                            | {{ $index+1 }})
+                        +table-remove-button(regions, 'Remove region')
+                        span(ng-hide='field.edit')
+                            a.labelFormField(ng-click='field.edit = true; #{model} = model;') {{ model }}
+                        span(ng-if='field.edit')
+                            +table-text-field(name, model, regions, valid, save, 'Region name', false)
+                                +table-save-button(valid, save, false)
+                                +unique-feedback(name, uniqueTip)
+
+            .group-content(ng-repeat='field in group.add')
+                -var model = 'field.new';
+                -var name = '"new"'
+                -var valid = form + '[' + name + '].$valid'
+                -var save = regions + '.push(' + model + ')'
+
+                div
+                    label.col-xs-12.col-sm-12.col-md-12
+                        +table-text-field(name, model, regions, valid, save, 'Region name', true)
+                            +table-save-button(valid, save, false)
+                            +unique-feedback(name, uniqueTip)
+
+            .group-content-empty(ng-if='!(#{regions}.length) && !group.add.length')
+                | Not defined
+    .details-row
+        -var form = formZones;
+        +ignite-form-group(ng-model=zones ng-form=form)
+            -var uniqueTip = 'Such zone already exists!'
+
+            ignite-form-field-label
+                | Zones
+            ignite-form-group-tooltip
+                | List of zones where VMs are located#[br]
+                | If the zones are not set then every zone from specified regions, will be taken into account#[br]
+                | Note, that some cloud providers, like Rackspace, doesn't have a notion of a zone. For such providers zones are redundant
+            ignite-form-group-add(ng-click='group.add = [{}]')
+                | Add new zone
+
+            -var form = formZones;
+            .group-content(ng-if='#{zones}.length')
+                -var model = 'field.model';
+                -var name = '"edit" + $index'
+                -var valid = form + '[' + name + '].$valid'
+                -var save = zones + '[$index] = ' + model
+
+                div(ng-repeat='model in #{zones} track by $index')
+                    label.col-xs-12.col-sm-12.col-md-12(ng-init='field = {}')
+                        .indexField
+                            | {{ $index+1 }})
+                        +table-remove-button(zones, 'Remove zone')
+                        span(ng-hide='field.edit')
+                            a.labelFormField(ng-click='field.edit = true; #{model} = model;') {{ model }}
+                        span(ng-if='field.edit')
+                            +table-text-field(name, model, zones, valid, save, 'Zone name', false)
+                                +table-save-button(valid, save, false)
+                                +unique-feedback(name, uniqueTip)
+
+            .group-content(ng-repeat='field in group.add')
+                -var model = 'field.new';
+                -var name = '"new"'
+                -var valid = form + '[' + name + '].$valid'
+                -var save = zones + '.push(' + model + ')'
+
+                div
+                    label.col-xs-12.col-sm-12.col-md-12
+                        +table-text-field(name, model, zones, valid, save, 'Zone name', true)
+                            +table-save-button(valid, save, true)
+                            +unique-feedback(name, uniqueTip)
+
+            .group-content-empty(ng-if='!(#{zones}.length) && !group.add.length')
+                | Not defined

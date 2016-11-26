@@ -36,6 +36,7 @@ import org.apache.ignite.internal.IgniteLocalNodeMapBeforeStartTest;
 import org.apache.ignite.internal.IgniteSlowClientDetectionSelfTest;
 import org.apache.ignite.internal.MarshallerContextLockingSelfTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
+import org.apache.ignite.internal.processors.cache.GridLocalIgniteSerializationTest;
 import org.apache.ignite.internal.processors.cache.GridProjectionForCachesOnDaemonNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteDaemonNodeMarshallerCacheTest;
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheConcurrentReadWriteTest;
@@ -50,9 +51,11 @@ import org.apache.ignite.internal.product.GridProductVersionSelfTest;
 import org.apache.ignite.internal.util.nio.IgniteExceptionInNioWorkerSelfTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.DynamicProxySerializationMultiJvmSelfTest;
+import org.apache.ignite.marshaller.MarshallerContextSelfTest;
 import org.apache.ignite.messaging.GridMessagingNoPeerClassLoadingSelfTest;
 import org.apache.ignite.messaging.GridMessagingSelfTest;
 import org.apache.ignite.messaging.IgniteMessagingWithClientTest;
+import org.apache.ignite.plugin.security.SecurityPermissionSetBuilderTest;
 import org.apache.ignite.spi.GridSpiLocalHostInjectionTest;
 import org.apache.ignite.startup.properties.NotStringSystemPropertyTest;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -126,6 +129,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         GridTestUtils.addTestIfNeeded(suite, IgniteDaemonNodeMarshallerCacheTest.class, ignoredTests);
         suite.addTestSuite(IgniteMarshallerCacheConcurrentReadWriteTest.class);
         suite.addTestSuite(GridNodeMetricsLogSelfTest.class);
+        suite.addTestSuite(GridLocalIgniteSerializationTest.class);
 
         suite.addTestSuite(IgniteExceptionInNioWorkerSelfTest.class);
         suite.addTestSuite(IgniteLocalNodeMapBeforeStartTest.class);
@@ -141,6 +145,9 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(NotStringSystemPropertyTest.class);
 
         suite.addTestSuite(MarshallerContextLockingSelfTest.class);
+        suite.addTestSuite(MarshallerContextSelfTest.class);
+
+        suite.addTestSuite(SecurityPermissionSetBuilderTest.class);
 
         return suite;
     }

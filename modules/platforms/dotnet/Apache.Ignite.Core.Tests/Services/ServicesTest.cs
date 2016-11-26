@@ -321,6 +321,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             // .. but setter does not
             var ex = Assert.Throws<ServiceInvocationException>(() => { prx.TestProperty = new object(); });
+            Assert.IsNotNull(ex.InnerException);
             Assert.AreEqual("Specified cast is not valid.", ex.InnerException.Message);
         }
 
@@ -436,6 +437,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var ex = Assert.Throws<IgniteException>(() => Services.DeployMultiple(SvcName, svc, Grids.Length, 1));
             Assert.AreEqual("Expected exception", ex.Message);
+            Assert.IsNotNull(ex.InnerException);
             Assert.IsTrue(ex.InnerException.Message.Contains("PlatformCallbackUtils.serviceInit(Native Method)"));
 
             var svc0 = Services.GetService<TestIgniteServiceSerializable>(SvcName);

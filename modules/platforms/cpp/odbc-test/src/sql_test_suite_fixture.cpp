@@ -34,6 +34,7 @@ namespace ignite
         cfg.jvmOpts.push_back("-Djava.compiler=NONE");
         cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
         cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
+        cfg.jvmOpts.push_back("-Duser.timezone=GMT");
 
 #ifdef IGNITE_TESTS_32
         cfg.jvmInitMem = 256;
@@ -45,7 +46,7 @@ namespace ignite
 
         char* cfgPath = getenv("IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH");
 
-        BOOST_REQUIRE(cfgPath != 0) ;
+        BOOST_REQUIRE(cfgPath != 0);
 
         cfg.springCfgPath.assign(cfgPath).append("/queries-test.xml");
 
@@ -54,14 +55,14 @@ namespace ignite
         grid = Ignition::Start(cfg, &err);
 
         if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
-        BOOST_FAIL(err.GetText()) ;
+            BOOST_FAIL(err.GetText()) ;
 
         testCache = grid.GetCache<int64_t, TestType>("cache");
 
         // Allocate an environment handle
         SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env);
 
-        BOOST_REQUIRE(env != NULL) ;
+        BOOST_REQUIRE(env != NULL);
 
         // We want ODBC 3 support
         SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<void*>(SQL_OV_ODBC3), 0);
@@ -69,10 +70,10 @@ namespace ignite
         // Allocate a connection handle
         SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
 
-        BOOST_REQUIRE(dbc != NULL) ;
+        BOOST_REQUIRE(dbc != NULL);
 
         // Connect string
-        SQLCHAR connectStr[] = "DRIVER={Apache Ignite};SERVER=localhost;PORT=10800;CACHE=cache";
+        SQLCHAR connectStr[] = "DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache";
 
         SQLCHAR outstr[ODBC_BUFFER_SIZE];
         SQLSMALLINT outstrlen;
@@ -85,13 +86,13 @@ namespace ignite
         {
             Ignition::Stop(grid.GetName(), true);
 
-            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_DBC, dbc)) ;
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_DBC, dbc));
         }
 
         // Allocate a statement handle
         SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
 
-        BOOST_REQUIRE(stmt != NULL) ;
+        BOOST_REQUIRE(stmt != NULL);
     }
 
     SqlTestSuiteFixture::~SqlTestSuiteFixture()
@@ -117,20 +118,20 @@ namespace ignite
         ret = SQLBindCol(stmt, 1, type, column, bufSize, resSize);
 
         if (!SQL_SUCCEEDED(ret))
-            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt)) ;
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         ret = SQLExecDirect(stmt, reinterpret_cast<SQLCHAR*>(const_cast<char*>(request)), SQL_NTS);
 
         if (!SQL_SUCCEEDED(ret))
-            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt)) ;
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         ret = SQLFetch(stmt);
 
         if (!SQL_SUCCEEDED(ret))
-            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt)) ;
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         ret = SQLFetch(stmt);
-        BOOST_CHECK(ret == SQL_NO_DATA) ;
+        BOOST_CHECK(ret == SQL_NO_DATA);
     }
 
     template<>
@@ -267,5 +268,21 @@ namespace ignite
         SQLDOUBLE res = 0;
 
         CheckSingleResult0(request, SQL_C_DOUBLE, &res, 0, 0);
+    }
+
+    template<>
+    void SqlTestSuiteFixture::CheckSingleResult<Date>(const char* request)
+    {
+        SQL_DATE_STRUCT res;
+
+        CheckSingleResult0(request, SQL_C_DATE, &res, 0, 0);
+    }
+
+    template<>
+    void SqlTestSuiteFixture::CheckSingleResult<Timestamp>(const char* request)
+    {
+        SQL_TIMESTAMP_STRUCT res;
+
+        CheckSingleResult0(request, SQL_C_TIMESTAMP, &res, 0, 0);
     }
 }
