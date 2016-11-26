@@ -67,6 +67,29 @@ public class StripedExecutor implements ExecutorService {
                 stripes[i].start();
             }
 
+            // TODO
+            Thread t = new Thread(new Runnable() {
+                @Override public void run() {
+                    for (;;) {
+                        try {
+                            Thread.sleep(10000);
+                        }
+                        catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+
+                        for (Stripe stripe : stripes) {
+                            if (stripe.queueSize() > 0)
+                                System.out.println(stripe.thread.getName() + " - " + stripe.queueToString());
+                        }
+                    }
+                }
+            });
+
+            t.setDaemon(true);
+
+            t.start();
+
             success = true;
         }
         catch (Error | RuntimeException e) {
@@ -392,6 +415,8 @@ public class StripedExecutor implements ExecutorService {
          */
         abstract int queueSize();
 
+        abstract String queueToString();
+
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(Stripe.class, this);
@@ -466,6 +491,11 @@ public class StripedExecutor implements ExecutorService {
         }
 
         /** {@inheritDoc} */
+        @Override String queueToString() {
+            return String.valueOf(queue);
+        }
+
+        /** {@inheritDoc} */
         @Override int queueSize() {
             return queue.size();
         }
@@ -522,6 +552,11 @@ public class StripedExecutor implements ExecutorService {
         }
 
         /** {@inheritDoc} */
+        @Override String queueToString() {
+            return String.valueOf(queue);
+        }
+
+        /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(StripeConcurrentQueueNoPark.class, this, super.toString());
         }
@@ -565,6 +600,11 @@ public class StripedExecutor implements ExecutorService {
         /** {@inheritDoc} */
         @Override int queueSize() {
             return queue.size();
+        }
+
+        /** {@inheritDoc} */
+        @Override String queueToString() {
+            return String.valueOf(queue);
         }
 
         /** {@inheritDoc} */

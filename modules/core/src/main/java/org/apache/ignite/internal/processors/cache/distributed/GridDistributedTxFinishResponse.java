@@ -86,6 +86,42 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
+    @Override public int partition() {
+        /*
+        TODO possible starvation - need to fix sync waits in internal threads.
+        Thread [name="sys-stripe-1-#30%dht.GridCacheColocatedTxExceptionSelfTest1%", id=46, state=WAITING, blockCnt=0, waitCnt=7]
+    Lock [object=o.a.i.i.processors.cache.distributed.dht.GridDhtTxFinishFuture@212874c9, ownerName=null, ownerId=-1]
+        at sun.misc.Unsafe.park(Native Method)
+        at java.util.concurrent.locks.LockSupport.park(LockSupport.java:186)
+        at java.util.concurrent.locks.AbstractQueuedSynchronizer.parkAndCheckInterrupt(AbstractQueuedSynchronizer.java:834)
+        at java.util.concurrent.locks.AbstractQueuedSynchronizer.doAcquireSharedInterruptibly(AbstractQueuedSynchronizer.java:994)
+        at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquireSharedInterruptibly(AbstractQueuedSynchronizer.java:1303)
+        at o.a.i.i.util.future.GridFutureAdapter.get0(GridFutureAdapter.java:159)
+        at o.a.i.i.util.future.GridFutureAdapter.get(GridFutureAdapter.java:117)
+        at o.a.i.i.processors.cache.distributed.dht.GridDhtTxFinishFuture.onError(GridDhtTxFinishFuture.java:183)
+        at o.a.i.i.processors.cache.distributed.dht.GridDhtTxLocal.finishCommit(GridDhtTxLocal.java:543)
+        at o.a.i.i.processors.cache.distributed.dht.GridDhtTxLocal.commitAsync(GridDhtTxLocal.java:580)
+        at o.a.i.i.processors.cache.transactions.IgniteTxHandler.finishDhtLocal(IgniteTxHandler.java:849)
+        at o.a.i.i.processors.cache.transactions.IgniteTxHandler.finish(IgniteTxHandler.java:728)
+        at o.a.i.i.processors.cache.transactions.IgniteTxHandler.processNearTxFinishRequest(IgniteTxHandler.java:687)
+        at o.a.i.i.processors.cache.transactions.IgniteTxHandler$3.apply(IgniteTxHandler.java:157)
+        at o.a.i.i.processors.cache.transactions.IgniteTxHandler$3.apply(IgniteTxHandler.java:155)
+        at o.a.i.i.processors.cache.GridCacheIoManager.processMessage(GridCacheIoManager.java:758)
+        at o.a.i.i.processors.cache.GridCacheIoManager.onMessage0(GridCacheIoManager.java:363)
+        at o.a.i.i.processors.cache.GridCacheIoManager.handleMessage(GridCacheIoManager.java:287)
+        at o.a.i.i.processors.cache.GridCacheIoManager.access$000(GridCacheIoManager.java:89)
+        at o.a.i.i.processors.cache.GridCacheIoManager$1.onMessage(GridCacheIoManager.java:232)
+        at o.a.i.i.managers.communication.GridIoManager.invokeListener(GridIoManager.java:1212)
+        at o.a.i.i.managers.communication.GridIoManager.processRegularMessage0(GridIoManager.java:840)
+        at o.a.i.i.managers.communication.GridIoManager.access$2100(GridIoManager.java:110)
+        at o.a.i.i.managers.communication.GridIoManager$6.run(GridIoManager.java:785)
+        at o.a.i.i.util.StripedExecutor$Stripe.run(StripedExecutor.java:362)
+        at java.lang.Thread.run(Thread.java:724)
+         */
+        return Integer.MIN_VALUE;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
