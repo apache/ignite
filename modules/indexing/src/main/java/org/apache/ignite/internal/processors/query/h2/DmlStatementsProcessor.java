@@ -464,22 +464,6 @@ public class DmlStatementsProcessor {
 
         long res = 0;
 
-        CacheOperationContext opCtx = cctx.operationContextPerCall();
-
-        // Force keepBinary for operation context to avoid binary deserialization inside entry processor
-        if (cctx.binaryMarshaller()) {
-            CacheOperationContext newOpCtx = null;
-
-            if (opCtx == null)
-                // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
-                newOpCtx = new CacheOperationContext(false, null, true, null, false, null);
-            else if (!opCtx.isKeepBinary())
-                newOpCtx = opCtx.keepBinary();
-
-            if (newOpCtx != null)
-                cctx.operationContextPerCall(newOpCtx);
-        }
-
         Map<Object, EntryProcessor<Object, Object, Boolean>> rows = new LinkedHashMap<>();
 
         // Keys that failed to UPDATE due to concurrent updates.
@@ -487,97 +471,93 @@ public class DmlStatementsProcessor {
 
         SQLException resEx = null;
 
-        try {
-            Iterator<List<?>> it = cursor.iterator();
+        Iterator<List<?>> it = cursor.iterator();
 
-            while (it.hasNext()) {
-                List<?> e = it.next();
-                Object key = e.get(0);
-                Object val = (hasNewVal ? e.get(valColIdx) : e.get(1));
+        while (it.hasNext()) {
+            List<?> e = it.next();
+            Object key = e.get(0);
+            Object val = (hasNewVal ? e.get(valColIdx) : e.get(1));
 
-                Object newVal;
+            Object newVal;
 
-                Map<String, Object> newColVals = new HashMap<>();
+            Map<String, Object> newColVals = new HashMap<>();
 
-                for (int i = 0; i < plan.colNames.length; i++) {
-                    if (hasNewVal && i == valColIdx - 2)
-                        continue;
+            for (int i = 0; i < plan.colNames.length; i++) {
+                if (hasNewVal && i == valColIdx - 2)
+                    continue;
 
-                    newColVals.put(plan.colNames[i], e.get(i + 2));
-                }
-
-                newVal = plan.valSupplier.apply(e);
-
-                if (bin && !(val instanceof BinaryObject))
-                    val = cctx.grid().binary().toBinary(val);
-
-                // Skip key and value - that's why we start off with 2nd column
-                for (int i = 0; i < plan.tbl.getColumns().length - 2; i++) {
-                    Column c = plan.tbl.getColumn(i + 2);
-
-                    boolean hasNewColVal = newColVals.containsKey(c.getName());
-
-                    // Binary objects get old field values from the Builder, so we can skip what we're not updating
-                    if (bin && !hasNewColVal)
-                        continue;
-
-                    Object colVal = hasNewColVal ? newColVals.get(c.getName()) : desc.columnValue(key, val, i);
-
-                    desc.setColumnValue(key, newVal, colVal, i);
-                }
-
-                if (bin && hasProps) {
-                    assert newVal instanceof BinaryObjectBuilder;
-
-                    newVal = ((BinaryObjectBuilder) newVal).build();
-                }
-
-                Object srcVal = e.get(1);
-
-                if (bin && !(srcVal instanceof BinaryObject))
-                    srcVal = cctx.grid().binary().toBinary(srcVal);
-
-                rows.put(key, new ModifyingEntryProcessor(srcVal, new EntryValueUpdater(newVal)));
-
-                if ((pageSize > 0 && rows.size() == pageSize) || (!it.hasNext())) {
-                    PageProcessingResult pageRes = processPage(cctx, rows);
-
-                    res += pageRes.cnt;
-
-                    failedKeys.addAll(F.asList(pageRes.errKeys));
-
-                    if (pageRes.ex != null) {
-                        if (resEx == null)
-                            resEx = pageRes.ex;
-                        else
-                            resEx.setNextException(pageRes.ex);
-                    }
-
-                    if (it.hasNext())
-                        rows.clear(); // No need to clear after the last batch.
-                }
+                newColVals.put(plan.colNames[i], e.get(i + 2));
             }
 
-            if (resEx != null) {
-                if (!F.isEmpty(failedKeys)) {
-                    // Don't go for a re-run if processing of some keys yielded exceptions and report keys that
-                    // had been modified concurrently right away.
-                    String msg = "Failed to UPDATE some keys because they had been modified concurrently " +
-                        "[keys=" + failedKeys + ']';
+            newVal = plan.valSupplier.apply(e);
 
-                    SQLException dupEx = createJdbcSqlException(msg, IgniteQueryErrorCode.CONCURRENT_UPDATE);
+            if (bin && !(val instanceof BinaryObject))
+                val = cctx.grid().binary().toBinary(val);
 
-                    dupEx.setNextException(resEx);
+            // Skip key and value - that's why we start off with 2nd column
+            for (int i = 0; i < plan.tbl.getColumns().length - 2; i++) {
+                Column c = plan.tbl.getColumn(i + 2);
 
-                    resEx = dupEx;
+                boolean hasNewColVal = newColVals.containsKey(c.getName());
+
+                // Binary objects get old field values from the Builder, so we can skip what we're not updating
+                if (bin && !hasNewColVal)
+                    continue;
+
+                Object colVal = hasNewColVal ? newColVals.get(c.getName()) : desc.columnValue(key, val, i);
+
+                desc.setColumnValue(key, newVal, colVal, i);
+            }
+
+            if (bin && hasProps) {
+                assert newVal instanceof BinaryObjectBuilder;
+
+                newVal = ((BinaryObjectBuilder) newVal).build();
+            }
+
+            Object srcVal = e.get(1);
+
+            if (bin && !(srcVal instanceof BinaryObject))
+                srcVal = cctx.grid().binary().toBinary(srcVal);
+
+            rows.put(key, new ModifyingEntryProcessor(srcVal, new EntryValueUpdater(newVal)));
+
+            if ((pageSize > 0 && rows.size() == pageSize) || (!it.hasNext())) {
+                PageProcessingResult pageRes = processPage(cctx, rows);
+
+                res += pageRes.cnt;
+
+                failedKeys.addAll(F.asList(pageRes.errKeys));
+
+                if (pageRes.ex != null) {
+                    if (resEx == null)
+                        resEx = pageRes.ex;
+                    else
+                        resEx.setNextException(pageRes.ex);
                 }
 
-                throw new IgniteSQLException(resEx);
+                if (it.hasNext())
+                    rows.clear(); // No need to clear after the last batch.
             }
         }
-        finally {
-            cctx.operationContextPerCall(opCtx);
+
+        if (resEx != null) {
+            if (!F.isEmpty(failedKeys)) {
+                // Don't go for a re-run if processing of some keys yielded exceptions and report keys that
+                // had been modified concurrently right away.
+                String msg = "Failed to UPDATE some keys because they had been modified concurrently " +
+                    "[keys=" + failedKeys + ']';
+
+                SQLException dupEx = createJdbcSqlException(msg, IgniteQueryErrorCode.CONCURRENT_UPDATE);
+
+                dupEx.setNextException(resEx);
+
+                resEx = dupEx;
+            }
+
+            throw new IgniteSQLException(resEx);
         }
+
 
         return new UpdateResult(res, failedKeys.toArray());
     }
