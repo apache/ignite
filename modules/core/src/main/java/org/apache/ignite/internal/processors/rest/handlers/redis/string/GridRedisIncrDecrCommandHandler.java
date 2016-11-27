@@ -87,16 +87,23 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
             restReq.initial(0L);
         else {
             if (getResp.getResponse() instanceof String) {
+                Long init;
+
                 try {
-                    restReq.initial(Long.parseLong((String)getResp.getResponse()));
+                    init = Long.parseLong((String) getResp.getResponse());
+
+                    restReq.initial(init);
                 }
                 catch (Exception e) {
                     U.error(log, "An initial value must be numeric and in range", e);
 
                     throw new GridRedisGenericException("An initial value must be numeric and in range");
                 }
-            }
-            else
+
+                if ((init == Long.MAX_VALUE && (msg.command() == INCR || msg.command() == INCRBY))
+                        || (init == Long.MIN_VALUE && (msg.command() == DECR || msg.command() == DECRBY)))
+                    throw new GridRedisGenericException("Increment or decrement would overflow");
+            } else
                 throw new GridRedisTypeException("Operation against a key holding the wrong kind of value");
 
             // remove from cache.
