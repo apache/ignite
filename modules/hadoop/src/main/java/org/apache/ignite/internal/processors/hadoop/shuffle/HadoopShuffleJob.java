@@ -224,6 +224,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      */
     @SuppressWarnings("BusyWait")
     public void startSending(String gridName, IgniteInClosure2X<T, HadoopShuffleMessage> io) {
+        if (stripeMappers)
+            return;
+
         assert snd == null;
         assert io != null;
 
@@ -485,6 +488,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
     /** {@inheritDoc} */
     @Override public void close() throws IgniteCheckedException {
+        if (stripeMappers)
+            return;
+
         if (snd != null) {
             snd.cancel();
 
@@ -517,6 +523,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      */
     @SuppressWarnings("unchecked")
     public IgniteInternalFuture<?> flush() throws IgniteCheckedException {
+        if (stripeMappers)
+            return new GridFinishedFuture<>();
+
         if (log.isDebugEnabled())
             log.debug("Flushing job " + job.id() + " on address " + locReduceAddr);
 
