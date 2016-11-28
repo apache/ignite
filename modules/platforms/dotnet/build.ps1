@@ -18,6 +18,7 @@ param (
     [switch]$skipJava,
     [switch]$skipNuGet,
     [switch]$skipDocs,
+    [switch]$clean,
     [string]$platform="Any CPU",
     [string]$configuration="Release"
  )
@@ -34,9 +35,14 @@ if (!$skipJava)
     echo "Ignite home detected at '$pwd'."
 
     # run Maven
-    echo "Starting Java (Maven) build..."
+    if ($clean)
+    {
+        echo "Executing Maven cleanup..."
+        cmd /c "mvn clean"        
+    }
 
-    cmd /c "mvn clean package -DskipTests -U -P-lgpl,-scala,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true"
+    echo "Starting Java (Maven) build..."
+    cmd /c "mvn package -DskipTests -U -P-lgpl,-scala,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true"
 
     # restore directory
     cd $PSScriptRoot
@@ -55,7 +61,8 @@ Import-Module .\Invoke-MsBuild
 
 # Build
 echo "Starting MsBuild..."
-Invoke-MsBuild Apache.Ignite.sln -Params "/p:Configuration=$configuration /p:Platform=$platform" -ShowBuildOutputInCurrentWindow
+$targets = if ($clean) {"Clean;Rebuild"} else {"Build"}
+Invoke-MsBuild Apache.Ignite.sln -Params "/target $targets /p:Configuration=$configuration /p:Platform=$platform" -ShowBuildOutputInCurrentWindow
 
 # Remove module dir
 Remove-Item -Force -Recurse -ErrorAction SilentlyContinue "Invoke-MsBuild"
