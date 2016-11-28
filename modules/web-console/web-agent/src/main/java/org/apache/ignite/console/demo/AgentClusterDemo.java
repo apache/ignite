@@ -54,7 +54,6 @@ import org.apache.ignite.logger.log4j.Log4JLogger;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.log4j.Logger;
 
@@ -363,8 +362,6 @@ public class AgentClusterDemo {
             cfg.setClientMode(true);
 
         cfg.setCacheConfiguration(cacheCountry(), cacheDepartment(), cacheEmployee(), cacheParking(), cacheCar());
-
-        cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
         return cfg;
     }
