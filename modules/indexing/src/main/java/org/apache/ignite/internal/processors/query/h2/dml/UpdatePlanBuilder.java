@@ -99,7 +99,7 @@ public final class UpdatePlanBuilder {
 
         GridSqlColumn[] cols;
 
-        boolean isTableSubqry;
+        boolean isTwoStepSubqry;
 
         int rowsNum;
 
@@ -116,8 +116,8 @@ public final class UpdatePlanBuilder {
 
             cols = ins.columns();
             sel = DmlAstUtils.selectForInsertOrMerge(cols, ins.rows(), ins.query(), desc);
-            isTableSubqry = (ins.query() != null);
-            rowsNum = isTableSubqry ? 0 : ins.rows().size();
+            isTwoStepSubqry = (ins.query() != null);
+            rowsNum = isTwoStepSubqry ? 0 : ins.rows().size();
         }
         else if (stmt instanceof GridSqlMerge) {
             GridSqlMerge merge = (GridSqlMerge) stmt;
@@ -137,14 +137,14 @@ public final class UpdatePlanBuilder {
 
             cols = merge.columns();
             sel = DmlAstUtils.selectForInsertOrMerge(cols, merge.rows(), merge.query(), desc);
-            isTableSubqry = (merge.query() != null);
-            rowsNum = isTableSubqry ? 0 : merge.rows().size();
+            isTwoStepSubqry = (merge.query() != null);
+            rowsNum = isTwoStepSubqry ? 0 : merge.rows().size();
         }
         else throw new IgniteSQLException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
                 IgniteQueryErrorCode.UNEXPECTED_OPERATION);
 
         // Let's set the flag only for subqueries that have their FROM specified.
-        isTableSubqry = (isTableSubqry && (sel instanceof GridSqlUnion ||
+        isTwoStepSubqry = (isTwoStepSubqry && (sel instanceof GridSqlUnion ||
             (sel instanceof GridSqlSelect && ((GridSqlSelect) sel).from() != null)));
 
         int keyColIdx = -1;
@@ -189,10 +189,10 @@ public final class UpdatePlanBuilder {
 
         if (stmt instanceof GridSqlMerge)
             return UpdatePlan.forMerge(tbl.dataTable(), colNames, keySupplier, valSupplier, keyColIdx, valColIdx,
-                sel.getSQL(), !isTableSubqry, rowsNum);
+                sel.getSQL(), !isTwoStepSubqry, rowsNum);
         else
             return UpdatePlan.forInsert(tbl.dataTable(), colNames, keySupplier, valSupplier, keyColIdx, valColIdx,
-                sel.getSQL(), !isTableSubqry, rowsNum);
+                sel.getSQL(), !isTwoStepSubqry, rowsNum);
     }
 
     /**
