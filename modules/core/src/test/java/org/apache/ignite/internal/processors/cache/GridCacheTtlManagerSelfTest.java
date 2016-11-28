@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache;
 
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.TouchedExpiryPolicy;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -112,8 +114,13 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
                     assertNull(g.cache(null).get(key));
 
                     if (!g.internalCache().context().deferredDelete())
-                        assertNull(g.internalCache().map().getEntry(g.internalCache().context().toCacheKeyObject(key)));
-                }
+                        try {
+                            assertNull(g.internalCache().map().getEntry(g.internalCache().context().toCacheKeyObject(key)));
+                        }
+                        catch (IgniteCheckedException e){
+                            throw new IgniteException("Unable to checkTtl for key : " + key, e);
+                        }
+                    }
             });
         }
         finally {

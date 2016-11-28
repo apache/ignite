@@ -115,7 +115,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     @Override public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx,
         @Nullable GridCacheContext cctx,
         Object obj,
-        boolean userObj) {
+        boolean userObj) throws IgniteCheckedException {
         if (obj instanceof KeyCacheObject) {
             KeyCacheObject key = (KeyCacheObject)obj;
 
@@ -139,7 +139,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     protected KeyCacheObject toCacheKeyObject0(CacheObjectContext ctx,
         @Nullable GridCacheContext cctx,
         Object obj,
-        boolean userObj) {
+        boolean userObj) throws IgniteCheckedException {
         int part = partition(ctx, cctx, obj);
 
         if (!userObj)
@@ -225,16 +225,14 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
      * @param obj Object.
      * @return Object partition.
      */
-    protected final int partition(CacheObjectContext ctx, @Nullable GridCacheContext cctx, Object obj) {
+    protected final int partition(CacheObjectContext ctx, @Nullable GridCacheContext cctx, Object obj) throws IgniteCheckedException {
         try {
             return cctx != null ?
                 cctx.affinity().partition(obj, false) :
                 ctx.kernalContext().affinity().partition0(ctx.cacheName(), obj, null);
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to get partition");
-
-            return  -1;
+            throw new IgniteCheckedException("Failed to get partition: " + ctx.cacheName());
         }
     }
 

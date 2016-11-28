@@ -1462,7 +1462,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
      * @param keys Keys to lock.
      * @return Collection of locked entries.
      */
-    private List<GridCacheEntryEx> lockEntries(Collection<? extends K> keys) {
+    private List<GridCacheEntryEx> lockEntries(Collection<? extends K> keys) throws IgniteCheckedException {
         List<GridCacheEntryEx> locked = new ArrayList<>(keys.size());
 
         boolean nullKeys = false;

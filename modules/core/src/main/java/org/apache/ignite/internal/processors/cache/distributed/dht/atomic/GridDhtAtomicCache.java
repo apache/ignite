@@ -522,21 +522,25 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final ExpiryPolicy expiryPlc = skipVals ? null : opCtx != null ? opCtx.expiry() : null;
 
         final boolean skipStore = opCtx != null && opCtx.skipStore();
-
-        return asyncOp(new CO<IgniteInternalFuture<V>>() {
-            @Override public IgniteInternalFuture<V> apply() {
-                return getAsync0(ctx.toCacheKeyObject(key),
-                    forcePrimary,
-                    subjId0,
-                    taskName,
-                    deserializeBinary,
-                    expiryPlc,
-                    skipVals,
-                    skipStore,
-                    canRemap,
-                    needVer);
-            }
-        });
+            return asyncOp(new CO<IgniteInternalFuture<V>>() {
+                @Override public IgniteInternalFuture<V> apply() {
+                    try{
+                        return getAsync0(ctx.toCacheKeyObject(key),
+                        forcePrimary,
+                        subjId0,
+                        taskName,
+                        deserializeBinary,
+                        expiryPlc,
+                        skipVals,
+                        skipStore,
+                        canRemap,
+                        needVer);
+                    }
+                    catch (IgniteCheckedException e){
+                        return new GridFinishedFuture<>(e);
+                    }
+                }
+            });
     }
 
     /** {@inheritDoc} */
@@ -2789,9 +2793,17 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (storeErr != null) {
             ArrayList<KeyCacheObject> failed = new ArrayList<>(storeErr.failedKeys().size());
 
-            for (Object failedKey : storeErr.failedKeys())
-                failed.add(ctx.toCacheKeyObject(failedKey));
-
+            for (Object failedKey : storeErr.failedKeys()) {
+                try{
+                    failed.add(ctx.toCacheKeyObject(failedKey));
+                } catch (IgniteCheckedException e){
+                    for (int i = 0; i < entries.size(); i++) {
+                        GridDhtCacheEntry entry = entries.get(i);
+                        if (entry.key().value(ctx.cacheObjectContext(), false).equals(failedKey))
+                            res.addFailedKey(entry.key(), e);
+                    }
+                }
+            }
             res.addFailedKeys(failed, storeErr.getCause(), ctx);
         }
 

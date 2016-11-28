@@ -819,7 +819,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         @Nullable GridCacheContext cctx,
         Object obj,
         boolean userObj
-    ) {
+    ) throws IgniteCheckedException {
         if (!((CacheObjectBinaryContext)ctx).binaryEnabled())
             return super.toCacheKeyObject(ctx, cctx, obj, userObj);
 

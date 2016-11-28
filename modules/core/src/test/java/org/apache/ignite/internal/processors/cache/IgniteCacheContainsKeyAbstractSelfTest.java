@@ -127,8 +127,10 @@ public abstract class IgniteCacheContainsKeyAbstractSelfTest extends GridCacheAb
      * @param tx Transaction to check.
      * @param key Key to check.
      * @return {@code True} if key was enlisted.
+     *
+     * @throws Exception If failed.
      */
-    private boolean txContainsKey(Transaction tx, String key) {
+    private boolean txContainsKey(Transaction tx, String key) throws Exception {
         TransactionProxyImpl<String, Integer> proxy = (TransactionProxyImpl<String, Integer>)tx;
 
         IgniteInternalTx txEx = proxy.tx();

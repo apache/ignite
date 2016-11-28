@@ -25,6 +25,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -179,16 +180,26 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
     /** {@inheritDoc} */
     @Override public boolean isLocked(K key) {
-        KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
+        try {
+            KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
-        return ctx.mvcc().isLockedByThread(ctx.txKey(cacheKey), -1);
+            return ctx.mvcc().isLockedByThread(ctx.txKey(cacheKey), -1);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public boolean isLockedByThread(K key) {
-        KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
+        try {
+            KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
-        return ctx.mvcc().isLockedByThread(ctx.txKey(cacheKey), Thread.currentThread().getId());
+            return ctx.mvcc().isLockedByThread(ctx.txKey(cacheKey), Thread.currentThread().getId());
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -212,33 +223,40 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<V>() {
-                @Override public IgniteInternalFuture<V> op(IgniteTxLocalAdapter tx, AffinityTopologyVersion readyTopVer) {
-                    IgniteInternalFuture<Map<Object, Object>>  fut = tx.getAllAsync(ctx,
-                        readyTopVer,
-                        Collections.singleton(ctx.toCacheKeyObject(key)),
-                        deserializeBinary,
-                        skipVals,
-                        false,
-                        opCtx != null && opCtx.skipStore(),
-                        needVer);
+                @Override
+                public IgniteInternalFuture<V> op(IgniteTxLocalAdapter tx, AffinityTopologyVersion readyTopVer) {
+                    try {
+                        IgniteInternalFuture<Map<Object, Object>> fut = tx.getAllAsync(ctx,
+                            readyTopVer,
+                            Collections.singleton(ctx.toCacheKeyObject(key)),
+                            deserializeBinary,
+                            skipVals,
+                            false,
+                            opCtx != null && opCtx.skipStore(),
+                            needVer);
 
-                    return fut.chain(new CX1<IgniteInternalFuture<Map<Object, Object>>, V>() {
-                        @SuppressWarnings("unchecked")
-                        @Override public V applyx(IgniteInternalFuture<Map<Object, Object>> e)
-                            throws IgniteCheckedException {
-                            Map<Object, Object> map = e.get();
+                        return fut.chain(new CX1<IgniteInternalFuture<Map<Object, Object>>, V>() {
+                            @SuppressWarnings("unchecked")
+                            @Override public V applyx(IgniteInternalFuture<Map<Object, Object>> e)
+                                throws IgniteCheckedException {
+                                Map<Object, Object> map = e.get();
 
-                            assert map.isEmpty() || map.size() == 1 : map.size();
+                                assert map.isEmpty() || map.size() == 1 : map.size();
 
-                            if (skipVals) {
-                                Boolean val = map.isEmpty() ? false : (Boolean)F.firstValue(map);
+                                if (skipVals) {
+                                    Boolean val = map.isEmpty() ? false : (Boolean)F.firstValue(map);
 
-                                return (V)(val);
+                                    return (V)(val);
+                                }
+
+                                return (V)F.firstValue(map);
+
                             }
-
-                            return (V)F.firstValue(map);
-                        }
-                    });
+                        });
+                    }
+                    catch (IgniteCheckedException e) {
+                        return new GridFinishedFuture<>(e);
+                    }
                 }
             }, opCtx);
         }
@@ -248,24 +266,28 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             tx.topologyVersion();
 
         subjId = ctx.subjectIdPerCall(subjId, opCtx);
-
-        GridPartitionedSingleGetFuture fut = new GridPartitionedSingleGetFuture(ctx,
-            ctx.toCacheKeyObject(key),
-            topVer,
-            opCtx == null || !opCtx.skipStore(),
-            forcePrimary,
-            subjId,
-            taskName,
-            deserializeBinary,
-            skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
-            skipVals,
-            canRemap,
-            needVer,
+        try {
+            GridPartitionedSingleGetFuture fut = new GridPartitionedSingleGetFuture(ctx,
+                ctx.toCacheKeyObject(key),
+                topVer,
+                opCtx == null || !opCtx.skipStore(),
+                forcePrimary,
+                subjId,
+                taskName,
+                deserializeBinary,
+                skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
+                skipVals,
+                canRemap,
+                needVer,
             /*keepCacheObjects*/false);
 
-        fut.init();
+            fut.init();
 
-        return (IgniteInternalFuture<V>)fut;
+            return (IgniteInternalFuture<V>)fut;
+        }
+        catch (IgniteCheckedException e) {
+            return new GridFinishedFuture<>(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -408,23 +430,28 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean needVer,
         boolean keepCacheObj
     ) {
-        GridPartitionedSingleGetFuture fut = new GridPartitionedSingleGetFuture(ctx,
-            ctx.toCacheKeyObject(key),
-            topVer,
-            readThrough,
-            forcePrimary,
-            subjId,
-            taskName,
-            deserializeBinary,
-            expiryPlc,
-            skipVals,
-            canRemap,
-            needVer,
-            keepCacheObj);
+        try {
+            GridPartitionedSingleGetFuture fut = new GridPartitionedSingleGetFuture(ctx,
+                ctx.toCacheKeyObject(key),
+                topVer,
+                readThrough,
+                forcePrimary,
+                subjId,
+                taskName,
+                deserializeBinary,
+                expiryPlc,
+                skipVals,
+                canRemap,
+                needVer,
+                keepCacheObj);
 
-        fut.init();
+            fut.init();
 
-        return fut;
+            return fut;
+        }
+        catch (IgniteCheckedException e) {
+            return new GridFinishedFuture<>(e);
+        }
     }
 
     /**
