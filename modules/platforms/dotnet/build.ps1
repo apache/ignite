@@ -55,17 +55,21 @@ else
 # 2) Build .NET
 
 # Download and install Invoke-MsBuild module
-echo "Installing MsBuild module..."
-Save-Module -Name Invoke-MsBuild -Path .
+if (!(Test-Path Invoke-MsBuild))
+{
+    echo "Installing MsBuild module..."
+    Save-Module -Name Invoke-MsBuild -Path .
+}
+
 Import-Module .\Invoke-MsBuild
 
 # Build
 echo "Starting MsBuild..."
 $targets = if ($clean) {"Clean;Rebuild"} else {"Build"}
-Invoke-MsBuild Apache.Ignite.sln -Params "/target $targets /p:Configuration=$configuration /p:Platform=$platform" -ShowBuildOutputInCurrentWindow
+Invoke-MsBuild Apache.Ignite.sln -Params "/target:$targets /p:Configuration=$configuration /p:Platform=`"$platform`"" -ShowBuildOutputInCurrentWindow
 
 # Remove module dir
-Remove-Item -Force -Recurse -ErrorAction SilentlyContinue "Invoke-MsBuild"
+# Remove-Item -Force -Recurse -ErrorAction SilentlyContinue "Invoke-MsBuild"
 
 # TODO:
 # build java (skippable)
