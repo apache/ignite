@@ -20,7 +20,7 @@ import redis
 To execute this, you will have redis-py installed and Ignite running.
 See https://github.com/andymccurdy/redis-py for the details on redis-py.
 
-See https://apacheignite.readme.io/ for more details on Redis integration.
+See https://apacheignite.readme.io/docs/redis for more details on Redis integration.
 '''
 
 r = redis.StrictRedis(host='localhost', port=11211, db=0)
