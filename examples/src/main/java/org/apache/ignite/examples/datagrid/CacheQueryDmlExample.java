@@ -87,26 +87,25 @@ public class CacheQueryDmlExample {
      */
     private static void insert(IgniteCache<Long, Organization> orgCache,
         IgniteCache<AffinityKey<Long>, Person> personCache) {
-        // Organizations.
-        Organization org1 = new Organization("Apache");
-        Organization org2 = new Organization("Other");
+        // Insert organizations.
+        SqlFieldsQuery qry = new SqlFieldsQuery("insert into Organization (_key, id, name) values (?, ?, ?)");
 
-        orgCache.put(org1.id(), org1);
-        orgCache.put(org2.id(), org2);
+        orgCache.query(qry.setArgs(1L, 1L, "Apache"));
+        orgCache.query(qry.setArgs(2L, 2L, "Other"));
 
-        // Insert persons via field values.
-        AffinityKey<Long> key1 = new AffinityKey<>(1L, org2.id());
-        AffinityKey<Long> key2 = new AffinityKey<>(2L, org2.id());
-        AffinityKey<Long> key3 = new AffinityKey<>(3L, org2.id());
-        AffinityKey<Long> key4 = new AffinityKey<>(4L, org2.id());
+        // Insert persons.
+        AffinityKey<Long> key1 = new AffinityKey<>(1L, 1L);
+        AffinityKey<Long> key2 = new AffinityKey<>(2L, 1L);
+        AffinityKey<Long> key3 = new AffinityKey<>(3L, 2L);
+        AffinityKey<Long> key4 = new AffinityKey<>(4L, 2L);
 
-        SqlFieldsQuery qry = new SqlFieldsQuery(
+        qry = new SqlFieldsQuery(
             "insert into Person (_key, id, orgId, firstName, lastName, salary, resume) values (?, ?, ?, ?, ?, ?, ?)");
 
-        personCache.query(qry.setArgs(key1, 1L, org1.id(), "John", "Doe", 4000, "Master"));
-        personCache.query(qry.setArgs(key2, 2L, org1.id(), "Jane", "Roe", 2000, "Bachelor"));
-        personCache.query(qry.setArgs(key3, 3L, org2.id(), "Mary", "Major", 5000, "Master"));
-        personCache.query(qry.setArgs(key4, 4L, org2.id(), "Richard", "Miles", 3000, "Bachelor"));
+        personCache.query(qry.setArgs(key1, 1L, 1L, "John", "Doe", 4000, "Master"));
+        personCache.query(qry.setArgs(key2, 2L, 1L, "Jane", "Roe", 2000, "Bachelor"));
+        personCache.query(qry.setArgs(key3, 3L, 2L, "Mary", "Major", 5000, "Master"));
+        personCache.query(qry.setArgs(key4, 4L, 2L, "Richard", "Miles", 3000, "Bachelor"));
     }
 
     /**
