@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Set;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -245,8 +244,6 @@ public final class UpdatePlanBuilder {
             GridSqlSelect sel;
 
             if (stmt instanceof GridSqlUpdate) {
-                boolean bin = desc.context().binaryMarshaller();
-
                 List<GridSqlColumn> updatedCols = ((GridSqlUpdate) stmt).cols();
 
                 int valColIdx = -1;
@@ -270,6 +267,15 @@ public final class UpdatePlanBuilder {
                 if (hasNewVal)
                     valColIdx += 2;
 
+                // TODO https://issues.apache.org/jira/browse/IGNITE-4312
+                /*
+
+                This section has been commented out due to the issue linked above -
+                without this problem, in case of binary marshaller we could use either explicitly use either old _val
+                or explicitly set new _val as base object whose field values we would update, but because of it,
+                we have to instantiate new binary objects explicitly and just copy field values one by one.
+                Sad but true. When the issue is fixed, this section will have to be uncommented.
+
                 int newValColIdx;
 
                 if (!hasProps) // No distinct properties, only whole new value - let's take it
@@ -284,6 +290,9 @@ public final class UpdatePlanBuilder {
                 // Otherwise we always want it to instantiate new object whose properties we will later
                 // set to current values.
                 KeyValueSupplier newValSupplier = createSupplier(desc.context(), desc.type(), newValColIdx, hasProps, false);
+                */
+
+                KeyValueSupplier newValSupplier = createSupplier(desc.context(), desc.type(), -1, hasProps, false);
 
                 sel = DmlAstUtils.selectForUpdate((GridSqlUpdate) stmt, errKeysPos);
 
@@ -335,10 +344,17 @@ public final class UpdatePlanBuilder {
         }
 
         if (cctx.binaryMarshaller()) {
+            // TODO https://issues.apache.org/jira/browse/IGNITE-4312
+            /*
+            This section has been commented out due to the issue linked above - commented code is correct, and
+            without this problem, in case of binary marshaller we could use either explicitly use either old _val
+            or explicitly set new _val as base object whose field values we would update, but because of it,
+            we have to instantiate new binary objects explicitly and just copy field values one by one.
+            Sad but true. When the issue is fixed, this section will have to be uncommented.
+
             if (colIdx != -1) {
                 // If we have key or value explicitly present in query, create new builder upon them...
                 return new KeyValueSupplier() {
-                    /** {@inheritDoc} */
                     @Override public Object apply(List<?> arg) throws IgniteCheckedException {
                         BinaryObject bin = cctx.grid().binary().toBinary(arg.get(colIdx));
 
@@ -349,12 +365,17 @@ public final class UpdatePlanBuilder {
             else {
                 // ...and if we don't, just create a new builder.
                 return new KeyValueSupplier() {
-                    /** {@inheritDoc} */
                     @Override public Object apply(List<?> arg) throws IgniteCheckedException {
                         return cctx.grid().binary().builder(typeName);
                     }
                 };
             }
+            */
+            return new KeyValueSupplier() {
+                @Override public Object apply(List<?> arg) throws IgniteCheckedException {
+                    return cctx.grid().binary().builder(typeName);
+                }
+            };
         }
         else {
             Constructor<?> ctor;

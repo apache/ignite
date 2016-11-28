@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
+import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArguments;
@@ -476,6 +477,9 @@ public class DmlStatementsProcessor {
         while (it.hasNext()) {
             List<?> e = it.next();
             Object key = e.get(0);
+
+            // Base object to take "initial" column values from - either one currently in cache,
+            // or the one explicitly passed in arguments.
             Object val = (hasNewVal ? e.get(valColIdx) : e.get(1));
 
             Object newVal;
@@ -498,15 +502,25 @@ public class DmlStatementsProcessor {
             for (int i = 0; i < plan.tbl.getColumns().length - 2; i++) {
                 Column c = plan.tbl.getColumn(i + 2);
 
+                GridQueryProperty prop = desc.type().property(c.getName());
+
+                if (prop.key())
+                    continue; // Don't get values of key's columns - we won't use them anyway
+
                 boolean hasNewColVal = newColVals.containsKey(c.getName());
 
+                // TODO uncomment when https://issues.apache.org/jira/browse/IGNITE-4312 is fixed
+                /*
                 // Binary objects get old field values from the Builder, so we can skip what we're not updating
                 if (bin && !hasNewColVal)
                     continue;
+                */
 
-                Object colVal = hasNewColVal ? newColVals.get(c.getName()) : desc.columnValue(key, val, i);
+                // Column values that have been explicitly specified have priority over field values in old or new _val
+                Object colVal = hasNewColVal ? newColVals.get(c.getName()) : desc.columnValue(null, val, i);
 
-                desc.setColumnValue(key, newVal, colVal, i);
+                // UPDATE currently does not allow to modify key or its fields, so we must be safe to pass null as key
+                desc.setColumnValue(null, newVal, colVal, i);
             }
 
             if (bin && hasProps) {
@@ -784,6 +798,28 @@ public class DmlStatementsProcessor {
 
         if (val == null)
             throw new IgniteSQLException("Value for INSERT or MERGE must not be null", IgniteQueryErrorCode.NULL_VALUE);
+
+        // TODO remove this whole condition when https://issues.apache.org/jira/browse/IGNITE-4312 is fixed
+        boolean isKeyBldr = key instanceof BinaryObjectBuilder;
+        boolean isValBldr = val instanceof BinaryObjectBuilder;
+        if (cctx.binaryMarshaller() && (isKeyBldr || isValBldr)) {
+            Object explicitKey = keyColIdx != -1 ? row[keyColIdx] : null;
+
+            Object explicitVal = valColIdx != -1 ? row[valColIdx] : null;
+
+            Set<String> propNames = desc.fields().keySet();
+
+            for (String propName : propNames) {
+                GridQueryProperty prop = desc.property(propName);
+
+                assert prop != null;
+
+                if (prop.key() && explicitKey != null && isKeyBldr)
+                    prop.setValue(key, null, prop.value(explicitKey, null));
+                else if (!prop.key() && explicitVal != null && isValBldr)
+                    prop.setValue(null, val, prop.value(null, explicitVal));
+            }
+        }
 
         for (int i = 0; i < cols.length; i++) {
             if (i == keyColIdx || i == valColIdx)
