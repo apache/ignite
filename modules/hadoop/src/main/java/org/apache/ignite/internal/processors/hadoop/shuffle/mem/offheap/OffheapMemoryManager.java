@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.hadoop.shuffle.mem.Page;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 
 /**
- * Base class for all multimaps.
+ * Off-heap implementation of memory manager.
  */
 public class OffheapMemoryManager extends MemoryManager {
     /** */

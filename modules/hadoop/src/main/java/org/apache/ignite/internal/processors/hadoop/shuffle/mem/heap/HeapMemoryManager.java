@@ -22,10 +22,9 @@ import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.internal.processors.hadoop.shuffle.mem.MemoryManager;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 
 /**
- * Base class for all multimaps.
+ * On-heap implementation of memory manager.
  */
 public class HeapMemoryManager extends MemoryManager {
 
@@ -39,14 +38,14 @@ public class HeapMemoryManager extends MemoryManager {
 
 
     /**
-     * @param mem Memory.
      * @param pageSize Page size.
      */
-    public HeapMemoryManager(GridUnsafeMemory mem, int pageSize) {
-        assert mem != null;
+    public HeapMemoryManager(int pageSize) {
         assert pageSize > 0;
 
         this.pageSize = pageSize;
+
+        allPages.add(new HeapPage(0, 0));
     }
 
     /** {@inheritDoc} */
@@ -98,105 +97,105 @@ public class HeapMemoryManager extends MemoryManager {
     @Override public long readLongVolatile(long ptr) {
         HeapPage p = ptrToPage(ptr);
 
-        return GridUnsafe.getLongVolatile(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffff);
+        return GridUnsafe.getLongVolatile(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffffL);
     }
 
     /** {@inheritDoc} */
     @Override public void writeLongVolatile(long ptr, long v) {
         HeapPage p = ptrToPage(ptr);
 
-        GridUnsafe.putLongVolatile(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffff, v);
+        GridUnsafe.putLongVolatile(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffffL, v);
     }
 
     /** {@inheritDoc} */
     @Override public boolean casLong(long ptr, long exp, long v) {
         HeapPage p = ptrToPage(ptr);
 
-        return GridUnsafe.compareAndSwapLong(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffff, exp, v);
+        return GridUnsafe.compareAndSwapLong(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffffL, exp, v);
     }
 
     /** {@inheritDoc} */
     @Override public long readLong(long ptr) {
         HeapPage p = ptrToPage(ptr);
 
-        return GridUnsafe.getLong(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffff);
+        return GridUnsafe.getLong(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffffL);
     }
 
     /** {@inheritDoc} */
     @Override public void writeLong(long ptr, long v) {
         HeapPage p = ptrToPage(ptr);
 
-        GridUnsafe.putLong(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffff, v);
+        GridUnsafe.putLong(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffffL, v);
     }
 
     /** {@inheritDoc} */
     @Override public int readInt(long ptr) {
         HeapPage p = ptrToPage(ptr);
 
-        return GridUnsafe.getInt(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffff);
+        return GridUnsafe.getInt(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffffL);
     }
 
     /** {@inheritDoc} */
     @Override public void writeInt(long ptr, int v) {
         HeapPage p = ptrToPage(ptr);
 
-        GridUnsafe.putInt(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffff, v);
+        GridUnsafe.putInt(p.buf(), GridUnsafe.BYTE_ARR_OFF + (ptr & 0xffffffffL), v);
     }
 
     /** {@inheritDoc} */
     @Override public float readFloat(long ptr) {
         HeapPage p = ptrToPage(ptr);
 
-        return GridUnsafe.getFloat(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffff);
+        return GridUnsafe.getFloat(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffffL);
     }
 
     /** {@inheritDoc} */
     @Override public void writeFloat(long ptr, float v) {
         HeapPage p = ptrToPage(ptr);
 
-        GridUnsafe.putFloat(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffff, v);
+        GridUnsafe.putFloat(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffffL, v);
     }
 
     /** {@inheritDoc} */
     @Override public double readDouble(long ptr) {
         HeapPage p = ptrToPage(ptr);
 
-        return GridUnsafe.getDouble(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffff);
+        return GridUnsafe.getDouble(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffffL);
     }
 
     /** {@inheritDoc} */
     @Override public void writeDouble(long ptr, double v) {
         HeapPage p = ptrToPage(ptr);
 
-        GridUnsafe.putDouble(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffff, v);
+        GridUnsafe.putDouble(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffffL, v);
     }
 
     /** {@inheritDoc} */
     @Override public short readShort(long ptr) {
         HeapPage p = ptrToPage(ptr);
 
-        return GridUnsafe.getShort(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffff);
+        return GridUnsafe.getShort(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffffL);
     }
 
     /** {@inheritDoc} */
     @Override public void writeShort(long ptr, short v) {
         HeapPage p = ptrToPage(ptr);
 
-        GridUnsafe.putShort(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffff, v);
+        GridUnsafe.putShort(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffffL, v);
     }
 
     /** {@inheritDoc} */
     @Override public byte readByte(long ptr) {
         HeapPage p = ptrToPage(ptr);
 
-        return GridUnsafe.getByte(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffff);
+        return GridUnsafe.getByte(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffffL);
     }
 
     /** {@inheritDoc} */
     @Override public void writeByte(long ptr, byte v) {
         HeapPage p = ptrToPage(ptr);
 
-        GridUnsafe.putByte(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffff, v);
+        GridUnsafe.putByte(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffffL, v);
     }
 
     /** {@inheritDoc} */
@@ -204,14 +203,14 @@ public class HeapMemoryManager extends MemoryManager {
         HeapPage p = ptrToPage(ptr);
 
         GridUnsafe.copyMemory(arr, GridUnsafe.BYTE_ARR_OFF + off,
-            p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffff, len);
+            p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffffL, len);
     }
 
     /** {@inheritDoc} */
     @Override public byte[] readBytes(long ptr, byte[] arr, int off, int len) {
         HeapPage p = ptrToPage(ptr);
 
-        GridUnsafe.copyMemory(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffff,
+        GridUnsafe.copyMemory(p.buf(), GridUnsafe.BYTE_ARR_OFF + ptr & 0xffffffffL,
             arr, GridUnsafe.BYTE_ARR_OFF + off, len);
 
         return arr;

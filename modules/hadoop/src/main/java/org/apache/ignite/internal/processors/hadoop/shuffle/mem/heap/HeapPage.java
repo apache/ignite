@@ -24,6 +24,7 @@ public class HeapPage implements Page {
     public HeapPage(int order, int size) {
         this.order = order;
         this.size = size;
+
         buf = new byte[size];
     }
 

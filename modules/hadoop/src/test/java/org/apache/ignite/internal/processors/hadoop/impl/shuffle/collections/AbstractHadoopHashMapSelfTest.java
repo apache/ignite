@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopHashMultimap;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopMultimap;
+import org.apache.ignite.internal.processors.hadoop.shuffle.mem.MemoryManager;
 import org.apache.ignite.internal.processors.hadoop.shuffle.mem.offheap.OffheapMemoryManager;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
@@ -39,7 +40,12 @@ import java.util.Random;
 /**
  *
  */
-public class HadoopHashMapSelfTest extends HadoopAbstractMapTest {
+public abstract class AbstractHadoopHashMapSelfTest extends HadoopAbstractMapTest {
+    /**
+     * @return Memory manager to use by map.
+     */
+    protected abstract MemoryManager memoryManager();
+
     /**
      * Test simple map.
      *
@@ -55,7 +61,7 @@ public class HadoopHashMapSelfTest extends HadoopAbstractMapTest {
         HadoopTaskContext taskCtx = new TaskContext();
 
         final HadoopHashMultimap m = new HadoopHashMultimap(new JobInfo(),
-            new OffheapMemoryManager(mem, 32 * 1024), mapSize);
+            memoryManager(), mapSize);
 
         HadoopMultimap.Adder a = m.startAdding(taskCtx);
 

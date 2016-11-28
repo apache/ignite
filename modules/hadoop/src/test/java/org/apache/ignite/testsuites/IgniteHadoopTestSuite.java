@@ -75,7 +75,7 @@ import org.apache.ignite.internal.processors.hadoop.impl.HadoopValidationSelfTes
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopWeightedMapReducePlannerTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopWeightedPlannerMapReduceTest;
 import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopConcurrentHashMultimapSelftest;
-import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopHashMapSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.AbstractHadoopHashMapSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopSkipListSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.shuffle.streams.HadoopDataStreamSelfTest;
 import org.apache.ignite.internal.util.typedef.F;
@@ -162,7 +162,7 @@ public class IgniteHadoopTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopJobTrackerSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopHashMapSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(AbstractHadoopHashMapSelfTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopDataStreamSelfTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopConcurrentHashMultimapSelftest.class.getName())));
 
