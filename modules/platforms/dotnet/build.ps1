@@ -18,6 +18,7 @@ param (
     [switch]$skipJava,
     [switch]$skipNuGet,
     [switch]$skipDocs,
+    [switch]$skipCodeAnalysis,
     [switch]$clean,
     [string]$platform="Any CPU",
     [string]$configuration="Release"
@@ -66,7 +67,8 @@ Import-Module .\Invoke-MsBuild
 # Build
 echo "Starting MsBuild..."
 $targets = if ($clean) {"Clean;Rebuild"} else {"Build"}
-Invoke-MsBuild Apache.Ignite.sln -Params "/target:$targets /p:Configuration=$configuration /p:Platform=`"$platform`"" -ShowBuildOutputInCurrentWindow
+$codeAnalysis = if ($skipCodeAnalysis) {"/p:RunCodeAnalysis=false"} else {""}
+Invoke-MsBuild Apache.Ignite.sln -Params "/target:$targets /p:Configuration=$configuration /p:Platform=`"$platform`" $codeAnalysis" -ShowBuildOutputInCurrentWindow
 
 # Remove module dir
 # Remove-Item -Force -Recurse -ErrorAction SilentlyContinue "Invoke-MsBuild"
