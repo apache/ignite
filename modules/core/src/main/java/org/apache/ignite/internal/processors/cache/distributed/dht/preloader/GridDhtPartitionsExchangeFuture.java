@@ -615,9 +615,19 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 cctx.cache().changeStateUpdateTopology(topologyVersion());
 
                 if (r.globalStateDeActivate()) {
-                    cctx.kernalContext().dataStructures().onKernalStop(false);
+                    cctx.kernalContext().dataStructures().onDeActivate();
 
-                    cctx.kernalContext().service().onKernalStop(false);
+                    cctx.kernalContext().service().onDeActivate();
+
+                    cctx.database().onDeActivate();
+
+                    if (cctx.pageStore() != null)
+                        cctx.pageStore().onDeActivate();
+
+                    cctx.wal().onDeActivate();
+
+                    if (!cctx.kernalContext().clientNode())
+                        cctx.database().unLock();
                 }
                 break;
             }

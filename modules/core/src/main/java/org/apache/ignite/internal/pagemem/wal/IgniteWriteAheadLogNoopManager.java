@@ -56,4 +56,14 @@ public class IgniteWriteAheadLogNoopManager extends GridCacheSharedManagerAdapte
     @Override public int truncate(WALPointer ptr) {
         return 0;
     }
+
+    /** {@inheritDoc} */
+    @Override public void onActivate() {
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate() {
+
+    }
 }

@@ -839,7 +839,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheAdapter<?, ?> cache : caches.values())
             onKernalStart(cache);
 
-
         if (globalState == ACTIVE) {
             ctx.marshallerContext().onMarshallerCacheStarted(ctx);
 
@@ -1881,6 +1880,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ", ctxDepId=" + ctx.dynamicDeploymentId() + ']';
 
             onKernalStop(cache, true);
+
             stopCache(cache, true, true);
         }
     }
@@ -4155,9 +4155,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         final DynamicCacheChangeRequest req,
         final AffinityTopologyVersion topVer
     ){
+        if (this.globalState == ACTIVE)
+            return;
+
         assert changeStateInProgress;
         assert req.globalStateChange();
-        assert globalState != ACTIVE;
         assert req.state() == ACTIVE;
 
         final GridCacheSharedContext<?, ?> shCtx = sharedCtx;
@@ -4172,14 +4174,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             globalState = req.state();
 
             if (isServerNode)
-                shCtx.database().beforeActivate();
+                shCtx.database().lock();
 
-            shCtx.wal().onKernalStart(false);
+            shCtx.wal().onActivate();
 
-            shCtx.database().onKernalStart(false);
+            shCtx.database().onActivate();
 
             if (shCtx.pageStore() != null)
-                shCtx.pageStore().onKernalStart(false);
+                shCtx.pageStore().onActivate();
 
             ctx.marshallerContext().onMarshallerCacheStarted(ctx);
 
@@ -4214,13 +4216,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     glStLock.lock();
 
                     try {
-                        ctx.service().start();
+                        ctx.service().onActivate();
 
-                        ctx.service().onKernalStart();
-
-                        ctx.dataStructures().start();
-
-                        ctx.dataStructures().onKernalStart();
+                        ctx.dataStructures().onActivate();
 
                         if (isServerNode)
                             shCtx.database().afterActivate();
@@ -4261,25 +4259,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         final DynamicCacheChangeRequest req,
         final AffinityTopologyVersion topVer
     ){
-        assert this.globalState == ACTIVE;
+        if (this.globalState == INACTIVE)
+            return;
+
         assert req.state() == INACTIVE;
 
         final GridCacheSharedContext<?, ?> shCtx = sharedCtx;
 
+        glStLock.lock();
+
         try {
             globalState = req.state();
-
-            final boolean isServerNode = !ctx.clientNode();
-
-            if (shCtx.pageStore() != null)
-                shCtx.pageStore().onKernalStop(false);
-
-            shCtx.database().onKernalStop(false);
-
-            sharedCtx.wal().stop(false);
-
-            if (isServerNode)
-                sharedCtx.database().unLock();
 
             sendChangeGlobalStateResponse(req.requestId(), req.initiatingNodeId(), null);
         }catch (Exception e){
@@ -4288,6 +4278,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             sendChangeGlobalStateResponse(req.requestId(), req.initiatingNodeId(), e);
         }finally {
             changeStateInProgress = false;
+
+            glStLock.unlock();
         }
     }
 

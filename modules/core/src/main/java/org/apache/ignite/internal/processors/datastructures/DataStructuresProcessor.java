@@ -82,6 +82,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPR;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteActivationSupport;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -96,8 +97,8 @@ import static org.apache.ignite.internal.processors.datastructures.DataStructure
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.ATOMIC_STAMPED;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.COUNT_DOWN_LATCH;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.QUEUE;
-import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.SEMAPHORE;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.REENTRANT_LOCK;
+import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.SEMAPHORE;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.SET;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -105,7 +106,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Manager of data structures.
  */
-public final class DataStructuresProcessor extends GridProcessorAdapter {
+public final class DataStructuresProcessor extends GridProcessorAdapter implements IgniteActivationSupport {
     /** */
     public static final CacheDataStructuresConfigurationKey DATA_STRUCTURES_KEY =
         new CacheDataStructuresConfigurationKey();
@@ -118,7 +119,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     private static final int INITIAL_CAPACITY = 10;
 
     /** Initialization latch. */
-    private final CountDownLatch initLatch = new CountDownLatch(1);
+    private volatile CountDownLatch initLatch = new CountDownLatch(1);
 
     /** Initialization failed flag. */
     private boolean initFailed;
@@ -165,6 +166,32 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     /** */
     private volatile UUID qryId;
 
+    /** Listener. */
+    private final GridLocalEventListener lsnr = new GridLocalEventListener() {
+        @Override public void onEvent(final Event evt) {
+            // This may require cache operation to execute,
+            // therefore cannot use event notification thread.
+            ctx.closure().callLocalSafe(
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
+
+                        UUID leftNodeId = discoEvt.eventNode().id();
+
+                        for (GridCacheRemovable ds : dsMap.values()) {
+                            if (ds instanceof GridCacheSemaphoreEx)
+                                ((GridCacheSemaphoreEx)ds).onNodeRemoved(leftNodeId);
+                            else if (ds instanceof GridCacheLockEx)
+                                ((GridCacheLockEx)ds).onNodeRemoved(leftNodeId);
+                        }
+
+                        return null;
+                    }
+                },
+                false);
+        }
+    };
+
     /**
      * @param ctx Context.
      */
@@ -178,78 +205,54 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (ctx.cache().internalGlobalState() == CacheState.ACTIVE) {
-            super.start();
+        if (ctx.cache().internalGlobalState() == CacheState.ACTIVE)
+            return;
 
-            ctx.event().addLocalEventListener(
-                new GridLocalEventListener() {
-                    @Override public void onEvent(final Event evt) {
-                        // This may require cache operation to execute,
-                        // therefore cannot use event notification thread.
-                        ctx.closure().callLocalSafe(
-                            new Callable<Object>() {
-                                @Override public Object call() throws Exception {
-                                    DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
+        super.start();
 
-                                    UUID leftNodeId = discoEvt.eventNode().id();
-
-                                    for (GridCacheRemovable ds : dsMap.values()) {
-                                        if (ds instanceof GridCacheSemaphoreEx)
-                                            ((GridCacheSemaphoreEx)ds).onNodeRemoved(leftNodeId);
-                                        else if (ds instanceof GridCacheLockEx)
-                                            ((GridCacheLockEx)ds).onNodeRemoved(leftNodeId);
-                                    }
-
-                                    return null;
-                                }
-                            },
-                            false);
-                    }
-                },
-                EVT_NODE_LEFT,
-                EVT_NODE_FAILED);
-        }
+        ctx.event().addLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void onKernalStart() throws IgniteCheckedException {
-        if (ctx.cache().internalGlobalState() == CacheState.ACTIVE){
-            if (ctx.config().isDaemon())
-                return;
+        if (ctx.cache().internalGlobalState() != CacheState.ACTIVE)
+            return;
 
-            utilityCache = (IgniteInternalCache)ctx.cache().utilityCache();
+        if (ctx.config().isDaemon())
+            return;
 
-            utilityDataCache = (IgniteInternalCache)ctx.cache().utilityCache();
+        utilityCache = (IgniteInternalCache)ctx.cache().utilityCache();
 
-            assert utilityCache != null;
+        utilityDataCache = (IgniteInternalCache)ctx.cache().utilityCache();
 
-            if (atomicCfg != null) {
-                IgniteInternalCache atomicsCache = ctx.cache().atomicsCache();
+        assert utilityCache != null;
 
-                assert atomicsCache != null;
+        if (atomicCfg != null) {
+            IgniteInternalCache atomicsCache = ctx.cache().atomicsCache();
 
-                dsView = atomicsCache;
+            assert atomicsCache != null;
 
-                cntDownLatchView = atomicsCache;
+            dsView = atomicsCache;
 
-                semView = atomicsCache;
+            cntDownLatchView = atomicsCache;
 
-                reentrantLockView = atomicsCache;
+            semView = atomicsCache;
 
-                atomicLongView = atomicsCache;
+            reentrantLockView = atomicsCache;
 
-                atomicRefView = atomicsCache;
+            atomicLongView = atomicsCache;
 
-                atomicStampedView = atomicsCache;
+            atomicRefView = atomicsCache;
 
-                seqView = atomicsCache;
+            atomicStampedView = atomicsCache;
 
-                dsCacheCtx = atomicsCache.context();
-            }
+            seqView = atomicsCache;
 
-            initLatch.countDown();
+            dsCacheCtx = atomicsCache.context();
         }
+
+        initLatch.countDown();
     }
 
     /**
@@ -271,26 +274,54 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        if (ctx.cache().internalGlobalState() == CacheState.ACTIVE){
-            super.onKernalStop(cancel);
+        if (ctx.cache().internalGlobalState() == CacheState.ACTIVE)
+            return;
 
-            for (GridCacheRemovable ds : dsMap.values()) {
-                if (ds instanceof GridCacheSemaphoreEx)
-                    ((GridCacheSemaphoreEx)ds).stop();
+        super.onKernalStop(cancel);
 
-                if (ds instanceof GridCacheLockEx)
-                    ((GridCacheLockEx)ds).onStop();
-            }
+        for (GridCacheRemovable ds : dsMap.values()) {
+            if (ds instanceof GridCacheSemaphoreEx)
+                ((GridCacheSemaphoreEx)ds).stop();
 
-            if (initLatch.getCount() > 0) {
-                initFailed = true;
-
-                initLatch.countDown();
-            }
-
-            if (qryId != null)
-                dsCacheCtx.continuousQueries().cancelInternalQuery(qryId);
+            if (ds instanceof GridCacheLockEx)
+                ((GridCacheLockEx)ds).onStop();
         }
+
+        if (initLatch.getCount() > 0) {
+            initFailed = true;
+
+            initLatch.countDown();
+        }
+
+        if (qryId != null)
+            dsCacheCtx.continuousQueries().cancelInternalQuery(qryId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onActivate() throws IgniteCheckedException {
+        start();
+
+        onKernalStart();
+
+        for (Map.Entry<GridCacheInternal, GridCacheRemovable> e : dsMap.entrySet()) {
+            GridCacheRemovable v = e.getValue();
+
+            if (v instanceof IgniteActivationSupport)
+                ((IgniteActivationSupport)v).onActivate();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate() {
+        ctx.event().removeLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
+
+        onKernalStop(false);
+
+        this.initLatch = new CountDownLatch(1);
+
+        this.initFailed = false;
+
+        this.qryId = null;
     }
 
     /**

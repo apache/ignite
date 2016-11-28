@@ -37,12 +37,13 @@ import org.apache.ignite.internal.processors.cache.database.freelist.FreeListImp
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteActivationSupport;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdapter {
+public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdapter implements IgniteActivationSupport {
     /** */
     protected PageMemory pageMem;
 
@@ -121,13 +122,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      */
     public void unLock(){
-
-    }
-
-    /**
-     *
-     */
-    public void beforeActivate() throws IgniteCheckedException {
 
     }
 
@@ -260,5 +254,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         File workDir = igniteHome == null ? new File(path) : new File(igniteHome, path);
 
         return new File(workDir, consId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onActivate() throws IgniteCheckedException {
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate() throws IgniteCheckedException {
+
     }
 }

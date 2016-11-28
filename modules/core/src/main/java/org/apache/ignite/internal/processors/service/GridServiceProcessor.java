@@ -82,6 +82,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteActivationSupport;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
@@ -112,7 +113,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Grid service processor.
  */
 @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions"})
-public class GridServiceProcessor extends GridProcessorAdapter {
+public class GridServiceProcessor extends GridProcessorAdapter implements IgniteActivationSupport {
     /** */
     public static final IgniteProductVersion LAZY_SERVICES_CFG_SINCE = IgniteProductVersion.fromString("1.5.22");
 
@@ -321,18 +322,96 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     }
                 }
 
-                /*U.shutdownNow(GridServiceProcessor.class, depExe, log);*/
+                U.shutdownNow(GridServiceProcessor.class, depExe, log);
 
                 Exception err = new IgniteCheckedException("Operation has been cancelled (node is stopping).");
 
                 cancelFutures(depFuts, err);
                 cancelFutures(undepFuts, err);
-
-                if (log.isDebugEnabled())
-                    log.debug("Stopped service processor.");
             }finally {
                 busyLock.unblock();
             }
+        }
+        else if (ctx.cache().internalGlobalState() == CacheState.INACTIVE) {
+            Collection<ServiceContextImpl> ctxs = new ArrayList<>();
+
+            synchronized (locSvcs) {
+                for (Collection<ServiceContextImpl> ctxs0 : locSvcs.values())
+                    ctxs.addAll(ctxs0);
+            }
+
+            for (ServiceContextImpl ctx : ctxs)
+                ctx.executor().shutdownNow();
+
+
+            for (ServiceContextImpl ctx : ctxs) {
+                try {
+                    if (log.isInfoEnabled() && !ctxs.isEmpty())
+                        log.info("Shutting down distributed service [name=" + ctx.name() + ", execId8=" +
+                            U.id8(ctx.executionId()) + ']');
+
+                    ctx.executor().awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+                }
+                catch (InterruptedException ignore) {
+                    Thread.currentThread().interrupt();
+
+                    U.error(log, "Got interrupted while waiting for service to shutdown (will continue stopping node): " +
+                        ctx.name());
+                }
+            }
+
+            U.shutdownNow(GridServiceProcessor.class, depExe, log);
+        }
+
+        if (log.isDebugEnabled())
+            log.debug("Stopped service processor.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onActivate() throws IgniteCheckedException {
+        assert ctx.cache().globalState() == CacheState.INACTIVE;
+
+        start();
+
+        onKernalStart();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate() {
+        busyLock.block();
+
+        try {
+            if (ctx.isDaemon())
+                return;
+
+            if (!ctx.clientNode())
+                ctx.event().removeLocalEventListener(topLsnr);
+
+            Collection<ServiceContextImpl> ctxs = new ArrayList<>();
+
+            synchronized (locSvcs) {
+                for (Collection<ServiceContextImpl> ctxs0 : locSvcs.values())
+                    ctxs.addAll(ctxs0);
+            }
+
+            for (ServiceContextImpl ctx : ctxs) {
+                ctx.setCancelled(true);
+
+                Service svc = ctx.service();
+
+                if (svc != null)
+                    svc.cancel(ctx);
+            }
+
+            Exception err = new IgniteCheckedException("Operation has been cancelled (node is in active status).");
+
+            cancelFutures(depFuts, err);
+            cancelFutures(undepFuts, err);
+
+            if (log.isDebugEnabled())
+                log.debug("Deactivate service processor.");
+        }finally {
+            busyLock.unblock();
         }
     }
 
