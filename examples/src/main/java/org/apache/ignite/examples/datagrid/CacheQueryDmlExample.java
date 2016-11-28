@@ -94,22 +94,17 @@ public class CacheQueryDmlExample {
         orgCache.put(org1.id(), org1);
         orgCache.put(org2.id(), org2);
 
-        // Insert persons by key/value.
-        Person p1 = new Person(1L, org1.id(), "John", "Doe", 4000, "Master");
-        Person p2 = new Person(2L, org1.id(), "Jane", "Roe", 2000, "Bachelor");
-
-        SqlFieldsQuery qry = new SqlFieldsQuery("insert into Person (_key, _val) values (?, ?)");
-
-        personCache.query(qry.setArgs(p1.key(), p1));
-        personCache.query(qry.setArgs(p2.key(), p2));
-
         // Insert persons via field values.
+        AffinityKey<Long> key1 = new AffinityKey<>(1L, org2.id());
+        AffinityKey<Long> key2 = new AffinityKey<>(2L, org2.id());
         AffinityKey<Long> key3 = new AffinityKey<>(3L, org2.id());
         AffinityKey<Long> key4 = new AffinityKey<>(4L, org2.id());
 
-        qry = new SqlFieldsQuery(
+        SqlFieldsQuery qry = new SqlFieldsQuery(
             "insert into Person (_key, id, orgId, firstName, lastName, salary, resume) values (?, ?, ?, ?, ?, ?, ?)");
 
+        personCache.query(qry.setArgs(key1, 1L, org1.id(), "John", "Doe", 4000, "Master"));
+        personCache.query(qry.setArgs(key2, 2L, org1.id(), "Jane", "Roe", 2000, "Bachelor"));
         personCache.query(qry.setArgs(key3, 3L, org2.id(), "Mary", "Major", 5000, "Master"));
         personCache.query(qry.setArgs(key4, 4L, org2.id(), "Richard", "Miles", 3000, "Bachelor"));
     }
