@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-using System;
-using Apache.Ignite.Core;
-using Apache.Ignite.ExamplesDll.Services;
-
 namespace Apache.Ignite.Examples.Services
 {
+    using System;
+    using Apache.Ignite.Core;
+    using Apache.Ignite.ExamplesDll.Services;
+
     /// <summary>
     /// Example demonstrating Ignite services.
     /// <para />
@@ -55,7 +55,7 @@ namespace Apache.Ignite.Examples.Services
 
                 // Get a sticky service proxy so that we will always be contacting the same remote node.
                 var prx = ignite.GetServices().GetServiceProxy<IMapService<int, string>>("service", true);
-                
+
                 for (var i = 0; i < 10; i++)
                     prx.Put(i, i.ToString());
 

@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.platform.dotnet;
 
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractBootstrap;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
+import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 
 import java.io.PrintStream;
 
@@ -39,5 +42,11 @@ public class PlatformDotNetBootstrap extends PlatformAbstractBootstrap {
     /** {@inheritDoc} */
     @Override protected PlatformAbstractConfigurationClosure closure(long envPtr) {
         return new PlatformDotNetConfigurationClosure(envPtr);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void processInput(PlatformInputStream input, IgniteConfiguration cfg) {
+        if (input.readBoolean())
+            cfg.setGridLogger(new PlatformLogger());
     }
 }
