@@ -465,11 +465,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             ExchangeType exchange;
 
             if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
-                DiscoveryCustomMessage customMessage = ((DiscoveryCustomEvent)discoEvt).customMessage();
+                DiscoveryCustomMessage customMsg = ((DiscoveryCustomEvent)discoEvt).customMessage();
 
                 if (!F.isEmpty(reqs))
                     exchange = onCacheChangeRequest(crdNode);
-                else if (customMessage instanceof StartFullBackupAckDiscoveryMessage)
+                else if (customMsg instanceof StartFullBackupAckDiscoveryMessage)
                     exchange = CU.clientNode(discoEvt.eventNode()) ?
                         onClientNodeEvent(crdNode) :
                         onServerNodeEvent(crdNode);
@@ -609,6 +609,18 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     private ExchangeType onCacheChangeRequest(boolean crd) throws IgniteCheckedException {
         assert !F.isEmpty(reqs) : this;
+
+        for (DynamicCacheChangeRequest r : reqs)
+            if (r.globalStateChange()) {
+                cctx.cache().changeStateUpdateTopology(topologyVersion());
+
+                if (r.globalStateDeActivate()) {
+                    cctx.kernalContext().dataStructures().onKernalStop(false);
+
+                    cctx.kernalContext().service().onKernalStop(false);
+                }
+                break;
+            }
 
         boolean clientOnly = cctx.affinity().onCacheChangeRequest(this, crd, reqs);
 

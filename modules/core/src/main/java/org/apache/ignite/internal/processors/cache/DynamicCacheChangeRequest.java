@@ -134,6 +134,20 @@ public class DynamicCacheChangeRequest implements Serializable {
     }
 
     /**
+     *
+     */
+    public boolean globalStateActivate(){
+        return state != null && state == CacheState.ACTIVE;
+    }
+
+    /**
+     *
+     */
+    public boolean globalStateDeActivate(){
+        return state != null && state == CacheState.INACTIVE;
+    }
+
+    /**
      * @param cacheFutTopVer Ready topology version when dynamic cache future should be completed.
      */
     public void cacheFutureTopologyVersion(AffinityTopologyVersion cacheFutTopVer) {

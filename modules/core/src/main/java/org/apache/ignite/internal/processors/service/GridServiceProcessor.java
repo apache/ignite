@@ -188,36 +188,36 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             assert !ctx.isDaemon();
 
             ctx.continuous().registerStaticRoutine(
-                CU.UTILITY_CACHE_NAME,
-                new ServiceEntriesListener(),
-                null,
-                null);
+                CU.UTILITY_CACHE_NAME, new ServiceEntriesListener(), null, null
+            );
         }
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        ctx.addNodeAttribute(ATTR_SERVICES_COMPATIBILITY_MODE, srvcCompatibilitySysProp);
+        if (ctx.cache().internalGlobalState() == CacheState.ACTIVE) {
+            ctx.addNodeAttribute(ATTR_SERVICES_COMPATIBILITY_MODE, srvcCompatibilitySysProp);
 
-        if (ctx.isDaemon())
-            return;
+            if (ctx.isDaemon())
+                return;
 
-        IgniteConfiguration cfg = ctx.config();
+            IgniteConfiguration cfg = ctx.config();
 
-        DeploymentMode depMode = cfg.getDeploymentMode();
+            DeploymentMode depMode = cfg.getDeploymentMode();
 
-        if (cfg.isPeerClassLoadingEnabled() && (depMode == PRIVATE || depMode == ISOLATED) &&
-            !F.isEmpty(cfg.getServiceConfiguration()))
-            throw new IgniteCheckedException("Cannot deploy services in PRIVATE or ISOLATED deployment mode: " + depMode);
+            if (cfg.isPeerClassLoadingEnabled() && (depMode == PRIVATE || depMode == ISOLATED) &&
+                !F.isEmpty(cfg.getServiceConfiguration()))
+                throw new IgniteCheckedException("Cannot deploy services in PRIVATE or ISOLATED deployment mode: " + depMode);
+        }
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void onKernalStart() throws IgniteCheckedException {
-        if (ctx.isDaemon())
-            return;
-
         if (ctx.cache().internalGlobalState() == CacheState.ACTIVE) {
+            if (ctx.isDaemon())
+                return;
+
             cache = ctx.cache().utilityCache();
 
             if (!ctx.clientNode())
@@ -230,11 +230,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 if (!ctx.clientNode()) {
                     assert cache.context().affinityNode();
 
-                    cache.context().continuousQueries().executeInternalQuery(new ServiceEntriesListener(),
-                        null,
-                        true,
-                        true,
-                        false);
+                    cache.context().continuousQueries().executeInternalQuery(
+                        new ServiceEntriesListener(), null, true, true, false
+                    );
                 }
                 else {
                     assert !ctx.isDaemon();
@@ -279,57 +277,63 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        if (ctx.isDaemon())
-            return;
+        if (ctx.cache().internalGlobalState() == CacheState.ACTIVE) {
+            busyLock.block();
 
-        busyLock.block();
-
-        if (!ctx.clientNode())
-            ctx.event().removeLocalEventListener(topLsnr);
-
-        Collection<ServiceContextImpl> ctxs = new ArrayList<>();
-
-        synchronized (locSvcs) {
-            for (Collection<ServiceContextImpl> ctxs0 : locSvcs.values())
-                ctxs.addAll(ctxs0);
-        }
-
-        for (ServiceContextImpl ctx : ctxs) {
-            ctx.setCancelled(true);
-
-            Service svc = ctx.service();
-
-            if (svc != null)
-                svc.cancel(ctx);
-
-            ctx.executor().shutdownNow();
-        }
-
-        for (ServiceContextImpl ctx : ctxs) {
             try {
-                if (log.isInfoEnabled() && !ctxs.isEmpty())
-                    log.info("Shutting down distributed service [name=" + ctx.name() + ", execId8=" +
-                        U.id8(ctx.executionId()) + ']');
+                if (ctx.isDaemon())
+                    return;
 
-                ctx.executor().awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
-            }
-            catch (InterruptedException ignore) {
-                Thread.currentThread().interrupt();
+                if (!ctx.clientNode())
+                    ctx.event().removeLocalEventListener(topLsnr);
 
-                U.error(log, "Got interrupted while waiting for service to shutdown (will continue stopping node): " +
-                    ctx.name());
+                Collection<ServiceContextImpl> ctxs = new ArrayList<>();
+
+                synchronized (locSvcs) {
+                    for (Collection<ServiceContextImpl> ctxs0 : locSvcs.values())
+                        ctxs.addAll(ctxs0);
+                }
+
+                for (ServiceContextImpl ctx : ctxs) {
+                    ctx.setCancelled(true);
+
+                    Service svc = ctx.service();
+
+                    if (svc != null)
+                        svc.cancel(ctx);
+
+                    ctx.executor().shutdownNow();
+                }
+
+                for (ServiceContextImpl ctx : ctxs) {
+                    try {
+                        if (log.isInfoEnabled() && !ctxs.isEmpty())
+                            log.info("Shutting down distributed service [name=" + ctx.name() + ", execId8=" +
+                                U.id8(ctx.executionId()) + ']');
+
+                        ctx.executor().awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+                    }
+                    catch (InterruptedException ignore) {
+                        Thread.currentThread().interrupt();
+
+                        U.error(log, "Got interrupted while waiting for service to shutdown (will continue stopping node): " +
+                            ctx.name());
+                    }
+                }
+
+                /*U.shutdownNow(GridServiceProcessor.class, depExe, log);*/
+
+                Exception err = new IgniteCheckedException("Operation has been cancelled (node is stopping).");
+
+                cancelFutures(depFuts, err);
+                cancelFutures(undepFuts, err);
+
+                if (log.isDebugEnabled())
+                    log.debug("Stopped service processor.");
+            }finally {
+                busyLock.unblock();
             }
         }
-
-        U.shutdownNow(GridServiceProcessor.class, depExe, log);
-
-        Exception err = new IgniteCheckedException("Operation has been cancelled (node is stopping).");
-
-        cancelFutures(depFuts, err);
-        cancelFutures(undepFuts, err);
-
-        if (log.isDebugEnabled())
-            log.debug("Stopped service processor.");
     }
 
     /** {@inheritDoc} */
