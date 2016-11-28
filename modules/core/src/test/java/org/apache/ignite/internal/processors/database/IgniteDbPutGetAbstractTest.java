@@ -157,7 +157,7 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory(null, "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
 
         long seed = 1464583813940L; // System.currentTimeMillis();
 
@@ -176,7 +176,7 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
 
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(null, "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
     }
 
     /**
