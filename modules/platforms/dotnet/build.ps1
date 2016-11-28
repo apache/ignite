@@ -11,14 +11,16 @@
 #    limitations under the License.
 
 # Apache Ignite.NET build script
-# Requires PowerShell 3
-# TODO: Describe arguments
+# Requirements:
+# * PowerShell 3
+# * NuGet in PATH
+# * Apache Maven in PATH
+# * JDK 7+
 
 param (
     [switch]$skipJava,
     [switch]$skipNuGet,
-    [switch]$skipDocs,
-    [switch]$skipCodeAnalysis,
+    [switch]$skipCodeAnalysis,  
     [switch]$clean,
     [string]$platform="Any CPU",
     [string]$configuration="Release"
@@ -70,12 +72,31 @@ $targets = if ($clean) {"Clean;Rebuild"} else {"Build"}
 $codeAnalysis = if ($skipCodeAnalysis) {"/p:RunCodeAnalysis=false"} else {""}
 Invoke-MsBuild Apache.Ignite.sln -Params "/target:$targets /p:Configuration=$configuration /p:Platform=`"$platform`" $codeAnalysis" -ShowBuildOutputInCurrentWindow
 
-# Remove module dir
-# Remove-Item -Force -Recurse -ErrorAction SilentlyContinue "Invoke-MsBuild"
+# 3) Pack NuGet
 
-# TODO:
-# build java (skippable)
-# build AnyCPU binaries (debug/release switchable)
-# pack NuGet (skippable)
-# doxygen (?)
-# copy results to a folder
+if (!$skipNuGet)
+{
+    # Check parameters
+    if (($platform -ne "Any CPU") -or ($configuration -ne "Release"))
+    {
+        echo "NuGet can only package 'Release' 'Any CPU' builds; you have specified '$configuration' '$platform'."
+        exit -1
+    }
+
+    # Prepare paths
+    $ng = (Get-Item .).FullName + '\nuget.exe'
+    if (!(Test-Path $ng)) { $ng = 'nuget' }
+
+    rmdir nupkg -Force -Recurse
+    mkdir nupkg
+
+    # Detect version
+    $ver = (gi Apache.Ignite.Core\bin\Release\Apache.Ignite.Core.dll).VersionInfo.ProductVersion
+
+    # Find all nuspec files and run 'nuget pack' either directly, or on corresponding csproj files (if present).
+    ls *.nuspec -Recurse  `
+        | % { If (Test-Path ([io.path]::ChangeExtension($_.FullName, ".csproj"))){[io.path]::ChangeExtension($_.FullName, ".csproj")} Else {$_.FullName}  } `
+        | % { & $ng pack $_ -Prop Configuration=Release -Prop Platform=AnyCPU -Version $ver -OutputDirectory nupkg }
+
+    echo "NuGet packages created in $pwd\nupkg"
+}
