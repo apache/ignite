@@ -20,7 +20,6 @@ package org.apache.ignite.examples.datagrid;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.model.Organization;
@@ -52,13 +51,13 @@ public class CacheQueryDmlExample {
             CacheConfiguration<Long, Organization> orgCacheCfg = new CacheConfiguration<>(ORG_CACHE);
             orgCacheCfg.setIndexedTypes(Long.class, Organization.class);
 
-            CacheConfiguration<AffinityKey<Long>, Person> personCacheCfg = new CacheConfiguration<>(PERSON_CACHE);
-            personCacheCfg.setIndexedTypes(AffinityKey.class, Person.class);
+            CacheConfiguration<Long, Person> personCacheCfg = new CacheConfiguration<>(PERSON_CACHE);
+            personCacheCfg.setIndexedTypes(Long.class, Person.class);
 
             // Auto-close cache at the end of the example.
             try (
                 IgniteCache<Long, Organization> orgCache = ignite.getOrCreateCache(orgCacheCfg);
-                IgniteCache<AffinityKey<Long>, Person> personCache = ignite.getOrCreateCache(personCacheCfg)
+                IgniteCache<Long, Person> personCache = ignite.getOrCreateCache(personCacheCfg)
             ) {
                 insert(orgCache, personCache);
                 queryData(personCache, "Insert data:");
@@ -85,8 +84,7 @@ public class CacheQueryDmlExample {
      * @param orgCache Organization cache,
      * @param personCache Person cache.
      */
-    private static void insert(IgniteCache<Long, Organization> orgCache,
-        IgniteCache<AffinityKey<Long>, Person> personCache) {
+    private static void insert(IgniteCache<Long, Organization> orgCache, IgniteCache<Long, Person> personCache) {
         // Insert organizations.
         SqlFieldsQuery qry = new SqlFieldsQuery("insert into Organization (_key, id, name) values (?, ?, ?)");
 
@@ -94,18 +92,13 @@ public class CacheQueryDmlExample {
         orgCache.query(qry.setArgs(2L, 2L, "Other"));
 
         // Insert persons.
-        AffinityKey<Long> key1 = new AffinityKey<>(1L, 1L);
-        AffinityKey<Long> key2 = new AffinityKey<>(2L, 1L);
-        AffinityKey<Long> key3 = new AffinityKey<>(3L, 2L);
-        AffinityKey<Long> key4 = new AffinityKey<>(4L, 2L);
-
         qry = new SqlFieldsQuery(
             "insert into Person (_key, id, orgId, firstName, lastName, salary, resume) values (?, ?, ?, ?, ?, ?, ?)");
 
-        personCache.query(qry.setArgs(key1, 1L, 1L, "John", "Doe", 4000, "Master"));
-        personCache.query(qry.setArgs(key2, 2L, 1L, "Jane", "Roe", 2000, "Bachelor"));
-        personCache.query(qry.setArgs(key3, 3L, 2L, "Mary", "Major", 5000, "Master"));
-        personCache.query(qry.setArgs(key4, 4L, 2L, "Richard", "Miles", 3000, "Bachelor"));
+        personCache.query(qry.setArgs(1L, 1L, 1L, "John", "Doe", 4000, "Master"));
+        personCache.query(qry.setArgs(2L, 2L, 1L, "Jane", "Roe", 2000, "Bachelor"));
+        personCache.query(qry.setArgs(3L, 3L, 2L, "Mary", "Major", 5000, "Master"));
+        personCache.query(qry.setArgs(4L, 4L, 2L, "Richard", "Miles", 3000, "Bachelor"));
     }
 
     /**
@@ -113,7 +106,7 @@ public class CacheQueryDmlExample {
      *
      * @param personCache Person cache.
      */
-    private static void update(IgniteCache<AffinityKey<Long>, Person> personCache) {
+    private static void update(IgniteCache<Long, Person> personCache) {
         String sql =
             "update Person set salary = salary * 1.1 " +
             "where resume = ?";
@@ -126,7 +119,7 @@ public class CacheQueryDmlExample {
      *
      * @param personCache Person cache.
      */
-    private static void delete(IgniteCache<AffinityKey<Long>, Person> personCache) {
+    private static void delete(IgniteCache<Long, Person> personCache) {
         String sql =
             "delete from Person " +
             "where id in (" +
@@ -144,13 +137,13 @@ public class CacheQueryDmlExample {
      * @param personCache Person cache.
      * @param msg Message.
      */
-    private static void queryData(IgniteCache<AffinityKey<Long>, Person> personCache, String msg) {
+    private static void queryData(IgniteCache<Long, Person> personCache, String msg) {
         String sql =
             "select p.id, concat(p.firstName, ' ', p.lastName), o.name, p.resume, p.salary " +
             "from Person as p, \"Organizations\".Organization as o " +
             "where p.orgId = o.id";
 
-        List<List<?>> res = personCache.query(new SqlFieldsQuery(sql)).getAll();
+        List<List<?>> res = personCache.query(new SqlFieldsQuery(sql).setDistributedJoins(true)).getAll();
 
         print(msg, res);
     }
