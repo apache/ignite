@@ -44,8 +44,8 @@ if (!$skipJava)
 # 2) Build .NET
 
 # Download and install Invoke-MsBuild module
-Save-Module Invoke-MsBuild
-Install-Module .\Invoke-MsBuild
+Save-Module -Name Invoke-MsBuild -Path .
+Import-Module .\Invoke-MsBuild
 
 # Build
 Invoke-MsBuild Apache.Ignite.sln
