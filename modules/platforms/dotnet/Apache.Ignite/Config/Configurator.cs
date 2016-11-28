@@ -105,7 +105,7 @@ namespace Apache.Ignite.Config
                     assemblies.Add(arg.Item2);
                 else if (argIs(CmdForceTestClasspath) && arg.Item2 == "true")
                     Environment.SetEnvironmentVariable("IGNITE_NATIVE_TEST_CLASSPATH", "true");
-                else
+                else if (!argIs(CmdConfigFile) && !argIs(CmdConfigSection))
                 {
                     throw new IgniteException(string.Format(
                         "Unknown argument: '{0}'. See 'Apache.Ignite.exe /help'", arg.Item1));
