@@ -88,7 +88,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
-        pendingEntries.clear();
+        if (pendingEntries != null)
+            pendingEntries.clear();
 
         cctx.shared().ttl().unregister(this);
     }
@@ -183,7 +184,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             if (more)
                 return more;
 
-            if (amount != -1) {
+            if (amount != -1 && pendingEntries != null) {
                 EntryWrapper e = pendingEntries.firstx();
 
                 return e != null && e.expireTime <= now;
