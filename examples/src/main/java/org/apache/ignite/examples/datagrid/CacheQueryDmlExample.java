@@ -46,7 +46,7 @@ public class CacheQueryDmlExample {
     @SuppressWarnings({"unused", "ThrowFromFinallyBlock"})
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            print(">>> Cache query DML example started.");
+            print("Cache query DML example started.");
 
             CacheConfiguration<Long, Organization> orgCacheCfg = new CacheConfiguration<>(ORG_CACHE);
             orgCacheCfg.setIndexedTypes(Long.class, Organization.class);
@@ -88,8 +88,8 @@ public class CacheQueryDmlExample {
         // Insert organizations.
         SqlFieldsQuery qry = new SqlFieldsQuery("insert into Organization (_key, id, name) values (?, ?, ?)");
 
-        orgCache.query(qry.setArgs(1L, 1L, "Apache"));
-        orgCache.query(qry.setArgs(2L, 2L, "Other"));
+        orgCache.query(qry.setArgs(1L, 1L, "ASF"));
+        orgCache.query(qry.setArgs(2L, 2L, "Eclipse"));
 
         // Insert persons.
         qry = new SqlFieldsQuery(
@@ -128,7 +128,7 @@ public class CacheQueryDmlExample {
                 "where o.name != ? and p.orgId = o.id" +
             ")";
 
-        personCache.query(new SqlFieldsQuery(sql).setArgs("Apache")).getAll();
+        personCache.query(new SqlFieldsQuery(sql).setArgs("ASF")).getAll();
     }
 
     /**
