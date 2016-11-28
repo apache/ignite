@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
+import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArguments;
@@ -464,22 +465,6 @@ public class DmlStatementsProcessor {
 
         long res = 0;
 
-        CacheOperationContext opCtx = cctx.operationContextPerCall();
-
-        // Force keepBinary for operation context to avoid binary deserialization inside entry processor
-        if (cctx.binaryMarshaller()) {
-            CacheOperationContext newOpCtx = null;
-
-            if (opCtx == null)
-                // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
-                newOpCtx = new CacheOperationContext(false, null, true, null, false, null);
-            else if (!opCtx.isKeepBinary())
-                newOpCtx = opCtx.keepBinary();
-
-            if (newOpCtx != null)
-                cctx.operationContextPerCall(newOpCtx);
-        }
-
         Map<Object, EntryProcessor<Object, Object, Boolean>> rows = new LinkedHashMap<>();
 
         // Keys that failed to UPDATE due to concurrent updates.
@@ -487,97 +472,106 @@ public class DmlStatementsProcessor {
 
         SQLException resEx = null;
 
-        try {
-            Iterator<List<?>> it = cursor.iterator();
+        Iterator<List<?>> it = cursor.iterator();
 
-            while (it.hasNext()) {
-                List<?> e = it.next();
-                Object key = e.get(0);
-                Object val = (hasNewVal ? e.get(valColIdx) : e.get(1));
+        while (it.hasNext()) {
+            List<?> e = it.next();
+            Object key = e.get(0);
 
-                Object newVal;
+            // Base object to take "initial" column values from - either one currently in cache,
+            // or the one explicitly passed in arguments.
+            Object val = (hasNewVal ? e.get(valColIdx) : e.get(1));
 
-                Map<String, Object> newColVals = new HashMap<>();
+            Object newVal;
 
-                for (int i = 0; i < plan.colNames.length; i++) {
-                    if (hasNewVal && i == valColIdx - 2)
-                        continue;
+            Map<String, Object> newColVals = new HashMap<>();
 
-                    newColVals.put(plan.colNames[i], e.get(i + 2));
-                }
+            for (int i = 0; i < plan.colNames.length; i++) {
+                if (hasNewVal && i == valColIdx - 2)
+                    continue;
 
-                newVal = plan.valSupplier.apply(e);
-
-                if (bin && !(val instanceof BinaryObject))
-                    val = cctx.grid().binary().toBinary(val);
-
-                // Skip key and value - that's why we start off with 2nd column
-                for (int i = 0; i < plan.tbl.getColumns().length - 2; i++) {
-                    Column c = plan.tbl.getColumn(i + 2);
-
-                    boolean hasNewColVal = newColVals.containsKey(c.getName());
-
-                    // Binary objects get old field values from the Builder, so we can skip what we're not updating
-                    if (bin && !hasNewColVal)
-                        continue;
-
-                    Object colVal = hasNewColVal ? newColVals.get(c.getName()) : desc.columnValue(key, val, i);
-
-                    desc.setColumnValue(key, newVal, colVal, i);
-                }
-
-                if (bin && hasProps) {
-                    assert newVal instanceof BinaryObjectBuilder;
-
-                    newVal = ((BinaryObjectBuilder) newVal).build();
-                }
-
-                Object srcVal = e.get(1);
-
-                if (bin && !(srcVal instanceof BinaryObject))
-                    srcVal = cctx.grid().binary().toBinary(srcVal);
-
-                rows.put(key, new ModifyingEntryProcessor(srcVal, new EntryValueUpdater(newVal)));
-
-                if ((pageSize > 0 && rows.size() == pageSize) || (!it.hasNext())) {
-                    PageProcessingResult pageRes = processPage(cctx, rows);
-
-                    res += pageRes.cnt;
-
-                    failedKeys.addAll(F.asList(pageRes.errKeys));
-
-                    if (pageRes.ex != null) {
-                        if (resEx == null)
-                            resEx = pageRes.ex;
-                        else
-                            resEx.setNextException(pageRes.ex);
-                    }
-
-                    if (it.hasNext())
-                        rows.clear(); // No need to clear after the last batch.
-                }
+                newColVals.put(plan.colNames[i], e.get(i + 2));
             }
 
-            if (resEx != null) {
-                if (!F.isEmpty(failedKeys)) {
-                    // Don't go for a re-run if processing of some keys yielded exceptions and report keys that
-                    // had been modified concurrently right away.
-                    String msg = "Failed to UPDATE some keys because they had been modified concurrently " +
-                        "[keys=" + failedKeys + ']';
+            newVal = plan.valSupplier.apply(e);
 
-                    SQLException dupEx = createJdbcSqlException(msg, IgniteQueryErrorCode.CONCURRENT_UPDATE);
+            if (bin && !(val instanceof BinaryObject))
+                val = cctx.grid().binary().toBinary(val);
 
-                    dupEx.setNextException(resEx);
+            // Skip key and value - that's why we start off with 2nd column
+            for (int i = 0; i < plan.tbl.getColumns().length - 2; i++) {
+                Column c = plan.tbl.getColumn(i + 2);
 
-                    resEx = dupEx;
+                GridQueryProperty prop = desc.type().property(c.getName());
+
+                if (prop.key())
+                    continue; // Don't get values of key's columns - we won't use them anyway
+
+                boolean hasNewColVal = newColVals.containsKey(c.getName());
+
+                // TODO uncomment when https://issues.apache.org/jira/browse/IGNITE-4312 is fixed
+                /*
+                // Binary objects get old field values from the Builder, so we can skip what we're not updating
+                if (bin && !hasNewColVal)
+                    continue;
+                */
+
+                // Column values that have been explicitly specified have priority over field values in old or new _val
+                Object colVal = hasNewColVal ? newColVals.get(c.getName()) : desc.columnValue(null, val, i);
+
+                // UPDATE currently does not allow to modify key or its fields, so we must be safe to pass null as key
+                desc.setColumnValue(null, newVal, colVal, i);
+            }
+
+            if (bin && hasProps) {
+                assert newVal instanceof BinaryObjectBuilder;
+
+                newVal = ((BinaryObjectBuilder) newVal).build();
+            }
+
+            Object srcVal = e.get(1);
+
+            if (bin && !(srcVal instanceof BinaryObject))
+                srcVal = cctx.grid().binary().toBinary(srcVal);
+
+            rows.put(key, new ModifyingEntryProcessor(srcVal, new EntryValueUpdater(newVal)));
+
+            if ((pageSize > 0 && rows.size() == pageSize) || (!it.hasNext())) {
+                PageProcessingResult pageRes = processPage(cctx, rows);
+
+                res += pageRes.cnt;
+
+                failedKeys.addAll(F.asList(pageRes.errKeys));
+
+                if (pageRes.ex != null) {
+                    if (resEx == null)
+                        resEx = pageRes.ex;
+                    else
+                        resEx.setNextException(pageRes.ex);
                 }
 
-                throw new IgniteSQLException(resEx);
+                if (it.hasNext())
+                    rows.clear(); // No need to clear after the last batch.
             }
         }
-        finally {
-            cctx.operationContextPerCall(opCtx);
+
+        if (resEx != null) {
+            if (!F.isEmpty(failedKeys)) {
+                // Don't go for a re-run if processing of some keys yielded exceptions and report keys that
+                // had been modified concurrently right away.
+                String msg = "Failed to UPDATE some keys because they had been modified concurrently " +
+                    "[keys=" + failedKeys + ']';
+
+                SQLException dupEx = createJdbcSqlException(msg, IgniteQueryErrorCode.CONCURRENT_UPDATE);
+
+                dupEx.setNextException(resEx);
+
+                resEx = dupEx;
+            }
+
+            throw new IgniteSQLException(resEx);
         }
+
 
         return new UpdateResult(res, failedKeys.toArray());
     }
@@ -804,6 +798,28 @@ public class DmlStatementsProcessor {
 
         if (val == null)
             throw new IgniteSQLException("Value for INSERT or MERGE must not be null", IgniteQueryErrorCode.NULL_VALUE);
+
+        // TODO remove this whole condition when https://issues.apache.org/jira/browse/IGNITE-4312 is fixed
+        boolean isKeyBldr = key instanceof BinaryObjectBuilder;
+        boolean isValBldr = val instanceof BinaryObjectBuilder;
+        if (cctx.binaryMarshaller() && (isKeyBldr || isValBldr)) {
+            Object explicitKey = keyColIdx != -1 ? row[keyColIdx] : null;
+
+            Object explicitVal = valColIdx != -1 ? row[valColIdx] : null;
+
+            Set<String> propNames = desc.fields().keySet();
+
+            for (String propName : propNames) {
+                GridQueryProperty prop = desc.property(propName);
+
+                assert prop != null;
+
+                if (prop.key() && explicitKey != null && isKeyBldr)
+                    prop.setValue(key, null, prop.value(explicitKey, null));
+                else if (!prop.key() && explicitVal != null && isValBldr)
+                    prop.setValue(null, val, prop.value(null, explicitVal));
+            }
+        }
 
         for (int i = 0; i < cols.length; i++) {
             if (i == keyColIdx || i == valColIdx)

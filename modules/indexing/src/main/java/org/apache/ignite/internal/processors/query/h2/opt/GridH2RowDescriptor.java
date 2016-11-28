@@ -117,7 +117,7 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
     public void setColumnValue(Object key, Object val, Object colVal, int col);
 
     /**
-     * Determine whether a column corresponds to a property of key or to one of value.
+     * Determine whether a column corresponds to a property of key or of value.
      *
      * @param col Column index.
      * @return {@code true} if given column corresponds to a key property, {@code false} otherwise

@@ -89,25 +89,39 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonA
         startGridsMultiThreaded(3, true);
 
         ignite(0).createCache(cacheConfig("S2P", true, false).setIndexedTypes(String.class, Person.class));
-        ignite(0).createCache(createBinCacheConfig());
+
+        if (isBinaryMarshaller())
+            ignite(0).createCache(createBinCacheConfig());
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
+        // Put to S2P only non binary Persons
         ignite(0).cache("S2P").put("FirstKey", new Person(1, "John", "White"));
         ignite(0).cache("S2P").put("SecondKey", new Person(2, "Joe", "Black"));
         ignite(0).cache("S2P").put("k3", new Person(3, "Sylvia", "Green"));
         ignite(0).cache("S2P").put("f0u4thk3y", new Person(4, "Jane", "Silver"));
 
-        ignite(0).cache("S2P-bin").put("FirstKey", createPerson(1, "John", "White"));
-        ignite(0).cache("S2P-bin").put("SecondKey", createPerson(2, "Joe", "Black"));
-        ignite(0).cache("S2P-bin").put("k3", createPerson(3, "Sylvia", "Green"));
-        ignite(0).cache("S2P-bin").put("f0u4thk3y", createPerson(4, "Jane", "Silver"));
+        if (isBinaryMarshaller()) {
+            ignite(0).cache("S2P-bin").put("FirstKey", createBinPerson(1, "John", "White"));
+            ignite(0).cache("S2P-bin").put("SecondKey", createBinPerson(2, "Joe", "Black"));
+            ignite(0).cache("S2P-bin").put("k3", createBinPerson(3, "Sylvia", "Green"));
+            ignite(0).cache("S2P-bin").put("f0u4thk3y", createBinPerson(4, "Jane", "Silver"));
+        }
     }
 
     /** */
     Object createPerson(int id, String name, String secondName) {
+        if (!isBinaryMarshaller())
+            return new Person(id, name, secondName);
+        else
+            return createBinPerson(id, name, secondName);
+    }
+
+    /** */
+    private Object createBinPerson(int id, String name, String secondName) {
         BinaryObjectBuilder bldr = ignite(0).binary().builder("Person");
 
         bldr.setField("id", id);
